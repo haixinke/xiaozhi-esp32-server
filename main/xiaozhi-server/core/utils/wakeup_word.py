@@ -86,7 +86,7 @@ class WakeupWordsConfig:
             raise
 
     def get_wakeup_response(self, voice: str) -> Dict:
-        voice = hashlib.md5(voice.encode()).hexdigest()
+        voice = hashlib.md5(str(voice).encode()).hexdigest()
         """获取唤醒词回复配置"""
         config = self._load_config()
 

@@ -39,6 +39,9 @@ class TTSProvider(TTSProviderBase):
         # 应用百分比调整（如果存在），否则使用公有化配置
         self._apply_percentage_params(config)
 
+        # 采样率配置：部分腾讯云音色只支持16000
+        self.sample_rate = int(config.get("sample_rate", 16000))
+
     def _get_auth_headers(self, request_body):
         """生成鉴权请求头"""
         # 获取当前UTC时间戳
@@ -145,7 +148,7 @@ class TTSProvider(TTSProviderBase):
             "Codec": self.audio_file_type,  # 音频编码格式
             "Volume": self.volume,  # 音量
             "Speed": self.speed,  # 语速
-            "SampleRate": self.conn.sample_rate,  # 采样率部分支持24000
+            "SampleRate": self.sample_rate,  # 采样率部分支持24000
         }
 
         try:

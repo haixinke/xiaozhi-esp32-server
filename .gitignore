@@ -187,3 +187,7 @@ uploadfile
 !main/manager-mobile/**/.env*
 !main/manager-mobile/**/*.json
 !main/xiaozhi-server/**/*.json
+
+main/xiaozhi-server/.claude/
+main/xiaozhi-server/CLAUDE.md
+main/xiaozhi-server/docs/

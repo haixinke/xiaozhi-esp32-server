@@ -283,6 +283,7 @@ class ConnectionHandler:
 
     async def _save_and_close(self, ws):
         """保存记忆并关闭连接"""
+        self.logger.bind(tag=TAG).info(f"_save_and_close called, memory={self.memory is not None}, dialogue_len={len(self.dialogue.dialogue) if self.dialogue else 0}")
         try:
             # 守护线程1：独立生成标题（不依赖记忆模型）
             if self.session_id:

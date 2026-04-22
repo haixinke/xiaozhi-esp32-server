@@ -162,6 +162,7 @@ class MemoryProvider(MemoryProviderBase):
         Returns:
             Result from PowerMem API or None if failed
         """
+        logger.bind(tag=TAG).info(f"save_memory called, use_powermem={self.use_powermem}, client={self.memory_client is not None}, msgs_len={len(msgs)}")
         try:
             if self.use_powermem and self.memory_client is not None and len(msgs) >= 2:
                 # Format the content as a message list for PowerMem
@@ -186,6 +187,7 @@ class MemoryProvider(MemoryProviderBase):
                     messages.append({"role": message.role, "content": content})
 
                 # Add memory using PowerMem SDK
+                logger.bind(tag=TAG).info(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages[:2] if messages else 'empty'}")
                 result = self.memory_client.add(
                     messages=messages,
                     user_id=self.role_id
@@ -194,7 +196,7 @@ class MemoryProvider(MemoryProviderBase):
                 if asyncio.iscoroutine(result):
                     result = await result
 
-                logger.bind(tag=TAG).debug(f"Save memory result: {result}")
+                logger.bind(tag=TAG).info(f"Save memory result: {result}, type={type(result)}")
 
                 # Cache user profile if UserMemory mode and profile was extracted
                 if self.enable_user_profile and result:
@@ -205,10 +207,10 @@ class MemoryProvider(MemoryProviderBase):
                 if not self.use_powermem or self.memory_client is None:
                     logger.bind(tag=TAG).warning("PowerMem is not available, skipping save_memory")
                 elif len(msgs) < 2:
-                    logger.bind(tag=TAG).debug("Not enough messages to save (need at least 2)")
+                    logger.bind(tag=TAG).info("Not enough messages to save (need at least 2)")
         except Exception as e:
             logger.bind(tag=TAG).error(f"Error saving memory: {str(e)}")
-            logger.bind(tag=TAG).debug(f"Detailed error: {traceback.format_exc()}")
+            logger.bind(tag=TAG).info(f"Detailed error: {traceback.format_exc()}")
 
         return None
 

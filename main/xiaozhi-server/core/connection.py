@@ -302,9 +302,9 @@ class ConnectionHandler:
                         except Exception:
                             pass
 
-                threading.Thread(target=generate_title_task, daemon=True).start()
+                threading.Thread(target=generate_title_task, daemon=False).start()
 
-            # 守护线程2：走老流程记忆保存（仅记忆，不含标题）
+            # 非守护线程2：走老流程记忆保存（仅记忆，不含标题）
             if self.memory:
                 # 使用线程池异步保存记忆
                 def save_memory_task():
@@ -325,12 +325,19 @@ class ConnectionHandler:
                         except Exception:
                             pass
 
-                # 启动线程保存记忆，不等待完成
-                threading.Thread(target=save_memory_task, daemon=True).start()
+                # 启动线程保存记忆（非守护线程），等待完成
+                memory_thread = threading.Thread(target=save_memory_task, daemon=False)
+                memory_thread.start()
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"保存记忆失败: {e}")
         finally:
-            # 立即关闭连接，不等待记忆保存完成
+            # 等待记忆保存线程完成（最多30秒）
+            if 'memory_thread' in locals() and memory_thread.is_alive():
+                memory_thread.join(timeout=30.0)
+                if memory_thread.is_alive():
+                    self.logger.bind(tag=TAG).warning("记忆保存超时，继续关闭连接")
+
+            # 关闭连接
             try:
                 await self.close(ws)
             except Exception as close_error:

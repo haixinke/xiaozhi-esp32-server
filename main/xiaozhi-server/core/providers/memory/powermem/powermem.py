@@ -20,6 +20,118 @@ from ..base import MemoryProviderBase, logger
 TAG = __name__
 
 
+def _register_oceanbase_dialect():
+    """
+    Register OceanBase dialect with SQLAlchemy.
+
+    This is required for pyobvector to work with OceanBase database.
+    Must be called before importing PowerMem SDK.
+    """
+    try:
+        from sqlalchemy.dialects import registry
+        # Register the OceanBase dialect for SQLAlchemy
+        # This allows connection strings like "mysql+oceanbase://..."
+        registry.register("mysql.oceanbase", "pyobvector.schema.dialect", "OceanBaseDialect")
+        logger.bind(tag=TAG).info("OceanBase dialect registered with SQLAlchemy")
+    except ImportError:
+        # If sqlalchemy is not available, log a warning but don't fail
+        logger.bind(tag=TAG).warning("SQLAlchemy not available, skipping OceanBase dialect registration")
+    except Exception as e:
+        # If registration fails, log but don't fail - PowerMem might handle this
+        logger.bind(tag=TAG).warning(f"Failed to register OceanBase dialect: {e}")
+
+
+def _fix_powermem_graph_store_bug():
+    """
+    Monkey-patch PowerMem SDK to fix graph_store initialization bug.
+
+    Bug: In PowerMem v1.0.2, AsyncMemory passes the entire MemoryConfig object
+    to GraphStoreFactory instead of just the graph_store dict.
+
+    This patches both AsyncMemory and Memory classes.
+    """
+    try:
+        from powermem.core.memory import Memory
+        from powermem.core.async_memory import AsyncMemory
+        import inspect
+
+        # Patch function to fix the graph_store initialization
+        def patch_asyncmemory_init(OriginalClass):
+            original_source = inspect.getsource(OriginalClass.__init__)
+
+            # Check if the bug exists
+            if "config_to_pass = self.memory_config if self.memory_config else self.config" in original_source:
+                original_init = OriginalClass.__init__
+
+                def patched_init(self, config=None, storage_type=None, llm_provider=None, embedding_provider=None, agent_id=None):
+                    # Extract graph_store config for later use
+                    graph_config = None
+                    should_enable_graph = False
+                    if isinstance(config, dict) and "graph_store" in config:
+                        graph_config = config["graph_store"]
+                        should_enable_graph = graph_config.get("enabled", False)
+
+                    # Completely remove graph_store from config to prevent original init from creating it
+                    config_without_graph = {k: v for k, v in (config.items() if isinstance(config, dict) else [])}
+                    config_without_graph.pop("graph_store", None)
+
+                    # Call original init without graph_store config
+                    original_init(self, config=config_without_graph, storage_type=storage_type,
+                                llm_provider=llm_provider, embedding_provider=embedding_provider, agent_id=agent_id)
+
+                    # Create graph_store correctly if it should be enabled
+                    if should_enable_graph:
+                        self.enable_graph = True
+                        from powermem.storage.oceanbase.oceanbase_graph import MemoryGraph
+
+                        # Create minimal MemoryConfig-like object for MemoryGraph
+                        class MinimalConfig:
+                            def __init__(self, gs_config, full_config):
+                                # Create graph_store attribute
+                                gs_inner_config = gs_config.get('config', gs_config)
+                                self.graph_store = type('obj', (object,), {
+                                    'config': gs_inner_config,
+                                    'llm': None,
+                                    'custom_prompt': None
+                                })()
+
+                                # Create llm attribute
+                                self.llm = type('obj', (object,), {
+                                    'provider': full_config.get('llm', {}).get('provider', 'qwen')
+                                })()
+
+                                # Create embedder and vector_store attributes
+                                self.embedder = type('obj', (object,), {
+                                    'provider': full_config.get('embedder', {}).get('provider', 'openai'),
+                                    'config': full_config.get('embedder', {}).get('config', {})
+                                })()
+
+                                self.vector_store = type('obj', (object,), {
+                                    'provider': full_config.get('vector_store', {}).get('provider', 'oceanbase'),
+                                    'config': full_config.get('vector_store', {}).get('config', {})
+                                })()
+
+                        # Create the graph store directly
+                        minimal_config = MinimalConfig(graph_config, config)
+                        self.graph_store = MemoryGraph(minimal_config)
+
+                OriginalClass.__init__ = patched_init
+                return True
+            return False
+
+        # Patch both classes
+        patched_async = patch_asyncmemory_init(AsyncMemory)
+        patched_sync = patch_asyncmemory_init(Memory)
+
+        if patched_async or patched_sync:
+            logger.bind(tag=TAG).info("Applied PowerMem graph_store bug patch")
+        else:
+            logger.bind(tag=TAG).debug("PowerMem graph_store bug not detected, no patch needed")
+
+    except Exception as e:
+        logger.bind(tag=TAG).warning(f"Failed to patch PowerMem graph_store bug: {e}")
+
+
 class MemoryProvider(MemoryProviderBase):
     """
     PowerMem memory provider implementation.
@@ -46,8 +158,14 @@ class MemoryProvider(MemoryProviderBase):
 
         try:
             # Check if user profile mode is enabled
-            self.enable_user_profile = config.get("enable_user_profile", False)
-            
+            # Handle both boolean and string representations (from JSON config)
+            enable_user_profile_config = config.get("enable_user_profile", False)
+            if isinstance(enable_user_profile_config, str):
+                # Convert string "false"/"true" to boolean
+                self.enable_user_profile = enable_user_profile_config.lower() in ("true", "1", "yes", "on")
+            else:
+                self.enable_user_profile = bool(enable_user_profile_config)
+
             # Get configuration parameters
             database_provider = config.get("database_provider", "sqlite")
             llm_provider = config.get("llm_provider", "qwen")
@@ -61,7 +179,11 @@ class MemoryProvider(MemoryProviderBase):
 
             # Configure vector store / database
             if "vector_store" in config:
-                powermem_config["vector_store"] = config["vector_store"]
+                vector_config = config["vector_store"]
+                # Keep the nested config format as-is (PowerMem SDK expects it)
+                # Manager-API format: {provider: "oceanbase", config: {host, port, ...}}
+                # PowerMem SDK expects: {provider: "oceanbase", config: {...}}
+                powermem_config["vector_store"] = vector_config
             elif "database" in config:
                 powermem_config["database"] = config["database"]
             else:
@@ -122,6 +244,51 @@ class MemoryProvider(MemoryProviderBase):
                     "provider": embedding_provider,
                     "config": embedder_config
                 }
+
+            # Configure graph store if enabled
+            if "graph_store" in config:
+                graph_config = config["graph_store"]
+                # Convert max_hops from string to int if needed (PowerMem SDK expects int)
+                if isinstance(graph_config, dict) and "config" in graph_config:
+                    if "max_hops" in graph_config["config"] and isinstance(graph_config["config"]["max_hops"], str):
+                        graph_config["config"]["max_hops"] = int(graph_config["config"]["max_hops"])
+                # Keep the nested config format as-is
+                powermem_config["graph_store"] = graph_config
+                logger.bind(tag=TAG).info(f"Graph store enabled: provider={config['graph_store'].get('provider', 'unknown')}")
+
+            # Add custom Chinese prompts to ensure memory extraction in Chinese
+            # This prevents memory summaries from being extracted in English
+            powermem_config["custom_fact_extraction_prompt"] = """
+你是一个中文信息提取专家。从对话中提取用户的重要信息、偏好和计划。
+
+提取规则：
+1. 仅提取明确提到的信息
+2. 保留时间表达（如"昨天"、"上周"）
+3. 使用自然流畅的中文表达
+4. 提取相关的个人事实、偏好、计划
+
+输出 JSON 格式：{"facts": ["事实1", "事实2"]}
+"""
+
+            powermem_config["custom_update_memory_prompt"] = """
+你是一个中文记忆管理助手。比较新事实与现有记忆，决定操作：ADD（新增）、UPDATE（更新）、DELETE（删除）或 NONE（不变）。
+
+重要规则：
+- 如果新事实包含旧记忆没有的时间信息，则 UPDATE
+- 如果信息完全冲突，则 DELETE
+- 如果信息相同，则 NONE
+- 保持中文表达的流畅性和自然性
+"""
+
+            # Log the final configuration for debugging
+            logger.bind(tag=TAG).info(f"PowerMem config: {json.dumps(powermem_config, default=str, indent=2)}")
+
+            # Register OceanBase dialect with SQLAlchemy before importing PowerMem
+            # This is required for pyobvector to work correctly
+            _register_oceanbase_dialect()
+
+            # Apply PowerMem SDK bug fixes
+            _fix_powermem_graph_store_bug()
 
             # Initialize memory client based on mode
             if self.enable_user_profile:

@@ -256,29 +256,8 @@ class MemoryProvider(MemoryProviderBase):
                 powermem_config["graph_store"] = graph_config
                 logger.bind(tag=TAG).info(f"Graph store enabled: provider={config['graph_store'].get('provider', 'unknown')}")
 
-            # Add custom Chinese prompts to ensure memory extraction in Chinese
-            # This prevents memory summaries from being extracted in English
-            powermem_config["custom_fact_extraction_prompt"] = """
-你是一个中文信息提取专家。从对话中提取用户的重要信息、偏好和计划。
-
-提取规则：
-1. 仅提取明确提到的信息
-2. 保留时间表达（如"昨天"、"上周"）
-3. 使用自然流畅的中文表达
-4. 提取相关的个人事实、偏好、计划
-
-输出 JSON 格式：{"facts": ["事实1", "事实2"]}
-"""
-
-            powermem_config["custom_update_memory_prompt"] = """
-你是一个中文记忆管理助手。比较新事实与现有记忆，决定操作：ADD（新增）、UPDATE（更新）、DELETE（删除）或 NONE（不变）。
-
-重要规则：
-- 如果新事实包含旧记忆没有的时间信息，则 UPDATE
-- 如果信息完全冲突，则 DELETE
-- 如果信息相同，则 NONE
-- 保持中文表达的流畅性和自然性
-"""
+            # Use SDK's built-in prompts (no custom prompts needed)
+            # SDK already handles role filtering via include_roles parameter
 
             # Log the final configuration for debugging
             logger.bind(tag=TAG).info(f"PowerMem config: {json.dumps(powermem_config, default=str, indent=2)}")
@@ -357,7 +336,11 @@ class MemoryProvider(MemoryProviderBase):
                 logger.bind(tag=TAG).info(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages[:2] if messages else 'empty'}")
                 result = self.memory_client.add(
                     messages=messages,
-                    user_id=self.role_id
+                    user_id=self.role_id,
+                    native_language="zh",  # Force profile extraction in Chinese
+                    # profile_type="topics",  # Extract structured topics (JSON) instead of plain text content
+                    profile_type="content",
+                    include_roles=["user"]  # Only extract profile from user messages, not AI assistant responses
                 )
                 # Handle both sync and async returns
                 if asyncio.iscoroutine(result):
@@ -368,8 +351,16 @@ class MemoryProvider(MemoryProviderBase):
                 # Cache user profile if UserMemory mode and profile was extracted
                 if self.enable_user_profile and result:
                     if result.get('profile_extracted'):
-                        self.last_profile_content = result.get('profile_content', '')
-                        logger.bind(tag=TAG).debug(f"User profile extracted: {self.last_profile_content}")
+                        # Store topics as JSON string for structured profile
+                        topics = result.get('topics')
+                        if topics:
+                            import json
+                            self.last_profile_content = json.dumps(topics, ensure_ascii=False, indent=2)
+                            logger.bind(tag=TAG).debug(f"User profile topics extracted: {self.last_profile_content}")
+                        else:
+                            # Fallback to profile_content if topics not available
+                            self.last_profile_content = result.get('profile_content', '')
+                            logger.bind(tag=TAG).debug(f"User profile content extracted: {self.last_profile_content}")
             else:
                 if not self.use_powermem or self.memory_client is None:
                     logger.bind(tag=TAG).warning("PowerMem is not available, skipping save_memory")

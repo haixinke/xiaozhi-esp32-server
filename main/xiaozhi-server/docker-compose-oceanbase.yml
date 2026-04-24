@@ -1,0 +1,33 @@
+# OceanBase for PowerMem
+# 用于xiaozhi-esp32-server的记忆存储，支持用户画像和知识图谱
+
+services:
+  oceanbase:
+    image: oceanbase/oceanbase-ce:latest
+    container_name: xiaozhi-oceanbase
+    restart: always
+    ports:
+      - "2881:2881"  # SQL port
+      - "2882:2882"  # RPC port
+    environment:
+      - MODE=mini
+      - OB_MEMORY_LIMIT=6G
+      - OB_DATAFILE_SIZE=20G
+      - OB_LOG_DISK_SIZE=10G
+      - OB_ROOT_PASSWORD=123456
+      - OB_TENANT=mysql
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./oceanbase/data:/root/ob/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "obclient -h127.0.0.1 -P2881 -uroot -p123456 -Dtest -e'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - xiaozhi-network
+
+networks:
+  xiaozhi-network:
+    driver: bridge

@@ -71,6 +71,9 @@ sudo bash -c "$(wget -qO- https://ghfast.top/https://raw.githubusercontent.com/x
 docker compose -f main/xiaozhi-server/docker-compose.yml up -d
 # 全模块 (MySQL + Redis + 服务端 + Web):
 docker compose -f main/xiaozhi-server/docker-compose_all.yml up -d
+# OceanBase (PowerMem 记忆存储):
+cd main/xiaozhi-server
+./oceanbase/init-powermem.sh
 ```
 
 ## 高层架构

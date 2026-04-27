@@ -987,21 +987,26 @@ class ConnectionHandler:
                 )
                 memory_str = future.result()
 
+            # 获取传递给LLM的对话消息
+            llm_messages = self.dialogue.get_llm_dialogue_with_memory(
+                memory_str, self.config.get("voiceprint", {})
+            )
+
+            # 打印LLM提示词（用于调试）
+            self.logger.bind(tag=TAG).info(f"LLM Input Messages:\n{json.dumps(llm_messages, ensure_ascii=False, indent=2)}")
+
             if self.intent_type == "function_call" and functions is not None:
                 # 使用支持functions的streaming接口
+                self.logger.bind(tag=TAG).info(f"LLM Functions:\n{json.dumps(functions, ensure_ascii=False, indent=2)}")
                 llm_responses = self.llm.response_with_functions(
                     self.session_id,
-                    self.dialogue.get_llm_dialogue_with_memory(
-                        memory_str, self.config.get("voiceprint", {})
-                    ),
+                    llm_messages,
                     functions=functions,
                 )
             else:
                 llm_responses = self.llm.response(
                     self.session_id,
-                    self.dialogue.get_llm_dialogue_with_memory(
-                        memory_str, self.config.get("voiceprint", {})
-                    ),
+                    llm_messages,
                 )
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"LLM 处理出错 {query}: {e}")

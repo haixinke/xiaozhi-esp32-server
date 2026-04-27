@@ -97,7 +97,8 @@ def _fix_powermem_graph_store_bug():
 
                                 # Create llm attribute
                                 self.llm = type('obj', (object,), {
-                                    'provider': full_config.get('llm', {}).get('provider', 'qwen')
+                                    'provider': full_config.get('llm', {}).get('provider', 'qwen'),
+                                    'config': full_config.get('llm', {}).get('config', {})
                                 })()
 
                                 # Create embedder and vector_store attributes
@@ -308,14 +309,20 @@ class MemoryProvider(MemoryProviderBase):
         Returns:
             Result from PowerMem API or None if failed
         """
+        import time
+        save_start_time = time.time()
+
         logger.bind(tag=TAG).info(f"save_memory called, use_powermem={self.use_powermem}, client={self.memory_client is not None}, msgs_len={len(msgs)}")
         try:
             if self.use_powermem and self.memory_client is not None and len(msgs) >= 2:
                 # Format the content as a message list for PowerMem
+                format_start = time.time()
                 messages = []
                 for message in msgs:
                     if message.role == "system":
                         continue
+                    if message.role == "assistant":
+                        continue  # 跳过助手消息，只存储用户对话
 
                     content = message.content
 
@@ -332,8 +339,12 @@ class MemoryProvider(MemoryProviderBase):
 
                     messages.append({"role": message.role, "content": content})
 
+                format_time = time.time() - format_start
+                logger.bind(tag=TAG).debug(f"Message formatting took {format_time:.2f}s")
+
                 # Add memory using PowerMem SDK
-                logger.bind(tag=TAG).info(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages[:2] if messages else 'empty'}")
+                add_start = time.time()
+                logger.bind(tag=TAG).info(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages if messages else 'empty'}")
                 result = self.memory_client.add(
                     messages=messages,
                     user_id=self.role_id,
@@ -344,12 +355,18 @@ class MemoryProvider(MemoryProviderBase):
                 )
                 # Handle both sync and async returns
                 if asyncio.iscoroutine(result):
+                    await_start = time.time()
                     result = await result
+                    await_time = time.time() - await_start
+                    logger.bind(tag=TAG).debug(f"Async await took {await_time:.2f}s")
 
+                add_time = time.time() - add_start
+                logger.bind(tag=TAG).info(f"PowerMem add() took {add_time:.2f}s (total)")
                 logger.bind(tag=TAG).info(f"Save memory result: {result}, type={type(result)}")
 
                 # Cache user profile if UserMemory mode and profile was extracted
                 if self.enable_user_profile and result:
+                    cache_start = time.time()
                     if result.get('profile_extracted'):
                         # Store topics as JSON string for structured profile
                         topics = result.get('topics')
@@ -361,6 +378,11 @@ class MemoryProvider(MemoryProviderBase):
                             # Fallback to profile_content if topics not available
                             self.last_profile_content = result.get('profile_content', '')
                             logger.bind(tag=TAG).debug(f"User profile content extracted: {self.last_profile_content}")
+                    cache_time = time.time() - cache_start
+                    logger.bind(tag=TAG).debug(f"Profile caching took {cache_time:.2f}s")
+
+                total_time = time.time() - save_start_time
+                logger.bind(tag=TAG).info(f"save_memory total time: {total_time:.2f}s")
             else:
                 if not self.use_powermem or self.memory_client is None:
                     logger.bind(tag=TAG).warning("PowerMem is not available, skipping save_memory")

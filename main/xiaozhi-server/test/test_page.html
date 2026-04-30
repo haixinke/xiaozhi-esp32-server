@@ -78,8 +78,6 @@
             </div>
         </div>
 
-        <!-- Live2D Canvas 容器 -->
-        <canvas id="live2d-stage"></canvas>
 
         <!-- 聊天消息流（弹幕样式） -->
         <div class="chat-container">
@@ -124,6 +122,14 @@
                 </svg>
                 <span class="btn-text">录音</span>
             </button>
+
+            <button class="control-btn" id="backgroundBtn" title="切换背景">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15V18M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z" />
+                </svg>
+                <span class="btn-text">背景</span>
+            </button>
         </div>
     </div>
 
@@ -138,7 +144,6 @@
                 <div class="settings-tabs">
                     <button class="tab-btn active" data-tab="device">设备配置</button>
                     <button class="tab-btn" data-tab="mcp">MCP工具</button>
-                    <button class="tab-btn" data-tab="other">数字人皮肤</button>
                 </div>
 
                 <div class="tab-content active" id="deviceTab">
@@ -203,33 +208,6 @@
                     </div>
                 </div>
 
-                <div class="tab-content" id="otherTab">
-                    <div class="other-settings-panel">
-                        <div class="control-panel">
-                            <div class="config-row">
-                                <div class="config-item">
-                                    <label>选择模型:</label>
-                                    <select id="live2dModelSelect" class="model-select">
-                                        <option value="hiyori_pro_zh">hiyori (春日)</option>
-                                        <option value="natori_pro_zh">natori (名取)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="config-row">
-                                <div class="config-item">
-                                    <label></label>
-                                    <button class="background-btn" id="backgroundBtn" title="切换背景">
-                                        <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-                                            <path
-                                                d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15V18M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z" />
-                                        </svg>
-                                        <span class="btn-text">切换背景</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -342,21 +320,11 @@
     <!-- 背景加载 -->
     <script src="js/ui/background-load.js?v=0205"></script>
 
-    <!-- PIXI.js 2D渲染引擎 -->
-    <script src="js/live2d/pixi.js?v=0205"></script>
-
-    <!-- Live2D Cubism 4.0 SDK -->
-    <script src="js/live2d/live2dcubismcore.min.js?v=0205"></script>
-    <script src="js/live2d/cubism4.min.js?v=0205"></script>
-
-    <!-- Live2D 管理器 -->
-    <script src="js/live2d/live2d.js?v=0205"></script>
-
     <!-- Opus解码库 -->
     <script src="js/utils/libopus.js?v=0205"></script>
 
     <!-- 主应用入口 -->
-    <script type="module" src="js/app.js?v=0205"></script>
+    <script type="module" src="js/app.js?v=0428"></script>
 
     <!-- 全局错误处理 -->
     <script>

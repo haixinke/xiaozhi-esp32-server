@@ -342,6 +342,32 @@ class MemoryProvider(MemoryProviderBase):
                 format_time = time.time() - format_start
                 logger.bind(tag=TAG).debug(f"Message formatting took {format_time:.2f}s")
 
+                # ====== 调试代码开始：诊断记忆消失问题 ======
+                # 调试目的：记录保存记忆前的记忆数量，检查是否有意外删除
+                # TODO: 调试结束后删除此代码块
+                try:
+                    logger.bind(tag=TAG).info(f"[DEBUG] Before save_memory: querying existing memory count for user_id={self.role_id}")
+                    existing_before = await asyncio.to_thread(
+                        self.memory_client.search,
+                        query="",
+                        user_id=self.role_id,
+                        limit=10000  # 设置大限制以获取所有记忆
+                    )
+                    count_before = len(existing_before.get('results', [])) if existing_before else 0
+                    logger.bind(tag=TAG).info(f"[DEBUG] Before save_memory: found {count_before} existing memories")
+
+                    # 记录前10条记忆的ID和时间，用于追踪
+                    if existing_before and existing_before.get('results'):
+                        sample_memories = existing_before['results'][:10]
+                        for i, mem in enumerate(sample_memories):
+                            mem_id = mem.get('id', 'N/A')
+                            created_at = mem.get('created_at', 'N/A')
+                            content_preview = mem.get('memory', mem.get('document', ''))[:50]
+                            logger.bind(tag=TAG).info(f"[DEBUG] Memory #{i+1}: id={mem_id}, created_at={created_at}, content={content_preview}...")
+                except Exception as debug_error:
+                    logger.bind(tag=TAG).error(f"[DEBUG] Failed to query memories before save: {debug_error}")
+                # ====== 调试代码结束 ======
+
                 # Add memory using PowerMem SDK
                 add_start = time.time()
                 logger.bind(tag=TAG).info(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages if messages else 'empty'}")
@@ -352,7 +378,8 @@ class MemoryProvider(MemoryProviderBase):
                     # profile_type="topics",  # Extract structured topics (JSON) instead of plain text content
                     profile_type="content",
                     # strict_mode=True,
-                    include_roles=["user"]  # Only extract profile from user messages, not AI assistant responses
+                    include_roles=["user"],  # Only extract profile from user messages, not AI assistant responses
+                    infer=False  # ====== 调试修改：禁用智能模式，防止LLM意外删除记忆 ======  # TODO: 调试结束后恢复为 True（启用智能模式）
                 )
                 # Handle both sync and async returns
                 if asyncio.iscoroutine(result):
@@ -364,6 +391,40 @@ class MemoryProvider(MemoryProviderBase):
                 add_time = time.time() - add_start
                 logger.bind(tag=TAG).info(f"PowerMem add() took {add_time:.2f}s (total)")
                 logger.bind(tag=TAG).info(f"Save memory result: {result}, type={type(result)}")
+
+                # ====== 调试代码开始：诊断记忆消失问题 ======
+                # 调试目的：记录保存记忆后的记忆数量，检查是否有记忆被意外删除
+                # TODO: 调试结束后删除此代码块
+                try:
+                    logger.bind(tag=TAG).info(f"[DEBUG] After save_memory: querying new memory count for user_id={self.role_id}")
+                    existing_after = await asyncio.to_thread(
+                        self.memory_client.search,
+                        query="",
+                        user_id=self.role_id,
+                        limit=10000  # 设置大限制以获取所有记忆
+                    )
+                    count_after = len(existing_after.get('results', [])) if existing_after else 0
+                    logger.bind(tag=TAG).info(f"[DEBUG] After save_memory: found {count_after} existing memories")
+
+                    # 记录前10条记忆的ID和时间，用于追踪
+                    if existing_after and existing_after.get('results'):
+                        sample_memories = existing_after['results'][:10]
+                        for i, mem in enumerate(sample_memories):
+                            mem_id = mem.get('id', 'N/A')
+                            created_at = mem.get('created_at', 'N/A')
+                            content_preview = mem.get('memory', mem.get('document', ''))[:50]
+                            logger.bind(tag=TAG).info(f"[DEBUG] Memory #{i+1}: id={mem_id}, created_at={created_at}, content={content_preview}...")
+
+                    # 对比前后数量，检查是否有记忆被删除
+                    if count_before > count_after:
+                        logger.bind(tag=TAG).error(f"[DEBUG] MEMORY LOSS DETECTED! Before: {count_before}, After: {count_after}, Lost: {count_before - count_after}")
+                    elif count_after > count_before:
+                        logger.bind(tag=TAG).info(f"[DEBUG] New memories added: {count_after - count_before}")
+                    else:
+                        logger.bind(tag=TAG).info(f"[DEBUG] Memory count unchanged: {count_before}")
+                except Exception as debug_error:
+                    logger.bind(tag=TAG).error(f"[DEBUG] Failed to query memories after save: {debug_error}")
+                # ====== 调试代码结束 ======
 
                 # Cache user profile if UserMemory mode and profile was extracted
                 if self.enable_user_profile and result:

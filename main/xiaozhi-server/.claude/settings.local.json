@@ -163,7 +163,15 @@
       "Bash(PGPASSWORD=arch_pass psql -h localhost -U postgres -d ai_companion -c \"SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'memories';\")",
       "Bash(PGPASSWORD=arch_pass psql -h localhost -U postgres -d ai_companion -c \"CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories \\(\\(payload->>'user_id'\\)\\);\")",
       "Bash(nohup:*)",
-      "Bash(mvn spring-boot:run:*)"
+      "Bash(mvn spring-boot:run:*)",
+      "mcp__plugin_ecc_sequential-thinking__sequentialthinking",
+      "Bash(.venv/bin/python -c \"import sys; sys.path.insert\\(0, '.'\\); import app; print\\('Import successful'\\)\" 2>&1)",
+      "Bash(.venv/bin/python -c \"print\\('Python works'\\)\" 2>&1)",
+      "Bash(printf \"GET /xiaozhi/v1/ HTTP/1.1\\\\r\\\\nHost: 192.168.4.12:8000\\\\r\\\\nUpgrade: websocket\\\\r\\\\nConnection: Upgrade\\\\r\\\\n\\\\r\\\\n\")",
+      "Bash(nc 192.168.4.12 8000)",
+      "Bash(.venv/bin/pip list:*)",
+      "Bash(.venv/bin/pip show:*)",
+      "Bash(docker-compose:*)"
     ],
     "deny": [
       "Bash(sudo:*)",

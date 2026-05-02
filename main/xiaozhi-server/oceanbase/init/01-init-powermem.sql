@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS memories (
     actor_id VARCHAR(128) DEFAULT NULL COMMENT '角色ID',
     hash VARCHAR(32) DEFAULT NULL COMMENT '内容哈希',
     document LONGTEXT DEFAULT NULL COMMENT '记忆文档内容',
-    embedding VECTOR(1536) DEFAULT NULL COMMENT '向量嵌入（1536维）',
+    embedding VECTOR(1024) DEFAULT NULL COMMENT '向量嵌入（1024维）',
     metadata JSON DEFAULT NULL COMMENT '元数据',
     category VARCHAR(64) DEFAULT NULL COMMENT '分类',
     fulltext_content LONGTEXT DEFAULT NULL COMMENT '全文检索内容',

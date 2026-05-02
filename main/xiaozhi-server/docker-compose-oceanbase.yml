@@ -17,8 +17,9 @@ services:
       - OB_ROOT_PASSWORD=123456
       - OB_TENANT=mysql
       - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=123456
     volumes:
-      - ./oceanbase/data:/root/ob/data
+      - ./oceanbase/data:/root/ob
     healthcheck:
       test: ["CMD", "bash", "-c", "obclient -h127.0.0.1 -P2881 -uroot -p123456 -Dtest -e'SELECT 1'"]
       interval: 10s

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小智ESP32服务器 - 系统架构图</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #020617;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        header .subtitle {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .diagram-card {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .diagram-card svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .card h3 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .card li {
+            font-size: 9px;
+            line-height: 1.6;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 8px;
+            color: #64748b;
+            margin-top: 20px;
+        }
+
+        .highlight {
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span class="status-dot"></span>小智ESP32服务器系统架构</h1>
+            <p class="subtitle">AI虚拟宠物 · 情感陪伴 · 智能语音助手</p>
+        </header>
+
+        <div class="diagram-card">
+            <svg viewBox="0 0 1200 720" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+                    </pattern>
+
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+                    </marker>
+
+                    <marker id="arrowhead-ws" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+                    </marker>
+
+                    <marker id="arrowhead-api" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+                    </marker>
+                </defs>
+
+                <!-- Background grid -->
+                <rect width="100%" height="100%" fill="url(#grid)"/>
+
+                <!-- Title -->
+                <text x="600" y="25" fill="#e2e8f0" font-size="14" font-weight="600" text-anchor="middle">小智ESP32服务器 - 系统架构</text>
+
+                <!-- ==================== ARROW LAYER ==================== -->
+                <!-- Draw all arrows first so they appear behind components -->
+
+                <!-- ESP32 → xiaozhi-server WebSocket -->
+                <line x1="180" y1="120" x2="280" y2="120" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrowhead-ws)"/>
+                <text x="230" y="110" fill="#22d3ee" font-size="8" text-anchor="middle">WebSocket</text>
+                <text x="230" y="100" fill="#64748b" font-size="7" text-anchor="middle">端口 8000</text>
+
+                <!-- xiaozhi-server → ASR/LLM/TTS APIs -->
+                <line x1="440" y1="120" x2="750" y2="120" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+                <text x="595" y="110" fill="#94a3b8" font-size="8" text-anchor="middle">HTTP API</text>
+
+                <!-- xiaozhi-server → manager-api Config -->
+                <line x1="360" y1="140" x2="360" y2="220" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-api)"/>
+                <text x="375" y="180" fill="#34d399" font-size="8" text-anchor="start">远程配置</text>
+
+                <!-- xiaozhi-server → OceanBase PowerMem -->
+                <line x1="420" y1="140" x2="550" y2="220" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+                <text x="490" y="175" fill="#a78bfa" font-size="8" text-anchor="start">PowerMem</text>
+                <text x="490" y="185" fill="#64748b" font-size="7" text-anchor="start">向量 + 知识图谱</text>
+
+                <!-- manager-api → MySQL/Redis -->
+                <line x1="360" y1="280" x2="360" y2="350" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-api)"/>
+                <line x1="520" y1="250" x2="580" y2="250" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-api)"/>
+                <text x="550" y="240" fill="#34d399" font-size="7" text-anchor="middle">缓存</text>
+
+                <!-- manager-api → Web/Mobile -->
+                <line x1="280" y1="250" x2="200" y2="250" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+                <line x1="280" y1="250" x2="200" y2="310" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+                <text x="240" y="240" fill="#fbbf24" font-size="8" text-anchor="middle">REST API</text>
+                <text x="240" y="280" fill="#fbbf24" font-size="8" text-anchor="middle">/xiaozhi</text>
+
+                <!-- ==================== COMPONENT LAYER ==================== -->
+
+                <!-- ========== DEVICE LAYER ========== -->
+                <!-- ESP32 Devices -->
+                <g transform="translate(60, 90)">
+                    <rect x="0" y="0" width="120" height="60" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1.5"/>
+                    <text x="60" y="25" fill="#22d3ee" font-size="12" font-weight="600" text-anchor="middle">ESP32 设备</text>
+                    <text x="60" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">硬件终端</text>
+                    <text x="60" y="54" fill="#64748b" font-size="7" text-anchor="middle">音频流 · WebSocket</text>
+                </g>
+
+                <!-- ========== AI CORE LAYER ========== -->
+                <!-- xiaozhi-server -->
+                <g transform="translate(280, 90)">
+                    <rect x="0" y="0" width="160" height="60" rx="6" fill="fill opaque" stroke="#34d399" stroke-width="1.5"/>
+                    <rect x="0" y="0" width="160" height="60" rx="6" fill="#064e3b" fill-opacity="0.4" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="80" y="22" fill="#34d399" font-size="11" font-weight="600" text-anchor="middle">xiaozhi-server</text>
+                    <text x="80" y="38" fill="#94a3b8" font-size="8" text-anchor="middle">Python 3.10 · Provider 模式</text>
+                    <text x="80" y="50" fill="#64748b" font-size="7" text-anchor="middle">ASR → LLM → TTS · 语音流水线</text>
+                </g>
+
+                <!-- ========== BACKEND LAYER ========== -->
+                <!-- manager-api -->
+                <g transform="translate(280, 220)">
+                    <rect x="0" y="0" width="160" height="60" rx="6" fill="fill opaque" stroke="#34d399" stroke-width="1.5"/>
+                    <rect x="0" y="0" width="160" height="60" rx="6" fill="#064e3b" fill-opacity="0.4" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="80" y="22" fill="#34d399" font-size="11" font-weight="600" text-anchor="middle">manager-api</text>
+                    <text x="80" y="38" fill="#94a3b8" font-size="8" text-anchor="middle">Java 21 · Spring Boot 3.4.3</text>
+                    <text x="80" y="50" fill="#64748b" font-size="7" text-anchor="middle">管理后台 REST · 配置中心</text>
+                </g>
+
+                <!-- ========== EXTERNAL API LAYER ========== -->
+                <!-- LLM Services -->
+                <g transform="translate(750, 70)">
+                    <rect x="0" y="0" width="380" height="100" rx="8" fill="fill opaque" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="8,4"/>
+                    <rect x="0" y="0" width="380" height="100" rx="8" fill="#78350f" fill-opacity="0.3" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="8,4"/>
+
+                    <!-- ASR -->
+                    <g transform="translate(15, 10)">
+                        <rect x="0" y="0" width="100" height="35" rx="4" fill="#302b2b" stroke="#94a3b8" stroke-width="1"/>
+                        <text x="50" y="16" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">ASR 服务</text>
+                        <text x="50" y="28" fill="#64748b" font-size="7" text-anchor="middle">阿里云·百度·腾讯</text>
+                    </g>
+
+                    <!-- LLM -->
+                    <g transform="translate(135, 10)">
+                        <rect x="0" y="0" width="110" height="35" rx="4" fill="#302b2b" stroke="#94a3b8" stroke-width="1"/>
+                        <text x="55" y="16" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">LLM 服务</text>
+                        <text x="55" y="28" fill="#64748b" font-size="7" text-anchor="middle">OpenAI·通义千问</text>
+                    </g>
+
+                    <!-- TTS -->
+                    <g transform="translate(265, 10)">
+                        <rect x="0" y="0" width="100" height="35" rx="4" fill="#302b2b" stroke="#94a3b8" stroke-width="1"/>
+                        <text x="50" y="16" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">TTS 服务</text>
+                        <text x="50" y="28" fill="#64748b" font-size="7" text-anchor="middle">阿里云·火山引擎</text>
+                    </g>
+
+                    <!-- Label -->
+                    <text x="190" y="65" fill="#fbbf24" font-size="10" font-weight="500" text-anchor="middle">外部 AI 服务商</text>
+                    <text x="190" y="80" fill="#94a3b8" font-size="7" text-anchor="middle">语音识别(ASR) · 大语言模型(LLM) · 语音合成(TTS)</text>
+                    <text x="190" y="90" fill="#64748b" font-size="6" text-anchor="middle">支持多个供应商，通过 Provider 模式接入</text>
+                </g>
+
+                <!-- ========== DATABASE LAYER ========== -->
+                <!-- MySQL -->
+                <g transform="translate(290, 350)">
+                    <rect x="0" y="0" width="140" height="70" rx="6" fill="fill opaque" stroke="#a78bfa" stroke-width="1.5"/>
+                    <rect x="0" y="0" width="140" height="70" rx="6" fill="#4c1d95" fill-opacity="0.4" stroke="#a78bfa" stroke-width="1.5"/>
+                    <text x="70" y="25" fill="#a78bfa" font-size="11" font-weight="600" text-anchor="middle">MySQL</text>
+                    <text x="70" y="40" fill="#94a3b8" font-size="8" text-anchor="middle">设备·用户·配置</text>
+                    <text x="70" y="52" fill="#64748b" font-size="7" text-anchor="middle">Liquibase 迁移</text>
+                    <text x="70" y="62" fill="#64748b" font-size="7" text-anchor="middle">MyBatis-Plus</text>
+                </g>
+
+                <!-- Redis -->
+                <g transform="translate(580, 215)">
+                    <rect x="0" y="0" width="100" height="70" rx="6" fill="fill opaque" stroke="#a78bfa" stroke-width="1.5"/>
+                    <rect x="0" y="0" width="100" height="70" rx="6" fill="#4c1d95" fill-opacity="0.4" stroke="#a78bfa" stroke-width="1.5"/>
+                    <text x="50" y="25" fill="#a78bfa" font-size="11" font-weight="600" text-anchor="middle">Redis</text>
+                    <text x="50" y="40" fill="#94a3b8" font-size="8" text-anchor="middle">缓存·会话</text>
+                    <text x="50" y="52" fill="#64748b" font-size="7" text-anchor="middle">系统参数</text>
+                    <text x="50" y="62" fill="#64748b" font-size="7" text-anchor="middle">认证令牌</text>
+                </g>
+
+                <!-- OceanBase (PowerMem) -->
+                <g transform="translate(500, 350)">
+                    <rect x="0" y="0" width="140" height="70" rx="6" fill="fill opaque" stroke="#a78bfa" stroke-width="1.5"/>
+                    <rect x="0" y="0" width="140" height="70" rx="6" fill="#4c1d95" fill-opacity="0.4" stroke="#a78bfa" stroke-width="1.5"/>
+                    <text x="70" y="25" fill="#a78bfa" font-size="11" font-weight="600" text-anchor="middle">OceanBase</text>
+                    <text x="70" y="40" fill="#94a3b8" font-size="8" text-anchor="middle">PowerMem 记忆存储</text>
+                    <text x="70" y="52" fill="#64748b" font-size="7" text-anchor="middle">向量存储</text>
+                    <text x="70" y="62" fill="#64748b" font-size="7" text-anchor="middle">知识图谱·用户画像</text>
+                </g>
+
+                <!-- ========== FRONTEND LAYER ========== -->
+                <!-- manager-web -->
+                <g transform="translate(60, 220)">
+                    <rect x="0" y="0" width="130" height="55" rx="6" fill="fill opaque" stroke="#22d3ee" stroke-width="1.5"/>
+                    <rect x="0" y="0" width="130" height="55" rx="6" fill="#083344" fill-opacity="0.4" stroke="#22d3ee" stroke-width="1.5"/>
+                    <text x="65" y="20" fill="#22d3ee" font-size="10" font-weight="600" text-anchor="middle">智控台</text>
+                    <text x="65" y="34" fill="#94a3b8" font-size="8" text-anchor="middle">manager-web</text>
+                    <text x="65" y="46" fill="#64748b" font-size="7" text-anchor="middle">Vue.js 2 · 端口 8001</text>
+                </g>
+
+                <!-- manager-mobile -->
+                <g transform="translate(60, 285)">
+                    <rect x="0" y="0" width="130" height="55" rx="6" fill="fill opaque" stroke="#22d3ee" stroke-width="1.5"/>
+                    <rect x="0" y="0" width="130" height="55" rx="6" fill="#083344" fill-opacity="0.4" stroke="#22d3ee" stroke-width="1.5"/>
+                    <text x="65" y="20" fill="#22d3ee" font-size="10" font-weight="600" text-anchor="middle">移动端</text>
+                    <text x="65" y="34" fill="#94a3b8" font-size="8" text-anchor="middle">manager-mobile</text>
+                    <text x="65" y="46" fill="#64748b" font-size="7" text-anchor="middle">Uni-app · H5/小程序</text>
+                </g>
+
+                <!-- ========== MQTT GATEWAY (OPTIONAL) ========== -->
+                <g transform="translate(60, 450)">
+                    <rect x="0" y="0" width="240" height="60" rx="6" fill="fill opaque" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="4,4"/>
+                    <rect x="0" y="0" width="240" height="60" rx="6" fill="rgba(251, 146, 60, 0.1)" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="4,4"/>
+                    <text x="120" y="22" fill="#fb923c" font-size="10" font-weight="600" text-anchor="middle">mqtt-gateway (可选)</text>
+                    <text x="120" y="38" fill="#94a3b8" font-size="8" text-anchor="middle">MQTT + UDP 桥接网关</text>
+                    <text x="120" y="50" fill="#64748b" font-size="7" text-anchor="middle">扩展设备连接方式</text>
+                </g>
+
+                <!-- ========== AUTH SECURITY REGION ========== -->
+                <g transform="translate(750, 450)">
+                    <rect x="0" y="0" width="380" height="140" rx="8" fill="fill opaque" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,4"/>
+                    <rect x="0" y="0" width="380" height="140" rx="8" fill="rgba(136, 19, 55, 0.2)" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+                    <text x="20" y="20" fill="#fb7185" font-size="10" font-weight="600">认证与安全</text>
+
+                    <!-- OAuth2 -->
+                    <g transform="translate(15, 35)">
+                        <rect x="0" y="0" width="160" height="40" rx="4" fill="#302b2b" stroke="#fb7185" stroke-width="1"/>
+                        <text x="80" y="16" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">OAuth2 认证</text>
+                        <text x="80" y="30" fill="#64748b" font-size="7" text-anchor="middle">Web · 移动端 Bearer Token</text>
+                    </g>
+
+                    <!-- Server Key -->
+                    <g transform="translate(205, 35)">
+                        <rect x="0" y="0" width="160" height="40" rx="4" fill="#302b2b" stroke="#fb7185" stroke-width="1"/>
+                        <text x="80" y="16" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">服务密钥认证</text>
+                        <text x="80" y="30" fill="#64748b" font-size="7" text-anchor="middle">xiaozhi-server 机器对机器</text>
+                    </g>
+
+                    <!-- XSS/SQL Injection -->
+                    <g transform="translate(15, 85)">
+                        <rect x="0" y="0" width="160" height="40" rx="4" fill="#302b2b" stroke="#fb7185" stroke-width="1"/>
+                        <text x="80" y="16" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">XSS / SQL 注入防护</text>
+                        <text x="80" y="30" fill="#64748b" font-size="7" text-anchor="middle">输入验证 · 参数化查询</text>
+                    </g>
+
+                    <!-- HTTPS -->
+                    <g transform="translate(205, 85)">
+                        <rect x="0" y="0" width="160" height="40" rx="4" fill="#302b2b" stroke="#fb7185" stroke-width="1"/>
+                        <text x="80" y="16" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">HTTPS 加密传输</text>
+                        <text x="80" y="30" fill="#64748b" font-size="7" text-anchor="middle">生产环境强制 TLS</text>
+                    </g>
+                </g>
+
+                <!-- ========== DEPLOYMENT MODES ========== -->
+                <g transform="translate(750, 610)">
+                    <rect x="0" y="0" width="380" height="90" rx="8" fill="fill opaque" stroke="#94a3b8" stroke-width="1.5"/>
+                    <rect x="0" y="0" width="380" height="90" rx="6" fill="#1e293b" fill-opacity="0.5" stroke="#94a3b8" stroke-width="1.5"/>
+
+                    <text x="20" y="20" fill="#94a3b8" font-size="10" font-weight="600">部署模式</text>
+
+                    <!-- Minimal -->
+                    <g transform="translate(15, 35)">
+                        <rect x="0" y="0" width="160" height="45" rx="4" fill="#0f172a" stroke="#64748b" stroke-width="1"/>
+                        <text x="80" y="18" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">最小化部署</text>
+                        <text x="80" y="32" fill="#94a3b8" font-size="7" text-anchor="middle">仅 xiaozhi-server</text>
+                        <text x="80" y="41" fill="#64748b" font-size="6" text-anchor="middle">配置存储在文件中</text>
+                    </g>
+
+                    <!-- Full -->
+                    <g transform="translate(205, 35)">
+                        <rect x="0" y="0" width="160" height="45" rx="4" fill="#0f172a" stroke="#64748b" stroke-width="1"/>
+                        <text x="80" y="18" fill="#e2e8f0" font-size="9" font-weight="500" text-anchor="middle">全模块部署</text>
+                        <text x="80" y="32" fill="#94a3b8" font-size="7" text-anchor="middle">Docker Compose</text>
+                        <text x="80" y="41" fill="#64748b" font-size="6" text-anchor="middle">MySQL + Redis + 全服务</text>
+                    </g>
+                </g>
+
+                <!-- ========== DATA FLOW ANNOTATION ========== -->
+                <g transform="translate(60, 530)">
+                    <rect x="0" y="0" width="580" height="70" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+                    <text x="20" y="20" fill="#94a3b8" font-size="9" font-weight="600">语音交互数据流</text>
+                    <text x="20" y="38" fill="#64748b" font-size="7">ESP32 设备 → WebSocket → ASR(语音识别) → 意图识别 → LLM(大模型) → TTS(语音合成) → ESP32 设备</text>
+                    <text x="20" y="52" fill="#64748b" font-size="7">配置流: manager-api → xiaozhi-server (远程配置，无需重启)</text>
+                    <text x="20" y="62" fill="#64748b" font-size="6">Provider 模式: ASR/LLM/TTS/VAD/Intent/Memory 均通过工厂模式实例化，支持多供应商切换</text>
+                </g>
+
+                <!-- ========== LEGEND ========== -->
+                <g transform="translate(60, 620)">
+                    <rect x="0" y="0" width="580" height="80" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+                    <text x="20" y="20" fill="#94a3b8" font-size="9" font-weight="600">图例</text>
+
+                    <!-- Frontend -->
+                    <rect x="20" y="30" width="15" height="15" rx="2" fill="#083344" stroke="#22d3ee" stroke-width="1"/>
+                    <text x="42" y="41" fill="#94a3b8" font-size="7">前端服务</text>
+
+                    <!-- Backend -->
+                    <rect x="100" y="30" width="15" height="15" rx="2" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+                    <text x="122" y="41" fill="#94a3b8" font-size="7">后端服务</text>
+
+                    <!-- Database -->
+                    <rect x="180" y="30" width="15" height="15" rx="2" fill="#4c1d95" stroke="#a78bfa" stroke-width="1"/>
+                    <text x="202" y="41" fill="#94a3b8" font-size="7">数据库</text>
+
+                    <!-- External -->
+                    <rect x="260" y="30" width="15" height="15" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4"/>
+                    <text x="282" y="41" fill="#94a3b8" font-size="7">外部服务</text>
+
+                    <!-- Security -->
+                    <rect x="350" y="30" width="15" height="15" rx="2" fill="rgba(136, 19, 55, 0.2)" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+                    <text x="372" y="41" fill="#94a3b8" font-size="7">安全认证</text>
+
+                    <!-- WebSocket -->
+                    <line x1="20" y1="60" x2="40" y2="60" stroke="#22d3ee" stroke-width="1.5"/>
+                    <text x="46" y="62" fill="#94a3b8" font-size="7">WebSocket 连接</text>
+
+                    <!-- API -->
+                    <line x1="120" y1="60" x2="140" y2="60" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="146" y="62" fill="#94a3b8" font-size="7">REST API 调用</text>
+
+                    <!-- HTTP -->
+                    <line x1="220" y1="60" x2="240" y2="60" stroke="#94a3b8" stroke-width="1.5"/>
+                    <text x="246" y="62" fill="#94a3b8" font-size="7">HTTP 请求</text>
+                </g>
+            </svg>
+        </div>
+
+        <div class="summary-grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-dot" style="background: #34d399;"></div>
+                    <h3>核心服务</h3>
+                </div>
+                <ul>
+                    <li><span class="highlight">xiaozhi-server</span> - Python AI 核心 (端口 8000/8003)</li>
+                    <li>Provider 模式管理 AI 流水线</li>
+                    <li>支持 ASR·LLM·TTS·VAD·Intent·Memory</li>
+                    <li>WebSocket 实时语音对话</li>
+                    <li>三层配置机制 (本地·文件·远程)</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-dot" style="background: #064e3b;"></div>
+                    <h3>管理后台</h3>
+                </div>
+                <ul>
+                    <li><span class="highlight">manager-api</span> - Java Spring Boot REST (端口 8002)</li>
+                    <li>设备注册·配置管理·用户认证</li>
+                    <li>MyBatis-Plus + MySQL + Redis</li>
+                    <li>Apache Shiro 双认证机制</li>
+                    <li>Liquibase 数据库迁移</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-dot" style="background: #a78bfa;"></div>
+                    <h3>数据存储</h3>
+                </ul>
+                <ul>
+                    <li><span class="highlight">MySQL</span> - 业务数据 (设备·用户·配置)</li>
+                    <li><span class="highlight">Redis</span> - 缓存·会话·系统参数</li>
+                    <li><span class="highlight">OceanBase</span> - PowerMem 记忆存储</li>
+                    <li>向量存储 + 知识图谱</li>
+                    <li>用户画像与情感陪伴数据</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="summary-grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-dot" style="background: #22d3ee;"></div>
+                    <h3>前端应用</h3>
+                </div>
+                <ul>
+                    <li><span class="highlight">智控台</span> - Vue.js 2 Web 管理控制台 (端口 8001)</li>
+                    <li><span class="highlight">移动端</span> - Uni-app 跨平台 (H5/小程序/iOS/Android)</li>
+                    <li>REST API 统一接口 (/xiaozhi)</li>
+                    <li>OAuth2 Bearer Token 认证</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-dot" style="background: #fbbf24;"></div>
+                    <h3>外部集成</h3>
+                </div>
+                <ul>
+                    <li><span class="highlight">ASR</span> - 阿里云·百度·腾讯·讯飞</li>
+                    <li><span class="highlight">LLM</span> - OpenAI·通义千问·Gemini·Ollama</li>
+                    <li><span class="highlight">TTS</span> - 阿里云·火山引擎·Fish Speech</li>
+                    <li><span class="highlight">RAGFlow</span> - 知识库适配器</li>
+                    <li>多供应商灵活切换</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-dot" style="background: #fb7185;"></div>
+                    <h3>安全特性</h3>
+                </div>
+                <ul>
+                    <li><span class="highlight">OAuth2</span> - Web/移动端用户认证</li>
+                    <li><span class="highlight">服务密钥</span> - xiaozhi-server 机器对机器认证</li>
+                    <li>XSS / SQL 注入防护</li>
+                    <li>HTTPS 加密传输</li>
+                    <li>集中式错误码管理</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            小智ESP32服务器 · AI虚拟宠物情感陪伴系统 · 2026 | <a href="https://github.com/xinnan-tech/xiaozhi-esp32-server" style="color: #64748b;">GitHub</a>
+        </footer>
+    </div>
+</body>
+</html>

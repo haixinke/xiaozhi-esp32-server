@@ -321,8 +321,8 @@ class MemoryProvider(MemoryProviderBase):
                 for message in msgs:
                     if message.role == "system":
                         continue
-                    if message.role == "assistant":
-                        continue  # 跳过助手消息，只存储用户对话
+                    # if message.role == "assistant":
+                    #     continue  # 跳过助手消息，只存储用户对话
 
                     content = message.content
 
@@ -349,7 +349,7 @@ class MemoryProvider(MemoryProviderBase):
                     logger.bind(tag=TAG).info(f"[DEBUG] Before save_memory: querying existing memory count for user_id={self.role_id}")
                     existing_before = await asyncio.to_thread(
                         self.memory_client.search,
-                        query="",
+                        query="对话",
                         user_id=self.role_id,
                         limit=10000  # 设置大限制以获取所有记忆
                     )
@@ -377,9 +377,8 @@ class MemoryProvider(MemoryProviderBase):
                     native_language="zh",  # Force profile extraction in Chinese
                     # profile_type="topics",  # Extract structured topics (JSON) instead of plain text content
                     profile_type="content",
-                    # strict_mode=True,
                     include_roles=["user"],  # Only extract profile from user messages, not AI assistant responses
-                    infer=False  # ====== 调试修改：禁用智能模式，防止LLM意外删除记忆 ======  # TODO: 调试结束后恢复为 True（启用智能模式）
+                    infer=True  # ====== 调试修改：禁用智能模式，防止LLM意外删除记忆 ======  # TODO: 调试结束后恢复为 True（启用智能模式）
                 )
                 # Handle both sync and async returns
                 if asyncio.iscoroutine(result):
@@ -399,7 +398,7 @@ class MemoryProvider(MemoryProviderBase):
                     logger.bind(tag=TAG).info(f"[DEBUG] After save_memory: querying new memory count for user_id={self.role_id}")
                     existing_after = await asyncio.to_thread(
                         self.memory_client.search,
-                        query="",
+                        query="对话",
                         user_id=self.role_id,
                         limit=10000  # 设置大限制以获取所有记忆
                     )

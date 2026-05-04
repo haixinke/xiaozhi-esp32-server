@@ -10,7 +10,7 @@ services:
       - "2881:2881"  # SQL port
       - "2882:2882"  # RPC port
     environment:
-      - MODE=mini
+      - MODE=normal
       - OB_MEMORY_LIMIT=6G
       - OB_DATAFILE_SIZE=20G
       - OB_LOG_DISK_SIZE=10G
@@ -21,11 +21,11 @@ services:
     volumes:
       - ./oceanbase/data:/root/ob
     healthcheck:
-      test: ["CMD", "bash", "-c", "obclient -h127.0.0.1 -P2881 -uroot -p123456 -Dtest -e'SELECT 1'"]
+      test: ["CMD", "bash", "-c", "obclient -h127.0.0.1 -P2881 -uroot@sys -p123456 -Dtest -e'SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 60s
+      start_period: 180s
     networks:
       - xiaozhi-network
 

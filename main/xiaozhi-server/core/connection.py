@@ -284,7 +284,7 @@ class ConnectionHandler:
                         except Exception:
                             pass
 
-                # 启动线程保存记忆，不等待完成
+                # 启动线程保存记忆（守护线程，不阻塞程序退出）
                 threading.Thread(target=save_memory_task, daemon=True).start()
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"保存记忆失败: {e}")
@@ -960,6 +960,32 @@ class ConnectionHandler:
                     self.memory.query_memory(query), self.loop
                 )
                 memory_str = future.result()
+
+            # 🔍 获取 LLM 对话内容并打印提示词
+            llm_dialogue = self.dialogue.get_llm_dialogue_with_memory(
+                memory_str, self.config.get("voiceprint", {})
+            )
+
+            # 格式化 LLM 提示词为多行字符串
+            dialogue_lines = []
+            for msg in llm_dialogue:
+                role = msg.get("role", "unknown")
+                content = msg.get("content", "")
+                # 截取长内容，避免日志过长
+                content_preview = content[:500] + "..." if len(content) > 500 else content
+                dialogue_lines.append(f"- [{role}]: {content_preview}")
+
+            dialogue_str = "\n".join(dialogue_lines)
+
+            # 打印完整的 LLM 提示词（INFO 级别）
+            self.logger.bind(tag=TAG).info(f"""
+【LLM 提示词】
+Session ID: {self.session_id}
+Intent Type: {self.intent_type}
+Messages: {len(llm_dialogue)}
+
+{dialogue_str}
+""")
 
             if self.intent_type == "function_call" and functions is not None:
                 # 使用支持functions的streaming接口

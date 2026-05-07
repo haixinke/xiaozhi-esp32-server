@@ -123,6 +123,13 @@ class MemoryProvider(MemoryProviderBase):
                     "config": embedder_config
                 }
 
+            # Configure intelligent memory (Ebbinghaus forgetting curve)
+            if "intelligent_memory" in config:
+                powermem_config["intelligent_memory"] = config["intelligent_memory"]
+                logger.bind(tag=TAG).info(
+                    f"PowerMem intelligent_memory config: {config['intelligent_memory']}"
+                )
+
             # Initialize memory client based on mode
             if self.enable_user_profile:
                 from powermem import UserMemory
@@ -185,6 +192,15 @@ class MemoryProvider(MemoryProviderBase):
 
                     messages.append({"role": message.role, "content": content})
 
+                # 保存前日志
+                logger.bind(tag=TAG).info(f"""
+【PowerMem 保存记忆】开始
+User ID: {self.role_id}
+Session ID: {session_id or 'N/A'}
+Messages: {len(messages)}
+UserMemory Mode: {self.enable_user_profile}
+""")
+
                 # Add memory using PowerMem SDK
                 result = self.memory_client.add(
                     messages=messages,
@@ -194,7 +210,12 @@ class MemoryProvider(MemoryProviderBase):
                 if asyncio.iscoroutine(result):
                     result = await result
 
-                logger.bind(tag=TAG).debug(f"Save memory result: {result}")
+                # 保存后日志 - 打印完整结果
+                logger.bind(tag=TAG).info(f"""
+【PowerMem 保存记忆】完成
+User ID: {self.role_id}
+Result: {json.dumps(result, ensure_ascii=False, indent=2) if result else 'None'}
+""")
 
                 # Cache user profile if UserMemory mode and profile was extracted
                 if self.enable_user_profile and result:

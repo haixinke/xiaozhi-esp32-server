@@ -4,15 +4,16 @@
 
 ## 项目概述
 
-本项目是 **xiaozhi-esp32-server**，为 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 开源智能硬件项目提供的后端服务。它为 ESP32 设备提供实时语音 AI 助手服务器，由 `main/` 下的四个子项目组成。
+本项目是 **xiaozhi-esp32-server**，为 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 开源智能硬件项目提供的后端服务。它为 ESP32 设备提供实时语音 AI 助手服务器，由 `main/` 下的五个子项目组成。
 
 ## 子项目
 
-在本项目中，四个子项目有约定的简称：
+在本项目中，五个子项目有约定的简称：
 - **聊天服务** → `main/xiaozhi-server/`
 - **后端服务** → `main/manager-api/`
 - **web服务** → `main/manager-web/`
 - **移动服务** → `main/manager-mobile/`
+- **演示项目** / **演示web项目** → `main/demo-web/`
 
 | 子项目 | 语言 / 技术栈 | 端口 | 用途 |
 |---|---|---|---|
@@ -20,6 +21,7 @@
 | `main/manager-api/` | Java 21 / Spring Boot 3.4.3 | 8002 (`/xiaozhi`) | 管理后台 REST API，设备注册，Python 服务端的配置来源 |
 | `main/manager-web/` | Vue.js 2 / Vue CLI | 8001 (dev) | Web 管理控制台 ("智控台") |
 | `main/manager-mobile/` | Uni-app / Vue 3 / Vite | — | 移动端管理后台 (H5、微信小程序、iOS、Android) |
+| `main/demo-web/` | HTML / CSS / JS (纯静态) | 8006 | 演示项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
 
 每个子项目都有自己的 `CLAUDE.md`，包含详细的架构说明和常用命令。
 
@@ -59,6 +61,13 @@ pnpm dev:h5                            # H5 开发
 pnpm dev:mp-weixin                     # 微信小程序开发
 pnpm build:h5                          # H5 构建
 pnpm lint                            # 代码检查
+```
+
+### 演示项目 (`main/demo-web/`)
+```bash
+cd main/demo-web
+python -m http.server 8006             # 启动演示页面
+# 浏览器访问 http://localhost:8006/test_page.html
 ```
 
 ### Docker (全栈)

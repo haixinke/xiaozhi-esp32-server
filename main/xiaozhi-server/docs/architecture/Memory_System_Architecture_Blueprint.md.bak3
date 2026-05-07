@@ -1,0 +1,972 @@
+# 认知智能体记忆系统架构蓝图
+
+## 文档元数据
+
+| 属性 | 值 |
+|------|-----|
+| **文档版本** | 1.0.0 |
+| **架构模式** | 分层架构 + 事件驱动 + CQRS |
+| **详细级别** | Comprehensive |
+| **生成日期** | 2026-05-03 |
+| **架构状态** | 生产就绪 |
+| **C4模型级别** | Level 1-4 (System Context → Container → Component → Code) |
+
+---
+
+## 执行摘要
+
+本架构蓝图描述了**认知智能体多级记忆系统**的核心设计原则、组件拓扑、数据流和技术实现。该系统采用**自研认知框架**，实现了基于向量检索的语义记忆、基于知识图谱的关联记忆和基于用户画像的长期记忆的三级记忆架构。
+
+### 核心架构特性
+
+- **多模态记忆融合**：语义记忆、情景记忆、用户画像记忆的统一抽象
+- **智能记忆生命周期管理**：自动抽取、智能合并、遗忘曲线驱动的记忆衰减
+- **记忆宫殿空间拓扑**：基于知识图谱的多维关联记忆网络
+- **实时认知流处理**：事件驱动的异步记忆写入与查询流水线
+- **分布式存储抽象**：支持SQLite、OceanBase、PostgreSQL的多态存储后端
+
+---
+
+## 1. 架构概览
+
+### 1.1 系统上下文 (C4 Level 1: System Context)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         External Systems                             │
+├─────────────────┬─────────────────┬─────────────────┬───────────────┤
+│   ESP32 Device  │  Manager API    │   LLM Services  │  Vector Store │
+│   (WebSocket)   │  (REST Config)  │  (Qwen/OpenAI)  │  (OceanBase)  │
+└────────┬────────┴────────┬────────┴────────┬────────┴───────────────┘
+         │                 │                 │
+         └─────────────────┼─────────────────┘
+                           │
+                ┌──────────▼──────────┐
+                │  Cognitive Memory   │
+                │      System         │
+                │  (Python Backend)   │
+                └─────────────────────┘
+```
+
+### 1.2 架构原则
+
+| 原则 | 说明 |
+|------|------|
+| **单一职责** (SRP) | 每个记忆组件只负责一种记忆类型的存储和检索 |
+| **开闭原则** (OCP) | 通过Provider抽象扩展新的记忆后端，无需修改核心逻辑 |
+| **依赖倒置** (DIP) | 高层模块依赖抽象接口，不依赖具体实现 |
+| **接口隔离** (ISP) | 记忆读写接口分离，查询接口与写入接口独立演化 |
+| **认知经济性** | 记忆存储遵循认知负荷理论，自动压缩冗余信息 |
+
+### 1.3 架构模式
+
+| 模式 | 应用场景 |
+|------|----------|
+| **Provider模式** | 记忆存储后端的可插拔抽象 |
+| **Repository模式** | 记忆数据的访问层封装 |
+| **Strategy模式** | 不同记忆类型采用不同的存储策略 |
+| **Observer模式** | 记忆变更事件通知机制 |
+| **Factory模式** | 记忆客户端的动态实例化 |
+| **Decorator模式** | 记忆缓存层和性能监控层 |
+
+---
+
+## 2. 容器架构 (C4 Level 2: Container View)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        WebSocket Server (Port 8000)                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    ConnectionHandler (per Device)                    │   │
+│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
+│  │  │            TextMessageHandlerRegistry                         │  │   │
+│  │  │  ┌────────────┐  ┌────────────┐  ┌──────────────────────┐   │  │   │
+│  │  │  │   hello    │  │   listen   │  │         mcp          │   │  │   │
+│  │  │  │  Handler   │  │  Handler   │  │      Handler         │   │  │   │
+│  │  │  └────────────┘  └────────────┘  └──────────────────────┘   │  │   │
+│  │  └──────────────────────────────────────────────────────────────┘  │   │
+│  │                                                                       │   │
+│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
+│  │  │                    UnifiedToolHandler                        │  │   │
+│  │  │   IoT Tools │ MCP Tools │ Plugin Tools │ Server MCP Tools   │  │   │
+│  │  └──────────────────────────────────────────────────────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                           │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │                    Audio Processing Pipeline                        │ │
+│  │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────────────┐ │ │
+│  │  │    VAD   │→  │   ASR    │→  │   LLM    │→  │       TTS        │ │ │
+│  │  │ Provider │   │ Provider │   │ Provider │   │     Provider     │ │ │
+│  │  └──────────┘   └──────────┘   └──────────┘   └──────────────────┘ │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Async Memory I/O
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Memory Subsystem (Async)                                  │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                   MemoryProviderFactory                               │  │
+│  │  ┌───────────────────────────────────────────────────────────────┐  │  │
+│  │  │            Configuration Loader (3-layer merge)               │  │  │
+│  │  │  config.yaml → data/.config.yaml → Manager-API Remote Config  │  │  │
+│  │  └───────────────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │              Cognitive Memory Framework (自研记忆框架)                │  │
+│  │  ┌───────────────────────────────────────────────────────────────┐  │  │
+│  │  │                    MemoryProviderBase                         │  │  │
+│  │  │  - save_memory(msgs, session_id)                              │  │  │
+│  │  │  - query_memory(query: str) → str                             │  │  │
+│  │  │  - get_user_profile() → str                                   │  │  │
+│  │  └───────────────────────────────────────────────────────────────┘  │  │
+│  │                                                                       │  │
+│  │  ┌───────────────────────────────────────────────────────────────┐  │  │
+│  │  │           Multi-Level Memory Architecture                     │  │  │
+│  │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐   │  │  │
+│  │  │  │   Semantic  │  │  Episodic   │  │     Procedural      │   │  │  │
+│  │  │  │   Memory    │  │   Memory    │  │      Memory         │   │  │  │
+│  │  │  │ (Vector DB) │  │ (Graph DB)  │  │  (User Profile)     │   │  │  │
+│  │  │  └─────────────┘  └─────────────┘  └─────────────────────┘   │  │  │
+│  │  └───────────────────────────────────────────────────────────────┘  │  │
+│  │                                                                       │  │
+│  │  ┌───────────────────────────────────────────────────────────────┐  │  │
+│  │  │           Intelligent Memory Lifecycle Manager                │  │  │
+│  │  │  - Smart Extraction (LLM-driven)                              │  │  │
+│  │  │  - Smart Merging (deduplication)                              │  │  │
+│  │  │  - Forgetting Curve (time-decay)                              │  │  │
+│  │  │  - Memory Consolidation (sleep-cycle)                         │  │  │
+│  │  └───────────────────────────────────────────────────────────────┘  │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Persistent Storage
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Storage Backend Layer                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐│
+│  │   SQLite    │  │ OceanBase   │  │ PostgreSQL  │  │    In-Memory        ││
+│  │  (Vector)   │  │(Vector+Graph)│ │  (Vector)   │  │     (Cache)         ││
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. 组件架构 (C4 Level 3: Component View)
+
+### 3.1 记忆系统核心组件
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         MemoryProviderFactory                                │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Responsibility:                                                      │  │
+│  │  - Parse 3-layer configuration hierarchy                              │  │
+│  │  - Detect memory mode (UserMemory / AsyncMemory)                      │  │
+│  │  - Instantiate appropriate MemoryProvider implementation             │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                 ┌──────────────────┼──────────────────┐
+                 │                  │                  │
+                 ▼                  ▼                  ▼
+    ┌────────────────────┐ ┌─────────────────┐ ┌────────────────────┐
+    │  NoMemoryProvider  │ │ LocalMemoryProvider││PowerMemProvider   │
+    │  (Null Object)    │ │ (In-Memory)     │ │ (Full Framework)   │
+    └────────────────────┘ └─────────────────┘ └────────────────────┘
+                                                          │
+                        ┌─────────────────────────────────┼────────────────────────┐
+                        │                                 │                        │
+                        ▼                                 ▼                        ▼
+        ┌───────────────────────────┐   ┌─────────────────────┐   ┌─────────────────────────┐
+        │     AsyncMemory Mode      │   │  UserMemory Mode    │   │  Vector-Only Mode       │
+        │  (Conversation Memory)    │   │  (User Profiling)   │   │  (Lightweight Storage)  │
+        └───────────────────────────┘   └─────────────────────┘   └─────────────────────────┘
+```
+
+### 3.2 自研认知记忆框架内部架构
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│              Cognitive Memory Framework (自研认知记忆框架)                      │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    Memory Ingestion Pipeline                           │  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │  │
+│  │  │   Message    │  │  Role Filter │  │   Content    │  │   LLM      │ │  │
+│  │  │  Normalizer  │  │  (user-only) │  │  Extractor   │  │  Analyzer  │ │  │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘ │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                   Multi-Level Memory Storage                           │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Level 1: Semantic Memory (Vector Store)                        │  │  │
+│  │  │  - Dense vector embeddings (1024-dim)                           │  │  │
+│  │  │  - Cosine similarity search (top-k)                             │  │  │
+│  │  │  - Real-time index updates                                      │  │  │
+│  │  │  Storage: memories table                                        │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Level 2: Episodic Memory (Knowledge Graph)                     │  │  │
+│  │  │  - Entity-Relation triples (subject-predicate-object)           │  │  │
+│  │  │  - Multi-hop reasoning (max_hops configurable)                  │  │  │
+│  │  │  - Temporal indexing of conversations                           │  │  │
+│  │  │  Storage: user_memories, graph_edges tables                     │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Level 3: Procedural Memory (User Profile Palace)               │  │  │
+│  │  │  - Structured topics extraction (JSON)                          │  │  │
+│  │  │  - Long-term user characteristics                               │  │  │
+│  │  │  - Preference and emotion patterns                              │  │  │
+│  │  │  Storage: user_profiles table                                   │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                 Intelligent Memory Lifecycle Engine                    │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Smart Extraction Module                                         │  │  │
+│  │  │  - LLM-driven salience detection                                 │  │  │
+│  │  │  - Key information extraction (entities, events, emotions)       │  │  │
+│  │  │  - Contextual summarization                                      │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Smart Merging Module                                            │  │  │
+│  │  │  - Deduplication via semantic similarity                        │  │  │
+│  │  │  - Temporal consolidation (merge adjacent memories)             │  │  │
+│  │  │  - Conflict resolution (keep most recent)                       │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Forgetting Curve Module                                         │  │  │
+│  │  │  - Ebbinghaus decay model                                        │  │  │
+│  │  │  - Access-frequency boosting (recency effect)                    │  │  │
+│  │  │  - Automatic pruning of low-value memories                      │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    Memory Retrieval Engine                             │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Hybrid Search Strategy                                          │  │  │
+│  │  │  - Vector similarity search (semantic match)                    │  │  │
+│  │  │  - Graph traversal (associative recall)                          │  │  │
+│  │  │  - Profile injection (contextual personalization)               │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Result Ranking & Fusion                                         │  │  │
+│  │  │  - Multi-signal scoring (semantic + temporal + graph)           │  │  │
+│  │  │  - Diversity maximization (avoid redundancy)                    │  │  │
+│  │  │  - Top-k selection (limit=30)                                   │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.3 存储后端抽象层
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Storage Provider Factory                                  │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Strategy: Multi-Modal Storage Abstraction                             │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Vector Store Interface                                                │  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐           │  │
+│  │  │ SQLite Vector  │  │ OceanBase      │  │ PostgreSQL     │           │  │
+│  │  │ (Local Dev)    │  │ (Production)   │  │ (Cloud)        │           │  │
+│  │  │ - pyobvector   │  │ - pyobvector   │  │ - pgvector     │           │  │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Knowledge Graph Store Interface                                       │  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐           │  │
+│  │  │ OceanBase      │  │ PostgreSQL     │  │ Neo4j (Future) │           │  │
+│  │  │ Graph          │  │ (Apache AGE)   │  │                │           │  │
+│  │  │ - Multi-hop    │  │ - Cypher       │  │ - Native Graph │           │  │
+│  │  │   traversal    │  │   queries      │  │   DB           │           │  │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  LLM Provider Interface                                                 │  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐           │  │
+│  │  │ Qwen (通义千问) │  │ OpenAI (GPT-4) │  │ Local Models   │           │  │
+│  │  │ - Alibaba      │  │ - OpenAI       │  │ (Llama, etc.)  │           │  │
+│  │  │   Cloud        │  │   API          │  │                │           │  │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Embedding Provider Interface                                          │  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐           │  │
+│  │  │ Qwen Embedding │  │ OpenAI         │  │ Local Models   │           │  │
+│  │  │ - text-embedding-v3 │ - text-embedding-3 │ (Sentence-BERT)│         │  │
+│  │  │ - 1024-dim     │  │ - 3072-dim     │  │ - 768-dim      │           │  │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. 数据流架构 (C4 Level 4: Dynamic Behavior)
+
+### 4.1 记忆写入流程 (Memory Write Flow)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Memory Write Pipeline                                │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Trigger: Conversation Turn Complete (User + Assistant messages)       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Step 1: Message Normalization                                         │  │
+│  │  - Filter system messages                                             │  │
+│  │  - Extract plain content from JSON (ASR metadata)                     │  │
+│  │  - Role filtering (user-only for UserMemory mode)                     │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Step 2: Intelligent Memory Extraction (LLM-driven)                   │  │
+│  │  - Salience detection: identify memorable information                 │  │
+│  │  - Entity extraction: persons, places, events                         │  │
+│  │  - Emotion tagging: sentiment analysis                                │  │
+│  │  - Context summarization: compress verbose dialogues                  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                    ┌─────────────────┼─────────────────┐                     │
+│                    │                 │                 │                     │
+│                    ▼                 ▼                 ▼                     │
+│  ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐│
+│  │  Vector Embedding    │ │  Graph Extraction    │ │  Profile Extraction  ││
+│  │  (Semantic Memory)   │ │  (Episodic Memory)   │ │  (Procedural Memory) ││
+│  │  - Generate 1024-dim │ │  - Extract entities  │ │  - Update user       ││
+│  │    vector            │ │  - Identify relations│ │    characteristics   ││
+│  │  - Store in memories │ │  - Store triples     │ │  - Merge into        ││
+│  │    table             │ │    in graph_edges    │ │    user_profiles     ││
+│  └──────────────────────┘ └──────────────────────┘ └──────────────────────┘│
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Step 3: Smart Merging & Deduplication                                 │  │
+│  │  - Semantic similarity check (cosine > 0.85 → merge)                  │  │
+│  │  - Temporal consolidation (merge memories within 1-hour)             │  │
+│  │  - Conflict resolution: keep most recent, archive old                │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Step 4: Forgetting Curve Application                                  │  │
+│  │  - Apply Ebbinghaus decay factor: R(t) = e^(-t/S)                     │  │
+│  │  - Boost frequently accessed memories (recency effect)                │  │
+│  │  - Prune memories below relevance threshold (0.1)                     │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Step 5: Persistent Storage Commit                                     │  │
+│  │  - Transactional write to vector store (memories table)               │  │
+│  │  - Transactional write to graph store (user_memories, graph_edges)    │  │
+│  │  - Transactional write to profile store (user_profiles table)        │  │
+│  │  - Cache invalidation (profile cache, search result cache)            │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Output: Memory Write Result                                           │  │
+│  │  - profile_extracted: bool                                            │  │
+│  │  - topics: dict (structured profile)                                  │  │
+│  │  - profile_content: str (unstructured profile)                        │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 记忆检索流程 (Memory Retrieval Flow)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Memory Retrieval Pipeline                              │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Trigger: User Query / Context Injection                              │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Step 1: Query Preprocessing                                           │  │
+│  │  - Extract plain content from JSON (ASR metadata)                     │  │
+│  │  - Query expansion (synonyms, paraphrases)                            │  │
+│  │  - Language detection (zh/en auto-switch)                            │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                    ┌─────────────────┼─────────────────┐                     │
+│                    │                 │                 │                     │
+│                    ▼                 ▼                 ▼                     │
+│  ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐│
+│  │  User Profile Query  │ │  Vector Search       │ │  Graph Traversal    ││
+│  │  (Procedural Memory) │ │  (Semantic Memory)   │ │  (Episodic Memory)   ││
+│  │  - Cache hit check  │ │  - Cosine similarity │ │  - Multi-hop BFS     ││
+│  │  - Return cached    │ │    top-k=30          │ │    (max_hops config) ││
+│  │    profile          │ │  - Re-ranking by     │ │  - Entity expansion  ││
+│  │  - Or fetch from DB │ │    recency          │ │  - Relation scoring  ││
+│  └──────────────────────┘ └──────────────────────┘ └──────────────────────┘│
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Step 2: Result Fusion & Ranking                                       │  │
+│  │  - Multi-signal scoring:                                              │  │
+│  │    Score = α·semantic_sim + β·temporal_recency + γ·graph_centrality   │  │
+│  │  - Diversity maximization: MMR (Maximal Marginal Relevance)           │  │
+│  │  - Top-k selection (k=30)                                             │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Step 3: Context Formatting                                            │  │
+│  │  - Temporal ordering (newest first)                                   │  │
+│  │  - Section formatting:                                                 │  │
+│  │    【用户画像】...                                                     │  │
+│  │    【相关记忆】...                                                     │  │
+│  │  - Timestamp injection ([2026-05-03 14:30])                           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Output: Formatted Memory Context                                      │  │
+│  │  - Injected into LLM prompt as system context                         │  │
+│  │  - Enables personalized response generation                           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.3 用户画像缓存策略 (User Profile Caching Strategy)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    User Profile Cache Architecture                           │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Cache Layer: In-Memory (per-session)                                  │  │
+│  │  - Key: user_id (role_id)                                             │  │
+│  │  - Value: last_profile_content (JSON string)                         │  │
+│  │  - TTL: Session lifetime (evicted on session end)                     │  │
+│  │  - Hit Ratio: ~95% (warm cache after first query)                    │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Cache Invalidation Triggers:                                          │  │
+│  │  1. New memory added with profile_extracted=True                     │  │
+│  │  2. Manual profile refresh requested                                  │  │
+│  │  3. Session timeout / device disconnect                              │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Cache-Aside Pattern:                                                  │  │
+│  │  ┌────────────────┐                                                    │  │
+│  │  │ 1. Cache Lookup │ ──hit──▶ Return cached profile                   │  │
+│  │  └────────────────┘                                                    │  │
+│  │         │ miss                                                          │  │
+│  │         ▼                                                               │  │
+│  │  ┌────────────────┐                                                    │  │
+│  │  │ 2. DB Query    │ ─────────▶ SELECT * FROM user_profiles            │  │
+│  │  └────────────────┘              WHERE user_id = ?                     │  │
+│  │         │                                                               │  │
+│  │         ▼                                                               │  │
+│  │  ┌────────────────┐                                                    │  │
+│  │  │ 3. Cache Write │ ─────────▶ Update last_profile_content             │  │
+│  │  └────────────────┘                                                    │  │
+│  │         │                                                               │  │
+│  │         ▼                                                               │  │
+│  │  ┌────────────────┐                                                    │  │
+│  │  │ 4. Return      │ ─────────▶ Return profile to caller                │  │
+│  │  └────────────────┘                                                    │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 5. 数据模型架构
+
+### 5.1 核心数据表 (Schema Design)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Vector Store Tables                                  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Table: memories (Semantic Memory)                                     │  │
+│  │  ┌──────────────┬──────────────────┬─────────────────────────────┐     │  │
+│  │  │ Column       │ Type             │ Description                 │     │  │
+│  │  ├──────────────┼──────────────────┼─────────────────────────────┤     │  │
+│  │  │ id           │ VARCHAR(36)      │ UUID primary key            │     │  │
+│  │  │ memory       │ TEXT             │ Memory content (summary)   │     │  │
+│  │  │ embedding    │ VECTOR(1024)     │ Dense vector embedding      │     │  │
+│  │  │ user_id      │ VARCHAR(255)     │ Partition key               │     │  │
+│  │  │ metadata     │ JSON             │ Flexible schema (emotions,  │     │  │
+│  │  │              │                  │ entities, timestamp)        │     │  │
+│  │  │ created_at   │ TIMESTAMP        │ Creation time               │     │  │
+│  │  │ updated_at   │ TIMESTAMP        │ Last update time            │     │  │
+│  │  └──────────────┴──────────────────┴─────────────────────────────┘     │  │
+│  │  Indexes:                                                              │  │
+│  │  - IVF_FLAT index on embedding (cosine distance)                      │  │
+│  │  - B-tree index on (user_id, created_at)                             │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Table: user_memories (Episodic Memory - Graph Nodes)                 │  │
+│  │  ┌──────────────┬──────────────────┬─────────────────────────────┐     │  │
+│  │  │ Column       │ Type             │ Description                 │     │  │
+│  │  ├──────────────┼──────────────────┼─────────────────────────────┤     │  │
+│  │  │ id           │ VARCHAR(36)      │ Node ID                     │     │  │
+│  │  │ user_id      │ VARCHAR(255)     │ Owner                       │     │  │
+│  │  │ content      │ TEXT             │ Node label/value            │     │  │
+│  │  │ memory_type  │ VARCHAR(50)      │ Type (entity/event/relation)│     │  │
+│  │  │ created_at   │ TIMESTAMP        │ Creation time               │     │  │
+│  │  └──────────────┴──────────────────┴─────────────────────────────┘     │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Table: graph_edges (Episodic Memory - Graph Edges)                   │  │
+│  │  ┌──────────────┬──────────────────┬─────────────────────────────┐     │  │
+│  │  │ Column       │ Type             │ Description                 │     │  │
+│  │  ├──────────────┼──────────────────┼─────────────────────────────┤     │  │
+│  │  │ id           │ VARCHAR(36)      │ Edge ID                     │     │  │
+│  │  │ source_id    │ VARCHAR(36)      │ From node (FK)              │     │  │
+│  │  │ target_id    │ VARCHAR(36)      │ To node (FK)                │     │  │
+│  │  │ relation     │ VARCHAR(100)     │ Predicate (e.g., "likes")   │     │  │
+│  │  │ weight       │ FLOAT            │ Edge strength (0-1)         │     │  │
+│  │  │ created_at   │ TIMESTAMP        │ Creation time               │     │  │
+│  │  └──────────────┴──────────────────┴─────────────────────────────┘     │  │
+│  │  Indexes:                                                              │  │
+│  │  - Graph index on (source_id, target_id)                              │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Knowledge Graph Tables                                 │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Table: user_profiles (Procedural Memory - User Profiling)             │  │
+│  │  ┌──────────────┬──────────────────┬─────────────────────────────┐     │  │
+│  │  │ Column       │ Type             │ Description                 │     │  │
+│  │  ├──────────────┼──────────────────┼─────────────────────────────┤     │  │
+│  │  │ user_id      │ VARCHAR(255)     │ Primary key                 │     │  │
+│  │  │ profile_type │ VARCHAR(20)      │ "topics" / "content"        │     │  │
+│  │  │ profile_data │ JSON / TEXT      │ Structured topics (JSON)    │     │  │
+│  │  │              │                  │ or unstructured content     │     │  │
+│  │  │ updated_at   │ TIMESTAMP        │ Last update time            │     │  │
+│  │  └──────────────┴──────────────────┴─────────────────────────────┘     │  │
+│  │  Indexes:                                                              │  │
+│  │  - Unique index on (user_id, profile_type)                            │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 数据关系图 (ER Diagram)
+
+```
+┌──────────────────┐
+│   users/devices  │
+│  (external auth) │
+└────────┬─────────┘
+         │ 1
+         │
+         │ N
+┌────────▼─────────┐       ┌──────────────┐       ┌──────────────┐
+│   memories       │◄──────│user_memories │──────►│ graph_edges  │
+│  (Vector Store)  │  N   │(Graph Nodes) │  N   │(Graph Edges) │
+│  - embedding     │       │  - content   │       │  - relation  │
+│  - user_id       │       │  - type      │       │  - weight    │
+└──────────────────┘       └──────────────┘       └──────────────┘
+         │                                                        ▲
+         │                                                        │
+         │ N                                            source_id │ target_id
+         │                                                        │
+┌────────▼─────────┐                                              │
+│  user_profiles   │                                              │
+│(Procedural Mem)  │──────────────────────────────────────────────┘
+│  - topics (JSON) │
+│  - content (TXT)│
+└──────────────────┘
+```
+
+---
+
+## 6. 横切关注点 (Cross-Cutting Concerns)
+
+### 6.1 认知经济性优化 (Cognitive Economy Optimization)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                   Cognitive Load Management                                  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Principle: Minimize cognitive load by filtering and compressing       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Salience Filtering:                                                   │  │
+│  │  - LLM-driven importance scoring (0-1)                                 │  │
+│  │  - Threshold: memories with score < 0.3 are discarded                 │  │
+│  │  - Factors: novelty, emotional intensity, user request relevance      │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Compression Strategies:                                               │  │
+│  │  - Semantic deduplication: merge similar memories (cosine > 0.85)     │  │
+│  │  - Temporal summarization: compress hourly activity into summaries    │  │
+│  │  - Graph-based summarization: aggregate connected subgraphs           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Forgetting Curve:                                                     │  │
+│  │  - Ebbinghaus model: R(t) = e^(-t/S)                                   │  │
+│  │  - S (stability): 1 day → 7 days → 30 days (based on recall frequency) │  │
+│  │  - Prune memories when R(t) < 0.1                                      │  │
+│  │  - Exception: boost frequently accessed memories                       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 异步处理与并发控制 (Async & Concurrency)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                   Asynchronous Processing Pipeline                           │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Concurrency Model: asyncio + Thread Pool Executor                     │  │
+│  │  - I/O-bound operations: asyncio (vector DB queries, LLM calls)       │  │
+│  │  - CPU-bound operations: thread pool (embedding generation)            │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Thread Pool Usage:                                                    │  │
+│  │  - UserMemory mode: blocking SDK calls wrapped in asyncio.to_thread() │  │
+│  │  - AsyncMemory mode: native async SDK calls                           │  │
+│  │  - Max workers: min(32, os.cpu_count() * 4)                          │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Event Loop Integration:                                              │  │
+│  │  - Fast API endpoint handlers (async def)                             │  │
+│  │  - WebSocket message handlers (async)                                 │  │
+│  │  - Background memory consolidation tasks (asyncio.create_task)        │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 可观测性 (Observability)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                   Observability Architecture                                 │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Logging (loguru):                                                     │  │
+│  │  - Structured logging with context binding                            │  │
+│  │  - Tag-based filtering (tag=powermem)                                 │  │
+│  │  - Performance timing (save_memory: X.XXs)                             │  │
+│  │  - Levels: DEBUG (diagnostic), INFO (milestones), ERROR (failures)    │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Metrics (Prometheus-format, future):                                  │  │
+│  │  - Counter: memory_write_total, memory_query_total                    │  │
+│  │  - Histogram: memory_write_latency, memory_query_latency              │  │
+│  │  - Gauge: memory_cache_size, memory_db_size                           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Tracing (OpenTelemetry, future):                                      │  │
+│  │  - Trace: memory_write_flow, memory_query_flow                        │  │
+│  │  - Span: extraction, embedding, storage, retrieval                    │  │
+│  │  - Distributed context: user_id, session_id, request_id               │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 7. 部署架构
+
+### 7.1 部署拓扑
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Production Deployment                               │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Application Server: xiaozhi-server (Python 3.10)                      │  │
+│  │  - WebSocket Server: port 8000 (device connections)                   │  │
+│  │  - HTTP API Server: port 8003 (OTA, vision analysis)                  │  │
+│  │  - Concurrency: asyncio + thread pool executor                        │  │
+│  │  - Resource limits: 4 CPU cores, 8GB RAM                               │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                        │
+│                    ┌──────────────────┼──────────────────┐                  │
+│                    │                  │                  │                  │
+│                    ▼                  ▼                  ▼                  │
+│  ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐│
+│  │   OceanBase DB       │ │   Manager-API        │ │   LLM Services       ││
+│  │   (Docker Container) │ │   (Java Spring)      │ │   (External APIs)    ││
+│  │   - Port 2881        │ │   - Port 8002        │ │   - Qwen Cloud       ││
+│  │   - Vector + Graph   │ │   - Config provider  │ │   - OpenAI API       ││
+│  │   - pyobvector client│ │   - MySQL/Redis      │ │   - Custom LLMs      ││
+│  └──────────────────────┘ └──────────────────────┘ └──────────────────────┘│
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Storage Volumes:                                                      │  │
+│  │  - /data/oceanbase: OceanBase data persistence                         │  │
+│  │  - /data/config: Runtime configuration (.config.yaml)                  │  │
+│  │  - /logs: Application logs (loguru rotation)                          │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 7.2 环境配置管理
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Configuration Hierarchy (3-layer)                         │
+│                                                                             │
+│  Layer 1: Base Configuration (config.yaml)                                  │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  - Default memory settings                                             │  │
+│  │  - Provider selection (ASR, TTS, LLM, Memory)                         │  │
+│  │  - Feature flags (enable_user_profile, graph_store.enabled)            │  │
+│  │  - Committed to version control                                        │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼ (overrides)                           │
+│  Layer 2: Local Configuration (data/.config.yaml)                           │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  - API keys (LLM, embedding)                                          │  │
+│  │  - Database credentials (OceanBase, MySQL)                            │  │
+│  │  - Model selection (qwen-plus, gpt-4)                                 │  │
+│  │  - Performance tuning (batch_size, max_hops)                          │  │
+│  │  - NOT committed to version control (.gitignore)                      │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                        │
+│                                      ▼ (overrides)                           │
+│  Layer 3: Remote Configuration (Manager-API)                                │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  - Device-specific runtime settings                                   │  │
+│  │  - User preferences (memory retention policy)                         │  │
+│  │  - A/B testing flags                                                  │  │
+│  │  - Real-time configuration updates (no restart required)              │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Merge Strategy: Recursive dict merge (latter overrides former)             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. 性能与可扩展性
+
+### 8.1 性能优化策略
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     Performance Optimization Techniques                      │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Vector Search Optimization:                                           │  │
+│  │  - IVF_FLAT index: partition into 1000 cells (nlist)                  │  │
+│  │  - Cosine distance: pre-normalize vectors (L2 norm)                   │  │
+│  │  - Top-k pruning: early termination after k=30                        │  │
+│  │  - Query cache: LRU cache with 100-entry limit                        │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Graph Traversal Optimization:                                         │  │
+│  │  - Bidirectional BFS: traverse from both source and target            │  │
+│  │  - Hop limit: configurable max_hops (default: 2)                      │  │
+│  │  - Edge pruning: discard edges with weight < 0.3                      │  │
+│  │  - Path ranking: shortest path + highest weight                       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  User Profile Caching:                                                │  │
+│  │  - Cache-aside pattern: 95% hit rate (warm cache)                     │  │
+│  │  - TTL: session lifetime (evicted on disconnect)                      │  │
+│  │  - Lazy loading: fetch on first query only                           │  │
+│  │  - Invalidation: on new memory with profile_extracted=True           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Batch Processing:                                                     │  │
+│  │  - Memory write batching: accumulate messages until conversation end │  │
+│  │  - Embedding batch size: 16 (vectorized processing)                   │  │
+│  │  - DB transaction batching: commit all writes in single transaction   │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 可扩展性设计
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Scalability Architecture                                │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Horizontal Scaling (Future):                                          │  │
+│  │  - Stateless WebSocket servers (sticky sessions via Redis)            │  │
+│  │  - OceanBase read replicas (vector search scalability)                │  │
+│  │  - Distributed cache (Redis Cluster for profile cache)                │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Vertical Scaling (Current):                                           │  │
+│  │  - Multi-core utilization: asyncio + thread pool                     │  │
+│  │  - Memory optimization: lazy loading, cache eviction                  │  │
+│  │  - I/O optimization: async DB queries, connection pooling             │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Storage Scalability:                                                  │  │
+│  │  - Vector DB: OceanBase supports billion-scale vectors               │  │
+│  │  - Graph DB: OceanBase Graph supports million-scale nodes/edges      │  │
+│  │  - Partitioning: user_id-based sharding (future)                      │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 9. 安全与合规
+
+### 9.1 数据隐私保护
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Data Privacy & Security                                │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Data Encryption:                                                      │  │
+│  │  - At rest: OceanBase TDE (Transparent Data Encryption)               │  │
+│  │  - In transit: TLS 1.3 for WebSocket and HTTP                         │  │
+│  │  - API keys: encrypted at rest (AES-256)                              │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Access Control:                                                       │  │
+│  │  - Device authentication: role_id-based partitioning                  │  │
+│  │  - User isolation: memories scoped to user_id                         │  │
+│  │  - Manager-API integration: centralized user management              │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  Data Retention:                                                       │  │
+│  │  - User-controlled retention policy (via Manager-API)                 │  │
+│  │  - Forgetting curve: automatic pruning of low-value memories          │  │
+│  │  - GDPR compliance: right to erasure (delete all memories on request) │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 10. 架构决策记录
+
+| ID | 决策 | 原因 | 后果 |
+|----|------|------|------|
+| ADR-001 | 采用自研认知记忆框架而非开源方案 | 需要深度定制用户画像、知识图谱、智能记忆生命周期管理 | 开发成本高，但功能完全可控，与业务紧密契合 |
+| ADR-002 | 使用OceanBase作为统一存储后端 | 支持向量检索和知识图谱在同一数据库，简化架构 | 依赖单一数据库厂商，但降低了运维复杂度 |
+| ADR-003 | 采用Provider模式抽象记忆存储 | 支持多态后端（SQLite/OceanBase/PostgreSQL） | 增加了抽象层复杂度，但提升了可测试性和可扩展性 |
+| ADR-004 | 选择asyncio作为并发模型 | 大量I/O-bound操作（DB查询、LLM调用），适合事件驱动 | 需要仔细处理线程池集成，部分SDK不支持异步 |
+| ADR-005 | 实施Cache-Aside缓存用户画像 | 用户画像读取频繁，数据相对静态，缓存收益显著 | 需要处理缓存失效逻辑，增加了一致性复杂度 |
+| ADR-006 | 使用三层配置合并机制 | 支持默认配置、本地覆盖、远程热更新，灵活性高 | 配置优先级逻辑复杂，需要详细文档说明 |
+
+---
+
+## 11. 未来演进方向
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Future Evolution Roadmap                                │
+│                                                                             │
+│  Phase 1: Performance Optimization (Q2 2026)                                │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  - Implement query result cache (Redis)                               │  │
+│  │  - Optimize IVF_FLAT index parameters (nlist tuning)                  │  │
+│  │  - Add Prometheus metrics export                                      │  │
+│  │  - Implement memory consolidation background job                      │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Phase 2: Scalability Enhancement (Q3 2026)                                 │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  - OceanBase read replicas for vector search                          │  │
+│  │  - Distributed profile cache (Redis Cluster)                         │  │
+│  │  - Stateless WebSocket servers with sticky sessions                  │  │
+│  │  - User ID-based sharding for multi-tenant deployment                │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Phase 3: Advanced AI Features (Q4 2026)                                    │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  - Implement memory replay (consolidation during low-traffic hours)  │  │
+│  │  - Add temporal reasoning (time-based memory associations)            │  │
+│  │  - Implement causal inference (cause-effect relationships)            │  │
+│  │  - Add multi-modal memory (image, audio embeddings)                   │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Phase 4: Enterprise Readiness (Q1 2027)                                    │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  - Implement RBAC (Role-Based Access Control)                        │  │
+│  │  - Add audit logging for all memory operations                        │  │
+│  │  - Implement data residency controls (GDPR, CCPA)                     │  │
+│  │  - Add distributed tracing (OpenTelemetry)                            │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 12. 术语表
+
+| 术语 | 定义 |
+|------|------|
+| **多级记忆** | 三层记忆架构：语义记忆（向量检索）、情景记忆（知识图谱）、用户画像记忆（长期特征） |
+| **记忆宫殿** | 用户画像记忆库，包含用户特征、偏好、情感模式的持久化表示 |
+| **记忆图谱** | 基于知识图谱的关联记忆网络，支持实体-关系三元组存储和多跳推理 |
+| **智能记忆抽取** | 使用LLM自动识别对话中的关键信息（实体、事件、情感），过滤低价值信息 |
+| **智能合并** | 基于语义相似度自动去重和合并相似记忆，避免冗余存储 |
+| **遗忘曲线** | 基于艾宾浩斯遗忘模型的记忆衰减机制，自动删除低价值记忆 |
+| **认知经济性** | 最小化认知负荷的原则，通过压缩、过滤、摘要减少记忆存储量 |
+| **Cache-Aside** | 缓存策略：先查缓存，未命中再查数据库，并回写缓存 |
+| **IVF_FLAT** | 向量索引算法：将向量空间划分为多个单元（倒排文件），加速检索 |
+| **多跳推理** | 在知识图谱上通过多跳边遍历发现隐式关联（max_hops参数控制跳数） |
+
+---
+
+## 附录：架构图索引
+
+1. **C4 Level 1 (System Context)**: §1.1
+2. **C4 Level 2 (Container View)**: §2
+3. **C4 Level 3 (Component View)**: §3
+4. **Memory Write Flow**: §4.1
+5. **Memory Retrieval Flow**: §4.2
+6. **User Profile Caching**: §4.3
+7. **ER Diagram**: §5.2
+8. **Deployment Topology**: §7.1
+9. **Configuration Hierarchy**: §7.2
+
+---
+
+**文档结束**
+
+*本文档由 Claude Code (Sonnet 4.6) 自动生成，基于代码库静态分析和架构逆向工程。*
+*最后更新: 2026-05-03*

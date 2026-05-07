@@ -4,7 +4,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 .vscode
-.claude
+.claude/*
+!.claude/commands/
 AGENTS.md
 
 # C extensions
@@ -150,6 +151,12 @@ tmp
 .DS_Store
 main/xiaozhi-server/data
 
+# ⚠️ OceanBase 数据持久化目录（包含所有记忆数据、用户画像、知识图谱）
+# 删除此目录会导致所有数据库数据永久丢失！
+# 仅在首次部署时执行 ./oceanbase/init-powermem.sh
+# 后续重启使用 docker-compose restart，不要重新初始化
+main/xiaozhi-server/oceanbase/data/
+
 main/manager-web/node_modules
 .config.yaml
 .secrets.yaml
@@ -187,3 +194,14 @@ uploadfile
 !main/manager-mobile/**/.env*
 !main/manager-mobile/**/*.json
 !main/xiaozhi-server/**/*.json
+
+main/xiaozhi-server/.claude/
+main/xiaozhi-server/CLAUDE.md
+main/xiaozhi-server/docs/
+
+# 本地开发环境配置（包含敏感信息）
+main/manager-api/src/main/resources/application-dev.yml
+main/manager-mobile/env/.env.development
+
+# 测试页面（仅供本地开发使用）
+main/xiaozhi-server/test/

@@ -46,8 +46,14 @@ class MemoryProvider(MemoryProviderBase):
 
         try:
             # Check if user profile mode is enabled
-            self.enable_user_profile = config.get("enable_user_profile", False)
-            
+            # Handle both boolean and string representations (from JSON config)
+            enable_user_profile_config = config.get("enable_user_profile", False)
+            if isinstance(enable_user_profile_config, str):
+                # Convert string "false"/"true" to boolean
+                self.enable_user_profile = enable_user_profile_config.lower() in ("true", "1", "yes", "on")
+            else:
+                self.enable_user_profile = bool(enable_user_profile_config)
+
             # Get configuration parameters
             database_provider = config.get("database_provider", "sqlite")
             llm_provider = config.get("llm_provider", "qwen")
@@ -61,7 +67,11 @@ class MemoryProvider(MemoryProviderBase):
 
             # Configure vector store / database
             if "vector_store" in config:
-                powermem_config["vector_store"] = config["vector_store"]
+                vector_config = config["vector_store"]
+                # Keep the nested config format as-is (PowerMem SDK expects it)
+                # Manager-API format: {provider: "oceanbase", config: {host, port, ...}}
+                # PowerMem SDK expects: {provider: "oceanbase", config: {...}}
+                powermem_config["vector_store"] = vector_config
             elif "database" in config:
                 powermem_config["database"] = config["database"]
             else:
@@ -169,13 +179,20 @@ class MemoryProvider(MemoryProviderBase):
         Returns:
             Result from PowerMem API or None if failed
         """
+        import time
+        save_start_time = time.time()
+
+        logger.bind(tag=TAG).info(f"save_memory called, use_powermem={self.use_powermem}, client={self.memory_client is not None}, msgs_len={len(msgs)}")
         try:
             if self.use_powermem and self.memory_client is not None and len(msgs) >= 2:
                 # Format the content as a message list for PowerMem
+                format_start = time.time()
                 messages = []
                 for message in msgs:
                     if message.role == "system":
                         continue
+                    # if message.role == "assistant":
+                    #     continue  # 跳过助手消息，只存储用户对话
 
                     content = message.content
 
@@ -202,13 +219,23 @@ UserMemory Mode: {self.enable_user_profile}
 """)
 
                 # Add memory using PowerMem SDK
+                add_start = time.time()
+                logger.bind(tag=TAG).info(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages if messages else 'empty'}")
                 result = self.memory_client.add(
                     messages=messages,
-                    user_id=self.role_id
+                    user_id=self.role_id,
+                    native_language="zh",  # Force profile extraction in Chinese
+                    # profile_type="topics",  # Extract structured topics (JSON) instead of plain text content
+                    profile_type="content",
+                    include_roles=["user"],  # Only extract profile from user messages, not AI assistant responses
+                    infer=True
                 )
                 # Handle both sync and async returns
                 if asyncio.iscoroutine(result):
+                    await_start = time.time()
                     result = await result
+                    await_time = time.time() - await_start
+                    logger.bind(tag=TAG).debug(f"Async await took {await_time:.2f}s")
 
                 # 保存后日志 - 打印完整结果
                 logger.bind(tag=TAG).info(f"""
@@ -219,17 +246,30 @@ Result: {json.dumps(result, ensure_ascii=False, indent=2) if result else 'None'}
 
                 # Cache user profile if UserMemory mode and profile was extracted
                 if self.enable_user_profile and result:
+                    cache_start = time.time()
                     if result.get('profile_extracted'):
-                        self.last_profile_content = result.get('profile_content', '')
-                        logger.bind(tag=TAG).debug(f"User profile extracted: {self.last_profile_content}")
+                        # Store topics as JSON string for structured profile
+                        topics = result.get('topics')
+                        if topics:
+                            self.last_profile_content = json.dumps(topics, ensure_ascii=False, indent=2)
+                            logger.bind(tag=TAG).debug(f"User profile topics extracted: {self.last_profile_content}")
+                        else:
+                            # Fallback to profile_content if topics not available
+                            self.last_profile_content = result.get('profile_content', '')
+                            logger.bind(tag=TAG).debug(f"User profile content extracted: {self.last_profile_content}")
+                    cache_time = time.time() - cache_start
+                    logger.bind(tag=TAG).debug(f"Profile caching took {cache_time:.2f}s")
+
+                total_time = time.time() - save_start_time
+                logger.bind(tag=TAG).info(f"save_memory total time: {total_time:.2f}s")
             else:
                 if not self.use_powermem or self.memory_client is None:
                     logger.bind(tag=TAG).warning("PowerMem is not available, skipping save_memory")
                 elif len(msgs) < 2:
-                    logger.bind(tag=TAG).debug("Not enough messages to save (need at least 2)")
+                    logger.bind(tag=TAG).info("Not enough messages to save (need at least 2)")
         except Exception as e:
             logger.bind(tag=TAG).error(f"Error saving memory: {str(e)}")
-            logger.bind(tag=TAG).debug(f"Detailed error: {traceback.format_exc()}")
+            logger.bind(tag=TAG).info(f"Detailed error: {traceback.format_exc()}")
 
         return None
 
@@ -340,9 +380,12 @@ Result: {json.dumps(result, ensure_ascii=False, indent=2) if result else 'None'}
     async def get_user_profile(self) -> str:
         """
         Get user profile from PowerMem (only available in UserMemory mode).
-        
-        In PowerMem 0.3.0+, user profile is automatically extracted during add()
-        and cached in last_profile_content.
+
+        Uses a cache-first strategy:
+        1. Check if last_profile_content is already cached
+        2. If cached, return immediately (performance optimization)
+        3. If cache is empty, fetch from PowerMem SDK
+        4. Store fetched profile in cache for next query
 
         Returns:
             Formatted user profile string or empty string if not available
@@ -354,9 +397,48 @@ Result: {json.dumps(result, ensure_ascii=False, indent=2) if result else 'None'}
             logger.bind(tag=TAG).debug("User profile mode is not enabled")
             return ""
 
-        # Return cached profile content from last add() operation
+        # Return cached profile content if available (fast path)
         if self.last_profile_content:
+            logger.bind(tag=TAG).debug("Returning cached user profile")
             return self.last_profile_content
 
-        return ""
+        # Cache is empty, fetch from PowerMem SDK
+        logger.bind(tag=TAG).info("Cache miss, fetching user profile from PowerMem SDK")
+        try:
+            # Call UserMemory.profile() to get profile data
+            profile_data = await asyncio.to_thread(
+                self.memory_client.profile,
+                self.role_id
+            )
+
+            if not profile_data:
+                logger.bind(tag=TAG).warning("PowerMem SDK returned empty profile data")
+                return ""
+
+            # Try to use profile_content first
+            profile_content = profile_data.get("profile_content")
+            if profile_content:
+                # Update cache with fetched profile_content
+                self.last_profile_content = profile_content
+                logger.bind(tag=TAG).info(f"Successfully fetched and cached user profile from profile_content (length: {len(self.last_profile_content)})")
+                logger.bind(tag=TAG).debug(f"User profile content: {self.last_profile_content}")
+                return self.last_profile_content
+
+            # If profile_content is empty, fallback to topics
+            topics = profile_data.get("topics")
+            if topics:
+                # Serialize topics dict to JSON string for structured profile
+                self.last_profile_content = json.dumps(topics, ensure_ascii=False, indent=2)
+                logger.bind(tag=TAG).info(f"Successfully fetched and cached user profile from topics (length: {len(self.last_profile_content)})")
+                logger.bind(tag=TAG).debug(f"User profile topics: {self.last_profile_content}")
+                return self.last_profile_content
+
+            # Both profile_content and topics are empty
+            logger.bind(tag=TAG).warning("PowerMem SDK returned profile with empty profile_content and topics")
+            return ""
+
+        except Exception as e:
+            logger.bind(tag=TAG).error(f"Failed to fetch user profile from SDK: {str(e)}")
+            logger.bind(tag=TAG).debug(f"Detailed error: {traceback.format_exc()}")
+            return ""
 

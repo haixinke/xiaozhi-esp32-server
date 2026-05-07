@@ -3,7 +3,7 @@
     <div class="header-container">
       <!-- 左侧元素 -->
       <div class="header-left" @click="handleRouter('home')">
-        <img loading="lazy" alt="" src="@/assets/xiaozhi-logo.png" class="logo-img" />
+        <img loading="lazy" alt="" src="@/assets/eggbabe-logo.png" class="logo-img" />
         <img loading="lazy" alt="" :src="xiaozhiAiIcon" class="brand-img" />
       </div>
 
@@ -644,7 +644,7 @@ export default {
 }
 
 .logo-img {
-  width: 42px;
+  width: 88px;
   height: 42px;
 }
 

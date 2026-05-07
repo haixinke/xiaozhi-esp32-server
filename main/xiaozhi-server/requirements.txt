@@ -25,7 +25,7 @@ cozepy==0.20.0
 mem0ai==1.0.0
 # Note: v1.1.0+ requires Python >=3.11, this project uses Python 3.10
 # v1.0.2 is the last version supporting Python 3.10
-powermem==1.0.2
+powermem==1.1.0
 bs4==0.0.2
 modelscope==1.32.0
 sherpa_onnx==1.12.29

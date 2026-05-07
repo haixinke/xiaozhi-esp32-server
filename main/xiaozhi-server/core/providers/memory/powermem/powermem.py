@@ -20,119 +20,6 @@ from ..base import MemoryProviderBase, logger
 TAG = __name__
 
 
-def _register_oceanbase_dialect():
-    """
-    Register OceanBase dialect with SQLAlchemy.
-
-    This is required for pyobvector to work with OceanBase database.
-    Must be called before importing PowerMem SDK.
-    """
-    try:
-        from sqlalchemy.dialects import registry
-        # Register the OceanBase dialect for SQLAlchemy
-        # This allows connection strings like "mysql+oceanbase://..."
-        registry.register("mysql.oceanbase", "pyobvector.schema.dialect", "OceanBaseDialect")
-        logger.bind(tag=TAG).info("OceanBase dialect registered with SQLAlchemy")
-    except ImportError:
-        # If sqlalchemy is not available, log a warning but don't fail
-        logger.bind(tag=TAG).warning("SQLAlchemy not available, skipping OceanBase dialect registration")
-    except Exception as e:
-        # If registration fails, log but don't fail - PowerMem might handle this
-        logger.bind(tag=TAG).warning(f"Failed to register OceanBase dialect: {e}")
-
-
-def _fix_powermem_graph_store_bug():
-    """
-    Monkey-patch PowerMem SDK to fix graph_store initialization bug.
-
-    Bug: In PowerMem v1.0.2, AsyncMemory passes the entire MemoryConfig object
-    to GraphStoreFactory instead of just the graph_store dict.
-
-    This patches both AsyncMemory and Memory classes.
-    """
-    try:
-        from powermem.core.memory import Memory
-        from powermem.core.async_memory import AsyncMemory
-        import inspect
-
-        # Patch function to fix the graph_store initialization
-        def patch_asyncmemory_init(OriginalClass):
-            original_source = inspect.getsource(OriginalClass.__init__)
-
-            # Check if the bug exists
-            if "config_to_pass = self.memory_config if self.memory_config else self.config" in original_source:
-                original_init = OriginalClass.__init__
-
-                def patched_init(self, config=None, storage_type=None, llm_provider=None, embedding_provider=None, agent_id=None):
-                    # Extract graph_store config for later use
-                    graph_config = None
-                    should_enable_graph = False
-                    if isinstance(config, dict) and "graph_store" in config:
-                        graph_config = config["graph_store"]
-                        should_enable_graph = graph_config.get("enabled", False)
-
-                    # Completely remove graph_store from config to prevent original init from creating it
-                    config_without_graph = {k: v for k, v in (config.items() if isinstance(config, dict) else [])}
-                    config_without_graph.pop("graph_store", None)
-
-                    # Call original init without graph_store config
-                    original_init(self, config=config_without_graph, storage_type=storage_type,
-                                llm_provider=llm_provider, embedding_provider=embedding_provider, agent_id=agent_id)
-
-                    # Create graph_store correctly if it should be enabled
-                    if should_enable_graph:
-                        self.enable_graph = True
-                        from powermem.storage.oceanbase.oceanbase_graph import MemoryGraph
-
-                        # Create minimal MemoryConfig-like object for MemoryGraph
-                        class MinimalConfig:
-                            def __init__(self, gs_config, full_config):
-                                # Create graph_store attribute
-                                gs_inner_config = gs_config.get('config', gs_config)
-                                self.graph_store = type('obj', (object,), {
-                                    'config': gs_inner_config,
-                                    'llm': None,
-                                    'custom_prompt': None
-                                })()
-
-                                # Create llm attribute
-                                self.llm = type('obj', (object,), {
-                                    'provider': full_config.get('llm', {}).get('provider', 'qwen'),
-                                    'config': full_config.get('llm', {}).get('config', {})
-                                })()
-
-                                # Create embedder and vector_store attributes
-                                self.embedder = type('obj', (object,), {
-                                    'provider': full_config.get('embedder', {}).get('provider', 'openai'),
-                                    'config': full_config.get('embedder', {}).get('config', {})
-                                })()
-
-                                self.vector_store = type('obj', (object,), {
-                                    'provider': full_config.get('vector_store', {}).get('provider', 'oceanbase'),
-                                    'config': full_config.get('vector_store', {}).get('config', {})
-                                })()
-
-                        # Create the graph store directly
-                        minimal_config = MinimalConfig(graph_config, config)
-                        self.graph_store = MemoryGraph(minimal_config)
-
-                OriginalClass.__init__ = patched_init
-                return True
-            return False
-
-        # Patch both classes
-        patched_async = patch_asyncmemory_init(AsyncMemory)
-        patched_sync = patch_asyncmemory_init(Memory)
-
-        if patched_async or patched_sync:
-            logger.bind(tag=TAG).info("Applied PowerMem graph_store bug patch")
-        else:
-            logger.bind(tag=TAG).debug("PowerMem graph_store bug not detected, no patch needed")
-
-    except Exception as e:
-        logger.bind(tag=TAG).warning(f"Failed to patch PowerMem graph_store bug: {e}")
-
-
 class MemoryProvider(MemoryProviderBase):
     """
     PowerMem memory provider implementation.
@@ -263,13 +150,6 @@ class MemoryProvider(MemoryProviderBase):
             # Log the final configuration for debugging
             logger.bind(tag=TAG).info(f"PowerMem config: {json.dumps(powermem_config, default=str, indent=2)}")
 
-            # Register OceanBase dialect with SQLAlchemy before importing PowerMem
-            # This is required for pyobvector to work correctly
-            _register_oceanbase_dialect()
-
-            # Apply PowerMem SDK bug fixes
-            _fix_powermem_graph_store_bug()
-
             # Initialize memory client based on mode
             if self.enable_user_profile:
                 from powermem import UserMemory
@@ -342,32 +222,6 @@ class MemoryProvider(MemoryProviderBase):
                 format_time = time.time() - format_start
                 logger.bind(tag=TAG).debug(f"Message formatting took {format_time:.2f}s")
 
-                # ====== 调试代码开始：诊断记忆消失问题 ======
-                # 调试目的：记录保存记忆前的记忆数量，检查是否有意外删除
-                # TODO: 调试结束后删除此代码块
-                try:
-                    logger.bind(tag=TAG).info(f"[DEBUG] Before save_memory: querying existing memory count for user_id={self.role_id}")
-                    existing_before = await asyncio.to_thread(
-                        self.memory_client.search,
-                        query="对话",
-                        user_id=self.role_id,
-                        limit=10000  # 设置大限制以获取所有记忆
-                    )
-                    count_before = len(existing_before.get('results', [])) if existing_before else 0
-                    logger.bind(tag=TAG).info(f"[DEBUG] Before save_memory: found {count_before} existing memories")
-
-                    # 记录前10条记忆的ID和时间，用于追踪
-                    if existing_before and existing_before.get('results'):
-                        sample_memories = existing_before['results'][:10]
-                        for i, mem in enumerate(sample_memories):
-                            mem_id = mem.get('id', 'N/A')
-                            created_at = mem.get('created_at', 'N/A')
-                            content_preview = mem.get('memory', mem.get('document', ''))[:50]
-                            logger.bind(tag=TAG).info(f"[DEBUG] Memory #{i+1}: id={mem_id}, created_at={created_at}, content={content_preview}...")
-                except Exception as debug_error:
-                    logger.bind(tag=TAG).error(f"[DEBUG] Failed to query memories before save: {debug_error}")
-                # ====== 调试代码结束 ======
-
                 # Add memory using PowerMem SDK
                 add_start = time.time()
                 logger.bind(tag=TAG).info(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages if messages else 'empty'}")
@@ -378,7 +232,7 @@ class MemoryProvider(MemoryProviderBase):
                     # profile_type="topics",  # Extract structured topics (JSON) instead of plain text content
                     profile_type="content",
                     include_roles=["user"],  # Only extract profile from user messages, not AI assistant responses
-                    infer=True  # ====== 调试修改：禁用智能模式，防止LLM意外删除记忆 ======  # TODO: 调试结束后恢复为 True（启用智能模式）
+                    infer=True
                 )
                 # Handle both sync and async returns
                 if asyncio.iscoroutine(result):
@@ -390,40 +244,6 @@ class MemoryProvider(MemoryProviderBase):
                 add_time = time.time() - add_start
                 logger.bind(tag=TAG).info(f"PowerMem add() took {add_time:.2f}s (total)")
                 logger.bind(tag=TAG).info(f"Save memory result: {result}, type={type(result)}")
-
-                # ====== 调试代码开始：诊断记忆消失问题 ======
-                # 调试目的：记录保存记忆后的记忆数量，检查是否有记忆被意外删除
-                # TODO: 调试结束后删除此代码块
-                try:
-                    logger.bind(tag=TAG).info(f"[DEBUG] After save_memory: querying new memory count for user_id={self.role_id}")
-                    existing_after = await asyncio.to_thread(
-                        self.memory_client.search,
-                        query="对话",
-                        user_id=self.role_id,
-                        limit=10000  # 设置大限制以获取所有记忆
-                    )
-                    count_after = len(existing_after.get('results', [])) if existing_after else 0
-                    logger.bind(tag=TAG).info(f"[DEBUG] After save_memory: found {count_after} existing memories")
-
-                    # 记录前10条记忆的ID和时间，用于追踪
-                    if existing_after and existing_after.get('results'):
-                        sample_memories = existing_after['results'][:10]
-                        for i, mem in enumerate(sample_memories):
-                            mem_id = mem.get('id', 'N/A')
-                            created_at = mem.get('created_at', 'N/A')
-                            content_preview = mem.get('memory', mem.get('document', ''))[:50]
-                            logger.bind(tag=TAG).info(f"[DEBUG] Memory #{i+1}: id={mem_id}, created_at={created_at}, content={content_preview}...")
-
-                    # 对比前后数量，检查是否有记忆被删除
-                    if count_before > count_after:
-                        logger.bind(tag=TAG).error(f"[DEBUG] MEMORY LOSS DETECTED! Before: {count_before}, After: {count_after}, Lost: {count_before - count_after}")
-                    elif count_after > count_before:
-                        logger.bind(tag=TAG).info(f"[DEBUG] New memories added: {count_after - count_before}")
-                    else:
-                        logger.bind(tag=TAG).info(f"[DEBUG] Memory count unchanged: {count_before}")
-                except Exception as debug_error:
-                    logger.bind(tag=TAG).error(f"[DEBUG] Failed to query memories after save: {debug_error}")
-                # ====== 调试代码结束 ======
 
                 # Cache user profile if UserMemory mode and profile was extracted
                 if self.enable_user_profile and result:

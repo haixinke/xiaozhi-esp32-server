@@ -29,6 +29,7 @@
         <shiro.version>2.0.2</shiro.version>
         <captcha.version>1.6.2</captcha.version>
         <guava.version>33.0.0-jre</guava.version>
+        <skipTests>true</skipTests>
         <liquibase-core.version>4.20.0</liquibase-core.version>
         <aliyun-sms-version>4.1.0</aliyun-sms-version>
         <okio-version>3.4.0</okio-version>
@@ -281,7 +282,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <skipTests>true</skipTests>
+                    <skipTests>${skipTests}</skipTests>
                 </configuration>
             </plugin>
         </plugins>

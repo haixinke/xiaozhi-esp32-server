@@ -260,4 +260,10 @@ public interface ErrorCode {
     // 替换词相关错误码
     int CORRECT_WORD_FILE_NAME_EXISTS = 10203; // 文件名已存在
     int FILE_SIZE_OVER_LIMIT = 10204; // 文件大小超过限制
+
+    // AI宠物相关错误码
+    int PET_DEVICE_NOT_FOUND = 10205; // 宠物关联的设备不存在
+    int PET_ALREADY_EXISTS = 10206; // 该设备已创建过宠物
+    int PET_NOT_FOUND = 10207; // 宠物不存在
+    int PET_NO_PERMISSION = 10208; // 没有权限操作该宠物
 }

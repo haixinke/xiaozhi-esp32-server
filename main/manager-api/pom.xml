@@ -238,6 +238,12 @@
             <artifactId>okio</artifactId>
             <version>${okio-version}</version>
         </dependency>
+        <!-- 农历/八字/五行计算 -->
+        <dependency>
+            <groupId>cn.6tail</groupId>
+            <artifactId>lunar</artifactId>
+            <version>1.3.9</version>
+        </dependency>
     </dependencies>
 
     <!-- 阿里云maven仓库 -->

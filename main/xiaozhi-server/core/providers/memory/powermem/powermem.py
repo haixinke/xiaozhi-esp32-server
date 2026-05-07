@@ -426,7 +426,6 @@ Result: {json.dumps(result, ensure_ascii=False, indent=2) if result else 'None'}
                 # Update cache with fetched profile_content
                 self.last_profile_content = profile_content
                 logger.bind(tag=TAG).info(f"Successfully fetched and cached user profile from profile_content (length: {len(self.last_profile_content)})")
-                logger.bind(tag=TAG).debug(f"User profile content: {self.last_profile_content}")
                 return self.last_profile_content
 
             # If profile_content is empty, fallback to topics
@@ -435,7 +434,6 @@ Result: {json.dumps(result, ensure_ascii=False, indent=2) if result else 'None'}
                 # Serialize topics dict to JSON string for structured profile
                 self.last_profile_content = json.dumps(topics, ensure_ascii=False, indent=2)
                 logger.bind(tag=TAG).info(f"Successfully fetched and cached user profile from topics (length: {len(self.last_profile_content)})")
-                logger.bind(tag=TAG).debug(f"User profile topics: {self.last_profile_content}")
                 return self.last_profile_content
 
             # Both profile_content and topics are empty

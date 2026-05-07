@@ -22,7 +22,7 @@ play_music_function_desc = {
     "type": "function",
     "function": {
         "name": "play_music",
-        "description": "唱歌、听歌、播放音乐的方法。",
+        "description": "当用户要求播放音乐、歌曲时调用。",
         "parameters": {
             "type": "object",
             "properties": {

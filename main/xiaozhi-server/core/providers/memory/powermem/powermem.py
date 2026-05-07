@@ -134,10 +134,15 @@ class MemoryProvider(MemoryProviderBase):
                 }
 
             # Configure intelligent memory (Ebbinghaus forgetting curve)
+            # SDK expects "enabled" at top level of intelligent_memory dict,
+            # but user config may nest it under "plugin.enabled"
             if "intelligent_memory" in config:
-                powermem_config["intelligent_memory"] = config["intelligent_memory"]
+                im_config = dict(config["intelligent_memory"])
+                if "plugin" in im_config and isinstance(im_config["plugin"], dict) and "enabled" in im_config["plugin"]:
+                    im_config["enabled"] = im_config["plugin"]["enabled"]
+                powermem_config["intelligent_memory"] = im_config
                 logger.bind(tag=TAG).info(
-                    f"PowerMem intelligent_memory config: {config['intelligent_memory']}"
+                    f"PowerMem intelligent_memory config: {im_config}"
                 )
 
             # Initialize memory client based on mode

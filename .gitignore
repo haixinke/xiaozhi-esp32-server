@@ -196,8 +196,6 @@ uploadfile
 !main/xiaozhi-server/**/*.json
 
 main/xiaozhi-server/.claude/
-main/xiaozhi-server/CLAUDE.md
-main/xiaozhi-server/docs/
 
 # 本地开发环境配置（包含敏感信息）
 main/manager-api/src/main/resources/application-dev.yml

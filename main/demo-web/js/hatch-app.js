@@ -134,6 +134,7 @@ class HatchApp {
         });
 
         // 阶段3: 破壳
+        let crackingApiTimer = null;
         hatchManager.registerStage('cracking', {
             enter: async () => {
                 if (els.hatchHint) els.hatchHint.textContent = '即将破壳...';
@@ -145,7 +146,8 @@ class HatchApp {
                 }, 2000);
 
                 // 动画播放到一半时发起API请求
-                setTimeout(async () => {
+                crackingApiTimer = setTimeout(async () => {
+                    crackingApiTimer = null;
                     try {
                         const config = getConfig();
                         const otaUrl = document.getElementById('otaUrl')?.value?.trim() || '';
@@ -164,22 +166,44 @@ class HatchApp {
                 }, 1000);
 
                 await crackingPromise;
-                // 破壳动画完成后等待一下再切换
+                // 破壳动画完成后等待API结果（最多再等3秒）
+                const waitStart = Date.now();
+                while (!this.birthResult && crackingApiTimer !== null && Date.now() - waitStart < 3000) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                // 清除未执行的API定时器
+                if (crackingApiTimer !== null) {
+                    clearTimeout(crackingApiTimer);
+                    crackingApiTimer = null;
+                }
+                // 如果API还没返回，等待一下再切换
                 await new Promise(r => setTimeout(r, 1500));
                 await hatchManager.goTo('birth');
+            },
+            exit: () => {
+                if (crackingApiTimer !== null) {
+                    clearTimeout(crackingApiTimer);
+                    crackingApiTimer = null;
+                }
             }
         });
 
         // 阶段4: 出生展示
+        let birthTransitionTimer = null;
         hatchManager.registerStage('birth', {
             enter: () => {
                 // 出生场景已在 cracking 阶段显示
                 // 展示3.5秒后过渡到聊天
-                setTimeout(async () => {
+                birthTransitionTimer = setTimeout(async () => {
+                    birthTransitionTimer = null;
                     await hatchManager.goTo('chat');
                 }, 3500);
             },
             exit: () => {
+                if (birthTransitionTimer !== null) {
+                    clearTimeout(birthTransitionTimer);
+                    birthTransitionTimer = null;
+                }
                 els.birthScene.classList.remove('active');
             }
         });

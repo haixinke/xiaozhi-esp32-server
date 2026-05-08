@@ -56,6 +56,11 @@ export function createHatchingController(deps) {
         spawnFloatText(particleContainer, `+${Math.round(amount)}%`);
     }
 
+    function onEggTouchEnd(e) {
+        e.preventDefault();
+        onEggClick({ clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY });
+    }
+
     function spawnHeartParticle(container, e) {
         const rect = container.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -98,10 +103,7 @@ export function createHatchingController(deps) {
 
         // 绑定点击事件
         eggSvg.closest('.egg-wrapper').addEventListener('click', onEggClick);
-        eggSvg.closest('.egg-wrapper').addEventListener('touchend', (e) => {
-            e.preventDefault();
-            onEggClick({ clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY });
-        });
+        eggSvg.closest('.egg-wrapper').addEventListener('touchend', onEggTouchEnd);
 
         updateUI();
     }
@@ -115,6 +117,7 @@ export function createHatchingController(deps) {
         const wrapper = eggSvg.closest('.egg-wrapper');
         if (wrapper) {
             wrapper.removeEventListener('click', onEggClick);
+            wrapper.removeEventListener('touchend', onEggTouchEnd);
         }
     }
 

@@ -307,6 +307,12 @@ class UIController {
                 }
             }
         }
+
+        // 同步更新第二个连接状态元素（孵化页面）
+        const connectionStatus2 = document.getElementById('connectionStatus2');
+        if (connectionStatus2) {
+            connectionStatus2.textContent = isConnected ? '已连接' : '离线';
+        }
     }
 
     // Update dial button state

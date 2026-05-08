@@ -4,16 +4,17 @@
 services:
   oceanbase:
     image: oceanbase/oceanbase-ce:latest
-    container_name: xiaozhi-oceanbase
+    container_name: egg-oceanbase
     restart: always
     ports:
       - "2881:2881"  # SQL port
       - "2882:2882"  # RPC port
     environment:
       - MODE=normal
-      - OB_MEMORY_LIMIT=6G
-      - OB_DATAFILE_SIZE=20G
-      - OB_LOG_DISK_SIZE=10G
+      - OB_MEMORY_LIMIT=4G
+      - OB_DATAFILE_SIZE=5G
+      - OB_LOG_DISK_SIZE=3G
+      - OB_MIN_FULL_RESOURCE_POOL_MEMORY=1G
       - OB_ROOT_PASSWORD=123456
       - OB_TENANT=mysql
       - TZ=Asia/Shanghai

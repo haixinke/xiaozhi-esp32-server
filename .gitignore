@@ -198,7 +198,7 @@ uploadfile
 main/xiaozhi-server/.claude/
 
 # 本地开发环境配置（包含敏感信息）
-main/manager-api/src/main/resources/application-dev.yml
+# main/manager-api/src/main/resources/application-dev.yml
 main/manager-mobile/env/.env.development
 
 # 测试页面（仅供本地开发使用）

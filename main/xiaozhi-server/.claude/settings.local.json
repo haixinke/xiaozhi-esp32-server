@@ -172,7 +172,8 @@
       "Bash(.venv/bin/pip list:*)",
       "Bash(.venv/bin/pip show:*)",
       "Bash(docker-compose:*)",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''sandbox'''',{}\\), indent=2\\)\\); print\\(''''---permissions.defaultMode:'''', d.get\\(''''permissions'''',{}\\).get\\(''''defaultMode'''',''''\\(not set\\)''''\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''sandbox'''',{}\\), indent=2\\)\\); print\\(''''---permissions.defaultMode:'''', d.get\\(''''permissions'''',{}\\).get\\(''''defaultMode'''',''''\\(not set\\)''''\\)\\)\")",
+      "Bash(redis-cli:*)"
     ],
     "deny": [
       "Bash(sudo:*)",

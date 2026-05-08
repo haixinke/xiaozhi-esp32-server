@@ -16,6 +16,8 @@ import { playCrackingAnimation } from './hatch/cracking.js?v=0508';
 import { showBirthScene } from './hatch/birth.js?v=0508';
 import { createRabbit } from './rabbit/rabbit.js?v=0508';
 import { uiController } from './ui/controller.js?v=0205';
+import { getWebSocketHandler } from './core/network/websocket.js?v=0205';
+import { getAudioRecorder } from './core/audio/recorder.js?v=0205';
 
 class HatchApp {
     constructor() {
@@ -212,7 +214,6 @@ class HatchApp {
                 dialBtn.disabled = true;
                 setTimeout(() => { dialBtn.disabled = false; }, 3000);
 
-                const { getWebSocketHandler } = require('./core/network/websocket.js?v=0205');
                 const wsHandler = getWebSocketHandler();
                 if (wsHandler.isConnected()) {
                     wsHandler.disconnect();
@@ -229,7 +230,6 @@ class HatchApp {
         if (recordBtn && !recordBtn._hatchBound) {
             recordBtn._hatchBound = true;
             recordBtn.addEventListener('click', () => {
-                const { getAudioRecorder } = require('./core/audio/recorder.js?v=0205');
                 const audioRecorder = getAudioRecorder();
                 if (audioRecorder.isRecording) {
                     audioRecorder.stop();
@@ -249,7 +249,6 @@ class HatchApp {
             chatIpt._hatchBound = true;
             chatIpt.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.target.value) {
-                    const { getWebSocketHandler } = require('./core/network/websocket.js?v=0205');
                     getWebSocketHandler().sendTextMessage(e.target.value);
                     e.target.value = '';
                 }
@@ -262,7 +261,6 @@ class HatchApp {
         if (els.rehatchBtn) {
             els.rehatchBtn.addEventListener('click', () => {
                 // 断开 WebSocket
-                const { getWebSocketHandler } = require('./core/network/websocket.js?v=0205');
                 const wsHandler = getWebSocketHandler();
                 if (wsHandler.isConnected()) {
                     wsHandler.disconnect();

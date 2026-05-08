@@ -1,0 +1,304 @@
+/**
+ * 孵化演示页面入口
+ * 整合状态机、蛋动画、孵化互动、破壳、出生展示、聊天
+ */
+
+import { checkOpusLoaded, initOpusEncoder } from './core/audio/opus-codec.js?v=0205';
+import { getAudioPlayer } from './core/audio/player.js?v=0205';
+import { checkMicrophoneAvailability, isHttpNonLocalhost } from './core/audio/recorder.js?v=0205';
+import { initMcpTools } from './core/mcp/tools.js?v=0205';
+import { loadConfig, saveConfig, getConfig } from './config/manager.js?v=0205';
+import { log } from './utils/logger.js?v=0205';
+import { HatchManager } from './hatch/hatch-manager.js?v=0508';
+import { startBreathing, stopBreathing, resetEgg, clearCracks } from './hatch/egg.js?v=0508';
+import { createHatchingController } from './hatch/hatching.js?v=0508';
+import { playCrackingAnimation } from './hatch/cracking.js?v=0508';
+import { showBirthScene } from './hatch/birth.js?v=0508';
+import { createRabbit } from './rabbit/rabbit.js?v=0508';
+import { uiController } from './ui/controller.js?v=0205';
+
+class HatchApp {
+    constructor() {
+        this.hatchManager = new HatchManager();
+        this.hatchingController = null;
+        this.rabbitCompanion = null;
+    }
+
+    async init() {
+        log('正在初始化孵化演示...', 'info');
+
+        // 缓存 DOM 元素
+        this.els = {
+            hatchScene: document.getElementById('hatchScene'),
+            birthScene: document.getElementById('birthScene'),
+            chatScene: document.getElementById('chatScene'),
+            eggSvg: document.getElementById('eggSvg'),
+            crackGroup: document.getElementById('crackGroup'),
+            eggWrapper: document.getElementById('eggWrapper'),
+            hatchStartBtn: document.getElementById('hatchStartBtn'),
+            hatchProgress: document.getElementById('hatchProgress'),
+            progressFill: document.getElementById('progressFill'),
+            progressText: document.getElementById('progressText'),
+            particleContainer: document.getElementById('particleContainer'),
+            hatchHint: document.getElementById('hatchHint'),
+            birthRabbitContainer: document.getElementById('birthRabbit'),
+            petName: document.getElementById('petName'),
+            petMbti: document.getElementById('petMbti'),
+            petZodiac: document.getElementById('petZodiac'),
+            petBirthDate: document.getElementById('petBirthDate'),
+            rabbitCompanionEl: document.getElementById('rabbitCompanion'),
+            rehatchBtn: document.getElementById('rehatchBtn'),
+            toastContainer: document.getElementById('toastContainer'),
+            connectionStatus: document.getElementById('connectionStatus'),
+            connectionStatus2: document.getElementById('connectionStatus2'),
+        };
+
+        // 初始化核心模块
+        checkOpusLoaded();
+        initOpusEncoder();
+        const audioPlayer = getAudioPlayer();
+        await audioPlayer.start();
+        initMcpTools();
+
+        // 检查麦克风
+        await this.checkMicrophone();
+
+        // 初始化 UI 控制器
+        uiController.init();
+        this.initRehatchButton();
+
+        // 注册状态机阶段
+        this.registerStages();
+
+        // 进入蛋阶段
+        await this.hatchManager.goTo('egg');
+
+        log('孵化演示初始化完成', 'success');
+    }
+
+    async checkMicrophone() {
+        try {
+            const available = await checkMicrophoneAvailability();
+            const isHttp = isHttpNonLocalhost();
+            window.microphoneAvailable = available;
+            window.isHttpNonLocalhost = isHttp;
+        } catch {
+            window.microphoneAvailable = false;
+            window.isHttpNonLocalhost = isHttpNonLocalhost();
+        }
+    }
+
+    registerStages() {
+        const { hatchManager, els } = this;
+
+        // 阶段1: 蛋（静态展示）
+        hatchManager.registerStage('egg', {
+            enter: () => {
+                this.switchScene('hatchScene');
+                resetEgg(els.eggSvg);
+                clearCracks(els.crackGroup);
+                startBreathing(els.eggSvg);
+                els.hatchStartBtn.classList.remove('hidden');
+                els.hatchProgress.style.display = 'none';
+                if (els.hatchHint) els.hatchHint.textContent = '';
+            },
+            exit: () => {
+                stopBreathing(els.eggSvg);
+                els.hatchStartBtn.classList.add('hidden');
+            }
+        });
+
+        // 阶段2: 孵化（用户互动）
+        hatchManager.registerStage('hatching', {
+            enter: () => {
+                this.hatchingController = createHatchingController({
+                    eggSvg: els.eggSvg,
+                    crackGroup: els.crackGroup,
+                    progressContainer: els.hatchProgress,
+                    progressFill: els.progressFill,
+                    progressText: els.progressText,
+                    particleContainer: els.particleContainer,
+                    hintEl: els.hatchHint,
+                    onComplete: () => hatchManager.goTo('cracking'),
+                });
+                this.hatchingController.start();
+            },
+            exit: () => {
+                if (this.hatchingController) {
+                    this.hatchingController.stop();
+                    this.hatchingController = null;
+                }
+            }
+        });
+
+        // 阶段3: 破壳
+        hatchManager.registerStage('cracking', {
+            enter: async () => {
+                if (els.hatchHint) els.hatchHint.textContent = '即将破壳...';
+
+                // 播放破壳动画，在50%时调用API
+                const crackingPromise = playCrackingAnimation({
+                    eggSvg: els.eggSvg,
+                    particleContainer: els.particleContainer,
+                }, 2000);
+
+                // 动画播放到一半时发起API请求
+                setTimeout(async () => {
+                    try {
+                        const config = getConfig();
+                        const otaUrl = document.getElementById('otaUrl')?.value?.trim() || '';
+                        this.birthResult = await showBirthScene({
+                            birthScene: els.birthScene,
+                            birthRabbitContainer: els.birthRabbitContainer,
+                            petNameEl: els.petName,
+                            petMbtiEl: els.petMbti,
+                            petZodiacEl: els.petZodiac,
+                            petBirthDateEl: els.petBirthDate,
+                            showToast: (msg) => this.showToast(msg),
+                        }, otaUrl, config.deviceId);
+                    } catch (err) {
+                        this.showToast(err.message);
+                    }
+                }, 1000);
+
+                await crackingPromise;
+                // 破壳动画完成后等待一下再切换
+                await new Promise(r => setTimeout(r, 1500));
+                await hatchManager.goTo('birth');
+            }
+        });
+
+        // 阶段4: 出生展示
+        hatchManager.registerStage('birth', {
+            enter: () => {
+                // 出生场景已在 cracking 阶段显示
+                // 展示3.5秒后过渡到聊天
+                setTimeout(async () => {
+                    await hatchManager.goTo('chat');
+                }, 3500);
+            },
+            exit: () => {
+                els.birthScene.classList.remove('active');
+            }
+        });
+
+        // 阶段5: 聊天
+        hatchManager.registerStage('chat', {
+            enter: () => {
+                this.switchScene('chatScene');
+
+                // 创建兔子伴侣
+                if (els.rabbitCompanionEl && !this.rabbitCompanion) {
+                    this.rabbitCompanion = createRabbit(els.rabbitCompanionEl);
+                }
+
+                // 初始化 UI 控制器的事件（拨号、录音等）
+                this.initChatControls();
+            }
+        });
+
+        // 绑定开始按钮
+        els.hatchStartBtn.addEventListener('click', () => {
+            hatchManager.goTo('hatching');
+        });
+    }
+
+    initChatControls() {
+        // 拨号按钮
+        const dialBtn = document.getElementById('dialBtn');
+        if (dialBtn && !dialBtn._hatchBound) {
+            dialBtn._hatchBound = true;
+            dialBtn.addEventListener('click', () => {
+                dialBtn.disabled = true;
+                setTimeout(() => { dialBtn.disabled = false; }, 3000);
+
+                const { getWebSocketHandler } = require('./core/network/websocket.js?v=0205');
+                const wsHandler = getWebSocketHandler();
+                if (wsHandler.isConnected()) {
+                    wsHandler.disconnect();
+                    uiController.updateDialButton(false);
+                    uiController.addChatMessage('已断开连接~', false);
+                } else {
+                    uiController.handleConnect();
+                }
+            });
+        }
+
+        // 录音按钮
+        const recordBtn = document.getElementById('recordBtn');
+        if (recordBtn && !recordBtn._hatchBound) {
+            recordBtn._hatchBound = true;
+            recordBtn.addEventListener('click', () => {
+                const { getAudioRecorder } = require('./core/audio/recorder.js?v=0205');
+                const audioRecorder = getAudioRecorder();
+                if (audioRecorder.isRecording) {
+                    audioRecorder.stop();
+                    recordBtn.classList.remove('recording');
+                    recordBtn.querySelector('.btn-text').textContent = '录音';
+                } else {
+                    recordBtn.classList.add('recording');
+                    recordBtn.querySelector('.btn-text').textContent = '录音中';
+                    setTimeout(() => audioRecorder.start(), 100);
+                }
+            });
+        }
+
+        // 聊天输入
+        const chatIpt = document.getElementById('chatIpt');
+        if (chatIpt && !chatIpt._hatchBound) {
+            chatIpt._hatchBound = true;
+            chatIpt.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.value) {
+                    const { getWebSocketHandler } = require('./core/network/websocket.js?v=0205');
+                    getWebSocketHandler().sendTextMessage(e.target.value);
+                    e.target.value = '';
+                }
+            });
+        }
+    }
+
+    initRehatchButton() {
+        const { els, hatchManager } = this;
+        if (els.rehatchBtn) {
+            els.rehatchBtn.addEventListener('click', () => {
+                // 断开 WebSocket
+                const { getWebSocketHandler } = require('./core/network/websocket.js?v=0205');
+                const wsHandler = getWebSocketHandler();
+                if (wsHandler.isConnected()) {
+                    wsHandler.disconnect();
+                }
+
+                // 清理兔子伴侣
+                this.rabbitCompanion = null;
+                if (els.rabbitCompanionEl) els.rabbitCompanionEl.innerHTML = '';
+
+                // 重置聊天流
+                const chatStream = document.getElementById('chatStream');
+                if (chatStream) chatStream.innerHTML = '';
+
+                // 重置到蛋阶段
+                hatchManager.reset();
+            });
+        }
+    }
+
+    switchScene(sceneId) {
+        document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+        const scene = document.getElementById(sceneId);
+        if (scene) scene.classList.add('active');
+    }
+
+    showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        this.els.toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+}
+
+// 启动
+const hatchApp = new HatchApp();
+window.chatApp = hatchApp;
+window.hatchApp = hatchApp;
+document.addEventListener('DOMContentLoaded', () => hatchApp.init());

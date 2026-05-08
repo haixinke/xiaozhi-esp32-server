@@ -1,0 +1,75 @@
+/* ===== 兔子 SVG ===== */
+.rabbit-svg {
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+/* 呼吸动画 */
+.rabbit-svg.idle {
+    animation: rabbitBreathe 3s ease-in-out infinite;
+}
+
+@keyframes rabbitBreathe {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+/* 眨眼 */
+.rabbit-eye-lid {
+    animation: blink 4s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 45%, 55%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.1); }
+}
+
+/* 说话 - 嘴巴张合 */
+.rabbit-svg.speaking .rabbit-mouth {
+    animation: mouthMove 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes mouthMove {
+    0% { transform: scaleY(1); }
+    100% { transform: scaleY(1.5); }
+}
+
+/* 倾听 - 耳朵竖起 */
+.rabbit-svg.listening .rabbit-ear-left {
+    animation: earPerkLeft 0.4s ease forwards;
+}
+.rabbit-svg.listening .rabbit-ear-right {
+    animation: earPerkRight 0.4s ease forwards;
+}
+
+@keyframes earPerkLeft {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-8deg); }
+}
+
+@keyframes earPerkRight {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(8deg); }
+}
+
+/* 收到消息 - 开心跳动 */
+.rabbit-svg.happy {
+    animation: rabbitJump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes rabbitJump {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-15px) scale(1.05); }
+    60% { transform: translateY(-10px); }
+}
+
+/* 出生场景大兔子 */
+.birth-rabbit .rabbit-svg {
+    width: 160px;
+    height: 200px;
+}
+
+/* 伴侣小兔子 */
+.rabbit-companion .rabbit-svg {
+    width: 80px;
+    height: 100px;
+}

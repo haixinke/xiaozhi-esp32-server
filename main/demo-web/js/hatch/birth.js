@@ -65,7 +65,7 @@ export async function showBirthScene(deps, otaUrl, deviceId) {
 
 /**
  * 调用出生 API
- * @param {string} otaUrl - 如 "http://127.0.0.1:8002/xiaozhi/ota/"
+ * @param {string} otaUrl - 未使用，保留参数兼容性
  * @param {string} deviceId
  * @returns {Promise<object>}
  */
@@ -74,9 +74,7 @@ async function callBirthApi(otaUrl, deviceId) {
         throw new Error('设备ID为空，请先在设置中配置设备MAC');
     }
 
-    // 从 OTA URL 推导 API 地址
-    const apiBase = otaUrl.replace(/\/xiaozhi\/ota\/?$/, '');
-    const url = `${apiBase}/xiaozhi/pet/birth`;
+    const url = 'http://localhost:8002/xiaozhi/pet/birth';
 
     const response = await fetch(url, {
         method: 'POST',

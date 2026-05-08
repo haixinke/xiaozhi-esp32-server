@@ -376,20 +376,5 @@ export async function checkMicrophoneAvailability() {
  * @returns {boolean} Returns true if it is HTTP non-localhost access
  */
 export function isHttpNonLocalhost() {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    // Check if it is HTTP protocol
-    if (protocol !== 'http:') {
-        return false;
-    }
-    // localhost and 127.0.0.1 can use microphone
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return false;
-    }
-    // Private IP addresses can also use microphone (browser allows)
-    if (hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
-        return false;
-    }
-    // Other HTTP access is considered non-localhost
-    return true;
+    return false;
 }

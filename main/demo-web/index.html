@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AI 宠物孵化</title>
+    <link rel="stylesheet" href="css/test_page.css?v=0205">
+    <link rel="stylesheet" href="css/hatch.css">
+    <link rel="stylesheet" href="css/rabbit.css">
+    <style>
+        .scene { display: none; }
+        .scene.active { display: flex; }
+    </style>
+</head>
+<body>
+    <!-- 背景容器 -->
+    <div class="background-container" id="backgroundContainer">
+        <div class="background-overlay"></div>
+    </div>
+
+    <!-- 场景1：孵化 -->
+    <div class="scene active" id="hatchScene">
+        <div class="hatch-container">
+            <!-- 连接状态 -->
+            <div class="connection-status-top">
+                <div class="status-indicator">
+                    <span class="status-dot status-disconnected"></span>
+                    <span id="connectionStatus">离线</span>
+                </div>
+            </div>
+
+            <!-- 蛋容器 -->
+            <div class="egg-wrapper" id="eggWrapper">
+                <svg id="eggSvg" class="egg-svg" viewBox="0 0 140 180" width="140" height="180">
+                    <!-- 蛋身 -->
+                    <ellipse cx="70" cy="100" rx="55" ry="70" fill="#FFF5E6" stroke="#F0D9B5" stroke-width="2"/>
+                    <!-- 高光 -->
+                    <ellipse cx="50" cy="75" rx="15" ry="25" fill="rgba(255,255,255,0.6)" transform="rotate(-15 50 75)"/>
+                    <circle cx="45" cy="60" r="5" fill="rgba(255,255,255,0.8)"/>
+                    <!-- 腮红 -->
+                    <ellipse cx="35" cy="110" rx="10" ry="6" fill="rgba(255,180,180,0.4)"/>
+                    <ellipse cx="105" cy="110" rx="10" ry="6" fill="rgba(255,180,180,0.4)"/>
+                    <!-- 裂纹组（孵化时动态添加） -->
+                    <g id="crackGroup"></g>
+                </svg>
+                <!-- 爱心粒子容器 -->
+                <div class="particle-container" id="particleContainer"></div>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="hatch-progress" id="hatchProgress" style="display:none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="progress-text" id="progressText">0%</span>
+            </div>
+
+            <!-- 开始按钮 -->
+            <button class="hatch-start-btn" id="hatchStartBtn">开始孵化</button>
+
+            <!-- 提示文字 -->
+            <p class="hatch-hint" id="hatchHint"></p>
+        </div>
+    </div>
+
+    <!-- 场景2：出生展示 -->
+    <div class="scene" id="birthScene">
+        <div class="birth-container">
+            <!-- 兔子 -->
+            <div class="birth-rabbit" id="birthRabbit"></div>
+            <!-- 宠物信息卡 -->
+            <div class="pet-info-card" id="petInfoCard">
+                <h2 class="pet-name" id="petName"></h2>
+                <div class="pet-details">
+                    <span class="pet-mbti" id="petMbti"></span>
+                    <span class="pet-zodiac" id="petZodiac"></span>
+                    <span class="pet-birth-date" id="petBirthDate"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 场景3：聊天（复用 test_page 的结构） -->
+    <div class="scene" id="chatScene">
+        <div class="container">
+            <!-- 兔子伴侣（左下角） -->
+            <div class="rabbit-companion" id="rabbitCompanion"></div>
+
+            <!-- 连接状态 -->
+            <div class="connection-status-top">
+                <div class="status-indicator">
+                    <span class="status-dot status-disconnected"></span>
+                    <span id="connectionStatus2">离线</span>
+                </div>
+            </div>
+
+            <!-- 聊天消息流 -->
+            <div class="chat-container">
+                <div class="chat-stream" id="chatStream"></div>
+                <div class="chat-ipt" id="chatIpt">
+                    <input type="text" id="messageInput" autocomplete="off" placeholder="输入消息，按Enter发送">
+                </div>
+            </div>
+
+            <!-- 底部控制栏 -->
+            <div class="control-bar">
+                <button class="control-btn" id="settingsBtn" title="设置">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5A3.5 3.5 0 0 1 15.5 12A3.5 3.5 0 0 1 12 15.5M19.43 12.97C19.47 12.65 19.5 12.33 19.5 12C19.5 11.67 19.47 11.34 19.43 11L21.54 9.37C21.73 9.22 21.78 8.95 21.66 8.73L19.66 5.27C19.54 5.05 19.27 4.96 19.05 5.05L16.56 6.05C16.04 5.66 15.5 5.32 14.87 5.07L14.5 2.42C14.46 2.18 14.25 2 14 2H10C9.75 2 9.54 2.18 9.5 2.42L9.13 5.07C8.5 5.32 7.96 5.66 7.44 6.05L4.95 5.05C4.73 4.96 4.46 5.05 4.34 5.27L2.34 8.73C2.22 8.95 2.27 9.22 2.46 9.37L4.57 11C4.53 11.34 4.5 11.67 4.5 12C4.5 12.33 4.53 12.65 4.57 12.97L2.46 14.63C2.27 14.78 2.22 15.05 2.34 15.27L4.34 18.73C4.46 18.95 4.73 19.03 4.95 18.95L7.44 17.94C7.96 18.34 8.5 18.68 9.13 18.93L9.5 21.58C9.54 21.82 9.75 22 10 22H14C14.25 22 14.46 21.82 14.5 21.58L14.87 18.93C15.5 18.68 16.04 18.34 16.56 17.94L19.05 18.95C19.27 19.03 19.54 18.95 19.66 18.73L21.66 15.27C21.78 15.05 21.73 14.78 21.54 14.63L19.43 12.97Z"/>
+                    </svg>
+                    <span class="btn-text">设置</span>
+                </button>
+
+                <button class="control-btn dial-btn" id="dialBtn" title="拨号">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/>
+                    </svg>
+                    <span class="btn-text">拨号</span>
+                </button>
+
+                <button class="control-btn" id="recordBtn" title="开始录音" disabled>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
+                    </svg>
+                    <span class="btn-text">录音</span>
+                </button>
+
+                <button class="control-btn" id="backgroundBtn" title="切换背景">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15V18M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12H20A8,8 0 0,0 12,4Z"/>
+                    </svg>
+                    <span class="btn-text">背景</span>
+                </button>
+
+                <button class="control-btn" id="rehatchBtn" title="重新孵化">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 4V1L8 5L12 9V6A6 6 0 0 1 18 12H20A8 8 0 0 0 12 4Z"/>
+                    </svg>
+                    <span class="btn-text">重新孵化</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗（从 test_page.html 复制，ID 保持一致） -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content settings-modal">
+            <div class="modal-header">
+                <h2>设置</h2>
+                <button class="close-btn" id="closeSettingsBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="device">设备配置</button>
+                    <button class="tab-btn" data-tab="mcp">MCP工具</button>
+                </div>
+                <div class="tab-content active" id="deviceTab">
+                    <div class="config-panel">
+                        <div class="control-panel">
+                            <div class="config-row">
+                                <div class="config-item">
+                                    <label for="deviceMac">设备MAC:</label>
+                                    <input type="text" id="deviceMac" placeholder="device-id">
+                                </div>
+                            </div>
+                            <div class="config-row">
+                                <div class="config-item">
+                                    <label for="clientId">客户端ID:</label>
+                                    <input type="text" id="clientId" value="web_test_client" placeholder="client-id">
+                                </div>
+                                <div class="config-item">
+                                    <label for="deviceName">设备名称:</label>
+                                    <input type="text" id="deviceName" value="Web测试设备" maxlength="50" placeholder="deviceName">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="connection-controls">
+                        <div class="input-group">
+                            <label for="otaUrl">OTA服务器地址:</label>
+                            <input type="text" id="otaUrl" value="http://127.0.0.1:8002/xiaozhi/ota/" placeholder="OTA服务器地址"/>
+                        </div>
+                        <div class="input-group">
+                            <label for="serverUrl">WebSocket服务器地址:</label>
+                            <input type="text" id="serverUrl" value="" readonly disabled placeholder="填写OTA地址后，点击拨号按钮自动连接"/>
+                        </div>
+                        <div class="input-group">
+                            <label for="visionUrl">视觉分析地址:</label>
+                            <input type="text" id="visionUrl" value="" readonly disabled placeholder="成功建立ws连接后自动获取"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-content" id="mcpTab">
+                    <div class="mcp-tools-container">
+                        <div class="mcp-tools-header"><h3>MCP 工具管理</h3></div>
+                        <div class="mcp-tools-panel" id="mcpToolsPanel">
+                            <div class="mcp-tools-list" id="mcpToolsContainer"></div>
+                            <div class="mcp-actions">
+                                <button class="btn-primary" id="addMcpToolBtn">➕ 添加新工具</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MCP 工具编辑模态框 -->
+    <div id="mcpToolModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="mcpModalTitle">添加工具</h2>
+                <button class="close-btn" id="closeMcpModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="mcpErrorContainer"></div>
+                <form id="mcpToolForm">
+                    <div class="input-group">
+                        <label for="mcpToolName">工具名称 *</label>
+                        <input type="text" id="mcpToolName" placeholder="例如: self.get_device_status" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="mcpToolDescription">工具描述 *</label>
+                        <textarea id="mcpToolDescription" placeholder="详细描述工具的功能和使用场景..." required></textarea>
+                    </div>
+                    <div class="input-group">
+                        <div class="input-group-header">
+                            <label>输入参数</label>
+                            <button type="button" class="properties-btn-primary" id="addMcpPropertyBtn">➕ 添加参数</button>
+                        </div>
+                        <div class="properties-container">
+                            <div class="mcp-empty-state" id="mcpEmptyState">暂无参数，点击上方按钮添加参数</div>
+                            <div class="mcp-properties-list" id="mcpPropertiesContainer"></div>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="mcpMockResponse">模拟返回结果 (JSON 格式，可选)</label>
+                        <textarea id="mcpMockResponse" placeholder='{"success": true, "data": "执行成功"}'></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancelMcpBtn">取消</button>
+                        <button type="submit" class="btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 参数编辑模态框 -->
+    <div id="mcpPropertyModal" class="modal">
+        <div class="modal-content property-modal">
+            <div class="modal-header">
+                <h2 id="mcpPropertyModalTitle">编辑参数</h2>
+                <button class="close-btn" id="closeMcpPropertyModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="mcpPropertyForm">
+                    <input type="hidden" id="mcpPropertyIndex" value="-1">
+                    <div class="input-group">
+                        <label for="mcpPropertyName">参数名称 *</label>
+                        <input type="text" id="mcpPropertyName" placeholder="例如: param_1" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="mcpPropertyType">数据类型 *</label>
+                        <select id="mcpPropertyType" class="model-select" required>
+                            <option value="string">字符串</option>
+                            <option value="integer">整数</option>
+                            <option value="number">数字</option>
+                            <option value="boolean">布尔值</option>
+                            <option value="array">数组</option>
+                            <option value="object">对象</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="mcpPropertyRangeGroup" style="display: none;">
+                        <div class="config-row">
+                            <div class="config-item">
+                                <label for="mcpPropertyMinimum">最小值</label>
+                                <input type="number" id="mcpPropertyMinimum" placeholder="可选">
+                            </div>
+                            <div class="config-item">
+                                <label for="mcpPropertyMaximum">最大值</label>
+                                <input type="number" id="mcpPropertyMaximum" placeholder="可选">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="mcpPropertyDescription">参数描述</label>
+                        <input type="text" id="mcpPropertyDescription" placeholder="可选">
+                    </div>
+                    <div class="input-group">
+                        <label class="mcp-checkbox-label">
+                            <input type="checkbox" id="mcpPropertyRequired">
+                            必填参数
+                        </label>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancelMcpPropertyBtn">取消</button>
+                        <button type="submit" class="btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 脚本 -->
+    <script src="js/ui/background-load.js?v=0205"></script>
+    <script src="js/utils/libopus.js?v=0205"></script>
+    <script type="module" src="js/hatch-app.js"></script>
+</body>
+</html>

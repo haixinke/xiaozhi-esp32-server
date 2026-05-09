@@ -44,35 +44,66 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
             请只回复四个字母的MBTI类型，不要其他内容。""";
 
+    private static final String PERSONALITY_PROMPT = """
+            你是一个AI宠物的性格设计师。根据以下MBTI人格类型，为这个AI宠物生成一段性格描述。
+
+            MBTI类型：%s
+
+            要求：
+            1. 包含宠物的核心特质（2-3个关键词展开）
+            2. 描述它和用户聊天时的风格和互动指南
+            3. 用中文撰写，字数控制在200字以内
+            4. 语气活泼有趣，让宠物形象更生动
+
+            请直接输出性格描述，不要其他内容。""";
+
+    private static final String DEFAULT_PERSONALITY = "性格温和友善，喜欢陪伴主人聊天。虽然偶尔有点小迷糊，但总能用温暖的话语让人感到安心。";
+
     @Override
     public PetVO birth(String deviceId) {
-        // 1. 如果该设备已有宠物，直接返回
-        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
-        existWrapper.eq("device_id", deviceId);
-        PetEntity existingPet = petDao.selectOne(existWrapper);
-        if (existingPet != null) {
-            return toVO(existingPet);
-        }
-
-        // 2. 校验设备存在且已绑定用户
+        // 1. 校验设备存在且已绑定用户
         DeviceEntity device = deviceDao.selectById(deviceId);
         if (device == null || device.getUserId() == null) {
             throw new RenException(ErrorCode.PET_DEVICE_NOT_FOUND);
         }
 
-        // 3. 使用当前时间作为出生时间
+        // 2. 使用当前时间作为出生时间
         LocalDateTime birthTime = LocalDateTime.now();
 
-        // 4. 计算八字、五行、星座
+        // 3. 计算八字、五行、星座
         PetBirthCalculator.BirthResult calcResult = PetBirthCalculator.calculate(birthTime);
 
-        // 5. 调用 LLM 推算 MBTI
+        // 4. 调用 LLM 推算 MBTI
         String mbti = deriveMbti(calcResult);
 
-        // 6. 随机分配昵称
+        // 5. 调用 LLM 生成性格描述
+        String personality = derivePersonality(mbti);
+
+        // 6. 查询该设备是否已有宠物
+        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
+        existWrapper.eq("device_id", deviceId);
+        PetEntity existingPet = petDao.selectOne(existWrapper);
+
+        if (existingPet != null) {
+            // TODO 演示逻辑：宠物已存在时，根据当前时间重新生成昵称、五行、八字、星座和MBTI并更新，后期去掉
+            String nickname = PetNicknameGenerator.generate();
+            existingPet.setNickname(nickname);
+            existingPet.setBirthDate(Date.from(birthTime.atZone(ZoneId.systemDefault()).toInstant()));
+            existingPet.setBazi(calcResult.bazi());
+            existingPet.setWuxing(calcResult.wuxing());
+            existingPet.setZodiac(calcResult.zodiac());
+            existingPet.setMbti(mbti);
+            existingPet.setPersonality(personality);
+            existingPet.setUpdater(device.getUserId());
+            petDao.updateById(existingPet);
+            log.info("宠物信息已更新（演示），deviceId={}, petId={}, nickname={}", deviceId, existingPet.getId(), nickname);
+            return toVO(existingPet);
+        }
+
+        // 7. 随机分配昵称
         String nickname = PetNicknameGenerator.generate();
 
-        // 7. 创建宠物实体
+        // 8. 创建宠物实体
         PetEntity pet = new PetEntity();
         pet.setUserId(device.getUserId());
         pet.setDeviceId(deviceId);
@@ -82,6 +113,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setWuxing(calcResult.wuxing());
         pet.setZodiac(calcResult.zodiac());
         pet.setMbti(mbti);
+        pet.setPersonality(personality);
         pet.setCreator(device.getUserId());
 
         petDao.insert(pet);
@@ -156,6 +188,30 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
     }
 
+    private String derivePersonality(String mbti) {
+        try {
+            if (!llmService.isAvailable()) {
+                log.warn("LLM服务不可用，使用默认性格描述");
+                return DEFAULT_PERSONALITY;
+            }
+
+            String prompt = String.format(PERSONALITY_PROMPT, mbti);
+            String response = llmService.generateSummary("", prompt);
+
+            if (response != null && !response.isBlank()) {
+                String trimmed = response.trim();
+                if (trimmed.length() > 500) {
+                    return trimmed.substring(0, 500);
+                }
+                return trimmed;
+            }
+            return DEFAULT_PERSONALITY;
+        } catch (Exception e) {
+            log.error("LLM生成性格描述失败，使用默认值", e);
+            return DEFAULT_PERSONALITY;
+        }
+    }
+
     private PetVO toVO(PetEntity pet) {
         PetVO vo = new PetVO();
         vo.setId(pet.getId());
@@ -167,6 +223,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setWuxing(pet.getWuxing());
         vo.setZodiac(pet.getZodiac());
         vo.setMbti(pet.getMbti());
+        vo.setPersonality(pet.getPersonality());
         vo.setCreateDate(pet.getCreateDate());
         return vo;
     }

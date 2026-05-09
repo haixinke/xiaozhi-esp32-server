@@ -459,6 +459,76 @@
     transition: transform 0.3s ease;
 }
 
+/* ===== 宠物信息面板（聊天场景，兔子左侧） ===== */
+.pet-info-panel {
+    position: fixed;
+    top: 50%;
+    left: 24px;
+    transform: translateY(-50%);
+    z-index: 15;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 18px 20px;
+    width: 400px;
+    max-width: calc(50vw - 120px);
+    max-height: 70vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    animation: panelSlideIn 0.5s ease both;
+}
+
+@keyframes panelSlideIn {
+    from { opacity: 0; transform: translateY(-50%) translateX(-20px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+.pet-info-panel-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.pet-info-panel-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.pet-info-panel-row:last-child {
+    margin-bottom: 0;
+}
+
+.pet-info-panel-personality {
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.pet-info-panel-personality .pet-info-value {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.5;
+}
+
+.pet-info-label {
+    font-size: 12px;
+    color: #999;
+    flex-shrink: 0;
+}
+
+.pet-info-value {
+    font-size: 13px;
+    color: #555;
+}
+
 /* ===== 左上角重新孵化按钮 ===== */
 .rehatch-float-btn {
     position: fixed;

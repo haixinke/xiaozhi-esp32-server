@@ -45,6 +45,9 @@ public class PetEntity {
     @Schema(description = "MBTI人格")
     private String mbti;
 
+    @Schema(description = "性格描述")
+    private String personality;
+
     @Schema(description = "更新者")
     @TableField(fill = FieldFill.UPDATE)
     private Long updater;

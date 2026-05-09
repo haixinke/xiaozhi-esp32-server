@@ -219,6 +219,9 @@ class HatchApp {
                     this.rabbitCompanion = createRabbit(els.rabbitCompanionEl);
                 }
 
+                // 显示宠物信息面板
+                this.fillPetInfoPanel();
+
                 // 初始化 UI 控制器的事件（拨号、录音等）
                 this.initChatControls();
 
@@ -285,6 +288,10 @@ class HatchApp {
                 const chatStream = document.getElementById('chatStream');
                 if (chatStream) chatStream.innerHTML = '';
 
+                // 隐藏宠物信息面板
+                const petInfoPanel = document.getElementById('petInfoPanel');
+                if (petInfoPanel) petInfoPanel.style.display = 'none';
+
                 // 重置到蛋阶段
                 hatchManager.reset();
             });
@@ -295,6 +302,85 @@ class HatchApp {
         document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
         const scene = document.getElementById(sceneId);
         if (scene) scene.classList.add('active');
+    }
+
+    /** 星座英文→中文映射 */
+    static ZODIAC_NAMES = {
+        aries: '白羊座', taurus: '金牛座', gemini: '双子座', cancer: '巨蟹座',
+        leo: '狮子座', virgo: '处女座', libra: '天秤座', scorpio: '天蝎座',
+        sagittarius: '射手座', capricorn: '摩羯座', aquarius: '水瓶座', pisces: '双鱼座',
+    };
+
+    /** 五行英文→中文映射 */
+    static WUXING_NAMES = {
+        metal: '金', wood: '木', water: '水', fire: '火', earth: '土',
+    };
+
+    /** 八字key→中文映射 */
+    static BAZI_LABELS = {
+        year: '年柱', month: '月柱', day: '日柱', hour: '时柱',
+    };
+
+    /** 填充聊天场景中的宠物信息面板 */
+    fillPetInfoPanel() {
+        const panel = document.getElementById('petInfoPanel');
+        if (!panel) return;
+
+        const petData = this.birthResult?.petData;
+        if (!petData) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        document.getElementById('petInfoPanelName').textContent = petData.nickname || '';
+        document.getElementById('petInfoPanelBirthDate').textContent = this.formatBirthDate(petData.birthDate);
+        document.getElementById('petInfoPanelZodiac').textContent =
+            HatchApp.ZODIAC_NAMES[petData.zodiac] || petData.zodiac || '';
+        document.getElementById('petInfoPanelMbti').textContent = petData.mbti || '';
+        document.getElementById('petInfoPanelBazi').textContent = this.formatBazi(petData.bazi);
+        document.getElementById('petInfoPanelWuxing').textContent = this.formatWuxing(petData.wuxing);
+        document.getElementById('petInfoPanelPersonality').textContent = petData.personality || '';
+
+        panel.style.display = 'block';
+    }
+
+    /** 格式化出生日期 */
+    formatBirthDate(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    /** 格式化八字 JSON → "年柱-丙午、月柱-壬辰、日柱-乙亥、时柱-丙戌" */
+    formatBazi(baziStr) {
+        if (!baziStr) return '';
+        try {
+            const bazi = typeof baziStr === 'string' ? JSON.parse(baziStr) : baziStr;
+            const labels = HatchApp.BAZI_LABELS;
+            const order = ['year', 'month', 'day', 'hour'];
+            return order
+                .map(k => `${labels[k]}-${bazi[k] || ''}`)
+                .join('、');
+        } catch {
+            return '';
+        }
+    }
+
+    /** 格式化五行 JSON → "火-5分、水-4分、土-3分、木-2分、金-0分"（按分数降序，全部显示） */
+    formatWuxing(wuxingStr) {
+        if (!wuxingStr) return '';
+        try {
+            const wuxing = typeof wuxingStr === 'string' ? JSON.parse(wuxingStr) : wuxingStr;
+            const names = HatchApp.WUXING_NAMES;
+            return Object.entries(wuxing)
+                .map(([k, v]) => ({ name: names[k] || k, count: v }))
+                .sort((a, b) => b.count - a.count)
+                .map(item => `${item.name}-${item.count}分`)
+                .join('、');
+        } catch {
+            return '';
+        }
     }
 
     async prefillOtaUrl() {

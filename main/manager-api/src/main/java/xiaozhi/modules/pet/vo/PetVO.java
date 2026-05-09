@@ -36,6 +36,9 @@ public class PetVO {
     @Schema(description = "MBTI人格")
     private String mbti;
 
+    @Schema(description = "性格描述")
+    private String personality;
+
     @Schema(description = "创建时间")
     private Date createDate;
 }

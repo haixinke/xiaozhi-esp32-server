@@ -322,6 +322,12 @@ class HatchApp {
         CARE: '关怀', ANXIETY: '焦虑', FRUSTRATION: '沮丧', FATIGUE: '疲惫',
     };
 
+    /** MBTI 字母含义映射 */
+    static MBTI_LETTER_MEANINGS = {
+        E: '外倾型', I: '内倾型', S: '实感型', N: '直觉型',
+        T: '逻辑型', F: '情感型', J: '判断型', P: '知觉型',
+    };
+
     /** 八字key→中文映射 */
     static BAZI_LABELS = {
         year: '年柱', month: '月柱', day: '日柱', hour: '时柱',
@@ -342,7 +348,8 @@ class HatchApp {
         document.getElementById('petInfoPanelBirthDate').textContent = this.formatBirthDate(petData.birthDate);
         document.getElementById('petInfoPanelZodiac').textContent =
             HatchApp.ZODIAC_NAMES[petData.zodiac] || petData.zodiac || '';
-        document.getElementById('petInfoPanelMbti').textContent = petData.mbti || '';
+        const mbtiEl = document.getElementById('petInfoPanelMbti');
+        mbtiEl.innerHTML = this.formatMbti(petData.mbti);
         document.getElementById('petInfoPanelBazi').textContent = this.formatBazi(petData.bazi);
         document.getElementById('petInfoPanelWuxing').textContent = this.formatWuxing(petData.wuxing);
         document.getElementById('petInfoPanelMood').textContent =
@@ -350,6 +357,17 @@ class HatchApp {
         document.getElementById('petInfoPanelPersonality').textContent = petData.personality || '';
 
         panel.style.display = 'block';
+    }
+
+    /** 格式化 MBTI → "INFP" + 每个字母含义 */
+    formatMbti(mbti) {
+        if (!mbti) return '';
+        const meanings = HatchApp.MBTI_LETTER_MEANINGS;
+        const letters = mbti.split('');
+        const detail = letters
+            .map(l => `${l}-${meanings[l] || l}`)
+            .join('、');
+        return `${mbti}（${detail}）`;
     }
 
     /** 格式化出生日期 */

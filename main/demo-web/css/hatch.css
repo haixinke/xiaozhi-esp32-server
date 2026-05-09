@@ -518,6 +518,11 @@
     line-height: 1.5;
 }
 
+.pet-info-panel-mbti .pet-info-value {
+    font-size: 12px;
+    line-height: 1.6;
+}
+
 .pet-info-label {
     font-size: 12px;
     color: #999;

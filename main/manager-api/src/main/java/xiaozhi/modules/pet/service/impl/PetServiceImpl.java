@@ -46,17 +46,18 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
     @Override
     public PetVO birth(String deviceId) {
-        // 1. 校验设备存在且已绑定用户
+        // 1. 如果该设备已有宠物，直接返回
+        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
+        existWrapper.eq("device_id", deviceId);
+        PetEntity existingPet = petDao.selectOne(existWrapper);
+        if (existingPet != null) {
+            return toVO(existingPet);
+        }
+
+        // 2. 校验设备存在且已绑定用户
         DeviceEntity device = deviceDao.selectById(deviceId);
         if (device == null || device.getUserId() == null) {
             throw new RenException(ErrorCode.PET_DEVICE_NOT_FOUND);
-        }
-
-        // 2. 校验该设备未创建过宠物
-        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
-        existWrapper.eq("device_id", deviceId);
-        if (petDao.selectCount(existWrapper) > 0) {
-            throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
         }
 
         // 3. 使用当前时间作为出生时间

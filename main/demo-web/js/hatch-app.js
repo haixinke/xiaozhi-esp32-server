@@ -221,8 +221,8 @@ class HatchApp {
                 // 初始化 UI 控制器的事件（拨号、录音等）
                 this.initChatControls();
 
-                // 自动连接 WebSocket
-                this.autoConnect();
+                // 预填 OTA 地址为默认值
+                this.prefillOtaUrl();
             }
         });
 
@@ -233,24 +233,7 @@ class HatchApp {
     }
 
     initChatControls() {
-        // 拨号按钮
-        const dialBtn = document.getElementById('dialBtn');
-        if (dialBtn && !dialBtn._hatchBound) {
-            dialBtn._hatchBound = true;
-            dialBtn.addEventListener('click', () => {
-                dialBtn.disabled = true;
-                setTimeout(() => { dialBtn.disabled = false; }, 3000);
-
-                const wsHandler = getWebSocketHandler();
-                if (wsHandler.isConnected()) {
-                    wsHandler.disconnect();
-                    uiController.updateDialButton(false);
-                    uiController.addChatMessage('已断开连接~', false);
-                } else {
-                    uiController.handleConnect();
-                }
-            });
-        }
+        // 拨号按钮事件由 uiController.init() 统一处理，不再重复绑定
 
         // 录音按钮
         const recordBtn = document.getElementById('recordBtn');
@@ -313,15 +296,14 @@ class HatchApp {
         if (scene) scene.classList.add('active');
     }
 
-    async autoConnect() {
+    async prefillOtaUrl() {
         const otaUrlInput = document.getElementById('otaUrl');
-        if (!otaUrlInput || !otaUrlInput.value.trim()) {
+        if (otaUrlInput && !otaUrlInput.value.trim()) {
             otaUrlInput.value = 'http://localhost:8002/xiaozhi/ota/';
         }
 
+        // 注册 WebSocket 事件回调（不自动连接）
         const wsHandler = getWebSocketHandler();
-        if (wsHandler.isConnected()) return;
-
         wsHandler.onConnectionStateChange = (isConnected) => {
             uiController.updateConnectionUI(isConnected);
             uiController.updateDialButton(isConnected);
@@ -344,32 +326,6 @@ class HatchApp {
 
         const chatIpt = document.getElementById('chatIpt');
         if (chatIpt) chatIpt.style.display = 'flex';
-
-        const dialBtn = document.getElementById('dialBtn');
-        if (dialBtn) {
-            dialBtn.classList.add('dial-active');
-            dialBtn.querySelector('.btn-text').textContent = '连接中...';
-            dialBtn.disabled = true;
-        }
-
-        uiController.addChatMessage('正在连接服务器...', false);
-
-        const isConnected = await wsHandler.connect();
-        if (isConnected) {
-            uiController.hideModal('settingsModal');
-            if (dialBtn) {
-                dialBtn.disabled = false;
-                dialBtn.querySelector('.btn-text').textContent = '挂断';
-                dialBtn.classList.add('dial-active');
-            }
-        } else {
-            uiController.addChatMessage('自动连接失败，请点击拨号按钮重试', false);
-            if (dialBtn) {
-                dialBtn.disabled = false;
-                dialBtn.querySelector('.btn-text').textContent = '拨号';
-                dialBtn.classList.remove('dial-active');
-            }
-        }
     }
 
     showToast(message) {

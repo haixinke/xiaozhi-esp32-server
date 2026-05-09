@@ -17,6 +17,7 @@ import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.util.MbtiParser;
 import xiaozhi.modules.pet.util.PetBirthCalculator;
+import xiaozhi.modules.pet.util.PetMood;
 import xiaozhi.modules.pet.util.PetNicknameGenerator;
 import xiaozhi.modules.pet.vo.PetVO;
 
@@ -94,6 +95,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             existingPet.setZodiac(calcResult.zodiac());
             existingPet.setMbti(mbti);
             existingPet.setPersonality(personality);
+            existingPet.setTodayMood(PetMood.random().name());
             existingPet.setUpdater(device.getUserId());
             petDao.updateById(existingPet);
             log.info("宠物信息已更新（演示），deviceId={}, petId={}, nickname={}", deviceId, existingPet.getId(), nickname);
@@ -114,6 +116,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setZodiac(calcResult.zodiac());
         pet.setMbti(mbti);
         pet.setPersonality(personality);
+        pet.setTodayMood(PetMood.random().name());
         pet.setCreator(device.getUserId());
 
         petDao.insert(pet);
@@ -224,6 +227,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setZodiac(pet.getZodiac());
         vo.setMbti(pet.getMbti());
         vo.setPersonality(pet.getPersonality());
+        vo.setTodayMood(pet.getTodayMood());
         vo.setCreateDate(pet.getCreateDate());
         return vo;
     }

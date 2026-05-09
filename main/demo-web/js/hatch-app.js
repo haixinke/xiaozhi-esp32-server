@@ -316,6 +316,12 @@ class HatchApp {
         metal: '金', wood: '木', water: '水', fire: '火', earth: '土',
     };
 
+    /** 心情枚举→中文映射 */
+    static MOOD_NAMES = {
+        JOY: '愉快', CALM: '平静', EXCITEMENT: '兴奋', CURIOSITY: '好奇',
+        CARE: '关怀', ANXIETY: '焦虑', FRUSTRATION: '沮丧', FATIGUE: '疲惫',
+    };
+
     /** 八字key→中文映射 */
     static BAZI_LABELS = {
         year: '年柱', month: '月柱', day: '日柱', hour: '时柱',
@@ -339,6 +345,8 @@ class HatchApp {
         document.getElementById('petInfoPanelMbti').textContent = petData.mbti || '';
         document.getElementById('petInfoPanelBazi').textContent = this.formatBazi(petData.bazi);
         document.getElementById('petInfoPanelWuxing').textContent = this.formatWuxing(petData.wuxing);
+        document.getElementById('petInfoPanelMood').textContent =
+            HatchApp.MOOD_NAMES[petData.todayMood] || petData.todayMood || '';
         document.getElementById('petInfoPanelPersonality').textContent = petData.personality || '';
 
         panel.style.display = 'block';

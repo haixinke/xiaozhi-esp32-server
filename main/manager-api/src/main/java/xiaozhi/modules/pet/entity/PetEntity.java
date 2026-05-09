@@ -48,6 +48,9 @@ public class PetEntity {
     @Schema(description = "性格描述")
     private String personality;
 
+    @Schema(description = "今日心情")
+    private String todayMood;
+
     @Schema(description = "更新者")
     @TableField(fill = FieldFill.UPDATE)
     private Long updater;

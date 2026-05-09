@@ -39,6 +39,9 @@ public class PetVO {
     @Schema(description = "性格描述")
     private String personality;
 
+    @Schema(description = "今日心情")
+    private String todayMood;
+
     @Schema(description = "创建时间")
     private Date createDate;
 }

@@ -107,4 +107,32 @@ class PetBirthCalculatorTest {
         String nickname = PetNicknameGenerator.generate();
         assertThat(nickname).isNotBlank();
     }
+
+    @Test
+    @DisplayName("PetMood - 随机生成返回合法枚举值")
+    void randomMood_returnsValidEnum() {
+        PetMood mood = PetMood.random();
+        assertThat(mood).isNotNull();
+        assertThat(mood.getLabel()).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("PetMood - 大量随机生成权重分布合理")
+    void randomMood_distributionMatchesWeights() {
+        int iterations = 10000;
+        int[] counts = new int[PetMood.values().length];
+
+        for (int i = 0; i < iterations; i++) {
+            counts[PetMood.random().ordinal()]++;
+        }
+
+        // JOY(20%) and CALM(20%) should have more than FATIGUE(5%)
+        assertThat(counts[PetMood.JOY.ordinal()]).isGreaterThan(counts[PetMood.FATIGUE.ordinal()]);
+        assertThat(counts[PetMood.CALM.ordinal()]).isGreaterThan(counts[PetMood.ANXIETY.ordinal()]);
+
+        // Every mood should appear at least once
+        for (int count : counts) {
+            assertThat(count).isGreaterThan(0);
+        }
+    }
 }

@@ -115,6 +115,8 @@ class MemoryProvider(MemoryProviderBase):
                     embedder_config["api_key"] = config["embedding_api_key"]
                 if config.get("embedding_model"):
                     embedder_config["model"] = config["embedding_model"]
+                if config.get("embedding_dims"):
+                    embedder_config["embedding_dims"] = int(config["embedding_dims"])
                 # Handle base_url based on provider type
                 # - qwen provider uses dashscope_base_url
                 # - openai provider uses openai_base_url
@@ -134,10 +136,10 @@ class MemoryProvider(MemoryProviderBase):
                 }
 
             # Configure intelligent memory (Ebbinghaus forgetting curve)
-            # SDK expects "enabled" at top level of intelligent_memory dict,
-            # but user config may nest it under "plugin.enabled"
-            if "intelligent_memory" in config:
-                im_config = dict(config["intelligent_memory"])
+            # Read from vector_store.intelligent_memory (same level as provider)
+            vector_config = powermem_config.get("vector_store", {})
+            if isinstance(vector_config, dict) and "intelligent_memory" in vector_config:
+                im_config = dict(vector_config["intelligent_memory"])
                 if "plugin" in im_config and isinstance(im_config["plugin"], dict) and "enabled" in im_config["plugin"]:
                     im_config["enabled"] = im_config["plugin"]["enabled"]
                 powermem_config["intelligent_memory"] = im_config

@@ -1,11 +1,11 @@
 // WebSocket消息处理模块
-import { getConfig, saveConnectionUrls } from '../../config/manager.js?v=0205';
-import { uiController } from '../../ui/controller.js?v=0205';
-import { log } from '../../utils/logger.js?v=0205';
-import { getAudioPlayer } from '../audio/player.js?v=0205';
-import { getAudioRecorder } from '../audio/recorder.js?v=0205';
-import { executeMcpTool, getMcpTools, setWebSocket as setMcpWebSocket } from '../mcp/tools.js?v=0205';
-import { webSocketConnect } from './ota-connector.js?v=0205';
+import { getConfig, saveConnectionUrls } from '../../config/manager.js';
+import { uiController } from '../../ui/controller.js';
+import { log } from '../../utils/logger.js';
+import { getAudioPlayer } from '../audio/player.js';
+import { getAudioRecorder } from '../audio/recorder.js';
+import { executeMcpTool, getMcpTools, setWebSocket as setMcpWebSocket } from '../mcp/tools.js';
+import { webSocketConnect } from './ota-connector.js';
 
 // WebSocket处理器类
 export class WebSocketHandler {
@@ -393,7 +393,20 @@ export class WebSocketHandler {
 
             this.setupEventHandlers();
 
-            return true;
+            // 等待 WebSocket 真正打开（而不仅仅是 CONNECTING 状态）
+            return new Promise((resolve) => {
+                const cleanup = () => {
+                    ws.removeEventListener('open', onOpen);
+                    ws.removeEventListener('error', onError);
+                    ws.removeEventListener('close', onClose);
+                };
+                const onOpen = () => { cleanup(); resolve(true); };
+                const onError = () => { cleanup(); resolve(false); };
+                const onClose = () => { cleanup(); resolve(false); };
+                ws.addEventListener('open', onOpen);
+                ws.addEventListener('error', onError);
+                ws.addEventListener('close', onClose);
+            });
         } catch (error) {
             log(`连接错误: ${error.message}`, 'error');
             if (this.onConnectionStateChange) {
@@ -475,7 +488,9 @@ export class WebSocketHandler {
     disconnect() {
         if (!this.websocket) return;
 
-        this.websocket.close();
+        const ws = this.websocket;
+        this.websocket = null;
+        ws.close();
         const audioRecorder = getAudioRecorder();
         audioRecorder.stop();
 

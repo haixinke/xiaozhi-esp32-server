@@ -1,0 +1,14 @@
+{
+  "name": "demo-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 8006",
+    "build": "vite build",
+    "preview": "vite preview --port 8006"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}

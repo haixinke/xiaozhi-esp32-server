@@ -2,7 +2,7 @@
  * 孵化互动逻辑：点击事件、进度管理、爱心粒子
  */
 
-import { playBounce, updateWobble, updateCracks } from './egg.js?v=0508';
+import { playBounce, updateWobble, updateCracks } from './egg.js';
 
 /**
  * 创建孵化互动控制器

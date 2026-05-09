@@ -3,21 +3,21 @@
  * 整合状态机、蛋动画、孵化互动、破壳、出生展示、聊天
  */
 
-import { checkOpusLoaded, initOpusEncoder } from './core/audio/opus-codec.js?v=0205';
-import { getAudioPlayer } from './core/audio/player.js?v=0205';
-import { checkMicrophoneAvailability, isHttpNonLocalhost } from './core/audio/recorder.js?v=0205';
-import { initMcpTools } from './core/mcp/tools.js?v=0205';
-import { loadConfig, saveConfig, getConfig } from './config/manager.js?v=0205';
-import { log } from './utils/logger.js?v=0205';
-import { HatchManager } from './hatch/hatch-manager.js?v=0508';
-import { startBreathing, stopBreathing, resetEgg, clearCracks } from './hatch/egg.js?v=0508';
-import { createHatchingController } from './hatch/hatching.js?v=0508';
-import { playCrackingAnimation } from './hatch/cracking.js?v=0508';
-import { showBirthScene } from './hatch/birth.js?v=0508';
-import { createRabbit } from './rabbit/rabbit.js?v=0508';
-import { uiController } from './ui/controller.js?v=0205';
-import { getWebSocketHandler } from './core/network/websocket.js?v=0205';
-import { getAudioRecorder } from './core/audio/recorder.js?v=0205';
+import { checkOpusLoaded, initOpusEncoder } from './core/audio/opus-codec.js';
+import { getAudioPlayer } from './core/audio/player.js';
+import { checkMicrophoneAvailability, isHttpNonLocalhost } from './core/audio/recorder.js';
+import { initMcpTools } from './core/mcp/tools.js';
+import { loadConfig, saveConfig, getConfig } from './config/manager.js';
+import { log } from './utils/logger.js';
+import { HatchManager } from './hatch/hatch-manager.js';
+import { startBreathing, stopBreathing, resetEgg, clearCracks } from './hatch/egg.js';
+import { createHatchingController } from './hatch/hatching.js';
+import { playCrackingAnimation } from './hatch/cracking.js';
+import { showBirthScene } from './hatch/birth.js';
+import { createRabbit } from './rabbit/rabbit.js';
+import { uiController } from './ui/controller.js';
+import { getWebSocketHandler } from './core/network/websocket.js';
+import { getAudioRecorder } from './core/audio/recorder.js';
 
 class HatchApp {
     constructor() {
@@ -139,13 +139,14 @@ class HatchApp {
             enter: async () => {
                 if (els.hatchHint) els.hatchHint.textContent = '即将破壳...';
 
-                // 播放破壳动画，在50%时调用API
+                // 播放破壳动画（4秒），在1.5秒时分裂时调用API
                 const crackingPromise = playCrackingAnimation({
                     eggSvg: els.eggSvg,
                     particleContainer: els.particleContainer,
-                }, 2000);
+                    eggWrapper: els.eggWrapper,
+                }, 4000);
 
-                // 动画播放到一半时发起API请求
+                // 蛋分裂时发起API请求（1.5秒后）
                 crackingApiTimer = setTimeout(async () => {
                     crackingApiTimer = null;
                     try {
@@ -163,7 +164,7 @@ class HatchApp {
                     } catch (err) {
                         this.showToast(err.message);
                     }
-                }, 1000);
+                }, 1500);
 
                 await crackingPromise;
                 // 破壳动画完成后等待API结果（最多再等3秒）
@@ -177,7 +178,7 @@ class HatchApp {
                     crackingApiTimer = null;
                 }
                 // 如果API还没返回，等待一下再切换
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 1000));
                 await hatchManager.goTo('birth');
             },
             exit: () => {

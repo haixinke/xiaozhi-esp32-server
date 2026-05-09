@@ -2,7 +2,7 @@
  * 出生展示：调用 API、展示宠物信息卡、过渡到聊天
  */
 
-import { createRabbit } from '../rabbit/rabbit.js?v=0508';
+import { createRabbit } from '../rabbit/rabbit.js';
 
 /** 星座名称映射 */
 const ZODIAC_NAMES = {

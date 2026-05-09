@@ -21,7 +21,7 @@
 | `main/manager-api/` | Java 21 / Spring Boot 3.4.3 | 8002 (`/xiaozhi`) | 管理后台 REST API，设备注册，Python 服务端的配置来源 |
 | `main/manager-web/` | Vue.js 2 / Vue CLI | 8001 (dev) | Web 管理控制台 ("智控台") |
 | `main/manager-mobile/` | Uni-app / Vue 3 / Vite | — | 移动端管理后台 (H5、微信小程序、iOS、Android) |
-| `main/demo-web/` | HTML / CSS / JS (纯静态) | 8006 | 演示项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
+| `main/demo-web/` | HTML / CSS / JS / Vite | 8006 | 演示项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
 
 每个子项目都有自己的 `CLAUDE.md`，包含详细的架构说明和常用命令。
 
@@ -66,8 +66,10 @@ pnpm lint                            # 代码检查
 ### 演示项目 (`main/demo-web/`)
 ```bash
 cd main/demo-web
-python -m http.server 8006             # 启动演示页面
-# 浏览器访问 http://localhost:8006/test_page.html
+npm install                            # 安装依赖（首次）
+npm run dev                            # 启动开发服务器，端口 8006
+npm run build                          # 生产构建
+npm run preview                        # 预览生产构建
 ```
 
 ### Docker (全栈)

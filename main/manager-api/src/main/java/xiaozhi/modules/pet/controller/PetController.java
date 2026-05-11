@@ -32,7 +32,6 @@ public class PetController {
 
     @GetMapping("/detail/{deviceId}")
     @Operation(summary = "查询宠物详情")
-    @RequiresPermissions("sys:role:normal")
     public Result<PetVO> detail(@PathVariable String deviceId) {
         PetVO pet = petService.getByDeviceId(deviceId);
         return new Result<PetVO>().ok(pet);

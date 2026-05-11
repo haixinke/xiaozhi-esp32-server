@@ -195,6 +195,17 @@ async def get_correct_words(mac_address: str) -> Optional[Dict]:
         return None
 
 
+async def get_pet_detail(device_id: str) -> Optional[Dict]:
+    """获取设备关联的宠物详情"""
+    try:
+        return await ManageApiClient._instance._execute_async_request(
+            "GET", f"/pet/detail/{device_id}"
+        )
+    except Exception as e:
+        print(f"获取宠物详情失败: {e}")
+        return None
+
+
 async def generate_and_save_chat_summary(session_id: str) -> Optional[Dict]:
     """生成并保存聊天记录总结"""
     try:

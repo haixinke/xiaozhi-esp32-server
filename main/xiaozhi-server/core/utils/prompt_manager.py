@@ -275,6 +275,7 @@ class PromptManager:
                 client_ip=client_ip,
                 dynamic_context=self.context_data,
                 language=language,
+                today_mood=self.config.get("today_mood", "愉快"),
                 *args,
                 **kwargs,
             )

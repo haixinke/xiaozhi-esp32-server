@@ -7,6 +7,7 @@ from config.manage_api_client import (
     get_server_config,
     get_agent_models,
     get_correct_words,
+    get_pet_detail,
     DeviceNotFoundException,
     DeviceBindException,
 )
@@ -98,10 +99,12 @@ async def get_private_config_from_api(config, device_id, client_id):
     results = await asyncio.gather(
         get_agent_models(device_id, client_id, config["selected_module"]),
         get_correct_words(device_id),
+        get_pet_detail(device_id),
         return_exceptions=True,
     )
     agent_result = results[0]
     correct_words = results[1] if not isinstance(results[1], Exception) else None
+    pet_info = results[2] if not isinstance(results[2], Exception) else None
 
     # 抛出业务异常
     if isinstance(agent_result, DeviceNotFoundException):
@@ -112,6 +115,8 @@ async def get_private_config_from_api(config, device_id, client_id):
     private_config = agent_result if not isinstance(agent_result, Exception) else {}
     if correct_words:
         private_config["correct_words"] = correct_words
+    if pet_info:
+        private_config["pet_info"] = pet_info
     return private_config
 
 

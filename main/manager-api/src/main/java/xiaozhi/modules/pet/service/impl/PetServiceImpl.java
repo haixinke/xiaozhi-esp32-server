@@ -57,7 +57,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             4. 用中文撰写，字数控制在200字以内
             5. 语气活泼有趣，让宠物形象更生动
             6. 不要在描述中出现MBTI类型名称或结论
-            7. 不要包含表情符号或emoji相关内容，宠物通过语音与用户交互
+            7. 不要在描述中定义是什么具体的宠物，例如你是机械犬、你是机灵猫等
+            8. 不要包含表情符号或emoji相关内容，宠物通过语音与用户交互
 
             请直接输出性格描述，不要其他内容。""";
 

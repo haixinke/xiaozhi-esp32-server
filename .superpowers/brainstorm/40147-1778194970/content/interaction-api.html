@@ -1,0 +1,105 @@
+<h2>孵化互动 & API 集成</h2>
+<p class="subtitle">用户点击加速孵化，破壳时调用后端</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">孵化互动设计</div>
+    <div class="mockup-body" style="padding:24px 20px;">
+
+      <div style="font-weight:600; margin-bottom:12px;">孵化进度机制</div>
+
+      <div style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:#888; margin-bottom:4px;">
+          <span>孵化进度</span>
+          <span id="prog-label">0%</span>
+        </div>
+        <div style="background:#f0f0f0; border-radius:10px; height:14px; overflow:hidden;">
+          <div style="background: linear-gradient(90deg, #FFB6C1, #FF6B9D); width:0%; height:100%; border-radius:10px; transition: width 0.3s;"></div>
+        </div>
+      </div>
+
+      <div style="font-size:13px; color:#555;">
+        <div style="margin-bottom:10px;">
+          <strong style="color:#333;">点击规则：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li>每次点击蛋增加 <strong>3~5%</strong> 进度（随机，增加趣味）</li>
+            <li>同时也有 <strong>自动增长</strong>（约 0.5%/秒），不点也能孵完</li>
+            <li>用户点击产生 <strong>波纹 + 音效反馈</strong></li>
+          </ul>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <strong style="color:#333;">蛋的反馈：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li><strong>0~30%</strong>：轻微摇晃，偶尔晃动</li>
+            <li><strong>30~60%</strong>：摇晃加剧，出现细小裂纹</li>
+            <li><strong>60~90%</strong>：剧烈摇晃，裂纹增多变粗</li>
+            <li><strong>90~100%</strong>：蛋壳发光，即将破壳</li>
+          </ul>
+        </div>
+
+        <div>
+          <strong style="color:#333;">点击视觉反馈：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li>蛋被点击时 <strong>弹性缩放</strong>（scale 1.0 → 1.08 → 1.0）</li>
+            <li>点击位置出现 <strong>爱心粒子</strong> 向上飘散</li>
+            <li>进度条旁显示 <strong>"+N%"</strong> 飘字</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">出生 API 集成</div>
+    <div class="mockup-body" style="padding:24px 20px;">
+
+      <div style="font-weight:600; margin-bottom:12px;">破壳时调用流程</div>
+
+      <div style="font-size:13px; color:#555;">
+        <div style="background:#f8f9fa; border-radius:8px; padding:12px; margin-bottom:12px; font-family:monospace; font-size:12px;">
+          <div style="color:#888;">// 破壳动画播放到一半时触发</div>
+          <div><span style="color:#d63384;">POST</span> /xiaozhi/pet/birth</div>
+          <div style="color:#888;">// Request Body:</div>
+          <div>{ "deviceId": "当前设备ID" }</div>
+          <div style="color:#888; margin-top:8px;">// Response:</div>
+          <div>{</div>
+          <div>&nbsp; "nickname": "小团子",</div>
+          <div>&nbsp; "birthDate": "2026-05-08 ...",</div>
+          <div>&nbsp; "bazi": { "year":"丙午", ... },</div>
+          <div>&nbsp; "mbti": "INFP",</div>
+          <div>&nbsp; "zodiac": "taurus"</div>
+          <div>}</div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <strong style="color:#333;">API 调用时机：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li>进度 100% → 破壳动画开始</li>
+            <li>动画播放到 <strong>50%</strong> 时发起 API 请求</li>
+            <li>API 返回后，兔子弹出 + 宠物信息卡出现</li>
+          </ul>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <strong style="color:#333;">出生展示卡片：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li>宠物昵称（大字）</li>
+            <li>MBTI 性格类型</li>
+            <li>星座</li>
+            <li>出生时间</li>
+            <li>展示 3~4 秒后自动淡出，进入聊天界面</li>
+          </ul>
+        </div>
+
+        <div>
+          <strong style="color:#333;">错误处理：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li>API 失败：显示 Toast 提示，仍展示兔子但用默认数据</li>
+            <li>设备未注册：提示"请先配置设备信息"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

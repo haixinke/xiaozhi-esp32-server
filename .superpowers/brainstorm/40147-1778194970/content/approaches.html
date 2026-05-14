@@ -1,0 +1,43 @@
+<h2>三种实现方案对比</h2>
+<p class="subtitle">考虑开发成本、视觉效果、可维护性</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>单页面状态机 + CSS 动画</h3>
+      <p>在现有 test_page.html 基础上，用 CSS 动画和 JS 状态机控制孵化流程。蛋、裂纹、破壳、兔子全部用 CSS/SVG 实现。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>零依赖，纯原生实现</li><li>与现有代码天然集成</li><li>文件少，部署简单</li><li>加载速度最快</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>复杂动画（粒子、光影）实现较难</li><li>代码量集中，单文件可能较大</li><li>动画精度和流畅度有限</li></ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>多页面 + Canvas 动画引擎</h3>
+      <p>将孵化过程拆为独立页面，用 Canvas 2D 绘制蛋和兔子，实现更精细的动画效果（粒子、光晕、物理抖动）。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>动画效果最好（粒子、光影、物理）</li><li>关注点分离，各页面独立</li><li>Canvas 动画性能优秀</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>开发量最大</li><li>页面切换需要重新加载资源</li><li>Canvas 绘图代码维护成本高</li></ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>单页面 + Lottie/GSAP 动画库</h3>
+      <p>引入轻量动画库（GSAP + Lottie），用时间线控制孵化流程。蛋和兔子用 SVG + GSAP 动画驱动。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>动画专业且流畅</li><li>GSAP 时间线精确控制流程</li><li>SVG 矢量缩放无损</li><li>开发效率较高</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>引入外部依赖（GSAP ~30kb gzip）</li><li>Lottie 动画需要 AE 制作或 LottieFiles 素材</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <p><strong>我的推荐：方案 A（单页面状态机 + CSS 动画）</strong></p>
+  <p>理由：这是演示项目，核心需求是蛋的孵化仪式感 + 聊天交互。CSS/SVG 完全可以做出精致的卡通可爱效果（呼吸动画、蛋的摇晃、裂纹扩散、破壳粒子），而且零依赖、加载快、与现有代码无缝集成。复杂粒子效果可以用少量 Canvas 辅助。</p>
+</div>

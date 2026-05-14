@@ -1,0 +1,111 @@
+<h2>视觉设计：蛋与兔子</h2>
+<p class="subtitle">CSS/SVG 实现，卡通可爱风格</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">蛋的设计</div>
+    <div class="mockup-body" style="text-align:center; padding:30px 20px;">
+
+      <svg width="140" height="180" viewBox="0 0 140 180" style="margin: 0 auto; display:block; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.15));">
+        <!-- 蛋身 -->
+        <ellipse cx="70" cy="100" rx="55" ry="70" fill="#FFF5E6" stroke="#F0D9B5" stroke-width="2"/>
+        <!-- 高光 -->
+        <ellipse cx="50" cy="75" rx="15" ry="25" fill="rgba(255,255,255,0.6)" transform="rotate(-15 50 75)"/>
+        <!-- 小高光点 -->
+        <circle cx="45" cy="60" r="5" fill="rgba(255,255,255,0.8)"/>
+        <!-- 腮红 -->
+        <ellipse cx="35" cy="110" rx="10" ry="6" fill="rgba(255,180,180,0.4)"/>
+        <ellipse cx="105" cy="110" rx="10" ry="6" fill="rgba(255,180,180,0.4)"/>
+      </svg>
+
+      <div style="margin-top:20px; text-align:left;">
+        <div style="font-weight:600; margin-bottom:8px;">蛋的视觉要素：</div>
+        <ul style="font-size:13px; color:#555; padding-left:18px;">
+          <li>椭圆形，上窄下宽，暖奶油色 (#FFF5E6)</li>
+          <li>左侧椭圆高光 + 小光点，增加立体感</li>
+          <li>两侧淡粉色腮红，增加可爱感</li>
+          <li>柔和投影 (drop-shadow)</li>
+          <li>呼吸动画：缓慢缩放 + 光晕明暗变化</li>
+          <li>裂纹：SVG path 逐渐绘制，从顶部向下蔓延</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">兔子的设计</div>
+    <div class="mockup-body" style="text-align:center; padding:30px 20px;">
+
+      <svg width="160" height="200" viewBox="0 0 160 200" style="margin: 0 auto; display:block; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.12));">
+        <!-- 左耳 -->
+        <ellipse cx="50" cy="40" rx="16" ry="40" fill="#FFFFFF" stroke="#F0D9B5" stroke-width="1.5"/>
+        <ellipse cx="50" cy="40" rx="8" ry="28" fill="#FFB6C1"/>
+        <!-- 右耳 -->
+        <ellipse cx="110" cy="40" rx="16" ry="40" fill="#FFFFFF" stroke="#F0D9B5" stroke-width="1.5"/>
+        <ellipse cx="110" cy="40" rx="8" ry="28" fill="#FFB6C1"/>
+        <!-- 头 -->
+        <circle cx="80" cy="95" r="42" fill="#FFFFFF" stroke="#F0D9B5" stroke-width="1.5"/>
+        <!-- 左眼 -->
+        <circle cx="65" cy="88" r="5" fill="#333"/>
+        <circle cx="63" cy="86" r="2" fill="#FFF"/>
+        <!-- 右眼 -->
+        <circle cx="95" cy="88" r="5" fill="#333"/>
+        <circle cx="93" cy="86" r="2" fill="#FFF"/>
+        <!-- 鼻子 -->
+        <ellipse cx="80" cy="98" rx="4" ry="3" fill="#FFB6C1"/>
+        <!-- 嘴 -->
+        <path d="M76 102 Q80 107 84 102" fill="none" stroke="#F0D9B5" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- 腮红 -->
+        <ellipse cx="52" cy="100" rx="10" ry="6" fill="rgba(255,180,180,0.5)"/>
+        <ellipse cx="108" cy="100" rx="10" ry="6" fill="rgba(255,180,180,0.5)"/>
+        <!-- 身体 -->
+        <ellipse cx="80" cy="155" rx="35" ry="30" fill="#FFFFFF" stroke="#F0D9B5" stroke-width="1.5"/>
+        <!-- 小尾巴 -->
+        <circle cx="80" cy="185" r="8" fill="#FFFFFF" stroke="#F0D9B5" stroke-width="1.5"/>
+      </svg>
+
+      <div style="margin-top:20px; text-align:left;">
+        <div style="font-weight:600; margin-bottom:8px;">兔子的视觉要素：</div>
+        <ul style="font-size:13px; color:#555; padding-left:18px;">
+          <li>白色圆身，长耳朵内粉色</li>
+          <li>大眼睛带高光点，可爱表情</li>
+          <li>粉色鼻子 + 微笑弧线嘴</li>
+          <li>两侧腮红，与蛋的腮红呼应</li>
+          <li>圆润小身体 + 圆尾巴</li>
+          <li>动画：呼吸、眨眼、耳朵微动、左右摇晃</li>
+          <li>聊天时嘴巴随音频张合</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <div style="font-weight:600; margin-bottom:8px;">配色方案：</div>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <div style="text-align:center;">
+      <div style="width:48px; height:48px; border-radius:10px; background:#FFF5E6; border:1px solid #eee;"></div>
+      <div style="font-size:11px; margin-top:4px;">蛋身<br>#FFF5E6</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:48px; height:48px; border-radius:10px; background:#F0D9B5; border:1px solid #eee;"></div>
+      <div style="font-size:11px; margin-top:4px;">描边<br>#F0D9B5</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:48px; height:48px; border-radius:10px; background:#FFB6C1; border:1px solid #eee;"></div>
+      <div style="font-size:11px; margin-top:4px;">粉色<br>#FFB6C1</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:48px; height:48px; border-radius:10px; background:#FFFFFF; border:1px solid #eee;"></div>
+      <div style="font-size:11px; margin-top:4px;">白<br>#FFFFFF</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:48px; height:48px; border-radius:10px; background:#FFB4A2; border:1px solid #eee;"></div>
+      <div style="font-size:11px; margin-top:4px;">腮红<br>#FFB4A2</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:48px; height:48px; border-radius:10px; background:#FFF0F5; border:1px solid #eee;"></div>
+      <div style="font-size:11px; margin-top:4px;">背景<br>#FFF0F5</div>
+    </div>
+  </div>
+</div>

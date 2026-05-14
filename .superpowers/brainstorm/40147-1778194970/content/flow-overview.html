@@ -1,0 +1,88 @@
+<h2>整体流程设计</h2>
+<p class="subtitle">单页面五阶段状态机，点击演示按钮触发</p>
+
+<div class="mockup">
+  <div class="mockup-header">孵化演示流程</div>
+  <div class="mockup-body" style="text-align:center; padding: 30px 20px;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">
+
+      <div style="background:#f0f4ff; border-radius:12px; padding:16px 20px; min-width:100px; border:2px solid #4f7cff;">
+        <div style="font-size:28px;">🥚</div>
+        <div style="font-weight:600; margin-top:6px;">蛋</div>
+        <div style="font-size:11px; color:#666;">精致静态蛋<br>呼吸光晕</div>
+      </div>
+
+      <div style="font-size:20px; color:#aaa;">→</div>
+
+      <div style="background:#fff8f0; border-radius:12px; padding:16px 20px; min-width:100px; border:2px solid #ff9f43;">
+        <div style="font-size:28px;">🫨</div>
+        <div style="font-weight:600; margin-top:6px;">孵化</div>
+        <div style="font-size:11px; color:#666;">用户点击加速<br>蛋摇晃 + 裂纹</div>
+      </div>
+
+      <div style="font-size:20px; color:#aaa;">→</div>
+
+      <div style="background:#fff0f5; border-radius:12px; padding:16px 20px; min-width:100px; border:2px solid #ff6b9d;">
+        <div style="font-size:28px;">🐣</div>
+        <div style="font-weight:600; margin-top:6px;">破壳</div>
+        <div style="font-size:11px; color:#666;">蛋壳碎裂<br>调用出生API</div>
+      </div>
+
+      <div style="font-size:20px; color:#aaa;">→</div>
+
+      <div style="background:#f0fff4; border-radius:12px; padding:16px 20px; min-width:100px; border:2px solid #51cf66;">
+        <div style="font-size:28px;">🐰</div>
+        <div style="font-weight:600; margin-top:6px;">出生</div>
+        <div style="font-size:11px; color:#666;">兔子出现<br>展示宠物信息</div>
+      </div>
+
+      <div style="font-size:20px; color:#aaa;">→</div>
+
+      <div style="background:#f5f0ff; border-radius:12px; padding:16px 20px; min-width:100px; border:2px solid #845ef7;">
+        <div style="font-size:28px;">💬</div>
+        <div style="font-weight:600; margin-top:6px;">聊天</div>
+        <div style="font-size:11px; color:#666;">AI 语音对话<br>现有功能</div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:24px; text-align:left; max-width:500px; margin-left:auto; margin-right:auto;">
+      <div style="font-weight:600; margin-bottom:10px;">各阶段细节：</div>
+
+      <div style="margin-bottom:12px; padding:10px; background:#f8f9fa; border-radius:8px;">
+        <strong>阶段 1 — 蛋（静态展示）</strong>
+        <div style="font-size:13px; color:#555; margin-top:4px;">
+          屏幕中央显示精致蛋，柔和呼吸光晕动画。底部有"开始孵化"按钮。
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px; padding:10px; background:#f8f9fa; border-radius:8px;">
+        <strong>阶段 2 — 孵化（用户互动）</strong>
+        <div style="font-size:13px; color:#555; margin-top:4px;">
+          蛋开始轻微摇晃。用户点击/触摸蛋加速孵化。进度条逐渐填满。蛋摇晃幅度随进度增加，裂纹逐渐出现。
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px; padding:10px; background:#f8f9fa; border-radius:8px;">
+        <strong>阶段 3 — 破壳（自动播放）</strong>
+        <div style="font-size:13px; color:#555; margin-top:4px;">
+          进度满后自动触发。蛋壳裂开，粒子飞散。此时调用 POST /pet/birth API，获取宠物数据。
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px; padding:10px; background:#f8f9fa; border-radius:8px;">
+        <strong>阶段 4 — 出生展示</strong>
+        <div style="font-size:13px; color:#555; margin-top:4px;">
+          兔子从蛋壳中跳出，展示宠物信息卡（昵称、MBTI、八字等）。持续几秒后过渡到聊天。
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px; padding:10px; background:#f8f9fa; border-radius:8px;">
+        <strong>阶段 5 — 聊天交互</strong>
+        <div style="font-size:13px; color:#555; margin-top:4px;">
+          现有 test_page.html 功能。兔子形象替代 Live2D 角色，出现在聊天界面中。有"重新孵化"按钮可回到阶段 1。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

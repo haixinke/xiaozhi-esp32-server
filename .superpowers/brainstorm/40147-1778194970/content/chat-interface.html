@@ -1,0 +1,87 @@
+<h2>聊天界面改造 & 文件结构</h2>
+<p class="subtitle">兔子替代 Live2D，整合现有功能</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">聊天界面布局</div>
+    <div class="mockup-body" style="padding:20px;">
+
+      <div style="font-size:13px; color:#555;">
+        <div style="margin-bottom:12px;">
+          <strong style="color:#333;">改造要点：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li>顶部：兔子头像 + 宠物昵称 + 连接状态</li>
+            <li>中间：聊天弹幕流（保留现有功能）</li>
+            <li>底部：文字输入 + 语音按钮</li>
+            <li>兔子形象出现在 <strong>左下角</strong>，作为固定陪伴</li>
+            <li>保留 Live2D 代码但不再默认启用</li>
+          </ul>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <strong style="color:#333;">兔子在聊天中的行为：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li><strong>待机</strong>：呼吸动画 + 偶尔眨眼</li>
+            <li><strong>说话中</strong>（TTS 播放）：嘴巴张合动画</li>
+            <li><strong>倾听中</strong>（录音）：耳朵竖起动画</li>
+            <li><strong>收到消息</strong>：开心跳动</li>
+          </ul>
+        </div>
+
+        <div>
+          <strong style="color:#333;">保留的现有功能：</strong>
+          <ul style="padding-left:16px; margin-top:4px;">
+            <li>WebSocket 连接（OTA 流程不变）</li>
+            <li>语音录制 + Opus 编解码</li>
+            <li>聊天弹幕显示</li>
+            <li>设置面板（设备配置、MCP 工具）</li>
+            <li>背景切换</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; padding:10px; background:#fff3cd; border-radius:8px; font-size:12px; color:#856404;">
+        <strong>入口变化：</strong>原页面的"拨号"按钮改为"开始演示"按钮。设备配置保留在设置面板中，演示开始前需配置好 OTA 地址。
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">文件结构</div>
+    <div class="mockup-body" style="padding:20px;">
+      <pre style="font-size:12px; line-height:1.7; color:#333; margin:0; overflow-x:auto;">
+demo-web/
+├── index.html              <span style="color:#888;">// 新入口：孵化演示</span>
+├── test_page.html          <span style="color:#888;">// 保留：原始测试页面</span>
+├── css/
+│   ├── test_page.css       <span style="color:#888;">// 现有样式</span>
+│   ├── hatch.css           <span style="color:#888;">// 新：孵化动画样式</span>
+│   └── rabbit.css          <span style="color:#888;">// 新：兔子样式</span>
+├── js/
+│   ├── app.js              <span style="color:#888;">// 现有入口</span>
+│   ├── hatch/
+│   │   ├── hatch-manager.js  <span style="color:#888;">// 孵化状态机</span>
+│   │   ├── egg.js            <span style="color:#888;">// 蛋的渲染 + 动画</span>
+│   │   ├── hatching.js       <span style="color:#888;">// 孵化互动 + 进度</span>
+│   │   ├── cracking.js       <span style="color:#888;">// 破壳动画</span>
+│   │   └── birth.js          <span style="color:#888;">// 出生展示 + API</span>
+│   ├── rabbit/
+│   │   └── rabbit.js         <span style="color:#888;">// 兔子 SVG + 动画</span>
+│   ├── ui/
+│   │   ├── controller.js     <span style="color:#888;">// 现有（改造）</span>
+│   │   └── background-load.js<span style="color:#888;">// 现有</span>
+│   ├── core/               <span style="color:#888;">// 现有代码不变</span>
+│   │   ├── network/
+│   │   ├── audio/
+│   │   └── mcp/
+│   ├── config/
+│   │   └── manager.js       <span style="color:#888;">// 现有（改造）</span>
+│   └── utils/
+│       └── logger.js        <span style="color:#888;">// 现有</span>
+├── images/                  <span style="color:#888;">// 现有图片</span>
+├── resources/               <span style="color:#888;">// Live2D 资源（保留）</span>
+└── favicon.ico
+      </pre>
+    </div>
+  </div>
+</div>

@@ -237,25 +237,7 @@ class HatchApp {
     }
 
     initChatControls() {
-        // 拨号按钮事件由 uiController.init() 统一处理，不再重复绑定
-
-        // 录音按钮
-        const recordBtn = document.getElementById('recordBtn');
-        if (recordBtn && !recordBtn._hatchBound) {
-            recordBtn._hatchBound = true;
-            recordBtn.addEventListener('click', () => {
-                const audioRecorder = getAudioRecorder();
-                if (audioRecorder.isRecording) {
-                    audioRecorder.stop();
-                    recordBtn.classList.remove('recording');
-                    recordBtn.querySelector('.btn-text').textContent = '录音';
-                } else {
-                    recordBtn.classList.add('recording');
-                    recordBtn.querySelector('.btn-text').textContent = '录音中';
-                    setTimeout(() => audioRecorder.start(), 100);
-                }
-            });
-        }
+        // 拨号按钮、录音按钮事件由 uiController.init() 统一处理，不再重复绑定
 
         // 聊天输入
         const chatIpt = document.getElementById('chatIpt');
@@ -424,18 +406,7 @@ class HatchApp {
         wsHandler.onChatMessage = (text, isUser) => {
             uiController.addChatMessage(text, isUser);
         };
-        wsHandler.onRecordButtonStateChange = (isRecording) => {
-            const recordBtn = document.getElementById('recordBtn');
-            if (recordBtn) {
-                if (isRecording) {
-                    recordBtn.classList.add('recording');
-                    recordBtn.querySelector('.btn-text').textContent = '录音中';
-                } else {
-                    recordBtn.classList.remove('recording');
-                    recordBtn.querySelector('.btn-text').textContent = '录音';
-                }
-            }
-        };
+        // onRecordButtonStateChange 回调在 uiController 中注册，避免重复
 
         const chatIpt = document.getElementById('chatIpt');
         if (chatIpt) chatIpt.style.display = 'flex';

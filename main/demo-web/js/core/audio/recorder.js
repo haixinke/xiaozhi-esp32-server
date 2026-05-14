@@ -3,6 +3,9 @@ import { log } from '../../utils/logger.js';
 import { initOpusEncoder } from './opus-codec.js';
 import { getAudioPlayer } from './player.js';
 
+// Track if AudioWorklet processor has been registered
+let workletProcessorRegistered = false;
+
 // Audio recorder class
 export class AudioRecorder {
     constructor() {
@@ -92,10 +95,14 @@ export class AudioRecorder {
         this.audioContext = this.getAudioContext();
         try {
             if (this.audioContext.audioWorklet) {
-                const blob = new Blob([this.getAudioProcessorCode()], { type: 'application/javascript' });
-                const url = URL.createObjectURL(blob);
-                await this.audioContext.audioWorklet.addModule(url);
-                URL.revokeObjectURL(url);
+                // Only register the processor once
+                if (!workletProcessorRegistered) {
+                    const blob = new Blob([this.getAudioProcessorCode()], { type: 'application/javascript' });
+                    const url = URL.createObjectURL(blob);
+                    await this.audioContext.audioWorklet.addModule(url);
+                    URL.revokeObjectURL(url);
+                    workletProcessorRegistered = true;
+                }
                 const audioProcessor = new AudioWorkletNode(this.audioContext, 'audio-recorder-processor');
                 audioProcessor.port.onmessage = (event) => {
                     if (event.data.type === 'buffer') {
@@ -291,9 +298,11 @@ export class AudioRecorder {
 
     // Stop recording
     stop() {
-        if (!this.isRecording) return false;
+        // Always clear recording state and timer, even if already stopped
+        const wasRecording = this.isRecording;
+        this.isRecording = false;
+
         try {
-            this.isRecording = false;
             if (this.audioProcessor) {
                 if (this.audioProcessorType === 'worklet' && this.audioProcessor.port) {
                     this.audioProcessor.port.postMessage({ command: 'stop' });
@@ -309,22 +318,25 @@ export class AudioRecorder {
                 cancelAnimationFrame(this.visualizationRequest);
                 this.visualizationRequest = null;
             }
+            // Always clear timer to prevent any residual callbacks
             if (this.recordingTimer) {
                 clearInterval(this.recordingTimer);
                 this.recordingTimer = null;
             }
             // Encode and send remaining data
-            this.encodeAndSendOpus();
-            // Send end signal
-            if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-                const emptyOpusFrame = new Uint8Array(0);
-                this.websocket.send(emptyOpusFrame);
-                log('已发送录音停止信号', 'info');
+            if (wasRecording) {
+                this.encodeAndSendOpus();
+                // Send end signal
+                if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                    const emptyOpusFrame = new Uint8Array(0);
+                    this.websocket.send(emptyOpusFrame);
+                    log('已发送录音停止信号', 'info');
+                }
+                if (this.onRecordingStop) {
+                    this.onRecordingStop();
+                }
+                log('已停止PCM直接录音', 'success');
             }
-            if (this.onRecordingStop) {
-                this.onRecordingStop();
-            }
-            log('已停止PCM直接录音', 'success');
             return true;
         } catch (error) {
             log(`直接录音停止错误: ${error.message}`, 'error');

@@ -1,0 +1,287 @@
+{
+  "nodes": [
+    {
+      "id": "requirements",
+      "label": "Python Dependencies Configuration",
+      "file_type": "code",
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "id": "performance_tester",
+      "label": "Performance Testing Framework",
+      "file_type": "code",
+      "source_file": "performance_tester.py",
+      "source_location": null
+    },
+    {
+      "id": "performance_tester_list_performance_tester_modules",
+      "label": "List Performance Tester Modules Function",
+      "file_type": "code",
+      "source_file": "performance_tester.py",
+      "source_location": "lines 8-16"
+    },
+    {
+      "id": "performance_tester_load_and_execute_module",
+      "label": "Load and Execute Module Function",
+      "file_type": "code",
+      "source_file": "performance_tester.py",
+      "source_location": "lines 19-34"
+    },
+    {
+      "id": "performance_tester_get_module_description",
+      "label": "Get Module Description Function",
+      "file_type": "code",
+      "source_file": "performance_tester.py",
+      "source_location": "lines 37-44"
+    },
+    {
+      "id": "performance_tester_main",
+      "label": "Performance Tester Main Entry Point",
+      "file_type": "code",
+      "source_file": "performance_tester.py",
+      "source_location": "lines 47-66"
+    },
+    {
+      "id": "performance_tester_dir",
+      "label": "Performance Tester Directory Pattern",
+      "file_type": "rationale",
+      "source_file": "performance_tester.py",
+      "source_location": "lines 9-11"
+    },
+    {
+      "id": "dynamic_module_loading_pattern",
+      "label": "Dynamic Module Loading Pattern",
+      "file_type": "rationale",
+      "source_file": "performance_tester.py",
+      "source_location": "lines 19-34"
+    },
+    {
+      "id": "torch_dependency",
+      "label": "PyTorch Machine Learning Framework",
+      "file_type": "rationale",
+      "source_file": "requirements.txt",
+      "source_location": "line 3"
+    },
+    {
+      "id": "websockets_dependency",
+      "label": "WebSocket Communication Library",
+      "file_type": "rationale",
+      "source_file": "requirements.txt",
+      "source_location": "line 7"
+    },
+    {
+      "id": "asr_dependencies",
+      "label": "Automatic Speech Recognition Dependencies",
+      "file_type": "rationale",
+      "source_file": "requirements.txt",
+      "source_location": "lines 13, 29, 43"
+    },
+    {
+      "id": "llm_dependencies",
+      "label": "Large Language Model Dependencies",
+      "file_type": "rationale",
+      "source_file": "requirements.txt",
+      "source_location": "lines 14, 15, 24, 33"
+    },
+    {
+      "id": "tts_dependencies",
+      "label": "Text-to-Speech Dependencies",
+      "file_type": "rationale",
+      "source_file": "requirements.txt",
+      "source_location": "line 16"
+    },
+    {
+      "id": "memory_dependencies",
+      "label": "Memory System Dependencies",
+      "file_type": "rationale",
+      "source_file": "requirements.txt",
+      "source_location": "lines 25, 26"
+    },
+    {
+      "id": "mcp_dependencies",
+      "label": "MCP (Model Context Protocol) Dependencies",
+      "file_type": "rationale",
+      "source_file": "requirements.txt",
+      "source_location": "lines 30, 38"
+    }
+  ],
+  "edges": [
+    {
+      "source": "performance_tester_main",
+      "target": "performance_tester_list_performance_tester_modules",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "performance_tester.py",
+      "source_location": "line 48"
+    },
+    {
+      "source": "performance_tester_main",
+      "target": "performance_tester_get_module_description",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "performance_tester.py",
+      "source_location": "line 55"
+    },
+    {
+      "source": "performance_tester_main",
+      "target": "performance_tester_load_and_execute_module",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "performance_tester.py",
+      "source_location": "line 61"
+    },
+    {
+      "source": "performance_tester_load_and_execute_module",
+      "target": "dynamic_module_loading_pattern",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "performance_tester.py",
+      "source_location": "lines 19-34"
+    },
+    {
+      "source": "performance_tester_list_performance_tester_modules",
+      "target": "performance_tester_dir",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "performance_tester.py",
+      "source_location": "line 9"
+    },
+    {
+      "source": "performance_tester_load_and_execute_module",
+      "target": "performance_tester_dir",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "performance_tester.py",
+      "source_location": "line 20"
+    },
+    {
+      "source": "performance_tester_get_module_description",
+      "target": "performance_tester_dir",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "performance_tester.py",
+      "source_location": "line 38"
+    },
+    {
+      "source": "requirements",
+      "target": "asr_dependencies",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "source": "requirements",
+      "target": "llm_dependencies",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "source": "requirements",
+      "target": "tts_dependencies",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "source": "requirements",
+      "target": "memory_dependencies",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "source": "requirements",
+      "target": "mcp_dependencies",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "source": "requirements",
+      "target": "torch_dependency",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "source": "requirements",
+      "target": "websockets_dependency",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "source": "asr_dependencies",
+      "target": "torch_dependency",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "requirements.txt",
+      "source_location": null
+    },
+    {
+      "source": "performance_tester",
+      "target": "performance_tester_dir",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "performance_tester.py",
+      "source_location": "lines 8-16"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "ai_pipeline_dependencies",
+      "label": "AI Pipeline Dependency Group",
+      "nodes": [
+        "asr_dependencies",
+        "llm_dependencies",
+        "tts_dependencies",
+        "memory_dependencies"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "requirements.txt"
+    },
+    {
+      "id": "performance_tester_workflow",
+      "label": "Performance Tester Workflow Components",
+      "nodes": [
+        "performance_tester_main",
+        "performance_tester_list_performance_tester_modules",
+        "performance_tester_get_module_description",
+        "performance_tester_load_and_execute_module"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "performance_tester.py"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

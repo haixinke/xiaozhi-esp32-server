@@ -466,6 +466,10 @@ export class WebSocketHandler {
             if (this.onConnectionStateChange) {
                 this.onConnectionStateChange(false);
             }
+
+            // 重置录音按钮状态
+            const audioRecorder = getAudioRecorder();
+            audioRecorder.stop();
         };
 
         this.websocket.onmessage = (event) => {
@@ -488,9 +492,7 @@ export class WebSocketHandler {
     disconnect() {
         if (!this.websocket) return;
 
-        const ws = this.websocket;
-        this.websocket = null;
-        ws.close();
+        this.websocket.close();
         const audioRecorder = getAudioRecorder();
         audioRecorder.stop();
 

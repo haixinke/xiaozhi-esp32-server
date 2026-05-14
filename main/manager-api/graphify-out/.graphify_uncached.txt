@@ -1,0 +1,7 @@
+/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/README.md
+/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/CLAUDE.md
+/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/docs/database-schema.md
+/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/resources/application.yml
+/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/application-dev.yml
+/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/application.yml
+/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml

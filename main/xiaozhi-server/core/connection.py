@@ -42,6 +42,7 @@ from core.utils.prompt_manager import PromptManager
 from core.utils.voiceprint_provider import VoiceprintProvider
 from core.utils.util import get_system_error_response
 from core.utils import textUtils
+from core.utils.pet_utils import format_pet_birth_info
 
 
 TAG = __name__
@@ -769,7 +770,19 @@ class ConnectionHandler:
         if pet_info and pet_info.get("personality"):
             nickname = pet_info.get("nickname", "")
             personality = pet_info["personality"]
-            self.config["prompt"] = f"你的名字是{nickname}，{personality}"
+
+            # 构建基础提示词：昵称 + 出生日期 + 星座 + 性格
+            prompt_parts = [f"你的名字是{nickname}"]
+
+            # 添加出生日期和星座信息
+            birth_info = format_pet_birth_info(pet_info)
+            if birth_info:
+                prompt_parts.append(birth_info)
+
+            # 添加性格描述
+            prompt_parts.append(personality)
+
+            self.config["prompt"] = "，".join(prompt_parts)
         # 设置今日心情（默认"愉快"）
         PET_MOOD_MAP = {
             "JOY": "愉快", "CALM": "平静", "EXCITEMENT": "兴奋",

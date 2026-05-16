@@ -1,30 +1,44 @@
 package xiaozhi.modules.pet.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
+import xiaozhi.common.page.PageData;
 import xiaozhi.common.service.impl.BaseServiceImpl;
+import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
+import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.llm.service.LLMService;
+import xiaozhi.modules.pet.dao.MemoryDao;
 import xiaozhi.modules.pet.dao.PetDao;
+import xiaozhi.modules.pet.dao.UserProfileDao;
+import xiaozhi.modules.pet.entity.MemoryEntity;
 import xiaozhi.modules.pet.entity.PetEntity;
+import xiaozhi.modules.pet.entity.UserProfileEntity;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.util.MbtiParser;
 import xiaozhi.modules.pet.util.PetBirthCalculator;
 import xiaozhi.modules.pet.util.PetMood;
 import xiaozhi.modules.pet.util.PetNicknameGenerator;
+import xiaozhi.modules.pet.vo.ChatHistoryVO;
+import xiaozhi.modules.pet.vo.MemoryVO;
 import xiaozhi.modules.pet.vo.PetVO;
+import xiaozhi.modules.pet.vo.UserProfileVO;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -34,6 +48,9 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final PetDao petDao;
     private final DeviceDao deviceDao;
     private final LLMService llmService;
+    private final AiAgentChatHistoryDao chatHistoryDao;
+    private final MemoryDao memoryDao;
+    private final UserProfileDao userProfileDao;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -233,6 +250,111 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setPersonality(pet.getPersonality());
         vo.setTodayMood(pet.getTodayMood());
         vo.setCreateDate(pet.getCreateDate());
+        return vo;
+    }
+
+    @Override
+    public PageData<ChatHistoryVO> getChatHistoryByMacAddress(String macAddress, Map<String, Object> params) {
+        int page = Integer.parseInt(params.get(Constant.PAGE).toString());
+        int limit = Integer.parseInt(params.get(Constant.LIMIT).toString());
+
+        // 构建查询条件
+        QueryWrapper<AgentChatHistoryEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("mac_address", macAddress)
+                .orderByDesc("created_at");
+
+        // 执行分页查询
+        Page<AgentChatHistoryEntity> pageParam = new Page<>(page, limit);
+        IPage<AgentChatHistoryEntity> result = chatHistoryDao.selectPage(pageParam, wrapper);
+
+        // 转换为VO
+        List<ChatHistoryVO> records = result.getRecords().stream().map(entity -> {
+            ChatHistoryVO vo = new ChatHistoryVO();
+            vo.setId(entity.getId());
+            vo.setSessionId(entity.getSessionId());
+            vo.setChatType(entity.getChatType());
+            vo.setContent(entity.getContent());
+            vo.setAudioId(entity.getAudioId());
+            vo.setCreatedAt(entity.getCreatedAt());
+            return vo;
+        }).toList();
+
+        return new PageData<>(records, result.getTotal());
+    }
+
+    @Override
+    public PageData<MemoryVO> getMemoryByDeviceId(String deviceId, Map<String, Object> params) {
+        int page = Integer.parseInt(params.get(Constant.PAGE).toString());
+        int limit = Integer.parseInt(params.get(Constant.LIMIT).toString());
+
+        // 构建查询条件
+        QueryWrapper<MemoryEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("user_id", deviceId)
+                .orderByDesc("created_at");
+
+        // 执行分页查询
+        Page<MemoryEntity> pageParam = new Page<>(page, limit);
+        IPage<MemoryEntity> result = memoryDao.selectPage(pageParam, wrapper);
+
+        // 转换为VO
+        List<MemoryVO> records = result.getRecords().stream()
+                .map(this::toMemoryVO)
+                .toList();
+
+        return new PageData<>(records, result.getTotal());
+    }
+
+    /**
+     * 转换MemoryEntity为MemoryVO
+     *
+     * @param entity MemoryEntity
+     * @return MemoryVO
+     */
+    private MemoryVO toMemoryVO(MemoryEntity entity) {
+        MemoryVO vo = new MemoryVO();
+        vo.setId(entity.getId());
+        vo.setCategory(entity.getCategory());
+        vo.setDocument(entity.getDocument());
+        vo.setCreatedAt(entity.getCreatedAt());
+        vo.setUpdatedAt(entity.getUpdatedAt());
+        return vo;
+    }
+
+    @Override
+    public PageData<UserProfileVO> getUserProfileByDeviceId(String deviceId, Map<String, Object> params) {
+        int page = Integer.parseInt(params.get(Constant.PAGE).toString());
+        int limit = Integer.parseInt(params.get(Constant.LIMIT).toString());
+
+        // 构建查询条件
+        QueryWrapper<UserProfileEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("user_id", deviceId)
+                .orderByDesc("created_at");
+
+        // 执行分页查询
+        Page<UserProfileEntity> pageParam = new Page<>(page, limit);
+        IPage<UserProfileEntity> result = userProfileDao.selectPage(pageParam, wrapper);
+
+        // 转换为VO
+        List<UserProfileVO> records = result.getRecords().stream()
+                .map(this::toUserProfileVO)
+                .toList();
+
+        return new PageData<>(records, result.getTotal());
+    }
+
+    /**
+     * 转换UserProfileEntity为UserProfileVO
+     *
+     * @param entity UserProfileEntity
+     * @return UserProfileVO
+     */
+    private UserProfileVO toUserProfileVO(UserProfileEntity entity) {
+        UserProfileVO vo = new UserProfileVO();
+        vo.setId(entity.getId());
+        vo.setProfileContent(entity.getProfileContent());
+        vo.setTopics(entity.getTopics());
+        vo.setCreatedAt(entity.getCreatedAt());
+        vo.setUpdatedAt(entity.getUpdatedAt());
         return vo;
     }
 }

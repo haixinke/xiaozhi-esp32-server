@@ -1,17 +1,7 @@
 // 配置管理模块
 
-// 生成随机MAC地址
-function generateRandomMac() {
-    const hexDigits = '0123456789ABCDEF';
-    let mac = '';
-    for (let i = 0; i < 6; i++) {
-        if (i > 0) mac += ':';
-        for (let j = 0; j < 2; j++) {
-            mac += hexDigits.charAt(Math.floor(Math.random() * 16));
-        }
-    }
-    return mac;
-}
+// 默认MAC地址
+const DEFAULT_MAC = '62:68:0B:F7:03:8C';
 
 // 加载配置
 export function loadConfig() {
@@ -20,10 +10,10 @@ export function loadConfig() {
     const clientIdInput = document.getElementById('clientId');
     const otaUrlInput = document.getElementById('otaUrl');
 
-    // 从localStorage加载MAC地址，如果没有则生成新的
+    // 从localStorage加载MAC地址，如果没有则使用默认值
     let savedMac = localStorage.getItem('xz_tester_deviceMac');
     if (!savedMac) {
-        savedMac = generateRandomMac();
+        savedMac = DEFAULT_MAC;
         localStorage.setItem('xz_tester_deviceMac', savedMac);
     }
     deviceMacInput.value = savedMac;

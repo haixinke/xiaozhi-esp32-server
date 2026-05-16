@@ -40,11 +40,10 @@ public interface PetService extends BaseService<PetEntity> {
     PageData<MemoryVO> getMemoryByDeviceId(String deviceId, Map<String, Object> params);
 
     /**
-     * 根据设备ID查询用户画像记录
+     * 根据设备ID查询用户画像
      *
      * @param deviceId 设备ID (user_id)
-     * @param params   查询参数（包含分页信息）
-     * @return 分页用户画像记录
+     * @return 用户画像
      */
-    PageData<UserProfileVO> getUserProfileByDeviceId(String deviceId, Map<String, Object> params);
+    UserProfileVO getUserProfileByDeviceId(String deviceId);
 }

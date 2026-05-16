@@ -187,6 +187,9 @@
                 <div class="settings-tabs">
                     <button class="tab-btn active" data-tab="device">设备配置</button>
                     <button class="tab-btn" data-tab="mcp">MCP工具</button>
+                    <button class="tab-btn" data-tab="chat-history">聊天记录</button>
+                    <button class="tab-btn" data-tab="memory">记忆列表</button>
+                    <button class="tab-btn" data-tab="profile">用户画像</button>
                 </div>
                 <div class="tab-content active" id="deviceTab">
                     <div class="config-panel">
@@ -204,7 +207,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label for="deviceName">设备名称:</label>
-                                    <input type="text" id="deviceName" value="Web测试设备" maxlength="50" placeholder="deviceName">
+                                    <input type="text" id="deviceName" value="蛋宝宝测试设备" maxlength="50" placeholder="deviceName">
                                 </div>
                             </div>
                         </div>
@@ -233,6 +236,55 @@
                                 <button class="btn-primary" id="addMcpToolBtn">➕ 添加新工具</button>
                             </div>
                         </div>
+                    </div>
+                </div>
+                <div class="tab-content" id="chat-historyTab">
+                    <div class="data-container">
+                        <div class="data-loading" id="chatHistoryLoading" style="display: none;">
+                            <div class="loading-spinner"></div>
+                            <p>加载中...</p>
+                        </div>
+                        <div class="data-empty" id="chatHistoryEmpty" style="display: none;">
+                            <p>暂无聊天记录</p>
+                        </div>
+                        <div class="data-error" id="chatHistoryError" style="display: none;"></div>
+                        <div class="data-list" id="chatHistoryList"></div>
+                        <div class="data-pagination" id="chatHistoryPagination" style="display: none;">
+                            <button class="pagination-btn" id="chatHistoryPrevBtn" disabled>上一页</button>
+                            <span class="pagination-info" id="chatHistoryPageInfo">第 1 页</span>
+                            <button class="pagination-btn" id="chatHistoryNextBtn" disabled>下一页</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-content" id="memoryTab">
+                    <div class="data-container">
+                        <div class="data-loading" id="memoryLoading" style="display: none;">
+                            <div class="loading-spinner"></div>
+                            <p>加载中...</p>
+                        </div>
+                        <div class="data-empty" id="memoryEmpty" style="display: none;">
+                            <p>暂无记忆记录</p>
+                        </div>
+                        <div class="data-error" id="memoryError" style="display: none;"></div>
+                        <div class="data-list" id="memoryList"></div>
+                        <div class="data-pagination" id="memoryPagination" style="display: none;">
+                            <button class="pagination-btn" id="memoryPrevBtn" disabled>上一页</button>
+                            <span class="pagination-info" id="memoryPageInfo">第 1 页</span>
+                            <button class="pagination-btn" id="memoryNextBtn" disabled>下一页</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-content" id="profileTab">
+                    <div class="data-container">
+                        <div class="data-loading" id="profileLoading" style="display: none;">
+                            <div class="loading-spinner"></div>
+                            <p>加载中...</p>
+                        </div>
+                        <div class="data-empty" id="profileEmpty" style="display: none;">
+                            <p>暂无用户画像</p>
+                        </div>
+                        <div class="data-error" id="profileError" style="display: none;"></div>
+                        <div class="data-list" id="profileList"></div>
                     </div>
                 </div>
             </div>

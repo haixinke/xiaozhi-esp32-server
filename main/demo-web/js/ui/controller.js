@@ -1,8 +1,9 @@
 // UI controller module
-import { loadConfig, saveConfig } from '../config/manager.js';
+import { loadConfig, saveConfig, getConfig } from '../config/manager.js';
 import { getAudioPlayer } from '../core/audio/player.js';
 import { getAudioRecorder } from '../core/audio/recorder.js';
 import { getWebSocketHandler } from '../core/network/websocket.js';
+import { dataClient } from '../api/data-client.js';
 
 // UI controller class
 class UIController {
@@ -14,6 +15,12 @@ class UIController {
         this.currentBackgroundIndex = localStorage.getItem('backgroundIndex') ? parseInt(localStorage.getItem('backgroundIndex')) : 0;
         this.backgroundImages = ['4.jpg', '5.jpg', '6.png'];
         this.dialBtnDisabled = false;
+
+        // Data tabs state
+        this.dataTabsState = {
+            'chat-history': { currentPage: 1, totalPages: 1, data: null },
+            'memory': { currentPage: 1, totalPages: 1, data: null }
+        };
 
         // Bind methods
         this.init = this.init.bind(this);
@@ -43,6 +50,7 @@ class UIController {
 
         this.initEventListeners();
         this.startAudioStatsMonitor();
+        this.initDataTabs();
         loadConfig();
 
         // Register recording callback
@@ -516,6 +524,13 @@ class UIController {
             activeTabBtn.classList.add('active');
             activeTabContent.classList.add('active');
         }
+
+        // Fetch data when switching to data tabs
+        if (['chat-history', 'memory'].includes(tabName)) {
+            this.fetchDataForTab(tabName);
+        } else if (tabName === 'profile') {
+            this.fetchProfile();
+        }
     }
 
     // Start AI chat session after connection
@@ -625,6 +640,13 @@ class UIController {
             const isConnected = await wsHandler.connect();
 
             if (isConnected) {
+                // Initialize data client with connection parameters
+                const config = getConfig();
+                const otaUrlInput = document.getElementById('otaUrl');
+                if (otaUrlInput && otaUrlInput.value) {
+                    dataClient.init(otaUrlInput.value, config.deviceMac, config.clientId);
+                }
+
                 // Check microphone availability (check again after connection)
                 const { checkMicrophoneAvailability } = await import('../core/audio/recorder.js');
                 const micAvailable = await checkMicrophoneAvailability();
@@ -767,6 +789,454 @@ class UIController {
     updateSessionEmotion(emoji) {
         // Here can add emotion update logic
         // For example: display emoji in status indicator
+    }
+
+    // ==================== Data Tabs Methods ====================
+
+    /**
+     * Fetch data for a specific tab
+     * @param {string} tabName - Tab name (chat-history, memory, profile)
+     */
+    async fetchDataForTab(tabName) {
+        if (!dataClient.isInitialized()) {
+            this.showDataError(tabName, '请先连接设备');
+            return;
+        }
+
+        try {
+            this.showDataLoading(tabName, true);
+            const state = this.dataTabsState[tabName];
+            const page = state.currentPage;
+
+            let data;
+            switch (tabName) {
+                case 'chat-history':
+                    data = await dataClient.fetchChatHistory(dataClient.deviceId, page);
+                    break;
+                case 'memory':
+                    data = await dataClient.fetchMemoryList(dataClient.deviceId, page);
+                    break;
+            }
+
+            state.data = data;
+            state.totalPages = Math.ceil(data.total / 20) || 1;
+
+            this.renderDataForTab(tabName);
+        } catch (error) {
+            console.error(`Failed to fetch ${tabName}:`, error);
+            this.showDataError(tabName, `加载失败: ${error.message}`);
+        }
+    }
+
+    /**
+     * Fetch user profile
+     */
+    async fetchProfile() {
+        if (!dataClient.isInitialized()) {
+            this.showProfileError('请先连接设备');
+            return;
+        }
+
+        try {
+            this.showProfileLoading(true);
+
+            const profile = await dataClient.fetchProfile(dataClient.deviceId);
+
+            if (!profile) {
+                this.showProfileEmpty(true);
+                this.showProfileLoading(false);
+                this.showProfileError(null, false);
+                return;
+            }
+
+            // Hide loading and empty states
+            this.showProfileLoading(false);
+            this.showProfileEmpty(false);
+            this.showProfileError(null, false);
+
+            // Render profile
+            this.renderProfile(profile);
+        } catch (error) {
+            console.error('Failed to fetch profile:', error);
+            this.showProfileError(`加载失败: ${error.message}`);
+        }
+    }
+
+    /**
+     * Render data for a specific tab
+     * @param {string} tabName - Tab name
+     */
+    renderDataForTab(tabName) {
+        const state = this.dataTabsState[tabName];
+        const data = state.data;
+
+        if (!data || !data.list || data.list.length === 0) {
+            this.showDataEmpty(tabName);
+            return;
+        }
+
+        // Hide loading and empty states
+        this.showDataLoading(tabName, false);
+        this.showDataEmpty(tabName, false, false);
+        this.showDataError(tabName, null, false);
+
+        // Render data
+        switch (tabName) {
+            case 'chat-history':
+                this.renderChatHistory(data.list);
+                break;
+            case 'memory':
+                this.renderMemoryList(data.list);
+                break;
+        }
+
+        // Update pagination
+        this.updatePagination(tabName);
+    }
+
+    /**
+     * Render user profile
+     * @param {Object} profile - Profile object
+     */
+    renderProfile(profile) {
+        const container = document.getElementById('profileList');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        const card = document.createElement('div');
+        card.className = 'profile-card';
+
+        const createdTime = this.formatDate(profile.createdAt);
+        const updatedTime = this.formatDate(profile.updatedAt);
+
+        // Parse topics if it's a JSON string or comma-separated
+        let topics = [];
+        if (profile.topics) {
+            try {
+                topics = JSON.parse(profile.topics);
+            } catch {
+                topics = profile.topics.split(',').map(t => t.trim()).filter(t => t);
+            }
+        }
+
+        const topicsHtml = topics.map(topic =>
+            `<span class="profile-topic-tag">${this.escapeHtml(topic)}</span>`
+        ).join('');
+
+        card.innerHTML = `
+            <div class="profile-header">
+                <span style="font-weight: 600;">用户画像</span>
+                <span class="profile-time">${createdTime}</span>
+            </div>
+            <div class="profile-content">${this.escapeHtml(profile.profileContent || '')}</div>
+            ${topics.length > 0 ? `<div class="profile-topics">${topicsHtml}</div>` : ''}
+            ${profile.updatedAt ? `<div class="profile-updated">更新于 ${updatedTime}</div>` : ''}
+        `;
+
+        container.appendChild(card);
+    }
+
+    /**
+     * Render chat history
+     * @param {Array} list - Chat history list
+     */
+    renderChatHistory(list) {
+        const container = document.getElementById('chatHistoryList');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        list.forEach(item => {
+            const messageDiv = document.createElement('div');
+            const isUser = item.chatType === 1;
+
+            messageDiv.className = `chat-message-item ${isUser ? 'user' : 'ai'}`;
+
+            const timeStr = this.formatDate(item.createdAt);
+            const typeLabel = isUser ? '用户' : 'AI助手';
+
+            messageDiv.innerHTML = `
+                <div class="chat-message-header">
+                    <span>${typeLabel}</span>
+                    <span class="chat-message-time">${timeStr}</span>
+                </div>
+                <div class="chat-message-content">${this.escapeHtml(item.content || '')}</div>
+            `;
+
+            container.appendChild(messageDiv);
+        });
+    }
+
+    /**
+     * Render memory list
+     * @param {Array} list - Memory list
+     */
+    renderMemoryList(list) {
+        const container = document.getElementById('memoryList');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        list.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'memory-card';
+
+            const createdTime = this.formatDate(item.createdAt);
+            const updatedTime = this.formatDate(item.updatedAt);
+
+            card.innerHTML = `
+                <div class="memory-header">
+                    <span class="memory-category">${this.escapeHtml(item.category || '未分类')}</span>
+                    <span class="memory-time">${createdTime}</span>
+                </div>
+                <div class="memory-content">${this.escapeHtml(item.document || '')}</div>
+                ${item.updatedAt ? `<div class="memory-updated">更新于 ${updatedTime}</div>` : ''}
+            `;
+
+            container.appendChild(card);
+        });
+    }
+
+    /**
+     * Render profile list
+     * @param {Array} list - Profile list
+     */
+    renderProfileList(list) {
+        const container = document.getElementById('profileList');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        list.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'profile-card';
+
+            const createdTime = this.formatDate(item.createdAt);
+            const updatedTime = this.formatDate(item.updatedAt);
+
+            // Parse topics if it's a JSON string or comma-separated
+            let topics = [];
+            if (item.topics) {
+                try {
+                    topics = JSON.parse(item.topics);
+                } catch {
+                    topics = item.topics.split(',').map(t => t.trim()).filter(t => t);
+                }
+            }
+
+            const topicsHtml = topics.map(topic =>
+                `<span class="profile-topic-tag">${this.escapeHtml(topic)}</span>`
+            ).join('');
+
+            card.innerHTML = `
+                <div class="profile-header">
+                    <span style="font-weight: 600;">用户画像</span>
+                    <span class="profile-time">${createdTime}</span>
+                </div>
+                <div class="profile-content">${this.escapeHtml(item.profileContent || '')}</div>
+                ${topics.length > 0 ? `<div class="profile-topics">${topicsHtml}</div>` : ''}
+                ${item.updatedAt ? `<div class="profile-updated">更新于 ${updatedTime}</div>` : ''}
+            `;
+
+            container.appendChild(card);
+        });
+    }
+
+    /**
+     * Show loading state
+     * @param {string} tabName - Tab name
+     * @param {boolean} show - Show or hide
+     */
+    showDataLoading(tabName, show = true) {
+        const loadingEl = document.getElementById(`${tabName.replace('-', '')}Loading`);
+        if (loadingEl) {
+            loadingEl.style.display = show ? 'flex' : 'none';
+        }
+    }
+
+    /**
+     * Show empty state
+     * @param {string} tabName - Tab name
+     * @param {boolean} show - Show or hide
+     */
+    showDataEmpty(tabName, show = true) {
+        const emptyEl = document.getElementById(`${tabName.replace('-', '')}Empty`);
+        if (emptyEl) {
+            emptyEl.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    /**
+     * Show error state
+     * @param {string} tabName - Tab name
+     * @param {string} message - Error message
+     * @param {boolean} show - Show or hide
+     */
+    showDataError(tabName, message, show = true) {
+        const errorEl = document.getElementById(`${tabName.replace('-', '')}Error`);
+        if (errorEl) {
+            if (show && message) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            } else {
+                errorEl.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Show profile loading state
+     * @param {boolean} show - Show or hide
+     */
+    showProfileLoading(show = true) {
+        const loadingEl = document.getElementById('profileLoading');
+        if (loadingEl) {
+            loadingEl.style.display = show ? 'flex' : 'none';
+        }
+    }
+
+    /**
+     * Show profile empty state
+     * @param {boolean} show - Show or hide
+     */
+    showProfileEmpty(show = true) {
+        const emptyEl = document.getElementById('profileEmpty');
+        if (emptyEl) {
+            emptyEl.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    /**
+     * Show profile error state
+     * @param {string} message - Error message
+     * @param {boolean} show - Show or hide
+     */
+    showProfileError(message, show = true) {
+        const errorEl = document.getElementById('profileError');
+        if (errorEl) {
+            if (show && message) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            } else {
+                errorEl.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Update pagination controls
+     * @param {string} tabName - Tab name
+     */
+    updatePagination(tabName) {
+        const state = this.dataTabsState[tabName];
+        const paginationEl = document.getElementById(`${tabName.replace('-', '')}Pagination`);
+        const pageInfo = document.getElementById(`${tabName.replace('-', '')}PageInfo`);
+        const prevBtn = document.getElementById(`${tabName.replace('-', '')}PrevBtn`);
+        const nextBtn = document.getElementById(`${tabName.replace('-', '')}NextBtn`);
+
+        if (!paginationEl) return;
+
+        paginationEl.style.display = 'flex';
+
+        if (pageInfo) {
+            pageInfo.textContent = `第 ${state.currentPage} / ${state.totalPages} 页`;
+        }
+
+        if (prevBtn) {
+            prevBtn.disabled = state.currentPage <= 1;
+        }
+
+        if (nextBtn) {
+            nextBtn.disabled = state.currentPage >= state.totalPages;
+        }
+    }
+
+    /**
+     * Handle pagination button click
+     * @param {string} tabName - Tab name
+     * @param {string} direction - 'prev' or 'next'
+     */
+    handlePagination(tabName, direction) {
+        const state = this.dataTabsState[tabName];
+
+        if (direction === 'prev' && state.currentPage > 1) {
+            state.currentPage--;
+        } else if (direction === 'next' && state.currentPage < state.totalPages) {
+            state.currentPage++;
+        } else {
+            return;
+        }
+
+        this.fetchDataForTab(tabName);
+    }
+
+    /**
+     * Initialize data tabs
+     */
+    initDataTabs() {
+        // Chat history pagination
+        const prevBtn = document.getElementById('chatHistoryPrevBtn');
+        const nextBtn = document.getElementById('chatHistoryNextBtn');
+        if (prevBtn) prevBtn.addEventListener('click', () => this.handlePagination('chat-history', 'prev'));
+        if (nextBtn) nextBtn.addEventListener('click', () => this.handlePagination('chat-history', 'next'));
+
+        // Memory pagination
+        const memPrevBtn = document.getElementById('memoryPrevBtn');
+        const memNextBtn = document.getElementById('memoryNextBtn');
+        if (memPrevBtn) memPrevBtn.addEventListener('click', () => this.handlePagination('memory', 'prev'));
+        if (memNextBtn) memNextBtn.addEventListener('click', () => this.handlePagination('memory', 'next'));
+
+        // Profile tab doesn't need pagination (single record)
+    }
+
+    /**
+     * Format date to string
+     * @param {string} dateString - ISO date string
+     * @returns {string}
+     */
+    formatDate(dateString) {
+        if (!dateString) return '';
+
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) {
+                return '刚刚';
+            } else if (diffMins < 60) {
+                return `${diffMins}分钟前`;
+            } else if (diffHours < 24) {
+                return `${diffHours}小时前`;
+            } else if (diffDays < 7) {
+                return `${diffDays}天前`;
+            } else {
+                return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        } catch (e) {
+            return dateString;
+        }
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     * @param {string} text - Text to escape
+     * @returns {string}
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 

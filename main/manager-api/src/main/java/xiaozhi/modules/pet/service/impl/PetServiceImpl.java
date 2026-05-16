@@ -321,25 +321,23 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     }
 
     @Override
-    public PageData<UserProfileVO> getUserProfileByDeviceId(String deviceId, Map<String, Object> params) {
-        int page = Integer.parseInt(params.get(Constant.PAGE).toString());
-        int limit = Integer.parseInt(params.get(Constant.LIMIT).toString());
-
-        // 构建查询条件
+    public UserProfileVO getUserProfileByDeviceId(String deviceId) {
+        // 构建查询条件 - 查询最新的一条用户画像
         QueryWrapper<UserProfileEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", deviceId)
-                .orderByDesc("created_at");
+                .orderByDesc("created_at")
+                .last("LIMIT 1");
 
-        // 执行分页查询
-        Page<UserProfileEntity> pageParam = new Page<>(page, limit);
-        IPage<UserProfileEntity> result = userProfileDao.selectPage(pageParam, wrapper);
+        // 执行查询
+        UserProfileEntity entity = userProfileDao.selectOne(wrapper);
+
+        // 如果没有找到，返回null
+        if (entity == null) {
+            return null;
+        }
 
         // 转换为VO
-        List<UserProfileVO> records = result.getRecords().stream()
-                .map(this::toUserProfileVO)
-                .toList();
-
-        return new PageData<>(records, result.getTotal());
+        return toUserProfileVO(entity);
     }
 
     /**

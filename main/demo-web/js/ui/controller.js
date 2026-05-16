@@ -1003,7 +1003,6 @@ class UIController {
 
             card.innerHTML = `
                 <div class="memory-header">
-                    <span class="memory-category">${this.escapeHtml(item.category || '未分类')}</span>
                     <span class="memory-time">${createdTime}</span>
                 </div>
                 <div class="memory-content">${this.escapeHtml(item.document || '')}</div>
@@ -1146,10 +1145,21 @@ class UIController {
      */
     updatePagination(tabName) {
         const state = this.dataTabsState[tabName];
-        const paginationEl = document.getElementById(`${tabName.replace('-', '')}Pagination`);
-        const pageInfo = document.getElementById(`${tabName.replace('-', '')}PageInfo`);
-        const prevBtn = document.getElementById(`${tabName.replace('-', '')}PrevBtn`);
-        const nextBtn = document.getElementById(`${tabName.replace('-', '')}NextBtn`);
+
+        // Convert tab name to match HTML ID format
+        let elementPrefix;
+        if (tabName === 'chat-history') {
+            elementPrefix = 'chatHistory';
+        } else if (tabName === 'memory') {
+            elementPrefix = 'memory';
+        } else {
+            return;
+        }
+
+        const paginationEl = document.getElementById(`${elementPrefix}Pagination`);
+        const pageInfo = document.getElementById(`${elementPrefix}PageInfo`);
+        const prevBtn = document.getElementById(`${elementPrefix}PrevBtn`);
+        const nextBtn = document.getElementById(`${elementPrefix}NextBtn`);
 
         if (!paginationEl) return;
 

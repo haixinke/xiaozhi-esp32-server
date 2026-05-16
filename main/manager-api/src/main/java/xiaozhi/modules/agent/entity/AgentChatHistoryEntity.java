@@ -1,7 +1,5 @@
 package xiaozhi.modules.agent.entity;
 
-import java.util.Date;
-
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -68,14 +66,14 @@ public class AgentChatHistoryEntity {
     private String audioId;
 
     /**
-     * 创建时间
+     * 创建时间（ISO 8601格式字符串）
      */
     @TableField(value = "created_at")
-    private Date createdAt;
+    private String createdAt;
 
     /**
-     * 更新时间
+     * 更新时间（ISO 8601格式字符串）
      */
     @TableField(value = "updated_at")
-    private Date updatedAt;
+    private String updatedAt;
 }

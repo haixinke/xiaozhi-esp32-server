@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,7 +26,6 @@ public class ProfileController {
     @Parameters({
             @Parameter(name = "deviceId", description = "设备ID (user_id)", required = true)
     })
-    @RequiresPermissions("sys:role:normal")
     public Result<UserProfileVO> getUserProfileByDeviceId(
             @RequestParam("deviceId") String deviceId) {
         UserProfileVO profile = petService.getUserProfileByDeviceId(deviceId);

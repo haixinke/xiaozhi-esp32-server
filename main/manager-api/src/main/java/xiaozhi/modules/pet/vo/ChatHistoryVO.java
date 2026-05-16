@@ -3,8 +3,6 @@ package xiaozhi.modules.pet.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.util.Date;
-
 @Data
 @Schema(description = "聊天历史视图对象")
 public class ChatHistoryVO {
@@ -24,6 +22,6 @@ public class ChatHistoryVO {
     @Schema(description = "音频ID")
     private String audioId;
 
-    @Schema(description = "创建时间")
-    private Date createdAt;
+    @Schema(description = "创建时间（ISO 8601格式）")
+    private String createdAt;
 }

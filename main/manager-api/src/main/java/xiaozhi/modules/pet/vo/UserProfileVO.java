@@ -3,8 +3,6 @@ package xiaozhi.modules.pet.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.util.Date;
-
 /**
  * 用户画像视图对象
  *
@@ -25,9 +23,9 @@ public class UserProfileVO {
     @Schema(description = "主题标签")
     private String topics;
 
-    @Schema(description = "创建时间")
-    private Date createdAt;
+    @Schema(description = "创建时间（ISO 8601格式）")
+    private String createdAt;
 
-    @Schema(description = "更新时间")
-    private Date updatedAt;
+    @Schema(description = "更新时间（ISO 8601格式）")
+    private String updatedAt;
 }

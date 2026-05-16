@@ -118,7 +118,7 @@ public class AgentChatHistoryBizServiceImpl implements AgentChatHistoryBizServic
                 .chatType(report.getChatType())
                 .content(report.getContent())
                 .audioId(audioId)
-                .createdAt(new Date(reportTime))
+                .createdAt(new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(new Date(reportTime)))
                 // NOTE(haotian): 2025/5/26 updateAt可以不设置，重点是createAt，而且这样可以看到上报延迟
                 .build();
 

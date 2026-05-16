@@ -3,8 +3,6 @@ package xiaozhi.modules.pet.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.util.Date;
-
 /**
  * 记忆视图对象
  *
@@ -25,9 +23,9 @@ public class MemoryVO {
     @Schema(description = "记忆文档内容")
     private String document;
 
-    @Schema(description = "创建时间")
-    private Date createdAt;
+    @Schema(description = "创建时间（ISO 8601格式）")
+    private String createdAt;
 
-    @Schema(description = "更新时间")
-    private Date updatedAt;
+    @Schema(description = "更新时间（ISO 8601格式）")
+    private String updatedAt;
 }

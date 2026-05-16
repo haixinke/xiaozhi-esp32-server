@@ -9,8 +9,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 /**
  * 用户画像表
  *
@@ -49,14 +47,14 @@ public class UserProfileEntity {
     private String topics;
 
     /**
-     * 创建时间
+     * 创建时间（ISO 8601格式字符串）
      */
     @TableField(value = "created_at")
-    private Date createdAt;
+    private String createdAt;
 
     /**
-     * 更新时间
+     * 更新时间（ISO 8601格式字符串）
      */
     @TableField(value = "updated_at")
-    private Date updatedAt;
+    private String updatedAt;
 }

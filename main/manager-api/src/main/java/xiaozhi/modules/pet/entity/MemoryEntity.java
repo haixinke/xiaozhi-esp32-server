@@ -9,8 +9,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 /**
  * 记忆表
  *
@@ -31,10 +29,10 @@ public class MemoryEntity {
     private Long id;
 
     /**
-     * 用户ID
+     * 用户ID（MAC地址字符串）
      */
     @TableField(value = "user_id")
-    private Long userId;
+    private String userId;
 
     /**
      * 智能体ID
@@ -55,14 +53,14 @@ public class MemoryEntity {
     private String category;
 
     /**
-     * 创建时间
+     * 创建时间（ISO 8601格式字符串）
      */
     @TableField(value = "created_at")
-    private Date createdAt;
+    private String createdAt;
 
     /**
-     * 更新时间
+     * 更新时间（ISO 8601格式字符串）
      */
     @TableField(value = "updated_at")
-    private Date updatedAt;
+    private String updatedAt;
 }

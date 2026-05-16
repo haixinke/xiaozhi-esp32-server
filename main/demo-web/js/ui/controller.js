@@ -798,9 +798,17 @@ class UIController {
      * @param {string} tabName - Tab name (chat-history, memory, profile)
      */
     async fetchDataForTab(tabName) {
+        // Try to initialize dataClient if not already initialized
         if (!dataClient.isInitialized()) {
-            this.showDataError(tabName, '请先连接设备');
-            return;
+            const otaUrlInput = document.getElementById('otaUrl');
+            const config = getConfig();
+
+            if (otaUrlInput && otaUrlInput.value) {
+                dataClient.init(otaUrlInput.value, config.deviceMac, config.clientId);
+            } else {
+                this.showDataError(tabName, '请先配置OTA服务器地址');
+                return;
+            }
         }
 
         try {
@@ -832,9 +840,17 @@ class UIController {
      * Fetch user profile
      */
     async fetchProfile() {
+        // Try to initialize dataClient if not already initialized
         if (!dataClient.isInitialized()) {
-            this.showProfileError('请先连接设备');
-            return;
+            const otaUrlInput = document.getElementById('otaUrl');
+            const config = getConfig();
+
+            if (otaUrlInput && otaUrlInput.value) {
+                dataClient.init(otaUrlInput.value, config.deviceMac, config.clientId);
+            } else {
+                this.showProfileError('请先配置OTA服务器地址');
+                return;
+            }
         }
 
         try {

@@ -133,52 +133,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 依赖与环境
 
-- 推荐 Python 版本：**3.10**
+- 推荐 Python 版本：**3.12**
 - `requirements.txt` 中固定了较重的 ML 依赖：`torch==2.2.2`、`funasr==1.2.7`、`sherpa_onnx==1.12.29`、`silero_vad==6.1.0`
 - 使用 `loguru` 进行结构化日志记录
 - 使用 `websockets` 作为设备通信协议，`aiohttp` 作为 HTTP 服务框架
 
 ### 数据库
 
-本地开发环境的 **OceanBase** 通过 **Docker Compose** 运行，用于 PowerMem 记忆模块的向量存储和知识图谱存储（需要 pyobvector 客户端）。
+本地开发环境的 **OceanBase** 通过 **Docker** 容器运行（容器名 `seekdb`），用于 PowerMem 记忆模块的向量存储和知识图谱存储（需要 pyobvector 客户端）。
 
-#### 重启
+#### 容器管理
 
-**重启**（⚠️ 重要）：
-
-```bash
-# ✅ 正确：仅重启容器，保留数据
-docker-compose -f docker-compose-oceanbase.yml restart
-
-# ❌ 错误：不要重复执行 init-powermem.sh，会删除所有存量数据！
-```
-
-**手动启动/停止**：
-```bash
-docker-compose -f docker-compose-oceanbase.yml up -d    # 启动
-docker-compose -f docker-compose-oceanbase.yml down     # 停止
-```
-
-#### 修改密码
-
-**⚠️ 注意**：`docker-compose-oceanbase.yml` 中的 `OB_ROOT_PASSWORD=123456` 环境变量**不起作用**，必须手动修改：
+**启动/停止/重启**：
 
 ```bash
-# 等待容器启动后（约 60-90 秒），执行：
-docker exec xiaozhi-oceanbase obclient -h127.0.0.1 -P2881 -uroot@sys -e "SET PASSWORD = '123456';"
+# 启动
+docker start seekdb
 
-# 验证新密码
-docker exec xiaozhi-oceanbase obclient -h127.0.0.1 -P2881 -uroot@sys -p123456 -e "SELECT 1"
+# 停止
+docker stop seekdb
+
+# 重启（保留数据）
+docker restart seekdb
+
+# 查看状态
+docker ps | grep seekdb
 ```
-
-密码修改后会持久化存储在 `./oceanbase/data` 目录中。
 
 #### 连接信息
 
 ```bash
 主机: 127.0.0.1
 端口: 2881
-用户: root@sys
+用户: root
 密码: 123456
 数据库: egg_database
 ```

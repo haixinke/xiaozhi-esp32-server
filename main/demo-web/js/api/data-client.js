@@ -9,7 +9,7 @@ class DataClient {
         this.baseUrl = '';
         this.deviceId = '';
         this.clientId = '';
-        this.serverSecret = 'c4baac28-f315-447e-9031-d2e850b4b398';
+        this.serverSecret = '95ba359a-8233-4827-8c59-53ecce0049c8';
     }
 
     /**

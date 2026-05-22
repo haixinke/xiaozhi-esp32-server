@@ -75,6 +75,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+graphify-out/
 
 # PyBuilder
 .pybuilder/
@@ -158,6 +159,8 @@ main/xiaozhi-server/data
 main/xiaozhi-server/oceanbase/data/
 
 main/manager-web/node_modules
+main/manager-mobile/node_modules
+main/demo-web/node_modules
 .config.yaml
 .secrets.yaml
 .private_config.yaml

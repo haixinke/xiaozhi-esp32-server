@@ -3,8 +3,8 @@
 -- 支持用户画像、记忆图谱和向量检索
 
 -- 创建数据库
-CREATE DATABASE IF NOT EXISTS powermem DEFAULT CHARACTER SET utf8mb4;
-USE powermem;
+CREATE DATABASE IF NOT EXISTS egg_database DEFAULT CHARACTER SET utf8mb4;
+USE egg_database;
 
 -- 创建记忆表（支持向量存储）
 CREATE TABLE IF NOT EXISTS memories (

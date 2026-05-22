@@ -17,7 +17,7 @@ OB_HOST="127.0.0.1"
 OB_PORT="2881"
 OB_USER="root@test"
 OB_PASSWORD="123456"
-OB_DATABASE="powermem"
+OB_DATABASE="egg_database"
 INIT_SCRIPT="./oceanbase/init/01-init-powermem.sql"
 
 # 检查 Docker 是否运行

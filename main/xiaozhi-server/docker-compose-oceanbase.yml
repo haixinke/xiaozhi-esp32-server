@@ -1,32 +1,26 @@
-# OceanBase for PowerMem
-# 用于xiaozhi-esp32-server的记忆存储，支持用户画像和知识图谱
+# OceanBase SeekDB for PowerMem
+# 用于 xiaozhi-esp32-server 的记忆存储，支持用户画像和知识图谱
+# 使用轻量级 SeekDB 镜像，适合开发环境
 
 services:
-  oceanbase:
-    image: oceanbase/oceanbase-ce:latest
-    container_name: egg-oceanbase
+  seekdb:
+    image: oceanbase/seekdb:latest
+    container_name: seekdb
     restart: always
     ports:
-      - "2881:2881"  # SQL port
-      - "2882:2882"  # RPC port
+      - "2881:2881"  # SQL port (MySQL 兼容)
     environment:
-      - MODE=normal
-      - OB_MEMORY_LIMIT=4G
-      - OB_DATAFILE_SIZE=5G
-      - OB_LOG_DISK_SIZE=3G
-      - OB_MIN_FULL_RESOURCE_POOL_MEMORY=1G
-      - OB_ROOT_PASSWORD=123456
-      - OB_TENANT=mysql
+      - MODE=slim  # 轻量级模式，适合开发环境
       - TZ=Asia/Shanghai
-      - MYSQL_ROOT_PASSWORD=123456
+      - REPORTER=docker-seekdb
     volumes:
-      - ./oceanbase/data:/root/ob
+      - ./oceanbase/data:/root/ob  # 数据持久化
     healthcheck:
-      test: ["CMD", "bash", "-c", "obclient -h127.0.0.1 -P2881 -uroot@sys -p123456 -Dtest -e'SELECT 1'"]
+      test: ["CMD", "bash", "-c", "obclient -h127.0.0.1 -P2881 -uroot -p123456 -Dtest -e'SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 180s
+      start_period: 60s  # slim 模式启动较快
     networks:
       - xiaozhi-network
 

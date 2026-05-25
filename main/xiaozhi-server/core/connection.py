@@ -1056,7 +1056,7 @@ Messages: {len(llm_dialogue)}
 
             if self.intent_type == "function_call" and functions is not None:
                 # 使用支持functions的streaming接口
-                self.logger.bind(tag=TAG).info(f"LLM Functions:\n{json.dumps(functions, ensure_ascii=False, indent=2)}")
+                # self.logger.bind(tag=TAG).info(f"LLM Functions:\n{json.dumps(functions, ensure_ascii=False, indent=2)}")
                 llm_responses = self.llm.response_with_functions(
                     self.session_id,
                     llm_dialogue,

@@ -217,6 +217,7 @@ async def play_local_music(conn: "ConnectionHandler", specific_file=None):
             conn.logger.bind(tag=TAG).error(f"选定的音乐文件不存在: {music_path}")
             return
         text = _get_random_play_prompt(selected_music)
+        conn.tts.store_tts_text(conn.sentence_id, text)
         # conn.dialogue.put(Message(role="assistant", content=text))
 
         if conn.intent_type == "intent_llm":

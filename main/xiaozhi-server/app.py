@@ -10,6 +10,7 @@ from core.http_server import SimpleHttpServer
 from core.websocket_server import WebSocketServer
 from core.utils.util import check_ffmpeg_installed
 from core.utils.gc_manager import get_gc_manager
+from core.connection import shutdown_global_executor
 
 TAG = __name__
 logger = setup_logging()
@@ -129,6 +130,9 @@ async def main():
     finally:
         # 停止全局GC管理器
         await gc_manager.stop()
+
+        # 关闭全局线程池
+        shutdown_global_executor()
 
         # 取消所有任务（关键修复点）
         stdin_task.cancel()

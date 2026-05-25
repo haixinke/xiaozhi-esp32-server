@@ -29,6 +29,7 @@ from core.handle.reportHandle import report, enqueue_tool_report
 from core.providers.tts.default import DefaultTTS
 from concurrent.futures import ThreadPoolExecutor
 from core.utils.dialogue import Message, Dialogue
+
 from core.providers.asr.dto.dto import InterfaceType
 from core.handle.textHandle import handleTextMessage
 from core.providers.tools.unified_tool_handler import UnifiedToolHandler
@@ -47,6 +48,18 @@ from core.utils.pet_utils import format_pet_birth_info
 
 
 TAG = __name__
+
+# 全局共享线程池，避免每连接创建独立线程池导致线程爆炸
+_GLOBAL_EXECUTOR = ThreadPoolExecutor(
+    max_workers=min(32, (os.cpu_count() or 4) * 4),
+    thread_name_prefix="xiaozhi-worker"
+)
+
+
+def shutdown_global_executor():
+    """服务器关闭时调用，清理全局线程池"""
+    _GLOBAL_EXECUTOR.shutdown(wait=True, cancel_futures=True)
+
 
 auto_import_modules("plugins_func.functions")
 
@@ -119,10 +132,10 @@ class ConnectionHandler:
         # 线程任务相关
         self.loop = None  # 在 handle_connection 中获取运行中的事件循环
         self.stop_event = threading.Event()
-        self.executor = ThreadPoolExecutor(max_workers=5)
+        self.executor = _GLOBAL_EXECUTOR
 
         # 添加上报线程池
-        self.report_queue = queue.Queue()
+        self.report_queue = queue.Queue(maxsize=1000)  # 限制上报队列大小，防止内存溢出
         self.report_thread = None
         # 未来可以通过修改此处，调节asr的上报和tts的上报，目前默认都开启
         self.report_asr_enable = self.read_config_from_api
@@ -155,7 +168,7 @@ class ConnectionHandler:
         # 因为实际部署时可能会用到公共的本地ASR，不能把变量暴露给公共ASR
         # 所以涉及到ASR的变量，需要在这里定义，属于connection的私有变量
         self.asr_audio = []
-        self.asr_audio_queue = queue.Queue()
+        self.asr_audio_queue = queue.Queue(maxsize=100)  # 限制音频队列大小，约100帧PCM数据
         self.current_speaker = None  # 存储当前说话人
 
         # llm相关变量
@@ -371,7 +384,7 @@ class ConnectionHandler:
                     return
 
             # 不需要头部处理或没有头部时，直接处理原始消息
-            self.asr_audio_queue.put(message)
+            self._put_asr_audio(message)
 
     async def _process_mqtt_audio_message(self, message):
         """
@@ -398,7 +411,7 @@ class ConnectionHandler:
             elif len(message) > 16:
                 # 没有指定长度或长度无效，去掉头部后处理剩余数据
                 audio_data = message[16:]
-                self.asr_audio_queue.put(audio_data)
+                self._put_asr_audio(audio_data)
                 return True
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"解析WebSocket音频包失败: {e}")
@@ -416,7 +429,7 @@ class ConnectionHandler:
 
         # 如果时间戳是递增的，直接处理
         if timestamp >= self.last_processed_timestamp:
-            self.asr_audio_queue.put(audio_data)
+            self._put_asr_audio(audio_data)
             self.last_processed_timestamp = timestamp
 
             # 处理缓冲区中的后续包
@@ -426,7 +439,7 @@ class ConnectionHandler:
                 for ts in sorted(self.audio_timestamp_buffer.keys()):
                     if ts > self.last_processed_timestamp:
                         buffered_audio = self.audio_timestamp_buffer.pop(ts)
-                        self.asr_audio_queue.put(buffered_audio)
+                        self._put_asr_audio(buffered_audio)
                         self.last_processed_timestamp = ts
                         processed_any = True
                         break
@@ -435,7 +448,17 @@ class ConnectionHandler:
             if len(self.audio_timestamp_buffer) < self.max_timestamp_buffer_size:
                 self.audio_timestamp_buffer[timestamp] = audio_data
             else:
-                self.asr_audio_queue.put(audio_data)
+                self._put_asr_audio(audio_data)
+
+    def _put_asr_audio(self, audio_data):
+        """将音频数据放入ASR队列，队列满时丢弃最旧数据"""
+        if self.asr_audio_queue.full():
+            try:
+                self.asr_audio_queue.get_nowait()
+                self.logger.bind(tag=TAG).debug("ASR音频队列已满，丢弃最旧音频帧")
+            except queue.Empty:
+                pass
+        self.asr_audio_queue.put(audio_data)
 
     async def handle_restart(self, message):
         """处理服务器重启请求"""
@@ -1523,15 +1546,7 @@ Messages: {len(llm_dialogue)}
             if self.asr:
                 await self.asr.close()
 
-            # 最后关闭线程池（避免阻塞）
-            if self.executor:
-                try:
-                    self.executor.shutdown(wait=False)
-                except Exception as executor_error:
-                    self.logger.bind(tag=TAG).error(
-                        f"关闭线程池时出错: {executor_error}"
-                    )
-                self.executor = None
+            # 全局线程池不随连接关闭而销毁，仅在服务器退出时统一清理
             self.logger.bind(tag=TAG).info("连接资源已释放")
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"关闭连接时出错: {e}")

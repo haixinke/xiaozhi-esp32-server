@@ -11,6 +11,7 @@ TTS上报功能已集成到ConnectionHandler类中。
 
 import time
 import json
+import queue
 import opuslib_next
 from typing import TYPE_CHECKING
 
@@ -120,15 +121,21 @@ def enqueue_tts_report(conn: "ConnectionHandler", text, opus_data):
     try:
         # 使用连接对象的队列，传入文本和二进制数据而非文件路径
         if conn.chat_history_conf == 2:
-            conn.report_queue.put((2, text, opus_data, int(time.time() * 1000)))
-            conn.logger.bind(tag=TAG).debug(
-                f"TTS数据已加入上报队列: {conn.device_id}, 音频大小: {len(opus_data)} "
-            )
+            try:
+                conn.report_queue.put_nowait((2, text, opus_data, int(time.time() * 1000)))
+                conn.logger.bind(tag=TAG).debug(
+                    f"TTS数据已加入上报队列: {conn.device_id}, 音频大小: {len(opus_data)} "
+                )
+            except queue.Full:
+                conn.logger.bind(tag=TAG).warning("聊天记录上报队列已满，丢弃TTS上报数据")
         else:
-            conn.report_queue.put((2, text, None, int(time.time() * 1000)))
-            conn.logger.bind(tag=TAG).debug(
-                f"TTS数据已加入上报队列: {conn.device_id}, 不上报音频"
-            )
+            try:
+                conn.report_queue.put_nowait((2, text, None, int(time.time() * 1000)))
+                conn.logger.bind(tag=TAG).debug(
+                    f"TTS数据已加入上报队列: {conn.device_id}, 不上报音频"
+                )
+            except queue.Full:
+                conn.logger.bind(tag=TAG).warning("聊天记录上报队列已满，丢弃TTS上报数据")
     except Exception as e:
         conn.logger.bind(tag=TAG).error(f"加入TTS上报队列失败: {text}, {e}")
 
@@ -161,13 +168,19 @@ def enqueue_tool_report(conn: "ConnectionHandler", tool_name: str, tool_input: d
                     }
                 ]
             )
-            conn.report_queue.put((3, tool_text, None, timestamp))
+            try:
+                conn.report_queue.put_nowait((3, tool_text, None, timestamp))
+            except queue.Full:
+                conn.logger.bind(tag=TAG).warning("聊天记录上报队列已满，丢弃工具调用上报数据")
 
         # 构建工具结果内容
         if tool_result:
             result_display = f'{{"result":"{str(tool_result)}"}}'
             result_content = json.dumps([{"type": "tool_result", "text": result_display}], ensure_ascii=False)
-            conn.report_queue.put((3, result_content, None, timestamp + 1))
+            try:
+                conn.report_queue.put_nowait((3, result_content, None, timestamp + 1))
+            except queue.Full:
+                conn.logger.bind(tag=TAG).warning("聊天记录上报队列已满，丢弃工具结果上报数据")
     except Exception as e:
         conn.logger.bind(tag=TAG).error(f"加入工具上报队列失败: {e}")
 
@@ -187,14 +200,20 @@ def enqueue_asr_report(conn: "ConnectionHandler", text, opus_data):
     try:
         # 使用连接对象的队列，传入文本和二进制数据而非文件路径
         if conn.chat_history_conf == 2:
-            conn.report_queue.put((1, text, opus_data, int(time.time() * 1000)))
-            conn.logger.bind(tag=TAG).debug(
-                f"ASR数据已加入上报队列: {conn.device_id}, 音频大小: {len(opus_data)} "
-            )
+            try:
+                conn.report_queue.put_nowait((1, text, opus_data, int(time.time() * 1000)))
+                conn.logger.bind(tag=TAG).debug(
+                    f"ASR数据已加入上报队列: {conn.device_id}, 音频大小: {len(opus_data)} "
+                )
+            except queue.Full:
+                conn.logger.bind(tag=TAG).warning("聊天记录上报队列已满，丢弃ASR上报数据")
         else:
-            conn.report_queue.put((1, text, None, int(time.time() * 1000)))
-            conn.logger.bind(tag=TAG).debug(
-                f"ASR数据已加入上报队列: {conn.device_id}, 不上报音频"
-            )
+            try:
+                conn.report_queue.put_nowait((1, text, None, int(time.time() * 1000)))
+                conn.logger.bind(tag=TAG).debug(
+                    f"ASR数据已加入上报队列: {conn.device_id}, 不上报音频"
+                )
+            except queue.Full:
+                conn.logger.bind(tag=TAG).warning("聊天记录上报队列已满，丢弃ASR上报数据")
     except Exception as e:
         conn.logger.bind(tag=TAG).debug(f"加入ASR上报队列失败: {text}, {e}")

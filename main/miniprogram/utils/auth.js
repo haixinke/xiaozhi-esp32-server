@@ -28,6 +28,7 @@ function setToken(token, openid) {
 function clearToken() {
   wx.removeStorageSync('token');
   wx.removeStorageSync('openid');
+  wx.removeStorageSync('agentId');
   wx.removeStorageSync('virtualMAC');
 }
 

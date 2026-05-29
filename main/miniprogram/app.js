@@ -4,8 +4,8 @@
  */
 
 const { post } = require('./utils/request');
-const { setToken, clearToken } = require('./utils/auth');
-const { getOrCreateMAC, checkOrRegisterDevice } = require('./utils/device');
+const { setToken } = require('./utils/auth');
+const { getOrCreateMAC, checkOrRegisterDevice, completeDeviceBinding } = require('./utils/device');
 
 App({
   globalData: {
@@ -30,6 +30,7 @@ App({
     if (token) {
       this.globalData.token = token;
       this.globalData.openid = wx.getStorageSync('openid');
+      this.globalData.agentId = wx.getStorageSync('agentId');
       this.globalData.virtualMAC = wx.getStorageSync('virtualMAC');
       // 已登录，检查设备状态
       this.checkDeviceStatus().catch(err => {
@@ -71,11 +72,17 @@ App({
             this.globalData.openid = data.openid;
             setToken(data.token, data.openid);
 
+            // 保存 agentId 到 storage
+            if (data.agentId) {
+              this.globalData.agentId = data.agentId;
+              wx.setStorageSync('agentId', data.agentId);
+            }
+
             // 生成并缓存虚拟 MAC
             const mac = getOrCreateMAC(data.openid);
             this.globalData.virtualMAC = mac;
 
-            console.log('静默登录成功, MAC:', mac);
+            console.log('静默登录成功, MAC:', mac, 'AgentId:', data.agentId);
             resolve();
           } catch (err) {
             console.error('静默登录请求失败:', err);
@@ -93,43 +100,73 @@ App({
   /**
    * 检查设备绑定状态
    * 已绑定：获取 wsUrl + wsToken
-   * 未绑定：跳转 agent-select 页面
+   * 未绑定：自动执行绑定流程
    */
   async checkDeviceStatus() {
     const mac = this.globalData.virtualMAC;
+    const agentId = this.globalData.agentId;
+
     if (!mac) {
       console.warn('无虚拟 MAC，跳过设备检查');
       return;
     }
 
-    try {
-      const res = await checkOrRegisterDevice(mac);
+    if (!agentId) {
+      console.error('无 Agent ID，无法自动绑定设备');
+      wx.showModal({
+        title: '提示',
+        content: '登录信息异常，请重新登录',
+        showCancel: false,
+        success: () => {
+          this.clearLoginState();
+        }
+      });
+      return;
+    }
 
-      if (res && res.websocket) {
-        // 设备已绑定，获取 WebSocket 连接信息
-        this.globalData.wsUrl = res.websocket.url;
-        this.globalData.wsToken = res.websocket.token;
+    try {
+      // 先尝试OTA检查，看设备是否已绑定
+      const otaResponse = await checkOrRegisterDevice(mac);
+
+      if (otaResponse.websocket) {
+        // 设备已绑定，直接使用WebSocket信息
+        this.globalData.wsUrl = otaResponse.websocket.url;
+        this.globalData.wsToken = otaResponse.websocket.token;
         this.globalData.isDeviceBound = true;
 
-        if (res.agent) {
-          this.globalData.agentId = res.agent.id;
-          this.globalData.agentName = res.agent.name;
-        }
+        console.log('设备已绑定, WS URL:', otaResponse.websocket.url);
+      } else if (otaResponse.activation && otaResponse.activation.code) {
+        // 设备未绑定，执行自动绑定流程
+        console.log('设备未绑定，开始自动绑定...验证码:', otaResponse.activation.code);
 
-        console.log('设备已绑定, WS URL:', res.websocket.url);
+        const wsInfo = await completeDeviceBinding(mac, agentId);
+
+        this.globalData.wsUrl = wsInfo.wsUrl;
+        this.globalData.wsToken = wsInfo.wsToken;
+        this.globalData.isDeviceBound = true;
+
+        console.log('设备自动绑定成功, WS URL:', wsInfo.wsUrl);
       } else {
-        // 设备未绑定，需要选择 Agent
-        this.globalData.isDeviceBound = false;
-        console.log('设备未绑定，需选择 Agent');
-
-        wx.redirectTo({
-          url: '/pages/agent-select/agent-select'
-        });
+        throw new Error('OTA响应格式异常');
       }
     } catch (err) {
-      console.error('设备状态检查失败:', err);
-      // 如果是首次未注册的设备，也跳转到选择页
-      this.globalData.isDeviceBound = false;
+      console.error('设备绑定失败:', err);
+      wx.showModal({
+        title: '绑定失败',
+        content: '设备绑定失败: ' + (err.message || '未知错误'),
+        showCancel: false
+      });
     }
+  },
+
+  /**
+   * 清除登录状态
+   */
+  clearLoginState() {
+    this.globalData.token = null;
+    this.globalData.openid = null;
+    this.globalData.agentId = null;
+    wx.removeStorageSync('token');
+    wx.removeStorageSync('openid');
   }
 });

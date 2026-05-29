@@ -19,6 +19,19 @@ const BASE_URL = 'http://127.0.0.1:8002/xiaozhi';
 function request(options) {
   return new Promise((resolve, reject) => {
     const token = wx.getStorageSync('token');
+    console.log('[request] URL:', options.url, 'Method:', options.method || 'GET', 'Token exists:', !!token, 'Token value:', token ? token.substring(0, 30) + '...' : 'EMPTY or NULL');
+
+    // 如果需要认证的接口（非登录接口），且没有token，直接拒绝
+    const requiresAuth = !options.url.includes('/login') && !options.url.includes('/ota');
+    if (requiresAuth && !token) {
+      console.error('[request] 需要认证的接口缺少token:', options.url);
+      reject({
+        statusCode: 401,
+        data: { code: 401, msg: '未登录', data: null },
+        message: '需要登录'
+      });
+      return;
+    }
 
     wx.request({
       url: BASE_URL + options.url,

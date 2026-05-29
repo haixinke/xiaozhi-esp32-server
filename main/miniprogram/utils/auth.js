@@ -16,10 +16,14 @@ function getToken() {
  * @param {string} openid
  */
 function setToken(token, openid) {
+  console.log('[setToken] 保存token - token存在:', !!token, 'token长度:', token ? token.length : 0, 'token前缀:', token ? token.substring(0, 20) : 'N/A');
   wx.setStorageSync('token', token);
   if (openid) {
     wx.setStorageSync('openid', openid);
   }
+  // 验证保存是否成功
+  const savedToken = wx.getStorageSync('token');
+  console.log('[setToken] 验证保存 - 读取到的token存在:', !!savedToken, '读取到的token前缀:', savedToken ? savedToken.substring(0, 20) : 'N/A');
 }
 
 /**

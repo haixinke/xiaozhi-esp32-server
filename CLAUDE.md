@@ -78,12 +78,81 @@ Java API 向 Python 服务端暴露运行时配置，使得管理控制台无需
 | `main/manager-web/vue.config.js` | Vue 构建配置，代理 `/xiaozhi` 到 `localhost:8002` |
 | `main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml` | Liquibase 迁移日志 |
 
-## 部署模式
+## Behavioral Guidelines (All Languages)
 
-1. **最小化 (仅服务端)** — Docker 或本地 Python，配置存储在文件中，无需数据库。适合低资源配置环境。
-2. **全模块** — Docker Compose 部署 MySQL + Redis + 服务端 + Web。通过管理控制台实现多用户、多智能体管理。
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-详细部署说明请参阅 `docs/Deployment.md` (最小化) 和 `docs/Deployment_all.md` (全模块)。
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+
+- "Add validation" -> "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" -> "Write a test that reproduces it, then make it pass"
+- "Refactor X" -> "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+
+```
+1. [Step] -> verify: [check]
+2. [Step] -> verify: [check]
+3. [Step] -> verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## Security Checklist (All Sub-projects)
+
+Before ANY commit:
+
+- No hardcoded secrets (API keys, passwords, tokens)
+- All user inputs validated
+- SQL injection prevention (parameterized queries)
+- XSS prevention (sanitized HTML output)
+- Error messages do not leak sensitive data
+- Authentication/authorization verified on protected endpoints
 
 ## graphify
 

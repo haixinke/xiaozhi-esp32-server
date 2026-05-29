@@ -181,22 +181,18 @@ async function bindDeviceWithCode(agentId, deviceCode) {
  * @param {string} agentId - Agent ID
  * @returns {Promise<Object>} WebSocket连接信息
  */
-async function completeDeviceBinding(mac, agentId) {
-  // 1. OTA检查，获取验证码
-  const otaResponse = await checkOrRegisterDevice(mac);
-  const deviceCode = otaResponse.activation?.code;
-
+async function completeDeviceBinding(mac, agentId, deviceCode) {
+  // 1. 使用传入的验证码绑定设备
   if (!deviceCode) {
-    throw new Error('OTA响应缺少验证码');
+    throw new Error('验证码参数为空');
   }
 
-  console.log('获取到验证码:', deviceCode);
+  console.log('使用验证码绑定设备:', deviceCode);
 
-  // 2. 使用验证码绑定设备
   await bindDeviceWithCode(agentId, deviceCode);
   console.log('设备绑定成功');
 
-  // 3. 再次OTA检查，获取WebSocket信息
+  // 2. 再次OTA检查，获取WebSocket信息
   const finalOtaResponse = await checkOrRegisterDevice(mac);
 
   if (!finalOtaResponse.websocket) {

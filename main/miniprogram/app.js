@@ -66,26 +66,35 @@ App({
           }
 
           try {
-            const data = await post('/wechat/login', {
+            const response = await post('/wechat/login', {
               code: loginRes.code
             });
 
+            // 后端返回: {code: 0, msg: "success", data: {token, expire, openid, ...}}
+            console.log('完整登录响应:', response);
+
+            // 提取内层的数据
+            const loginData = response.data;
+            const token = loginData.token;
+            const openid = loginData.openid;
+            const agentId = loginData.agentId;
+
             // 保存登录态
-            this.globalData.token = data.token;
-            this.globalData.openid = data.openid;
-            setToken(data.token, data.openid);
+            this.globalData.token = token;
+            this.globalData.openid = openid;
+            setToken(token, openid);
 
             // 保存 agentId 到 storage（可能为null）
-            if (data.agentId) {
-              this.globalData.agentId = data.agentId;
-              wx.setStorageSync('agentId', data.agentId);
+            if (agentId) {
+              this.globalData.agentId = agentId;
+              wx.setStorageSync('agentId', agentId);
             }
 
             // 生成并缓存虚拟 MAC
-            const mac = getOrCreateMAC(data.openid);
+            const mac = getOrCreateMAC(openid);
             this.globalData.virtualMAC = mac;
 
-            console.log('静默登录成功, MAC:', mac, 'AgentId:', data.agentId);
+            console.log('静默登录成功, MAC:', mac, 'AgentId:', agentId, 'Token:', token ? token.substring(0, 20) + '...' : 'null');
             resolve();
           } catch (err) {
             console.error('静默登录请求失败:', err);
@@ -112,6 +121,9 @@ App({
 
     try {
       console.log('智能体不存在，开始创建...');
+      const storedToken = wx.getStorageSync('token');
+      console.log('创建agent前检查token - 存在:', !!storedToken, '前缀:', storedToken ? storedToken.substring(0, 20) : 'N/A');
+
       const agentId = await post('/agent', {
         agentName: '我的助手'
       });
@@ -164,18 +176,11 @@ App({
       // 先尝试OTA检查，看设备是否已绑定
       const otaResponse = await checkOrRegisterDevice(mac);
 
-      if (otaResponse.websocket) {
-        // 设备已绑定，直接使用WebSocket信息
-        this.globalData.wsUrl = otaResponse.websocket.url;
-        this.globalData.wsToken = otaResponse.websocket.token;
-        this.globalData.isDeviceBound = true;
-
-        console.log('设备已绑定, WS URL:', otaResponse.websocket.url);
-      } else if (otaResponse.activation && otaResponse.activation.code) {
-        // 设备未绑定，执行自动绑定流程
+      if (otaResponse.activation && otaResponse.activation.code) {
+        // 有激活码 → 设备未绑定，执行自动绑定流程
         console.log('设备未绑定，开始自动绑定...验证码:', otaResponse.activation.code);
 
-        const wsInfo = await completeDeviceBinding(mac, agentId);
+        const wsInfo = await completeDeviceBinding(mac, agentId, otaResponse.activation.code);
 
         this.globalData.wsUrl = wsInfo.wsUrl;
         this.globalData.wsToken = wsInfo.wsToken;
@@ -183,7 +188,15 @@ App({
 
         console.log('设备自动绑定成功, WS URL:', wsInfo.wsUrl);
       } else {
-        throw new Error('OTA响应格式异常');
+        // 无激活码 → 设备已绑定，直接使用WebSocket信息
+        if (otaResponse.websocket) {
+          this.globalData.wsUrl = otaResponse.websocket.url;
+          this.globalData.wsToken = otaResponse.websocket.token;
+          this.globalData.isDeviceBound = true;
+          console.log('设备已绑定, WS URL:', otaResponse.websocket.url);
+        } else {
+          throw new Error('设备已绑定但OTA响应缺少websocket信息');
+        }
       }
     } catch (err) {
       console.error('设备绑定失败:', err);

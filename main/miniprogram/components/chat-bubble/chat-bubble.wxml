@@ -1,0 +1,18 @@
+<!--components/chat-bubble/chat-bubble.wxml-->
+<view class="cb-row cb-{{role}} {{typing ? 'cb-typing' : ''}}">
+  <view class="cb-meta">
+    <view class="cb-tag">
+      <block wx:if="{{role === 'user'}}">YOU</block>
+      <block wx:else>{{label || 'XIAOZHI'}}</block>
+    </view>
+    <view class="cb-pin"></view>
+  </view>
+
+  <view class="cb-bubble">
+    <view class="cb-glow"></view>
+    <view class="cb-content">
+      <text class="cb-text" selectable="{{!typing}}">{{content}}</text>
+      <text wx:if="{{typing}}" class="cb-cursor">▍</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,112 @@
+<!--pages/index/index.wxml-->
+<view class="page">
+  <!-- 背景层：网格 + 光晕 -->
+  <view class="bg-grid"></view>
+  <view class="bg-aurora bg-aurora-1"></view>
+  <view class="bg-aurora bg-aurora-2"></view>
+
+  <!-- 顶部状态栏 -->
+  <view class="top-bar">
+    <view class="status-cluster" bindtap="onTapStatus">
+      <view class="status-ring state-{{connectionState}}">
+        <view class="status-dot"></view>
+      </view>
+      <view class="status-meta">
+        <text class="status-label">
+          <block wx:if="{{connectionState === 'connected'}}">CHANNEL · LIVE</block>
+          <block wx:elif="{{connectionState === 'connecting'}}">HANDSHAKE</block>
+          <block wx:else>OFFLINE · 点击重连</block>
+        </text>
+        <text class="status-session" wx:if="{{sessionId}}">{{sessionId}}</text>
+      </view>
+    </view>
+
+    <view class="agent-cluster">
+      <view class="agent-name">
+        <text class="agent-prefix">@</text>
+        <text class="agent-text">{{agentName || '小智助手'}}</text>
+      </view>
+      <view class="switch-btn" bindtap="onSwitchAgent" hover-class="switch-btn-hover" hover-stay-time="80">
+        <text>切换</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 启动占位 -->
+  <view wx:if="{{booting}}" class="boot-shell">
+    <view class="boot-orbit">
+      <view class="boot-dot"></view>
+    </view>
+    <text class="boot-text">正在唤醒小智…</text>
+  </view>
+
+  <!-- 消息区 -->
+  <scroll-view
+    wx:if="{{!booting}}"
+    class="conversation"
+    scroll-y="true"
+    scroll-with-animation="true"
+    enhanced="true"
+    show-scrollbar="false"
+    scroll-into-view="{{scrollToView}}"
+  >
+    <view class="conversation-inner">
+      <!-- 空状态：欢迎卡片 -->
+      <block wx:if="{{messages.length === 0 && !currentReply}}">
+        <view class="welcome">
+          <view class="welcome-eyebrow">
+            <view class="welcome-line"></view>
+            <text>NEURAL · 24kHz · OPUS</text>
+            <view class="welcome-line"></view>
+          </view>
+          <view class="welcome-title">
+            <text class="welcome-hi">Hi，我是</text>
+            <text class="welcome-name">{{agentName || '小智'}}</text>
+            <text class="welcome-dot">.</text>
+          </view>
+          <text class="welcome-sub">按住下方圆环开始对话；上滑取消，回答时点击「打断」即可中断。</text>
+
+          <view class="welcome-grid">
+            <view class="welcome-card">
+              <view class="welcome-card-tag">01</view>
+              <text class="welcome-card-text">告诉我今天的安排</text>
+            </view>
+            <view class="welcome-card">
+              <view class="welcome-card-tag">02</view>
+              <text class="welcome-card-text">用三句话总结一段文字</text>
+            </view>
+            <view class="welcome-card">
+              <view class="welcome-card-tag">03</view>
+              <text class="welcome-card-text">陪我练习英语口语</text>
+            </view>
+          </view>
+        </view>
+      </block>
+
+      <!-- 历史消息 -->
+      <block wx:for="{{messages}}" wx:key="id">
+        <view id="{{item.id}}">
+          <chat-bubble role="{{item.role}}" content="{{item.content}}" label="{{agentName || 'XIAOZHI'}}" />
+        </view>
+      </block>
+
+      <!-- 流式回复 -->
+      <view wx:if="{{currentReply}}" id="streaming">
+        <chat-bubble role="assistant" content="{{currentReply}}" typing="{{true}}" label="{{agentName || 'XIAOZHI'}}" />
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部操作区 -->
+  <view wx:if="{{!booting}}" class="dock safe-area-bottom">
+    <view class="dock-rail"></view>
+    <voice-button
+      chat-state="{{chatState}}"
+      disabled="{{connectionState !== 'connected'}}"
+      bind:start="onVoiceStart"
+      bind:end="onVoiceEnd"
+      bind:cancel="onVoiceCancel"
+      bind:abort="onAbort"
+    />
+  </view>
+</view>

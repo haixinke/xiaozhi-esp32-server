@@ -98,6 +98,7 @@ public class ShiroConfig {
         filterMap.put("/pet/memory/list", "server");
         filterMap.put("/pet/profile", "server");
         filterMap.put("/voiceClone/play/**", "anon");
+        filterMap.put("/wechat/login", "anon");
         filterMap.put("/**", "oauth2");
         shiroFilter.setFilterChainDefinitionMap(filterMap);
 

@@ -1,0 +1,78 @@
+<!--components/voice-button/voice-button.wxml-->
+<view class="vb-root state-{{chatState}} {{pressed ? 'is-pressed' : ''}} {{cancelled ? 'is-cancelled' : ''}} {{disabled ? 'is-disabled' : ''}}">
+
+  <!-- 状态文字 -->
+  <view class="vb-caption">
+    <block wx:if="{{disabled}}">通道未就绪</block>
+    <block wx:elif="{{cancelled}}">松开取消</block>
+    <block wx:elif="{{chatState === 'listening'}}">聆听中 · 上滑取消</block>
+    <block wx:elif="{{chatState === 'thinking'}}">推理中</block>
+    <block wx:elif="{{chatState === 'speaking'}}">回答中</block>
+    <block wx:else>按住开始对话</block>
+  </view>
+
+  <!-- 主操作区 -->
+  <view class="vb-stage">
+    <!-- 打断按钮：speaking 时浮于左侧 -->
+    <view
+      class="vb-side vb-side-left {{chatState === 'speaking' ? 'is-shown' : ''}}"
+      catchtap="_onTapAbort"
+      hover-class="vb-side-hover"
+      hover-stay-time="80"
+    >
+      <view class="vb-side-icon">
+        <view class="vb-icon-bar"></view>
+        <view class="vb-icon-bar"></view>
+      </view>
+      <text class="vb-side-text">打断</text>
+    </view>
+
+    <!-- 语音主按钮 -->
+    <view
+      class="vb-button"
+      catchtouchstart="_onTouchStart"
+      catchtouchmove="_onTouchMove"
+      catchtouchend="_onTouchEnd"
+      catchtouchcancel="_onTouchCancel"
+    >
+      <!-- 外层脉冲环（listening 时激活） -->
+      <view class="vb-pulse vb-pulse-1"></view>
+      <view class="vb-pulse vb-pulse-2"></view>
+      <view class="vb-pulse vb-pulse-3"></view>
+
+      <!-- 渐变光圈 -->
+      <view class="vb-halo"></view>
+
+      <!-- 核心按钮 -->
+      <view class="vb-core">
+        <!-- thinking: 旋转的虚线环 -->
+        <view class="vb-spinner"></view>
+
+        <!-- 麦克风图形（CSS 绘制，避免依赖外部图标） -->
+        <view class="vb-mic">
+          <view class="vb-mic-capsule"></view>
+          <view class="vb-mic-stem"></view>
+          <view class="vb-mic-base"></view>
+        </view>
+
+        <!-- 录音波形（listening 时显示） -->
+        <view class="vb-wave">
+          <view class="vb-wave-bar"></view>
+          <view class="vb-wave-bar"></view>
+          <view class="vb-wave-bar"></view>
+          <view class="vb-wave-bar"></view>
+          <view class="vb-wave-bar"></view>
+        </view>
+
+        <!-- speaking: 声波涟漪 -->
+        <view class="vb-speaking">
+          <view class="vb-speaking-ring"></view>
+          <view class="vb-speaking-ring"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 占位，让按钮居中 -->
+    <view class="vb-side vb-side-right"></view>
+  </view>
+</view>

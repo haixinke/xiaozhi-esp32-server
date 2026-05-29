@@ -1,0 +1,444 @@
+/* components/voice-button/voice-button.wxss */
+
+.vb-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28rpx;
+  padding: 24rpx 0 12rpx;
+  user-select: none;
+}
+
+/* ----- 状态文字 ----- */
+.vb-caption {
+  font-size: 22rpx;
+  letter-spacing: 6rpx;
+  color: rgba(180, 195, 220, 0.55);
+  text-transform: uppercase;
+  font-weight: 500;
+  height: 30rpx;
+  line-height: 30rpx;
+  transition: color 0.3s;
+}
+
+.vb-root.state-listening .vb-caption {
+  color: #f59e0b;
+  text-shadow: 0 0 18rpx rgba(245, 158, 11, 0.45);
+}
+.vb-root.state-thinking .vb-caption {
+  color: #5eead4;
+}
+.vb-root.state-speaking .vb-caption {
+  color: #38bdf8;
+}
+.vb-root.is-cancelled .vb-caption {
+  color: #ef4444 !important;
+}
+.vb-root.is-disabled .vb-caption {
+  color: rgba(180, 195, 220, 0.25);
+}
+
+/* ----- 主舞台 ----- */
+.vb-stage {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 60rpx;
+  box-sizing: border-box;
+}
+
+/* ----- 侧边按钮（打断 / 占位） ----- */
+.vb-side {
+  width: 96rpx;
+  height: 96rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  border-radius: 50%;
+  transition: opacity 0.25s, transform 0.25s;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8rpx) scale(0.85);
+}
+
+.vb-side.is-shown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.04) 70%),
+    rgba(239, 68, 68, 0.08);
+  border: 1rpx solid rgba(239, 68, 68, 0.35);
+  box-shadow:
+    inset 0 0 18rpx rgba(239, 68, 68, 0.15),
+    0 6rpx 18rpx rgba(239, 68, 68, 0.18);
+}
+
+.vb-side-hover {
+  transform: scale(0.92) !important;
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+.vb-side-icon {
+  width: 30rpx;
+  height: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+
+.vb-icon-bar {
+  width: 8rpx;
+  height: 24rpx;
+  background: #fca5a5;
+  border-radius: 2rpx;
+  box-shadow: 0 0 8rpx rgba(252, 165, 165, 0.5);
+}
+
+.vb-side-text {
+  font-size: 18rpx;
+  color: #fca5a5;
+  letter-spacing: 2rpx;
+}
+
+/* ----- 主按钮 ----- */
+.vb-button {
+  position: relative;
+  width: 220rpx;
+  height: 220rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ----- 脉冲环（listening 时激活） ----- */
+.vb-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 180rpx;
+  height: 180rpx;
+  margin-left: -90rpx;
+  margin-top: -90rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(245, 158, 11, 0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vb-root.state-listening .vb-pulse {
+  animation: vb-pulse 2s ease-out infinite;
+}
+.vb-root.state-listening .vb-pulse-2 {
+  animation-delay: 0.66s;
+}
+.vb-root.state-listening .vb-pulse-3 {
+  animation-delay: 1.33s;
+}
+
+@keyframes vb-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.85;
+    border-color: rgba(245, 158, 11, 0.65);
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+    border-color: rgba(245, 158, 11, 0);
+  }
+}
+
+/* ----- 渐变光圈 ----- */
+.vb-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200rpx;
+  height: 200rpx;
+  margin-left: -100rpx;
+  margin-top: -100rpx;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(94, 234, 212, 0.25),
+    rgba(56, 189, 248, 0.18),
+    rgba(168, 85, 247, 0.18),
+    rgba(94, 234, 212, 0.25)
+  );
+  filter: blur(14rpx);
+  opacity: 0.55;
+  animation: vb-halo-rotate 12s linear infinite;
+}
+
+.vb-root.state-listening .vb-halo {
+  background: conic-gradient(
+    from 0deg,
+    rgba(245, 158, 11, 0.5),
+    rgba(239, 68, 68, 0.45),
+    rgba(245, 158, 11, 0.5)
+  );
+  opacity: 0.85;
+  animation-duration: 4s;
+}
+.vb-root.state-thinking .vb-halo {
+  animation-duration: 3s;
+  opacity: 0.7;
+}
+.vb-root.is-disabled .vb-halo {
+  opacity: 0.15;
+  animation: none;
+}
+
+@keyframes vb-halo-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ----- 核心按钮 ----- */
+.vb-core {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18), transparent 55%),
+    linear-gradient(155deg, #1e293b 0%, #0f172a 50%, #020617 100%);
+  border: 1rpx solid rgba(148, 163, 184, 0.18);
+  box-shadow:
+    inset 0 0 0 1rpx rgba(148, 163, 184, 0.05),
+    inset 0 -8rpx 24rpx rgba(0, 0, 0, 0.6),
+    0 18rpx 48rpx rgba(0, 0, 0, 0.45),
+    0 0 0 0 rgba(94, 234, 212, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+}
+
+.vb-root.is-pressed .vb-core,
+.vb-root.state-listening .vb-core {
+  transform: scale(0.94);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 200, 120, 0.28), transparent 55%),
+    linear-gradient(155deg, #4c1d2c 0%, #7f1d1d 60%, #450a0a 100%);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow:
+    inset 0 0 24rpx rgba(245, 158, 11, 0.35),
+    inset 0 -8rpx 24rpx rgba(0, 0, 0, 0.55),
+    0 0 60rpx rgba(245, 158, 11, 0.55),
+    0 0 120rpx rgba(239, 68, 68, 0.35);
+}
+
+.vb-root.is-cancelled .vb-core {
+  background:
+    linear-gradient(155deg, #1e293b 0%, #0f172a 100%) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  box-shadow:
+    inset 0 0 24rpx rgba(239, 68, 68, 0.25),
+    0 0 36rpx rgba(239, 68, 68, 0.4) !important;
+}
+
+.vb-root.state-thinking .vb-core {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(94, 234, 212, 0.22), transparent 55%),
+    linear-gradient(155deg, #0f172a 0%, #020617 100%);
+  border-color: rgba(94, 234, 212, 0.45);
+  box-shadow:
+    inset 0 0 24rpx rgba(94, 234, 212, 0.2),
+    0 0 48rpx rgba(94, 234, 212, 0.3);
+}
+
+.vb-root.state-speaking .vb-core {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(56, 189, 248, 0.25), transparent 55%),
+    linear-gradient(155deg, #0c1f33 0%, #020617 100%);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow:
+    inset 0 0 28rpx rgba(56, 189, 248, 0.22),
+    0 0 60rpx rgba(56, 189, 248, 0.4);
+}
+
+.vb-root.is-disabled .vb-core {
+  filter: grayscale(0.85) brightness(0.55);
+  pointer-events: none;
+}
+
+/* ----- 思考时的旋转环 ----- */
+.vb-spinner {
+  position: absolute;
+  top: -8rpx;
+  left: -8rpx;
+  right: -8rpx;
+  bottom: -8rpx;
+  border-radius: 50%;
+  border: 2rpx dashed rgba(94, 234, 212, 0.55);
+  opacity: 0;
+  animation: vb-spin 5s linear infinite;
+}
+.vb-root.state-thinking .vb-spinner {
+  opacity: 1;
+}
+@keyframes vb-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ----- 麦克风图形 ----- */
+.vb-mic {
+  position: relative;
+  width: 70rpx;
+  height: 90rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.vb-mic-capsule {
+  width: 36rpx;
+  height: 50rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(180deg, #f8fafc 0%, #cbd5e1 100%);
+  box-shadow:
+    inset 0 -2rpx 6rpx rgba(0, 0, 0, 0.2),
+    0 0 12rpx rgba(248, 250, 252, 0.35);
+}
+.vb-mic-stem {
+  width: 4rpx;
+  height: 16rpx;
+  background: #cbd5e1;
+  margin-top: 4rpx;
+}
+.vb-mic-base {
+  width: 36rpx;
+  height: 4rpx;
+  background: #cbd5e1;
+  border-radius: 2rpx;
+  margin-top: 2rpx;
+  position: relative;
+}
+.vb-mic-base::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 30rpx;
+  border: 2rpx solid #cbd5e1;
+  border-top: none;
+  border-radius: 0 0 30rpx 30rpx;
+}
+
+.vb-root.state-listening .vb-mic,
+.vb-root.is-pressed .vb-mic {
+  opacity: 0;
+  transform: scale(0.6);
+}
+.vb-root.state-thinking .vb-mic,
+.vb-root.state-speaking .vb-mic {
+  opacity: 0;
+  transform: scale(0.85);
+}
+.vb-root.is-cancelled .vb-mic {
+  opacity: 0.4;
+}
+
+/* ----- 录音波形 ----- */
+.vb-wave {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.vb-root.state-listening .vb-wave,
+.vb-root.is-pressed .vb-wave {
+  opacity: 1;
+  transform: scale(1);
+}
+.vb-wave-bar {
+  width: 6rpx;
+  height: 20rpx;
+  border-radius: 3rpx;
+  background: linear-gradient(180deg, #fde68a 0%, #f59e0b 100%);
+  box-shadow: 0 0 8rpx rgba(245, 158, 11, 0.6);
+}
+.vb-root.state-listening .vb-wave-bar:nth-child(1),
+.vb-root.is-pressed .vb-wave-bar:nth-child(1) {
+  animation: vb-wave 0.7s ease-in-out infinite;
+}
+.vb-root.state-listening .vb-wave-bar:nth-child(2),
+.vb-root.is-pressed .vb-wave-bar:nth-child(2) {
+  animation: vb-wave 0.85s ease-in-out infinite;
+  animation-delay: 0.1s;
+}
+.vb-root.state-listening .vb-wave-bar:nth-child(3),
+.vb-root.is-pressed .vb-wave-bar:nth-child(3) {
+  animation: vb-wave 0.6s ease-in-out infinite;
+  animation-delay: 0.15s;
+}
+.vb-root.state-listening .vb-wave-bar:nth-child(4),
+.vb-root.is-pressed .vb-wave-bar:nth-child(4) {
+  animation: vb-wave 0.95s ease-in-out infinite;
+  animation-delay: 0.05s;
+}
+.vb-root.state-listening .vb-wave-bar:nth-child(5),
+.vb-root.is-pressed .vb-wave-bar:nth-child(5) {
+  animation: vb-wave 0.75s ease-in-out infinite;
+  animation-delay: 0.2s;
+}
+@keyframes vb-wave {
+  0%, 100% { height: 14rpx; }
+  50%      { height: 56rpx; }
+}
+
+/* ----- 说话时声波涟漪 ----- */
+.vb-speaking {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+}
+.vb-root.state-speaking .vb-speaking {
+  opacity: 1;
+}
+.vb-speaking-ring {
+  position: absolute;
+  width: 90rpx;
+  height: 90rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(56, 189, 248, 0.7);
+}
+.vb-root.state-speaking .vb-speaking-ring:nth-child(1) {
+  animation: vb-speak 1.6s ease-out infinite;
+}
+.vb-root.state-speaking .vb-speaking-ring:nth-child(2) {
+  animation: vb-speak 1.6s ease-out infinite;
+  animation-delay: 0.8s;
+}
+@keyframes vb-speak {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.85;
+    border-color: rgba(56, 189, 248, 0.85);
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+    border-color: rgba(56, 189, 248, 0);
+  }
+}

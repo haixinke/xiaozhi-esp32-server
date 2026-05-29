@@ -2,53 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 工作原则
-
-### ⚠️ 代码修改前必须先征求用户同意
-
-**铁律**：在进行任何代码修改之前，**必须先提出方案并等待用户选择**，不得直接修改代码。
-
-**适用场景**：
-- 修改配置文件（config.yaml、.config.yaml 等）
-- 修改核心代码文件
-- 修改数据库相关操作
-- 任何可能影响系统行为的更改
-
-**正确做法**：
-1. 分析问题，提出多个解决方案
-2. 说明每个方案的优缺点和影响范围
-3. 使用 AskUserQuestion 工具或文本方式让用户选择
-4. **等待用户明确确认后**再执行修改
-
-**错误做法**：
-- ❌ 直接使用 Edit/Write 工具修改文件
-- ❌ 先修改再告知用户
-- ❌ 假设用户会接受某个方案
-
-### 例外情况
-
-只有在以下情况下可以跳过征求用户意见：
-- 用户明确要求"直接修复"、"不用问我"
-- 修复明显的拼写错误或注释
-- 紧急安全漏洞修复（仍需在修复后说明）
-
 ## 项目概述
 
 本项目是 **xiaozhi-esp32-server**，一个面向 ESP32 智能设备的 Python 语音助手后端服务器。它对外提供 WebSocket 端点用于实时音频对话，以及 HTTP 端点用于 OTA 固件升级和视觉分析。
-
-## 产品定位
-
-### AI 虚拟宠物 · 情感陪伴
-
-**核心功能**：提供 AI 驱动的虚拟宠物，为用户提供情感陪伴和个性化互动体验。
-
-**产品特点**：
-
-- 🐾 **虚拟宠物人格**：AI 宠物拥有独特的性格，可以与用户进行情感化对话
-- 💝 **情感陪伴**：理解用户情绪状态，提供安慰、鼓励、倾听等情感支持
-- 🎭 **个性化互动**：根据用户画像调整对话风格和回复策略
-- 🧠 **记忆系统**：使用 PowerMem 记忆用户的偏好、情绪状态、对话历史等
-- 📊 **用户画像**：持续学习和更新用户的心理特征、互动偏好、情感需求
 
 ## 常用命令
 
@@ -142,43 +98,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 本地开发环境的 **OceanBase** 通过 **Docker** 容器运行（容器名 `seekdb`），用于 PowerMem 记忆模块的向量存储和知识图谱存储（需要 pyobvector 客户端）。
 
-#### 容器管理
-
-**启动/停止/重启**：
-
-```bash
-# 启动
-docker start seekdb
-
-# 停止
-docker stop seekdb
-
-# 重启（保留数据）
-docker restart seekdb
-
-# 查看状态
-docker ps | grep seekdb
-```
-
-#### 连接信息
-
-```bash
-主机: 127.0.0.1
-端口: 2881
-用户: root
-密码: 123456
-数据库: egg_database
-```
-
-#### PowerMem
-
-⚠️ **重要**：PowerMem 集成存在已知问题，详见 [PowerMem 集成问题清单](docs/PowerMem-Issues.md)。
-
-关键要点：
-- SDK Bug 需要 monkey-patch 修复（已在 `core/providers/memory/powermem/powermem.py` 中实现）
-- 配置必须包含 `enabled` 和 `embedding_model_dims` 字段
-- 数据库密码必须为字符串类型（`'123456'` 而非 `123456`）
-
 ### PowerMem SDK 源代码
 
 **PowerMem SDK 源代码位置**：`~/codes/github/powermem-1.1.0`
@@ -203,22 +122,6 @@ docker ps | grep seekdb
 - `powermem/storage/oceanbase/oceanbase_vector.py` - OceanBase 向量存储
 - `powermem/user_memory/user_memory.py` - UserMemory 类实现（用户画像）
 - `powermem/prompts/user_profile_prompts.py` - 用户画像提取提示词
-
-## 用户画像设计最佳实践
-
-### 用户画像存储（user_profiles 表）
-
-**推荐方案**：使用 `profile_type="content"` 存储非结构化情感描述
-
-```python
-# 存储用户画像
-user_memory.add(
-    messages=conversation,
-    user_id="user123",
-    profile_type="content",  # 非结构化存储
-    native_language="zh"     # 指定输出语言
-)
-```
 
 ## graphify
 

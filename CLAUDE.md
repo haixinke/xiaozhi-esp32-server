@@ -25,68 +25,6 @@
 
 每个子项目都有自己的 `CLAUDE.md`，包含详细的架构说明和常用命令。
 
-## 常用命令
-
-### Python 服务端 (`main/xiaozhi-server/`)
-```bash
-cd main/xiaozhi-server
-pip install -r requirements.txt
-python app.py                          # 启动服务
-python performance_tester.py           # ASR/LLM/TTS 性能基准测试
-```
-
-### Java API (`main/manager-api/`)
-```bash
-cd main/manager-api
-mvn spring-boot:run                    # 运行 (需要 MySQL + Redis)
-mvn test -DskipTests=false             # 运行全部测试
-mvn test -Dtest=DeviceTest -DskipTests=false            # 单个测试类
-mvn test -Dtest=DeviceTest#testWriteDeviceInfo -DskipTests=false  # 单个测试方法
-```
-
-### Web 前端 (`main/manager-web/`)
-```bash
-cd main/manager-web
-npm install
-npm run serve                          # 开发服务器，端口 8001
-npm run build                          # 生产构建
-npm run analyze                        # 包体积分析
-```
-
-### 移动端前端 (`main/manager-mobile/`)
-```bash
-cd main/manager-mobile
-pnpm install                           # 强制使用 pnpm
-pnpm dev:h5                            # H5 开发
-pnpm dev:mp-weixin                     # 微信小程序开发
-pnpm build:h5                          # H5 构建
-pnpm lint                            # 代码检查
-```
-
-### 演示项目 (`main/demo-web/`)
-```bash
-cd main/demo-web
-npm install                            # 安装依赖（首次）
-npm run dev                            # 启动开发服务器，端口 8006
-npm run build                          # 生产构建
-npm run preview                        # 预览生产构建
-```
-
-### Docker (全栈)
-```bash
-# Ubuntu 一键部署
-sudo bash -c "$(wget -qO- https://ghfast.top/https://raw.githubusercontent.com/xinnan-tech/xiaozhi-esp32-server/main/docker-setup.sh)"
-
-# 手动 Docker Compose
-# 最小化 (仅服务端):
-docker compose -f main/xiaozhi-server/docker-compose.yml up -d
-# 全模块 (MySQL + Redis + 服务端 + Web):
-docker compose -f main/xiaozhi-server/docker-compose_all.yml up -d
-# OceanBase (PowerMem 记忆存储):
-cd main/xiaozhi-server
-./oceanbase/init-powermem.sh
-```
-
 ## 高层架构
 
 ```

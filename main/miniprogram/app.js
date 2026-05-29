@@ -42,10 +42,13 @@ App({
     // 2. 未登录，后台执行静默登录
     this.silentLogin().then(() => {
       console.log('后台登录成功');
-      // 登录成功后检查设备状态
+      // 确保智能体存在
+      return this.ensureAgentExists();
+    }).then(() => {
+      // 智能体就绪后，检查设备状态
       return this.checkDeviceStatus();
     }).catch(err => {
-      console.error('后台登录失败:', err);
+      console.error('后台流程失败:', err);
     });
   },
 
@@ -72,7 +75,7 @@ App({
             this.globalData.openid = data.openid;
             setToken(data.token, data.openid);
 
-            // 保存 agentId 到 storage
+            // 保存 agentId 到 storage（可能为null）
             if (data.agentId) {
               this.globalData.agentId = data.agentId;
               wx.setStorageSync('agentId', data.agentId);
@@ -95,6 +98,39 @@ App({
         }
       });
     });
+  },
+
+  /**
+   * 确保智能体存在
+   * 如果当前用户没有智能体，则自动创建一个
+   */
+  async ensureAgentExists() {
+    if (this.globalData.agentId) {
+      console.log('智能体已存在:', this.globalData.agentId);
+      return;
+    }
+
+    try {
+      console.log('智能体不存在，开始创建...');
+      const agentId = await post('/agent', {
+        agentName: '我的助手'
+      });
+
+      this.globalData.agentId = agentId;
+      wx.setStorageSync('agentId', agentId);
+      console.log('智能体创建成功:', agentId);
+    } catch (err) {
+      console.error('创建智能体失败:', err);
+      wx.showModal({
+        title: '初始化失败',
+        content: '创建智能体失败: ' + (err.message || '未知错误'),
+        showCancel: false,
+        success: () => {
+          this.clearLoginState();
+        }
+      });
+      throw err;
+    }
   },
 
   /**

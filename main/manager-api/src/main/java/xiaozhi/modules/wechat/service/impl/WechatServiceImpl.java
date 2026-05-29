@@ -33,7 +33,6 @@ import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
 import xiaozhi.modules.wechat.service.WechatService;
 import xiaozhi.modules.agent.service.AgentService;
-import xiaozhi.modules.agent.dto.AgentCreateDTO;
 
 /**
  * 微信小程序登录服务实现
@@ -102,8 +101,8 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             isNewUser = true;
         }
 
-        // 5. 检查用户是否有智能体，如果没有则创建一个基于模板的智能体
-        String agentId = getOrCreateUserAgent(userId, isNewUser ? username : null);
+        // 5. 获取用户最新的智能体ID（若有）
+        String agentId = getLatestUserAgent(userId);
 
         // 6. 生成 token
         Result<TokenDTO> tokenResult = sysUserTokenService.createToken(userId);
@@ -207,27 +206,21 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     }
 
     /**
-     * 获取或创建用户智能体
-     * 如果用户没有智能体，则根据模板创建一个新智能体，智能体名称为用户名
-     *
+     * 获取用户最新的智能体ID
      * @param userId 用户ID
-     * @param username 用户名（仅在新用户时使用）
-     * @return 智能体ID
+     * @return 最新智能体ID，若用户无智能体则返回null
      */
-    private String getOrCreateUserAgent(Long userId, String username) {
-        // 查询用户是否已有智能体
-        java.util.List<xiaozhi.modules.agent.dto.AgentDTO> agents = agentService.getUserAgents(userId, null, null);
-        if (agents != null && !agents.isEmpty()) {
-            // 用户已有智能体，返回第一个智能体ID
-            return agents.get(0).getId();
+    private String getLatestUserAgent(Long userId) {
+        try {
+            java.util.List<xiaozhi.modules.agent.dto.AgentDTO> agents = agentService.getUserAgents(userId, null, null);
+            if (agents != null && !agents.isEmpty()) {
+                // getUserAgents 已按 created_at 降序排序，返回第一个即为最新
+                return agents.get(0).getId();
+            }
+        } catch (Exception e) {
+            log.warn("查询用户智能体失败: userId={}, error={}", userId, e.getMessage());
         }
-
-        // 用户没有智能体，创建一个基于模板的智能体
-        AgentCreateDTO dto = new AgentCreateDTO();
-        // 使用用户名作为智能体名称，如果username为空则使用默认名称
-        dto.setAgentName(StringUtils.isNotBlank(username) ? username : "我的助手");
-
-        return agentService.createAgent(dto);
+        return null;
     }
 
     /**

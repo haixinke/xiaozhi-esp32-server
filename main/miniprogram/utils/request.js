@@ -24,6 +24,7 @@ function request(options) {
       url: BASE_URL + options.url,
       method: options.method || 'GET',
       data: options.data,
+      timeout: 30000, // 30秒超时
       header: {
         'Content-Type': 'application/json',
         'Authorization': token ? `Bearer ${token}` : '',

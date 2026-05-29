@@ -16,7 +16,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
@@ -32,19 +32,22 @@ import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
 import xiaozhi.modules.wechat.service.WechatService;
+import xiaozhi.modules.agent.service.AgentService;
+import xiaozhi.modules.agent.dto.AgentCreateDTO;
 
 /**
  * 微信小程序登录服务实现
  */
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUserEntity> implements WechatService {
 
     private static final String JSCODE2SESSION_URL = "https://api.weixin.qq.com/sns/jscode2session";
 
     private final SysUserDao sysUserDao;
     private final SysUserTokenService sysUserTokenService;
+    private final AgentService agentService;
 
     @Value("${wechat.miniprogram.appid:}")
     private String appid;
@@ -79,6 +82,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
 
         boolean isNewUser = false;
         Long userId;
+        String username = null;
         if (wechatUser != null) {
             userId = wechatUser.getUserId();
             // 同步会话密钥
@@ -86,7 +90,9 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             baseDao.updateById(wechatUser);
         } else {
             // 3. 自动创建 sys_user
-            userId = createSysUserForOpenid(openid);
+            var result = createSysUserForOpenid(openid);
+            userId = result.getUserId();
+            username = result.getUsername();
             // 4. 创建 ai_wechat_user 关联记录
             wechatUser = new WechatUserEntity();
             wechatUser.setOpenid(openid);
@@ -96,7 +102,10 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             isNewUser = true;
         }
 
-        // 5. 生成 token
+        // 5. 检查用户是否有智能体，如果没有则创建一个基于模板的智能体
+        String agentId = getOrCreateUserAgent(userId, isNewUser ? username : null);
+
+        // 6. 生成 token
         Result<TokenDTO> tokenResult = sysUserTokenService.createToken(userId);
         if (tokenResult.getCode() != 0 || tokenResult.getData() == null) {
             throw new RenException(ErrorCode.TOKEN_GENERATE_ERROR);
@@ -108,6 +117,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         resp.setExpire(tokenDTO.getExpire());
         resp.setOpenid(openid);
         resp.setIsNewUser(isNewUser);
+        resp.setAgentId(agentId);
         return resp;
     }
 
@@ -177,7 +187,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     /**
      * 为指定 openid 自动创建一个 sys_user 账号
      */
-    private Long createSysUserForOpenid(String openid) {
+    private UserCreationResult createSysUserForOpenid(String openid) {
         String prefix = openid.length() >= 8 ? openid.substring(0, 8) : openid;
         String username = "wx_" + prefix;
         // 用户名冲突时追加随机后缀
@@ -187,13 +197,58 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
 
         SysUserEntity user = new SysUserEntity();
         user.setUsername(username);
-        user.setPassword(PasswordUtils.encode(generateRandomPassword()));
+        user.setPassword(PasswordUtils.encode(openid));
         user.setSuperAdmin(SuperAdminEnum.NO.value());
         user.setStatus(1);
         user.setCreateDate(new Date());
         user.setUpdateDate(new Date());
         sysUserDao.insert(user);
-        return user.getId();
+        return new UserCreationResult(user.getId(), username);
+    }
+
+    /**
+     * 获取或创建用户智能体
+     * 如果用户没有智能体，则根据模板创建一个新智能体，智能体名称为用户名
+     *
+     * @param userId 用户ID
+     * @param username 用户名（仅在新用户时使用）
+     * @return 智能体ID
+     */
+    private String getOrCreateUserAgent(Long userId, String username) {
+        // 查询用户是否已有智能体
+        java.util.List<xiaozhi.modules.agent.dto.AgentDTO> agents = agentService.getUserAgents(userId, null, null);
+        if (agents != null && !agents.isEmpty()) {
+            // 用户已有智能体，返回第一个智能体ID
+            return agents.get(0).getId();
+        }
+
+        // 用户没有智能体，创建一个基于模板的智能体
+        AgentCreateDTO dto = new AgentCreateDTO();
+        // 使用用户名作为智能体名称，如果username为空则使用默认名称
+        dto.setAgentName(StringUtils.isNotBlank(username) ? username : "我的助手");
+
+        return agentService.createAgent(dto);
+    }
+
+    /**
+     * 用户创建结果
+     */
+    private static class UserCreationResult {
+        private final Long userId;
+        private final String username;
+
+        public UserCreationResult(Long userId, String username) {
+            this.userId = userId;
+            this.username = username;
+        }
+
+        public Long getUserId() {
+            return userId;
+        }
+
+        public String getUsername() {
+            return username;
+        }
     }
 
     private boolean existsUsername(String username) {

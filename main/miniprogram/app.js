@@ -20,30 +20,32 @@ App({
   },
 
   onLaunch() {
-    this.init();
+    // 快速初始化，不阻塞启动
+    this.initInBackground();
   },
 
-  async init() {
-    try {
-      // 1. 尝试从 storage 恢复登录态
-      const token = wx.getStorageSync('token');
-      if (token) {
-        this.globalData.token = token;
-        this.globalData.openid = wx.getStorageSync('openid');
-        this.globalData.virtualMAC = wx.getStorageSync('virtualMAC');
-      }
-
-      // 2. 如果没有 token，执行静默登录
-      if (!this.globalData.token) {
-        await this.silentLogin();
-      }
-
-      // 3. 检查设备绑定状态并获取 WS Token
-      await this.checkDeviceStatus();
-
-    } catch (err) {
-      console.error('初始化失败:', err);
+  initInBackground() {
+    // 1. 尝试从 storage 恢复登录态
+    const token = wx.getStorageSync('token');
+    if (token) {
+      this.globalData.token = token;
+      this.globalData.openid = wx.getStorageSync('openid');
+      this.globalData.virtualMAC = wx.getStorageSync('virtualMAC');
+      // 已登录，检查设备状态
+      this.checkDeviceStatus().catch(err => {
+        console.warn('设备状态检查失败:', err);
+      });
+      return;
     }
+
+    // 2. 未登录，后台执行静默登录
+    this.silentLogin().then(() => {
+      console.log('后台登录成功');
+      // 登录成功后检查设备状态
+      return this.checkDeviceStatus();
+    }).catch(err => {
+      console.error('后台登录失败:', err);
+    });
   },
 
   /**

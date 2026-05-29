@@ -53,5 +53,5 @@ spring:
 # 微信小程序配置
 wechat:
   miniprogram:
-    appid: ${WECHAT_MINIPROGRAM_APPID:your-appid}
-    secret: ${WECHAT_MINIPROGRAM_SECRET:your-secret}
+    appid: ${MINI_EGG_APPID:your-appid}
+    secret: ${MINI_EGG_SECRET:your-secret}

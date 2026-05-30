@@ -100,6 +100,35 @@
   <!-- 底部操作区 -->
   <view wx:if="{{!booting}}" class="dock safe-area-bottom">
     <view class="dock-rail"></view>
+
+    <!-- 文字输入区 -->
+    <view class="text-input-section">
+      <view class="input-container">
+        <input
+          class="text-input"
+          type="text"
+          placeholder="输入消息..."
+          placeholder-style="color: rgba(148, 163, 184, 0.5);"
+          value="{{inputText}}"
+          bindinput="onTextInput"
+          bindconfirm="onTextSend"
+          confirm-type="send"
+          maxlength="500"
+          disabled="{{connectionState !== 'connected' || chatState === 'thinking'}}"
+          adjust-position="{{true}}"
+        />
+        <view
+          class="send-btn {{inputText.trim() ? 'active' : ''}}"
+          bindtap="onTextSend"
+          hover-class="send-btn-hover"
+          hover-stay-time="80"
+        >
+          <text class="send-btn-icon">↑</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 语音按钮 -->
     <voice-button
       chat-state="{{chatState}}"
       disabled="{{connectionState !== 'connected'}}"

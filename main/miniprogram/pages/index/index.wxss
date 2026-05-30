@@ -371,6 +371,69 @@ page {
   background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.45), transparent);
 }
 
+/* ---------------- 文字输入区 ---------------- */
+.text-input-section {
+  padding: 0 36rpx 24rpx;
+}
+
+.input-container {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 24rpx;
+  border-radius: 24rpx;
+  background:
+    linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border: 1rpx solid rgba(148, 163, 184, 0.15);
+  backdrop-filter: blur(12rpx);
+  transition: all 0.3s ease;
+}
+
+.text-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #e2e8f0;
+  line-height: 1.5;
+}
+
+.text-input[disabled] {
+  color: rgba(148, 163, 184, 0.4);
+}
+
+.send-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.1);
+  border: 1rpx solid rgba(148, 163, 184, 0.2);
+  transition: all 0.2s ease;
+}
+
+.send-btn.active {
+  background: linear-gradient(135deg, #5eead4 0%, #38bdf8 100%);
+  border-color: transparent;
+  box-shadow: 0 4rpx 16rpx rgba(94, 234, 212, 0.35);
+}
+
+.send-btn-hover {
+  transform: scale(0.92);
+  opacity: 0.8;
+}
+
+.send-btn-icon {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.6);
+  line-height: 1;
+}
+
+.send-btn.active .send-btn-icon {
+  color: #06070d;
+}
+
 /* 安全区适配 */
 .safe-area-bottom {
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));

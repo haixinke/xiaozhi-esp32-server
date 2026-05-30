@@ -165,6 +165,11 @@ class WebSocketManager {
     return this.send({ type: 'ping' });
   }
 
+  sendText(text) {
+    // 使用服务端已支持的 listen+detect 模式发送文本
+    return this.send({ type: 'listen', mode: 'manual', state: 'detect', text: text });
+  }
+
   /**
    * 发送 Opus 二进制帧。AudioManager 输出的 ArrayBuffer 直接喂进来即可。
    */

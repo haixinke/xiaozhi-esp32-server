@@ -40,6 +40,9 @@ Page({
 
     // 启动加载态
     booting: true,
+
+    // 文字输入
+    inputText: '',
   },
 
   // 非响应式资源，挂在 this 上以避免 setData 开销
@@ -243,8 +246,16 @@ Page({
     if (msg.state === 'start') {
       this.setData({ chatState: STATE_SPEAKING });
     } else if (msg.state === 'sentence_start' || msg.state === 'sentence_end') {
-      // 服务端可能逐句下发文本，这里 llm 通道已处理累加；保留切到 speaking。
-      this.setData({ chatState: STATE_SPEAKING });
+      // 服务端通过 tts 消息发送文本内容，累加到 currentReply
+      if (msg.text) {
+        this.setData({
+          currentReply: (this.data.currentReply || '') + msg.text,
+          chatState: STATE_SPEAKING,
+        });
+        this._scrollToBottom();
+      } else {
+        this.setData({ chatState: STATE_SPEAKING });
+      }
     } else if (msg.state === 'stop') {
       const reply = (this.data.currentReply || '').trim();
       if (reply) {
@@ -318,6 +329,38 @@ Page({
     if (this.data.connectionState !== 'connected') {
       this._reconnect();
     }
+  },
+
+  onTextInput(e) {
+    this.setData({ inputText: e.detail.value });
+  },
+
+  onTextSend() {
+    const text = (this.data.inputText || '').trim();
+    if (!text) return;
+    if (!this._isReadyForAction()) return;
+
+    // 若 AI 正在说话，则先打断
+    if (this.data.chatState === STATE_SPEAKING) {
+      this._sendAbort();
+    }
+
+    // 发送文本消息到服务器
+    try {
+      this.wsManager.sendText(text);
+    } catch (err) {
+      console.error('发送文本失败:', err);
+      wx.showToast({ title: '发送失败，请重试', icon: 'none' });
+      return;
+    }
+
+    // 清空输入框并更新状态
+    // 注意：不在这里添加用户消息，等待服务端的 stt 消息来触发显示
+    this.setData({
+      inputText: '',
+      chatState: STATE_THINKING,
+      currentReply: '',
+    });
   },
 
   // -------------------------------------------------------------------------

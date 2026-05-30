@@ -242,11 +242,11 @@ page {
   flex: 1;
   width: 100%;
   box-sizing: border-box;
-  padding: 16rpx 0 60rpx;
+  padding: 16rpx 0 20rpx;
   overflow: hidden;
 }
 .conversation-inner {
-  padding: 24rpx 36rpx 80rpx;
+  padding: 24rpx 24rpx 24rpx;
   min-height: 100%;
   box-sizing: border-box;
   display: flex;
@@ -354,84 +354,201 @@ page {
   color: #e2e8f0;
 }
 
-/* ---------------- 底部 dock ---------------- */
-.dock {
+/* ---------------- 底部输入栏 ---------------- */
+.input-bar {
   position: relative;
   z-index: 3;
-  padding-top: 16rpx;
-  padding-bottom: 32rpx;
-  background: linear-gradient(180deg, transparent, rgba(6, 7, 13, 0.92) 30%, #06070d);
+  background: rgba(15, 23, 42, 0.95);
+  border-top: 1rpx solid rgba(148, 163, 184, 0.1);
+  padding: 12rpx 24rpx 12rpx;
+  backdrop-filter: blur(20rpx);
 }
 
-.dock-rail {
-  width: 80rpx;
-  height: 4rpx;
-  margin: 0 auto 8rpx;
-  border-radius: 2rpx;
-  background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.45), transparent);
-}
-
-/* ---------------- 文字输入区 ---------------- */
-.text-input-section {
-  padding: 0 36rpx 24rpx;
-}
-
-.input-container {
+.input-bar-inner {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 16rpx;
-  padding: 16rpx 24rpx;
-  border-radius: 24rpx;
-  background:
-    linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.6) 100%);
-  border: 1rpx solid rgba(148, 163, 184, 0.15);
-  backdrop-filter: blur(12rpx);
-  transition: all 0.3s ease;
 }
 
-.text-input {
+/* 输入框容器 */
+.input-wrapper {
   flex: 1;
-  font-size: 28rpx;
+  min-height: 76rpx;
+  max-height: 200rpx;
+  padding: 16rpx 20rpx;
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 8rpx;
+  border: 1rpx solid rgba(148, 163, 184, 0.15);
+  transition: border-color 0.2s;
+}
+
+.message-input {
+  width: 100%;
+  font-size: 32rpx;
   color: #e2e8f0;
   line-height: 1.5;
+  background: transparent;
 }
 
-.text-input[disabled] {
-  color: rgba(148, 163, 184, 0.4);
+.message-input::placeholder {
+  color: rgba(148, 163, 184, 0.5);
 }
 
-.send-btn {
-  width: 64rpx;
-  height: 64rpx;
+.message-input[disabled] {
+  color: rgba(148, 163, 184, 0.3);
+}
+
+/* 操作按钮区 */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  padding-bottom: 8rpx;
+}
+
+.action-btn {
+  min-width: 112rpx;
+  height: 76rpx;
+  padding: 0 24rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: rgba(148, 163, 184, 0.1);
-  border: 1rpx solid rgba(148, 163, 184, 0.2);
-  transition: all 0.2s ease;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  transition: all 0.2s;
+  user-select: none;
+  color: #cbd5e1;
 }
 
-.send-btn.active {
+/* 发送按钮 */
+.send-btn-active {
   background: linear-gradient(135deg, #5eead4 0%, #38bdf8 100%);
-  border-color: transparent;
-  box-shadow: 0 4rpx 16rpx rgba(94, 234, 212, 0.35);
-}
-
-.send-btn-hover {
-  transform: scale(0.92);
-  opacity: 0.8;
-}
-
-.send-btn-icon {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: rgba(148, 163, 184, 0.6);
-  line-height: 1;
-}
-
-.send-btn.active .send-btn-icon {
+  border: none;
   color: #06070d;
+}
+
+.send-btn-active .action-btn-text {
+  color: #06070d;
+  font-weight: 500;
+}
+
+/* 语音按钮（小版） */
+.voice-btn-mini {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1rpx solid rgba(148, 163, 184, 0.15);
+  min-width: 96rpx;
+  transition: all 0.2s;
+}
+
+.voice-btn-mini.idle {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.voice-btn-mini.listening {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+  transform: scale(0.95);
+}
+
+.voice-btn-mini.listening.cancelled {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.voice-btn-mini.thinking {
+  background: rgba(94, 234, 212, 0.15);
+  border-color: rgba(94, 234, 212, 0.5);
+}
+
+.voice-btn-mini.speaking {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.5);
+}
+
+.voice-btn-mini.disabled {
+  background: rgba(30, 41, 59, 0.3);
+  border-color: rgba(148, 163, 184, 0.08);
+  opacity: 0.5;
+}
+
+.voice-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.voice-icon-line {
+  width: 6rpx;
+  height: 24rpx;
+  background: rgba(94, 234, 212, 0.8);
+  border-radius: 3rpx;
+}
+
+.voice-btn-mini.listening .voice-icon-line {
+  background: rgba(245, 158, 11, 0.9);
+  animation: voice-wave 0.8s ease-in-out infinite;
+}
+
+.voice-btn-mini.listening .voice-icon-line:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.voice-btn-mini.listening .voice-icon-line:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.voice-btn-mini.listening .voice-icon-line:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.voice-btn-mini.thinking .voice-icon-line {
+  background: rgba(94, 234, 212, 0.8);
+}
+
+.voice-btn-mini.speaking .voice-icon-line {
+  background: rgba(56, 189, 248, 0.9);
+  animation: voice-wave 0.6s ease-in-out infinite;
+}
+
+.voice-btn-mini.speaking .voice-icon-line:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.voice-btn-mini.speaking .voice-icon-line:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.voice-btn-mini.speaking .voice-icon-line:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+@keyframes voice-wave {
+  0%, 100% {
+    height: 16rpx;
+  }
+  50% {
+    height: 36rpx;
+  }
+}
+
+/* 打断按钮 */
+.abort-btn {
+  background: rgba(239, 68, 68, 0.8);
+  border: 1rpx solid rgba(239, 68, 68, 0.5);
+  color: #ffffff;
+}
+
+.abort-btn .action-btn-text {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* 按钮悬停效果 */
+.action-btn-hover {
+  transform: scale(0.95);
+  opacity: 0.8;
 }
 
 /* 安全区适配 */

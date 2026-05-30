@@ -43,6 +43,11 @@ Page({
 
     // 文字输入
     inputText: '',
+
+    // 语音按钮状态
+    voicePressed: false,
+    voiceCancelled: false,
+    voiceStartY: 0,
   },
 
   // 非响应式资源，挂在 this 上以避免 setData 开销
@@ -281,8 +286,15 @@ Page({
   // 用户交互
   // -------------------------------------------------------------------------
 
-  onVoiceStart() {
+  onVoiceStart(e) {
     if (!this._isReadyForAction()) return;
+
+    const touch = (e.touches && e.touches[0]) || {};
+    this.setData({
+      voicePressed: true,
+      voiceCancelled: false,
+      voiceStartY: touch.clientY || 0,
+    });
 
     // 若 AI 正在说话，则先打断
     if (this.data.chatState === STATE_SPEAKING) {
@@ -297,22 +309,48 @@ Page({
     });
   },
 
+  onVoiceMove(e) {
+    if (!this.data.voicePressed) return;
+    const touch = (e.touches && e.touches[0]) || {};
+    const dy = (this.data.voiceStartY || 0) - (touch.clientY || 0);
+    // 上滑超过 80px 视为取消
+    const cancelled = dy > 80;
+    if (cancelled !== this.data.voiceCancelled) {
+      this.setData({ voiceCancelled: cancelled });
+      // 可以在这里添加震动反馈
+    }
+  },
+
   onVoiceEnd() {
-    if (this.data.chatState !== STATE_LISTENING) return;
+    if (!this.data.voicePressed) return;
+    const cancelled = this.data.voiceCancelled;
+    this.setData({ voicePressed: false, voiceCancelled: false });
 
     try { this.audioManager.stopRecord(); } catch (_) {}
     try { this.wsManager.sendListenStop(); } catch (_) {}
-    this.setData({ chatState: STATE_THINKING });
+
+    if (cancelled) {
+      // 取消录音
+      this._sendAbort();
+      this.setData({ chatState: STATE_IDLE, currentReply: '' });
+      wx.showToast({ title: '已取消', icon: 'none' });
+    } else {
+      // 正常结束
+      if (this.data.chatState !== STATE_SPEAKING) {
+        this.setData({ chatState: STATE_THINKING });
+      }
+    }
   },
 
   onVoiceCancel() {
-    // 上滑取消：停止录音并发送 abort
-    if (this.data.chatState !== STATE_LISTENING) return;
+    if (!this.data.voicePressed) return;
+    this.setData({ voicePressed: false, voiceCancelled: false });
+
     try { this.audioManager.stopRecord(); } catch (_) {}
     try { this.wsManager.sendListenStop(); } catch (_) {}
+
     this._sendAbort();
     this.setData({ chatState: STATE_IDLE, currentReply: '' });
-    wx.showToast({ title: '已取消', icon: 'none' });
   },
 
   onAbort() {

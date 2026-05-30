@@ -64,7 +64,7 @@
             <text class="welcome-name">{{agentName || '小智'}}</text>
             <text class="welcome-dot">.</text>
           </view>
-          <text class="welcome-sub">按住下方圆环开始对话；上滑取消，回答时点击「打断」即可中断。</text>
+          <text class="welcome-sub">在下方输入框输入文字，或按住语音按钮开始对话；上滑取消，回答时点击「打断」即可中断。</text>
 
           <view class="welcome-grid">
             <view class="welcome-card">
@@ -97,15 +97,13 @@
     </view>
   </scroll-view>
 
-  <!-- 底部操作区 -->
-  <view wx:if="{{!booting}}" class="dock safe-area-bottom">
-    <view class="dock-rail"></view>
-
-    <!-- 文字输入区 -->
-    <view class="text-input-section">
-      <view class="input-container">
+  <!-- 底部输入栏 -->
+  <view wx:if="{{!booting}}" class="input-bar safe-area-bottom">
+    <view class="input-bar-inner">
+      <!-- 输入框容器 -->
+      <view class="input-wrapper">
         <input
-          class="text-input"
+          class="message-input"
           type="text"
           placeholder="输入消息..."
           placeholder-style="color: rgba(148, 163, 184, 0.5);"
@@ -117,25 +115,48 @@
           disabled="{{connectionState !== 'connected' || chatState === 'thinking'}}"
           adjust-position="{{true}}"
         />
+      </view>
+
+      <!-- 操作按钮区 -->
+      <view class="action-buttons">
+        <!-- 发送按钮（有文字时显示） -->
         <view
-          class="send-btn {{inputText.trim() ? 'active' : ''}}"
+          wx:if="{{inputText.trim()}}"
+          class="action-btn send-btn-active"
           bindtap="onTextSend"
-          hover-class="send-btn-hover"
+          hover-class="action-btn-hover"
           hover-stay-time="80"
         >
-          <text class="send-btn-icon">↑</text>
+          <text class="action-btn-text">发送</text>
+        </view>
+
+        <!-- 语音按钮（无文字时且不在 speaking 状态显示） -->
+        <view
+          wx:if="{{chatState !== 'speaking'}}"
+          class="action-btn voice-btn-mini {{chatState}} {{voiceCancelled ? 'cancelled' : ''}} {{connectionState !== 'connected' || chatState === 'thinking' ? 'disabled' : ''}}"
+          catchtouchstart="onVoiceStart"
+          catchtouchmove="onVoiceMove"
+          catchtouchend="onVoiceEnd"
+          catchtouchcancel="onVoiceCancel"
+        >
+          <view class="voice-icon">
+            <view class="voice-icon-line"></view>
+            <view class="voice-icon-line"></view>
+            <view class="voice-icon-line"></view>
+          </view>
+        </view>
+
+        <!-- 打断按钮（AI 说话时显示） -->
+        <view
+          wx:if="{{chatState === 'speaking' && !inputText.trim()}}"
+          class="action-btn abort-btn"
+          catchtap="onAbort"
+          hover-class="action-btn-hover"
+          hover-stay-time="80"
+        >
+          <text class="action-btn-text">打断</text>
         </view>
       </view>
     </view>
-
-    <!-- 语音按钮 -->
-    <voice-button
-      chat-state="{{chatState}}"
-      disabled="{{connectionState !== 'connected'}}"
-      bind:start="onVoiceStart"
-      bind:end="onVoiceEnd"
-      bind:cancel="onVoiceCancel"
-      bind:abort="onAbort"
-    />
   </view>
 </view>

@@ -1,23 +1,20 @@
 /**
  * pages/index/index.js
  *
- * 主页：语音对话控制器。
+ * 主页：文字对话控制器。
  * 负责：
  *   1. 等待 app 启动完成（登录 + 设备绑定）。
- *   2. 初始化 AudioManager 与 WebSocketManager 并桥接二者。
- *   3. 维护会话状态机：idle → listening → thinking → speaking → idle。
+ *   2. 初始化 WebSocketManager 进行文字对话。
+ *   3. 维护会话状态机：idle → thinking → idle。
  *   4. 切后台/前台时按需重连。
  */
 
-const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
 
 const app = getApp();
 
 const STATE_IDLE = 'idle';
-const STATE_LISTENING = 'listening';
 const STATE_THINKING = 'thinking';
-const STATE_SPEAKING = 'speaking';
 
 Page({
   data: {
@@ -43,15 +40,9 @@ Page({
 
     // 文字输入
     inputText: '',
-
-    // 语音按钮状态
-    voicePressed: false,
-    voiceCancelled: false,
-    voiceStartY: 0,
   },
 
   // 非响应式资源，挂在 this 上以避免 setData 开销
-  audioManager: null,
   wsManager: null,
   _bootTimer: null,
   _appShowHandler: null,
@@ -87,12 +78,7 @@ Page({
   },
 
   onHide() {
-    // 切后台时主动停录音（避免误录），但保留连接交给系统调度
-    if (this.audioManager && this.data.chatState === STATE_LISTENING) {
-      try { this.audioManager.stopRecord(); } catch (_) {}
-      try { this.wsManager && this.wsManager.sendListenStop(); } catch (_) {}
-      this.setData({ chatState: STATE_IDLE });
-    }
+    // 切后台时保持连接，交给系统调度
   },
 
   // -------------------------------------------------------------------------
@@ -138,40 +124,7 @@ Page({
       booting: false,
     });
 
-    this._initAudio();
     this._initWebSocket();
-  },
-
-  _initAudio() {
-    this.audioManager = new AudioManager({
-      onAudioFrame: (frame) => {
-        // 录音回调：把 Opus 帧推到 WebSocket
-        if (this.wsManager && this.wsManager.isConnected()) {
-          this.wsManager.sendAudioFrame(frame);
-        }
-      },
-      onRecordStart: () => {
-        // 录音真正启动后再切到 listening（避免提前显示）
-      },
-      onRecordStop: () => {
-        // 录音器停止；不在这里切状态，因为状态由用户手势 + 服务端响应驱动
-      },
-      onPlayEnd: () => {
-        // 播放队列清空：若还在 speaking 状态则可视为补完
-      },
-      onError: (err, scope) => {
-        console.warn('[Audio:' + scope + ']', err);
-        if (scope === 'record') {
-          wx.showToast({ title: '麦克风启动失败', icon: 'none' });
-          this.setData({ chatState: STATE_IDLE });
-        }
-      },
-    });
-
-    this.audioManager.ready().catch((err) => {
-      console.error('Opus runtime not ready:', err);
-      wx.showToast({ title: '音频引擎加载失败', icon: 'none' });
-    });
   },
 
   _initWebSocket() {
@@ -182,10 +135,6 @@ Page({
         if (state === 'disconnected' && this.data.chatState !== STATE_IDLE) {
           // 连接断开时把会话状态拉回 idle
           this.setData({ chatState: STATE_IDLE, currentReply: '' });
-          if (this.audioManager) {
-            try { this.audioManager.stopRecord(); } catch (_) {}
-            try { this.audioManager.stopPlayback(); } catch (_) {}
-          }
         }
       },
       onMessage: (msg) => this._handleWSMessage(msg),
@@ -207,17 +156,10 @@ Page({
         this.setData({ sessionId: msg.sessionId || '' });
         break;
 
-      case 'audio':
-        // 二进制 Opus 帧 → 解码播放
-        if (this.audioManager) this.audioManager.appendOpusFrame(msg.data);
-        break;
-
       case 'stt':
         if (msg.text) this._addMessage('user', msg.text);
         // STT 抵达后通常进入思考阶段
-        if (this.data.chatState !== STATE_SPEAKING) {
-          this.setData({ chatState: STATE_THINKING });
-        }
+        this.setData({ chatState: STATE_THINKING });
         break;
 
       case 'llm':
@@ -225,9 +167,7 @@ Page({
         if (msg.text) {
           this.setData({
             currentReply: (this.data.currentReply || '') + msg.text,
-            chatState: this.data.chatState === STATE_LISTENING
-              ? this.data.chatState
-              : STATE_SPEAKING,
+            chatState: STATE_THINKING,
           });
           this._scrollToBottom();
         }
@@ -249,17 +189,15 @@ Page({
 
   _handleTtsState(msg) {
     if (msg.state === 'start') {
-      this.setData({ chatState: STATE_SPEAKING });
+      this.setData({ chatState: STATE_THINKING });
     } else if (msg.state === 'sentence_start' || msg.state === 'sentence_end') {
       // 服务端通过 tts 消息发送文本内容，累加到 currentReply
       if (msg.text) {
         this.setData({
           currentReply: (this.data.currentReply || '') + msg.text,
-          chatState: STATE_SPEAKING,
+          chatState: STATE_THINKING,
         });
         this._scrollToBottom();
-      } else {
-        this.setData({ chatState: STATE_SPEAKING });
       }
     } else if (msg.state === 'stop') {
       const reply = (this.data.currentReply || '').trim();
@@ -286,79 +224,6 @@ Page({
   // 用户交互
   // -------------------------------------------------------------------------
 
-  onVoiceStart(e) {
-    if (!this._isReadyForAction()) return;
-
-    const touch = (e.touches && e.touches[0]) || {};
-    this.setData({
-      voicePressed: true,
-      voiceCancelled: false,
-      voiceStartY: touch.clientY || 0,
-    });
-
-    // 若 AI 正在说话，则先打断
-    if (this.data.chatState === STATE_SPEAKING) {
-      this._sendAbort();
-    }
-
-    this.wsManager.sendListenStart();
-    this.audioManager.startRecord();
-    this.setData({
-      chatState: STATE_LISTENING,
-      currentReply: '',
-    });
-  },
-
-  onVoiceMove(e) {
-    if (!this.data.voicePressed) return;
-    const touch = (e.touches && e.touches[0]) || {};
-    const dy = (this.data.voiceStartY || 0) - (touch.clientY || 0);
-    // 上滑超过 80px 视为取消
-    const cancelled = dy > 80;
-    if (cancelled !== this.data.voiceCancelled) {
-      this.setData({ voiceCancelled: cancelled });
-      // 可以在这里添加震动反馈
-    }
-  },
-
-  onVoiceEnd() {
-    if (!this.data.voicePressed) return;
-    const cancelled = this.data.voiceCancelled;
-    this.setData({ voicePressed: false, voiceCancelled: false });
-
-    try { this.audioManager.stopRecord(); } catch (_) {}
-    try { this.wsManager.sendListenStop(); } catch (_) {}
-
-    if (cancelled) {
-      // 取消录音
-      this._sendAbort();
-      this.setData({ chatState: STATE_IDLE, currentReply: '' });
-      wx.showToast({ title: '已取消', icon: 'none' });
-    } else {
-      // 正常结束
-      if (this.data.chatState !== STATE_SPEAKING) {
-        this.setData({ chatState: STATE_THINKING });
-      }
-    }
-  },
-
-  onVoiceCancel() {
-    if (!this.data.voicePressed) return;
-    this.setData({ voicePressed: false, voiceCancelled: false });
-
-    try { this.audioManager.stopRecord(); } catch (_) {}
-    try { this.wsManager.sendListenStop(); } catch (_) {}
-
-    this._sendAbort();
-    this.setData({ chatState: STATE_IDLE, currentReply: '' });
-  },
-
-  onAbort() {
-    if (this.data.chatState !== STATE_SPEAKING) return;
-    this._sendAbort();
-    this.setData({ chatState: STATE_IDLE, currentReply: '' });
-  },
-
   onSwitchAgent() {
     wx.navigateTo({ url: '/pages/agent-select/agent-select' });
   },
@@ -377,11 +242,6 @@ Page({
     const text = (this.data.inputText || '').trim();
     if (!text) return;
     if (!this._isReadyForAction()) return;
-
-    // 若 AI 正在说话，则先打断
-    if (this.data.chatState === STATE_SPEAKING) {
-      this._sendAbort();
-    }
 
     // 发送文本消息到服务器
     try {
@@ -407,7 +267,6 @@ Page({
 
   _sendAbort() {
     try { this.wsManager && this.wsManager.sendAbort(); } catch (_) {}
-    try { this.audioManager && this.audioManager.stopPlayback(); } catch (_) {}
   },
 
   _isReadyForAction() {
@@ -416,7 +275,6 @@ Page({
       this._reconnect();
       return false;
     }
-    if (!this.audioManager) return false;
     return true;
   },
 
@@ -446,10 +304,6 @@ Page({
     if (this.wsManager) {
       try { this.wsManager.destroy(); } catch (_) {}
       this.wsManager = null;
-    }
-    if (this.audioManager) {
-      try { this.audioManager.destroy(); } catch (_) {}
-      this.audioManager = null;
     }
   },
 });

@@ -366,15 +366,13 @@ page {
 
 .input-bar-inner {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 16rpx;
 }
 
 /* 输入框容器 */
 .input-wrapper {
   flex: 1;
-  min-height: 76rpx;
-  max-height: 200rpx;
   padding: 16rpx 20rpx;
   background: rgba(30, 41, 59, 0.8);
   border-radius: 8rpx;
@@ -398,14 +396,8 @@ page {
   color: rgba(148, 163, 184, 0.3);
 }
 
-/* 操作按钮区 */
-.action-buttons {
-  display: flex;
-  align-items: center;
-  padding-bottom: 8rpx;
-}
-
-.action-btn {
+/* 发送按钮 */
+.send-btn {
   min-width: 112rpx;
   height: 76rpx;
   padding: 0 24rpx;
@@ -413,140 +405,29 @@ page {
   align-items: center;
   justify-content: center;
   border-radius: 8rpx;
-  font-size: 28rpx;
-  transition: all 0.2s;
-  user-select: none;
-  color: #cbd5e1;
-}
-
-/* 发送按钮 */
-.send-btn-active {
-  background: linear-gradient(135deg, #5eead4 0%, #38bdf8 100%);
-  border: none;
-  color: #06070d;
-}
-
-.send-btn-active .action-btn-text {
-  color: #06070d;
-  font-weight: 500;
-}
-
-/* 语音按钮（小版） */
-.voice-btn-mini {
   background: rgba(30, 41, 59, 0.8);
   border: 1rpx solid rgba(148, 163, 184, 0.15);
-  min-width: 96rpx;
   transition: all 0.2s;
+  user-select: none;
 }
 
-.voice-btn-mini.idle {
-  background: rgba(30, 41, 59, 0.8);
+.send-btn.active {
+  background: linear-gradient(135deg, #5eead4 0%, #38bdf8 100%);
+  border-color: transparent;
+  box-shadow: 0 4rpx 16rpx rgba(94, 234, 212, 0.35);
 }
 
-.voice-btn-mini.listening {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.5);
-  transform: scale(0.95);
-}
-
-.voice-btn-mini.listening.cancelled {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.5);
-}
-
-.voice-btn-mini.thinking {
-  background: rgba(94, 234, 212, 0.15);
-  border-color: rgba(94, 234, 212, 0.5);
-}
-
-.voice-btn-mini.speaking {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: rgba(56, 189, 248, 0.5);
-}
-
-.voice-btn-mini.disabled {
-  background: rgba(30, 41, 59, 0.3);
-  border-color: rgba(148, 163, 184, 0.08);
-  opacity: 0.5;
-}
-
-.voice-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4rpx;
-  width: 48rpx;
-  height: 48rpx;
-}
-
-.voice-icon-line {
-  width: 6rpx;
-  height: 24rpx;
-  background: rgba(94, 234, 212, 0.8);
-  border-radius: 3rpx;
-}
-
-.voice-btn-mini.listening .voice-icon-line {
-  background: rgba(245, 158, 11, 0.9);
-  animation: voice-wave 0.8s ease-in-out infinite;
-}
-
-.voice-btn-mini.listening .voice-icon-line:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.voice-btn-mini.listening .voice-icon-line:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.voice-btn-mini.listening .voice-icon-line:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-.voice-btn-mini.thinking .voice-icon-line {
-  background: rgba(94, 234, 212, 0.8);
-}
-
-.voice-btn-mini.speaking .voice-icon-line {
-  background: rgba(56, 189, 248, 0.9);
-  animation: voice-wave 0.6s ease-in-out infinite;
-}
-
-.voice-btn-mini.speaking .voice-icon-line:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.voice-btn-mini.speaking .voice-icon-line:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.voice-btn-mini.speaking .voice-icon-line:nth-child(3) {
-  animation-delay: 0.1s;
-}
-
-@keyframes voice-wave {
-  0%, 100% {
-    height: 16rpx;
-  }
-  50% {
-    height: 36rpx;
-  }
-}
-
-/* 打断按钮 */
-.abort-btn {
-  background: rgba(239, 68, 68, 0.8);
-  border: 1rpx solid rgba(239, 68, 68, 0.5);
-  color: #ffffff;
-}
-
-.abort-btn .action-btn-text {
-  color: #ffffff;
+.send-btn-text {
+  font-size: 28rpx;
+  color: rgba(148, 163, 184, 0.6);
   font-weight: 500;
 }
 
-/* 按钮悬停效果 */
-.action-btn-hover {
+.send-btn.active .send-btn-text {
+  color: #06070d;
+}
+
+.send-btn-hover {
   transform: scale(0.95);
   opacity: 0.8;
 }

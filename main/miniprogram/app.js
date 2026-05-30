@@ -5,7 +5,7 @@
 
 const { post } = require('./utils/request');
 const { setToken } = require('./utils/auth');
-const { getOrCreateMAC, checkOrRegisterDevice, completeDeviceBinding } = require('./utils/device');
+const { getOrCreateMAC, checkOrRegisterDevice, completeDeviceBinding, createPet } = require('./utils/device');
 
 App({
   globalData: {
@@ -16,7 +16,7 @@ App({
     wsUrl: null,
     agentId: null,
     agentName: null,
-    isDeviceBound: false
+    isDeviceBound: undefined  // 设备绑定状态，undefined=检查中, true=已绑定, false=未绑定
   },
 
   onLaunch() {
@@ -32,8 +32,10 @@ App({
       this.globalData.openid = wx.getStorageSync('openid');
       this.globalData.agentId = wx.getStorageSync('agentId');
       this.globalData.virtualMAC = wx.getStorageSync('virtualMAC');
-      // 已登录，检查设备状态
-      this.checkDeviceStatus().catch(err => {
+      // 已登录，先创建宠物，再检查设备状态
+      this.createPetIfNeeded().then(() => {
+        return this.checkDeviceStatus();
+      }).catch(err => {
         console.warn('设备状态检查失败:', err);
       });
       return;
@@ -45,7 +47,10 @@ App({
       // 确保智能体存在
       return this.ensureAgentExists();
     }).then(() => {
-      // 智能体就绪后，检查设备状态
+      // 创建宠物（在设备绑定前）
+      return this.createPetIfNeeded();
+    }).then(() => {
+      // 宠物就绪后，检查设备状态
       return this.checkDeviceStatus();
     }).catch(err => {
       console.error('后台流程失败:', err);
@@ -142,6 +147,27 @@ App({
         }
       });
       throw err;
+    }
+  },
+
+  /**
+   * 创建宠物（如果需要）
+   * 在调用 OTA 接口前先创建宠物
+   */
+  async createPetIfNeeded() {
+    const mac = this.globalData.virtualMAC;
+    if (!mac) {
+      console.warn('无虚拟 MAC，跳过创建宠物');
+      return;
+    }
+
+    try {
+      console.log('开始创建宠物, MAC:', mac);
+      await createPet(mac);
+      console.log('宠物创建完成');
+    } catch (err) {
+      // 创建失败不阻断流程（可能宠物已存在）
+      console.warn('创建宠物失败（可能已存在）:', err);
     }
   },
 

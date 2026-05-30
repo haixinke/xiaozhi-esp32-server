@@ -108,12 +108,13 @@ Page({
       if (check()) return;
 
       let elapsed = 0;
+      const TIMEOUT_MS = 30000; // 增加到 30 秒，给设备绑定更多时间
       this._bootTimer = setInterval(() => {
         elapsed += 250;
         if (check()) {
           clearInterval(this._bootTimer);
           this._bootTimer = null;
-        } else if (elapsed >= 12000) {
+        } else if (elapsed >= TIMEOUT_MS) {
           clearInterval(this._bootTimer);
           this._bootTimer = null;
           reject(new Error('app init timeout'));

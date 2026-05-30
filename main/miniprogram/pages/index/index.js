@@ -4,17 +4,19 @@
  * 主页：文字对话控制器。
  * 负责：
  *   1. 等待 app 启动完成（登录 + 设备绑定）。
- *   2. 初始化 WebSocketManager 进行文字对话。
- *   3. 维护会话状态机：idle → thinking → idle。
+ *   2. 初始化 WebSocketManager 和 AudioManager 进行文字对话和音频播放。
+ *   3. 维护会话状态机：idle → thinking → speaking → idle。
  *   4. 切后台/前台时按需重连。
  */
 
+const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
 
 const app = getApp();
 
 const STATE_IDLE = 'idle';
 const STATE_THINKING = 'thinking';
+const STATE_SPEAKING = 'speaking';
 
 Page({
   data: {
@@ -43,6 +45,7 @@ Page({
   },
 
   // 非响应式资源，挂在 this 上以避免 setData 开销
+  audioManager: null,
   wsManager: null,
   _bootTimer: null,
   _appShowHandler: null,
@@ -124,7 +127,33 @@ Page({
       booting: false,
     });
 
+    this._initAudio();
     this._initWebSocket();
+  },
+
+  _initAudio() {
+    this.audioManager = new AudioManager({
+      onAudioFrame: () => {
+        // 不需要处理录音帧，只用于播放
+      },
+      onRecordStart: () => {
+        // 不再使用录音功能
+      },
+      onRecordStop: () => {
+        // 不再使用录音功能
+      },
+      onPlayEnd: () => {
+        // 播放队列清空：若还在 speaking 状态则可视为补完
+      },
+      onError: (err, scope) => {
+        console.warn('[Audio:' + scope + ']', err);
+      },
+    });
+
+    this.audioManager.ready().catch((err) => {
+      console.error('Opus runtime not ready:', err);
+      wx.showToast({ title: '音频引擎加载失败', icon: 'none' });
+    });
   },
 
   _initWebSocket() {
@@ -135,6 +164,9 @@ Page({
         if (state === 'disconnected' && this.data.chatState !== STATE_IDLE) {
           // 连接断开时把会话状态拉回 idle
           this.setData({ chatState: STATE_IDLE, currentReply: '' });
+          if (this.audioManager) {
+            try { this.audioManager.stopPlayback(); } catch (_) {}
+          }
         }
       },
       onMessage: (msg) => this._handleWSMessage(msg),
@@ -154,6 +186,11 @@ Page({
     switch (msg.type) {
       case 'hello':
         this.setData({ sessionId: msg.sessionId || '' });
+        break;
+
+      case 'audio':
+        // 二进制 Opus 帧 → 解码播放
+        if (this.audioManager) this.audioManager.appendOpusFrame(msg.data);
         break;
 
       case 'stt':
@@ -189,13 +226,13 @@ Page({
 
   _handleTtsState(msg) {
     if (msg.state === 'start') {
-      this.setData({ chatState: STATE_THINKING });
+      this.setData({ chatState: STATE_SPEAKING });
     } else if (msg.state === 'sentence_start' || msg.state === 'sentence_end') {
       // 服务端通过 tts 消息发送文本内容，累加到 currentReply
       if (msg.text) {
         this.setData({
           currentReply: (this.data.currentReply || '') + msg.text,
-          chatState: STATE_THINKING,
+          chatState: STATE_SPEAKING,
         });
         this._scrollToBottom();
       }
@@ -304,6 +341,10 @@ Page({
     if (this.wsManager) {
       try { this.wsManager.destroy(); } catch (_) {}
       this.wsManager = null;
+    }
+    if (this.audioManager) {
+      try { this.audioManager.destroy(); } catch (_) {}
+      this.audioManager = null;
     }
   },
 });

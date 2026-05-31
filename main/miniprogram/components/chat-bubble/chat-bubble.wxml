@@ -6,5 +6,6 @@
       <text class="cb-text" selectable="{{!typing}}">{{content}}</text>
       <text wx:if="{{typing}}" class="cb-cursor">▍</text>
     </view>
+    <text class="cb-time" wx:if="{{!typing && time}}">{{time}}</text>
   </view>
 </view>

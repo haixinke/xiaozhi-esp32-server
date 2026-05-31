@@ -4,7 +4,7 @@
 .cb-row {
   display: flex;
   flex-direction: column;
-  margin: 0 0 32rpx;
+  margin: 0 0 24rpx;
   max-width: 100%;
   animation: cb-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -83,7 +83,8 @@
 }
 
 .cb-row.cb-user .cb-bubble {
-  border-top-right-radius: 12rpx;
+  border-top-right-radius: 32rpx;
+  border-bottom-right-radius: 0; /* 右下角直角 */
   background: rgba(255, 183, 193, 0.8);
   backdrop-filter: blur(20rpx);
   -webkit-backdrop-filter: blur(20rpx);
@@ -92,7 +93,8 @@
 }
 
 .cb-row.cb-assistant .cb-bubble {
-  border-top-left-radius: 12rpx;
+  border-top-left-radius: 32rpx;
+  border-bottom-left-radius: 0; /* 左下角直角 */
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(20rpx);
   -webkit-backdrop-filter: blur(20rpx);
@@ -164,6 +166,15 @@
   color: #864e5a;
   animation: cb-blink 1s steps(2, start) infinite;
   text-shadow: 0 0 12rpx rgba(134, 78, 90, 0.6);
+}
+
+/* ----- 时间戳 ----- */
+.cb-time {
+  display: block;
+  font-size: 20rpx;
+  color: rgba(134, 78, 90, 0.5);
+  margin-top: 8rpx;
+  line-height: 1;
 }
 
 @keyframes cb-blink {

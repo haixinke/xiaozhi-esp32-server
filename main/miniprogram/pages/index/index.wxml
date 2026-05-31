@@ -1,9 +1,9 @@
 <!--pages/index/index.wxml-->
 <view class="page">
+  <!-- 背景层：背景图片 -->
+  <image class="bg-image" src="/images/beijing.png" mode="aspectFill"></image>
   <!-- 背景层：网格 + 光晕 -->
   <view class="bg-grid"></view>
-  <view class="bg-aurora bg-aurora-1"></view>
-  <view class="bg-aurora bg-aurora-2"></view>
 
   <!-- 顶部状态栏 - AI伴侣导航 -->
   <view class="top-bar">
@@ -56,13 +56,20 @@
       <!-- 历史消息 -->
       <block wx:for="{{messages}}" wx:key="id">
         <view id="{{item.id}}">
-          <chat-bubble role="{{item.role}}" content="{{item.content}}" />
+          <chat-bubble role="{{item.role}}" content="{{item.content}}" time="{{item.time}}" />
         </view>
       </block>
 
       <!-- 流式回复 -->
       <view wx:if="{{currentReply}}" id="streaming">
         <chat-bubble role="assistant" content="{{currentReply}}" typing="{{true}}" />
+      </view>
+
+      <!-- 正在输入指示器 -->
+      <view wx:if="{{chatState === 'thinking'}}" class="typing-indicator">
+        <view class="typing-dot"></view>
+        <view class="typing-dot" style="animation-delay: 0.2s"></view>
+        <view class="typing-dot" style="animation-delay: 0.4s"></view>
       </view>
     </view>
   </scroll-view>

@@ -263,7 +263,9 @@ Page({
 
   _addMessage(role, content) {
     const id = 'msg-' + (this._msgIdSeed++);
-    const messages = this.data.messages.concat([{ id, role, content }]);
+    const now = new Date();
+    const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const messages = this.data.messages.concat([{ id, role, content, time }]);
     this.setData({ messages, scrollToView: id });
   },
 

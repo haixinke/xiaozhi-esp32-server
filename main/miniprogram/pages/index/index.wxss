@@ -16,6 +16,27 @@ page {
 }
 
 /* ---------------- 背景层 ---------------- */
+/* 背景图片 */
+.bg-image {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 渐变遮罩层 - 从下到上的渐变，确保文字可读性 */
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to top, rgba(251, 249, 248, 0.92) 0%, rgba(251, 249, 248, 0.6) 30%, transparent 60%, transparent 100%);
+  opacity: 0.85;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .bg-grid {
   position: absolute;
   inset: 0;
@@ -26,6 +47,7 @@ page {
   mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, #000 35%, transparent 80%);
   -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, #000 35%, transparent 80%);
   pointer-events: none;
+  z-index: 2;
 }
 
 .bg-aurora {
@@ -36,6 +58,7 @@ page {
   filter: blur(120rpx);
   opacity: 0.15;
   pointer-events: none;
+  z-index: 2;
 }
 .bg-aurora-1 {
   top: -300rpx;
@@ -61,11 +84,11 @@ page {
 /* ---------------- 顶部状态栏 ---------------- */
 .top-bar {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 28rpx 36rpx 20rpx;
+  padding: 20rpx 36rpx 20rpx;
   border-bottom: 1rpx solid rgba(134, 78, 90, 0.08);
   background: rgba(251, 249, 248, 0.8);
   backdrop-filter: blur(20rpx);
@@ -270,16 +293,16 @@ page {
 /* ---------------- 会话区 ---------------- */
 .conversation {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   flex: 1;
   width: 100%;
   height: 0; /* 关键修复：配合 flex: 1 使用，确保正确占据剩余空间 */
   box-sizing: border-box;
-  padding: 16rpx 0 20rpx;
+  padding: 16rpx 0 0;
   overflow: hidden;
 }
 .conversation-inner {
-  padding: 24rpx 24rpx 24rpx;
+  padding: 24rpx 24rpx 16rpx;
   min-height: 100%;
   box-sizing: border-box;
   display: flex;
@@ -392,12 +415,9 @@ page {
 /* ---------------- 底部输入栏 ---------------- */
 .input-bar {
   position: relative;
-  z-index: 3;
-  background: rgba(251, 249, 248, 0.9);
-  border-top: 1rpx solid rgba(134, 78, 90, 0.1);
-  padding: 12rpx 24rpx 12rpx;
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
+  z-index: 10;
+  background: transparent;
+  padding: 4rpx 24rpx 8rpx;
 }
 
 .input-bar-inner {
@@ -410,13 +430,13 @@ page {
 .input-wrapper {
   flex: 1;
   padding: 16rpx 24rpx;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(30rpx);
+  -webkit-backdrop-filter: blur(30rpx);
   border-radius: 100rpx;
-  border: 1rpx solid rgba(255, 183, 193, 0.2);
+  border: 1rpx solid rgba(255, 255, 255, 0.5);
   transition: border-color 0.2s;
-  box-shadow: 0 0 20rpx rgba(255, 183, 193, 0.4);
+  box-shadow: 0 8rpx 32rpx rgba(134, 78, 90, 0.15), 0 0 20rpx rgba(255, 183, 193, 0.3);
 }
 
 .message-input {
@@ -444,18 +464,19 @@ page {
   align-items: center;
   justify-content: center;
   border-radius: 100rpx;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(134, 78, 90, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(30rpx);
+  -webkit-backdrop-filter: blur(30rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.5);
   transition: all 0.2s;
   user-select: none;
+  box-shadow: 0 8rpx 32rpx rgba(134, 78, 90, 0.15), 0 0 20rpx rgba(255, 183, 193, 0.3);
 }
 
 .send-btn.active {
   background: linear-gradient(135deg, #ffb7c5 0%, #864e5a 100%);
   border-color: transparent;
-  box-shadow: 0 0 20rpx rgba(255, 183, 193, 0.4);
+  box-shadow: 0 8rpx 32rpx rgba(134, 78, 90, 0.25), 0 0 24rpx rgba(255, 183, 193, 0.5);
 }
 
 .send-btn-text {
@@ -470,10 +491,44 @@ page {
 
 .send-btn-hover {
   transform: scale(0.95);
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 /* 安全区适配 */
 .safe-area-bottom {
-  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  padding-bottom: 15rpx;
+}
+
+/* ---------------- 正在输入指示器 ---------------- */
+.typing-indicator {
+  display: flex;
+  gap: 8rpx;
+  padding: 16rpx 24rpx;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  border-radius: 100rpx;
+  width: fit-content;
+  margin-bottom: 16rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4rpx 20rpx rgba(255, 183, 193, 0.1);
+}
+
+.typing-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: rgba(134, 78, 90, 0.4);
+  animation: bounce 1.4s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

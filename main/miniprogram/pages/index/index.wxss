@@ -8,7 +8,7 @@ page {
 
 .page {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -114,7 +114,7 @@ page {
   border-radius: 50%;
   object-fit: cover;
   border: 3rpx solid #ffb7c5;
-  background: linear-gradient(135deg, #ffb7c5 0%, #864e5a 100%);
+  background: #ffb7c5;
 }
 
 /* 状态指示点 - 头像右下角 */
@@ -163,23 +163,25 @@ page {
 
 /* 召唤按钮 - 改为退下按钮 */
 .summon-btn {
-  padding: 10rpx 24rpx;
+  padding: 10rpx 48rpx;
+  padding-top: 16rpx;
+  padding-bottom: 16rpx;
   border-radius: 100rpx;
-  background: linear-gradient(135deg, #ffb7c5 0%, #864e5a 100%);
+  background: #ffb7c5;
   box-shadow: 0 0 20rpx rgba(255, 183, 193, 0.4);
   transition: all 0.2s;
   user-select: none;
 }
 
 .summon-btn-hover {
-  transform: scale(0.96);
-  opacity: 0.9;
-  box-shadow: 0 0 15rpx rgba(255, 183, 193, 0.3);
+  transform: scale(0.95);
+  opacity: 0.85;
+  box-shadow: 0 0 16rpx rgba(255, 183, 193, 0.35);
 }
 
 .summon-text {
-  font-size: 22rpx;
-  color: #ffffff;
+  font-size: 26rpx;
+  color: #360c19;
   font-weight: 500;
   letter-spacing: 2rpx;
 }
@@ -298,8 +300,6 @@ page {
   width: 100%;
   height: 0; /* 关键修复：配合 flex: 1 使用，确保正确占据剩余空间 */
   box-sizing: border-box;
-  padding: 16rpx 0 0;
-  overflow: hidden;
 }
 .conversation-inner {
   padding: 24rpx 24rpx 16rpx;

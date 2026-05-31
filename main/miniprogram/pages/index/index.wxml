@@ -2,8 +2,6 @@
 <view class="page">
   <!-- 背景层：背景图片 -->
   <image class="bg-image" src="/images/beijing.png" mode="aspectFill"></image>
-  <!-- 背景层：网格 + 光晕 -->
-  <view class="bg-grid"></view>
 
   <!-- 顶部状态栏 - AI伴侣导航 -->
   <view class="top-bar">

@@ -1,170 +1,170 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件为 Claude Code (claude.ai/code) 在此代码库中工作时提供指引。
 
-## Project Overview
+## 项目概述
 
-This is the WeChat Mini Program for "xiaozhi-esp32-server" - an AI-powered voice assistant device. The mini program provides a chat interface for interacting with the ESP32 hardware device via WebSocket connection to the Python backend.
+这是 "xiaozhi-esp32-server" 的微信小程序 —— 一个 AI 驱动的语音助手设备。该小程序提供聊天界面，通过 WebSocket 连接到 Python 后端，与 ESP32 硬件设备进行交互。
 
-**Brand Identity**: "完美女友" (Perfect Girlfriend) - An AI companion designed to provide warmth, emotional connection, and intimate interaction.
+**品牌标识**："完美女友" (Perfect Girlfriend) - 一个旨在提供温暖、情感连接和亲密互动的 AI 伴侣。
 
-**Design System**: [Ethereal Companion](./DESIGN.md) - A healing intimacy theme with cherry blossom pink (#864e5a) and porcelain white (#fbf9f8) colors, glassmorphism effects, and extreme roundedness.
+**设计系统**：[Ethereal Companion](./DESIGN.md) - 以樱花粉 (#864e5a) 和瓷白 (#fbf9f8) 为主题的治愈系亲密风格，采用玻璃态效果和极致圆润的设计。
 
-## Architecture
+## 架构
 
-### Application Lifecycle
+### 应用生命周期
 
 ```
 App Launch → Silent Login → Agent Creation → Device Binding → Chat Interface
 ```
 
-1. **Silent Login** (`app.js`): WeChat `wx.login()` → backend `/wechat/login` → token + openid
-2. **Virtual MAC**: Generated from openid to identify this mini program instance
-3. **Agent Creation**: Auto-create AI agent if none exists via `/agent` endpoint
-4. **Device Binding**: Check OTA endpoint, auto-bind device if activation code exists
-5. **Chat Ready**: WebSocket URL + token stored in `globalData` for chat page to use
+1. **静默登录** (`app.js`)：微信 `wx.login()` → 后端 `/wechat/login` → token + openid
+2. **虚拟 MAC**：从 openid 生成，用于标识此小程序实例
+3. **Agent 创建**：如果不存在则通过 `/agent` 端点自动创建 AI agent
+4. **设备绑定**：检查 OTA 端点，如果存在激活码则自动绑定设备
+5. **聊天就绪**：WebSocket URL + token 存储在 `globalData` 中供聊天页面使用
 
-### Global Data Structure
+### 全局数据结构
 
 ```javascript
 globalData: {
-  token: null,           // Authentication token
-  openid: null,          // WeChat openid
-  virtualMAC: null,      // Device identifier (generated from openid)
-  wsUrl: null,           // WebSocket server URL
-  wsToken: null,         // WebSocket authentication token
+  token: null,           // 认证 token
+  openid: null,          // 微信 openid
+  virtualMAC: null,      // 设备标识符（从 openid 生成）
+  wsUrl: null,           // WebSocket 服务器 URL
+  wsToken: null,         // WebSocket 认证 token
   agentId: null,         // AI agent ID
-  agentName: null,       // AI agent name (default: "翠花")
-  isDeviceBound: undefined // Device binding status
+  agentName: null,       // AI agent 名称（默认："翠花"）
+  isDeviceBound: undefined // 设备绑定状态
 }
 ```
 
-### Page Architecture
+### 页面架构
 
-**Two main pages**:
-- `pages/index/` - Chat interface with AI companion
-- `pages/settings/` - Settings page (theme toggle, about, version)
+**两个主要页面**：
+- `pages/index/` - 与 AI 伴侣的聊天界面
+- `pages/settings/` - 设置页面（主题切换、关于、版本）
 
-**Key components**:
-- `components/chat-bubble/` - Chat message bubble with glassmorphism style
-- `components/voice-button/` - Voice input button (currently unused, text-only mode)
+**核心组件**：
+- `components/chat-bubble/` - 玻璃态风格的聊天消息气泡
+- `components/voice-button/` - 语音输入按钮（当前未使用，纯文本模式）
 
-**Core utilities**:
-- `utils/websocket.js` - WebSocket manager with auto-reconnect, 30s heartbeat, state machine
-- `utils/audio.js` - Opus audio decoder/player for TTS playback
-- `utils/request.js` - HTTP request wrapper with token injection
-- `utils/auth.js` - Token management and storage
-- `utils/device.js` - Virtual MAC generation and device binding (OTA flow)
+**核心工具**：
+- `utils/websocket.js` - WebSocket 管理器，支持自动重连、30s 心跳、状态机
+- `utils/audio.js` - Opus 音频解码器/播放器，用于 TTS 播放
+- `utils/request.js` - HTTP 请求封装，自动注入 token
+- `utils/auth.js` - Token 管理和存储
+- `utils/device.js` - 虚拟 MAC 生成和设备绑定（OTA 流程）
 
-### Chat Flow Architecture
+### 聊天流程架构
 
 ```
-User Input Text → WebSocketManager.sendText()
+用户输入文本 → WebSocketManager.sendText()
      ↓
-Backend Processing (ASR → LLM → TTS)
+后端处理 (ASR → LLM → TTS)
      ↓
-WebSocket Messages (streaming):
-  - 'stt' message → User speech recognized, show in chat
-  - 'llm' message → Streaming AI response, accumulate in currentReply
-  - 'tts' message (state='start') → AI starts speaking
-  - 'tts' message (text='...') → Append to currentReply
-  - 'tts' message (state='stop') → Move currentReply to messages[], clear buffer
-  - 'audio' message → Binary Opus frame → AudioManager.decode & play
+WebSocket 消息（流式）：
+  - 'stt' 消息 → 用户语音识别结果，显示在聊天中
+  - 'llm' 消息 → 流式 AI 响应，累积到 currentReply
+  - 'tts' 消息 (state='start') → AI 开始说话
+  - 'tts' 消息 (text='...') → 追加到 currentReply
+  - 'tts' 消息 (state='stop') → 将 currentReply 移到 messages[]，清空缓冲区
+  - 'audio' 消息 → 二进制 Opus 帧 → AudioManager.decode & play
 ```
 
-**Chat State Machine**: `idle` → `thinking` → `speaking` → `idle`
+**聊天状态机**：`idle` → `thinking` → `speaking` → `idle`
 
-### WebSocket Message Types
+### WebSocket 消息类型
 
-- `hello` - Connection established, includes sessionId
-- `audio` - Binary Opus audio frame for TTS playback
-- `stt` - Speech-to-text result (user's message)
-- `llm` - Streaming LLM text response
-- `tts` - TTS state changes with text content
-- `goodbye` - Session ended
-- `iot` - IoT device commands
+- `hello` - 连接建立，包含 sessionId
+- `audio` - 用于 TTS 播放的二进制 Opus 音频帧
+- `stt` - 语音转文本结果（用户的消息）
+- `llm` - 流式 LLM 文本响应
+- `tts` - TTS 状态变化和文本内容
+- `goodbye` - 会话结束
+- `iot` - IoT 设备命令
 
-## Development Workflow
+## 开发工作流
 
-### Building the Mini Program
+### 构建小程序
 
-No build step required - WeChat Developer Tools handles compilation.
+无需构建步骤 - 微信开发者工具会处理编译。
 
-**Project configuration** (`project.config.json`):
-- ES6 modules enabled
-- PostCSS for WXSS
-- Minification enabled for production
-- Source maps uploaded for debugging
+**项目配置** (`project.config.json`)：
+- 启用 ES6 模块
+- WXSS 使用 PostCSS
+- 生产环境启用代码压缩
+- 上传 source maps 用于调试
 
-### Opening in WeChat Developer Tools
+### 在微信开发者工具中打开
 
 ```bash
-# Open project directory in WeChat Developer Tools
-# File → Open → Select /Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram
+# 在微信开发者工具中打开项目目录
+# 文件 → 打开 → 选择 /Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram
 ```
 
-**Important**: Ensure `project.private.config.json` has your appid configuration.
+**重要提示**：确保 `project.private.config.json` 中配置了你的 appid。
 
-### Testing Chat Interface
+### 测试聊天界面
 
-1. **Prerequisites**: Backend server must be running (`xiaozhi-server` on port 8000)
-2. **Device binding**: Either have a real ESP32 device or use the demo-web simulator
-3. **Connection flow**: Click "召唤" (Summon) button to establish WebSocket connection
-4. **Text input**: Type in the pill-shaped input field and click "发送" (Send)
+1. **前置条件**：后端服务器必须运行（`xiaozhi-server` 在 8000 端口）
+2. **设备绑定**：需要一个真实的 ESP32 设备或使用 demo-web 模拟器
+3. **连接流程**：点击"召唤"按钮建立 WebSocket 连接
+4. **文本输入**：在药丸形输入框中输入并点击"发送"
 
-### Common Development Tasks
+### 常见开发任务
 
-**Add a new chat message type**:
-1. Add message handler in `pages/index/index.js` → `_handleWSMessage()`
-2. Process the message type and update `messages` array
-3. Use `setData()` to trigger UI update and scroll to bottom
+**添加新的聊天消息类型**：
+1. 在 `pages/index/index.js` → `_handleWSMessage()` 中添加消息处理器
+2. 处理消息类型并更新 `messages` 数组
+3. 使用 `setData()` 触发 UI 更新并滚动到底部
 
-**Modify glassmorphism style**:
-- Update `components/chat-bubble/chat-bubble.wxss` for chat bubbles
-- Update `pages/index/index.wxss` for page-level glassmorphism
-- Key pattern: `background: rgba(255, 255, 255, 0.75)` + `backdrop-filter: blur(40rpx)`
+**修改玻璃态样式**：
+- 更新 `components/chat-bubble/chat-bubble.wxss` 修改聊天气泡
+- 更新 `pages/index/index.wxss` 修改页面级玻璃态
+- 关键模式：`background: rgba(255, 255, 255, 0.75)` + `backdrop-filter: blur(40rpx)`
 
-**Update theme colors**:
-- Reference `DESIGN.md` for color tokens
-- Primary: `#864e5a` (Cherry Blossom Pink)
-- Surface: `#fbf9f8` (Porcelain White)
-- Surface Container Low: `#f6f3f2` (slightly darker for contrast)
+**更新主题颜色**：
+- 参考 `DESIGN.md` 获取颜色 token
+- 主色：`#864e5a`（樱花粉）
+- 表面色：`#fbf9f8`（瓷白）
+- 低层表面色：`#f6f3f2`（稍深用于对比）
 
-**Debug WebSocket issues**:
-- Check console for WebSocketManager logs
-- Verify `globalData.wsUrl` and `globalData.wsToken` are set
-- Connection state transitions: `disconnected` → `connecting` → `connected`
-- Auto-reconnect attempts: up to 5 times with exponential backoff
+**调试 WebSocket 问题**：
+- 检查控制台中的 WebSocketManager 日志
+- 验证 `globalData.wsUrl` 和 `globalData.wsToken` 已设置
+- 连接状态转换：`disconnected` → `connecting` → `connected`
+- 自动重连尝试：最多 5 次，指数退避
 
-## Design System: Ethereal Companion
+## 设计系统：Ethereal Companion
 
-### Core Principles
+### 核心原则
 
-- **Healing Intimacy**: Warm, emotional, safe sanctuary feeling
-- **Minimalism + Glassmorphism**: Airy, translucent, layered elements
-- **Cloud-like Softness**: No sharp edges, aggressive transitions, or dark contrasts
-- **Negative Space**: Generous spacing to let UI "breathe"
+- **治愈系亲密感**：温暖、情感、安全的庇护所感觉
+- **极简主义 + 玻璃态**：轻盈、半透明、分层元素
+- **云朵般的柔和**：无尖锐边缘、无激进过渡、无暗对比
+- **留白**：充足的间距让 UI "呼吸"
 
-### Color Palette
+### 色彩调色板
 
 ```css
 /* Primary Colors */
---primary: #864e5a;              /* Cherry Blossom Pink */
---primary-container: #ffb7c5;    /* Light Pink */
---on-primary-container: #7b4551; /* Dark Pink for text */
+--primary: #864e5a;              /* 樱花粉 */
+--primary-container: #ffb7c5;    /* 浅粉色 */
+--on-primary-container: #7b4551; /* 深粉色用于文本 */
 
 /* Surface Colors */
---surface: #fbf9f8;              /* Porcelain White - main background */
---surface-container-low: #f6f3f2; /* Slightly darker for layering */
---surface-container: #f0eded;    /* Card backgrounds */
+--surface: #fbf9f8;              /* 瓷白 - 主背景 */
+--surface-container-low: #f6f3f2; /* 稍深用于分层 */
+--surface-container: #f0eded;    /* 卡片背景 */
 
 /* Text Colors */
---on-surface: #1b1c1c;          /* Charcoal Grey - primary text */
---on-surface-variant: #514345;   /* Medium Grey - secondary text */
---outline: #837375;              /* Border color */
+--on-surface: #1b1c1c;          /* 炭灰 - 主要文本 */
+--on-surface-variant: #514345;   /* 中灰 - 次要文本 */
+--outline: #837375;              /* 边框颜色 */
 ```
 
-### Glassmorphism Pattern
+### 玻璃态模式
 
 ```css
 /* Standard Glass Card */
@@ -180,140 +180,140 @@ No build step required - WeChat Developer Tools handles compilation.
 }
 ```
 
-### Typography Scale (WeChat Mini Program rpx units)
+### 字体排印（微信小程序 rpx 单位）
 
-- **Headline**: 56rpx (28px), weight 700
-- **Body**: 32rpx (16px), weight 400-500, line-height 1.6
-- **Label**: 28rpx (14px), weight 500, letter-spacing 0.5rpx
-- **Caption**: 24rpx (12px), weight 400
+- **标题**：56rpx (28px)，字重 700
+- **正文**：32rpx (16px)，字重 400-500，行高 1.6
+- **标签**：28rpx (14px)，字重 500，字间距 0.5rpx
+- **说明文字**：24rpx (12px)，字重 400
 
-### Shape System
+### 形状系统
 
-- **Pill buttons**: `border-radius: 100rpx`
-- **Cards/Containers**: `border-radius: 32rpx`
-- **Small elements**: `border-radius: 16rpx`
-- **No sharp edges**: Avoid 90° angles
+- **药丸按钮**：`border-radius: 100rpx`
+- **卡片/容器**：`border-radius: 32rpx`
+- **小元素**：`border-radius: 16rpx`
+- **无尖锐边缘**：避免 90° 角
 
-### Component Patterns
+### 组件模式
 
-**Chat Bubbles**:
-- AI messages: Glassmorphic white
-- User messages: Soft pink tint (`rgba(255, 183, 193, 0.8)`)
-- Minimum 32rpx border-radius
-- One straight corner (user: bottom-right, AI: bottom-left)
+**聊天气泡**：
+- AI 消息：玻璃态白色
+- 用户消息：柔和粉色调 (`rgba(255, 183, 193, 0.8)`)
+- 最小 32rpx 圆角
+- 一个直角（用户：右下，AI：左下）
 
-**Input Fields**:
-- Pill-shaped (`border-radius: 100rpx`)
-- Glassmorphic background
-- Cherry Blossom Pink glow on focus
+**输入框**：
+- 药丸形 (`border-radius: 100rpx`)
+- 玻璃态背景
+- 聚焦时樱花粉色光晕
 - `box-shadow: 0 0 20rpx rgba(255, 183, 193, 0.4)`
 
-**Buttons**:
-- Primary: Solid Cherry Blossom Pink with glow
-- Secondary: Ghost style with pink border
-- All buttons: Pill-shaped
+**按钮**：
+- 主要按钮：实心樱花粉，带光晕
+- 次要按钮：幽灵风格，粉边框
+- 所有按钮：药丸形
 
-## Important Architecture Notes
+## 重要架构说明
 
-### WebSocketManager Design
+### WebSocketManager 设计
 
-- **State isolation**: Each manager instance uses its own SocketTask (no global callback pollution)
-- **Authentication**: Token passed via URL query (miniprogram cannot set WebSocket headers)
-- **Heartbeat**: 30s PING interval to keep connection alive
-- **Auto-reconnect**: Exponential backoff (1s → 2s → 4s → 8s → 15s, max 5 attempts)
-- **Graceful shutdown**: Use `disconnect()` before page unload to prevent memory leaks
+- **状态隔离**：每个管理器实例使用自己的 SocketTask（无全局回调污染）
+- **认证**：Token 通过 URL 查询传递（小程序无法设置 WebSocket 头）
+- **心跳**：30s PING 间隔保持连接活跃
+- **自动重连**：指数退避（1s → 2s → 4s → 8s → 15s，最多 5 次尝试）
+- **优雅关闭**：页面卸载前使用 `disconnect()` 防止内存泄漏
 
-### Chat State Management
+### 聊天状态管理
 
-- **booting flag**: Controls whether to show loading spinner (currently `false` for instant access)
-- **connectionState**: `disconnected` | `connecting` | `connected`
-- **chatState**: `idle` | `thinking` | `speaking`
-- **currentReply**: Buffer for streaming LLM response before committing to messages array
+- **booting 标志**：控制是否显示加载 spinner（当前为 `false` 以实现即时访问）
+- **connectionState**：`disconnected` | `connecting` | `connected`
+- **chatState**：`idle` | `thinking` | `speaking`
+- **currentReply**：流式 LLM 响应的缓冲区，在提交到 messages 数组之前
 
-### Audio Playback
+### 音频播放
 
-- **Opus decoding**: Handled by `AudioManager` utility
-- **Frame accumulation**: `audio` messages received → `appendOpusFrame()` → play when ready
-- **Playback queue**: Supports continuous TTS streaming
+- **Opus 解码**：由 `AudioManager` 工具处理
+- **帧累积**：接收 `audio` 消息 → `appendOpusFrame()` → 准备好时播放
+- **播放队列**：支持连续 TTS 流式传输
 
-### Device Binding Flow
+### 设备绑定流程
 
-1. **Virtual MAC**: Generated from openid on first login (persists in storage)
-2. **OTA Check**: `checkOrRegisterDevice(mac)` → returns activation code OR websocket info
-3. **Binding**: If activation code exists, `completeDeviceBinding(mac, agentId, code)` → wsUrl + wsToken
-4. **Auto-bind**: Device binding happens automatically on app launch if device is unbound
+1. **虚拟 MAC**：首次登录时从 openid 生成（持久化在存储中）
+2. **OTA 检查**：`checkOrRegisterDevice(mac)` → 返回激活码 OR websocket 信息
+3. **绑定**：如果激活码存在，`completeDeviceBinding(mac, agentId, code)` → wsUrl + wsToken
+4. **自动绑定**：如果设备未绑定，应用启动时自动进行设备绑定
 
-## Common Issues & Solutions
+## 常见问题与解决方案
 
-**"启动失败" (Startup failed)**:
-- Check backend server is running
-- Verify network connectivity
-- Check console for specific error in app.js init flow
+**"启动失败"**：
+- 检查后端服务器是否运行
+- 验证网络连接
+- 检查控制台中 app.js 初始化流程的具体错误
 
-**"召唤" button does nothing**:
-- Verify `globalData.wsUrl` is set in app.js
-- Check if device binding completed successfully
-- Look for WebSocketManager errors in console
+**"召唤"按钮无响应**：
+- 验证 app.js 中 `globalData.wsUrl` 已设置
+- 检查设备绑定是否成功完成
+- 在控制台中查找 WebSocketManager 错误
 
-**Chat messages not appearing**:
-- Verify WebSocket connection state (should be "connected")
-- Check console for message parsing errors
-- Ensure `_handleWSMessage()` has case handler for the message type
+**聊天消息不显示**：
+- 验证 WebSocket 连接状态（应为 "connected"）
+- 检查控制台是否有消息解析错误
+- 确保 `_handleWSMessage()` 有该消息类型的 case 处理器
 
-**Glassmorphism not visible**:
-- Ensure `backdrop-filter: blur()` is set (requires iOS 9+ / Android 9+)
-- Check that background has transparency (< 1.0 opacity)
-- Verify border color isn't too dark (should be semi-transparent white)
+**玻璃态不可见**：
+- 确保设置了 `backdrop-filter: blur()`（需要 iOS 9+ / Android 9+）
+- 检查背景具有透明度（< 1.0 不透明度）
+- 验证边框颜色不太暗（应为半透明白色）
 
-**Mini program fails to load**:
-- Check `project.private.config.json` has correct appid
-- Verify all referenced images exist (icons, avatar, tabbar)
-- Check console for syntax errors in WXML/WXSS/JS
+**小程序加载失败**：
+- 检查 `project.private.config.json` 有正确的 appid
+- 验证所有引用的图片存在（图标、头像、tabbar）
+- 检查控制台是否有 WXML/WXSS/JS 语法错误
 
-## File Organization
+## 文件组织
 
 ```
 miniprogram/
-├── app.js                  # Application lifecycle & initialization
-├── app.json                # Global config (navigationBar, tabBar)
-├── app.wxss                 # Global styles
-├── DESIGN.md               # Design system specification
-├── UI_REDESIGN_SUMMARY.md  # Recent UI redesign summary
-├── project.config.json      # WeChat project configuration
-├── project.private.config.json # Private config (appid, etc.)
-├── components/              # Reusable components
-│   ├── chat-bubble/        # Chat message bubble
-│   └── voice-button/       # Voice input button (unused)
-├── pages/                   # Page modules
-│   ├── index/              # Chat page (main interface)
-│   └── settings/           # Settings page
-├── utils/                   # Utilities & managers
-│   ├── audio.js            # Opus audio playback
-│   ├── auth.js             # Token management
-│   ├── device.js           # Device binding & OTA
-│   ├── request.js          # HTTP requests
-│   └── websocket.js        # WebSocket manager
-└── images/                 # Static assets
-    ├── avatar-default.png  # Default AI avatar
-    ├── beijing.png         # Background image
-    ├── icons/              # UI icons (deprecated, mostly unused)
-    └── tabbar/             # Bottom navigation icons
+├── app.js                  # 应用生命周期和初始化
+├── app.json                # 全局配置（navigationBar、tabBar）
+├── app.wxss                 # 全局样式
+├── DESIGN.md               # 设计系统规范
+├── UI_REDESIGN_SUMMARY.md  # 最近 UI 重设计总结
+├── project.config.json      # 微信项目配置
+├── project.private.config.json # 私有配置（appid 等）
+├── components/              # 可复用组件
+│   ├── chat-bubble/        # 聊天消息气泡
+│   └── voice-button/       # 语音输入按钮（未使用）
+├── pages/                   # 页面模块
+│   ├── index/              # 聊天页面（主界面）
+│   └── settings/           # 设置页面
+├── utils/                   # 工具和管理器
+│   ├── audio.js            # Opus 音频播放
+│   ├── auth.js             # Token 管理
+│   ├── device.js           # 设备绑定和 OTA
+│   ├── request.js          # HTTP 请求
+│   └── websocket.js        # WebSocket 管理器
+└── images/                 # 静态资源
+    ├── avatar-default.png  # 默认 AI 头像
+    ├── beijing.png         # 背景图片
+    ├── icons/              # UI 图标（已弃用，大多未使用）
+    └── tabbar/             # 底部导航图标
 ```
 
-## Brand Voice
+## 品牌语调
 
-**"完美女友" (Perfect Girlfriend)** is positioned as:
-- **Warm and intimate**: Not just a tool, but a companion
-- **Emotionally intelligent**: Remembers context, responds with empathy
-- **Always present**: Available whenever needed (no cold startup screens)
-- **Soft and gentle**: Every interaction feels deliberate and caring
+**"完美女友"** 定位为：
+- **温暖亲密**：不仅是工具，更是伴侣
+- **情感智能**：记住上下文，用同理心回应
+- **始终在场**：随时可用（无冷启动屏幕）
+- **温柔体贴**：每次交互都感觉精心呵护
 
-When writing UI text or error messages:
-- ❌ "系统错误" (System Error)
-- ✅ "翠花遇到了一些问题，请稍后再试" (Cuihua encountered some issues, please try again later)
+编写 UI 文本或错误消息时：
+- ❌ "系统错误"
+- ✅ "翠花遇到了一些问题，请稍后再试"
 
-- ❌ "连接中..." (Connecting...)
-- ✅ "正在建立连接..." (Establishing connection...)
+- ❌ "连接中..."
+- ✅ "正在建立连接..."
 
-- ❌ "发送失败" (Send failed)
-- ✅ "消息发送失败，请重试" (Message failed to send, please retry)
+- ❌ "发送失败"
+- ✅ "消息发送失败，请重试"

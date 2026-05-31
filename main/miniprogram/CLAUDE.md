@@ -119,16 +119,7 @@ WebSocket 消息（流式）：
 2. 处理消息类型并更新 `messages` 数组
 3. 使用 `setData()` 触发 UI 更新并滚动到底部
 
-**修改玻璃态样式**：
-- 更新 `components/chat-bubble/chat-bubble.wxss` 修改聊天气泡
-- 更新 `pages/index/index.wxss` 修改页面级玻璃态
-- 关键模式：`background: rgba(255, 255, 255, 0.75)` + `backdrop-filter: blur(40rpx)`
-
-**更新主题颜色**：
-- 参考 `DESIGN.md` 获取颜色 token
-- 主色：`#864e5a`（樱花粉）
-- 表面色：`#fbf9f8`（瓷白）
-- 低层表面色：`#f6f3f2`（稍深用于对比）
+**修改 UI 样式**：参考 [DESIGN.md](./DESIGN.md) 获取完整的设计系统规范。
 
 **调试 WebSocket 问题**：
 - 检查控制台中的 WebSocketManager 日志
@@ -136,82 +127,9 @@ WebSocket 消息（流式）：
 - 连接状态转换：`disconnected` → `connecting` → `connected`
 - 自动重连尝试：最多 5 次，指数退避
 
-## 设计系统：Ethereal Companion
+## UI 设计
 
-### 核心原则
-
-- **治愈系亲密感**：温暖、情感、安全的庇护所感觉
-- **极简主义 + 玻璃态**：轻盈、半透明、分层元素
-- **云朵般的柔和**：无尖锐边缘、无激进过渡、无暗对比
-- **留白**：充足的间距让 UI "呼吸"
-
-### 色彩调色板
-
-```css
-/* Primary Colors */
---primary: #864e5a;              /* 樱花粉 */
---primary-container: #ffb7c5;    /* 浅粉色 */
---on-primary-container: #7b4551; /* 深粉色用于文本 */
-
-/* Surface Colors */
---surface: #fbf9f8;              /* 瓷白 - 主背景 */
---surface-container-low: #f6f3f2; /* 稍深用于分层 */
---surface-container: #f0eded;    /* 卡片背景 */
-
-/* Text Colors */
---on-surface: #1b1c1c;          /* 炭灰 - 主要文本 */
---on-surface-variant: #514345;   /* 中灰 - 次要文本 */
---outline: #837375;              /* 边框颜色 */
-```
-
-### 玻璃态模式
-
-```css
-/* Standard Glass Card */
-.glass-card {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(40rpx);
-  -webkit-backdrop-filter: blur(40rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.8);
-  border-radius: 32rpx;
-  box-shadow:
-    0 8rpx 32rpx rgba(134, 78, 90, 0.08),
-    0 0 20rpx rgba(255, 183, 193, 0.12);
-}
-```
-
-### 字体排印（微信小程序 rpx 单位）
-
-- **标题**：56rpx (28px)，字重 700
-- **正文**：32rpx (16px)，字重 400-500，行高 1.6
-- **标签**：28rpx (14px)，字重 500，字间距 0.5rpx
-- **说明文字**：24rpx (12px)，字重 400
-
-### 形状系统
-
-- **药丸按钮**：`border-radius: 100rpx`
-- **卡片/容器**：`border-radius: 32rpx`
-- **小元素**：`border-radius: 16rpx`
-- **无尖锐边缘**：避免 90° 角
-
-### 组件模式
-
-**聊天气泡**：
-- AI 消息：玻璃态白色
-- 用户消息：柔和粉色调 (`rgba(255, 183, 193, 0.8)`)
-- 最小 32rpx 圆角
-- 一个直角（用户：右下，AI：左下）
-
-**输入框**：
-- 药丸形 (`border-radius: 100rpx`)
-- 玻璃态背景
-- 聚焦时樱花粉色光晕
-- `box-shadow: 0 0 20rpx rgba(255, 183, 193, 0.4)`
-
-**按钮**：
-- 主要按钮：实心樱花粉，带光晕
-- 次要按钮：幽灵风格，粉边框
-- 所有按钮：药丸形
+**Ethereal Companion 设计系统**：完整的设计规范（颜色、排版、组件模式、玻璃态样式等）请参考 [DESIGN.md](./DESIGN.md)。
 
 ## 重要架构说明
 

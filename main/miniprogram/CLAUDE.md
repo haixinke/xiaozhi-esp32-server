@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-这是 "xiaozhi-esp32-server" 的微信小程序 —— 一个 AI 驱动的语音助手设备。该小程序提供聊天界面，通过 WebSocket 连接到 Python 后端，与 ESP32 硬件设备进行交互。
+这是 "xiaozhi-esp32-server" 的微信小程序 。该小程序提供聊天界面，通过 WebSocket 连接到 Python 后端。
 
 **品牌标识**："完美女友" (Perfect Girlfriend) - 一个旨在提供温暖、情感连接和亲密互动的 AI 伴侣。
 

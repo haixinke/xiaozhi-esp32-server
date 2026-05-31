@@ -73,6 +73,29 @@ page {
   backdrop-filter: blur(12rpx);
 }
 
+/* 召唤按钮 */
+.summon-btn {
+  padding: 10rpx 24rpx;
+  border-radius: 100rpx;
+  background: linear-gradient(135deg, #5eead4 0%, #38bdf8 100%);
+  box-shadow: 0 2rpx 8rpx rgba(94, 234, 212, 0.25);
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.summon-btn-hover {
+  transform: scale(0.96);
+  opacity: 0.9;
+  box-shadow: 0 1rpx 6rpx rgba(94, 234, 212, 0.2);
+}
+
+.summon-text {
+  font-size: 22rpx;
+  color: #06070d;
+  font-weight: 500;
+  letter-spacing: 2rpx;
+}
+
 .status-cluster {
   display: flex;
   align-items: center;
@@ -241,6 +264,7 @@ page {
   z-index: 2;
   flex: 1;
   width: 100%;
+  height: 0; /* 关键修复：配合 flex: 1 使用，确保正确占据剩余空间 */
   box-sizing: border-box;
   padding: 16rpx 0 20rpx;
   overflow: hidden;

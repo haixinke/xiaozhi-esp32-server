@@ -128,7 +128,8 @@ Page({
     });
 
     this._initAudio();
-    this._initWebSocket();
+    // 不再自动连接 WebSocket，等待用户点击"召唤"按钮
+    this._initWebSocketManager();
   },
 
   _initAudio() {
@@ -156,11 +157,17 @@ Page({
     });
   },
 
-  _initWebSocket() {
+  _initWebSocketManager() {
     const g = app.globalData;
     this.wsManager = new WebSocketManager({
       onStateChange: (state) => {
         this.setData({ connectionState: state });
+        if (state === 'disconnected') {
+          // 连接断开时禁用自动重连，等待用户手动召唤
+          try {
+            this.wsManager.disconnect();
+          } catch (_) {}
+        }
         if (state === 'disconnected' && this.data.chatState !== STATE_IDLE) {
           // 连接断开时把会话状态拉回 idle
           this.setData({ chatState: STATE_IDLE, currentReply: '' });
@@ -174,7 +181,16 @@ Page({
         console.warn('[WS:' + scope + ']', err && err.message ? err.message : err);
       },
     });
+    // 不在这里自动连接，等待用户手动触发
+  },
 
+  _connectToChat() {
+    if (!this.wsManager) return;
+    const g = app.globalData;
+    if (!g || !g.wsUrl || !g.virtualMAC) {
+      wx.showToast({ title: '连接信息未就绪', icon: 'none' });
+      return;
+    }
     this.wsManager.connect(g.wsUrl, g.virtualMAC, g.wsToken);
   },
 
@@ -267,8 +283,12 @@ Page({
 
   onTapStatus() {
     if (this.data.connectionState !== 'connected') {
-      this._reconnect();
+      this._connectToChat();
     }
+  },
+
+  onSummon() {
+    this._connectToChat();
   },
 
   onTextInput(e) {
@@ -308,25 +328,19 @@ Page({
 
   _isReadyForAction() {
     if (this.data.connectionState !== 'connected') {
-      wx.showToast({ title: '正在连接服务...', icon: 'none' });
-      this._reconnect();
+      wx.showToast({ title: '请先点击召唤按钮连接服务', icon: 'none' });
       return false;
     }
     return true;
   },
 
   _reconnect() {
-    if (!this.wsManager) return;
-    const g = app.globalData;
-    if (!g || !g.wsUrl || !g.virtualMAC) return;
-    this.wsManager.connect(g.wsUrl, g.virtualMAC, g.wsToken);
+    this._connectToChat();
   },
 
   _handleAppShow() {
-    // 从后台恢复：如果连接已断开则重连
-    if (this.wsManager && !this.wsManager.isConnected()) {
-      this._reconnect();
-    }
+    // 从后台恢复：不再自动重连，需要用户手动点击召唤按钮
+    // 保持当前连接状态，如果已断开则等待用户操作
   },
 
   _teardown() {

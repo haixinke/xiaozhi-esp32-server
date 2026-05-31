@@ -7,6 +7,11 @@
 
   <!-- 顶部状态栏 -->
   <view class="top-bar">
+    <!-- 召唤按钮 - 仅在断开连接时显示 -->
+    <view wx:if="{{!booting && connectionState === 'disconnected'}}" class="summon-btn" bindtap="onSummon" hover-class="summon-btn-hover" hover-stay-time="80">
+      <text class="summon-text">召唤小智</text>
+    </view>
+
     <view class="status-cluster" bindtap="onTapStatus">
       <view class="status-ring state-{{connectionState}}">
         <view class="status-dot"></view>
@@ -14,8 +19,8 @@
       <view class="status-meta">
         <text class="status-label">
           <block wx:if="{{connectionState === 'connected'}}">CHANNEL · LIVE</block>
-          <block wx:elif="{{connectionState === 'connecting'}}">HANDSHAKE</block>
-          <block wx:else>OFFLINE · 点击重连</block>
+          <block wx:elif="{{connectionState === 'connecting'}}">正在建立连接…</block>
+          <block wx:else>OFFLINE · 等待召唤</block>
         </text>
         <text class="status-session" wx:if="{{sessionId}}">{{sessionId}}</text>
       </view>

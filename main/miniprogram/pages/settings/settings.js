@@ -45,11 +45,11 @@ Page({
    */
   onAbout() {
     wx.showModal({
-      title: '关于小智',
-      content: '小智语音助手是一款基于ESP32的智能语音助手设备，为您提供便捷的语音交互体验。\n\n版本：1.0.0',
+      title: '关于完美女友',
+      content: '完美女友是有温度、有灵魂、有记忆、最懂你的女友。',
       showCancel: false,
       confirmText: '知道了',
-      confirmColor: '#07C160'
+      confirmColor: '#864e5a'
     });
   }
 });

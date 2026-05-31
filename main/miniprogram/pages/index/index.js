@@ -38,7 +38,7 @@ Page({
     currentReply: '',
 
     // 启动加载态
-    booting: true,
+    booting: false,
 
     // 文字输入
     inputText: '',

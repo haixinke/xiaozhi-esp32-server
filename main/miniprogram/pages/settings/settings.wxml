@@ -9,28 +9,24 @@
     <!-- 主题设置 -->
     <view class="settings-item">
       <view class="item-left">
-        <image class="item-icon" src="/images/icons/theme.png" mode="aspectFit"></image>
         <text class="item-label">深色模式</text>
       </view>
-      <switch checked="{{darkMode}}" bindchange="onThemeChange" color="#07C160" />
+      <switch checked="{{darkMode}}" bindchange="onThemeChange" color="#864e5a" />
     </view>
 
     <!-- 关于 -->
     <view class="settings-item" bindtap="onAbout">
       <view class="item-left">
-        <image class="item-icon" src="/images/icons/about.png" mode="aspectFit"></image>
         <text class="item-label">关于</text>
       </view>
       <view class="item-right">
-        <text class="item-value">小智语音助手</text>
-        <image class="arrow-icon" src="/images/icons/arrow.png" mode="aspectFit"></image>
+        <text class="item-value">完美女友</text>
       </view>
     </view>
 
     <!-- 版本信息 -->
     <view class="settings-item">
       <view class="item-left">
-        <image class="item-icon" src="/images/icons/version.png" mode="aspectFit"></image>
         <text class="item-label">版本</text>
       </view>
       <view class="item-right">
@@ -41,6 +37,6 @@
 
   <!-- 底部信息 -->
   <view class="settings-footer">
-    <text class="footer-text">小智语音助手 © 2026</text>
+    <text class="footer-text">完美女友 © 2026</text>
   </view>
 </view>

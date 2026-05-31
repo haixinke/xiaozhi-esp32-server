@@ -1,33 +1,48 @@
+/* pages/settings/settings.wxss */
+/* Ethereal Companion Design System - 完美女友主题 */
+
+/* ===== Base ===== */
 .settings-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
-  padding: 20rpx;
+  background: #f6f3f2;
+  padding: 40rpx 32rpx 60rpx;
 }
 
+/* ===== Header ===== */
 .settings-header {
-  padding: 40rpx 20rpx 30rpx;
+  padding: 20rpx 8rpx 48rpx;
 }
 
 .settings-title {
-  font-size: 48rpx;
-  font-weight: bold;
-  color: #ffffff;
+  font-size: 56rpx;
+  font-weight: 700;
+  color: #1b1c1c;
+  line-height: 1.2;
+  letter-spacing: 1rpx;
 }
 
+/* ===== Settings List (Glassmorphic Card) ===== */
 .settings-list {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 16rpx;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(40rpx);
+  -webkit-backdrop-filter: blur(40rpx);
+  border-radius: 32rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 8rpx 32rpx rgba(134, 78, 90, 0.08),
+    0 0 20rpx rgba(255, 183, 193, 0.12);
   overflow: hidden;
-  backdrop-filter: blur(10rpx);
+  margin-bottom: 24rpx;
 }
 
+/* ===== Settings Item ===== */
 .settings-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 30rpx 24rpx;
-  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
-  transition: background 0.3s;
+  padding: 32rpx;
+  border-bottom: 1rpx solid rgba(134, 78, 90, 0.06);
+  transition: background 0.2s ease;
 }
 
 .settings-item:last-child {
@@ -35,48 +50,50 @@
 }
 
 .settings-item:active {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(134, 78, 90, 0.04);
 }
 
+/* ===== Item Left ===== */
 .item-left {
   display: flex;
   align-items: center;
-  gap: 24rpx;
-}
-
-.item-icon {
-  width: 40rpx;
-  height: 40rpx;
+  flex: 1;
 }
 
 .item-label {
   font-size: 32rpx;
-  color: #ffffff;
+  color: #1b1c1c;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
+/* ===== Item Right ===== */
 .item-right {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 16rpx;
+  justify-content: flex-end;
 }
 
 .item-value {
   font-size: 28rpx;
-  color: rgba(255, 255, 255, 0.6);
+  color: #514345;
+  text-align: right;
 }
 
-.arrow-icon {
-  width: 24rpx;
-  height: 24rpx;
-  opacity: 0.6;
+/* ===== Switch Component ===== */
+switch {
+  transform: scale(0.9);
 }
 
+/* ===== Footer ===== */
 .settings-footer {
   text-align: center;
-  padding: 60rpx 20rpx;
+  padding: 60rpx 20rpx 40rpx;
 }
 
 .footer-text {
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(134, 78, 90, 0.5);
+  letter-spacing: 0.5rpx;
 }

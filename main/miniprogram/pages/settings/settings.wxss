@@ -1,0 +1,82 @@
+.settings-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+  padding: 20rpx;
+}
+
+.settings-header {
+  padding: 40rpx 20rpx 30rpx;
+}
+
+.settings-title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.settings-list {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16rpx;
+  overflow: hidden;
+  backdrop-filter: blur(10rpx);
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 24rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+  transition: background 0.3s;
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+}
+
+.settings-item:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.item-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.item-label {
+  font-size: 32rpx;
+  color: #ffffff;
+}
+
+.item-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.item-value {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.arrow-icon {
+  width: 24rpx;
+  height: 24rpx;
+  opacity: 0.6;
+}
+
+.settings-footer {
+  text-align: center;
+  padding: 60rpx 20rpx;
+}
+
+.footer-text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.4);
+}

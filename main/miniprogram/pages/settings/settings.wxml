@@ -1,0 +1,46 @@
+<view class="settings-container">
+  <!-- 设置页面头部 -->
+  <view class="settings-header">
+    <text class="settings-title">设置</text>
+  </view>
+
+  <!-- 设置项列表 -->
+  <view class="settings-list">
+    <!-- 主题设置 -->
+    <view class="settings-item">
+      <view class="item-left">
+        <image class="item-icon" src="/images/icons/theme.png" mode="aspectFit"></image>
+        <text class="item-label">深色模式</text>
+      </view>
+      <switch checked="{{darkMode}}" bindchange="onThemeChange" color="#07C160" />
+    </view>
+
+    <!-- 关于 -->
+    <view class="settings-item" bindtap="onAbout">
+      <view class="item-left">
+        <image class="item-icon" src="/images/icons/about.png" mode="aspectFit"></image>
+        <text class="item-label">关于</text>
+      </view>
+      <view class="item-right">
+        <text class="item-value">小智语音助手</text>
+        <image class="arrow-icon" src="/images/icons/arrow.png" mode="aspectFit"></image>
+      </view>
+    </view>
+
+    <!-- 版本信息 -->
+    <view class="settings-item">
+      <view class="item-left">
+        <image class="item-icon" src="/images/icons/version.png" mode="aspectFit"></image>
+        <text class="item-label">版本</text>
+      </view>
+      <view class="item-right">
+        <text class="item-value">1.0.0</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部信息 -->
+  <view class="settings-footer">
+    <text class="footer-text">小智语音助手 © 2026</text>
+  </view>
+</view>

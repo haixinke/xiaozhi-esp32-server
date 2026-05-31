@@ -5,35 +5,32 @@
   <view class="bg-aurora bg-aurora-1"></view>
   <view class="bg-aurora bg-aurora-2"></view>
 
-  <!-- 顶部状态栏 -->
+  <!-- 顶部状态栏 - AI伴侣导航 -->
   <view class="top-bar">
+    <!-- AI头像和名字 -->
+    <view class="ai-profile" bindtap="onTapStatus">
+      <view class="avatar-wrapper">
+        <image class="avatar-image" src="/images/avatar-default.png" mode="aspectFill"></image>
+        <view class="status-dot state-{{connectionState}}"></view>
+      </view>
+      <view class="ai-meta">
+        <text class="ai-name">{{agentName || '翠花'}}</text>
+        <text class="ai-status">
+          <block wx:if="{{connectionState === 'connected'}}">在线</block>
+          <block wx:elif="{{connectionState === 'connecting'}}">连接中...</block>
+          <block wx:else>离线</block>
+        </text>
+      </view>
+    </view>
+
+    <!-- 退下按钮 - 已连接时显示 -->
+    <view wx:if="{{!booting && connectionState === 'connected'}}" class="summon-btn" bindtap="onDisconnect" hover-class="summon-btn-hover" hover-stay-time="80">
+      <text class="summon-text">退下</text>
+    </view>
+
     <!-- 召唤按钮 - 仅在断开连接时显示 -->
     <view wx:if="{{!booting && connectionState === 'disconnected'}}" class="summon-btn" bindtap="onSummon" hover-class="summon-btn-hover" hover-stay-time="80">
-      <text class="summon-text">召唤小智</text>
-    </view>
-
-    <view class="status-cluster" bindtap="onTapStatus">
-      <view class="status-ring state-{{connectionState}}">
-        <view class="status-dot"></view>
-      </view>
-      <view class="status-meta">
-        <text class="status-label">
-          <block wx:if="{{connectionState === 'connected'}}">CHANNEL · LIVE</block>
-          <block wx:elif="{{connectionState === 'connecting'}}">正在建立连接…</block>
-          <block wx:else>OFFLINE · 等待召唤</block>
-        </text>
-        <text class="status-session" wx:if="{{sessionId}}">{{sessionId}}</text>
-      </view>
-    </view>
-
-    <view class="agent-cluster">
-      <view class="agent-name">
-        <text class="agent-prefix">@</text>
-        <text class="agent-text">{{agentName || '小智助手'}}</text>
-      </view>
-      <view class="switch-btn" bindtap="onSwitchAgent" hover-class="switch-btn-hover" hover-stay-time="80">
-        <text>切换</text>
-      </view>
+      <text class="summon-text">召唤</text>
     </view>
   </view>
 
@@ -42,7 +39,7 @@
     <view class="boot-orbit">
       <view class="boot-dot"></view>
     </view>
-    <text class="boot-text">正在唤醒小智…</text>
+    <text class="boot-text">正在唤醒翠花…</text>
   </view>
 
   <!-- 消息区 -->
@@ -56,48 +53,16 @@
     scroll-into-view="{{scrollToView}}"
   >
     <view class="conversation-inner">
-      <!-- 空状态：欢迎卡片 -->
-      <block wx:if="{{messages.length === 0 && !currentReply}}">
-        <view class="welcome">
-          <view class="welcome-eyebrow">
-            <view class="welcome-line"></view>
-            <text>NEURAL · 24kHz · OPUS</text>
-            <view class="welcome-line"></view>
-          </view>
-          <view class="welcome-title">
-            <text class="welcome-hi">Hi，我是</text>
-            <text class="welcome-name">{{agentName || '小智'}}</text>
-            <text class="welcome-dot">.</text>
-          </view>
-          <text class="welcome-sub">在下方输入框输入文字与小智助手对话。</text>
-
-          <view class="welcome-grid">
-            <view class="welcome-card">
-              <view class="welcome-card-tag">01</view>
-              <text class="welcome-card-text">帮我写一篇产品介绍</text>
-            </view>
-            <view class="welcome-card">
-              <view class="welcome-card-tag">02</view>
-              <text class="welcome-card-text">解释什么是人工智能</text>
-            </view>
-            <view class="welcome-card">
-              <view class="welcome-card-tag">03</view>
-              <text class="welcome-card-text">给我推荐几本好书</text>
-            </view>
-          </view>
-        </view>
-      </block>
-
       <!-- 历史消息 -->
       <block wx:for="{{messages}}" wx:key="id">
         <view id="{{item.id}}">
-          <chat-bubble role="{{item.role}}" content="{{item.content}}" label="{{agentName || 'XIAOZHI'}}" />
+          <chat-bubble role="{{item.role}}" content="{{item.content}}" />
         </view>
       </block>
 
       <!-- 流式回复 -->
       <view wx:if="{{currentReply}}" id="streaming">
-        <chat-bubble role="assistant" content="{{currentReply}}" typing="{{true}}" label="{{agentName || 'XIAOZHI'}}" />
+        <chat-bubble role="assistant" content="{{currentReply}}" typing="{{true}}" />
       </view>
     </view>
   </scroll-view>

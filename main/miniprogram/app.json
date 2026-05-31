@@ -4,17 +4,17 @@
     "pages/settings/settings"
   ],
   "window": {
-    "navigationBarTitleText": "小智语音助手",
-    "navigationBarBackgroundColor": "#1a1a2e",
-    "navigationBarTextStyle": "white",
-    "backgroundColor": "#0f0f1a",
-    "backgroundTextStyle": "light"
+    "navigationBarTitleText": "完美女友",
+    "navigationBarBackgroundColor": "#fbf9f8",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fbf9f8",
+    "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#8E8E93",
-    "selectedColor": "#07C160",
-    "backgroundColor": "#1a1a2e",
-    "borderStyle": "black",
+    "color": "#837375",
+    "selectedColor": "#864e5a",
+    "backgroundColor": "#fbf9f8",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",

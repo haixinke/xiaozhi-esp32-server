@@ -72,7 +72,7 @@ Page({
   onShow() {
     // 每次返回页面（例如切换 Agent 后）刷新 agent 名称
     if (app.globalData) {
-      this.setData({ agentName: app.globalData.agentName || '小智助手' });
+      this.setData({ agentName: app.globalData.agentName || '翠花' });
     }
   },
 
@@ -123,7 +123,7 @@ Page({
   _bootstrap() {
     const g = app.globalData;
     this.setData({
-      agentName: g.agentName || '小智助手',
+      agentName: g.agentName || '翠花',
       booting: false,
     });
 
@@ -289,6 +289,14 @@ Page({
 
   onSummon() {
     this._connectToChat();
+  },
+
+  onDisconnect() {
+    if (this.wsManager && this.data.connectionState === 'connected') {
+      try {
+        this.wsManager.disconnect();
+      } catch (_) {}
+    }
   },
 
   onTextInput(e) {

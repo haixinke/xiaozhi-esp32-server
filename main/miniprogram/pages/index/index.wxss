@@ -1,8 +1,9 @@
 /* pages/index/index.wxss */
+/* Ethereal Companion Design System - 完美女友主题 */
 
 page {
-  background-color: #06070d;
-  color: #e2e8f0;
+  background-color: #fbf9f8;
+  color: #1b1c1c;
 }
 
 .page {
@@ -11,10 +12,7 @@ page {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 100% 50% at 50% 0%, rgba(56, 189, 248, 0.06), transparent 70%),
-    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(94, 234, 212, 0.05), transparent 70%),
-    #06070d;
+  background: #fbf9f8;
 }
 
 /* ---------------- 背景层 ---------------- */
@@ -22,8 +20,8 @@ page {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.045) 1rpx, transparent 1rpx),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1rpx, transparent 1rpx);
+    linear-gradient(rgba(134, 78, 90, 0.03) 1rpx, transparent 1rpx),
+    linear-gradient(90deg, rgba(134, 78, 90, 0.03) 1rpx, transparent 1rpx);
   background-size: 80rpx 80rpx;
   mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, #000 35%, transparent 80%);
   -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, #000 35%, transparent 80%);
@@ -36,19 +34,19 @@ page {
   height: 700rpx;
   border-radius: 50%;
   filter: blur(120rpx);
-  opacity: 0.35;
+  opacity: 0.15;
   pointer-events: none;
 }
 .bg-aurora-1 {
   top: -300rpx;
   left: -180rpx;
-  background: radial-gradient(circle, #5eead4 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(255, 183, 193, 0.4) 0%, transparent 65%);
   animation: aurora-drift-1 18s ease-in-out infinite alternate;
 }
 .bg-aurora-2 {
   bottom: -280rpx;
   right: -200rpx;
-  background: radial-gradient(circle, #2563eb 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(134, 78, 90, 0.3) 0%, transparent 65%);
   animation: aurora-drift-2 22s ease-in-out infinite alternate;
 }
 @keyframes aurora-drift-1 {
@@ -68,17 +66,84 @@ page {
   align-items: center;
   justify-content: space-between;
   padding: 28rpx 36rpx 20rpx;
-  border-bottom: 1rpx solid rgba(148, 163, 184, 0.08);
-  background: linear-gradient(180deg, rgba(10, 12, 20, 0.7), rgba(10, 12, 20, 0.0));
-  backdrop-filter: blur(12rpx);
+  border-bottom: 1rpx solid rgba(134, 78, 90, 0.08);
+  background: rgba(251, 249, 248, 0.8);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
 }
 
-/* 召唤按钮 */
+/* AI伴侣头像区域 */
+.ai-profile {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 80rpx;
+  height: 80rpx;
+}
+
+.avatar-image {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3rpx solid #ffb7c5;
+  background: linear-gradient(135deg, #ffb7c5 0%, #864e5a 100%);
+}
+
+/* 状态指示点 - 头像右下角 */
+.status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  border: 3rpx solid #ffffff;
+  box-shadow: 0 0 8rpx currentColor;
+}
+
+.status-dot.state-connected {
+  background: #4ade80;
+}
+
+.status-dot.state-connecting {
+  background: #fbb3c1;
+  animation: dot-blink 1s ease-in-out infinite;
+}
+
+.status-dot.state-disconnected {
+  background: #837375;
+}
+
+.ai-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.ai-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1b1c1c;
+  line-height: 1.2;
+}
+
+.ai-status {
+  font-size: 22rpx;
+  color: #864e5a;
+  opacity: 0.8;
+}
+
+/* 召唤按钮 - 改为退下按钮 */
 .summon-btn {
   padding: 10rpx 24rpx;
   border-radius: 100rpx;
-  background: linear-gradient(135deg, #5eead4 0%, #38bdf8 100%);
-  box-shadow: 0 2rpx 8rpx rgba(94, 234, 212, 0.25);
+  background: linear-gradient(135deg, #ffb7c5 0%, #864e5a 100%);
+  box-shadow: 0 0 20rpx rgba(255, 183, 193, 0.4);
   transition: all 0.2s;
   user-select: none;
 }
@@ -86,78 +151,22 @@ page {
 .summon-btn-hover {
   transform: scale(0.96);
   opacity: 0.9;
-  box-shadow: 0 1rpx 6rpx rgba(94, 234, 212, 0.2);
+  box-shadow: 0 0 15rpx rgba(255, 183, 193, 0.3);
 }
 
 .summon-text {
   font-size: 22rpx;
-  color: #06070d;
+  color: #ffffff;
   font-weight: 500;
   letter-spacing: 2rpx;
 }
 
-.status-cluster {
-  display: flex;
-  align-items: center;
-  gap: 18rpx;
-}
-
-.status-ring {
-  position: relative;
-  width: 28rpx;
-  height: 28rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.status-ring::before {
-  content: '';
-  position: absolute;
-  inset: -6rpx;
-  border-radius: 50%;
-  border: 2rpx solid currentColor;
-  opacity: 0.3;
-}
-.status-dot {
-  width: 14rpx;
-  height: 14rpx;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 14rpx currentColor;
-}
-
-.status-ring.state-connected {
-  color: #22c55e;
-}
-.status-ring.state-connected::after {
-  content: '';
-  position: absolute;
-  inset: -6rpx;
-  border-radius: 50%;
-  border: 2rpx solid #22c55e;
-  animation: ring-pulse 2s ease-out infinite;
-}
-.status-ring.state-connecting {
-  color: #f59e0b;
-}
-.status-ring.state-connecting .status-dot {
-  animation: dot-blink 1s ease-in-out infinite;
-}
-.status-ring.state-disconnected {
-  color: #ef4444;
-}
-
-@keyframes ring-pulse {
-  0%   { transform: scale(0.85); opacity: 0.7; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
 @keyframes dot-blink {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.3; }
 }
 
-.status-meta {
+.status-cluster {
   display: flex;
   flex-direction: column;
   gap: 2rpx;
@@ -167,11 +176,11 @@ page {
   letter-spacing: 4rpx;
   font-weight: 600;
   font-family: 'SF Mono', 'Menlo', Consolas, monospace;
-  color: #cbd5e1;
+  color: #864e5a;
 }
 .status-session {
   font-size: 18rpx;
-  color: rgba(148, 163, 184, 0.55);
+  color: rgba(134, 78, 90, 0.55);
   font-family: 'SF Mono', 'Menlo', Consolas, monospace;
   max-width: 240rpx;
   overflow: hidden;
@@ -192,12 +201,12 @@ page {
 }
 .agent-prefix {
   font-size: 22rpx;
-  color: rgba(94, 234, 212, 0.7);
+  color: rgba(134, 78, 90, 0.7);
   font-family: 'SF Mono', 'Menlo', Consolas, monospace;
 }
 .agent-text {
   font-size: 28rpx;
-  color: #f1f5f9;
+  color: #1b1c1c;
   font-weight: 600;
   letter-spacing: 0.5rpx;
   overflow: hidden;
@@ -209,13 +218,13 @@ page {
   padding: 10rpx 22rpx;
   font-size: 22rpx;
   letter-spacing: 3rpx;
-  color: #5eead4;
-  border: 1rpx solid rgba(94, 234, 212, 0.4);
+  color: #864e5a;
+  border: 1rpx solid rgba(134, 78, 90, 0.4);
   border-radius: 100rpx;
-  background: rgba(94, 234, 212, 0.06);
+  background: rgba(134, 78, 90, 0.06);
 }
 .switch-btn-hover {
-  background: rgba(94, 234, 212, 0.18) !important;
+  background: rgba(134, 78, 90, 0.18) !important;
   transform: scale(0.96);
 }
 
@@ -234,7 +243,7 @@ page {
   width: 140rpx;
   height: 140rpx;
   border-radius: 50%;
-  border: 2rpx solid rgba(94, 234, 212, 0.18);
+  border: 2rpx solid rgba(134, 78, 90, 0.18);
   animation: boot-spin 3s linear infinite;
 }
 .boot-dot {
@@ -245,12 +254,12 @@ page {
   height: 16rpx;
   margin-left: -8rpx;
   border-radius: 50%;
-  background: #5eead4;
-  box-shadow: 0 0 16rpx #5eead4;
+  background: #fbb3c1;
+  box-shadow: 0 0 16rpx #fbb3c1;
 }
 .boot-text {
   font-size: 24rpx;
-  color: rgba(148, 163, 184, 0.7);
+  color: rgba(134, 78, 90, 0.7);
   letter-spacing: 4rpx;
 }
 @keyframes boot-spin {
@@ -292,16 +301,16 @@ page {
   gap: 16rpx;
   font-size: 20rpx;
   letter-spacing: 6rpx;
-  color: rgba(94, 234, 212, 0.65);
+  color: rgba(134, 78, 90, 0.65);
   font-family: 'SF Mono', 'Menlo', Consolas, monospace;
 }
 .welcome-line {
   flex: 1;
   height: 1rpx;
-  background: linear-gradient(90deg, rgba(94, 234, 212, 0.4), transparent);
+  background: linear-gradient(90deg, rgba(134, 78, 90, 0.4), transparent);
 }
 .welcome-eyebrow .welcome-line:last-child {
-  background: linear-gradient(270deg, rgba(94, 234, 212, 0.4), transparent);
+  background: linear-gradient(270deg, rgba(134, 78, 90, 0.4), transparent);
 }
 
 .welcome-title {
@@ -313,13 +322,13 @@ page {
 .welcome-hi {
   font-size: 56rpx;
   font-weight: 300;
-  color: #cbd5e1;
+  color: #514345;
   letter-spacing: 1rpx;
 }
 .welcome-name {
   font-size: 76rpx;
   font-weight: 700;
-  background: linear-gradient(135deg, #5eead4 0%, #38bdf8 60%, #818cf8 100%);
+  background: linear-gradient(135deg, #864e5a 0%, #fbb3c1 60%, #ffb7c5 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -328,13 +337,13 @@ page {
 .welcome-dot {
   font-size: 76rpx;
   font-weight: 700;
-  color: #f59e0b;
+  color: #864e5a;
 }
 
 .welcome-sub {
   font-size: 26rpx;
   line-height: 1.7;
-  color: rgba(203, 213, 225, 0.7);
+  color: rgba(81, 67, 69, 0.7);
   max-width: 580rpx;
 }
 
@@ -350,11 +359,13 @@ page {
   align-items: center;
   gap: 22rpx;
   padding: 24rpx 28rpx;
-  border-radius: 18rpx;
-  background:
-    linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
-  border: 1rpx solid rgba(148, 163, 184, 0.12);
+  border-radius: 32rpx;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
   overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(255, 183, 193, 0.1);
 }
 .welcome-card::before {
   content: '';
@@ -363,29 +374,30 @@ page {
   top: 0;
   bottom: 0;
   width: 3rpx;
-  background: linear-gradient(180deg, #5eead4, #2563eb);
+  background: linear-gradient(180deg, #fbb3c1, #864e5a);
   opacity: 0.7;
 }
 .welcome-card-tag {
   font-size: 20rpx;
   letter-spacing: 2rpx;
-  color: rgba(94, 234, 212, 0.75);
+  color: rgba(134, 78, 90, 0.75);
   font-family: 'SF Mono', 'Menlo', Consolas, monospace;
   width: 48rpx;
 }
 .welcome-card-text {
   font-size: 28rpx;
-  color: #e2e8f0;
+  color: #1b1c1c;
 }
 
 /* ---------------- 底部输入栏 ---------------- */
 .input-bar {
   position: relative;
   z-index: 3;
-  background: rgba(15, 23, 42, 0.95);
-  border-top: 1rpx solid rgba(148, 163, 184, 0.1);
+  background: rgba(251, 249, 248, 0.9);
+  border-top: 1rpx solid rgba(134, 78, 90, 0.1);
   padding: 12rpx 24rpx 12rpx;
   backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
 }
 
 .input-bar-inner {
@@ -394,33 +406,36 @@ page {
   gap: 16rpx;
 }
 
-/* 输入框容器 */
+/* 输入框容器 - pill-shaped */
 .input-wrapper {
   flex: 1;
-  padding: 16rpx 20rpx;
-  background: rgba(30, 41, 59, 0.8);
-  border-radius: 8rpx;
-  border: 1rpx solid rgba(148, 163, 184, 0.15);
+  padding: 16rpx 24rpx;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  border-radius: 100rpx;
+  border: 1rpx solid rgba(255, 183, 193, 0.2);
   transition: border-color 0.2s;
+  box-shadow: 0 0 20rpx rgba(255, 183, 193, 0.4);
 }
 
 .message-input {
   width: 100%;
   font-size: 32rpx;
-  color: #e2e8f0;
+  color: #1b1c1c;
   line-height: 1.5;
   background: transparent;
 }
 
 .message-input::placeholder {
-  color: rgba(148, 163, 184, 0.5);
+  color: rgba(134, 78, 90, 0.5);
 }
 
 .message-input[disabled] {
-  color: rgba(148, 163, 184, 0.3);
+  color: rgba(134, 78, 90, 0.3);
 }
 
-/* 发送按钮 */
+/* 发送按钮 - pill-shaped */
 .send-btn {
   min-width: 112rpx;
   height: 76rpx;
@@ -428,27 +443,29 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8rpx;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1rpx solid rgba(148, 163, 184, 0.15);
+  border-radius: 100rpx;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(134, 78, 90, 0.2);
   transition: all 0.2s;
   user-select: none;
 }
 
 .send-btn.active {
-  background: linear-gradient(135deg, #5eead4 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #ffb7c5 0%, #864e5a 100%);
   border-color: transparent;
-  box-shadow: 0 4rpx 16rpx rgba(94, 234, 212, 0.35);
+  box-shadow: 0 0 20rpx rgba(255, 183, 193, 0.4);
 }
 
 .send-btn-text {
   font-size: 28rpx;
-  color: rgba(148, 163, 184, 0.6);
+  color: rgba(134, 78, 90, 0.6);
   font-weight: 500;
 }
 
 .send-btn.active .send-btn-text {
-  color: #06070d;
+  color: #ffffff;
 }
 
 .send-btn-hover {

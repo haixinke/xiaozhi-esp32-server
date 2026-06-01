@@ -51,9 +51,11 @@ public class OTAController {
         if (StringUtils.isBlank(clientId)) {
             clientId = deviceId;
         }
-        boolean macAddressValid = isMacAddressValid(deviceId);
-        // 设备Id和Mac地址应是一致的, 并且必须需要application字段
-        if (!macAddressValid) {
+        // 小程序客户端使用 openid 作为设备标识，跳过 MAC 格式校验
+        boolean isValidDeviceId = "wechat-miniprogram".equals(clientId)
+                ? StringUtils.isNotBlank(deviceId)
+                : isMacAddressValid(deviceId);
+        if (!isValidDeviceId) {
             return createResponse(DeviceReportRespDTO.createError("Invalid device ID"));
         }
         return createResponse(deviceService.checkDeviceActive(deviceId, clientId, deviceReportReqDTO));

@@ -1,11 +1,11 @@
 /**
  * 小智语音助手 - 小程序入口
- * 启动流程：静默登录 → 生成虚拟MAC → 检查设备绑定 → 进入主页或选择Agent
+ * 启动流程：静默登录 → 检查设备绑定 → 进入主页或选择Agent
  */
 
 const { post } = require('./utils/request');
 const { setToken } = require('./utils/auth');
-const { getOrCreateMAC, checkOrRegisterDevice, completeDeviceBinding, createPet } = require('./utils/device');
+const { checkOrRegisterDevice, completeDeviceBinding, createPet } = require('./utils/device');
 
 App({
   globalData: {
@@ -30,8 +30,8 @@ App({
     if (token) {
       this.globalData.token = token;
       this.globalData.openid = wx.getStorageSync('openid');
+      this.globalData.virtualMAC = wx.getStorageSync('openid');
       this.globalData.agentId = wx.getStorageSync('agentId');
-      this.globalData.virtualMAC = wx.getStorageSync('virtualMAC');
       // 已登录，先创建宠物，再检查设备状态
       this.createPetIfNeeded().then(() => {
         return this.checkDeviceStatus();
@@ -95,11 +95,10 @@ App({
               wx.setStorageSync('agentId', agentId);
             }
 
-            // 生成并缓存虚拟 MAC
-            const mac = getOrCreateMAC(openid);
-            this.globalData.virtualMAC = mac;
+            // 使用 openid 作为设备标识
+            this.globalData.virtualMAC = openid;
 
-            console.log('静默登录成功, MAC:', mac, 'AgentId:', agentId, 'Token:', token ? token.substring(0, 20) + '...' : 'null');
+            console.log('静默登录成功, OpenID:', openid.substring(0, 8) + '...', 'AgentId:', agentId, 'Token:', token ? token.substring(0, 20) + '...' : 'null');
             resolve();
           } catch (err) {
             console.error('静默登录请求失败:', err);
@@ -129,9 +128,10 @@ App({
       const storedToken = wx.getStorageSync('token');
       console.log('创建agent前检查token - 存在:', !!storedToken, '前缀:', storedToken ? storedToken.substring(0, 20) : 'N/A');
 
-      const agentId = await post('/agent', {
-        agentName: '我的助手'
+      const response = await post('/agent', {
+        agentName: this.globalData.openid
       });
+      const agentId = response.data;
 
       this.globalData.agentId = agentId;
       wx.setStorageSync('agentId', agentId);
@@ -157,12 +157,12 @@ App({
   async createPetIfNeeded() {
     const mac = this.globalData.virtualMAC;
     if (!mac) {
-      console.warn('无虚拟 MAC，跳过创建宠物');
+      console.warn('无设备标识，跳过创建宠物');
       return;
     }
 
     try {
-      console.log('开始创建宠物, MAC:', mac);
+      console.log('开始创建宠物, deviceId:', mac);
       await createPet(mac);
       console.log('宠物创建完成');
     } catch (err) {
@@ -181,7 +181,7 @@ App({
     const agentId = this.globalData.agentId;
 
     if (!mac) {
-      console.warn('无虚拟 MAC，跳过设备检查');
+      console.warn('无设备标识，跳过设备检查');
       return;
     }
 

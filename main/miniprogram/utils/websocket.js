@@ -52,7 +52,7 @@ class WebSocketManager {
   /**
    * 建立连接。重复调用会先断开再重连。
    * @param {string} wsUrl     形如 ws://host:8000/xiaozhi/v1/
-   * @param {string} deviceId  虚拟 MAC
+   * @param {string} deviceId  openid 作为设备标识
    * @param {string} [token]   鉴权 token（可选）
    */
   connect(wsUrl, deviceId, token) {

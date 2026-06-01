@@ -95,7 +95,7 @@ WebSocket 消息流：
 
 ### 设备绑定
 
-1. 虚拟 MAC 从 openid 生成
+1. 直接使用 openid 作为设备标识
 2. `checkOrRegisterDevice(mac)` → 激活码 OR websocket 信息
 3. 如有激活码，`completeDeviceBinding()` 完成
 4. 应用启动时自动绑定

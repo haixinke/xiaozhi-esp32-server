@@ -501,8 +501,8 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
                     // 无记忆功能的模型，默认不记录聊天记录
                     entity.setChatHistoryConf(0);
                 } else {
-                    // 有记忆功能的模型，默认记录文本和语音
-                    entity.setChatHistoryConf(2);
+                    // 有记忆功能的模型，默认只记录文本（2是存储文本和音频）
+                    entity.setChatHistoryConf(1);
                 }
             } else {
                 entity.setChatHistoryConf(template.getChatHistoryConf());

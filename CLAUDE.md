@@ -4,16 +4,17 @@
 
 ## 项目概述
 
-本项目是 **xiaozhi-esp32-server**，为 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 开源智能硬件项目提供的后端服务。它为 ESP32 设备提供实时语音 AI 助手服务器，由 `main/` 下的五个子项目组成。
+本项目是 **xiaozhi-esp32-server**，为 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 开源智能硬件项目提供的后端服务。它为 ESP32 设备提供实时语音 AI 助手服务器，由 `main/` 下的六个子项目组成。
 
 ## 子项目
 
-在本项目中，五个子项目有约定的简称：
+在本项目中，六个子项目有约定的简称：
 - **聊天服务** → `main/xiaozhi-server/`
 - **后端服务** → `main/manager-api/`
 - **web服务** → `main/manager-web/`
 - **移动服务** → `main/manager-mobile/`
 - **演示项目** / **演示web项目** → `main/demo-web/`
+- **小程序** → `main/miniprogram/`
 
 | 子项目 | 语言 / 技术栈 | 端口 | 用途 |
 |---|---|---|---|
@@ -22,6 +23,7 @@
 | `main/manager-web/` | Vue.js 2 / Vue CLI | 8001 (dev) | Web 管理控制台 ("智控台") |
 | `main/manager-mobile/` | Uni-app / Vue 3 / Vite | — | 移动端管理后台 (H5、微信小程序、iOS、Android) |
 | `main/demo-web/` | HTML / CSS / JS / Vite | 8006 | 演示项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
+| `main/miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "完美女友"微信小程序：AI 伴侣聊天 |
 
 每个子项目都有自己的 `CLAUDE.md`，包含详细的架构说明和常用命令。
 

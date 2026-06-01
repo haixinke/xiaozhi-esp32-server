@@ -4,9 +4,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 .vscode
-.claude/*
-!.claude/commands/
-AGENTS.md
 
 # C extensions
 *.so
@@ -75,7 +72,6 @@ instance/
 
 # Sphinx documentation
 docs/_build/
-graphify-out/
 
 # PyBuilder
 .pybuilder/

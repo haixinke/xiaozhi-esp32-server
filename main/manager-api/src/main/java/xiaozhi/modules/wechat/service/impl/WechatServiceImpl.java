@@ -187,8 +187,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
      * 为指定 openid 自动创建一个 sys_user 账号
      */
     private UserCreationResult createSysUserForOpenid(String openid) {
-        String prefix = openid.length() >= 8 ? openid.substring(0, 8) : openid;
-        String username = "wx_" + prefix;
+        String username = openid;
         // 用户名冲突时追加随机后缀
         if (existsUsername(username)) {
             username = username + "_" + IdUtil.fastSimpleUUID().substring(0, 6);

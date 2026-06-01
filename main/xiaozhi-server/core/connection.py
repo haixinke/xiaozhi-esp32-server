@@ -135,7 +135,7 @@ class ConnectionHandler:
         self.executor = _GLOBAL_EXECUTOR
 
         # 添加上报线程池
-        self.report_queue = queue.Queue(maxsize=1000)  # 限制上报队列大小，防止内存溢出
+        self.report_queue = queue.Queue(maxsize=100)  # 限制上报队列大小，防止内存溢出（优化：1000→100）
         self.report_thread = None
         # 未来可以通过修改此处，调节asr的上报和tts的上报，目前默认都开启
         self.report_asr_enable = self.read_config_from_api

@@ -23,6 +23,21 @@ from config.manage_api_client import report as manage_report
 TAG = __name__
 
 
+def _check_queue_capacity(conn: "ConnectionHandler", report_type: str):
+    """检查上报队列容量并记录告警
+
+    Args:
+        conn: 连接对象
+        report_type: 上报类型（TTS/ASR/工具）
+    """
+    queue_size = conn.report_queue.qsize()
+    queue_capacity = conn.report_queue.maxsize
+    if queue_size >= queue_capacity * 0.8:  # 80%容量告警
+        conn.logger.bind(tag=TAG).warning(
+            f"{report_type}上报队列接近满载: {queue_size}/{queue_capacity} ({queue_size*100//queue_capacity}%)"
+        )
+
+
 async def report(conn: "ConnectionHandler", type, text, opus_data, report_time):
     """执行聊天记录上报操作
 
@@ -106,11 +121,7 @@ def opus_to_wav(conn: "ConnectionHandler", opus_data):
                 conn.logger.bind(tag=TAG).debug(f"释放decoder资源时出错: {e}")
 
 
-def enqueue_tts_report(conn: "ConnectionHandler", text, opus_data):
-    if not conn.read_config_from_api or conn.need_bind or not conn.report_tts_enable:
-        return
-    if conn.chat_history_conf == 0:
-        return
+def enqueue_tts_report(conn: "ConnectionHandler", text: str, opus_data: bytes | None):
     """将TTS数据加入上报队列
 
     Args:
@@ -118,6 +129,14 @@ def enqueue_tts_report(conn: "ConnectionHandler", text, opus_data):
         text: 合成文本
         opus_data: opus音频数据
     """
+    if not conn.read_config_from_api or conn.need_bind or not conn.report_tts_enable:
+        return
+    if conn.chat_history_conf == 0:
+        return
+
+    # 队列大小监控
+    _check_queue_capacity(conn, "TTS")
+
     try:
         # 使用连接对象的队列，传入文本和二进制数据而非文件路径
         if conn.chat_history_conf == 2:
@@ -140,7 +159,7 @@ def enqueue_tts_report(conn: "ConnectionHandler", text, opus_data):
         conn.logger.bind(tag=TAG).error(f"加入TTS上报队列失败: {text}, {e}")
 
 
-def enqueue_tool_report(conn: "ConnectionHandler", tool_name: str, tool_input: dict, tool_result: str = None, report_tool_call: bool = True):
+def enqueue_tool_report(conn: "ConnectionHandler", tool_name: str, tool_input: dict, tool_result: str | None = None, report_tool_call: bool = True):
     """将工具调用数据加入上报队列
 
     Args:
@@ -154,6 +173,9 @@ def enqueue_tool_report(conn: "ConnectionHandler", tool_name: str, tool_input: d
         return
     if conn.chat_history_conf == 0:
         return
+
+    # 队列大小监控
+    _check_queue_capacity(conn, "工具")
 
     try:
         timestamp = int(time.time() * 1000)
@@ -185,11 +207,7 @@ def enqueue_tool_report(conn: "ConnectionHandler", tool_name: str, tool_input: d
         conn.logger.bind(tag=TAG).error(f"加入工具上报队列失败: {e}")
 
 
-def enqueue_asr_report(conn: "ConnectionHandler", text, opus_data):
-    if not conn.read_config_from_api or conn.need_bind or not conn.report_asr_enable:
-        return
-    if conn.chat_history_conf == 0:
-        return
+def enqueue_asr_report(conn: "ConnectionHandler", text: str, opus_data: bytes | None):
     """将ASR数据加入上报队列
 
     Args:
@@ -197,6 +215,14 @@ def enqueue_asr_report(conn: "ConnectionHandler", text, opus_data):
         text: 合成文本
         opus_data: opus音频数据
     """
+    if not conn.read_config_from_api or conn.need_bind or not conn.report_asr_enable:
+        return
+    if conn.chat_history_conf == 0:
+        return
+
+    # 队列大小监控
+    _check_queue_capacity(conn, "ASR")
+
     try:
         # 使用连接对象的队列，传入文本和二进制数据而非文件路径
         if conn.chat_history_conf == 2:
@@ -216,4 +242,4 @@ def enqueue_asr_report(conn: "ConnectionHandler", text, opus_data):
             except queue.Full:
                 conn.logger.bind(tag=TAG).warning("聊天记录上报队列已满，丢弃ASR上报数据")
     except Exception as e:
-        conn.logger.bind(tag=TAG).debug(f"加入ASR上报队列失败: {text}, {e}")
+        conn.logger.bind(tag=TAG).error(f"加入ASR上报队列失败: {text}, {e}")

@@ -44,7 +44,6 @@ from core.utils.prompt_manager import PromptManager
 from core.utils.voiceprint_provider import VoiceprintProvider
 from core.utils.util import get_system_error_response
 from core.utils import textUtils
-from core.utils.pet_utils import format_pet_birth_info
 
 
 TAG = __name__
@@ -789,32 +788,6 @@ class ConnectionHandler:
                 ] = plugin_from_server.keys()
         if private_config.get("prompt", None) is not None:
             self.config["prompt"] = private_config["prompt"]
-        # 处理宠物信息：覆盖 prompt 和设置今日心情
-        pet_info = private_config.get("pet_info")
-        if pet_info and pet_info.get("personality"):
-            nickname = pet_info.get("nickname", "")
-            personality = pet_info["personality"]
-
-            # 构建基础提示词：昵称 + 出生日期 + 星座 + 性格
-            prompt_parts = [f"你的名字是{nickname}"]
-
-            # 添加出生日期和星座信息
-            birth_info = format_pet_birth_info(pet_info)
-            if birth_info:
-                prompt_parts.append(birth_info)
-
-            # 添加性格描述
-            prompt_parts.append(personality)
-
-            self.config["prompt"] = "，".join(prompt_parts)
-        # 设置今日心情（默认"愉快"）
-        PET_MOOD_MAP = {
-            "JOY": "愉快", "CALM": "平静", "EXCITEMENT": "兴奋",
-            "CURIOSITY": "好奇", "CARE": "关怀", "ANXIETY": "焦虑",
-            "FRUSTRATION": "沮丧", "FATIGUE": "疲惫",
-        }
-        today_mood_enum = pet_info.get("todayMood", "") if pet_info else ""
-        self.config["today_mood"] = PET_MOOD_MAP.get(today_mood_enum, "愉快")
         # 获取声纹信息
         if private_config.get("voiceprint", None) is not None:
             self.config["voiceprint"] = private_config["voiceprint"]

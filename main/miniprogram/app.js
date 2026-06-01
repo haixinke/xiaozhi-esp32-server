@@ -32,9 +32,9 @@ App({
       this.globalData.openid = wx.getStorageSync('openid');
       this.globalData.virtualMAC = wx.getStorageSync('openid');
       this.globalData.agentId = wx.getStorageSync('agentId');
-      // 已登录，先创建宠物，再检查设备状态
-      this.createPetIfNeeded().then(() => {
-        return this.checkDeviceStatus();
+      // 已登录，先检查设备状态（注册设备），再创建宠物
+      this.checkDeviceStatus().then(() => {
+        return this.createPetIfNeeded();
       }).catch(err => {
         console.warn('设备状态检查失败:', err);
       });
@@ -47,11 +47,11 @@ App({
       // 确保智能体存在
       return this.ensureAgentExists();
     }).then(() => {
-      // 创建宠物（在设备绑定前）
-      return this.createPetIfNeeded();
-    }).then(() => {
-      // 宠物就绪后，检查设备状态
+      // 先检查设备状态（注册设备）
       return this.checkDeviceStatus();
+    }).then(() => {
+      // 设备就绪后，创建宠物
+      return this.createPetIfNeeded();
     }).catch(err => {
       console.error('后台流程失败:', err);
     });

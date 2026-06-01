@@ -1,0 +1,58 @@
+# === Python 虚拟环境和缓存 ===
+main/xiaozhi-server/.venv/
+main/xiaozhi-server/venv/
+__pycache__/
+*.pyc
+
+# === Node.js 依赖 ===
+node_modules/
+
+# === 构建输出 ===
+main/manager-api/target/
+main/manager-mobile/dist/
+
+# === 第三方打包库 (minified/compiled) ===
+main/digital-human/js/
+main/miniprogram/libs/
+
+# === OceanBase 数据库 ===
+main/xiaozhi-server/oceanbase/
+
+# === 静态资源 (无代码逻辑) ===
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.wasm
+*.mp3
+*.wav
+*.p3
+
+# === Lock 文件 ===
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# === 工具/元数据目录 ===
+.git/
+.claude/
+.github/
+graphify-out/
+logs/
+
+# === 配置/文档 (非代码逻辑) ===
+*.md
+LICENSE
+Dockerfile*
+docker-compose*
+docker-setup.sh
+.dockerignore
+.graphifyignore
+.qoderignore
+.gitignore

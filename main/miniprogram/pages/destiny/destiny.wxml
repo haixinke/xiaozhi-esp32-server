@@ -103,12 +103,12 @@
   <!-- CTA 按钮 -->
   <view class="cta-bar safe-area-bottom">
     <view
-      class="cta-btn {{selectedOccupation >= 0 && !submitting ? '' : 'cta-btn-disabled'}}"
-      bindtap="onSubmit"
-      hover-class="{{selectedOccupation >= 0 && !submitting ? 'cta-btn-hover' : ''}}"
+      class="cta-btn {{selectedOccupation >= 0 ? '' : 'cta-btn-disabled'}}"
+      bindtap="onNext"
+      hover-class="{{selectedOccupation >= 0 ? 'cta-btn-hover' : ''}}"
       hover-stay-time="80"
     >
-      <text class="cta-text">{{submitting ? '注入中...' : '就是她了，注入灵魂'}}</text>
+      <text class="cta-text">就是她了，注入灵魂</text>
     </view>
   </view>
 </view>

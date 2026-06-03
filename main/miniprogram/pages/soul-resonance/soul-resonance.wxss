@@ -1,5 +1,5 @@
-/* pages/destiny/destiny.wxss */
-/* Ethereal Companion Design System - 命运初见 */
+/* pages/soul-resonance/soul-resonance.wxss */
+/* Ethereal Companion Design System - 灵魂共振 */
 
 page {
   background-color: #fbf9f8;
@@ -43,7 +43,7 @@ page {
   letter-spacing: 2rpx;
 }
 
-/* -------- 角色区（swiper 在 scroll-view 外） -------- */
+/* -------- 角色照片区（在 scroll-view 外） -------- */
 .char-section {
   flex-shrink: 0;
   padding: calc(var(--status-bar-height, 44px) + 88rpx + 24rpx) 40rpx 0;
@@ -55,57 +55,14 @@ page {
   overflow: hidden;
 }
 
-/* -------- 通用 section -------- */
-.section {
-  margin-bottom: 48rpx;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 28rpx;
-}
-
-.section-bar {
-  width: 6rpx;
-  height: 36rpx;
-  background: #ffb7c5;
-  border-radius: 4rpx;
-  flex-shrink: 0;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #1b1c1c;
-  line-height: 1.3;
-}
-
-/* -------- 角色肖像卡 -------- */
-.char-swiper {
-  height: 640rpx;
-}
-
-.char-card {
+.char-card-static {
   width: 100%;
-  height: 100%;
+  height: 420rpx;
   border-radius: 32rpx;
   overflow: hidden;
   position: relative;
-  transform: scale(0.92);
-  opacity: 0.7;
-  transition: all 0.3s ease;
-  box-shadow: 0 8rpx 40rpx rgba(134, 78, 90, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.char-card-active {
-  transform: scale(1);
-  opacity: 1;
   box-shadow: 0 8rpx 60rpx rgba(255, 183, 197, 0.35);
+  margin-bottom: 20rpx;
 }
 
 .char-image {
@@ -131,41 +88,53 @@ page {
   text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.2);
 }
 
-.char-dots {
+/* -------- 通用 section -------- */
+.section {
+  margin-bottom: 48rpx;
+}
+
+.section-header {
   display: flex;
-  justify-content: center;
-  gap: 12rpx;
-  margin-top: 20rpx;
-  padding: 0 0 20rpx;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
 }
 
-.char-dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background: rgba(134, 78, 90, 0.2);
-  transition: all 0.3s ease;
+.section-bar {
+  width: 6rpx;
+  height: 36rpx;
+  background: #ffb7c5;
+  border-radius: 4rpx;
+  flex-shrink: 0;
 }
 
-.char-dot-active {
-  background: #864e5a;
-  width: 24rpx;
-  border-radius: 6rpx;
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1b1c1c;
+  line-height: 1.3;
 }
 
-/* -------- 职业选择网格 -------- */
-.occ-grid {
+.section-subtitle {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(134, 78, 90, 0.6);
+  margin-bottom: 28rpx;
+  padding-left: 22rpx;
+  line-height: 1.5;
+}
+
+/* -------- 灵魂特质网格 -------- */
+.trait-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20rpx;
 }
 
-.occ-item {
+.trait-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
   padding: 28rpx 12rpx;
   border-radius: 24rpx;
   background: rgba(255, 255, 255, 0.6);
@@ -176,17 +145,17 @@ page {
   user-select: none;
 }
 
-.occ-item-hover {
+.trait-item-hover {
   transform: scale(0.95);
 }
 
-.occ-item-active {
+.trait-item-active {
   background: rgba(255, 183, 197, 0.25);
   border-color: #864e5a;
   box-shadow: 0 0 20rpx rgba(255, 183, 197, 0.3);
 }
 
-.occ-label {
+.trait-label {
   font-size: 26rpx;
   font-weight: 500;
   color: #1b1c1c;
@@ -194,65 +163,53 @@ page {
   line-height: 1.3;
 }
 
-.occ-item-active .occ-label {
+.trait-item-active .trait-label {
   color: #864e5a;
   font-weight: 600;
 }
 
-/* -------- 音色选择（picker-view） -------- */
-.voice-picker {
-  width: 100%;
-  height: 140rpx;
-  border-radius: 24rpx;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
-  border: 2rpx solid rgba(255, 255, 255, 0.4);
-  overflow: hidden;
+/* -------- 小任性网格 -------- */
+.quirk-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
 }
 
-.voice-col-item {
+.quirk-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #514345;
-}
-
-/* -------- 职业病输入 -------- */
-.quirks-wrap {
-  position: relative;
+  padding: 24rpx 8rpx;
   border-radius: 24rpx;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20rpx);
   -webkit-backdrop-filter: blur(20rpx);
   border: 2rpx solid rgba(255, 255, 255, 0.4);
-  overflow: hidden;
+  transition: all 0.25s ease;
+  user-select: none;
 }
 
-.quirks-input {
-  width: 100%;
-  min-height: 200rpx;
-  padding: 28rpx;
-  padding-bottom: 56rpx;
-  font-size: 28rpx;
+.quirk-item-hover {
+  transform: scale(0.95);
+}
+
+.quirk-item-active {
+  background: rgba(255, 183, 197, 0.25);
+  border-color: #864e5a;
+  box-shadow: 0 0 20rpx rgba(255, 183, 197, 0.3);
+}
+
+.quirk-label {
+  font-size: 24rpx;
+  font-weight: 500;
   color: #1b1c1c;
-  line-height: 1.7;
-  box-sizing: border-box;
-  background: transparent;
+  text-align: center;
+  line-height: 1.3;
 }
 
-.quirks-placeholder {
-  color: rgba(134, 78, 90, 0.4);
-}
-
-.quirks-counter {
-  position: absolute;
-  bottom: 16rpx;
-  right: 24rpx;
-  font-size: 22rpx;
-  color: rgba(134, 78, 90, 0.4);
+.quirk-item-active .quirk-label {
+  color: #864e5a;
+  font-weight: 600;
 }
 
 /* -------- CTA 按钮 -------- */
@@ -263,8 +220,8 @@ page {
   right: 0;
   padding: 16rpx 40rpx 24rpx;
   background: rgba(251, 249, 248, 0.85);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 100;
 }
 
@@ -277,12 +234,6 @@ page {
   box-shadow: 0 8rpx 40rpx rgba(255, 183, 197, 0.35);
   animation: softPulse 3s infinite ease-in-out;
   user-select: none;
-}
-
-.cta-btn-disabled {
-  opacity: 0.5;
-  animation: none;
-  box-shadow: none;
 }
 
 .cta-btn-hover {

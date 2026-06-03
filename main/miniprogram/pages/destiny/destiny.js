@@ -2,13 +2,8 @@
  * pages/destiny/destiny.js
  *
  * "命运初见"页面：新用户选择 AI 伴侣的角色、职业、音色和个性。
- * 当用户没有 agent 时展示，完成后创建个性化 agent。
+ * 选择后跳转到灵魂共振页面。
  */
-
-const { post, put } = require('../../utils/request');
-const { createPet } = require('../../utils/device');
-
-const app = getApp();
 
 // 角色预设
 const CHARACTERS = [
@@ -61,7 +56,6 @@ Page({
     selectedVoice: 1,
     quirks: '',
     quirksCount: 0,
-    submitting: false,
   },
 
   onLoad() {
@@ -94,56 +88,21 @@ Page({
     this.setData({ quirks: val, quirksCount: val.length });
   },
 
-  // 提交 - 创建 agent
-  async onSubmit() {
-    if (this.data.submitting) return;
-
-    const { selectedOccupation, quirks, characters, currentCharIdx, occupations } = this.data;
+  // 下一步 - 跳转到灵魂共振页面
+  onNext() {
+    var { selectedOccupation, currentCharIdx, selectedVoice, quirks } = this.data;
     if (selectedOccupation < 0) {
       wx.showToast({ title: '请选择一个职业身份', icon: 'none' });
       return;
     }
 
-    this.setData({ submitting: true });
+    var params = [
+      'charIdx=' + currentCharIdx,
+      'occIdx=' + selectedOccupation,
+      'voiceIdx=' + selectedVoice,
+      'quirksText=' + encodeURIComponent(quirks),
+    ].join('&');
 
-    try {
-      const character = characters[currentCharIdx];
-      const occupation = occupations[selectedOccupation];
-
-      // 1. 创建 agent
-      const createRes = await post('/agent', { agentName: character.name });
-      const agentId = createRes.data;
-
-      // 2. 构建 systemPrompt 并更新 agent
-      let systemPrompt = character.basePrompt;
-      systemPrompt += '\n\n' + occupation.prompt + '。';
-      if (quirks.trim()) {
-        systemPrompt += '\n\n她有一个可爱的"职业病"：' + quirks.trim();
-      }
-
-      await put('/agent/' + agentId, { systemPrompt });
-
-      // 3. 更新全局状态
-      app.globalData.agentId = agentId;
-      app.globalData.agentName = character.name;
-      wx.setStorageSync('agentId', agentId);
-
-      // 4. 继续设备绑定和宠物创建（如果尚未完成）
-      if (!app.globalData.isDeviceBound) {
-        await app.checkDeviceStatus();
-      }
-
-      try {
-        await createPet(app.globalData.virtualMAC);
-      } catch (_) {}
-
-      // 5. 清除 needsDestiny 标记并导航到首页
-      app.globalData.needsDestiny = false;
-      wx.switchTab({ url: '/pages/index/index' });
-    } catch (err) {
-      console.error('创建 agent 失败:', err);
-      wx.showToast({ title: '创建失败，请重试', icon: 'none' });
-      this.setData({ submitting: false });
-    }
+    wx.navigateTo({ url: '/pages/soul-resonance/soul-resonance?' + params });
   },
 });

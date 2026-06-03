@@ -3,7 +3,8 @@
     "pages/index/index",
     "pages/settings/settings",
     "pages/destiny/destiny",
-    "pages/soul-resonance/soul-resonance"
+    "pages/soul-resonance/soul-resonance",
+    "pages/memory-anchor/memory-anchor"
   ],
   "window": {
     "navigationBarTitleText": "完美女友",

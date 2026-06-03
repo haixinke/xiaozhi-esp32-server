@@ -108,7 +108,6 @@ Page({
     flow.quirk = selectedQuirk;
     app.globalData.destinyFlow = flow;
 
-    // TODO: 跳转到下一个页面（待实现）
-    wx.showToast({ title: '下一步页面待实现', icon: 'none' });
+    wx.navigateTo({ url: '/pages/memory-anchor/memory-anchor' });
   },
 });

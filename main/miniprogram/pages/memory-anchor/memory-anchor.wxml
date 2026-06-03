@@ -1,0 +1,104 @@
+<!--pages/memory-anchor/memory-anchor.wxml-->
+<view class="page">
+  <!-- 自定义导航栏 -->
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-bar-inner">
+      <text class="nav-title">记忆锚定</text>
+    </view>
+  </view>
+
+  <!-- 可滚动内容区 -->
+  <scroll-view class="scroll-content" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 视频区 -->
+    <view class="video-section">
+      <video
+        class="video-player"
+        src="{{videoUrl}}"
+        autoplay="{{true}}"
+        loop="{{false}}"
+        muted="{{false}}"
+        controls="{{true}}"
+        object-fit="cover"
+        show-center-play-btn="{{true}}"
+        enable-progress-gesture="{{false}}"
+      />
+    </view>
+
+    <!-- 情景一：关系选择 -->
+    <view class="section" wx:if="{{scenario === 1}}">
+      <view class="section-header">
+        <view class="section-bar" />
+        <text class="section-title">你们的关系从哪里开始？</text>
+      </view>
+      <text class="section-subtitle">听她说完，告诉她答案</text>
+      <view class="option-grid">
+        <view
+          wx:for="{{relationOptions}}"
+          wx:key="*this"
+          class="option-item {{index === selectedRelation ? 'option-item-active' : ''}}"
+          data-index="{{index}}"
+          bindtap="onRelationSelect"
+          hover-class="option-item-hover"
+          hover-stay-time="80"
+        >
+          <text class="option-label">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 情景二：宠物选择 -->
+    <block wx:if="{{scenario === 2}}">
+      <view class="section">
+        <view class="section-header">
+          <view class="section-bar" />
+          <text class="section-title">她想领养一个小动物</text>
+        </view>
+        <text class="section-subtitle">猫还是狗，你来决定</text>
+        <view class="pet-grid">
+          <view
+            wx:for="{{petOptions}}"
+            wx:key="*this"
+            class="option-item {{index === selectedPet ? 'option-item-active' : ''}}"
+            data-index="{{index}}"
+            bindtap="onPetSelect"
+            hover-class="option-item-hover"
+            hover-stay-time="80"
+          >
+            <text class="option-label">{{item}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="section">
+        <view class="section-header">
+          <view class="section-bar" />
+          <text class="section-title">给小家伙起个名字吧</text>
+        </view>
+        <view class="name-input-wrap">
+          <input
+            class="name-input"
+            placeholder="输入名字..."
+            value="{{petName}}"
+            bindinput="onPetNameInput"
+            maxlength="10"
+          />
+        </view>
+      </view>
+    </block>
+
+    <!-- 底部留白给 CTA 按钮腾空间 -->
+    <view style="height: 200rpx;" />
+  </scroll-view>
+
+  <!-- CTA 按钮（仅情景二显示） -->
+  <view class="cta-bar safe-area-bottom" wx:if="{{scenario === 2}}">
+    <view
+      class="cta-btn"
+      bindtap="onComplete"
+      hover-class="cta-btn-hover"
+      hover-stay-time="80"
+    >
+      <text class="cta-text">创造完成，唤醒她</text>
+    </view>
+  </view>
+</view>

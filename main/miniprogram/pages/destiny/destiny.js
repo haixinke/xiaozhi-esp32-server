@@ -44,10 +44,10 @@ const OCCUPATIONS = [
 
 // 音色预设
 const VOICES = [
-  { id: 0, label: '撒娇', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_sajiao.mp3' },
-  { id: 1, label: '知性', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_sophie.mp3' },
-  { id: 2, label: '甜美', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_tianmei.mp3' },
-  { id: 3, label: '温糯', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_xiaohe.mp3' },
+  { id: 0, label: '温糯', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_xiaohe.mp3' },
+  { id: 1, label: '撒娇', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_sajiao.mp3' },
+  { id: 2, label: '知性', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_sophie.mp3' },
+  { id: 3, label: '甜美', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_tianmei.mp3' },
 ];
 
 Page({

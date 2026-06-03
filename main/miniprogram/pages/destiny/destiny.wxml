@@ -64,16 +64,35 @@
         <view class="section-bar" />
         <text class="section-title">音色选择</text>
       </view>
-      <picker-view
-        class="voice-picker"
-        value="{{[selectedVoice]}}"
-        bindchange="onVoiceChange"
-        indicator-style="height: 48px;"
-      >
-        <picker-view-column>
-          <view wx:for="{{voices}}" wx:key="*this" class="voice-col-item">{{item}}</view>
-        </picker-view-column>
-      </picker-view>
+      <view class="voice-cell" bindtap="openVoicePicker" hover-class="voice-cell-hover" hover-stay-time="80">
+        <text class="voice-cell-label">{{voices[selectedVoice].label}}</text>
+        <view class="voice-cell-arrow {{showVoicePicker ? 'voice-cell-arrow-up' : ''}}" />
+      </view>
+    </view>
+
+    <!-- 音色底部弹窗 -->
+    <view class="voice-overlay {{showVoicePicker ? 'voice-overlay-show' : ''}}" bindtap="onVoiceOverlayTap">
+      <view class="voice-panel {{showVoicePicker ? 'voice-panel-show' : ''}}" catchtap="onVoicePanelTap">
+        <view class="voice-panel-header">
+          <text class="voice-panel-title">选择音色</text>
+        </view>
+        <view
+          wx:for="{{voices}}"
+          wx:key="id"
+          class="voice-row {{item.id === selectedVoice ? 'voice-row-active' : ''}}"
+          data-index="{{index}}"
+          bindtap="onVoiceTap"
+        >
+          <text class="voice-row-label">{{item.label}}</text>
+          <image
+            class="voice-play-btn {{item.id === playingVoiceId ? 'voice-play-btn-playing' : ''}}"
+            src="/images/play.png"
+            mode="aspectFit"
+            data-voice="{{item}}"
+            catchtap="onPlayVoice"
+          />
+        </view>
+      </view>
     </view>
 
     <!-- 职业病 -->

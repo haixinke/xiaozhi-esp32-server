@@ -187,7 +187,7 @@ page {
 }
 
 .occ-label {
-  font-size: 22rpx;
+  font-size: 26rpx;
   font-weight: 500;
   color: #1b1c1c;
   text-align: center;

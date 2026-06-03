@@ -3,7 +3,7 @@
   <!-- 自定义导航栏 -->
   <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
     <view class="nav-bar-inner">
-      <text class="nav-title">灵魂共振</text>
+      <text class="nav-title">真实灵魂</text>
     </view>
   </view>
 
@@ -23,9 +23,9 @@
     <view class="section">
       <view class="section-header">
         <view class="section-bar" />
-        <text class="section-title">挑选最吸引您的灵魂特质</text>
+        <text class="section-title">挑选两个最吸引您的灵魂特质</text>
       </view>
-      <text class="section-subtitle">人类的灵魂从不单一，创造她最吸引你的两个特质</text>
+      <text class="section-subtitle">人类的灵魂从不单一</text>
       <view class="trait-grid">
         <view
           wx:for="{{soulTraits}}"
@@ -45,7 +45,7 @@
     <view class="section">
       <view class="section-header">
         <view class="section-bar" />
-        <text class="section-title">选一个她的小任性吧（单选）</text>
+        <text class="section-title">选一个她的小任性吧</text>
       </view>
       <text class="section-subtitle">世界上没有完美的圆，正因为有了小瑕疵，她才独一无二</text>
       <view class="quirk-grid">

@@ -157,13 +157,14 @@ Page({
       return;
     }
 
-    var params = [
-      'charIdx=' + currentCharIdx,
-      'occIdx=' + selectedOccupation,
-      'voiceIdx=' + selectedVoice,
-      'quirksText=' + encodeURIComponent(quirks),
-    ].join('&');
+    var app = getApp();
+    app.globalData.destinyFlow = {
+      charIdx: currentCharIdx,
+      occIdx: selectedOccupation,
+      voiceIdx: selectedVoice,
+      quirksText: quirks,
+    };
 
-    wx.navigateTo({ url: '/pages/soul-resonance/soul-resonance?' + params });
+    wx.navigateTo({ url: '/pages/soul-resonance/soul-resonance' });
   },
 });

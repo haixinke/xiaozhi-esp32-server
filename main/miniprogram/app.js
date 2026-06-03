@@ -17,7 +17,8 @@ App({
     agentId: null,
     agentName: null,
     isDeviceBound: undefined,  // 设备绑定状态，undefined=检查中, true=已绑定, false=未绑定
-    needsDestiny: false        // 新用户无 agent，需要进入命运初见页面
+    needsDestiny: false,       // 新用户无 agent，需要进入命运初见页面
+    destinyFlow: null          // 命运初见向导流程的中间数据
   },
 
   onLaunch() {

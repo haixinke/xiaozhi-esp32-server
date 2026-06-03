@@ -49,17 +49,19 @@ Page({
     selectedQuirk: -1,
   },
 
-  onLoad(options) {
-    const sysInfo = wx.getSystemInfoSync();
-    const charIdx = Number(options.charIdx) || 0;
-    const character = CHARACTERS[charIdx];
+  onLoad() {
+    var app = getApp();
+    var flow = app.globalData.destinyFlow || {};
+    var sysInfo = wx.getSystemInfoSync();
+    var charIdx = flow.charIdx || 0;
+    var character = CHARACTERS[charIdx];
 
     this.setData({
       statusBarHeight: sysInfo.statusBarHeight || 44,
-      charIdx,
-      occIdx: Number(options.occIdx) || 0,
-      voiceIdx: Number(options.voiceIdx) || 0,
-      quirksText: options.quirksText || '',
+      charIdx: charIdx,
+      occIdx: flow.occIdx != null ? flow.occIdx : -1,
+      voiceIdx: flow.voiceIdx != null ? flow.voiceIdx : 0,
+      quirksText: flow.quirksText || '',
       characterName: character.name,
       characterImage: character.image,
     });
@@ -100,14 +102,11 @@ Page({
       .map(function (t) { return t.label; });
     var selectedQuirk = this.data.selectedQuirk >= 0 ? this.data.quirks[this.data.selectedQuirk] : '';
 
-    var params = [
-      'charIdx=' + this.data.charIdx,
-      'occIdx=' + this.data.occIdx,
-      'voiceIdx=' + this.data.voiceIdx,
-      'quirksText=' + encodeURIComponent(this.data.quirksText),
-      'traits=' + encodeURIComponent(selectedTraits.join(',')),
-      'quirk=' + encodeURIComponent(selectedQuirk),
-    ].join('&');
+    var app = getApp();
+    var flow = app.globalData.destinyFlow || {};
+    flow.traits = selectedTraits;
+    flow.quirk = selectedQuirk;
+    app.globalData.destinyFlow = flow;
 
     // TODO: 跳转到下一个页面（待实现）
     wx.showToast({ title: '下一步页面待实现', icon: 'none' });

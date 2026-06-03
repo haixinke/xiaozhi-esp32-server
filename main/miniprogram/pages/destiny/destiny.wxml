@@ -86,7 +86,7 @@
           <text class="voice-row-label">{{item.label}}</text>
           <image
             class="voice-play-btn {{item.id === playingVoiceId ? 'voice-play-btn-playing' : ''}}"
-            src="/images/play.png"
+            src="{{item.id === playingVoiceId ? '/images/playing.png' : '/images/play.png'}}"
             mode="aspectFit"
             data-voice="{{item}}"
             catchtap="onPlayVoice"

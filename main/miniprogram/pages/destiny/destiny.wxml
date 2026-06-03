@@ -1,0 +1,115 @@
+<!--pages/destiny/destiny.wxml-->
+<view class="page">
+  <!-- 自定义导航栏 -->
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-bar-inner">
+      <text class="nav-title">命运初见</text>
+    </view>
+  </view>
+
+  <!-- 角色肖像卡（在 scroll-view 外部，避免手势冲突） -->
+  <view class="char-section">
+    <swiper
+      class="char-swiper"
+      current="{{currentCharIdx}}"
+      bindchange="onCharChange"
+      circular
+      previous-margin="60rpx"
+      next-margin="60rpx"
+    >
+      <swiper-item wx:for="{{characters}}" wx:key="name">
+        <view class="char-card {{index === currentCharIdx ? 'char-card-active' : ''}}" style="background: {{item.gradient}};">
+          <text class="char-emoji">{{item.emoji}}</text>
+          <view class="char-overlay">
+            <text class="char-name">{{item.name}}</text>
+          </view>
+        </view>
+      </swiper-item>
+    </swiper>
+    <view class="char-dots">
+      <view
+        wx:for="{{characters}}"
+        wx:key="name"
+        class="char-dot {{index === currentCharIdx ? 'char-dot-active' : ''}}"
+      />
+    </view>
+  </view>
+
+  <!-- 可滚动内容区 -->
+  <scroll-view class="scroll-content" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 职业选择 -->
+    <view class="section">
+      <view class="section-header">
+        <view class="section-bar" />
+        <text class="section-title">设定她的现实身份</text>
+      </view>
+      <view class="occ-grid">
+        <view
+          wx:for="{{occupations}}"
+          wx:key="label"
+          class="occ-item {{index === selectedOccupation ? 'occ-item-active' : ''}}"
+          data-index="{{index}}"
+          bindtap="onOccupationTap"
+          hover-class="occ-item-hover"
+          hover-stay-time="80"
+        >
+          <text class="occ-icon occ-icon-{{item.icon}}" />
+          <text class="occ-label">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 音色选择 -->
+    <view class="section">
+      <view class="section-header">
+        <view class="section-bar" />
+        <text class="section-title">音色选择</text>
+      </view>
+      <picker-view
+        class="voice-picker"
+        value="{{[selectedVoice]}}"
+        bindchange="onVoiceChange"
+        indicator-style="height: 48px;"
+      >
+        <picker-view-column>
+          <view wx:for="{{voices}}" wx:key="*this" class="voice-col-item">{{item}}</view>
+        </picker-view-column>
+      </picker-view>
+    </view>
+
+    <!-- 职业病 -->
+    <view class="section">
+      <view class="section-header">
+        <view class="section-bar" />
+        <text class="section-title">她有什么可爱的"职业病"吗？</text>
+      </view>
+      <view class="quirks-wrap">
+        <textarea
+          class="quirks-input"
+          placeholder="例如：护士姐姐在生活中看到你的坐姿不对，会忍不住强行纠正..."
+          placeholder-class="quirks-placeholder"
+          value="{{quirks}}"
+          bindinput="onQuirksInput"
+          maxlength="200"
+          auto-height
+        />
+        <text class="quirks-counter">{{quirksCount}}/200</text>
+      </view>
+    </view>
+
+    <!-- 底部留白给 CTA 按钮腾空间 -->
+    <view style="height: 200rpx;" />
+  </scroll-view>
+
+  <!-- CTA 按钮 -->
+  <view class="cta-bar safe-area-bottom">
+    <view
+      class="cta-btn {{selectedOccupation >= 0 && !submitting ? '' : 'cta-btn-disabled'}}"
+      bindtap="onSubmit"
+      hover-class="{{selectedOccupation >= 0 && !submitting ? 'cta-btn-hover' : ''}}"
+      hover-stay-time="80"
+    >
+      <text class="cta-text">{{submitting ? '注入中...' : '就是她了，注入灵魂'}}</text>
+    </view>
+  </view>
+</view>

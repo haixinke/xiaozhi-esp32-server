@@ -59,6 +59,7 @@ Page({
     this._waitForAppReady()
       .then(() => this._bootstrap())
       .catch((err) => {
+        if (err.message === 'redirecting to destiny') return;
         console.error('启动失败:', err);
         this.setData({ booting: false });
         wx.showToast({ title: '启动失败，请重试', icon: 'none' });
@@ -70,9 +71,14 @@ Page({
   },
 
   onShow() {
-    // 每次返回页面（例如切换 Agent 后）刷新 agent 名称
+    // 每次返回页面（例如从命运初见页面返回）刷新 agent 名称
     if (app.globalData) {
-      this.setData({ agentName: app.globalData.agentName || '翠花' });
+      const g = app.globalData;
+      if (g.needsDestiny) {
+        wx.redirectTo({ url: '/pages/destiny/destiny' });
+        return;
+      }
+      this.setData({ agentName: g.agentName || '' });
     }
   },
 
@@ -92,6 +98,14 @@ Page({
     return new Promise((resolve, reject) => {
       const check = () => {
         const g = app.globalData || {};
+
+        // 新用户无 agent → 跳转到命运初见页面
+        if (g.needsDestiny) {
+          wx.redirectTo({ url: '/pages/destiny/destiny' });
+          reject(new Error('redirecting to destiny'));
+          return true;
+        }
+
         if (g.token && g.virtualMAC && g.isDeviceBound && g.wsUrl) {
           resolve();
           return true;
@@ -123,7 +137,7 @@ Page({
   _bootstrap() {
     const g = app.globalData;
     this.setData({
-      agentName: g.agentName || '翠花',
+      agentName: g.agentName || '',
       booting: false,
     });
 

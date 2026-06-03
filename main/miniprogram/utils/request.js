@@ -89,6 +89,13 @@ function post(url, data, header) {
 }
 
 /**
+ * PUT 请求快捷方法
+ */
+function put(url, data, header) {
+  return request({ url, method: 'PUT', data, header });
+}
+
+/**
  * 获取当前 BASE_URL
  */
 function getBaseUrl() {
@@ -99,6 +106,7 @@ module.exports = {
   request,
   get,
   post,
+  put,
   getBaseUrl,
   BASE_URL
 };

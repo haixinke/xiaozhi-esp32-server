@@ -16,7 +16,8 @@ App({
     wsUrl: null,
     agentId: null,
     agentName: null,
-    isDeviceBound: undefined  // 设备绑定状态，undefined=检查中, true=已绑定, false=未绑定
+    isDeviceBound: undefined,  // 设备绑定状态，undefined=检查中, true=已绑定, false=未绑定
+    needsDestiny: false        // 新用户无 agent，需要进入命运初见页面
   },
 
   onLaunch() {
@@ -32,6 +33,13 @@ App({
       this.globalData.openid = wx.getStorageSync('openid');
       this.globalData.virtualMAC = wx.getStorageSync('openid');
       this.globalData.agentId = wx.getStorageSync('agentId');
+
+      // 无 agent → 标记需要进入命运初见页面
+      if (!this.globalData.agentId) {
+        console.log('已登录但无 agent，标记 needsDestiny');
+        this.globalData.needsDestiny = true;
+      }
+
       // 已登录，先检查设备状态（注册设备），再创建宠物
       this.checkDeviceStatus().then(() => {
         return this.createPetIfNeeded();
@@ -44,14 +52,18 @@ App({
     // 2. 未登录，后台执行静默登录
     this.silentLogin().then(() => {
       console.log('后台登录成功');
-      // 确保智能体存在
-      return this.ensureAgentExists();
-    }).then(() => {
-      // 先检查设备状态（注册设备）
-      return this.checkDeviceStatus();
-    }).then(() => {
-      // 设备就绪后，创建宠物
-      return this.createPetIfNeeded();
+
+      // 无 agent → 标记需要进入命运初见页面（不再自动创建）
+      if (!this.globalData.agentId) {
+        console.log('新用户无 agent，标记 needsDestiny');
+        this.globalData.needsDestiny = true;
+        return;
+      }
+
+      // 有 agent → 继续正常流程
+      return this.checkDeviceStatus().then(() => {
+        return this.createPetIfNeeded();
+      });
     }).catch(err => {
       console.error('后台流程失败:', err);
     });
@@ -186,15 +198,8 @@ App({
     }
 
     if (!agentId) {
-      console.error('无 Agent ID，无法自动绑定设备');
-      wx.showModal({
-        title: '提示',
-        content: '登录信息异常，请重新登录',
-        showCancel: false,
-        success: () => {
-          this.clearLoginState();
-        }
-      });
+      // 无 agent 时跳过设备绑定，由命运初见页面完成后处理
+      console.log('无 Agent ID，跳过设备绑定（等待命运初见页面完成后处理）');
       return;
     }
 

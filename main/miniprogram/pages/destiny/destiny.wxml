@@ -18,8 +18,8 @@
       next-margin="60rpx"
     >
       <swiper-item wx:for="{{characters}}" wx:key="name">
-        <view class="char-card {{index === currentCharIdx ? 'char-card-active' : ''}}" style="background: {{item.gradient}};">
-          <text class="char-emoji">{{item.emoji}}</text>
+        <view class="char-card {{index === currentCharIdx ? 'char-card-active' : ''}}">
+          <image class="char-image" src="{{item.image}}" mode="aspectFill" />
           <view class="char-overlay">
             <text class="char-name">{{item.name}}</text>
           </view>
@@ -53,7 +53,6 @@
           hover-class="occ-item-hover"
           hover-stay-time="80"
         >
-          <text class="occ-icon occ-icon-{{item.icon}}" />
           <text class="occ-label">{{item.label}}</text>
         </view>
       </view>

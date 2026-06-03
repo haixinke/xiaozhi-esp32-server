@@ -53,7 +53,7 @@
           <view class="section-bar" />
           <text class="section-title">她想领养一个小动物</text>
         </view>
-        <text class="section-subtitle">猫还是狗，你来决定</text>
+        <!-- <text class="section-subtitle">猫还是狗，你来决定</text> -->
         <view class="pet-grid">
           <view
             wx:for="{{petOptions}}"

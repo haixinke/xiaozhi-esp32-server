@@ -37,7 +37,7 @@ page {
 }
 
 .nav-title {
-  font-size: 28rpx;
+  font-size: 30rpx;
   font-weight: 600;
   color: #864e5a;
   letter-spacing: 2rpx;

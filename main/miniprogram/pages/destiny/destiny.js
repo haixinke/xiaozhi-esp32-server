@@ -52,6 +52,7 @@ const VOICES = ['邻家', '可爱', '调皮'];
 
 Page({
   data: {
+    statusBarHeight: 44,
     characters: CHARACTERS,
     currentCharIdx: 0,
     occupations: OCCUPATIONS,
@@ -61,6 +62,11 @@ Page({
     quirks: '',
     quirksCount: 0,
     submitting: false,
+  },
+
+  onLoad() {
+    const sysInfo = wx.getSystemInfoSync();
+    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 44 });
   },
 
   // 角色切换

@@ -47,8 +47,8 @@
         <view
           wx:for="{{occupations}}"
           wx:key="label"
-          class="occ-item {{index === selectedOccupation ? 'occ-item-active' : ''}}"
-          data-index="{{index}}"
+          class="occ-item {{item.id === selectedOccupation ? 'occ-item-active' : ''}}"
+          data-id="{{item.id}}"
           bindtap="onOccupationTap"
           hover-class="occ-item-hover"
           hover-stay-time="80"
@@ -65,7 +65,7 @@
         <text class="section-title">音色选择</text>
       </view>
       <view class="voice-cell" bindtap="openVoicePicker" hover-class="voice-cell-hover" hover-stay-time="80">
-        <text class="voice-cell-label">{{voices[selectedVoice].label}}</text>
+        <text class="voice-cell-label">{{selectedVoiceLabel}}</text>
         <view class="voice-cell-arrow {{showVoicePicker ? 'voice-cell-arrow-up' : ''}}" />
       </view>
     </view>
@@ -80,7 +80,7 @@
           wx:for="{{voices}}"
           wx:key="id"
           class="voice-row {{item.id === selectedVoice ? 'voice-row-active' : ''}}"
-          data-index="{{index}}"
+          data-id="{{item.id}}"
           bindtap="onVoiceTap"
         >
           <text class="voice-row-label">{{item.label}}</text>
@@ -122,9 +122,9 @@
   <!-- CTA 按钮 -->
   <view class="cta-bar safe-area-bottom">
     <view
-      class="cta-btn {{selectedOccupation >= 0 ? '' : 'cta-btn-disabled'}}"
+      class="cta-btn {{selectedOccupation ? '' : 'cta-btn-disabled'}}"
       bindtap="onNext"
-      hover-class="{{selectedOccupation >= 0 ? 'cta-btn-hover' : ''}}"
+      hover-class="{{selectedOccupation ? 'cta-btn-hover' : ''}}"
       hover-stay-time="80"
     >
       <text class="cta-text">就是她了，注入灵魂</text>

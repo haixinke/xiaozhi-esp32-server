@@ -8,18 +8,22 @@
 // 角色数据（与 destiny 页面保持一致）
 const CHARACTERS = [
   {
+    id: 'baiyueguang',
     name: '高冷白月光',
     image: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/baiyueguang.png',
   },
   {
+    id: 'linjiamei',
     name: '元气邻家妹',
     image: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/linjiamei.png',
   },
   {
+    id: 'zhixingyujie',
     name: '知性御姐',
     image: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/zhichangjie.png',
   },
   {
+    id: 'erciyuan',
     name: '潮酷二次元',
     image: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/erciyuan.png',
   },
@@ -31,9 +35,9 @@ Page({
     characterName: '',
     characterImage: '',
     // 来自命运初见的参数
-    charIdx: 0,
-    occIdx: -1,
-    voiceIdx: 1,
+    charId: '',
+    occId: '',
+    voiceId: '',
     quirksText: '',
     // 灵魂特质
     soulTraits: [
@@ -54,14 +58,13 @@ Page({
     var app = getApp();
     var flow = app.globalData.destinyFlow || {};
     var sysInfo = wx.getSystemInfoSync();
-    var charIdx = flow.charIdx || 0;
-    var character = CHARACTERS[charIdx];
+    var character = CHARACTERS.find(function (c) { return c.id === flow.charId; }) || CHARACTERS[0];
 
     this.setData({
       statusBarHeight: sysInfo.statusBarHeight || 44,
-      charIdx: charIdx,
-      occIdx: flow.occIdx != null ? flow.occIdx : -1,
-      voiceIdx: flow.voiceIdx != null ? flow.voiceIdx : 0,
+      charId: flow.charId || character.id,
+      occId: flow.occId || '',
+      voiceId: flow.voiceId || '',
       quirksText: flow.quirksText || '',
       characterName: character.name,
       characterImage: character.image,

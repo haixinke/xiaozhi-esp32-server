@@ -16,7 +16,7 @@ const CHARACTERS = [
     image: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/linjiamei.png',
   },
   {
-    name: '知性职场姐',
+    name: '知性御姐',
     image: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/zhichangjie.png',
   },
   {

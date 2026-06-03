@@ -47,6 +47,7 @@ Page({
     // 小任性
     quirks: ['重度起床气', '小醋坛子', '路痴晚期', '游戏黑洞', '熬夜修仙党', '选择困难症', '逻辑泥石流', '炸厨房选手'],
     selectedQuirk: -1,
+    canProceed: false,
   },
 
   onLoad() {
@@ -77,7 +78,6 @@ Page({
       // 取消选择
       traits[idx].selected = false;
     } else {
-      // 检查是否已选 2 条
       const selectedCount = traits.filter(function (t) { return t.selected; }).length;
       if (selectedCount >= 2) {
         wx.showToast({ title: '最多选择两条', icon: 'none' });
@@ -86,17 +86,25 @@ Page({
       traits[idx].selected = true;
     }
 
-    this.setData({ soulTraits: traits });
+    this.setData({ soulTraits: traits, canProceed: this._checkCanProceed(traits, this.data.selectedQuirk) });
   },
 
   // 小任性选择（单选）
   onQuirkTap(e) {
     const idx = e.currentTarget.dataset.index;
-    this.setData({ selectedQuirk: idx === this.data.selectedQuirk ? -1 : idx });
+    this.setData({ selectedQuirk: idx === this.data.selectedQuirk ? -1 : idx, canProceed: this._checkCanProceed(this.data.soulTraits, idx === this.data.selectedQuirk ? -1 : idx) });
+  },
+
+  _checkCanProceed(traits, quirkIdx) {
+    var selectedCount = traits.filter(function (t) { return t.selected; }).length;
+    return selectedCount >= 1 && quirkIdx >= 0;
   },
 
   // 下一步 - 携带参数跳转
   onNext() {
+    if (!this.data.canProceed) {
+      return;
+    }
     var selectedTraits = this.data.soulTraits
       .filter(function (t) { return t.selected; })
       .map(function (t) { return t.label; });

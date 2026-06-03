@@ -23,9 +23,9 @@
     <view class="section">
       <view class="section-header">
         <view class="section-bar" />
-        <text class="section-title">挑选两个最吸引您的灵魂特质</text>
+        <text class="section-title">挑选最吸引您的灵魂特质</text>
       </view>
-      <text class="section-subtitle">人类的灵魂从不单一</text>
+      <text class="section-subtitle">人类的灵魂从来都不一样</text>
       <view class="trait-grid">
         <view
           wx:for="{{soulTraits}}"
@@ -70,9 +70,9 @@
   <!-- CTA 按钮 -->
   <view class="cta-bar safe-area-bottom">
     <view
-      class="cta-btn"
+      class="cta-btn {{canProceed ? '' : 'cta-btn-disabled'}}"
       bindtap="onNext"
-      hover-class="cta-btn-hover"
+      hover-class="{{canProceed ? 'cta-btn-hover' : ''}}"
       hover-stay-time="80"
     >
       <text class="cta-text">绑定灵魂，开始交心</text>

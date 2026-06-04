@@ -28,7 +28,7 @@
     <view class="section" wx:if="{{scenario === 1}}">
       <view class="section-header">
         <view class="section-bar" />
-        <text class="section-title">你们的关系从哪里开始？</text>
+        <text class="section-title">我们的关系从哪里开始？</text>
       </view>
       <text class="section-subtitle">听她说完，告诉她答案</text>
       <view class="option-grid">
@@ -51,7 +51,7 @@
       <view class="section">
         <view class="section-header">
           <view class="section-bar" />
-          <text class="section-title">她想领养一个小动物</text>
+          <text class="section-title">我想领养一个小动物，你帮我选择吧</text>
         </view>
         <!-- <text class="section-subtitle">猫还是狗，你来决定</text> -->
         <view class="pet-grid">
@@ -93,9 +93,9 @@
   <!-- CTA 按钮（仅情景二显示） -->
   <view class="cta-bar safe-area-bottom" wx:if="{{scenario === 2}}">
     <view
-      class="cta-btn"
+      class="cta-btn {{canComplete ? '' : 'cta-btn-disabled'}}"
       bindtap="onComplete"
-      hover-class="cta-btn-hover"
+      hover-class="{{canComplete ? 'cta-btn-hover' : ''}}"
       hover-stay-time="80"
     >
       <text class="cta-text">创造完成，唤醒她</text>

@@ -58,9 +58,6 @@ public class CompanionEntity {
     @Schema(description = "音色编码")
     private String voice;
 
-    @Schema(description = "性格描述")
-    private String personality;
-
     @Schema(description = "职业病描述")
     private String quirksText;
 

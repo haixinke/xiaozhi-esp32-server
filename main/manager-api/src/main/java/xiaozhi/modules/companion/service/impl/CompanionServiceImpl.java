@@ -16,7 +16,6 @@ import xiaozhi.modules.companion.util.CharacterAge;
 import xiaozhi.modules.companion.util.CompanionBirthCalculator;
 import xiaozhi.modules.companion.util.CompanionMood;
 import xiaozhi.modules.companion.vo.CompanionVO;
-import xiaozhi.modules.llm.service.LLMService;
 import xiaozhi.modules.security.user.SecurityUser;
 
 import java.time.LocalDateTime;
@@ -29,22 +28,6 @@ import java.util.Arrays;
 public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, CompanionEntity> implements CompanionService {
 
     private final CompanionDao companionDao;
-    private final LLMService llmService;
-
-    private static final String PERSONALITY_PROMPT = """
-            你是一位擅长刻画人物性格的作家。请根据以下设定，用一段自然生动的文字描述这个角色的性格，要求200字以内：
-            - 角色类型：%s
-            - 灵魂特质：%s
-            - 小任性：%s
-            - 与用户的关系：%s
-
-            要求：
-            1. 结合角色的类型特点，将灵魂特质和小任性融入性格描述中，让性格鲜活立体
-            2. 描述中要体现与用户关系的亲疏感，比如恋人之间会有独占欲和撒娇，朋友之间会有默契和包容
-            3. 语言自然流畅，像在描述一个真实存在的人，避免罗列式或模板化的表述
-            4. 只输出性格描述文本，不要加标题、引号或其他格式""";
-
-    private static final String DEFAULT_PERSONALITY = "性格温和友善，善解人意，喜欢陪伴在身边。虽然偶尔有点小任性，但总能用温暖的话语让人感到安心。";
 
     @Override
     public CompanionVO create(CompanionCreateDTO dto) {
@@ -71,12 +54,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         // 4. 计算八字、五行、星座、属相
         CompanionBirthCalculator.BirthResult calcResult = CompanionBirthCalculator.calculate(birthday);
 
-        // 4. 调用 LLM 生成性格描述
-        String characterName = CharacterAge.getName(dto.getCharacter());
-        String personality = derivePersonality(
-                characterName, dto.getSoulTraits(), dto.getSoulQuirk(), dto.getRelationType()
-        );
-
         // 5. 创建实体
         CompanionEntity entity = new CompanionEntity();
         entity.setUserId(userId);
@@ -92,7 +69,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         entity.setCharacter(dto.getCharacter());
         entity.setOccupation(dto.getOccupation());
         entity.setVoice(dto.getVoice());
-        entity.setPersonality(personality);
         entity.setQuirksText(dto.getQuirksText());
         entity.setSoulTraits(dto.getSoulTraits());
         entity.setSoulQuirk(dto.getSoulQuirk());
@@ -123,7 +99,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         }
 
         boolean needRecalcBirth = false;
-        boolean needRecalcPersonality = false;
 
         if (dto.getType() != null) entity.setType(dto.getType());
         if (dto.getAvatar() != null) entity.setAvatar(dto.getAvatar());
@@ -138,25 +113,14 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             entity.setMood(dto.getMood());
         }
         if (dto.getPastLifeSecret() != null) entity.setPastLifeSecret(dto.getPastLifeSecret());
-        if (dto.getPersonality() != null) entity.setPersonality(dto.getPersonality());
 
         if (dto.getCharacter() != null && !dto.getCharacter().equals(entity.getCharacter())) {
             entity.setCharacter(dto.getCharacter());
             needRecalcBirth = true;
-            needRecalcPersonality = true;
         }
-        if (dto.getSoulTraits() != null && !dto.getSoulTraits().equals(entity.getSoulTraits())) {
-            entity.setSoulTraits(dto.getSoulTraits());
-            needRecalcPersonality = true;
-        }
-        if (dto.getSoulQuirk() != null && !dto.getSoulQuirk().equals(entity.getSoulQuirk())) {
-            entity.setSoulQuirk(dto.getSoulQuirk());
-            needRecalcPersonality = true;
-        }
-        if (dto.getRelationType() != null && !dto.getRelationType().equals(entity.getRelationType())) {
-            entity.setRelationType(dto.getRelationType());
-            needRecalcPersonality = true;
-        }
+        if (dto.getSoulTraits() != null) entity.setSoulTraits(dto.getSoulTraits());
+        if (dto.getSoulQuirk() != null) entity.setSoulQuirk(dto.getSoulQuirk());
+        if (dto.getRelationType() != null) entity.setRelationType(dto.getRelationType());
 
         if (needRecalcBirth) {
             int age;
@@ -174,14 +138,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             entity.setWuxing(calcResult.wuxing());
         }
 
-        if (needRecalcPersonality) {
-            String characterName = CharacterAge.getName(entity.getCharacter());
-            String personality = derivePersonality(
-                    characterName, entity.getSoulTraits(), entity.getSoulQuirk(), entity.getRelationType()
-            );
-            entity.setPersonality(personality);
-        }
-
         companionDao.updateById(entity);
         log.info("伴侣信息已更新，deviceId={}", dto.getDeviceId());
 
@@ -197,27 +153,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             throw new RenException(ErrorCode.COMPANION_NOT_FOUND);
         }
         return CompanionVO.toVO(entity);
-    }
-
-    private String derivePersonality(String characterName, String soulTraits, String soulQuirk, String relationType) {
-        try {
-            if (!llmService.isAvailable()) {
-                log.warn("LLM服务不可用，使用默认性格描述");
-                return DEFAULT_PERSONALITY;
-            }
-
-            String prompt = String.format(PERSONALITY_PROMPT, characterName, soulTraits, soulQuirk, relationType);
-            log.info("LLM生成性格描述，提示词：{}", prompt);
-            String response = llmService.generateSummary("", prompt);
-
-            if (response != null && !response.isBlank()) {
-                return response.trim();
-            }
-            return DEFAULT_PERSONALITY;
-        } catch (Exception e) {
-            log.error("LLM生成性格描述失败，使用默认值", e);
-            return DEFAULT_PERSONALITY;
-        }
     }
 
     private void validateMood(String mood) {

@@ -14,7 +14,6 @@ CREATE TABLE ai_companion (
     `character`     VARCHAR(32)  NOT NULL COMMENT '角色',
     occupation      VARCHAR(32)  NOT NULL COMMENT '职业',
     voice           VARCHAR(32)  NOT NULL COMMENT '音色',
-    personality     VARCHAR(800) NOT NULL COMMENT '性格描述',
     quirks_text     VARCHAR(200) NULL     COMMENT '职业病描述',
     soul_traits     VARCHAR(64)  NOT NULL COMMENT '灵魂特质,逗号分隔',
     soul_quirk      VARCHAR(32)  NOT NULL COMMENT '小任性',

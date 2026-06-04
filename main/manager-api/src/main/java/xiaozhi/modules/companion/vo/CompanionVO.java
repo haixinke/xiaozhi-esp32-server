@@ -51,9 +51,6 @@ public class CompanionVO {
     @Schema(description = "音色")
     private String voice;
 
-    @Schema(description = "性格描述")
-    private String personality;
-
     @Schema(description = "职业病描述")
     private String quirksText;
 
@@ -103,7 +100,6 @@ public class CompanionVO {
         vo.setCharacter(entity.getCharacter());
         vo.setOccupation(entity.getOccupation());
         vo.setVoice(entity.getVoice());
-        vo.setPersonality(entity.getPersonality());
         vo.setQuirksText(entity.getQuirksText());
         vo.setSoulTraits(entity.getSoulTraits());
         vo.setSoulQuirk(entity.getSoulQuirk());

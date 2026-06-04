@@ -196,6 +196,12 @@ page {
   opacity: 0.9;
 }
 
+.cta-btn-disabled {
+  opacity: 0.5;
+  animation: none;
+  box-shadow: none;
+}
+
 .cta-text {
   font-size: 32rpx;
   font-weight: 600;

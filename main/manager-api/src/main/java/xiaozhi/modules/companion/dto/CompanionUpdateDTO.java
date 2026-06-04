@@ -48,9 +48,6 @@ public class CompanionUpdateDTO {
     @Schema(description = "宠物名")
     private String petName;
 
-    @Schema(description = "性格描述")
-    private String personality;
-
     @Schema(description = "今日心情")
     private String mood;
 

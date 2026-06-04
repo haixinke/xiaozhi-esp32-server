@@ -23,6 +23,7 @@ Page({
     petOptions: PET_OPTIONS,
     selectedPet: -1,
     petName: '',
+    canComplete: false,
   },
 
   onLoad: function () {
@@ -49,12 +50,19 @@ Page({
   // 情景二：宠物类型选择（单选）
   onPetSelect: function (e) {
     var idx = e.currentTarget.dataset.index;
-    this.setData({ selectedPet: idx === this.data.selectedPet ? -1 : idx });
+    var newIdx = idx === this.data.selectedPet ? -1 : idx;
+    this.setData({
+      selectedPet: newIdx,
+      canComplete: newIdx >= 0 && this.data.petName.trim(),
+    });
   },
 
   // 情景二：宠物名字输入
   onPetNameInput: function (e) {
-    this.setData({ petName: e.detail.value });
+    this.setData({
+      petName: e.detail.value,
+      canComplete: this.data.selectedPet >= 0 && e.detail.value.trim(),
+    });
   },
 
   // 创造完成

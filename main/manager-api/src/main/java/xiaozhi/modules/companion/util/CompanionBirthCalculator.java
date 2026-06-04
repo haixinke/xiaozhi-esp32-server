@@ -31,10 +31,13 @@ public final class CompanionBirthCalculator {
             Map.entry('戌', "earth"), Map.entry('亥', "water")
     );
 
-    private static final Map<Character, String> ZHI_SHENGXIAO = Map.of(
-            '子', "rat", '丑', "ox", '寅', "tiger", '卯', "rabbit",
-            '辰', "dragon", '巳', "snake", '午', "horse", '未', "sheep",
-            '申', "monkey", '酉', "rooster", '戌', "dog", '亥', "pig"
+    private static final Map<Character, String> ZHI_SHENGXIAO = Map.ofEntries(
+            Map.entry('子', "rat"), Map.entry('丑', "ox"),
+            Map.entry('寅', "tiger"), Map.entry('卯', "rabbit"),
+            Map.entry('辰', "dragon"), Map.entry('巳', "snake"),
+            Map.entry('午', "horse"), Map.entry('未', "sheep"),
+            Map.entry('申', "monkey"), Map.entry('酉', "rooster"),
+            Map.entry('戌', "dog"), Map.entry('亥', "pig")
     );
 
     private static final Map<String, String> ZODIAC_CODES = Map.ofEntries(

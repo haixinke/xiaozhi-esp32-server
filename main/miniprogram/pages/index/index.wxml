@@ -1,10 +1,10 @@
 <!--pages/index/index.wxml-->
 <view class="page">
   <!-- 背景层：背景图片 -->
-  <image class="bg-image" src="{{companionBgImage || '/images/beijing.png'}}" mode="aspectFill"></image>
+  <image wx:if="{{!booting}}" class="bg-image" src="{{companionBgImage || '/images/beijing.png'}}" mode="aspectFill"></image>
 
   <!-- 顶部状态栏 - AI伴侣导航 -->
-  <view class="top-bar">
+  <view wx:if="{{!booting}}" class="top-bar">
     <!-- AI头像和名字 -->
     <view class="ai-profile" bindtap="onTapStatus">
       <view class="avatar-wrapper">
@@ -36,7 +36,7 @@
     <view class="boot-orbit">
       <view class="boot-dot"></view>
     </view>
-    <text class="boot-text">正在唤醒翠花…</text>
+    <text class="boot-text">正在准备…</text>
   </view>
 
   <!-- 消息区 -->

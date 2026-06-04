@@ -37,8 +37,8 @@ Page({
     // AI 流式回复缓冲区
     currentReply: '',
 
-    // 启动加载态
-    booting: false,
+    // 启动加载态：初始为 true，确认不需要跳转后才显示 UI
+    booting: true,
 
     // 文字输入
     inputText: '',

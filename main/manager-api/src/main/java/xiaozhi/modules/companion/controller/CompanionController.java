@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.companion.dto.CompanionCreateDTO;
+import xiaozhi.modules.companion.dto.CompanionSyncPromptDTO;
 import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.service.CompanionService;
 import xiaozhi.modules.companion.vo.CompanionVO;
@@ -35,5 +36,12 @@ public class CompanionController {
     @Operation(summary = "根据设备ID查询伴侣")
     public Result<CompanionVO> detail(@PathVariable String deviceId) {
         return new Result<CompanionVO>().ok(companionService.getByDeviceId(deviceId));
+    }
+
+    @PostMapping("/sync-prompt")
+    @Operation(summary = "同步伴侣信息到智能体系统提示词")
+    public Result<Void> syncPrompt(@RequestBody @Valid CompanionSyncPromptDTO dto) {
+        companionService.syncPromptToAgent(dto.getAgentId(), dto.getCompanionId());
+        return new Result<Void>();
     }
 }

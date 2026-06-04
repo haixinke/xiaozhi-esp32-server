@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.service.impl.BaseServiceImpl;
+import xiaozhi.modules.agent.entity.AgentEntity;
+import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.companion.dao.CompanionDao;
 import xiaozhi.modules.companion.dto.CompanionCreateDTO;
 import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
@@ -14,6 +16,7 @@ import xiaozhi.modules.companion.entity.CompanionEntity;
 import xiaozhi.modules.companion.service.CompanionService;
 import xiaozhi.modules.companion.util.CharacterAge;
 import xiaozhi.modules.companion.util.CompanionBirthCalculator;
+import xiaozhi.modules.companion.util.CompanionLabels;
 import xiaozhi.modules.companion.util.CompanionMood;
 import xiaozhi.modules.companion.vo.CompanionVO;
 import xiaozhi.modules.security.user.SecurityUser;
@@ -29,6 +32,7 @@ import java.util.Date;
 public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, CompanionEntity> implements CompanionService {
 
     private final CompanionDao companionDao;
+    private final AgentService agentService;
 
     @Override
     public CompanionVO create(CompanionCreateDTO dto) {
@@ -174,5 +178,54 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             case "bickering" -> 0.5f;
             default -> 0.5f;
         };
+    }
+
+    @Override
+    public void syncPromptToAgent(String agentId, Long companionId) {
+        Long userId = SecurityUser.getUserId();
+
+        // 查询伴侣
+        CompanionEntity companion = this.selectById(companionId);
+        if (companion == null) {
+            throw new RenException(ErrorCode.COMPANION_NOT_FOUND);
+        }
+        if (!companion.getUserId().equals(userId)) {
+            throw new RenException(ErrorCode.NO_PERMISSION);
+        }
+
+        // 查询智能体
+        AgentEntity agent = agentService.selectById(agentId);
+        if (agent == null) {
+            throw new RenException(ErrorCode.AGENT_NOT_FOUND);
+        }
+        if (!agent.getUserId().equals(userId)) {
+            throw new RenException(ErrorCode.NO_PERMISSION);
+        }
+
+        // 解析标签
+        String characterLabel = CompanionLabels.getLabel(CompanionLabels.CHARACTER, companion.getCharacter());
+        String occupationLabel = CompanionLabels.getLabel(CompanionLabels.OCCUPATION, companion.getOccupation());
+        String relationTypeLabel = CompanionLabels.getLabel(CompanionLabels.RELATION_TYPE, companion.getRelationType());
+        String petTypeLabel = CompanionLabels.getLabel(CompanionLabels.PET_TYPE, companion.getPetType());
+        String petNameLabel = companion.getPetName() != null ? companion.getPetName() : "";
+        String soulTraitsLabel = CompanionLabels.getSoulTraitsLabels(companion.getSoulTraits());
+        String soulQuirkLabel = CompanionLabels.getLabel(CompanionLabels.SOUL_QUIRK, companion.getSoulQuirk());
+
+        // 替换模板变量
+        String prompt = CompanionLabels.SYSTEM_PROMPT_TEMPLATE
+                .replace("{{character}}", characterLabel)
+                .replace("{{occupation}}", occupationLabel)
+                .replace("{{relationType}}", relationTypeLabel)
+                .replace("{{petType}}", petTypeLabel)
+                .replace("{{petName}}", petNameLabel)
+                .replace("{{soulTraits}}", soulTraitsLabel)
+                .replace("{{soulQuirk}}", soulQuirkLabel);
+
+        // 更新智能体系统提示词
+        agent.setSystemPrompt(prompt);
+        agentService.updateById(agent);
+
+        log.info("伴侣系统提示词已同步, companionId={}, agentId={}", companionId, agentId);
+        log.info("替换后的系统提示词:\n{}", prompt);
     }
 }

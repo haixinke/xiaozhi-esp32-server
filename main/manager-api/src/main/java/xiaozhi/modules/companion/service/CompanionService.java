@@ -13,4 +13,6 @@ public interface CompanionService extends BaseService<CompanionEntity> {
     CompanionVO update(CompanionUpdateDTO dto);
 
     CompanionVO getByDeviceId(String deviceId);
+
+    void syncPromptToAgent(String agentId, Long companionId);
 }

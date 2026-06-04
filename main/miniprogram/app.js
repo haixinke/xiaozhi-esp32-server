@@ -5,7 +5,7 @@
 
 const { post } = require('./utils/request');
 const { setToken } = require('./utils/auth');
-const { checkOrRegisterDevice, completeDeviceBinding, createPet } = require('./utils/device');
+const { checkOrRegisterDevice, completeDeviceBinding } = require('./utils/device');
 
 App({
   globalData: {
@@ -41,10 +41,8 @@ App({
         this.globalData.needsDestiny = true;
       }
 
-      // 已登录，先检查设备状态（注册设备），再创建宠物
-      this.checkDeviceStatus().then(() => {
-        return this.createPetIfNeeded();
-      }).catch(err => {
+      // 已登录，检查设备状态
+      this.checkDeviceStatus().catch(err => {
         console.warn('设备状态检查失败:', err);
       });
       return;
@@ -62,9 +60,7 @@ App({
       }
 
       // 有 agent → 继续正常流程
-      return this.checkDeviceStatus().then(() => {
-        return this.createPetIfNeeded();
-      });
+      return this.checkDeviceStatus();
     }).catch(err => {
       console.error('后台流程失败:', err);
     });
@@ -160,27 +156,6 @@ App({
         }
       });
       throw err;
-    }
-  },
-
-  /**
-   * 创建宠物（如果需要）
-   * 在调用 OTA 接口前先创建宠物
-   */
-  async createPetIfNeeded() {
-    const mac = this.globalData.virtualMAC;
-    if (!mac) {
-      console.warn('无设备标识，跳过创建宠物');
-      return;
-    }
-
-    try {
-      console.log('开始创建宠物, deviceId:', mac);
-      await createPet(mac);
-      console.log('宠物创建完成');
-    } catch (err) {
-      // 创建失败不阻断流程（可能宠物已存在）
-      console.warn('创建宠物失败（可能已存在）:', err);
     }
   },
 

@@ -36,6 +36,20 @@ var PET_TYPES = [
   { id: 'dog', label: '狗' },
 ];
 
+var CHARACTER_AVATARS = {
+  baiyueguang: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/head-img/baiyueguang.png',
+  erciyuan: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/head-img/erciyuan.png',
+  linjiamei: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/head-img/linjiamei.png',
+  zhixingyujie: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/head-img/zhichangjie.png',
+};
+
+var CHARACTER_IMAGES = {
+  baiyueguang: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/baiyueguang.png',
+  erciyuan: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/erciyuan.png',
+  linjiamei: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/linjiamei.png',
+  zhixingyujie: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/zhichangjie.png',
+};
+
 /**
  * 根据编码获取显示标签
  * @param {Array} list - 选项列表
@@ -56,5 +70,7 @@ module.exports = {
   QUIRKS: QUIRKS,
   RELATION_TYPES: RELATION_TYPES,
   PET_TYPES: PET_TYPES,
+  CHARACTER_AVATARS: CHARACTER_AVATARS,
+  CHARACTER_IMAGES: CHARACTER_IMAGES,
   getLabel: getLabel,
 };

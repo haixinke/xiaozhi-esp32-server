@@ -6,6 +6,7 @@
  */
 
 var codes = require('../../config/companion-codes');
+var request = require('../../utils/request');
 
 var VIDEO_URLS = [
   'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/video/baiyueguang_tianmei.mp4',
@@ -65,7 +66,7 @@ Page({
   },
 
   // 创造完成
-  onComplete: function () {
+  onComplete: async function () {
     if (this.data.selectedPet < 0) {
       wx.showToast({ title: '请选择宠物类型', icon: 'none' });
       return;
@@ -77,11 +78,45 @@ Page({
 
     var app = getApp();
     var flow = app.globalData.destinyFlow || {};
-    flow.relation = codes.RELATION_TYPES[this.data.selectedRelation].id;
-    flow.petType = codes.PET_TYPES[this.data.selectedPet].id;
-    flow.petName = this.data.petName.trim();
-    app.globalData.destinyFlow = flow;
+    var charId = flow.charId || '';
 
-    wx.reLaunch({ url: '/pages/index/index' });
+    var body = {
+      deviceId: app.globalData.virtualMAC,
+      type: 'gf',
+      avatar: codes.CHARACTER_AVATARS[charId] || '',
+      defaultImage: codes.CHARACTER_IMAGES[charId] || '',
+      character: charId,
+      occupation: flow.occId || '',
+      voice: flow.voiceId || '',
+      soulTraits: (flow.traits || []).join(','),
+      soulQuirk: flow.quirk || '',
+      relationType: codes.RELATION_TYPES[this.data.selectedRelation].id,
+      petType: codes.PET_TYPES[this.data.selectedPet].id,
+      petName: this.data.petName.trim(),
+    };
+    if (flow.quirksText) {
+      body.quirksText = flow.quirksText;
+    }
+
+    wx.showLoading({ title: '正在创造...', mask: true });
+
+    try {
+      var res = await request.post('/companion/create', body);
+      if (!res || res.code !== 0) {
+        wx.hideLoading();
+        console.error('[memory-anchor] 创建伴侣失败:', res);
+        wx.showToast({ title: '唤醒失败', icon: 'none', duration: 2000 });
+        return;
+      }
+      await app.ensureAgentExists();
+      await app.checkDeviceStatus();
+      app.globalData.needsDestiny = false;
+      wx.hideLoading();
+      wx.reLaunch({ url: '/pages/index/index' });
+    } catch (err) {
+      wx.hideLoading();
+      console.error('[memory-anchor] 创建伴侣异常:', err);
+      wx.showToast({ title: '唤醒失败', icon: 'none', duration: 2000 });
+    }
   },
 });

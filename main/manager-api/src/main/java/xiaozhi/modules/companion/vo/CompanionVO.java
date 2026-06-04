@@ -3,7 +3,7 @@ package xiaozhi.modules.companion.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @Schema(description = "AI伴侣视图对象")
@@ -28,7 +28,7 @@ public class CompanionVO {
     private String defaultImage;
 
     @Schema(description = "出生日期")
-    private LocalDateTime birthday;
+    private Date birthday;
 
     @Schema(description = "星座")
     private String zodiac;
@@ -79,10 +79,10 @@ public class CompanionVO {
     private String pastLifeSecret;
 
     @Schema(description = "创建时间")
-    private LocalDateTime createdAt;
+    private Date createdAt;
 
     @Schema(description = "修改时间")
-    private LocalDateTime updatedAt;
+    private Date updatedAt;
 
     public static CompanionVO toVO(xiaozhi.modules.companion.entity.CompanionEntity entity) {
         CompanionVO vo = new CompanionVO();

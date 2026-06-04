@@ -21,6 +21,7 @@ import xiaozhi.modules.security.user.SecurityUser;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Date;
 
 @Slf4j
 @Service
@@ -61,7 +62,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         entity.setType(dto.getType());
         entity.setAvatar(dto.getAvatar());
         entity.setDefaultImage(dto.getDefaultImage());
-        entity.setBirthday(birthday);
+        entity.setBirthday(Date.from(birthday.atZone(ZoneId.of("Asia/Shanghai")).toInstant()));
         entity.setZodiac(calcResult.zodiac());
         entity.setChineseZodiac(calcResult.chineseZodiac());
         entity.setBazi(calcResult.bazi());
@@ -134,7 +135,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             }
             LocalDateTime birthday = LocalDateTime.now(ZoneId.of("Asia/Shanghai")).minusYears(age);
             CompanionBirthCalculator.BirthResult calcResult = CompanionBirthCalculator.calculate(birthday);
-            entity.setBirthday(birthday);
+            entity.setBirthday(Date.from(birthday.atZone(ZoneId.of("Asia/Shanghai")).toInstant()));
             entity.setZodiac(calcResult.zodiac());
             entity.setChineseZodiac(calcResult.chineseZodiac());
             entity.setBazi(calcResult.bazi());

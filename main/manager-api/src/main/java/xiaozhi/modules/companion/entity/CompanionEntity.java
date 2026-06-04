@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @TableName("ai_companion")
@@ -35,7 +35,7 @@ public class CompanionEntity {
     private String defaultImage;
 
     @Schema(description = "出生日期")
-    private LocalDateTime birthday;
+    private Date birthday;
 
     @Schema(description = "星座英文编码")
     private String zodiac;
@@ -49,6 +49,7 @@ public class CompanionEntity {
     @Schema(description = "五行JSON")
     private String wuxing;
 
+    @TableField(value = "`character`")
     @Schema(description = "角色编码")
     private String character;
 
@@ -95,9 +96,9 @@ public class CompanionEntity {
 
     @Schema(description = "创建时间")
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
+    private Date createdAt;
 
     @Schema(description = "修改时间")
     @TableField(fill = FieldFill.UPDATE)
-    private LocalDateTime updatedAt;
+    private Date updatedAt;
 }

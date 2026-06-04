@@ -74,29 +74,8 @@ async function completeDeviceBinding(deviceId, agentId, deviceCode) {
   };
 }
 
-/**
- * 创建宠物（Pet Birth）
- * 在设备绑定前调用，为用户创建 AI 宠物
- * @param {string} deviceId - openid 作为设备标识
- * @returns {Promise<Object>} 宠物信息
- */
-async function createPet(deviceId) {
-  try {
-    const res = await post('/pet/birth', {
-      deviceId: deviceId
-    });
-    console.log('宠物创建成功:', res);
-    return res;
-  } catch (err) {
-    console.warn('宠物创建失败（可能已存在）:', err);
-    // 不抛出错误，允许流程继续
-    return null;
-  }
-}
-
 module.exports = {
   checkOrRegisterDevice,
   bindDeviceWithCode,
   completeDeviceBinding,
-  createPet
 };

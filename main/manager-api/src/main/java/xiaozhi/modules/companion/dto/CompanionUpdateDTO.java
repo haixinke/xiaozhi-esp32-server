@@ -53,4 +53,7 @@ public class CompanionUpdateDTO {
 
     @Schema(description = "今日心情")
     private String mood;
+
+    @Schema(description = "前世秘密")
+    private String pastLifeSecret;
 }

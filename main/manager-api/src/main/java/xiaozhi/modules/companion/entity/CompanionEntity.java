@@ -85,6 +85,9 @@ public class CompanionEntity {
     @Schema(description = "今日心情")
     private String mood;
 
+    @Schema(description = "前世秘密")
+    private String pastLifeSecret;
+
     @Schema(description = "创建人ID")
     @TableField(fill = FieldFill.INSERT)
     private Long createdBy;

@@ -78,6 +78,9 @@ public class CompanionVO {
     @Schema(description = "今日心情")
     private String mood;
 
+    @Schema(description = "前世秘密")
+    private String pastLifeSecret;
+
     @Schema(description = "创建时间")
     private LocalDateTime createdAt;
 
@@ -109,6 +112,7 @@ public class CompanionVO {
         vo.setPetType(entity.getPetType());
         vo.setPetName(entity.getPetName());
         vo.setMood(entity.getMood());
+        vo.setPastLifeSecret(entity.getPastLifeSecret());
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         return vo;

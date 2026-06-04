@@ -100,6 +100,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         entity.setPetType(dto.getPetType());
         entity.setPetName(dto.getPetName());
         entity.setMood(CompanionMood.CALM.name());
+        entity.setPastLifeSecret(dto.getPastLifeSecret());
         entity.setIntimacy(deriveIntimacy(dto.getRelationType()));
         entity.setCreatedBy(userId);
 
@@ -136,6 +137,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             validateMood(dto.getMood());
             entity.setMood(dto.getMood());
         }
+        if (dto.getPastLifeSecret() != null) entity.setPastLifeSecret(dto.getPastLifeSecret());
         if (dto.getPersonality() != null) entity.setPersonality(dto.getPersonality());
 
         if (dto.getCharacter() != null && !dto.getCharacter().equals(entity.getCharacter())) {

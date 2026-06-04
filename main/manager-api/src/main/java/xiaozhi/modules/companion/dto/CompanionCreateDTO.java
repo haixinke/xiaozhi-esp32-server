@@ -58,4 +58,7 @@ public class CompanionCreateDTO {
     @NotBlank(message = "宠物名不能为空")
     @Schema(description = "宠物名", requiredMode = Schema.RequiredMode.REQUIRED)
     private String petName;
+
+    @Schema(description = "前世秘密")
+    private String pastLifeSecret;
 }

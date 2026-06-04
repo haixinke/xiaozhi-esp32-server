@@ -23,9 +23,9 @@
     <view class="section">
       <view class="section-header">
         <view class="section-bar" />
-        <text class="section-title">挑选最吸引您的灵魂特质</text>
+        <text class="section-title">挑选两个最吸引您的灵魂特质</text>
       </view>
-      <text class="section-subtitle">人类的灵魂从来都不一样</text>
+      <text class="section-subtitle">人类的灵魂从来都不单一</text>
       <view class="trait-grid">
         <view
           wx:for="{{soulTraits}}"

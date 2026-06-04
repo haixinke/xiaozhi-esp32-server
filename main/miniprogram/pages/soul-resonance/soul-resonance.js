@@ -100,7 +100,7 @@ Page({
 
   _checkCanProceed(traits, quirkIdx) {
     var selectedCount = traits.filter(function (t) { return t.selected; }).length;
-    return selectedCount >= 1 && quirkIdx >= 0;
+    return selectedCount >= 2 && quirkIdx >= 0;
   },
 
   // 下一步 - 携带参数跳转

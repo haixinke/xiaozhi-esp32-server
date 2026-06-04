@@ -78,7 +78,11 @@ Page({
         wx.redirectTo({ url: '/pages/destiny/destiny' });
         return;
       }
-      this.setData({ agentName: g.agentName || '' });
+      this.setData({
+        agentName: g.agentName || '',
+        companionAvatar: g.companionAvatar || '',
+        companionBgImage: g.companionBgImage || '',
+      });
     }
   },
 
@@ -138,6 +142,8 @@ Page({
     const g = app.globalData;
     this.setData({
       agentName: g.agentName || '',
+      companionAvatar: g.companionAvatar || '',
+      companionBgImage: g.companionBgImage || '',
       booting: false,
     });
 

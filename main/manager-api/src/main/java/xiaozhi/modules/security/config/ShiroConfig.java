@@ -99,7 +99,7 @@ public class ShiroConfig {
         filterMap.put("/pet/profile", "server");
         filterMap.put("/companion/create", "oauth2");
         filterMap.put("/companion/update", "oauth2");
-        filterMap.put("/companion/detail/**", "server");
+        filterMap.put("/companion/detail/**", "oauth2");
         filterMap.put("/voiceClone/play/**", "anon");
         filterMap.put("/wechat/login", "anon");
         filterMap.put("/**", "oauth2");

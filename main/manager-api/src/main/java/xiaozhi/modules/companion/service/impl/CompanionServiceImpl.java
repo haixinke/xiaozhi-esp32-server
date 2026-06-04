@@ -210,6 +210,8 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         String petNameLabel = companion.getPetName() != null ? companion.getPetName() : "";
         String soulTraitsLabel = CompanionLabels.getSoulTraitsLabels(companion.getSoulTraits());
         String soulQuirkLabel = CompanionLabels.getLabel(CompanionLabels.SOUL_QUIRK, companion.getSoulQuirk());
+        String birthdayLabel = companion.getBirthday() != null
+                ? new java.text.SimpleDateFormat("yyyy年MM月dd日").format(companion.getBirthday()) : "未知";
 
         // 替换模板变量
         String prompt = CompanionLabels.SYSTEM_PROMPT_TEMPLATE
@@ -219,7 +221,8 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
                 .replace("{{petType}}", petTypeLabel)
                 .replace("{{petName}}", petNameLabel)
                 .replace("{{soulTraits}}", soulTraitsLabel)
-                .replace("{{soulQuirk}}", soulQuirkLabel);
+                .replace("{{soulQuirk}}", soulQuirkLabel)
+                .replace("{{birthday}}", birthdayLabel);
 
         // 更新智能体系统提示词和音色
         agent.setSystemPrompt(prompt);

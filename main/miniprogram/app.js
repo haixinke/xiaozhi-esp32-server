@@ -3,7 +3,7 @@
  * 启动流程：静默登录 → 检查设备绑定 → 进入主页或选择Agent
  */
 
-const { post } = require('./utils/request');
+const { post, get } = require('./utils/request');
 const { setToken } = require('./utils/auth');
 const { checkOrRegisterDevice, completeDeviceBinding } = require('./utils/device');
 
@@ -18,7 +18,9 @@ App({
     agentName: null,
     isDeviceBound: undefined,  // 设备绑定状态，undefined=检查中, true=已绑定, false=未绑定
     needsDestiny: false,       // 新用户无 agent，需要进入命运初见页面
-    destinyFlow: null          // 命运初见向导流程的中间数据
+    destinyFlow: null,         // 命运初见向导流程的中间数据
+    companionAvatar: null,     // 伴侣头像 URL
+    companionBgImage: null     // 伴侣默认背景图 URL
   },
 
   onLaunch() {
@@ -45,6 +47,7 @@ App({
       this.checkDeviceStatus().catch(err => {
         console.warn('设备状态检查失败:', err);
       });
+      this.fetchCompanionData();
       return;
     }
 
@@ -60,6 +63,7 @@ App({
       }
 
       // 有 agent → 继续正常流程
+      this.fetchCompanionData();
       return this.checkDeviceStatus();
     }).catch(err => {
       console.error('后台流程失败:', err);
@@ -156,6 +160,23 @@ App({
         }
       });
       throw err;
+    }
+  },
+
+  /**
+   * 获取伴侣数据（头像、背景图）
+   */
+  async fetchCompanionData() {
+    const mac = this.globalData.virtualMAC;
+    if (!mac) return;
+    try {
+      const res = await get('/companion/detail/' + mac);
+      if (res && res.code === 0 && res.data) {
+        this.globalData.companionAvatar = res.data.avatar || null;
+        this.globalData.companionBgImage = res.data.defaultImage || null;
+      }
+    } catch (err) {
+      console.warn('获取伴侣数据失败:', err);
     }
   },
 

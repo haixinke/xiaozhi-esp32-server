@@ -120,7 +120,10 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         }
         if (dto.getSoulTraits() != null) entity.setSoulTraits(dto.getSoulTraits());
         if (dto.getSoulQuirk() != null) entity.setSoulQuirk(dto.getSoulQuirk());
-        if (dto.getRelationType() != null) entity.setRelationType(dto.getRelationType());
+        if (dto.getRelationType() != null) {
+            entity.setRelationType(dto.getRelationType());
+            entity.setIntimacy(deriveIntimacy(dto.getRelationType()));
+        }
 
         if (needRecalcBirth) {
             int age;
@@ -165,9 +168,9 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
 
     private static float deriveIntimacy(String relationType) {
         return switch (relationType) {
-            case "青梅竹马" -> 0.7f;
-            case "一见钟情" -> 0.6f;
-            case "欢喜冤家" -> 0.5f;
+            case "childhood" -> 0.7f;
+            case "loveAtFirst" -> 0.6f;
+            case "bickering" -> 0.5f;
             default -> 0.5f;
         };
     }

@@ -40,19 +40,19 @@ public class CompanionCreateDTO {
     private String quirksText;
 
     @NotBlank(message = "灵魂特质不能为空")
-    @Schema(description = "灵魂特质,逗号分隔", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "灵魂特质编码,逗号分隔", requiredMode = Schema.RequiredMode.REQUIRED)
     private String soulTraits;
 
     @NotBlank(message = "小任性不能为空")
-    @Schema(description = "小任性", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "小任性编码", requiredMode = Schema.RequiredMode.REQUIRED)
     private String soulQuirk;
 
     @NotBlank(message = "关系类型不能为空")
-    @Schema(description = "关系类型编码", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "关系类型编码: childhood/bickering/loveAtFirst", requiredMode = Schema.RequiredMode.REQUIRED)
     private String relationType;
 
     @NotBlank(message = "宠物类型不能为空")
-    @Schema(description = "宠物类型: cat/dog", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "宠物类型编码: cat/dog", requiredMode = Schema.RequiredMode.REQUIRED)
     private String petType;
 
     @NotBlank(message = "宠物名不能为空")

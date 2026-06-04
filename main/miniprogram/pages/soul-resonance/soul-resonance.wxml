@@ -29,7 +29,7 @@
       <view class="trait-grid">
         <view
           wx:for="{{soulTraits}}"
-          wx:key="*this"
+          wx:key="id"
           class="trait-item {{item.selected ? 'trait-item-active' : ''}}"
           data-index="{{index}}"
           bindtap="onTraitTap"
@@ -51,14 +51,14 @@
       <view class="quirk-grid">
         <view
           wx:for="{{quirks}}"
-          wx:key="*this"
+          wx:key="id"
           class="quirk-item {{index === selectedQuirk ? 'quirk-item-active' : ''}}"
           data-index="{{index}}"
           bindtap="onQuirkTap"
           hover-class="quirk-item-hover"
           hover-stay-time="80"
         >
-          <text class="quirk-label">{{item}}</text>
+          <text class="quirk-label">{{item.label}}</text>
         </view>
       </view>
     </view>

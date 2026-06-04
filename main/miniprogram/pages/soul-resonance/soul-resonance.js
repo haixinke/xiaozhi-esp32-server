@@ -5,6 +5,8 @@
  * 从命运初见页面跳入，选择后跳转到下一步。
  */
 
+var codes = require('../../config/companion-codes');
+
 // 角色数据（与 destiny 页面保持一致）
 const CHARACTERS = [
   {
@@ -40,16 +42,9 @@ Page({
     voiceId: '',
     quirksText: '',
     // 灵魂特质
-    soulTraits: [
-      { label: '粘人精', selected: false },
-      { label: '撒娇狂魔', selected: false },
-      { label: '嘴硬心软', selected: false },
-      { label: '护短狂魔', selected: false },
-      { label: '直球选手', selected: false },
-      { label: '人间清醒', selected: false },
-    ],
+    soulTraits: codes.SOUL_TRAITS.map(function (t) { return { id: t.id, label: t.label, selected: false }; }),
     // 小任性
-    quirks: ['重度起床气', '小醋坛子', '路痴晚期', '游戏黑洞', '熬夜修仙党', '选择困难症', '逻辑泥石流', '炸厨房选手'],
+    quirks: codes.QUIRKS.map(function (q) { return { id: q.id, label: q.label }; }),
     selectedQuirk: -1,
     canProceed: false,
   },
@@ -110,8 +105,8 @@ Page({
     }
     var selectedTraits = this.data.soulTraits
       .filter(function (t) { return t.selected; })
-      .map(function (t) { return t.label; });
-    var selectedQuirk = this.data.selectedQuirk >= 0 ? this.data.quirks[this.data.selectedQuirk] : '';
+      .map(function (t) { return t.id; });
+    var selectedQuirk = this.data.selectedQuirk >= 0 ? this.data.quirks[this.data.selectedQuirk].id : '';
 
     var app = getApp();
     var flow = app.globalData.destinyFlow || {};

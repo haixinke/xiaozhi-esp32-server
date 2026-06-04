@@ -1,0 +1,60 @@
+/**
+ * companion-codes.js
+ *
+ * AI 伴侣选项的编码配置。
+ * 前后端统一使用 id 编码，前端根据 id 动态显示中文 label。
+ */
+
+var SOUL_TRAITS = [
+  { id: 'clingy', label: '粘人精' },
+  { id: 'flirty', label: '撒娇狂魔' },
+  { id: 'toughSoft', label: '嘴硬心软' },
+  { id: 'protective', label: '护短狂魔' },
+  { id: 'straightShooter', label: '直球选手' },
+  { id: 'rational', label: '人间清醒' },
+];
+
+var QUIRKS = [
+  { id: 'grumpyMorning', label: '重度起床气' },
+  { id: 'jealous', label: '小醋坛子' },
+  { id: 'noDirection', label: '路痴晚期' },
+  { id: 'gamerNoob', label: '游戏黑洞' },
+  { id: 'nightOwl', label: '熬夜修仙党' },
+  { id: 'indecisive', label: '选择困难症' },
+  { id: 'chaoticLogic', label: '逻辑泥石流' },
+  { id: 'kitchenDisaster', label: '炸厨房选手' },
+];
+
+var RELATION_TYPES = [
+  { id: 'childhood', label: '青梅竹马' },
+  { id: 'bickering', label: '欢喜冤家' },
+  { id: 'loveAtFirst', label: '一见钟情' },
+];
+
+var PET_TYPES = [
+  { id: 'cat', label: '猫' },
+  { id: 'dog', label: '狗' },
+];
+
+/**
+ * 根据编码获取显示标签
+ * @param {Array} list - 选项列表
+ * @param {string} id - 编码
+ * @returns {string} 显示标签，找不到则返回编码本身
+ */
+function getLabel(list, id) {
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].id === id) {
+      return list[i].label;
+    }
+  }
+  return id || '';
+}
+
+module.exports = {
+  SOUL_TRAITS: SOUL_TRAITS,
+  QUIRKS: QUIRKS,
+  RELATION_TYPES: RELATION_TYPES,
+  PET_TYPES: PET_TYPES,
+  getLabel: getLabel,
+};

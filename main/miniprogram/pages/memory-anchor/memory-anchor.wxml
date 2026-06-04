@@ -34,14 +34,14 @@
       <view class="option-grid">
         <view
           wx:for="{{relationOptions}}"
-          wx:key="*this"
+          wx:key="id"
           class="option-item {{index === selectedRelation ? 'option-item-active' : ''}}"
           data-index="{{index}}"
           bindtap="onRelationSelect"
           hover-class="option-item-hover"
           hover-stay-time="80"
         >
-          <text class="option-label">{{item}}</text>
+          <text class="option-label">{{item.label}}</text>
         </view>
       </view>
     </view>
@@ -57,14 +57,14 @@
         <view class="pet-grid">
           <view
             wx:for="{{petOptions}}"
-            wx:key="*this"
+            wx:key="id"
             class="option-item {{index === selectedPet ? 'option-item-active' : ''}}"
             data-index="{{index}}"
             bindtap="onPetSelect"
             hover-class="option-item-hover"
             hover-stay-time="80"
           >
-            <text class="option-label">{{item}}</text>
+            <text class="option-label">{{item.label}}</text>
           </view>
         </view>
       </view>

@@ -61,19 +61,19 @@ public class CompanionEntity {
     @Schema(description = "职业病描述")
     private String quirksText;
 
-    @Schema(description = "灵魂特质,逗号分隔")
+    @Schema(description = "灵魂特质编码,逗号分隔")
     private String soulTraits;
 
-    @Schema(description = "小任性")
+    @Schema(description = "小任性编码")
     private String soulQuirk;
 
-    @Schema(description = "关系类型编码")
+    @Schema(description = "关系类型编码: childhood/bickering/loveAtFirst")
     private String relationType;
 
     @Schema(description = "亲密程度: 0.0~1.0")
     private Float intimacy;
 
-    @Schema(description = "宠物类型: cat/dog")
+    @Schema(description = "宠物类型编码: cat/dog")
     private String petType;
 
     @Schema(description = "宠物名")

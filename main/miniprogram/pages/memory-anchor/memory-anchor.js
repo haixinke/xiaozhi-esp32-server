@@ -5,22 +5,21 @@
  * 两个情景：关系确认 + 宠物领养。
  */
 
+var codes = require('../../config/companion-codes');
+
 var VIDEO_URLS = [
   'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/video/baiyueguang_tianmei.mp4',
   'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/video/baiyueguang_tianmei2.mp4',
 ];
-
-var RELATION_OPTIONS = ['青梅竹马', '欢喜冤家', '一见钟情'];
-var PET_OPTIONS = ['猫', '狗'];
 
 Page({
   data: {
     statusBarHeight: 44,
     scenario: 1,
     videoUrl: VIDEO_URLS[0],
-    relationOptions: RELATION_OPTIONS,
+    relationOptions: codes.RELATION_TYPES,
     selectedRelation: -1,
-    petOptions: PET_OPTIONS,
+    petOptions: codes.PET_TYPES,
     selectedPet: -1,
     petName: '',
     canComplete: false,
@@ -78,8 +77,8 @@ Page({
 
     var app = getApp();
     var flow = app.globalData.destinyFlow || {};
-    flow.relation = RELATION_OPTIONS[this.data.selectedRelation];
-    flow.petType = PET_OPTIONS[this.data.selectedPet];
+    flow.relation = codes.RELATION_TYPES[this.data.selectedRelation].id;
+    flow.petType = codes.PET_TYPES[this.data.selectedPet].id;
     flow.petName = this.data.petName.trim();
     app.globalData.destinyFlow = flow;
 

@@ -73,6 +73,9 @@ public class CompanionEntity {
     @Schema(description = "关系类型编码")
     private String relationType;
 
+    @Schema(description = "亲密程度: 0.0~1.0")
+    private Float intimacy;
+
     @Schema(description = "宠物类型: cat/dog")
     private String petType;
 

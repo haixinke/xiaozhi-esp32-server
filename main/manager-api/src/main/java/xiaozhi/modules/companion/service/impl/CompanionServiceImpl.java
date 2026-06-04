@@ -100,6 +100,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         entity.setPetType(dto.getPetType());
         entity.setPetName(dto.getPetName());
         entity.setMood(CompanionMood.CALM.name());
+        entity.setIntimacy(deriveIntimacy(dto.getRelationType()));
         entity.setCreatedBy(userId);
 
         companionDao.insert(entity);
@@ -223,5 +224,14 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         if (!valid) {
             throw new RenException(ErrorCode.PARAM_TYPE_INVALID);
         }
+    }
+
+    private static float deriveIntimacy(String relationType) {
+        return switch (relationType) {
+            case "青梅竹马" -> 0.7f;
+            case "一见钟情" -> 0.6f;
+            case "欢喜冤家" -> 0.5f;
+            default -> 0.5f;
+        };
     }
 }

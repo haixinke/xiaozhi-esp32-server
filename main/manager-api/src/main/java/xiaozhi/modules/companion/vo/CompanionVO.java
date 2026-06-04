@@ -66,6 +66,9 @@ public class CompanionVO {
     @Schema(description = "关系类型")
     private String relationType;
 
+    @Schema(description = "亲密程度: 0.0~1.0")
+    private Float intimacy;
+
     @Schema(description = "宠物类型")
     private String petType;
 
@@ -102,6 +105,7 @@ public class CompanionVO {
         vo.setSoulTraits(entity.getSoulTraits());
         vo.setSoulQuirk(entity.getSoulQuirk());
         vo.setRelationType(entity.getRelationType());
+        vo.setIntimacy(entity.getIntimacy());
         vo.setPetType(entity.getPetType());
         vo.setPetName(entity.getPetName());
         vo.setMood(entity.getMood());

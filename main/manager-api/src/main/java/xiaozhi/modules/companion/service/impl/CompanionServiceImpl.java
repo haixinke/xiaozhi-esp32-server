@@ -221,8 +221,9 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
                 .replace("{{soulTraits}}", soulTraitsLabel)
                 .replace("{{soulQuirk}}", soulQuirkLabel);
 
-        // 更新智能体系统提示词
+        // 更新智能体系统提示词和音色
         agent.setSystemPrompt(prompt);
+        agent.setTtsVoiceId(companion.getVoice());
         agentService.updateById(agent);
 
         log.info("伴侣系统提示词已同步, companionId={}, agentId={}", companionId, agentId);

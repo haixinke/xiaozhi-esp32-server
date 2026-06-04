@@ -109,6 +109,20 @@ Page({
         return;
       }
       await app.ensureAgentExists();
+
+      // 同步伴侣提示词到智能体
+      var companionId = res.data.id;
+      var syncRes = await request.post('/companion/sync-prompt', {
+        agentId: app.globalData.agentId,
+        companionId: companionId,
+      });
+      if (!syncRes || syncRes.code !== 0) {
+        wx.hideLoading();
+        console.error('[memory-anchor] 同步提示词失败:', syncRes);
+        wx.showToast({ title: '唤醒失败', icon: 'none', duration: 2000 });
+        return;
+      }
+
       await app.checkDeviceStatus();
       app.globalData.needsDestiny = false;
       wx.hideLoading();

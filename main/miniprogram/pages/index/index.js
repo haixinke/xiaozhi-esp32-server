@@ -251,7 +251,16 @@ Page({
         break;
 
       case 'goodbye':
-        this.setData({ chatState: STATE_IDLE, currentReply: '' });
+        // 同理：一次性完成 messages 追加 + currentReply 清空
+        if ((this.data.currentReply || '').trim()) {
+          const id = 'msg-' + (this._msgIdSeed++);
+          const now = new Date();
+          const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const messages = this.data.messages.concat([{ id, role: 'assistant', content: this.data.currentReply.trim(), time }]);
+          this.setData({ messages, scrollToView: id, chatState: STATE_IDLE, currentReply: '' });
+        } else {
+          this.setData({ chatState: STATE_IDLE });
+        }
         break;
 
       default:
@@ -275,9 +284,16 @@ Page({
     } else if (msg.state === 'stop') {
       const reply = (this.data.currentReply || '').trim();
       if (reply) {
-        this._addMessage('assistant', reply);
+        // 在同一次 setData 中完成：追加到 messages + 清空 currentReply + 更新 scrollToView
+        // 避免分两次渲染导致内容从流式区域"跳动"到消息列表
+        const id = 'msg-' + (this._msgIdSeed++);
+        const now = new Date();
+        const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const messages = this.data.messages.concat([{ id, role: 'assistant', content: reply, time }]);
+        this.setData({ messages, scrollToView: id, chatState: STATE_IDLE, currentReply: '' });
+      } else {
+        this.setData({ chatState: STATE_IDLE, currentReply: '' });
       }
-      this.setData({ chatState: STATE_IDLE, currentReply: '' });
     }
   },
 

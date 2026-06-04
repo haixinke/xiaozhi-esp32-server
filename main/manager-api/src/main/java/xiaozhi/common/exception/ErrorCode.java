@@ -266,4 +266,9 @@ public interface ErrorCode {
     int PET_ALREADY_EXISTS = 10206; // 该设备已创建过宠物
     int PET_NOT_FOUND = 10207; // 宠物不存在
     int PET_NO_PERMISSION = 10208; // 没有权限操作该宠物
+
+    // AI伴侣相关错误码
+    int COMPANION_NOT_FOUND = 10210; // 伴侣不存在
+    int COMPANION_ALREADY_EXISTS = 10211; // 该设备已创建过伴侣
+    int COMPANION_INVALID_CHARACTER = 10212; // 无效的角色编码
 }

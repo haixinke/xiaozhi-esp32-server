@@ -234,7 +234,7 @@ UserMemory Mode: {self.enable_user_profile}
                     native_language="zh",  # Force profile extraction in Chinese
                     # profile_type="topics",  # Extract structured topics (JSON) instead of plain text content
                     profile_type="content",
-                    include_roles=["user"],  # Only extract profile from user messages, not AI assistant responses
+                    # include_roles=["user"],  # Only extract profile from user messages, not AI assistant responses
                     infer=True
                 )
                 # Handle both sync and async returns

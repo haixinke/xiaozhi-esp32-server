@@ -12,7 +12,6 @@
         <view class="status-dot state-{{connectionState}}"></view>
       </view>
       <view class="ai-meta">
-        <text class="ai-name">{{agentName || '翠花'}}</text>
         <text class="ai-status">
           <block wx:if="{{connectionState === 'connected'}}">在线</block>
           <block wx:elif="{{connectionState === 'connecting'}}">连接中...</block>

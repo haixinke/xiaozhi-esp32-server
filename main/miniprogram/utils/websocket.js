@@ -7,7 +7,7 @@
  *   - 使用 wx.connectSocket 返回的 SocketTask（避免全局回调串扰）。
  *   - 鉴权信息经由 URL query（小程序无法自定义 WebSocket Header）。
  *   - 状态机：disconnected → connecting → connected → disconnected。
- *   - 30s 心跳；连接被动断开后自动指数退避重连（最多 5 次）。
+ *   - 30s 心跳 + 60s pong 超时检测；连接被动断开后自动指数退避重连（最多 5 次）。
  *   - 文本消息按 type 分发，二进制消息直通 onMessage 回调。
  *
  * options:
@@ -20,6 +20,7 @@
  */
 
 const PING_INTERVAL_MS = 30 * 1000;
+const PONG_TIMEOUT_MS = 60 * 1000;
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 15000];
 const HANDSHAKE_TIMEOUT_MS = 10 * 1000;
 
@@ -36,6 +37,7 @@ class WebSocketManager {
     this._token = null;
 
     this._pingTimer = null;
+    this._pongTimeoutTimer = null;
     this._reconnectTimer = null;
     this._reconnectAttempts = 0;
     this._handshakeTimer = null;
@@ -292,7 +294,7 @@ class WebSocketManager {
         break;
 
       case 'pong':
-        // 心跳响应，无需上报。
+        this._clearPongTimeout();
         break;
 
       case 'stt':
@@ -346,6 +348,7 @@ class WebSocketManager {
     this._pingTimer = setInterval(() => {
       if (this.state === 'connected') {
         this.sendPing();
+        this._startPongTimeout();
       }
     }, PING_INTERVAL_MS);
   }
@@ -354,6 +357,23 @@ class WebSocketManager {
     if (this._pingTimer) {
       clearInterval(this._pingTimer);
       this._pingTimer = null;
+    }
+    this._clearPongTimeout();
+  }
+
+  _startPongTimeout() {
+    this._clearPongTimeout();
+    this._pongTimeoutTimer = setTimeout(() => {
+      this._pongTimeoutTimer = null;
+      this._emitError(new Error('pong timeout: server not responding'), 'connect');
+      this.disconnect();
+    }, PONG_TIMEOUT_MS);
+  }
+
+  _clearPongTimeout() {
+    if (this._pongTimeoutTimer) {
+      clearTimeout(this._pongTimeoutTimer);
+      this._pongTimeoutTimer = null;
     }
   }
 

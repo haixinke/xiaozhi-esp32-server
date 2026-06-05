@@ -50,17 +50,12 @@
     scroll-into-view="{{scrollToView}}"
   >
     <view class="conversation-inner">
-      <!-- 历史消息 -->
+      <!-- 消息列表（含流式回复） -->
       <block wx:for="{{messages}}" wx:key="id">
         <view id="{{item.id}}">
-          <chat-bubble role="{{item.role}}" content="{{item.content}}" time="{{item.time}}" />
+          <chat-bubble role="{{item.role}}" content="{{item.content}}" typing="{{item.typing}}" />
         </view>
       </block>
-
-      <!-- 流式回复 -->
-      <view wx:if="{{currentReply}}" id="streaming">
-        <chat-bubble role="assistant" content="{{currentReply}}" typing="{{true}}" />
-      </view>
 
       <!-- 正在输入指示器 -->
       <view wx:if="{{chatState === 'thinking'}}" class="typing-indicator">

@@ -34,9 +34,6 @@ Page({
     messages: [],
     scrollToView: '',
 
-    // AI 流式回复缓冲区
-    currentReply: '',
-
     // 启动加载态：初始为 true，确认不需要跳转后才显示 UI
     booting: true,
 
@@ -50,6 +47,9 @@ Page({
   _bootTimer: null,
   _appShowHandler: null,
   _msgIdSeed: 1,
+  _streamingIdx: -1,
+  _streamingBuffer: '',
+  _flushTimer: null,
 
   // -------------------------------------------------------------------------
   // 生命周期
@@ -190,7 +190,10 @@ Page({
         }
         if (state === 'disconnected' && this.data.chatState !== STATE_IDLE) {
           // 连接断开时把会话状态拉回 idle
-          this.setData({ chatState: STATE_IDLE, currentReply: '' });
+          this.setData({ chatState: STATE_IDLE });
+          this._streamingIdx = -1;
+          this._streamingBuffer = '';
+          if (this._flushTimer) { clearTimeout(this._flushTimer); this._flushTimer = null; }
           if (this.audioManager) {
             try { this.audioManager.stopPlayback(); } catch (_) {}
           }
@@ -236,13 +239,9 @@ Page({
         break;
 
       case 'llm':
-        // 流式文本：累加到 currentReply
+        // 流式文本：就地更新 messages 中的流式消息
         if (msg.text) {
-          this.setData({
-            currentReply: (this.data.currentReply || '') + msg.text,
-            chatState: STATE_THINKING,
-          });
-          this._scrollToBottom();
+          this._appendStreamingText(msg.text, STATE_THINKING);
         }
         break;
 
@@ -251,16 +250,7 @@ Page({
         break;
 
       case 'goodbye':
-        // 同理：一次性完成 messages 追加 + currentReply 清空
-        if ((this.data.currentReply || '').trim()) {
-          const id = 'msg-' + (this._msgIdSeed++);
-          const now = new Date();
-          const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-          const messages = this.data.messages.concat([{ id, role: 'assistant', content: this.data.currentReply.trim(), time }]);
-          this.setData({ messages, scrollToView: id, chatState: STATE_IDLE, currentReply: '' });
-        } else {
-          this.setData({ chatState: STATE_IDLE });
-        }
+        this._finalizeStreaming(STATE_IDLE);
         break;
 
       default:
@@ -273,36 +263,75 @@ Page({
     if (msg.state === 'start') {
       this.setData({ chatState: STATE_SPEAKING });
     } else if (msg.state === 'sentence_start' || msg.state === 'sentence_end') {
-      // 服务端通过 tts 消息发送文本内容，累加到 currentReply
       if (msg.text) {
-        this.setData({
-          currentReply: (this.data.currentReply || '') + msg.text,
-          chatState: STATE_SPEAKING,
-        });
-        this._scrollToBottom();
+        this._appendStreamingText(msg.text, STATE_SPEAKING);
       }
     } else if (msg.state === 'stop') {
-      const reply = (this.data.currentReply || '').trim();
-      if (reply) {
-        // 在同一次 setData 中完成：追加到 messages + 清空 currentReply + 更新 scrollToView
-        // 避免分两次渲染导致内容从流式区域"跳动"到消息列表
-        const id = 'msg-' + (this._msgIdSeed++);
-        const now = new Date();
-        const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-        const messages = this.data.messages.concat([{ id, role: 'assistant', content: reply, time }]);
-        this.setData({ messages, scrollToView: id, chatState: STATE_IDLE, currentReply: '' });
-      } else {
-        this.setData({ chatState: STATE_IDLE, currentReply: '' });
-      }
+      this._finalizeStreaming(STATE_IDLE);
     }
   },
 
   _addMessage(role, content) {
     const id = 'msg-' + (this._msgIdSeed++);
-    const now = new Date();
-    const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-    const messages = this.data.messages.concat([{ id, role, content, time }]);
+    const messages = this.data.messages.concat([{ id, role, content }]);
     this.setData({ messages, scrollToView: id });
+  },
+
+  // 就地追加流式文本到 messages 中的流式消息，不销毁重建组件
+  _appendStreamingText(text, chatState) {
+    if (!text) return;
+    if (this._streamingIdx !== -1) {
+      // 后续 chunk：累积到本地 buffer，80ms 后批量刷到视图
+      this._streamingBuffer += text;
+      if (!this._flushTimer) {
+        this._flushTimer = setTimeout(() => this._flushStreaming(), 80);
+      }
+    } else {
+      // 第一个 chunk：立即创建气泡
+      const id = 'msg-' + (this._msgIdSeed++);
+      const messages = this.data.messages.concat([{ id, role: 'assistant', content: text, typing: true }]);
+      this._streamingIdx = messages.length - 1;
+      this._streamingBuffer = text;
+      this.setData({ messages, scrollToView: id, chatState });
+    }
+  },
+
+  // 将缓冲区的文本批量刷到 messages
+  _flushStreaming() {
+    this._flushTimer = null;
+    if (this._streamingIdx === -1) return;
+    const idx = this._streamingIdx;
+    const messages = this.data.messages.slice();
+    messages[idx] = Object.assign({}, messages[idx], { content: this._streamingBuffer });
+    this.setData({ messages });
+    this._scrollToBottom();
+  },
+
+  // 流式完成：先刷完残余 buffer，再关闭 typing
+  _finalizeStreaming(chatState) {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer);
+      this._flushTimer = null;
+    }
+    if (this._streamingIdx === -1) {
+      this.setData({ chatState });
+      return;
+    }
+    const idx = this._streamingIdx;
+    const msg = this.data.messages[idx];
+    const content = (this._streamingBuffer || (msg && msg.content) || '').trim();
+    this._streamingBuffer = '';
+    if (!msg || !content) {
+      const messages = !msg
+        ? this.data.messages
+        : this.data.messages.slice(0, idx).concat(this.data.messages.slice(idx + 1));
+      this.setData({ messages, chatState });
+    } else {
+      const messages = this.data.messages.slice();
+      messages[idx] = { id: msg.id, role: msg.role, content: content };
+      this.setData({ messages, chatState });
+    }
+    this._streamingIdx = -1;
   },
 
   _scrollToBottom() {
@@ -360,7 +389,6 @@ Page({
     this.setData({
       inputText: '',
       chatState: STATE_THINKING,
-      currentReply: '',
     });
   },
 
@@ -390,6 +418,7 @@ Page({
   },
 
   _teardown() {
+    if (this._flushTimer) { clearTimeout(this._flushTimer); this._flushTimer = null; }
     if (this._bootTimer) {
       clearInterval(this._bootTimer);
       this._bootTimer = null;

@@ -27,51 +27,6 @@
   align-items: flex-start;
 }
 
-/* ----- 角色标签 ----- */
-.cb-meta {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-  padding: 0 18rpx;
-  margin-bottom: 8rpx;
-}
-
-.cb-tag {
-  font-size: 18rpx;
-  letter-spacing: 4rpx;
-  font-weight: 600;
-  font-family: 'SF Mono', 'Menlo', Consolas, monospace;
-  color: rgba(134, 78, 90, 0.6);
-}
-
-.cb-row.cb-user .cb-tag {
-  color: rgba(134, 78, 90, 0.85);
-}
-.cb-row.cb-assistant .cb-tag {
-  color: rgba(134, 78, 90, 0.85);
-}
-
-.cb-pin {
-  width: 8rpx;
-  height: 8rpx;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.5;
-}
-
-.cb-row.cb-user .cb-pin {
-  background: rgba(134, 78, 90, 0.7);
-  box-shadow: 0 0 8rpx rgba(134, 78, 90, 0.6);
-}
-.cb-row.cb-assistant .cb-pin {
-  background: rgba(134, 78, 90, 0.7);
-  box-shadow: 0 0 8rpx rgba(134, 78, 90, 0.6);
-}
-
-.cb-row.cb-user .cb-meta {
-  flex-direction: row-reverse;
-}
-
 /* ----- 气泡 ----- */
 .cb-bubble {
   position: relative;
@@ -156,28 +111,4 @@
 .cb-row.cb-user .cb-text {
   color: #7b4551;
   font-weight: 500;
-}
-
-.cb-cursor {
-  display: inline-block;
-  margin-left: 4rpx;
-  font-size: 30rpx;
-  line-height: 1;
-  color: #864e5a;
-  animation: cb-blink 1s steps(2, start) infinite;
-  text-shadow: 0 0 12rpx rgba(134, 78, 90, 0.6);
-}
-
-/* ----- 时间戳 ----- */
-.cb-time {
-  display: block;
-  font-size: 20rpx;
-  color: rgba(134, 78, 90, 0.5);
-  margin-top: 8rpx;
-  line-height: 1;
-}
-
-@keyframes cb-blink {
-  0%, 50%   { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
 }

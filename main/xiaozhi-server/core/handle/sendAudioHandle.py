@@ -20,6 +20,9 @@ PRE_BUFFER_COUNT = 5
 async def sendAudioMessage(conn: "ConnectionHandler", sentenceType, audios, text, sentence_id=None):
     # 跳过旧句子残留音频
     if sentence_id is not None and sentence_id != conn.sentence_id:
+        conn.logger.bind(tag=TAG).debug(
+            f"跳过旧音频: msg_sid={sentence_id}, current_sid={conn.sentence_id}"
+        )
         return
 
     if conn.tts.tts_audio_first_sentence:
@@ -65,7 +68,13 @@ async def _wait_for_audio_completion(conn: "ConnectionHandler"):
         conn.logger.bind(tag=TAG).debug(
             f"等待音频发送完成，队列中还有 {len(rate_controller.queue)} 个包"
         )
-        await rate_controller.queue_empty_event.wait()
+        try:
+            await asyncio.wait_for(
+                rate_controller.queue_empty_event.wait(),
+                timeout=30.0,
+            )
+        except asyncio.TimeoutError:
+            conn.logger.bind(tag=TAG).warning("等待音频发送完成超时(30s)，强制继续")
 
         # 等待预缓冲包播放完成
         # 前N个包直接发送，增加2个网络抖动包，需要额外等待它们在客户端播放完成

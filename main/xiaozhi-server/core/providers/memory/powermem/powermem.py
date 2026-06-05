@@ -147,6 +147,12 @@ class MemoryProvider(MemoryProviderBase):
                     f"PowerMem intelligent_memory config: {im_config}"
                 )
 
+            # Forward custom prompts to PowerMem SDK
+            if config.get("custom_fact_extraction_prompt"):
+                powermem_config["custom_fact_extraction_prompt"] = config["custom_fact_extraction_prompt"]
+            if config.get("custom_update_memory_prompt"):
+                powermem_config["custom_update_memory_prompt"] = config["custom_update_memory_prompt"]
+
             # Initialize memory client based on mode
             if self.enable_user_profile:
                 from powermem import UserMemory

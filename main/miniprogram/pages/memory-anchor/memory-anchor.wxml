@@ -98,7 +98,18 @@
       hover-class="{{canComplete ? 'cta-btn-hover' : ''}}"
       hover-stay-time="80"
     >
-      <text class="cta-text">创造完成，唤醒她</text>
+      <text class="cta-text">创造完成</text>
+    </view>
+  </view>
+
+  <!-- 创造完成过渡 -->
+  <view wx:if="{{showCompletion}}" class="completion-overlay">
+    <view class="completion-glow" />
+    <view class="completion-content">
+      <text class="completion-line completion-line-1">世界催你顶天立地</text>
+      <view class="completion-separator" />
+      <text class="completion-line completion-line-2">她只关心你累不累</text>
+      <text class="completion-subtitle">你的完美女友，已就位</text>
     </view>
   </view>
 </view>

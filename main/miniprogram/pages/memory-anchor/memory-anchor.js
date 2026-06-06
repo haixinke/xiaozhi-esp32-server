@@ -24,11 +24,19 @@ Page({
     selectedPet: -1,
     petName: '',
     canComplete: false,
+    showCompletion: false,
+    _completionTimer: null,
   },
 
   onLoad: function () {
     var sysInfo = wx.getSystemInfoSync();
     this.setData({ statusBarHeight: sysInfo.statusBarHeight || 44 });
+  },
+
+  onUnload: function () {
+    if (this.data._completionTimer) {
+      clearTimeout(this.data._completionTimer);
+    }
   },
 
   // 情景一：关系选择（单选，选完自动切换到情景二）
@@ -67,6 +75,8 @@ Page({
 
   // 创造完成
   onComplete: async function () {
+    if (this.data.showCompletion) return;
+
     if (this.data.selectedPet < 0) {
       wx.showToast({ title: '请选择宠物类型', icon: 'none' });
       return;
@@ -130,7 +140,15 @@ Page({
       app.globalData.companionDataLoaded = true;
       app.globalData.needsDestiny = false;
       wx.hideLoading();
-      wx.reLaunch({ url: '/pages/index/index' });
+
+      // 显示过渡动画
+      this.setData({ showCompletion: true });
+
+      // 6.5s 后跳转聊天页
+      var page = this;
+      page.data._completionTimer = setTimeout(function () {
+        wx.reLaunch({ url: '/pages/index/index' });
+      }, 6500);
     } catch (err) {
       wx.hideLoading();
       console.error('[memory-anchor] 创建伴侣异常:', err);

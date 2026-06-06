@@ -124,6 +124,10 @@ Page({
       }
 
       await app.checkDeviceStatus();
+      // 将创建返回的伴侣头像/背景图写入 globalData，避免 reLaunch 后丢失
+      app.globalData.companionAvatar = res.data.avatar || null;
+      app.globalData.companionBgImage = res.data.defaultImage || null;
+      app.globalData.companionDataLoaded = true;
       app.globalData.needsDestiny = false;
       wx.hideLoading();
       wx.reLaunch({ url: '/pages/index/index' });

@@ -110,7 +110,7 @@ Page({
           return true;
         }
 
-        if (g.token && g.virtualMAC && g.isDeviceBound && g.wsUrl) {
+        if (g.token && g.virtualMAC && g.isDeviceBound && g.wsUrl && g.companionDataLoaded) {
           resolve();
           return true;
         }

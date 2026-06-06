@@ -20,7 +20,8 @@ App({
     needsDestiny: false,       // 新用户无 agent，需要进入命运初见页面
     destinyFlow: null,         // 命运初见向导流程的中间数据
     companionAvatar: null,     // 伴侣头像 URL
-    companionBgImage: null     // 伴侣默认背景图 URL
+    companionBgImage: null,    // 伴侣默认背景图 URL
+    companionDataLoaded: false // 伴侣数据是否已加载完成（无论成功或失败）
   },
 
   onLaunch() {
@@ -41,6 +42,7 @@ App({
       if (!this.globalData.agentId) {
         console.log('已登录但无 agent，标记 needsDestiny');
         this.globalData.needsDestiny = true;
+        this.globalData.companionDataLoaded = true;
       }
 
       // 已登录，检查设备状态
@@ -59,6 +61,7 @@ App({
       if (!this.globalData.agentId) {
         console.log('新用户无 agent，标记 needsDestiny');
         this.globalData.needsDestiny = true;
+        this.globalData.companionDataLoaded = true;
         return;
       }
 
@@ -168,7 +171,10 @@ App({
    */
   async fetchCompanionData() {
     const mac = this.globalData.virtualMAC;
-    if (!mac) return;
+    if (!mac) {
+      this.globalData.companionDataLoaded = true;
+      return;
+    }
     try {
       const res = await get('/companion/detail/' + mac);
       if (res && res.code === 0 && res.data) {
@@ -177,6 +183,8 @@ App({
       }
     } catch (err) {
       console.warn('获取伴侣数据失败:', err);
+    } finally {
+      this.globalData.companionDataLoaded = true;
     }
   },
 

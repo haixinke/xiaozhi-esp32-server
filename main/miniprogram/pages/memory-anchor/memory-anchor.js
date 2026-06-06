@@ -24,6 +24,7 @@ Page({
     selectedPet: -1,
     petName: '',
     canComplete: false,
+    videoEnded: false,
     showCompletion: false,
     _completionTimer: null,
   },
@@ -31,12 +32,22 @@ Page({
   onLoad: function () {
     var sysInfo = wx.getSystemInfoSync();
     this.setData({ statusBarHeight: sysInfo.statusBarHeight || 44 });
+    this.videoContext = wx.createVideoContext('anchorVideo');
   },
 
   onUnload: function () {
     if (this.data._completionTimer) {
       clearTimeout(this.data._completionTimer);
     }
+  },
+
+  onVideoEnded: function () {
+    this.setData({ videoEnded: true });
+  },
+
+  onReplay: function () {
+    this.setData({ videoEnded: false });
+    this.videoContext.play();
   },
 
   // 情景一：关系选择（单选，选完自动切换到情景二）

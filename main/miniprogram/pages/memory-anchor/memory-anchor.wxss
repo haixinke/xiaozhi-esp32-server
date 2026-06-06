@@ -59,9 +59,47 @@ page {
 .video-player {
   width: 100%;
   height: 820rpx;
+  box-shadow: 0 8rpx 60rpx rgba(255, 183, 197, 0.35);
+}
+
+.video-wrap {
+  position: relative;
+  width: 100%;
+  height: 820rpx;
   border-radius: 32rpx;
   overflow: hidden;
-  box-shadow: 0 8rpx 60rpx rgba(255, 183, 197, 0.35);
+}
+
+.video-replay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 32rpx;
+}
+
+.video-replay-btn {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  position: relative;
+}
+
+.video-replay-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 54%;
+  transform: translate(-50%, -50%);
+  border-style: solid;
+  border-width: 18rpx 0 18rpx 32rpx;
+  border-color: transparent transparent transparent #864e5a;
 }
 
 /* -------- 通用 section -------- */
@@ -285,18 +323,6 @@ page {
   margin: 32rpx 0;
   animation: completion-line-enter 0.6s ease-out forwards;
   animation-delay: 2.1s;
-}
-
-.completion-subtitle {
-  display: block;
-  font-size: 24rpx;
-  font-weight: 300;
-  color: rgba(255, 183, 197, 0.55);
-  letter-spacing: 4rpx;
-  margin-top: 64rpx;
-  opacity: 0;
-  animation: completion-text-enter 0.8s ease-out forwards;
-  animation-delay: 4.9s;
 }
 
 @keyframes completion-text-enter {

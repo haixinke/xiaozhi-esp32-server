@@ -11,17 +11,26 @@
   <scroll-view class="scroll-content" scroll-y enhanced show-scrollbar="{{false}}">
     <!-- 视频区 -->
     <view class="video-section">
-      <video
-        class="video-player"
-        src="{{videoUrl}}"
-        autoplay="{{true}}"
-        loop="{{false}}"
-        muted="{{false}}"
-        controls="{{true}}"
-        object-fit="cover"
-        show-center-play-btn="{{true}}"
-        enable-progress-gesture="{{false}}"
-      />
+      <view class="video-wrap">
+        <video
+          id="anchorVideo"
+          class="video-player"
+          src="{{videoUrl}}"
+          autoplay="{{true}}"
+          loop="{{false}}"
+          muted="{{false}}"
+          controls="{{false}}"
+          object-fit="cover"
+          show-center-play-btn="{{false}}"
+          enable-progress-gesture="{{false}}"
+          show-fullscreen-btn="{{false}}"
+          bindended="onVideoEnded"
+          bindplay="onVideoPlay"
+        />
+        <view wx:if="{{videoEnded}}" class="video-replay" bindtap="onReplay">
+          <view class="video-replay-btn" />
+        </view>
+      </view>
     </view>
 
     <!-- 情景一：关系选择 -->
@@ -109,7 +118,6 @@
       <text class="completion-line completion-line-1">世界催你顶天立地</text>
       <view class="completion-separator" />
       <text class="completion-line completion-line-2">她只关心你累不累</text>
-      <text class="completion-subtitle">你的完美女友，已就位</text>
     </view>
   </view>
 </view>

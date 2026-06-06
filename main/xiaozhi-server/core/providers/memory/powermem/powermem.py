@@ -202,7 +202,7 @@ class MemoryProvider(MemoryProviderBase):
                 format_start = time.time()
                 messages = []
                 for message in msgs:
-                    if message.role == "system":
+                    if message.role in ["system", "tool"]:
                         continue
                     # if message.role == "assistant":
                     #     continue  # 跳过助手消息，只存储用户对话

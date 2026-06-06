@@ -233,7 +233,7 @@ Page({
         break;
 
       case 'stt':
-        if (msg.text) this._addMessage('user', msg.text);
+        if (msg.text && !msg.text.startsWith('% ')) this._addMessage('user', msg.text);
         // STT 抵达后通常进入思考阶段
         this.setData({ chatState: STATE_THINKING });
         break;

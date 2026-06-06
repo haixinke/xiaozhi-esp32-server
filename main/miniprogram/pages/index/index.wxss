@@ -474,15 +474,16 @@ page {
 }
 
 .send-btn.active {
-  background: linear-gradient(135deg, #ffb7c5 0%, #864e5a 100%);
+  background: #864e5a;
   border-color: transparent;
-  box-shadow: 0 8rpx 32rpx rgba(134, 78, 90, 0.25), 0 0 24rpx rgba(255, 183, 193, 0.5);
+  box-shadow: none;
 }
 
 .send-btn-text {
   font-size: 28rpx;
-  color: rgba(134, 78, 90, 0.6);
+  color: #514345;
   font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .send-btn.active .send-btn-text {

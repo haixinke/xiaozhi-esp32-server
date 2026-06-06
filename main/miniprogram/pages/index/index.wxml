@@ -88,7 +88,7 @@
 
       <!-- 发送按钮 -->
       <view
-        class="send-btn {{inputText.trim() ? 'active' : ''}}"
+        class="send-btn {{connectionState === 'connected' && inputText ? 'active' : ''}}"
         bindtap="onTextSend"
         hover-class="send-btn-hover"
         hover-stay-time="80"

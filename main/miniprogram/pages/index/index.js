@@ -482,6 +482,12 @@ Page({
     this._onScrollToUpper();
   },
 
+  onInputTap() {
+    if (this.data.connectionState !== 'connected') {
+      wx.showToast({ title: '请先召唤您的女友', icon: 'none', duration: 2000 });
+    }
+  },
+
   onTextInput(e) {
     this.setData({ inputText: e.detail.value });
   },

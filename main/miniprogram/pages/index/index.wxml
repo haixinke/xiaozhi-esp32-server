@@ -89,7 +89,7 @@
   <view wx:if="{{!booting}}" class="input-bar safe-area-bottom">
     <view class="input-bar-inner">
       <!-- 输入框容器 -->
-      <view class="input-wrapper">
+      <view class="input-wrapper" bindtap="onInputTap">
         <input
           class="message-input"
           type="text"

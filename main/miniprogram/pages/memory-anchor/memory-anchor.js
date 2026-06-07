@@ -62,6 +62,7 @@ Page({
       self.setData({
         scenario: 2,
         videoUrl: VIDEO_URLS[1],
+        videoEnded: false,
       });
     }, 600);
   },
@@ -114,6 +115,7 @@ Page({
       relationType: codes.RELATION_TYPES[this.data.selectedRelation].id,
       petType: codes.PET_TYPES[this.data.selectedPet].id,
       petName: this.data.petName.trim(),
+      agentId: app.globalData.agentId || '',
     };
     if (flow.quirksText) {
       body.quirksText = flow.quirksText;
@@ -122,47 +124,40 @@ Page({
     wx.showLoading({ title: '正在创造...', mask: true });
 
     try {
-      var res = await request.post('/companion/create', body);
+      var res = await request.post('/companion/setup', body);
       if (!res || res.code !== 0) {
         wx.hideLoading();
-        console.error('[memory-anchor] 创建伴侣失败:', res);
-        wx.showToast({ title: '唤醒失败', icon: 'none', duration: 2000 });
-        return;
-      }
-      await app.ensureAgentExists();
-
-      // 同步伴侣提示词到智能体
-      var companionId = res.data.id;
-      var syncRes = await request.post('/companion/sync-prompt', {
-        agentId: app.globalData.agentId,
-        companionId: companionId,
-      });
-      if (!syncRes || syncRes.code !== 0) {
-        wx.hideLoading();
-        console.error('[memory-anchor] 同步提示词失败:', syncRes);
+        console.error('[memory-anchor] 唤醒失败:', res);
         wx.showToast({ title: '唤醒失败', icon: 'none', duration: 2000 });
         return;
       }
 
-      await app.checkDeviceStatus();
-      // 将创建返回的伴侣头像/背景图写入 globalData，避免 reLaunch 后丢失
-      app.globalData.companionAvatar = res.data.avatar || null;
-      app.globalData.companionBgImage = res.data.defaultImage || null;
+      var data = res.data;
+      app.globalData.agentId = data.agentId;
+      wx.setStorageSync('agentId', data.agentId);
+      app.globalData.companionAvatar = data.companion.avatar || null;
+      app.globalData.companionBgImage = data.companion.defaultImage || null;
       app.globalData.companionDataLoaded = true;
       app.globalData.needsDestiny = false;
-      wx.hideLoading();
 
-      // 显示过渡动画
+      if (data.deviceBound) {
+        app.globalData.wsUrl = data.wsUrl;
+        app.globalData.wsToken = data.wsToken;
+        app.globalData.isDeviceBound = true;
+      } else {
+        await app.checkDeviceStatus();
+      }
+
+      wx.hideLoading();
       this.setData({ showCompletion: true });
 
-      // 6.5s 后跳转聊天页
       var page = this;
       page.data._completionTimer = setTimeout(function () {
         wx.reLaunch({ url: '/pages/index/index' });
       }, 6500);
     } catch (err) {
       wx.hideLoading();
-      console.error('[memory-anchor] 创建伴侣异常:', err);
+      console.error('[memory-anchor] 唤醒异常:', err);
       wx.showToast({ title: '唤醒失败', icon: 'none', duration: 2000 });
     }
   },

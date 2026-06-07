@@ -7,9 +7,11 @@ import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.companion.dto.CompanionCreateDTO;
+import xiaozhi.modules.companion.dto.CompanionSetupDTO;
 import xiaozhi.modules.companion.dto.CompanionSyncPromptDTO;
 import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.service.CompanionService;
+import xiaozhi.modules.companion.vo.CompanionSetupVO;
 import xiaozhi.modules.companion.vo.CompanionVO;
 
 @Tag(name = "AI伴侣管理")
@@ -43,5 +45,11 @@ public class CompanionController {
     public Result<Void> syncPrompt(@RequestBody @Valid CompanionSyncPromptDTO dto) {
         companionService.syncPromptToAgent(dto.getAgentId(), dto.getCompanionId());
         return new Result<Void>();
+    }
+
+    @PostMapping("/setup")
+    @Operation(summary = "伴侣设置聚合接口（创建伴侣+智能体+同步提示词+设备绑定）")
+    public Result<CompanionSetupVO> setup(@RequestBody @Valid CompanionSetupDTO dto) {
+        return new Result<CompanionSetupVO>().ok(companionService.setup(dto));
     }
 }

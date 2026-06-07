@@ -4,13 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.service.impl.BaseServiceImpl;
+import xiaozhi.modules.agent.dto.AgentCreateDTO;
 import xiaozhi.modules.agent.entity.AgentEntity;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.companion.dao.CompanionDao;
 import xiaozhi.modules.companion.dto.CompanionCreateDTO;
+import xiaozhi.modules.companion.dto.CompanionSetupDTO;
 import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.entity.CompanionEntity;
 import xiaozhi.modules.companion.service.CompanionService;
@@ -18,7 +22,11 @@ import xiaozhi.modules.companion.util.CharacterAge;
 import xiaozhi.modules.companion.util.CompanionBirthCalculator;
 import xiaozhi.modules.companion.util.CompanionLabels;
 import xiaozhi.modules.companion.util.CompanionMood;
+import xiaozhi.modules.companion.vo.CompanionSetupVO;
 import xiaozhi.modules.companion.vo.CompanionVO;
+import xiaozhi.modules.device.dto.DeviceReportReqDTO;
+import xiaozhi.modules.device.dto.DeviceReportRespDTO;
+import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.security.user.SecurityUser;
 
 import java.time.LocalDateTime;
@@ -33,6 +41,8 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
 
     private final CompanionDao companionDao;
     private final AgentService agentService;
+    private final DeviceService deviceService;
+    private final PlatformTransactionManager transactionManager;
 
     @Override
     public CompanionVO create(CompanionCreateDTO dto) {
@@ -231,5 +241,97 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
 
         log.info("伴侣系统提示词已同步, companionId={}, agentId={}", companionId, agentId);
         log.info("替换后的系统提示词:\n{}", prompt);
+    }
+
+    @Override
+    public CompanionSetupVO setup(CompanionSetupDTO dto) {
+        // Phase 1: 事务性操作（伴侣创建 + 智能体确保 + 提示词同步）
+        // 使用 TransactionTemplate 确保事务生效（避免同类调用绕过AOP代理）
+        TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+        SetupPhase1Result phase1 = txTemplate.execute(status -> setupPhase1InTx(dto));
+
+        // Phase 2: 设备绑定（涉及Redis，在事务提交后执行）
+        CompanionSetupVO vo = new CompanionSetupVO();
+        vo.setCompanion(phase1.companion());
+        vo.setAgentId(phase1.agentId());
+
+        try {
+            bindDevice(dto.getDeviceId(), phase1.agentId(), vo);
+        } catch (Exception e) {
+            log.warn("设备绑定失败（伴侣和智能体已创建成功，可重试绑定）, deviceId={}: {}",
+                    dto.getDeviceId(), e.getMessage());
+        }
+
+        return vo;
+    }
+
+    private SetupPhase1Result setupPhase1InTx(CompanionSetupDTO dto) {
+        // Step 1: 创建伴侣（CompanionSetupDTO 继承 CompanionCreateDTO，直接传入）
+        CompanionVO companion = create(dto);
+
+        // Step 2: 确保智能体存在
+        String agentId = dto.getAgentId();
+        if (agentId == null || agentId.isBlank()) {
+            String agentName = SecurityUser.getUser().getUsername();
+            AgentCreateDTO agentCreateDTO = new AgentCreateDTO();
+            agentCreateDTO.setAgentName(agentName);
+            agentId = agentService.createAgent(agentCreateDTO);
+            log.info("聚合接口创建智能体, agentId={}, agentName={}", agentId, agentName);
+        } else {
+            // 校验已有智能体归属权
+            AgentEntity agent = agentService.selectById(agentId);
+            if (agent == null) {
+                throw new RenException(ErrorCode.AGENT_NOT_FOUND);
+            }
+            if (!agent.getUserId().equals(SecurityUser.getUserId())) {
+                throw new RenException(ErrorCode.NO_PERMISSION);
+            }
+        }
+
+        // Step 3: 同步提示词到智能体（复用现有逻辑）
+        syncPromptToAgent(agentId, companion.getId());
+
+        return new SetupPhase1Result(companion, agentId);
+    }
+
+    private void bindDevice(String deviceId, String agentId, CompanionSetupVO vo) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return;
+        }
+
+        // 构造设备上报请求（模拟小程序端调用）
+        DeviceReportReqDTO reportReq = new DeviceReportReqDTO();
+        DeviceReportReqDTO.Application app = new DeviceReportReqDTO.Application();
+        app.setName("xiaozhi-miniprogram");
+        app.setVersion("1.0.0");
+        reportReq.setApplication(app);
+        DeviceReportReqDTO.BoardInfo board = new DeviceReportReqDTO.BoardInfo();
+        board.setType("wechat-miniprogram");
+        reportReq.setBoard(board);
+
+        DeviceReportRespDTO otaResp = deviceService.checkDeviceActive(deviceId, "wechat-miniprogram", reportReq);
+
+        if (otaResp.getActivation() != null && otaResp.getActivation().getCode() != null) {
+            // 设备未绑定，执行绑定
+            String code = otaResp.getActivation().getCode();
+            deviceService.deviceActivation(agentId, code);
+            log.info("聚合接口绑定设备成功, deviceId={}, agentId={}", deviceId, agentId);
+
+            // 绑定后重新获取WebSocket信息
+            DeviceReportRespDTO finalResp = deviceService.checkDeviceActive(deviceId, "wechat-miniprogram", reportReq);
+            if (finalResp.getWebsocket() != null) {
+                vo.setDeviceBound(true);
+                vo.setWsUrl(finalResp.getWebsocket().getUrl());
+                vo.setWsToken(finalResp.getWebsocket().getToken());
+            }
+        } else if (otaResp.getWebsocket() != null) {
+            // 设备已绑定，直接使用WebSocket信息
+            vo.setDeviceBound(true);
+            vo.setWsUrl(otaResp.getWebsocket().getUrl());
+            vo.setWsToken(otaResp.getWebsocket().getToken());
+        }
+    }
+
+    private record SetupPhase1Result(CompanionVO companion, String agentId) {
     }
 }

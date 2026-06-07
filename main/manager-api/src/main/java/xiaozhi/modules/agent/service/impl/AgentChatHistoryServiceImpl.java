@@ -28,6 +28,7 @@ import xiaozhi.modules.agent.dto.AgentChatSessionDTO;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.agent.service.AgentChatHistoryService;
 import xiaozhi.modules.agent.service.AgentChatTitleService;
+import xiaozhi.modules.agent.vo.AgentChatHistoryListVO;
 import xiaozhi.modules.agent.vo.AgentChatHistoryUserVO;
 
 /**
@@ -183,5 +184,26 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
                 .eq(AgentChatHistoryEntity::getAudioId, audioId)
                 .eq(AgentChatHistoryEntity::getAgentId, agentId));
         return row == 1;
+    }
+
+    @Override
+    public PageData<AgentChatHistoryListVO> getChatHistoryList(String agentId, String macAddress,
+            Map<String, Object> params) {
+        int page = Integer.parseInt(params.get(Constant.PAGE).toString());
+        int limit = Math.min(Integer.parseInt(params.get(Constant.LIMIT).toString()), 50);
+
+        LambdaQueryWrapper<AgentChatHistoryEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(AgentChatHistoryEntity::getChatType, AgentChatHistoryEntity::getContent,
+                AgentChatHistoryEntity::getCreatedAt)
+                .eq(AgentChatHistoryEntity::getAgentId, agentId)
+                .eq(AgentChatHistoryEntity::getMacAddress, macAddress)
+                .orderByDesc(AgentChatHistoryEntity::getCreatedAt);
+
+        Page<AgentChatHistoryEntity> pageParam = new Page<>(page, limit);
+        IPage<AgentChatHistoryEntity> result = this.baseMapper.selectPage(pageParam, wrapper);
+
+        List<AgentChatHistoryListVO> records = ConvertUtils.sourceToTarget(result.getRecords(),
+                AgentChatHistoryListVO.class);
+        return new PageData<>(records, result.getTotal());
     }
 }

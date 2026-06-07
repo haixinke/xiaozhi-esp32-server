@@ -17,9 +17,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -38,6 +41,7 @@ import xiaozhi.modules.agent.dto.AgentChatHistoryDTO;
 import xiaozhi.modules.agent.dto.AgentChatHistoryReportDTO;
 import xiaozhi.modules.agent.dto.AgentChatSessionDTO;
 import xiaozhi.modules.agent.service.AgentChatHistoryService;
+import xiaozhi.modules.agent.vo.AgentChatHistoryListVO;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.agent.service.biz.AgentChatHistoryBizService;
 import xiaozhi.modules.security.user.SecurityUser;
@@ -64,6 +68,36 @@ public class AgentChatHistoryController {
     public Result<Boolean> uploadFile(@Valid @RequestBody AgentChatHistoryReportDTO request) {
         Boolean result = agentChatHistoryBizService.report(request);
         return new Result<Boolean>().ok(result);
+    }
+
+    /**
+     * 根据智能体ID和设备MAC地址分页查询聊天记录列表
+     *
+     * @param agentId    智能体ID
+     * @param macAddress 设备MAC地址
+     * @param params     分页参数（page、limit）
+     * @return 分页的聊天记录列表
+     */
+    @Operation(summary = "根据智能体ID和设备MAC地址分页查询聊天记录")
+    @RequiresPermissions("sys:role:normal")
+    @Parameters({
+        @Parameter(name = Constant.PAGE, description = "页码，从1开始", required = true),
+        @Parameter(name = Constant.LIMIT, description = "每页记录数，最大50", required = true),
+    })
+    @GetMapping("/list")
+    public Result<PageData<AgentChatHistoryListVO>> getChatHistoryList(
+            @RequestParam String agentId,
+            @RequestParam String macAddress,
+            @RequestParam Map<String, Object> params) {
+        // 检查权限
+        UserDetail user = SecurityUser.getUser();
+        if (!agentService.checkAgentPermission(agentId, user.getId())) {
+            throw new RenException(ErrorCode.CHAT_HISTORY_NO_PERMISSION);
+        }
+
+        PageData<AgentChatHistoryListVO> page = agentChatHistoryService.getChatHistoryList(agentId, macAddress,
+                params);
+        return new Result<PageData<AgentChatHistoryListVO>>().ok(page);
     }
 
     /**

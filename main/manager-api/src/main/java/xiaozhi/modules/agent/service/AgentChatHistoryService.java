@@ -9,6 +9,7 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.modules.agent.dto.AgentChatHistoryDTO;
 import xiaozhi.modules.agent.dto.AgentChatSessionDTO;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
+import xiaozhi.modules.agent.vo.AgentChatHistoryListVO;
 import xiaozhi.modules.agent.vo.AgentChatHistoryUserVO;
 
 /**
@@ -71,4 +72,14 @@ public interface AgentChatHistoryService extends IService<AgentChatHistoryEntity
      * @return T：属于 F：不属于
      */
     boolean isAudioOwnedByAgent(String audioId,String agentId);
+
+    /**
+     * 根据智能体ID和MAC地址分页查询聊天记录列表
+     *
+     * @param agentId    智能体ID
+     * @param macAddress 设备MAC地址
+     * @param params     分页参数（page、limit）
+     * @return 分页的聊天记录列表
+     */
+    PageData<AgentChatHistoryListVO> getChatHistoryList(String agentId, String macAddress, Map<String, Object> params);
 }

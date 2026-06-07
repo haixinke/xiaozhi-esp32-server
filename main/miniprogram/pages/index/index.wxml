@@ -102,6 +102,7 @@
           maxlength="500"
           disabled="{{connectionState !== 'connected' || chatState === 'thinking'}}"
           adjust-position="{{true}}"
+          cursor-spacing="20"
         />
       </view>
 

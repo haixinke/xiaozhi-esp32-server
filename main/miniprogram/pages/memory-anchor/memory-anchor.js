@@ -62,6 +62,7 @@ Page({
       self.setData({
         scenario: 2,
         videoUrl: VIDEO_URLS[1],
+        videoEnded: false,
       });
     }, 600);
   },

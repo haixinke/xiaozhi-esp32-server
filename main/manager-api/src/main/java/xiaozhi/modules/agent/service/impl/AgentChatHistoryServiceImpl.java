@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.collection.ListUtil;
+import org.apache.commons.lang3.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -188,7 +189,7 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
 
     @Override
     public PageData<AgentChatHistoryListVO> getChatHistoryList(String agentId, String macAddress,
-            Map<String, Object> params) {
+            String createdBefore, Map<String, Object> params) {
         int page = Integer.parseInt(params.get(Constant.PAGE).toString());
         int limit = Math.min(Integer.parseInt(params.get(Constant.LIMIT).toString()), 50);
 
@@ -197,7 +198,13 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
                 AgentChatHistoryEntity::getCreatedAt)
                 .eq(AgentChatHistoryEntity::getAgentId, agentId)
                 .eq(AgentChatHistoryEntity::getMacAddress, macAddress)
-                .orderByDesc(AgentChatHistoryEntity::getCreatedAt);
+                .in(AgentChatHistoryEntity::getChatType,
+                        AgentChatHistoryType.USER.getValue(),
+                        AgentChatHistoryType.AGENT.getValue());
+        if (StringUtils.isNotBlank(createdBefore)) {
+            wrapper.lt(AgentChatHistoryEntity::getCreatedAt, createdBefore);
+        }
+        wrapper.orderByDesc(AgentChatHistoryEntity::getCreatedAt);
 
         Page<AgentChatHistoryEntity> pageParam = new Page<>(page, limit);
         IPage<AgentChatHistoryEntity> result = this.baseMapper.selectPage(pageParam, wrapper);

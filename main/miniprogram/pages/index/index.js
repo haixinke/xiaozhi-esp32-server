@@ -11,6 +11,7 @@
 
 const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
+const { get } = require('../../utils/request');
 
 const app = getApp();
 
@@ -34,11 +35,18 @@ Page({
     messages: [],
     scrollToView: '',
 
+    // 历史记录加载状态
+    historyLoading: false,
+    historyNoMore: false,
+
     // 启动加载态：初始为 true，确认不需要跳转后才显示 UI
     booting: true,
 
     // 文字输入
     inputText: '',
+
+    // scroll-view 动态高度（px）
+    scrollViewHeight: 0,
   },
 
   // 非响应式资源，挂在 this 上以避免 setData 开销
@@ -50,6 +58,18 @@ Page({
   _streamingIdx: -1,
   _streamingBuffer: '',
   _flushTimer: null,
+  _historyPage: 1,
+  _historyLoading: false,
+  _historyNoMore: false,
+  _sessionStartTime: null,
+
+  // 生成本地时间的 ISO 格式字符串（与后端 LocalDateTime 对齐）
+  _formatLocalDateTime(date) {
+    const pad = (n, len) => String(n).padStart(len || 2, '0');
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate())
+      + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds())
+      + '.' + pad(date.getMilliseconds(), 3);
+  },
 
   // -------------------------------------------------------------------------
   // 生命周期
@@ -147,9 +167,35 @@ Page({
       booting: false,
     });
 
+    // 记录页面启动时间，用于下拉加载历史的 createdBefore 过滤
+    this._sessionStartTime = this._formatLocalDateTime(new Date());
+
     this._initAudio();
     // 不再自动连接 WebSocket，等待用户点击"召唤"按钮
     this._initWebSocketManager();
+
+    // 等待视图渲染完毕后计算 scroll-view 高度
+    setTimeout(() => {
+      this._calcScrollViewHeight();
+    }, 100);
+  },
+
+  _calcScrollViewHeight() {
+    const query = wx.createSelectorQuery();
+    query.select('.top-bar').boundingClientRect();
+    query.select('.input-bar').boundingClientRect();
+    query.exec((res) => {
+      const windowHeight = wx.getWindowInfo().windowHeight;
+      const topBarHeight = (res[0] && res[0].height) || 0;
+      const inputBarHeight = (res[1] && res[1].height) || 0;
+      const scrollViewHeight = windowHeight - topBarHeight - inputBarHeight;
+      if (scrollViewHeight > 0) {
+        this.setData({ scrollViewHeight });
+      } else {
+        // 兜底：使用窗口高度的70%作为默认值
+        this.setData({ scrollViewHeight: windowHeight * 0.7 });
+      }
+    });
   },
 
   _initAudio() {
@@ -225,6 +271,8 @@ Page({
     switch (msg.type) {
       case 'hello':
         this.setData({ sessionId: msg.sessionId || '' });
+        // 用连接时间替换页面启动时间，更精确避免当前会话消息与历史重复
+        this._sessionStartTime = this._formatLocalDateTime(new Date());
         break;
 
       case 'audio':
@@ -275,6 +323,69 @@ Page({
     const id = 'msg-' + (this._msgIdSeed++);
     const messages = this.data.messages.concat([{ id, role, content }]);
     this.setData({ messages, scrollToView: id });
+  },
+
+  // 下拉加载历史消息
+  _onScrollToUpper() {
+    if (this._historyLoading || this._historyNoMore) return;
+    if (!this._sessionStartTime) return;
+    this._loadHistoryMessages();
+  },
+
+  _loadHistoryMessages() {
+    if (this._historyLoading || this._historyNoMore) return;
+    this._historyLoading = true;
+    this.setData({ historyLoading: true });
+
+    const g = app.globalData;
+    const params = {
+      agentId: g.agentId,
+      macAddress: g.virtualMAC,
+      page: this._historyPage,
+      limit: 4,
+      createdBefore: this._sessionStartTime,
+    };
+
+    get('/agent/chat-history/list', params).then((res) => {
+      const list = (res.data && res.data.list) || [];
+      if (list.length === 0) {
+        this._historyNoMore = true;
+        this._historyLoading = false;
+        this.setData({ historyNoMore: true, historyLoading: false });
+        return;
+      }
+
+      // 记录当前滚动位置
+      const anchorId = this.data.scrollToView;
+
+      // 映射为消息格式，API 返回按 created_at DESC，需要反转为时间正序
+      const historyMsgs = list.reverse().map((item, idx) => ({
+        id: 'hist-' + this._historyPage + '-' + idx,
+        role: item.chatType === 1 ? 'user' : 'assistant',
+        content: item.content,
+      }));
+
+      // 前置插入到消息数组
+      const messages = historyMsgs.concat(this.data.messages);
+      this._historyPage++;
+      this._historyLoading = false;
+
+      if (list.length < 4) {
+        this._historyNoMore = true;
+        this.setData({ messages, historyNoMore: true, historyLoading: false });
+      } else {
+        this.setData({ messages, historyLoading: false });
+      }
+
+      // 恢复滚动位置到之前锚定的消息
+      if (anchorId) {
+        setTimeout(() => { this.setData({ scrollToView: anchorId }); }, 50);
+      }
+    }).catch(() => {
+      this._historyLoading = false;
+      this.setData({ historyLoading: false });
+      wx.showToast({ title: '加载失败', icon: 'none' });
+    });
   },
 
   // 就地追加流式文本到 messages 中的流式消息，不销毁重建组件
@@ -364,6 +475,11 @@ Page({
         this.wsManager.disconnect();
       } catch (_) {}
     }
+  },
+
+  // 下拉刷新事件处理（scroll-view refresher 触发）
+  onPullDownRefresh() {
+    this._onScrollToUpper();
   },
 
   onTextInput(e) {

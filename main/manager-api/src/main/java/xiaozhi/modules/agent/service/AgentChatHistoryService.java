@@ -81,5 +81,5 @@ public interface AgentChatHistoryService extends IService<AgentChatHistoryEntity
      * @param params     分页参数（page、limit）
      * @return 分页的聊天记录列表
      */
-    PageData<AgentChatHistoryListVO> getChatHistoryList(String agentId, String macAddress, Map<String, Object> params);
+    PageData<AgentChatHistoryListVO> getChatHistoryList(String agentId, String macAddress, String createdBefore, Map<String, Object> params);
 }

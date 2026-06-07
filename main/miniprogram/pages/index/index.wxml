@@ -43,13 +43,32 @@
   <scroll-view
     wx:if="{{!booting}}"
     class="conversation"
+    style="height: {{scrollViewHeight}}px;"
     scroll-y="true"
     scroll-with-animation="true"
     enhanced="true"
+    bounces="{{false}}"
     show-scrollbar="false"
     scroll-into-view="{{scrollToView}}"
+    refresher-enabled="{{!historyNoMore}}"
+    refresher-threshold="{{80}}"
+    refresher-default-style="none"
+    refresher-background="transparent"
+    refresher-triggered="{{historyLoading}}"
+    bindrefresherrefresh="onPullDownRefresh"
   >
+    <!-- 自定义下拉刷新指示器 -->
+    <view slot="refresher" class="refresher-container">
+      <view class="refresher-spinner"></view>
+    </view>
+
     <view class="conversation-inner">
+      <!-- 历史记录加载状态 -->
+      <view class="history-loader" wx:if="{{historyLoading}}">
+        <view class="history-loader-dot"></view>
+        <text class="history-loader-text">加载中...</text>
+      </view>
+
       <!-- 消息列表（含流式回复） -->
       <block wx:for="{{messages}}" wx:key="id">
         <view id="{{item.id}}">

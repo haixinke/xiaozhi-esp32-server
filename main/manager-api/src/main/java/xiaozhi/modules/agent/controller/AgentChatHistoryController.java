@@ -88,6 +88,7 @@ public class AgentChatHistoryController {
     public Result<PageData<AgentChatHistoryListVO>> getChatHistoryList(
             @RequestParam String agentId,
             @RequestParam String macAddress,
+            @RequestParam(required = false) String createdBefore,
             @RequestParam Map<String, Object> params) {
         // 检查权限
         UserDetail user = SecurityUser.getUser();
@@ -96,7 +97,7 @@ public class AgentChatHistoryController {
         }
 
         PageData<AgentChatHistoryListVO> page = agentChatHistoryService.getChatHistoryList(agentId, macAddress,
-                params);
+                createdBefore, params);
         return new Result<PageData<AgentChatHistoryListVO>>().ok(page);
     }
 

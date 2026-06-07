@@ -50,6 +50,15 @@ var CHARACTER_IMAGES = {
   zhixingyujie: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/zhichangjie.png',
 };
 
+var VOICE_STYLES = {
+  'TTS_HSDSTTS_V2_0001': 'wennuo',
+  'TTS_HSDSTTS_V2_0020': 'sajiao',
+  'TTS_HSDSTTS_V2_0017': 'zhixing',
+  'TTS_HSDSTTS_V2_0022': 'tianmei',
+};
+
+var VIDEO_BASE_URL = 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/video';
+
 /**
  * 根据编码获取显示标签
  * @param {Array} list - 选项列表
@@ -72,5 +81,7 @@ module.exports = {
   PET_TYPES: PET_TYPES,
   CHARACTER_AVATARS: CHARACTER_AVATARS,
   CHARACTER_IMAGES: CHARACTER_IMAGES,
+  VOICE_STYLES: VOICE_STYLES,
+  VIDEO_BASE_URL: VIDEO_BASE_URL,
   getLabel: getLabel,
 };

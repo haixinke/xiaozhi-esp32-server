@@ -120,7 +120,7 @@
   </scroll-view>
 
   <!-- CTA 按钮 -->
-  <view class="cta-bar safe-area-bottom">
+  <view class="cta-bar safe-area-bottom {{showVoicePicker ? 'cta-bar-hidden' : ''}}">
     <view
       class="cta-btn {{selectedOccupation ? '' : 'cta-btn-disabled'}}"
       bindtap="onNext"

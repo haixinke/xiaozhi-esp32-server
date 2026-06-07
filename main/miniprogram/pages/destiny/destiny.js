@@ -62,7 +62,7 @@ Page({
     occupations: OCCUPATIONS,
     selectedOccupation: '',
     voices: VOICES,
-    selectedVoice: 'wenruo',
+    selectedVoice: 'wennuo',
     selectedVoiceLabel: '温糯',
     showVoicePicker: false,
     playingVoiceId: '',

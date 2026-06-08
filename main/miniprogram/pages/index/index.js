@@ -491,12 +491,6 @@ Page({
     wx.navigateTo({ url: '/pages/agent-select/agent-select' });
   },
 
-  onTapStatus() {
-    if (this.data.connectionState !== 'connected') {
-      this._connectToChat();
-    }
-  },
-
   onSummon() {
     this._connectToChat();
   },

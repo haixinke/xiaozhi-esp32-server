@@ -6,7 +6,7 @@
   <!-- 顶部状态栏 - AI伴侣导航 -->
   <view wx:if="{{!booting && !bindFailed}}" class="top-bar">
     <!-- AI头像和名字 -->
-    <view class="ai-profile" bindtap="onTapStatus">
+    <view class="ai-profile">
       <view class="avatar-wrapper">
         <image class="avatar-image" src="{{companionAvatar || '/images/avatar-default.png'}}" mode="aspectFill"></image>
         <view class="status-dot state-{{connectionState}}"></view>

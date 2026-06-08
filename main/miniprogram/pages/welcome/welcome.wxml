@@ -5,7 +5,7 @@
 
   <!-- 诗句区 -->
   <view class="content {{contentFading ? 'content-fade' : ''}}">
-    <text class="line line-1">在这个的世界上</text>
+    <text class="line line-1">在这个世界上</text>
     <text class="line line-2">总有一束光</text>
     <text class="line line-3">只为你亮起</text>
     <text class="line line-4">今天起</text>

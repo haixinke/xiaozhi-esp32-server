@@ -4,7 +4,7 @@
   <image wx:if="{{!booting}}" class="bg-image" src="{{companionBgImage || '/images/beijing.png'}}" mode="aspectFill"></image>
 
   <!-- 顶部状态栏 - AI伴侣导航 -->
-  <view wx:if="{{!booting}}" class="top-bar">
+  <view wx:if="{{!booting && !bindFailed}}" class="top-bar">
     <!-- AI头像和名字 -->
     <view class="ai-profile" bindtap="onTapStatus">
       <view class="avatar-wrapper">
@@ -39,9 +39,17 @@
     <text class="boot-text">正在准备…</text>
   </view>
 
+  <!-- 绑定失败重试 -->
+  <view wx:if="{{bindFailed}}" class="boot-shell">
+    <text class="boot-text">设备连接失败</text>
+    <view class="retry-btn" bindtap="onRetryBind" hover-class="retry-btn-hover" hover-stay-time="80">
+      <text class="retry-btn-text">重试</text>
+    </view>
+  </view>
+
   <!-- 消息区 -->
   <scroll-view
-    wx:if="{{!booting}}"
+    wx:if="{{!booting && !bindFailed}}"
     class="conversation"
     style="height: {{scrollViewHeight}}px;"
     scroll-y="true"
@@ -86,7 +94,7 @@
   </scroll-view>
 
   <!-- 底部输入栏 -->
-  <view wx:if="{{!booting}}" class="input-bar safe-area-bottom">
+  <view wx:if="{{!booting && !bindFailed}}" class="input-bar safe-area-bottom">
     <view class="input-bar-inner">
       <!-- 输入框容器 -->
       <view class="input-wrapper" bindtap="onInputTap">

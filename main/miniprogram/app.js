@@ -236,11 +236,7 @@ App({
       }
     } catch (err) {
       console.error('设备绑定失败:', err);
-      wx.showModal({
-        title: '绑定失败',
-        content: '设备绑定失败: ' + (err.message || '未知错误'),
-        showCancel: false
-      });
+      this.globalData.isDeviceBound = false;
     }
   },
 

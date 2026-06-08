@@ -42,6 +42,9 @@ Page({
     // 启动加载态：初始为 true，确认不需要跳转后才显示 UI
     booting: true,
 
+    // 设备绑定失败，显示重试UI
+    bindFailed: false,
+
     // 文字输入
     inputText: '',
 
@@ -81,8 +84,12 @@ Page({
       .catch((err) => {
         if (err.message === 'redirecting to destiny') return;
         console.error('启动失败:', err);
-        this.setData({ booting: false });
-        wx.showToast({ title: '启动失败，请重试', icon: 'none' });
+        if (err.message === 'device not bound') {
+          this.setData({ booting: false, bindFailed: true });
+        } else {
+          this.setData({ booting: false });
+          wx.showToast({ title: '启动失败，请重试', icon: 'none' });
+        }
       });
 
     // 监听小程序切回前台 → 触发重连
@@ -104,6 +111,25 @@ Page({
         companionBgImage: g.companionBgImage || '',
       });
     }
+  },
+
+  onRetryBind() {
+    this.setData({ booting: true, bindFailed: false });
+    if (this._bootTimer) { clearInterval(this._bootTimer); this._bootTimer = null; }
+    app.globalData.isDeviceBound = undefined;
+    app.checkDeviceStatus()
+      .then(() => this._waitForAppReady())
+      .then(() => this._bootstrap())
+      .catch((err) => {
+        if (err.message === 'redirecting to destiny') return;
+        console.error('重试绑定失败:', err);
+        if (err.message === 'device not bound') {
+          this.setData({ booting: false, bindFailed: true });
+        } else {
+          this.setData({ booting: false });
+          wx.showToast({ title: '启动失败，请重试', icon: 'none' });
+        }
+      });
   },
 
   onUnload() {

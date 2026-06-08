@@ -1,7 +1,7 @@
 <!--pages/index/index.wxml-->
 <view class="page">
   <!-- 背景层：背景图片 -->
-  <image wx:if="{{!booting}}" class="bg-image" src="{{companionBgImage || '/images/beijing.png'}}" mode="aspectFill"></image>
+  <image wx:if="{{!booting && companionBgImage}}" class="bg-image" src="{{companionBgImage}}" mode="aspectFill"></image>
 
   <!-- 顶部状态栏 - AI伴侣导航 -->
   <view wx:if="{{!booting && !bindFailed}}" class="top-bar">

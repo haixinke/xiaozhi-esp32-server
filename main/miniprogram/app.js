@@ -45,31 +45,35 @@ App({
         this.globalData.companionDataLoaded = true;
       }
 
-      // 已登录，检查设备状态
-      this.checkDeviceStatus().catch(err => {
-        console.warn('设备状态检查失败:', err);
-      });
-      this.fetchCompanionData();
+      // 已登录且有 agent，加载伴侣数据并检查设备状态
+      if (this.globalData.agentId) {
+        this.checkDeviceStatus().catch(err => {
+          console.warn('设备状态检查失败:', err);
+        });
+        this.fetchCompanionData();
+      }
       return;
     }
 
-    // 2. 未登录（新用户），立即标记跳转，登录在后台继续
-    this.globalData.needsDestiny = true;
-    this.globalData.companionDataLoaded = true;
+    // 2. 未登录，先静默登录，根据返回结果判断是否需要跳转
     this.silentLogin().then(() => {
       console.log('后台登录成功');
 
-      // 登录后发现已有 agent → 取消跳转，走正常流程
       if (this.globalData.agentId) {
-        console.log('已有 agent，取消 needsDestiny');
-        this.globalData.needsDestiny = false;
-        // fetchCompanionData 完成后会自行设置 companionDataLoaded = true
-        // 此处不要重置 companionDataLoaded，避免 _waitForAppReady 轮询卡死
+        // 老用户（有 agent），走正常流程
+        console.log('已有 agent，走正常流程');
         this.fetchCompanionData();
         return this.checkDeviceStatus();
+      } else {
+        // 新用户（无 agent），标记需要进入命运初见页面
+        console.log('无 agent，标记 needsDestiny');
+        this.globalData.needsDestiny = true;
+        this.globalData.companionDataLoaded = true;
       }
     }).catch(err => {
       console.error('后台流程失败:', err);
+      // 登录失败时标记 companionDataLoaded，避免轮询卡死
+      this.globalData.companionDataLoaded = true;
     });
   },
 

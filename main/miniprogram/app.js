@@ -53,21 +53,21 @@ App({
       return;
     }
 
-    // 2. 未登录，后台执行静默登录
+    // 2. 未登录（新用户），立即标记跳转，登录在后台继续
+    this.globalData.needsDestiny = true;
+    this.globalData.companionDataLoaded = true;
     this.silentLogin().then(() => {
       console.log('后台登录成功');
 
-      // 无 agent → 标记需要进入命运初见页面（不再自动创建）
-      if (!this.globalData.agentId) {
-        console.log('新用户无 agent，标记 needsDestiny');
-        this.globalData.needsDestiny = true;
-        this.globalData.companionDataLoaded = true;
-        return;
+      // 登录后发现已有 agent → 取消跳转，走正常流程
+      if (this.globalData.agentId) {
+        console.log('已有 agent，取消 needsDestiny');
+        this.globalData.needsDestiny = false;
+        // fetchCompanionData 完成后会自行设置 companionDataLoaded = true
+        // 此处不要重置 companionDataLoaded，避免 _waitForAppReady 轮询卡死
+        this.fetchCompanionData();
+        return this.checkDeviceStatus();
       }
-
-      // 有 agent → 继续正常流程
-      this.fetchCompanionData();
-      return this.checkDeviceStatus();
     }).catch(err => {
       console.error('后台流程失败:', err);
     });

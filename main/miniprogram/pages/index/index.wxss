@@ -332,11 +332,11 @@ page {
 }
 
 .refresher-spinner {
-  width: 36rpx;
-  height: 36rpx;
+  width: 44rpx;
+  height: 44rpx;
   border-radius: 50%;
-  border: 3rpx solid rgba(134, 78, 90, 0.15);
-  border-top-color: rgba(134, 78, 90, 0.6);
+  border: 6rpx solid rgba(134, 78, 90, 0.15);
+  border-top-color: rgba(134, 78, 90, 0.7);
   animation: refresher-spin 0.7s linear infinite;
 }
 

@@ -1,5 +1,5 @@
 <!--pages/index/index.wxml-->
-<view class="page">
+<view class="page {{darkMode ? 'dark' : ''}}">
   <!-- 背景层：背景图片 -->
   <image wx:if="{{!booting && companionBgImage}}" class="bg-image" src="{{companionBgImage}}" mode="aspectFill"></image>
 
@@ -80,7 +80,7 @@
       <!-- 消息列表（含流式回复） -->
       <block wx:for="{{messages}}" wx:key="id">
         <view id="{{item.id}}">
-          <chat-bubble role="{{item.role}}" content="{{item.content}}" typing="{{item.typing}}" />
+          <chat-bubble role="{{item.role}}" content="{{item.content}}" typing="{{item.typing}}" darkMode="{{darkMode}}" />
         </view>
       </block>
 

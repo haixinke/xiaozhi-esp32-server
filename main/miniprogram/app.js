@@ -6,6 +6,7 @@
 const { post, get } = require('./utils/request');
 const { setToken } = require('./utils/auth');
 const { checkOrRegisterDevice, completeDeviceBinding } = require('./utils/device');
+const { applyGlobalTheme } = require('./utils/theme');
 
 App({
   globalData: {
@@ -25,7 +26,7 @@ App({
   },
 
   onLaunch() {
-    // 快速初始化，不阻塞启动
+    applyGlobalTheme();
     this.initInBackground();
   },
 

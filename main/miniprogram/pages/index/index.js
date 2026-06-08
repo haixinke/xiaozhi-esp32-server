@@ -12,6 +12,7 @@
 const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
 const { get } = require('../../utils/request');
+const { getTheme, applyTheme } = require('../../utils/theme');
 
 const app = getApp();
 
@@ -21,6 +22,9 @@ const STATE_SPEAKING = 'speaking';
 
 Page({
   data: {
+    // 主题
+    darkMode: getTheme(),
+
     // 连接状态：disconnected / connecting / connected
     connectionState: 'disconnected',
 
@@ -98,6 +102,8 @@ Page({
   },
 
   onShow() {
+    applyTheme(this);
+
     // 每次返回页面（例如从命运初见页面返回）刷新 agent 名称
     if (app.globalData) {
       const g = app.globalData;

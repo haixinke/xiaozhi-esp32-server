@@ -1,5 +1,5 @@
 <!--components/chat-bubble/chat-bubble.wxml-->
-<view class="cb-row cb-{{role}} {{typing ? 'cb-typing' : ''}}">
+<view class="cb-row cb-{{role}} {{typing ? 'cb-typing' : ''}} {{darkMode ? 'dark' : ''}}">
   <view class="cb-bubble">
     <view class="cb-glow"></view>
     <view class="cb-content">

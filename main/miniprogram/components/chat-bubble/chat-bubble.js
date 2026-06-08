@@ -20,5 +20,10 @@ Component({
       type: Boolean,
       value: false,
     },
+    /** 深色模式 */
+    darkMode: {
+      type: Boolean,
+      value: false,
+    },
   },
 });

@@ -97,3 +97,41 @@ switch {
   color: rgba(134, 78, 90, 0.5);
   letter-spacing: 0.5rpx;
 }
+
+/* ================================================================
+   DARK MODE
+   ================================================================ */
+
+.settings-container.dark {
+  background: #121220;
+}
+
+.dark .settings-title {
+  color: #e8e4e3;
+}
+
+.dark .settings-list {
+  background: rgba(30, 28, 46, 0.85);
+  border-color: rgba(134, 78, 90, 0.15);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
+}
+
+.dark .settings-item {
+  border-bottom-color: rgba(134, 78, 90, 0.12);
+}
+
+.dark .settings-item:active {
+  background: rgba(134, 78, 90, 0.08);
+}
+
+.dark .item-label {
+  color: #e8e4e3;
+}
+
+.dark .item-value {
+  color: #a09a9c;
+}
+
+.dark .footer-text {
+  color: rgba(196, 155, 165, 0.5);
+}

@@ -112,3 +112,31 @@
   color: #7b4551;
   font-weight: 500;
 }
+
+/* ================================================================
+   DARK MODE (.dark is on the same element as .cb-row)
+   ================================================================ */
+
+.cb-row.dark.cb-user .cb-bubble {
+  background: rgba(134, 78, 90, 0.6);
+  border-color: rgba(134, 78, 90, 0.3);
+  box-shadow: 0 4rpx 20rpx rgba(134, 78, 90, 0.2);
+}
+
+.cb-row.dark.cb-assistant .cb-bubble {
+  background: rgba(30, 28, 46, 0.8);
+  border-color: rgba(134, 78, 90, 0.15);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+}
+
+.cb-row.dark.cb-assistant .cb-bubble::before {
+  background: linear-gradient(180deg, #864e5a, transparent);
+}
+
+.cb-row.dark .cb-text {
+  color: #e8e4e3;
+}
+
+.cb-row.dark.cb-user .cb-text {
+  color: #f0dce0;
+}

@@ -140,6 +140,41 @@ WebSocket 消息流：
 | 玻璃态不可见 | `backdrop-filter: blur()`、透明度、边框颜色 |
 | 加载失败 | appid、图片资源、语法错误 |
 
+## 深色模式开发规范
+
+工具函数：`utils/theme.js`（`getTheme`, `applyTheme`, `toggleTheme`, `applyGlobalTheme`）
+
+### 新页面接入
+
+1. **JS** — 初始化 + onShow 应用：
+   ```js
+   const { getTheme, applyTheme } = require('../../utils/theme');
+   Page({
+     data: { darkMode: getTheme() },
+     onShow() { applyTheme(this); }
+   });
+   ```
+2. **WXML** — 根容器加条件 class：`class="container {{darkMode ? 'dark' : ''}}"`
+3. **WXSS** — 根元素用复合选择器（无空格）：`.container.dark { background: #121220; }`，子元素用后代选择器：`.dark .child { color: #e8e4e3; }`
+
+### 新组件接入
+
+1. **JS** — properties 声明 `darkMode: { type: Boolean, value: false }`
+2. **WXML** — 根元素加 `{{darkMode ? 'dark' : ''}}`，父页面传 `darkMode="{{darkMode}}"`
+3. **WXSS** — 同一元素上的选择器用复合形式：`.cb-row.dark.cb-user {}`
+
+### CSS 选择器规则
+
+| 场景 | 正确 | 错误 |
+|------|------|------|
+| dark 与根 class 同一元素 | `.container.dark {}` | `.dark .container {}` |
+| dark 元素的子元素 | `.dark .child {}` | — |
+| 组件中 dark 与 role 同一元素 | `.cb-row.dark.cb-user {}` | `.dark .cb-row.cb-user {}` |
+
+### 颜色常量
+
+深色主色调定义在 `utils/theme.js` 顶部，页面 CSS 中的深色值直接内联。
+
 ## 品牌语调
 
 **完美女友定位**：温暖亲密、情感智能、始终在场、温柔体贴

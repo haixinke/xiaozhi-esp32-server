@@ -602,3 +602,118 @@ page {
   font-size: 22rpx;
   color: rgba(81, 67, 69, 0.6);
 }
+
+/* ================================================================
+   DARK MODE
+   ================================================================ */
+
+.page.dark {
+  background: #121220;
+}
+
+/* 背景遮罩层 */
+.dark .bg-overlay {
+  background: linear-gradient(to top, rgba(18, 18, 32, 0.95) 0%, rgba(18, 18, 32, 0.7) 30%, transparent 60%, transparent 100%);
+}
+
+/* 顶部状态栏 */
+.dark .top-bar {
+  background: rgba(18, 18, 32, 0.85);
+  border-bottom-color: rgba(134, 78, 90, 0.15);
+}
+
+.dark .ai-name,
+.dark .agent-text {
+  color: #e8e4e3;
+}
+
+.dark .ai-status,
+.dark .status-label {
+  color: #c49ba5;
+}
+
+/* 召唤按钮 */
+.dark .summon-btn {
+  background: rgba(134, 78, 90, 0.5);
+  box-shadow: 0 0 20rpx rgba(134, 78, 90, 0.3);
+}
+
+.dark .summon-text {
+  color: #f0dce0;
+}
+
+/* 欢迎区 */
+.dark .welcome-hi {
+  color: #a09a9c;
+}
+
+.dark .welcome-sub {
+  color: rgba(232, 228, 227, 0.7);
+}
+
+.dark .welcome-card {
+  background: rgba(30, 28, 46, 0.85);
+  border-color: rgba(134, 78, 90, 0.15);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+}
+
+.dark .welcome-card-text {
+  color: #e8e4e3;
+}
+
+/* 输入栏 */
+.dark .input-wrapper {
+  background: rgba(30, 28, 46, 0.9);
+  border-color: rgba(134, 78, 90, 0.2);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
+}
+
+.dark .message-input {
+  color: #e8e4e3;
+}
+
+.dark .message-input::placeholder {
+  color: rgba(160, 154, 156, 0.5);
+}
+
+/* 发送按钮 */
+.dark .send-btn {
+  background: rgba(30, 28, 46, 0.9);
+  border-color: rgba(134, 78, 90, 0.2);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
+}
+
+.dark .send-btn-text {
+  color: #a09a9c;
+}
+
+.dark .send-btn.active {
+  background: rgba(134, 78, 90, 0.5);
+  box-shadow: 0 0 20rpx rgba(134, 78, 90, 0.3);
+}
+
+/* 正在输入指示器 */
+.dark .typing-indicator {
+  background: rgba(30, 28, 46, 0.85);
+  border-color: rgba(134, 78, 90, 0.15);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+}
+
+/* 启动占位 */
+.dark .boot-text {
+  color: rgba(196, 155, 165, 0.7);
+}
+
+/* 头像边框 */
+.dark .status-dot {
+  border-color: #121220;
+}
+
+/* 历史加载 */
+.dark .history-loader-text {
+  color: rgba(196, 155, 165, 0.5);
+}
+
+.dark .history-nomore-text {
+  color: rgba(196, 155, 165, 0.5);
+}

@@ -63,8 +63,6 @@ import xiaozhi.modules.device.dto.DeviceReportReqDTO;
 import xiaozhi.modules.device.dto.DeviceReportRespDTO;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.device.entity.OtaEntity;
-import xiaozhi.modules.agent.entity.AgentEntity;
-import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.device.service.OtaService;
 import xiaozhi.modules.device.vo.UserShowDeviceListVO;
@@ -82,7 +80,6 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
     private final SysParamsService sysParamsService;
     private final RedisUtils redisUtils;
     private final OtaService otaService;
-    private final AgentService agentService;
 
     @Async
     public void updateDeviceConnectionInfo(String agentId, String deviceId, String appVersion) {
@@ -134,12 +131,6 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         UserDetail user = SecurityUser.getUser();
         if (user.getId() == null) {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
-        }
-
-        // 校验 agentId 属于当前用户
-        AgentEntity agent = agentService.selectById(agentId);
-        if (agent == null || !agent.getUserId().equals(user.getId())) {
-            throw new RenException(ErrorCode.AGENT_NOT_FOUND);
         }
 
         Date currentTime = new Date();

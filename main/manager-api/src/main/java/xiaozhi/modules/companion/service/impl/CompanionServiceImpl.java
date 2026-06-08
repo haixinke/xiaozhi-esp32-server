@@ -170,10 +170,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         if (entity == null) {
             throw new RenException(ErrorCode.COMPANION_NOT_FOUND);
         }
-        Long userId = SecurityUser.getUserId();
-        if (!entity.getUserId().equals(userId)) {
-            throw new RenException(ErrorCode.COMPANION_NOT_FOUND);
-        }
         return CompanionVO.toVO(entity);
     }
 

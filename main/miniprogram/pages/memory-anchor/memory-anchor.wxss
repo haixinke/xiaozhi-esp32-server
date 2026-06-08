@@ -297,11 +297,11 @@ page {
 
 .completion-line {
   display: block;
-  font-size: 40rpx;
+  font-size: 44rpx;
   font-weight: 300;
   color: rgba(255, 243, 240, 0.92);
-  letter-spacing: 6rpx;
-  line-height: 1.6;
+  letter-spacing: 8rpx;
+  line-height: 2.4;
   opacity: 0;
 }
 

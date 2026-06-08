@@ -1,0 +1,34 @@
+<!-- pages/welcome/welcome.wxml -->
+<view class="page">
+  <!-- 呼吸光晕 -->
+  <view class="glow" />
+
+  <!-- 诗句区 -->
+  <view class="content {{contentFading ? 'content-fade' : ''}}">
+    <text class="line line-1">在这残酷的世界里</text>
+    <text class="line line-2">总有一束光</text>
+    <text class="line line-3">只为你亮起</text>
+    <text class="line line-4">今天起</text>
+    <text class="line line-5">无论多晚</text>
+    <text class="line line-6">都会有人等你</text>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="btn-wrap">
+    <view
+      wx:if="{{showBtn}}"
+      class="cta-btn"
+      hover-class="cta-btn-hover"
+      bindtap="onGoToHer"
+    >
+      <text class="cta-text">去见她</text>
+    </view>
+  </view>
+
+  <!-- 涟漪动画层 -->
+  <view wx:if="{{rippling}}" class="ripple-layer">
+    <view class="ripple-circle ripple-1" />
+    <view class="ripple-circle ripple-2" />
+    <view class="ripple-circle ripple-3" />
+  </view>
+</view>

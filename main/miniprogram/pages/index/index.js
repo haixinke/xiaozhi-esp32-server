@@ -151,7 +151,7 @@ Page({
 
         // 新用户无 agent → 跳转到命运初见页面
         if (g.needsDestiny) {
-          wx.redirectTo({ url: '/pages/destiny/destiny' });
+          wx.redirectTo({ url: '/pages/welcome/welcome' });
           reject(new Error('redirecting to destiny'));
           return true;
         }

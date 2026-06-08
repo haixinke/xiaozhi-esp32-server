@@ -2,6 +2,7 @@
   "pages": [
     "pages/index/index",
     "pages/settings/settings",
+    "pages/welcome/welcome",
     "pages/destiny/destiny",
     "pages/soul-resonance/soul-resonance",
     "pages/memory-anchor/memory-anchor"

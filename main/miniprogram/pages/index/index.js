@@ -615,7 +615,7 @@ Page({
 
   _isReadyForAction() {
     if (this.data.connectionState !== 'connected') {
-      wx.showToast({ title: '请先点击召唤按钮连接服务', icon: 'none' });
+      wx.showToast({ title: '请先召唤您的女友', icon: 'none' });
       return false;
     }
     return true;

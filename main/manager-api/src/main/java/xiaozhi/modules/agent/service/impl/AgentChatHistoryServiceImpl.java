@@ -195,7 +195,7 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
 
         LambdaQueryWrapper<AgentChatHistoryEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.select(AgentChatHistoryEntity::getChatType, AgentChatHistoryEntity::getContent,
-                AgentChatHistoryEntity::getCreatedAt)
+                AgentChatHistoryEntity::getCreatedAt, AgentChatHistoryEntity::getAudioId)
                 .eq(AgentChatHistoryEntity::getAgentId, agentId)
                 .eq(AgentChatHistoryEntity::getMacAddress, macAddress)
                 .in(AgentChatHistoryEntity::getChatType,

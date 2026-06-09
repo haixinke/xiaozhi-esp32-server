@@ -285,8 +285,7 @@ public class AgentController {
         }
         redisUtils.delete(RedisKeys.getAgentAudioIdKey(uuid));
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"play.wav\"")
+                .contentType(MediaType.parseMediaType("audio/wav"))
                 .body(audioData);
     }
 

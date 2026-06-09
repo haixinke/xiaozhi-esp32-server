@@ -406,6 +406,7 @@ Page({
         id: 'hist-' + this._historyPage + '-' + idx,
         role: item.chatType === 1 ? 'user' : 'assistant',
         content: item.content,
+        audioId: item.audioId || null,
       }));
 
       // 前置插入到消息数组

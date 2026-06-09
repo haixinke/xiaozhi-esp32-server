@@ -140,3 +140,83 @@
 .cb-row.dark.cb-user .cb-text {
   color: #f0dce0;
 }
+
+/* ----- 音频播放按钮 ----- */
+.cb-audio {
+  display: flex;
+  align-items: center;
+  margin-top: 12rpx;
+}
+
+.cb-audio-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: rgba(134, 78, 90, 0.12);
+  transition: background 0.2s;
+}
+
+.cb-audio-icon:active {
+  background: rgba(134, 78, 90, 0.22);
+}
+
+/* 播放三角形 */
+.cb-audio-triangle {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 10rpx 0 10rpx 16rpx;
+  border-color: transparent transparent transparent #864e5a;
+  margin-left: 4rpx;
+}
+
+/* 播放中的音频条动画 */
+.cb-audio-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4rpx;
+  height: 24rpx;
+}
+
+.cb-audio-bar {
+  width: 4rpx;
+  background: #864e5a;
+  border-radius: 2rpx;
+  animation: cb-bar-bounce 0.8s ease-in-out infinite alternate;
+}
+
+.cb-audio-bar:nth-child(1) {
+  height: 12rpx;
+  animation-delay: 0s;
+}
+
+.cb-audio-bar:nth-child(2) {
+  height: 20rpx;
+  animation-delay: 0.2s;
+}
+
+.cb-audio-bar:nth-child(3) {
+  height: 14rpx;
+  animation-delay: 0.4s;
+}
+
+@keyframes cb-bar-bounce {
+  0% { transform: scaleY(0.5); }
+  100% { transform: scaleY(1.2); }
+}
+
+/* 深色模式音频按钮 */
+.cb-row.dark .cb-audio-icon {
+  background: rgba(255, 183, 193, 0.15);
+}
+
+.cb-row.dark .cb-audio-triangle {
+  border-color: transparent transparent transparent #f0dce0;
+}
+
+.cb-row.dark .cb-audio-bar {
+  background: #f0dce0;
+}

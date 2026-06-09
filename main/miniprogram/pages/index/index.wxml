@@ -80,7 +80,7 @@
       <!-- 消息列表（含流式回复） -->
       <block wx:for="{{messages}}" wx:key="id">
         <view id="{{item.id}}">
-          <chat-bubble role="{{item.role}}" content="{{item.content}}" typing="{{item.typing}}" darkMode="{{darkMode}}" />
+          <chat-bubble role="{{item.role}}" content="{{item.content}}" typing="{{item.typing}}" audioId="{{item.audioId}}" darkMode="{{darkMode}}" />
         </view>
       </block>
 

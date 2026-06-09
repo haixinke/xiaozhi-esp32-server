@@ -13,4 +13,7 @@ public class AgentChatHistoryListVO {
 
     @Schema(description = "创建时间")
     private String createdAt;
+
+    @Schema(description = "音频ID")
+    private String audioId;
 }

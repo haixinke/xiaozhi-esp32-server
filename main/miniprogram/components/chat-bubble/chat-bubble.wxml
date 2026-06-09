@@ -4,6 +4,16 @@
     <view class="cb-glow"></view>
     <view class="cb-content">
       <text class="cb-text" selectable="{{!typing}}">{{content}}</text>
+      <view wx:if="{{role === 'assistant' && audioId}}" class="cb-audio" bindtap="_onPlayTap">
+        <view class="cb-audio-icon {{audioPlaying ? 'cb-audio-playing' : ''}}">
+          <view wx:if="{{audioPlaying}}" class="cb-audio-bars">
+            <view class="cb-audio-bar"></view>
+            <view class="cb-audio-bar"></view>
+            <view class="cb-audio-bar"></view>
+          </view>
+          <view wx:else class="cb-audio-triangle"></view>
+        </view>
+      </view>
     </view>
   </view>
 </view>

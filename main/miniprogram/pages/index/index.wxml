@@ -119,7 +119,7 @@
       >
         <image
           class="mode-toggle-icon"
-          src="{{inputMode === 'text' ? '/images/laba.png' : '/images/jianpan.png'}}"
+          src="{{inputMode === 'text' ? (darkMode ? '/images/laba-dark.png' : '/images/laba.png') : (darkMode ? '/images/jianpan-dark.png' : '/images/jianpan.png')}}"
           mode="aspectFit"
         />
       </view>

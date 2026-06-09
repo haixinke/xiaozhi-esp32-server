@@ -95,34 +95,67 @@
 
   <!-- 底部输入栏 -->
   <view wx:if="{{!booting && !bindFailed}}" class="input-bar safe-area-bottom">
+    <!-- 录音浮层 -->
+    <view wx:if="{{recording}}" class="recording-overlay">
+      <view class="recording-indicator">
+        <view class="recording-waves">
+          <view class="recording-wave-bar"></view>
+          <view class="recording-wave-bar"></view>
+          <view class="recording-wave-bar"></view>
+          <view class="recording-wave-bar"></view>
+          <view class="recording-wave-bar"></view>
+        </view>
+        <text class="recording-text">{{recordCancelled ? '松开 取消' : '手指上滑 取消'}}</text>
+      </view>
+    </view>
+
     <view class="input-bar-inner">
-      <!-- 输入框容器 -->
-      <view class="input-wrapper" bindtap="onInputTap">
-        <input
-          class="message-input"
-          type="text"
-          placeholder="输入消息..."
-          placeholder-style="color: rgba(148, 163, 184, 0.5);"
-          value="{{inputText}}"
-          bindinput="onTextInput"
-          bindconfirm="onTextSend"
-          confirm-type="send"
-          maxlength="500"
-          disabled="{{connectionState !== 'connected' || chatState === 'thinking'}}"
-          adjust-position="{{true}}"
-          cursor-spacing="20"
+      <!-- 模式切换按钮 -->
+      <view
+        class="mode-toggle-btn"
+        bindtap="onToggleInputMode"
+        hover-class="mode-toggle-btn-hover"
+        hover-stay-time="80"
+      >
+        <image
+          class="mode-toggle-icon"
+          src="{{inputMode === 'text' ? '/images/laba.png' : '/images/jianpan.png'}}"
+          mode="aspectFit"
         />
       </view>
 
-      <!-- 发送按钮 -->
-      <view
-        class="send-btn {{connectionState === 'connected' && inputText ? 'active' : ''}}"
-        bindtap="onTextSend"
-        hover-class="send-btn-hover"
-        hover-stay-time="80"
-      >
-        <text class="send-btn-text">发送</text>
-      </view>
+      <!-- 文字模式 -->
+      <block wx:if="{{inputMode === 'text'}}">
+        <view class="input-wrapper" bindtap="onInputTap">
+          <input
+            class="message-input"
+            type="text"
+            placeholder="输入消息..."
+            placeholder-style="color: rgba(148, 163, 184, 0.5);"
+            value="{{inputText}}"
+            bindinput="onTextInput"
+            bindconfirm="onTextSend"
+            confirm-type="send"
+            maxlength="500"
+            disabled="{{connectionState !== 'connected' || chatState === 'thinking'}}"
+            adjust-position="{{true}}"
+            cursor-spacing="20"
+          />
+        </view>
+      </block>
+
+      <!-- 语音模式 -->
+      <block wx:else>
+        <view
+          class="voice-btn {{recording ? 'is-pressed' : ''}} {{recordCancelled ? 'is-cancelled' : ''}}"
+          catchtouchstart="onVoiceTouchStart"
+          catchtouchmove="onVoiceTouchMove"
+          catchtouchend="onVoiceTouchEnd"
+          catchtouchcancel="onVoiceTouchCancel"
+        >
+          <text class="voice-btn-text">{{recordCancelled ? '松开 取消' : '按住 说话'}}</text>
+        </view>
+      </block>
     </view>
   </view>
 </view>

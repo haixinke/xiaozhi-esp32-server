@@ -52,6 +52,13 @@ Page({
     // 文字输入
     inputText: '',
 
+    // 输入模式：text / voice
+    inputMode: 'text',
+
+    // 录音状态
+    recording: false,
+    recordCancelled: false,
+
     // scroll-view 动态高度（px）
     scrollViewHeight: 0,
   },
@@ -69,6 +76,7 @@ Page({
   _historyLoading: false,
   _historyNoMore: false,
   _sessionStartTime: null,
+  _voiceStartY: 0,
 
   // 生成本地时间的 ISO 格式字符串（与后端 LocalDateTime 对齐）
   _formatLocalDateTime(date) {
@@ -232,14 +240,17 @@ Page({
 
   _initAudio() {
     this.audioManager = new AudioManager({
-      onAudioFrame: () => {
-        // 不需要处理录音帧，只用于播放
+      onAudioFrame: (frame) => {
+        // 录音产生的 Opus 帧 → 通过 WebSocket 发送
+        if (this.wsManager) {
+          this.wsManager.sendAudioFrame(frame);
+        }
       },
       onRecordStart: () => {
-        // 不再使用录音功能
+        this.setData({ recording: true });
       },
       onRecordStop: () => {
-        // 不再使用录音功能
+        this.setData({ recording: false, recordCancelled: false });
       },
       onPlayEnd: () => {
         // 播放队列清空：若还在 speaking 状态则可视为补完
@@ -538,6 +549,59 @@ Page({
       inputText: '',
       chatState: STATE_THINKING,
     });
+  },
+
+  onToggleInputMode() {
+    const next = this.data.inputMode === 'text' ? 'voice' : 'text';
+    this.setData({ inputMode: next });
+  },
+
+  onVoiceTouchStart(e) {
+    if (!this._isReadyForAction()) return;
+    if (this.data.chatState !== STATE_IDLE) return;
+
+    const touch = (e.touches && e.touches[0]) || {};
+    this._voiceStartY = touch.clientY || 0;
+    this.setData({ recording: true, recordCancelled: false });
+
+    // 开始录音并通知服务端开始监听
+    if (this.audioManager) this.audioManager.startRecord();
+    if (this.wsManager) this.wsManager.sendListenStart();
+  },
+
+  onVoiceTouchMove(e) {
+    if (!this.data.recording) return;
+    const touch = (e.touches && e.touches[0]) || {};
+    const dy = this._voiceStartY - (touch.clientY || 0);
+    const cancelled = dy > 80;
+    if (cancelled !== this.data.recordCancelled) {
+      this.setData({ recordCancelled: cancelled });
+    }
+  },
+
+  onVoiceTouchEnd() {
+    if (!this.data.recording) return;
+    const cancelled = this.data.recordCancelled;
+
+    // 停止录音
+    if (this.audioManager) this.audioManager.stopRecord();
+
+    if (cancelled) {
+      // 取消：中断服务端处理
+      if (this.wsManager) this.wsManager.sendAbort();
+      this.setData({ recording: false, recordCancelled: false });
+    } else {
+      // 正常发送：通知服务端停止监听
+      if (this.wsManager) this.wsManager.sendListenStop();
+      this.setData({ chatState: STATE_THINKING });
+    }
+  },
+
+  onVoiceTouchCancel() {
+    if (!this.data.recording) return;
+    if (this.audioManager) this.audioManager.stopRecord();
+    if (this.wsManager) this.wsManager.sendAbort();
+    this.setData({ recording: false, recordCancelled: false });
   },
 
   // -------------------------------------------------------------------------

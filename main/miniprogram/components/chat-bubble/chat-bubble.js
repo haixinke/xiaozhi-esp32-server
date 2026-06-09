@@ -55,6 +55,18 @@ Component({
       this._stopAudio();
       this.setData({ audioLoading: true });
 
+      const tempPath = `${wx.env.USER_DATA_PATH}/audio_${audioId}.wav`;
+      const fs = wx.getFileSystemManager();
+
+      // 本地已缓存则直接播放
+      try {
+        fs.accessSync(tempPath);
+        this._playLocalFile(tempPath);
+        return;
+      } catch (_) {
+        // 文件不存在，继续下载
+      }
+
       // Step 1: 用 wx.request 换取一次性播放 UUID
       post('/agent/audio/' + audioId).then((res) => {
         const uuid = res.data;
@@ -82,33 +94,35 @@ Component({
       }).then((arrayBuffer) => {
         if (!arrayBuffer) return;
 
-        // Step 3: 写入临时文件
-        const fs = wx.getFileSystemManager();
-        const tempPath = `${wx.env.USER_DATA_PATH}/audio_${this.data.audioId}.wav`;
+        // Step 3: 写入本地缓存文件
         fs.writeFileSync(tempPath, arrayBuffer, 'binary');
 
-        // Step 4: 用 InnerAudioContext 播放本地文件
-        const innerAudio = wx.createInnerAudioContext();
-        innerAudio.src = tempPath;
-        innerAudio.onPlay(() => {
-          this.setData({ audioPlaying: true, audioLoading: false });
-        });
-        innerAudio.onStop(() => {
-          this.setData({ audioPlaying: false });
-        });
-        innerAudio.onEnded(() => {
-          this.setData({ audioPlaying: false });
-        });
-        innerAudio.onError(() => {
-          this.setData({ audioPlaying: false, audioLoading: false });
-          wx.showToast({ title: '播放失败', icon: 'none' });
-        });
-        innerAudio.play();
-        this._innerAudio = innerAudio;
+        // Step 4: 播放
+        this._playLocalFile(tempPath);
       }).catch(() => {
         this.setData({ audioLoading: false });
         wx.showToast({ title: '获取音频失败', icon: 'none' });
       });
+    },
+
+    _playLocalFile(filePath) {
+      const innerAudio = wx.createInnerAudioContext();
+      innerAudio.src = filePath;
+      innerAudio.onPlay(() => {
+        this.setData({ audioPlaying: true, audioLoading: false });
+      });
+      innerAudio.onStop(() => {
+        this.setData({ audioPlaying: false });
+      });
+      innerAudio.onEnded(() => {
+        this.setData({ audioPlaying: false });
+      });
+      innerAudio.onError(() => {
+        this.setData({ audioPlaying: false, audioLoading: false });
+        wx.showToast({ title: '播放失败', icon: 'none' });
+      });
+      innerAudio.play();
+      this._innerAudio = innerAudio;
     },
 
     _stopAudio() {

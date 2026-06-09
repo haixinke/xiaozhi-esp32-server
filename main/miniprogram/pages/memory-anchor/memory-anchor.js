@@ -8,23 +8,20 @@
 var codes = require('../../config/companion-codes');
 var request = require('../../utils/request');
 
-var VIDEO_URLS = [
-  'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/video/baiyueguang_tianmei.mp4',
-  'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/video/baiyueguang_tianmei2.mp4',
-];
-
-function buildScenarioOneUrl(charId, voiceId) {
+function buildScenarioUrl(charId, voiceId, scenario) {
   var styles = Object.values(codes.VOICE_STYLES);
   var style = codes.VOICE_STYLES[voiceId] || (styles.indexOf(voiceId) >= 0 ? voiceId : '');
-  if (!charId || !style) return VIDEO_URLS[0];
-  return codes.VIDEO_BASE_URL + '/' + charId + '/one/' + charId + '_' + style + '.mp4';
+  var char = charId || 'baiyueguang';
+  var voice = style || 'tianmei';
+  var folder = scenario === 2 ? 'two' : 'one';
+  return codes.VIDEO_BASE_URL + '/' + char + '/' + folder + '/' + char + '_' + voice + '.mp4';
 }
 
 Page({
   data: {
     statusBarHeight: 44,
     scenario: 1,
-    videoUrl: VIDEO_URLS[0],
+    videoUrl: '',
     relationOptions: codes.RELATION_TYPES,
     selectedRelation: -1,
     petOptions: codes.PET_TYPES,
@@ -40,7 +37,7 @@ Page({
     var sysInfo = wx.getSystemInfoSync();
     var app = getApp();
     var flow = app.globalData.destinyFlow || {};
-    var videoUrl = buildScenarioOneUrl(flow.charId, flow.voiceId);
+    var videoUrl = buildScenarioUrl(flow.charId, flow.voiceId, 1);
     this.setData({
       statusBarHeight: sysInfo.statusBarHeight || 44,
       videoUrl: videoUrl,
@@ -71,10 +68,11 @@ Page({
     this.setData({ selectedRelation: idx });
 
     var self = this;
+    var flow = getApp().globalData.destinyFlow || {};
     setTimeout(function () {
       self.setData({
         scenario: 2,
-        videoUrl: VIDEO_URLS[1],
+        videoUrl: buildScenarioUrl(flow.charId, flow.voiceId, 2),
         videoEnded: false,
       });
     }, 600);

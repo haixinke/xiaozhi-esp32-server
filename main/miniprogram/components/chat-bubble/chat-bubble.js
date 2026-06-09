@@ -106,23 +106,33 @@ Component({
     },
 
     _playLocalFile(filePath) {
+      // 排他：停止其他组件正在播放的音频
+      const app = getApp();
+      if (app._currentAudioBubble && app._currentAudioBubble !== this) {
+        app._currentAudioBubble._stopAudio();
+      }
+
       const innerAudio = wx.createInnerAudioContext();
       innerAudio.src = filePath;
       innerAudio.onPlay(() => {
         this.setData({ audioPlaying: true, audioLoading: false });
       });
       innerAudio.onStop(() => {
+        if (app._currentAudioBubble === this) app._currentAudioBubble = null;
         this.setData({ audioPlaying: false });
       });
       innerAudio.onEnded(() => {
+        if (app._currentAudioBubble === this) app._currentAudioBubble = null;
         this.setData({ audioPlaying: false });
       });
       innerAudio.onError(() => {
+        if (app._currentAudioBubble === this) app._currentAudioBubble = null;
         this.setData({ audioPlaying: false, audioLoading: false });
         wx.showToast({ title: '播放失败', icon: 'none' });
       });
       innerAudio.play();
       this._innerAudio = innerAudio;
+      app._currentAudioBubble = this;
     },
 
     _stopAudio() {
@@ -131,6 +141,8 @@ Component({
         this._innerAudio.destroy();
         this._innerAudio = null;
       }
+      const app = getApp();
+      if (app._currentAudioBubble === this) app._currentAudioBubble = null;
       this.setData({ audioPlaying: false, audioLoading: false });
     },
   },
@@ -141,5 +153,7 @@ Component({
       this._innerAudio.destroy();
       this._innerAudio = null;
     }
+    const app = getApp();
+    if (app._currentAudioBubble === this) app._currentAudioBubble = null;
   },
 });

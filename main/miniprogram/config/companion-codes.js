@@ -36,18 +36,20 @@ var PET_TYPES = [
   { id: 'dog', label: '狗' },
 ];
 
+var CDN_BASE_URL = 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la';
+
 var CHARACTER_AVATARS = {
-  baiyueguang: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/head-img/baiyueguang.png',
-  erciyuan: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/head-img/erciyuan.png',
-  linjiamei: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/head-img/linjiamei.png',
-  zhixingyujie: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/head-img/zhichangjie.png',
+  baiyueguang: CDN_BASE_URL + '/girlfriend/head-img/baiyueguang.png',
+  erciyuan: CDN_BASE_URL + '/girlfriend/head-img/erciyuan.png',
+  linjiamei: CDN_BASE_URL + '/girlfriend/head-img/linjiamei.png',
+  zhixingyujie: CDN_BASE_URL + '/girlfriend/head-img/zhichangjie.png',
 };
 
 var CHARACTER_IMAGES = {
-  baiyueguang: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/baiyueguang.png',
-  erciyuan: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/erciyuan.png',
-  linjiamei: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/linjiamei.png',
-  zhixingyujie: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/bg-img/zhichangjie.png',
+  baiyueguang: CDN_BASE_URL + '/girlfriend/bg-img/baiyueguang.png',
+  erciyuan: CDN_BASE_URL + '/girlfriend/bg-img/erciyuan.png',
+  linjiamei: CDN_BASE_URL + '/girlfriend/bg-img/linjiamei.png',
+  zhixingyujie: CDN_BASE_URL + '/girlfriend/bg-img/zhichangjie.png',
 };
 
 var VOICE_STYLES = {
@@ -57,7 +59,7 @@ var VOICE_STYLES = {
   'TTS_HSDSTTS_V2_0022': 'tianmei',
 };
 
-var VIDEO_BASE_URL = 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/video';
+var VIDEO_BASE_URL = CDN_BASE_URL + '/girlfriend/video';
 
 /**
  * 根据编码获取显示标签
@@ -75,6 +77,7 @@ function getLabel(list, id) {
 }
 
 module.exports = {
+  CDN_BASE_URL: CDN_BASE_URL,
   SOUL_TRAITS: SOUL_TRAITS,
   QUIRKS: QUIRKS,
   RELATION_TYPES: RELATION_TYPES,

@@ -562,64 +562,8 @@ class ConnectionHandler:
             self.logger.bind(tag=TAG).debug("系统提示词已增强更新")
 
     def _inject_tool_call_fewshot(self):
-        """注入工具调用 few-shot 示例到对话历史。
-        结构：正样本（工具调用示例）放在动态 system 之前，可命中前缀缓存；
-        负样本（直接回答示例）放在动态 system 之后、紧挨真实用户消息，
-        确保模型在处理用户消息前最后看到的是"不调工具"的行为模式。
-        """
-        if self.intent_type != "function_call":
-            return
-        if not hasattr(self, "func_handler") or self.func_handler is None:
-            return
-
-        tools = self.func_handler.get_functions()
-        if not tools:
-            return
-
-        tool_names = {t.get("function", {}).get("name") for t in tools}
-
-        # === few-shot 示例（is_temporary）===
-        # 展示 direct_answer 携带 response 参数的用法，一次调用完成回复
-
-        # 示例1：direct_answer（回复内容写在 response 参数里，无需递归）
-        da_tc_id = "fewshot_da_001"
-        self.dialogue.put(Message(role="user", content="给我讲个故事吧", is_temporary=True))
-        self.dialogue.put(Message(
-            role="assistant",
-            tool_calls=[{
-                "id": da_tc_id,
-                "function": {"arguments": '{"response": "好呀，你想听什么类型的呀？童话、冒险还是搞笑的？选一个我给你开讲~"}', "name": "direct_answer"},
-                "type": "function", "index": 0,
-            }],
-            is_temporary=True,
-        ))
-        self.dialogue.put(Message(
-            role="tool", tool_call_id=da_tc_id,
-            content="已直接回复", is_temporary=True,
-        ))
-
-        # 示例2：真实工具调用（handle_exit_intent）
-        if "handle_exit_intent" in tool_names:
-            tc_id = "fewshot_exit_001"
-            self.dialogue.put(Message(role="user", content="拜拜", is_temporary=True))
-            self.dialogue.put(Message(
-                role="assistant",
-                tool_calls=[{
-                    "id": tc_id,
-                    "function": {"arguments": '{"say_goodbye": "再见，下次再聊~"}', "name": "handle_exit_intent"},
-                    "type": "function", "index": 0,
-                }],
-                is_temporary=True,
-            ))
-            self.dialogue.put(Message(
-                role="tool", tool_call_id=tc_id,
-                content="退出意图已处理", is_temporary=True,
-            ))
-            self.dialogue.put(Message(
-                role="assistant", content="再见，下次再聊~", is_temporary=True,
-            ))
-
-        self.logger.bind(tag=TAG).debug("已注入工具调用 few-shot 示例")
+        """注入工具调用 few-shot 示例到对话历史（已禁用）。"""
+        pass
 
     def _init_report_threads(self):
         """初始化ASR和TTS上报线程"""
@@ -996,26 +940,25 @@ class ConnectionHandler:
                 memory_str, self.config.get("voiceprint", {})
             )
 
-            # 格式化 LLM 提示词为多行字符串
-            dialogue_lines = []
-            for msg in llm_dialogue:
+            # [DEBUG] 打印完整 LLM 对话上下文（临时调试用，上线前删除）
+            self.logger.bind(tag=TAG).info(f"""
+========== [DEBUG] LLM 完整对话上下文 ==========
+Session ID: {self.session_id}
+对话消息总数: {len(llm_dialogue)}
+意图类型: {self.intent_type}
+{'=' * 50}
+""")
+            for i, msg in enumerate(llm_dialogue):
                 role = msg.get("role", "unknown")
                 content = msg.get("content", "")
-                # 截取长内容，避免日志过长
-                content_preview = content[:500] + "..." if len(content) > 500 else content
-                dialogue_lines.append(f"- [{role}]: {content_preview}")
-
-            dialogue_str = "\n".join(dialogue_lines)
-
-            # 打印完整的 LLM 提示词（INFO 级别）
-            self.logger.bind(tag=TAG).info(f"""
-【LLM 提示词】
-Session ID: {self.session_id}
-Intent Type: {self.intent_type}
-Messages: {len(llm_dialogue)}
-
-{dialogue_str}
-""")
+                tool_calls = msg.get("tool_calls", None)
+                self.logger.bind(tag=TAG).info(f"[{i}] role={role} | content={content}")
+                if tool_calls:
+                    self.logger.bind(tag=TAG).info(f"[{i}] tool_calls={json.dumps(tool_calls, ensure_ascii=False, indent=2)}")
+            if functions is not None:
+                self.logger.bind(tag=TAG).info(f"========== [DEBUG] 可用工具列表 ==========\n{json.dumps(functions, ensure_ascii=False, indent=2)}")
+            self.logger.bind(tag=TAG).info("========== [DEBUG] LLM 对话上下文结束 ==========\n")
+            # [DEBUG END]
 
             if self.intent_type == "function_call" and functions is not None:
                 # 使用支持functions的streaming接口

@@ -31,6 +31,10 @@ import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.Result;
 import xiaozhi.common.validator.ValidatorUtils;
 import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.item.enums.ConsumeBizType;
+import xiaozhi.modules.item.service.ItemService;
+import xiaozhi.modules.subscription.enums.FeatureCode;
+import xiaozhi.modules.subscription.service.SubscriptionService;
 import xiaozhi.modules.voiceclone.dto.VoiceCloneResponseDTO;
 import xiaozhi.modules.voiceclone.entity.VoiceCloneEntity;
 import xiaozhi.modules.voiceclone.service.VoiceCloneService;
@@ -44,6 +48,8 @@ public class VoiceCloneController {
 
     private final VoiceCloneService voiceCloneService;
     private final RedisUtils redisUtils;
+    private final SubscriptionService subscriptionService;
+    private final ItemService itemService;
 
     @GetMapping
     @Operation(summary = "分页查询音色资源")
@@ -183,6 +189,11 @@ public class VoiceCloneController {
     public Result<String> cloneAudio(@RequestBody Map<String, String> params) {
         String cloneId = params.get("cloneId");
         checkPermission(cloneId);
+        Long userId = SecurityUser.getUser().getId();
+        // 如果用户拥有 custom_voice 能力则直接放行；否则消耗一张 voice_clone_quota 道具
+        if (!subscriptionService.hasFeature(userId, FeatureCode.CUSTOM_VOICE)) {
+            itemService.consume(userId, "voice_clone_quota", 1, ConsumeBizType.VOICE_CLONE, cloneId);
+        }
         // 调用服务层进行语音克隆训练
         voiceCloneService.cloneAudio(cloneId);
         return new Result<String>();

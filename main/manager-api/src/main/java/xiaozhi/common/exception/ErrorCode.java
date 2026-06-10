@@ -271,4 +271,25 @@ public interface ErrorCode {
     int COMPANION_NOT_FOUND = 10210; // 伴侣不存在
     int COMPANION_ALREADY_EXISTS = 10211; // 该设备已创建过伴侣
     int COMPANION_INVALID_CHARACTER = 10212; // 无效的角色编码
+
+    // 支付相关错误码
+    int PAY_CHANNEL_NOT_AVAILABLE = 10300; // 支付渠道不可用
+    int PAY_ORDER_NOT_FOUND = 10301; // 订单不存在
+    int PAY_ORDER_AMOUNT_MISMATCH = 10302; // 订单金额不一致
+    int PAY_ORDER_DUPLICATE = 10303; // 重复下单，请稍后再试
+    int PAY_SIGN_INVALID = 10304; // 支付签名校验失败
+    int PAY_REFUND_FAILED = 10305; // 退款失败
+    int PAY_ORDER_STATUS_INVALID = 10306; // 订单状态不允许该操作
+    int PAY_PRODUCT_INVALID = 10307; // 商品信息无效
+    int PAY_OPENID_REQUIRED = 10308; // 缺少微信openid，无法发起支付
+
+    // 订阅相关错误码
+    int SUBSCRIPTION_PLAN_NOT_FOUND = 10310; // 订阅档位不存在
+    int SUBSCRIPTION_NOT_ACTIVE = 10311; // 当前没有生效的订阅
+    int SUBSCRIPTION_FEATURE_DENIED = 10312; // 当前订阅未包含该能力
+
+    // 道具相关错误码
+    int ITEM_SKU_NOT_FOUND = 10320; // 道具不存在
+    int ITEM_INSUFFICIENT = 10321; // 道具数量不足
+    int ITEM_CONSUME_FAILED = 10322; // 道具消耗失败
 }

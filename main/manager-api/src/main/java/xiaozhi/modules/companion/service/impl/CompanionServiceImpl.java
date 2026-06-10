@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
@@ -27,7 +28,11 @@ import xiaozhi.modules.companion.vo.CompanionVO;
 import xiaozhi.modules.device.dto.DeviceReportReqDTO;
 import xiaozhi.modules.device.dto.DeviceReportRespDTO;
 import xiaozhi.modules.device.service.DeviceService;
+import xiaozhi.modules.item.enums.ConsumeBizType;
+import xiaozhi.modules.item.service.ItemService;
 import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.subscription.enums.FeatureCode;
+import xiaozhi.modules.subscription.service.SubscriptionService;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -43,6 +48,8 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
     private final AgentService agentService;
     private final DeviceService deviceService;
     private final PlatformTransactionManager transactionManager;
+    private final SubscriptionService subscriptionService;
+    private final ItemService itemService;
 
     @Override
     public CompanionVO create(CompanionCreateDTO dto) {
@@ -102,6 +109,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public CompanionVO update(CompanionUpdateDTO dto) {
         QueryWrapper<CompanionEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("device_id", dto.getDeviceId());
@@ -113,12 +121,26 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             throw new RenException(ErrorCode.NO_PERMISSION);
         }
 
+        // 门禁校验与道具消耗：都放在实际写入之前集中完成，事务内任何后续异常会让道具扣减一起回滚。
+        boolean occupationChanged = dto.getOccupation() != null && !dto.getOccupation().equals(entity.getOccupation());
+        boolean soulQuirkChanged = dto.getSoulQuirk() != null && !dto.getSoulQuirk().equals(entity.getSoulQuirk());
+        if (occupationChanged) {
+            ensureChangeAllowed(entity.getUserId(), FeatureCode.OCCUPATION_CHANGE,
+                    "occupation_change", ConsumeBizType.OCCUPATION_CHANGE, entity.getDeviceId());
+        }
+        if (soulQuirkChanged) {
+            ensureChangeAllowed(entity.getUserId(), FeatureCode.SOUL_QUIRK_CHANGE,
+                    "soul_quirk_change", ConsumeBizType.SOUL_QUIRK_CHANGE, entity.getDeviceId());
+        }
+
         boolean needRecalcBirth = false;
 
         if (dto.getType() != null) entity.setType(dto.getType());
         if (dto.getAvatar() != null) entity.setAvatar(dto.getAvatar());
         if (dto.getDefaultImage() != null) entity.setDefaultImage(dto.getDefaultImage());
-        if (dto.getOccupation() != null) entity.setOccupation(dto.getOccupation());
+        if (occupationChanged) {
+            entity.setOccupation(dto.getOccupation());
+        }
         if (dto.getVoice() != null) entity.setVoice(dto.getVoice());
         if (dto.getQuirksText() != null) entity.setQuirksText(dto.getQuirksText());
         if (dto.getPetType() != null) entity.setPetType(dto.getPetType());
@@ -134,7 +156,9 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             needRecalcBirth = true;
         }
         if (dto.getSoulTraits() != null) entity.setSoulTraits(dto.getSoulTraits());
-        if (dto.getSoulQuirk() != null) entity.setSoulQuirk(dto.getSoulQuirk());
+        if (soulQuirkChanged) {
+            entity.setSoulQuirk(dto.getSoulQuirk());
+        }
         if (dto.getRelationType() != null) {
             entity.setRelationType(dto.getRelationType());
             entity.setIntimacy(deriveIntimacy(dto.getRelationType()));
@@ -188,6 +212,17 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             case "bickering" -> 0.5f;
             default -> 0.5f;
         };
+    }
+
+    /**
+     * 权益鉴权：订阅拥有对应 feature 时直接放行；否则消耗一张券。
+     */
+    private void ensureChangeAllowed(Long userId, String featureCode, String skuCode,
+                                     String bizType, String bizRefId) {
+        if (subscriptionService.hasFeature(userId, featureCode)) {
+            return;
+        }
+        itemService.consume(userId, skuCode, 1, bizType, bizRefId);
     }
 
     @Override

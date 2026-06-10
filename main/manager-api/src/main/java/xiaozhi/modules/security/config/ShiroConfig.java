@@ -102,6 +102,13 @@ public class ShiroConfig {
         filterMap.put("/companion/detail/**", "oauth2");
         filterMap.put("/voiceClone/play/**", "anon");
         filterMap.put("/wechat/login", "anon");
+        filterMap.put("/subscription/plans", "anon");
+        filterMap.put("/subscription/me", "oauth2");
+        filterMap.put("/subscription/entitlements", "oauth2");
+        filterMap.put("/item/skus", "anon");
+        filterMap.put("/item/inventory", "oauth2");
+        filterMap.put("/payment/notify/**", "anon");
+        filterMap.put("/payment/**", "oauth2");
         filterMap.put("/**", "oauth2");
         shiroFilter.setFilterChainDefinitionMap(filterMap);
 

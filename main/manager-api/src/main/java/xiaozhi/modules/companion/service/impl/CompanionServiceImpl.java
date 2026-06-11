@@ -31,8 +31,6 @@ import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.item.enums.ConsumeBizType;
 import xiaozhi.modules.item.service.ItemService;
 import xiaozhi.modules.security.user.SecurityUser;
-import xiaozhi.modules.subscription.enums.FeatureCode;
-import xiaozhi.modules.subscription.service.SubscriptionService;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -48,7 +46,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
     private final AgentService agentService;
     private final DeviceService deviceService;
     private final PlatformTransactionManager transactionManager;
-    private final SubscriptionService subscriptionService;
     private final ItemService itemService;
 
     @Override
@@ -125,12 +122,12 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         boolean occupationChanged = dto.getOccupation() != null && !dto.getOccupation().equals(entity.getOccupation());
         boolean soulQuirkChanged = dto.getSoulQuirk() != null && !dto.getSoulQuirk().equals(entity.getSoulQuirk());
         if (occupationChanged) {
-            ensureChangeAllowed(entity.getUserId(), FeatureCode.OCCUPATION_CHANGE,
-                    "occupation_change", ConsumeBizType.OCCUPATION_CHANGE, entity.getDeviceId());
+            itemService.consume(entity.getUserId(), "occupation_change", 1,
+                    ConsumeBizType.OCCUPATION_CHANGE, entity.getDeviceId());
         }
         if (soulQuirkChanged) {
-            ensureChangeAllowed(entity.getUserId(), FeatureCode.SOUL_QUIRK_CHANGE,
-                    "soul_quirk_change", ConsumeBizType.SOUL_QUIRK_CHANGE, entity.getDeviceId());
+            itemService.consume(entity.getUserId(), "soul_quirk_change", 1,
+                    ConsumeBizType.SOUL_QUIRK_CHANGE, entity.getDeviceId());
         }
 
         boolean needRecalcBirth = false;
@@ -212,17 +209,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             case "bickering" -> 0.5f;
             default -> 0.5f;
         };
-    }
-
-    /**
-     * 权益鉴权：订阅拥有对应 feature 时直接放行；否则消耗一张券。
-     */
-    private void ensureChangeAllowed(Long userId, String featureCode, String skuCode,
-                                     String bizType, String bizRefId) {
-        if (subscriptionService.hasFeature(userId, featureCode)) {
-            return;
-        }
-        itemService.consume(userId, skuCode, 1, bizType, bizRefId);
     }
 
     @Override

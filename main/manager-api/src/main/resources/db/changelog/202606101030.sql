@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS ai_subscription_plan (
     duration_days   INT          NOT NULL COMMENT '周期天数',
     price_fen       BIGINT       NOT NULL COMMENT '原价(分)',
     promo_price_fen BIGINT       NULL     COMMENT '促销价(分)',
-    features        TEXT         NOT NULL COMMENT '权益JSON数组: ["outfit","occupation_change",...]',
+    features        TEXT         NOT NULL COMMENT '权益JSON数组: ["long_term_memory","voice_input","superpower","social_moments"]',
     bonus_items     TEXT         NULL     COMMENT '附赠道具JSON: [{"skuCode":"rose","count":10}]',
     description     VARCHAR(500) NULL     COMMENT '描述',
     status          TINYINT      NOT NULL DEFAULT 1 COMMENT '0下架 1上架',
@@ -163,28 +163,22 @@ CREATE TABLE IF NOT EXISTS ai_payment_callback_log (
 -- 种子数据：3 档订阅
 INSERT INTO ai_subscription_plan (plan_code, plan_name, duration_days, price_fen, promo_price_fen, features, bonus_items, description, sort)
 VALUES
-('bronze', '青铜月卡', 30, 3000, NULL,
- '["outfit","occupation_change","soul_quirk_change"]',
- '[{"skuCode":"rose","count":3}]',
- '换装/换职业/换小任性 不限次数；附赠玫瑰花×3', 10),
-('silver', '白银月卡', 30, 8000, NULL,
- '["outfit","occupation_change","soul_quirk_change","custom_voice"]',
- '[{"skuCode":"rose","count":10},{"skuCode":"voice_clone_quota","count":1}]',
- '在青铜基础上 + 自定义克隆音色解锁；附赠克隆额度×1、玫瑰×10', 20),
-('gold', '黄金月卡', 30, 28800, NULL,
- '["outfit","occupation_change","soul_quirk_change","custom_voice","priority_chat"]',
- '[{"skuCode":"rose","count":30},{"skuCode":"voice_clone_quota","count":3},{"skuCode":"milktea","count":10}]',
- '全特权 + 优先聊天通道；附赠克隆额度×3、玫瑰×30、奶茶×10', 30);
+('silver', '白银月卡', 30, 1990, 990,
+ '["long_term_memory"]',
+ NULL,
+ '长久记忆', 20),
+('gold', '黄金月卡', 30, 3990, 1990,
+ '["long_term_memory","voice_input","superpower","social_moments"]',
+ NULL,
+ '全部权益：长久记忆 + 语音输入 + 超能力 + 朋友圈；', 30);
 
 -- 种子数据：道具 SKU
 INSERT INTO ai_item_sku (sku_code, sku_name, category, price_fen, attributes, description, sort)
 VALUES
-('occupation_change', '职业变更券', 'consumable_change', 600, NULL, '一次性变更女友职业', 10),
-('soul_quirk_change', '小任性变更券', 'consumable_change', 600, NULL, '一次性变更女友小任性', 11),
-('voice_clone_quota', '声音克隆额度', 'voice_quota', 1200, NULL, '可进行一次声音克隆', 12),
-('outfit_school', '校园风套装', 'outfit', 800, '{"outfitImage":""}', '校园风换装', 20),
+('occupation_change', '职业变更券', 'consumable_change', 29900, NULL, '一次性变更女友职业', 10),
+('soul_quirk_change', '小任性变更券', 'consumable_change', 9900, NULL, '一次性变更女友小任性', 11),
+('voice_clone_quota', '声音克隆额度', 'voice_quota', 29900, NULL, '可进行一次声音克隆', 12),
 ('outfit_office', 'OL职场套装', 'outfit', 800, '{"outfitImage":""}', '职场OL换装', 21),
-('outfit_lolita', 'Lolita套装', 'outfit', 1200, '{"outfitImage":""}', 'Lolita换装', 22),
 ('rose', '玫瑰花', 'intimacy', 200, '{"intimacyDelta":5}', '亲密度+5', 30),
 ('milktea', '奶茶', 'intimacy', 500, '{"intimacyDelta":10}', '亲密度+10', 31),
 ('diamond_ring', '挚爱钻戒', 'intimacy', 9900, '{"intimacyDelta":100}', '亲密度+100', 32);

@@ -28,15 +28,19 @@
       <text class="bond-identity-name {{planCode === 'gold' ? 'bond-gold' : planCode === 'silver' ? 'bond-silver' : 'bond-free'}}">{{identityName}}</text>
     </view>
 
-    <!-- 功能入口 -->
-    <view class="bond-actions">
-      <view class="bond-action" bindtap="onContractTap">
-        <text class="bond-action-text">我的契约</text>
-      </view>
-      <view class="bond-action-divider"></view>
-      <view class="bond-action" bindtap="onBackpackTap">
-        <text class="bond-action-text">我的背包</text>
-      </view>
+  </view>
+
+  <!-- 功能入口 -->
+  <view class="entry-row">
+    <view class="entry-card" bindtap="onContractTap">
+      <!-- <view class="entry-icon-area entry-icon-contract"></view> -->
+      <text class="entry-title">我的契约</text>
+      <text class="entry-desc">管理订阅</text>
+    </view>
+    <view class="entry-card" bindtap="onBackpackTap">
+      <!-- <view class="entry-icon-area entry-icon-backpack"></view> -->
+      <text class="entry-title">我的背包</text>
+      <text class="entry-desc">查看道具</text>
     </view>
   </view>
 

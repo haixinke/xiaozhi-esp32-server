@@ -79,4 +79,34 @@
   <view class="settings-footer">
     <text class="footer-text">完美女友 © 2026</text>
   </view>
+
+  <!-- 契约浮窗 -->
+  <view class="contract-overlay {{showContractPopup ? 'contract-overlay-show' : ''}}" bindtap="onContractOverlayTap">
+    <view class="contract-panel" catchtap="onContractPanelTap">
+      <view class="contract-header">
+        <text class="contract-romantic-text">你愿意签一个契约，让我离你的现实生活更近一点吗？</text>
+      </view>
+
+      <view class="contract-cards">
+        <view class="contract-card {{selectedPlanId === item.id ? 'contract-card-selected' : ''}}"
+              wx:for="{{plans}}" wx:key="id"
+              data-id="{{item.id}}" bindtap="onPlanSelect">
+          <text class="contract-card-name">{{item.planName}}</text>
+          <view class="contract-card-price">
+            <text class="contract-card-promo">¥{{item.promoYuan}}</text>
+            <text class="contract-card-original">¥{{item.priceYuan}}</text>
+          </view>
+          <view class="contract-card-features">
+            <text class="contract-feature" wx:for="{{item.features}}" wx:for-item="feat" wx:key="code">{{feat.label}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="contract-action">
+        <view class="contract-btn {{selectedPlanId ? 'contract-btn-active' : 'contract-btn-disabled'}}" bindtap="onSignContract">
+          签订契约
+        </view>
+      </view>
+    </view>
+  </view>
 </view>

@@ -327,6 +327,156 @@ switch {
   letter-spacing: 0.5rpx;
 }
 
+/* ===== 契约浮窗 ===== */
+.contract-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.contract-overlay-show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.contract-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fbf9f8;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 48rpx 32rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom, 24rpx));
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contract-overlay-show .contract-panel {
+  transform: translateY(0);
+}
+
+.contract-header {
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.contract-romantic-text {
+  font-size: 30rpx;
+  color: #514345;
+  line-height: 1.6;
+  letter-spacing: 1rpx;
+}
+
+.contract-cards {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.contract-card {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2rpx solid rgba(134, 78, 90, 0.12);
+  border-radius: 24rpx;
+  padding: 28rpx 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contract-card:active {
+  transform: scale(0.97);
+}
+
+.contract-card-selected {
+  border-color: #864e5a;
+  box-shadow: 0 4rpx 20rpx rgba(134, 78, 90, 0.2);
+}
+
+.contract-card-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1b1c1c;
+  letter-spacing: 1rpx;
+}
+
+.contract-card-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.contract-card-promo {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #864e5a;
+}
+
+.contract-card-original {
+  font-size: 22rpx;
+  color: #8a7a7e;
+  text-decoration: line-through;
+}
+
+.contract-card-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  width: 100%;
+  align-items: center;
+}
+
+.contract-feature {
+  font-size: 22rpx;
+  color: #514345;
+  padding: 4rpx 16rpx;
+  background: rgba(134, 78, 90, 0.06);
+  border-radius: 12rpx;
+  letter-spacing: 0.5rpx;
+}
+
+.contract-action {
+  padding-top: 8rpx;
+}
+
+.contract-btn {
+  width: 100%;
+  height: 88rpx;
+  border-radius: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  transition: opacity 0.2s ease;
+}
+
+.contract-btn-disabled {
+  background: rgba(134, 78, 90, 0.12);
+  color: rgba(134, 78, 90, 0.4);
+}
+
+.contract-btn-active {
+  background: linear-gradient(135deg, #864e5a, #d4737a);
+  color: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(134, 78, 90, 0.3);
+}
+
+.contract-btn-active:active {
+  opacity: 0.85;
+}
+
 /* ================================================================
    DARK MODE
    ================================================================ */
@@ -454,4 +604,50 @@ switch {
 
 .dark .footer-text {
   color: rgba(196, 155, 165, 0.5);
+}
+
+/* 契约浮窗 - 深色模式 */
+.dark .contract-panel {
+  background: #1e1c2e;
+}
+
+.dark .contract-romantic-text {
+  color: #a09a9c;
+}
+
+.dark .contract-card {
+  background: rgba(30, 28, 46, 0.9);
+  border-color: rgba(134, 78, 90, 0.2);
+}
+
+.dark .contract-card-selected {
+  border-color: #c49ba5;
+  box-shadow: 0 4rpx 20rpx rgba(196, 155, 165, 0.15);
+}
+
+.dark .contract-card-name {
+  color: #e8e4e3;
+}
+
+.dark .contract-card-promo {
+  color: #d4737a;
+}
+
+.dark .contract-card-original {
+  color: #6a6468;
+}
+
+.dark .contract-feature {
+  color: #a09a9c;
+  background: rgba(134, 78, 90, 0.12);
+}
+
+.dark .contract-btn-disabled {
+  background: rgba(134, 78, 90, 0.15);
+  color: rgba(196, 155, 165, 0.3);
+}
+
+.dark .contract-btn-active {
+  background: linear-gradient(135deg, #864e5a, #d4737a);
+  box-shadow: 0 8rpx 24rpx rgba(134, 78, 90, 0.25);
 }

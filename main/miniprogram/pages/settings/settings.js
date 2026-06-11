@@ -7,7 +7,7 @@ Page({
     darkMode: getTheme(),
     // 羁绊面板
     companionAvatar: '',
-    userAvatar: '/images/avatar-default.png',
+    userAvatar: '/images/user-default.png',
     planCode: null,
     identityName: '普通陪伴'
   },
@@ -19,7 +19,7 @@ Page({
   onShow() {
     applyTheme(this);
     this.setData({
-      userAvatar: wx.getStorageSync('userAvatar') || '/images/avatar-default.png'
+      userAvatar: wx.getStorageSync('userAvatar') || '/images/user-default.png'
     });
     this.loadCompanionAvatar();
     this.loadSubscription();

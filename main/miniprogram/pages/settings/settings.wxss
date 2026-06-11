@@ -21,6 +21,162 @@
   letter-spacing: 1rpx;
 }
 
+/* ===== 羁绊面板 ===== */
+.bond-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(40rpx);
+  -webkit-backdrop-filter: blur(40rpx);
+  border-radius: 32rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 8rpx 32rpx rgba(134, 78, 90, 0.08),
+    0 0 20rpx rgba(255, 183, 193, 0.12);
+  overflow: hidden;
+  margin-bottom: 24rpx;
+  padding: 40rpx 32rpx;
+}
+
+/* --- 头像区域 --- */
+.bond-avatars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.bond-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.bond-avatar-btn {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  line-height: normal;
+}
+
+.bond-avatar-btn::after {
+  border: none;
+}
+
+.bond-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(134, 78, 90, 0.2);
+  box-shadow: 0 4rpx 16rpx rgba(134, 78, 90, 0.15);
+}
+
+.bond-avatar-label {
+  font-size: 24rpx;
+  color: #514345;
+  letter-spacing: 0.5rpx;
+}
+
+/* --- 命运红线 --- */
+.bond-thread {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24rpx;
+}
+
+.bond-thread-line {
+  width: 100%;
+  height: 2rpx;
+  background: linear-gradient(
+    90deg,
+    rgba(212, 115, 122, 0) 0%,
+    rgba(212, 115, 122, 0.4) 30%,
+    rgba(212, 115, 122, 0.6) 50%,
+    rgba(212, 115, 122, 0.4) 70%,
+    rgba(212, 115, 122, 0) 100%
+  );
+  position: relative;
+}
+
+.bond-thread-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: rgba(212, 115, 122, 0.5);
+  box-shadow: 0 0 12rpx rgba(212, 115, 122, 0.3);
+}
+
+/* --- 身份标签 --- */
+.bond-identity {
+  display: flex;
+  justify-content: center;
+  margin-top: 28rpx;
+}
+
+.bond-identity-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  padding: 8rpx 32rpx;
+  border-radius: 20rpx;
+}
+
+.bond-free {
+  color: #514345;
+  background: rgba(134, 78, 90, 0.08);
+}
+
+.bond-silver {
+  color: #7a6f8a;
+  background: rgba(122, 111, 138, 0.1);
+}
+
+.bond-gold {
+  color: #b8860b;
+  background: rgba(184, 134, 11, 0.1);
+}
+
+/* --- 功能入口 --- */
+.bond-actions {
+  display: flex;
+  align-items: center;
+  margin-top: 32rpx;
+  border-top: 1rpx solid rgba(134, 78, 90, 0.08);
+  padding-top: 24rpx;
+}
+
+.bond-action {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16rpx 0;
+}
+
+.bond-action:active {
+  opacity: 0.6;
+}
+
+.bond-action-text {
+  font-size: 28rpx;
+  color: #864e5a;
+  font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+.bond-action-divider {
+  width: 1rpx;
+  height: 32rpx;
+  background: rgba(134, 78, 90, 0.12);
+}
+
 /* ===== Settings List (Glassmorphic Card) ===== */
 .settings-list {
   background: rgba(255, 255, 255, 0.75);
@@ -110,6 +266,66 @@ switch {
   color: #e8e4e3;
 }
 
+/* 羁绊面板 - 深色模式 */
+.dark .bond-card {
+  background: rgba(30, 28, 46, 0.85);
+  border-color: rgba(134, 78, 90, 0.15);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
+}
+
+.dark .bond-avatar {
+  border-color: rgba(196, 155, 165, 0.25);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.3);
+}
+
+.dark .bond-avatar-label {
+  color: #a09a9c;
+}
+
+.dark .bond-thread-line {
+  background: linear-gradient(
+    90deg,
+    rgba(212, 115, 122, 0) 0%,
+    rgba(212, 115, 122, 0.25) 30%,
+    rgba(212, 115, 122, 0.4) 50%,
+    rgba(212, 115, 122, 0.25) 70%,
+    rgba(212, 115, 122, 0) 100%
+  );
+}
+
+.dark .bond-thread-line::after {
+  background: rgba(212, 115, 122, 0.35);
+  box-shadow: 0 0 12rpx rgba(212, 115, 122, 0.15);
+}
+
+.dark .bond-free {
+  color: #a09a9c;
+  background: rgba(134, 78, 90, 0.15);
+}
+
+.dark .bond-silver {
+  color: #b8adc8;
+  background: rgba(122, 111, 138, 0.15);
+}
+
+.dark .bond-gold {
+  color: #daa520;
+  background: rgba(184, 134, 11, 0.15);
+}
+
+.dark .bond-action-text {
+  color: #c49ba5;
+}
+
+.dark .bond-actions {
+  border-top-color: rgba(134, 78, 90, 0.12);
+}
+
+.dark .bond-action-divider {
+  background: rgba(134, 78, 90, 0.18);
+}
+
+/* 设置列表 - 深色模式 */
 .dark .settings-list {
   background: rgba(30, 28, 46, 0.85);
   border-color: rgba(134, 78, 90, 0.15);

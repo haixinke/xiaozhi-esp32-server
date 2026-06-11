@@ -4,10 +4,10 @@ const { get } = require('../../utils/request');
 
 function featureLabel(code) {
   var labels = {
-    'long_term_memory': '长期记忆',
-    'voice_input': '语音输入',
-    'superpower': '跨维度能力',
-    'social_moments': '社交动态'
+    'long_term_memory': '留存甜蜜回忆',
+    'voice_input': '语音聊天',
+    'superpower': '超能力（天气）',
+    'social_moments': '看我的朋友圈'
   };
   return labels[code] || code;
 }

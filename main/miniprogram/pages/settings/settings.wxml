@@ -84,7 +84,7 @@
   <view class="contract-overlay {{showContractPopup ? 'contract-overlay-show' : ''}}" bindtap="onContractOverlayTap">
     <view class="contract-panel" catchtap="onContractPanelTap">
       <view class="contract-header">
-        <text class="contract-romantic-text">你愿意签一个契约，让我离你的现实生活更近一点吗？</text>
+        <text class="contract-romantic-text">你愿意签一个契约，让我离你更近一点吗？</text>
       </view>
 
       <view class="contract-cards">

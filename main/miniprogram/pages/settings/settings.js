@@ -20,11 +20,15 @@ Page({
     userAvatar: '/images/user-default.png',
     planCode: null,
     identityName: '普通陪伴',
-    // 契约浮窗
+    // 契约浮窗（购买）
     showContractPopup: false,
     plans: [],
     selectedPlanId: null,
-    contractLoading: false
+    contractLoading: false,
+    // 契约详情浮窗
+    showDetailPopup: false,
+    detailLoading: false,
+    detailData: null
   },
 
   onLoad() {
@@ -86,10 +90,80 @@ Page({
 
   onContractTap() {
     if (this.data.planCode) {
-      wx.showToast({ title: '您已有契约', icon: 'none', duration: 1500 });
+      this.loadMySubscription();
       return;
     }
     this.loadPlans();
+  },
+
+  async loadMySubscription() {
+    if (this.data.detailLoading) return;
+    this.setData({ detailLoading: true });
+    try {
+      var results = await Promise.all([
+        get('/subscription/me'),
+        get('/subscription/plans')
+      ]);
+      var subRes = results[0];
+      var plansRes = results[1];
+      if (!subRes || subRes.code !== 0 || !subRes.data) {
+        wx.showToast({ title: '加载失败', icon: 'none', duration: 1500 });
+        return;
+      }
+      var sub = subRes.data;
+      var plans = (plansRes && plansRes.code === 0 && plansRes.data) ? plansRes.data : [];
+      var plan = plans.filter(function(p) { return p.planCode === sub.planCode; })[0];
+      var planName = plan ? plan.planName : sub.planCode;
+      var identityName = this.getIdentityName(sub.planCode);
+      var features = (sub.features || []).map(function(code) {
+        return { code: code, label: featureLabel(code) };
+      });
+      var remainingText = '';
+      if (sub.remainingSeconds > 0) {
+        var days = Math.floor(sub.remainingSeconds / 86400);
+        var hours = Math.floor((sub.remainingSeconds % 86400) / 3600);
+        remainingText = days > 0 ? days + '天' + hours + '小时' : hours + '小时';
+      } else {
+        remainingText = '已过期';
+      }
+      var startStr = this.formatDate(sub.startAt);
+      var endStr = this.formatDate(sub.endAt);
+      var isActive = sub.status === 1;
+      this.setData({
+        showDetailPopup: true,
+        detailData: {
+          planName: planName,
+          identityName: identityName,
+          features: features,
+          startAt: startStr,
+          endAt: endStr,
+          remainingText: remainingText,
+          isActive: isActive
+        }
+      });
+    } catch (err) {
+      console.warn('[settings] load subscription detail failed:', err);
+      wx.showToast({ title: '加载失败', icon: 'none', duration: 1500 });
+    } finally {
+      this.setData({ detailLoading: false });
+    }
+  },
+
+  formatDate(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr);
+    var y = d.getFullYear();
+    var m = d.getMonth() + 1;
+    var day = d.getDate();
+    return y + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+  },
+
+  onDetailOverlayTap() {
+    this.setData({ showDetailPopup: false });
+  },
+
+  onDetailPanelTap() {
+    // prevent bubbling
   },
 
   async loadPlans() {

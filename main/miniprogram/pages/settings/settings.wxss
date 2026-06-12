@@ -477,6 +477,126 @@ switch {
   opacity: 0.85;
 }
 
+/* ===== 契约详情浮窗 ===== */
+.detail-header {
+  text-align: center;
+  margin-bottom: 36rpx;
+}
+
+.detail-identity {
+  display: inline-block;
+  font-size: 28rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  padding: 6rpx 24rpx;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.detail-silver {
+  color: #7a6f8a;
+  background: rgba(122, 111, 138, 0.1);
+}
+
+.detail-gold {
+  color: #b8860b;
+  background: rgba(184, 134, 11, 0.1);
+}
+
+.detail-expired {
+  color: #8a7a7e;
+  background: rgba(138, 122, 126, 0.1);
+}
+
+.detail-plan-name {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1b1c1c;
+  letter-spacing: 1rpx;
+  margin-top: 12rpx;
+}
+
+/* 时间信息 */
+.detail-time {
+  background: rgba(134, 78, 90, 0.04);
+  border-radius: 20rpx;
+  padding: 24rpx 28rpx;
+  margin-bottom: 32rpx;
+}
+
+.detail-time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10rpx 0;
+}
+
+.detail-time-label {
+  font-size: 26rpx;
+  color: #8a7a7e;
+}
+
+.detail-time-value {
+  font-size: 26rpx;
+  color: #514345;
+  font-weight: 500;
+}
+
+.detail-remaining {
+  font-size: 28rpx;
+  color: #864e5a;
+  font-weight: 600;
+}
+
+.detail-remaining-expired {
+  color: #8a7a7e;
+}
+
+/* 权益列表 */
+.detail-features {
+  margin-bottom: 32rpx;
+}
+
+.detail-features-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #514345;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.detail-features-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+/* 状态 */
+.detail-status {
+  text-align: center;
+  padding-top: 8rpx;
+}
+
+.detail-status-tag {
+  display: inline-block;
+  font-size: 24rpx;
+  font-weight: 500;
+  padding: 6rpx 28rpx;
+  border-radius: 16rpx;
+  letter-spacing: 1rpx;
+}
+
+.detail-status-active {
+  color: #5a8a4e;
+  background: rgba(90, 138, 78, 0.1);
+}
+
+.detail-status-expired {
+  color: #8a7a7e;
+  background: rgba(138, 122, 126, 0.1);
+}
+
 /* ================================================================
    DARK MODE
    ================================================================ */
@@ -650,4 +770,58 @@ switch {
 .dark .contract-btn-active {
   background: linear-gradient(135deg, #864e5a, #d4737a);
   box-shadow: 0 8rpx 24rpx rgba(134, 78, 90, 0.25);
+}
+
+/* 契约详情浮窗 - 深色模式 */
+.dark .detail-silver {
+  color: #b8adc8;
+  background: rgba(122, 111, 138, 0.15);
+}
+
+.dark .detail-gold {
+  color: #daa520;
+  background: rgba(184, 134, 11, 0.15);
+}
+
+.dark .detail-expired {
+  color: #6a6468;
+  background: rgba(138, 122, 126, 0.12);
+}
+
+.dark .detail-plan-name {
+  color: #e8e4e3;
+}
+
+.dark .detail-time {
+  background: rgba(134, 78, 90, 0.08);
+}
+
+.dark .detail-time-label {
+  color: #6a6468;
+}
+
+.dark .detail-time-value {
+  color: #a09a9c;
+}
+
+.dark .detail-remaining {
+  color: #d4737a;
+}
+
+.dark .detail-remaining-expired {
+  color: #6a6468;
+}
+
+.dark .detail-features-title {
+  color: #a09a9c;
+}
+
+.dark .detail-status-active {
+  color: #7ab86e;
+  background: rgba(90, 138, 78, 0.12);
+}
+
+.dark .detail-status-expired {
+  color: #6a6468;
+  background: rgba(138, 122, 126, 0.12);
 }

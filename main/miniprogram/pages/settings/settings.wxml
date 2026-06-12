@@ -76,7 +76,7 @@
     <text class="footer-text">完美女友 © 2026</text>
   </view>
 
-  <!-- 契约浮窗 -->
+  <!-- 契约购买浮窗 -->
   <view class="contract-overlay {{showContractPopup ? 'contract-overlay-show' : ''}}" bindtap="onContractOverlayTap">
     <view class="contract-panel" catchtap="onContractPanelTap">
       <view class="contract-header">
@@ -101,6 +101,48 @@
       <view class="contract-action">
         <view class="contract-btn {{selectedPlanId ? 'contract-btn-active' : 'contract-btn-disabled'}}" bindtap="onSignContract">
           签订契约
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 契约详情浮窗 -->
+  <view class="contract-overlay {{showDetailPopup ? 'contract-overlay-show' : ''}}" bindtap="onDetailOverlayTap">
+    <view class="contract-panel" catchtap="onDetailPanelTap" wx:if="{{detailData}}">
+      <!-- 身份 + 套餐名 -->
+      <view class="detail-header">
+        <text class="detail-identity {{detailData.isActive ? (planCode === 'gold' ? 'detail-gold' : 'detail-silver') : 'detail-expired'}}">{{detailData.identityName}}</text>
+        <text class="detail-plan-name">{{detailData.planName}}</text>
+      </view>
+
+      <!-- 时间信息 -->
+      <view class="detail-time">
+        <view class="detail-time-row">
+          <text class="detail-time-label">生效日期</text>
+          <text class="detail-time-value">{{detailData.startAt}}</text>
+        </view>
+        <view class="detail-time-row">
+          <text class="detail-time-label">到期日期</text>
+          <text class="detail-time-value">{{detailData.endAt}}</text>
+        </view>
+        <view class="detail-time-row">
+          <text class="detail-time-label">剩余时长</text>
+          <text class="detail-remaining {{detailData.isActive ? '' : 'detail-remaining-expired'}}">{{detailData.remainingText}}</text>
+        </view>
+      </view>
+
+      <!-- 权益列表 -->
+      <view class="detail-features">
+        <text class="detail-features-title">契约权益</text>
+        <view class="detail-features-list">
+          <text class="contract-feature" wx:for="{{detailData.features}}" wx:key="code">{{item.label}}</text>
+        </view>
+      </view>
+
+      <!-- 状态 -->
+      <view class="detail-status">
+        <view class="detail-status-tag {{detailData.isActive ? 'detail-status-active' : 'detail-status-expired'}}">
+          {{detailData.isActive ? '生效中' : '已过期'}}
         </view>
       </view>
     </view>

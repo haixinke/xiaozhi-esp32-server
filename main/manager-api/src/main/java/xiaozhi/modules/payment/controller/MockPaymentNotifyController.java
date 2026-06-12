@@ -23,7 +23,7 @@ import java.util.Map;
 @Tag(name = "支付回调-Mock")
 @RestController
 @RequestMapping("/payment/notify")
-@ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class MockPaymentNotifyController {
 

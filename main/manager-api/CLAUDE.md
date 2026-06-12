@@ -111,3 +111,7 @@ xiaozhi
 - 所有接口响应使用 `Result<T>`，`code = 0` 表示成功。
 - 校验分组：`AddGroup`、`UpdateGroup`、`DefaultGroup`。
 - 实体/DTO/VO 中广泛使用 Lombok `@Data`。
+
+## 业务文档
+
+- [订阅、道具、微信支付技术方案](docs/companion-subscription-items-payment.md) — 套餐订阅（青铜/白银/黄金）、道具购买（SKU+库存+核销）、微信支付 V3 JSAPI 的后端设计与实现参考。

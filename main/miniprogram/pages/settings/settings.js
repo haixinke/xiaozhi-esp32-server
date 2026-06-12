@@ -1,6 +1,6 @@
 // pages/settings/settings.js
 const { getTheme, applyTheme, toggleTheme } = require('../../utils/theme');
-const { get } = require('../../utils/request');
+const { get, post } = require('../../utils/request');
 
 function featureLabel(code) {
   var labels = {
@@ -48,6 +48,14 @@ Page({
   },
 
   async loadSubscription() {
+    var app = getApp();
+    var gd = app.globalData || {};
+    if (gd.planCode) {
+      this.setData({
+        planCode: gd.planCode,
+        identityName: this.getIdentityName(gd.planCode)
+      });
+    }
     try {
       var res = await get('/subscription/entitlements');
       if (res && res.code === 0 && res.data) {
@@ -131,7 +139,67 @@ Page({
 
   onSignContract() {
     if (!this.data.selectedPlanId) return;
-    wx.showToast({ title: '支付功能开发中', icon: 'none', duration: 1500 });
+    this._doSignContract();
+  },
+
+  async _doSignContract() {
+    var planId = this.data.selectedPlanId;
+    wx.showLoading({ title: '正在下单...', mask: true });
+    try {
+      // 1. 创建订单
+      var orderRes = await post('/payment/order', {
+        productType: 'SUBSCRIPTION',
+        productRefId: planId,
+        quantity: 1
+      });
+      if (!orderRes || orderRes.code !== 0 || !orderRes.data) {
+        wx.hideLoading();
+        wx.showToast({ title: (orderRes && orderRes.msg) || '下单失败', icon: 'none', duration: 2000 });
+        return;
+      }
+      var order = orderRes.data;
+      var prepayParams = order.prepayParams || {};
+
+      // 2. 检测 Mock 模式（MockPaymentNotifyController 返回 {code:"SUCCESS", message:"SUCCESS"}）
+      if (prepayParams.mockNotifyUrl) {
+        var notifyRes = await post('/payment/notify/mock', {
+          outTradeNo: order.outTradeNo,
+          transactionId: 'MOCK_TX_' + Date.now(),
+          amountFen: order.amountFen
+        });
+        if (!notifyRes || notifyRes.code !== 'SUCCESS') {
+          wx.hideLoading();
+          wx.showToast({ title: '支付失败，请重试', icon: 'none', duration: 2000 });
+          return;
+        }
+      } else {
+        // 真实微信支付：调用 wx.requestPayment
+        // TODO: 接入真实 wx.requestPayment
+        wx.hideLoading();
+        wx.showToast({ title: '真实支付待接入', icon: 'none', duration: 2000 });
+        return;
+      }
+
+      // 3. 刷新全局订阅状态
+      var app = getApp();
+      if (app.fetchSubscription) {
+        await app.fetchSubscription();
+      }
+
+      // 4. 刷新页面状态
+      this.setData({
+        showContractPopup: false,
+        selectedPlanId: null
+      });
+      await this.loadSubscription();
+
+      wx.hideLoading();
+      wx.showToast({ title: '契约签订成功', icon: 'success', duration: 2000 });
+    } catch (err) {
+      wx.hideLoading();
+      console.warn('[settings] sign contract failed:', err);
+      wx.showToast({ title: '操作失败，请重试', icon: 'none', duration: 2000 });
+    }
   },
 
   onBackpackTap() {

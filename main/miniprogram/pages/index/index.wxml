@@ -110,8 +110,9 @@
     </view>
 
     <view class="input-bar-inner">
-      <!-- 模式切换按钮 -->
+      <!-- 模式切换按钮（仅订阅用户可见） -->
       <view
+        wx:if="{{hasVoiceInput}}"
         class="mode-toggle-btn"
         bindtap="onToggleInputMode"
         hover-class="mode-toggle-btn-hover"

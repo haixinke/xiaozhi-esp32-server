@@ -22,7 +22,9 @@ App({
     destinyFlow: null,         // 命运初见向导流程的中间数据
     companionAvatar: null,     // 伴侣头像 URL
     companionBgImage: null,    // 伴侣默认背景图 URL
-    companionDataLoaded: false // 伴侣数据是否已加载完成（无论成功或失败）
+    companionDataLoaded: false, // 伴侣数据是否已加载完成（无论成功或失败）
+    planCode: null,            // 当前订阅档位: null/bronze/silver/gold
+    subscriptionFeatures: []   // 当前权益列表 ['voice_input','long_term_memory',...]
   },
 
   onLaunch() {
@@ -52,6 +54,7 @@ App({
           console.warn('设备状态检查失败:', err);
         });
         this.fetchCompanionData();
+        this.fetchSubscription();
       }
       return;
     }
@@ -64,6 +67,7 @@ App({
         // 老用户（有 agent），走正常流程
         console.log('已有 agent，走正常流程');
         this.fetchCompanionData();
+        this.fetchSubscription();
         return this.checkDeviceStatus();
       } else {
         // 新用户（无 agent），标记需要进入命运初见页面
@@ -246,13 +250,49 @@ App({
   },
 
   /**
+   * 获取当前用户订阅状态和权益
+   */
+  async fetchSubscription() {
+    try {
+      // 先尝试从缓存恢复
+      var cachedPlanCode = wx.getStorageSync('planCode');
+      var cachedFeatures = wx.getStorageSync('subscriptionFeatures');
+      if (cachedPlanCode) {
+        this.globalData.planCode = cachedPlanCode;
+        this.globalData.subscriptionFeatures = cachedFeatures || [];
+      }
+
+      var res = await get('/subscription/entitlements');
+      if (res && res.code === 0 && res.data) {
+        var planCode = res.data.active ? res.data.planCode : null;
+        var features = res.data.features || [];
+        this.globalData.planCode = planCode;
+        this.globalData.subscriptionFeatures = features;
+        if (planCode) {
+          wx.setStorageSync('planCode', planCode);
+          wx.setStorageSync('subscriptionFeatures', features);
+        } else {
+          wx.removeStorageSync('planCode');
+          wx.removeStorageSync('subscriptionFeatures');
+        }
+      }
+    } catch (err) {
+      console.warn('获取订阅状态失败:', err);
+    }
+  },
+
+  /**
    * 清除登录状态
    */
   clearLoginState() {
     this.globalData.token = null;
     this.globalData.openid = null;
     this.globalData.agentId = null;
+    this.globalData.planCode = null;
+    this.globalData.subscriptionFeatures = [];
     wx.removeStorageSync('token');
     wx.removeStorageSync('openid');
+    wx.removeStorageSync('planCode');
+    wx.removeStorageSync('subscriptionFeatures');
   }
 });

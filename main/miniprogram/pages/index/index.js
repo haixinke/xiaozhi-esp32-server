@@ -61,6 +61,10 @@ Page({
 
     // scroll-view 动态高度（px）
     scrollViewHeight: 0,
+
+    // 订阅权益灰度
+    hasVoiceInput: false,        // 是否有语音输入权限
+    hasLongTermMemory: false,    // 是否有聊天历史权限
   },
 
   // 非响应式资源，挂在 this 上以避免 setData 开销
@@ -112,7 +116,7 @@ Page({
   onShow() {
     applyTheme(this);
 
-    // 每次返回页面（例如从命运初见页面返回）刷新 agent 名称
+    // 每次返回页面（例如从设置页面返回）刷新数据
     if (app.globalData) {
       const g = app.globalData;
       if (g.needsDestiny) {
@@ -124,6 +128,7 @@ Page({
         companionAvatar: g.companionAvatar || '',
         companionBgImage: g.companionBgImage || '',
       });
+      this._applyFeatures();
     }
   },
 
@@ -200,12 +205,18 @@ Page({
 
   _bootstrap() {
     const g = app.globalData;
+    this._applyFeatures();
     this.setData({
       agentName: g.agentName || '',
       companionAvatar: g.companionAvatar || '',
       companionBgImage: g.companionBgImage || '',
       booting: false,
     });
+
+    // 确保订阅权益已加载，再刷新一次 features（fetchSubscription 可能还没返回）
+    if (app.fetchSubscription) {
+      app.fetchSubscription().then(() => this._applyFeatures());
+    }
 
     // 记录页面启动时间，用于下拉加载历史的 createdBefore 过滤
     this._sessionStartTime = this._formatLocalDateTime(new Date());
@@ -377,6 +388,18 @@ Page({
 
   _loadHistoryMessages() {
     if (this._historyLoading || this._historyNoMore) return;
+    if (!this.data.hasLongTermMemory) {
+      wx.showModal({
+        title: '甜蜜回忆',
+        content: '签订契约后即可查看聊天回忆',
+        showCancel: false,
+        confirmText: '知道了',
+        confirmColor: '#864e5a'
+      });
+      this._historyNoMore = true;
+      this.setData({ historyNoMore: true });
+      return;
+    }
     this._historyLoading = true;
     this.setData({ historyLoading: true });
 
@@ -628,6 +651,21 @@ Page({
   _handleAppShow() {
     // 从后台恢复：不再自动重连，需要用户手动点击召唤按钮
     // 保持当前连接状态，如果已断开则等待用户操作
+  },
+
+  _applyFeatures() {
+    var features = (app.globalData && app.globalData.subscriptionFeatures) || [];
+    var newHasLongTermMemory = features.indexOf('long_term_memory') !== -1;
+    // 从无权限变为有权限时，重置历史加载状态，允许重新下拉
+    if (!this.data.hasLongTermMemory && newHasLongTermMemory) {
+      this._historyNoMore = false;
+      this._historyPage = 1;
+    }
+    this.setData({
+      hasVoiceInput: features.indexOf('voice_input') !== -1,
+      hasLongTermMemory: newHasLongTermMemory,
+      historyNoMore: this._historyNoMore,
+    });
   },
 
   _teardown() {

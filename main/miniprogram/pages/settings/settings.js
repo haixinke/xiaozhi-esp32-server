@@ -4,10 +4,10 @@ const { get } = require('../../utils/request');
 
 function featureLabel(code) {
   var labels = {
-    'long_term_memory': '留存甜蜜回忆',
-    'voice_input': '语音聊天',
-    'superpower': '超能力（天气）',
-    'social_moments': '看我的朋友圈'
+    'long_term_memory': '永久留存甜蜜回忆',
+    'voice_input': '和女友语音聊天',
+    'superpower': '赋予女友超能力（天气）',
+    'social_moments': '看女友的私密空间'
   };
   return labels[code] || code;
 }

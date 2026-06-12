@@ -27,13 +27,13 @@ public class DocumentStatusSyncTask {
      * 每 30 秒执行一次同步
      * 采用 fixedDelay，确保上一次执行完 30 秒后才开始下一次，防止积压
      */
-    @Scheduled(fixedDelay = 30000)
-    public void syncRunningDocuments() {
-        try {
-            // log.debug("开始执行文档状态同步任务...");
-            knowledgeFilesService.syncRunningDocuments();
-        } catch (Exception e) {
-            log.error("文档状态同步任务异常", e);
-        }
-    }
+//    @Scheduled(fixedDelay = 30000)
+//    public void syncRunningDocuments() {
+//        try {
+//            // log.debug("开始执行文档状态同步任务...");
+//            knowledgeFilesService.syncRunningDocuments();
+//        } catch (Exception e) {
+//            log.error("文档状态同步任务异常", e);
+//        }
+//    }
 }

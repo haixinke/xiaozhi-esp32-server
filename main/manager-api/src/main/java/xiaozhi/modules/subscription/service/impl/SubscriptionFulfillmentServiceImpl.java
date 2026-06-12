@@ -43,7 +43,7 @@ public class SubscriptionFulfillmentServiceImpl implements SubscriptionFulfillme
             throw new RenException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
         }
 
-        // 1) 计算 startAt：若已有生效中订阅则拼接到旧 endAt 之后
+        // 1) 计算 startAt：区分升级与续费
         Date now = new Date();
         Date startAt = now;
         UserSubscriptionEntity active = subscriptionDao.selectOne(new QueryWrapper<UserSubscriptionEntity>()
@@ -53,7 +53,17 @@ public class SubscriptionFulfillmentServiceImpl implements SubscriptionFulfillme
                 .orderByDesc("end_at")
                 .last("LIMIT 1"));
         if (active != null) {
-            startAt = active.getEndAt();
+            if (active.getPlanId().equals(planId)) {
+                // 同套餐续费 → 堆叠到旧订阅到期之后
+                startAt = active.getEndAt();
+            } else {
+                // 升级 → 立即过期旧订阅，新订阅从 now 开始
+                log.info("套餐升级 userId={}, oldPlanId={}, oldPlanCode={}, newPlanId={}, newPlanCode={}",
+                        userId, active.getPlanId(), active.getPlanCode(), planId, plan.getPlanCode());
+                active.setStatus(SubscriptionStatus.EXPIRED.getValue());
+                active.setEndAt(now);
+                subscriptionDao.updateById(active);
+            }
         }
         Date endAt = new Date(startAt.getTime() + plan.getDurationDays() * 24L * 60 * 60 * 1000);
 

@@ -114,6 +114,7 @@ Page({
       var plans = (plansRes && plansRes.code === 0 && plansRes.data) ? plansRes.data : [];
       var plan = plans.filter(function(p) { return p.planCode === sub.planCode; })[0];
       var planName = plan ? plan.planName : sub.planCode;
+      var currentSort = plan ? plan.sort : 0;
       var identityName = this.getIdentityName(sub.planCode);
       var features = (sub.features || []).map(function(code) {
         return { code: code, label: featureLabel(code) };
@@ -129,6 +130,7 @@ Page({
       var startStr = this.formatDate(sub.startAt);
       var endStr = this.formatDate(sub.endAt);
       var isActive = sub.status === 1;
+      var higherPlan = plans.filter(function(p) { return p.sort > currentSort; })[0] || null;
       this.setData({
         showDetailPopup: true,
         detailData: {
@@ -138,7 +140,11 @@ Page({
           startAt: startStr,
           endAt: endStr,
           remainingText: remainingText,
-          isActive: isActive
+          isActive: isActive,
+          planId: sub.planId,
+          canUpgrade: isActive && !!higherPlan,
+          upgradePlanId: higherPlan ? higherPlan.id : null,
+          upgradePlanName: higherPlan ? higherPlan.planName : ''
         }
       });
     } catch (err) {
@@ -164,6 +170,25 @@ Page({
 
   onDetailPanelTap() {
     // prevent bubbling
+  },
+
+  onRenew() {
+    var planId = this.data.detailData && this.data.detailData.planId;
+    if (!planId) return;
+    this.setData({ showDetailPopup: false });
+    this._doSignContract(planId);
+  },
+
+  onUpgrade() {
+    var planId = this.data.detailData && this.data.detailData.upgradePlanId;
+    if (!planId) return;
+    this.setData({ showDetailPopup: false });
+    this._doSignContract(planId);
+  },
+
+  onResubscribe() {
+    this.setData({ showDetailPopup: false });
+    this.loadPlans();
   },
 
   async loadPlans() {
@@ -213,11 +238,10 @@ Page({
 
   onSignContract() {
     if (!this.data.selectedPlanId) return;
-    this._doSignContract();
+    this._doSignContract(this.data.selectedPlanId);
   },
 
-  async _doSignContract() {
-    var planId = this.data.selectedPlanId;
+  async _doSignContract(planId) {
     wx.showLoading({ title: '正在下单...', mask: true });
     try {
       // 1. 创建订单

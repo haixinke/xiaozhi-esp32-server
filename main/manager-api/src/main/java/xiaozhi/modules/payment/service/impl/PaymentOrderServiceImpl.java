@@ -25,7 +25,10 @@ import xiaozhi.modules.payment.vo.OrderVO;
 import xiaozhi.modules.payment.vo.PrepayVO;
 import xiaozhi.modules.payment.wechat.WechatPayClient;
 import xiaozhi.modules.subscription.dao.SubscriptionPlanDao;
+import xiaozhi.modules.subscription.dao.UserSubscriptionDao;
 import xiaozhi.modules.subscription.entity.SubscriptionPlanEntity;
+import xiaozhi.modules.subscription.entity.UserSubscriptionEntity;
+import xiaozhi.modules.subscription.enums.SubscriptionStatus;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
 
@@ -50,6 +53,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
     private final PaymentOrderDao orderDao;
     private final SubscriptionPlanDao planDao;
+    private final UserSubscriptionDao subscriptionDao;
     private final ItemService itemService;
     private final WechatPayClient wechatPayClient;
     private final WechatUserDao wechatUserDao;
@@ -135,6 +139,29 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                 throw new RenException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
             }
             amountFen = plan.getPromoPriceFen() != null ? plan.getPromoPriceFen() : plan.getPriceFen();
+
+            // 升级折算：若用户有生效中低级套餐，剩余时间折算抵扣
+            UserSubscriptionEntity activeSub = subscriptionDao.selectOne(new QueryWrapper<UserSubscriptionEntity>()
+                    .eq("user_id", userId)
+                    .eq("status", SubscriptionStatus.ACTIVE.getValue())
+                    .gt("end_at", new Date())
+                    .orderByDesc("end_at")
+                    .last("LIMIT 1"));
+            if (activeSub != null && !activeSub.getPlanId().equals(plan.getId())) {
+                SubscriptionPlanEntity oldPlan = planDao.selectById(activeSub.getPlanId());
+                if (oldPlan != null && oldPlan.getSort() < plan.getSort()) {
+                    long remainingMs = activeSub.getEndAt().getTime() - System.currentTimeMillis();
+                    if (remainingMs > 0) {
+                        long oldPlanDurationMs = oldPlan.getDurationDays() * 24L * 60 * 60 * 1000;
+                        long oldPriceFen = oldPlan.getPromoPriceFen() != null ? oldPlan.getPromoPriceFen() : oldPlan.getPriceFen();
+                        long creditFen = remainingMs * oldPriceFen / oldPlanDurationMs;
+                        amountFen = Math.max(1, amountFen - creditFen);
+                        log.info("升级折算 userId={}, oldPlan={}, newPlan={}, creditFen={}, finalFen={}",
+                                userId, oldPlan.getPlanCode(), plan.getPlanCode(), creditFen, amountFen);
+                    }
+                }
+            }
+
             snapshot = JSONUtil.toJsonStr(plan);
         } else if (ProductType.ITEM.equals(type)) {
             ItemSkuEntity sku = itemService.getBySkuId(dto.getProductRefId());

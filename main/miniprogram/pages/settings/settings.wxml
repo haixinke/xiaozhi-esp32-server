@@ -145,6 +145,17 @@
           {{detailData.isActive ? '生效中' : '已过期'}}
         </view>
       </view>
+
+      <!-- 操作按钮 -->
+      <view class="detail-actions" wx:if="{{detailData.isActive}}">
+        <view class="detail-btn detail-btn-renew" bindtap="onRenew">续费</view>
+        <view class="detail-btn detail-btn-upgrade" wx:if="{{detailData.canUpgrade}}" bindtap="onUpgrade">
+          升级到{{detailData.upgradePlanName}}
+        </view>
+      </view>
+      <view class="detail-actions" wx:if="{{!detailData.isActive}}">
+        <view class="detail-btn detail-btn-subscribe" bindtap="onResubscribe">订阅</view>
+      </view>
     </view>
   </view>
 </view>

@@ -89,6 +89,35 @@
 .bond-thread-line {
   width: 100%;
   height: 2rpx;
+  position: relative;
+}
+
+/* 免费 - 灰色暗淡 */
+.thread-free {
+  background: linear-gradient(
+    90deg,
+    rgba(160, 154, 156, 0) 0%,
+    rgba(160, 154, 156, 0.25) 30%,
+    rgba(160, 154, 156, 0.4) 50%,
+    rgba(160, 154, 156, 0.25) 70%,
+    rgba(160, 154, 156, 0) 100%
+  );
+}
+
+.thread-free::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: rgba(160, 154, 156, 0.3);
+}
+
+/* Silver - 红色亮起 */
+.thread-silver {
   background: linear-gradient(
     90deg,
     rgba(212, 115, 122, 0) 0%,
@@ -97,10 +126,9 @@
     rgba(212, 115, 122, 0.4) 70%,
     rgba(212, 115, 122, 0) 100%
   );
-  position: relative;
 }
 
-.bond-thread-line::after {
+.thread-silver::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -111,6 +139,48 @@
   border-radius: 50%;
   background: rgba(212, 115, 122, 0.5);
   box-shadow: 0 0 12rpx rgba(212, 115, 122, 0.3);
+}
+
+/* Gold - 高亮发光 */
+.thread-gold {
+  background: linear-gradient(
+    90deg,
+    rgba(212, 115, 122, 0) 0%,
+    rgba(212, 115, 122, 0.6) 25%,
+    rgba(212, 115, 122, 0.85) 50%,
+    rgba(212, 115, 122, 0.6) 75%,
+    rgba(212, 115, 122, 0) 100%
+  );
+  height: 3rpx;
+}
+
+.thread-gold::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background: rgba(212, 115, 122, 0.6);
+  box-shadow: 0 0 16rpx rgba(212, 115, 122, 0.5);
+}
+
+/* Gold 头像呼吸光效 */
+@keyframes avatar-breathe {
+  0%, 100% {
+    border-color: rgba(184, 134, 11, 0.35);
+    box-shadow: 0 4rpx 16rpx rgba(184, 134, 11, 0.15);
+  }
+  50% {
+    border-color: rgba(184, 134, 11, 0.7);
+    box-shadow: 0 4rpx 28rpx rgba(184, 134, 11, 0.4), 0 0 12rpx rgba(184, 134, 11, 0.2);
+  }
+}
+
+.avatar-glow {
+  animation: avatar-breathe 2.5s ease-in-out infinite;
 }
 
 /* --- 身份标签 --- */
@@ -626,7 +696,23 @@ switch {
   color: #a09a9c;
 }
 
-.dark .bond-thread-line {
+.dark .thread-free {
+  background: linear-gradient(
+    90deg,
+    rgba(106, 100, 104, 0) 0%,
+    rgba(106, 100, 104, 0.2) 30%,
+    rgba(106, 100, 104, 0.3) 50%,
+    rgba(106, 100, 104, 0.2) 70%,
+    rgba(106, 100, 104, 0) 100%
+  );
+}
+
+.dark .thread-free::after {
+  background: rgba(106, 100, 104, 0.25);
+  box-shadow: none;
+}
+
+.dark .thread-silver {
   background: linear-gradient(
     90deg,
     rgba(212, 115, 122, 0) 0%,
@@ -637,9 +723,40 @@ switch {
   );
 }
 
-.dark .bond-thread-line::after {
+.dark .thread-silver::after {
   background: rgba(212, 115, 122, 0.35);
   box-shadow: 0 0 12rpx rgba(212, 115, 122, 0.15);
+}
+
+.dark .thread-gold {
+  background: linear-gradient(
+    90deg,
+    rgba(212, 115, 122, 0) 0%,
+    rgba(212, 115, 122, 0.4) 25%,
+    rgba(212, 115, 122, 0.6) 50%,
+    rgba(212, 115, 122, 0.4) 75%,
+    rgba(212, 115, 122, 0) 100%
+  );
+}
+
+.dark .thread-gold::after {
+  background: rgba(212, 115, 122, 0.45);
+  box-shadow: 0 0 16rpx rgba(212, 115, 122, 0.3);
+}
+
+@keyframes avatar-breathe-dark {
+  0%, 100% {
+    border-color: rgba(218, 165, 32, 0.25);
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    border-color: rgba(218, 165, 32, 0.6);
+    box-shadow: 0 4rpx 28rpx rgba(218, 165, 32, 0.3), 0 0 12rpx rgba(218, 165, 32, 0.15);
+  }
+}
+
+.dark .avatar-glow {
+  animation: avatar-breathe-dark 2.5s ease-in-out infinite;
 }
 
 .dark .bond-free {

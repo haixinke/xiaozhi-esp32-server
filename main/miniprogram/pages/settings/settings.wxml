@@ -6,15 +6,15 @@
     <view class="bond-avatars">
       <view class="bond-avatar-wrap bond-user">
         <button class="bond-avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-          <image class="bond-avatar" src="{{userAvatar}}" mode="aspectFill" />
+          <image class="bond-avatar {{planCode === 'gold' ? 'avatar-glow' : ''}}" src="{{userAvatar}}" mode="aspectFill" />
         </button>
         <text class="bond-avatar-label">你</text>
       </view>
       <view class="bond-thread">
-        <view class="bond-thread-line"></view>
+        <view class="bond-thread-line {{planCode === 'gold' ? 'thread-gold' : planCode === 'silver' ? 'thread-silver' : 'thread-free'}}"></view>
       </view>
       <view class="bond-avatar-wrap bond-companion">
-        <image class="bond-avatar" src="{{companionAvatar}}" mode="aspectFill" />
+        <image class="bond-avatar {{planCode === 'gold' ? 'avatar-glow' : ''}}" src="{{companionAvatar}}" mode="aspectFill" />
         <text class="bond-avatar-label">她</text>
       </view>
     </view>

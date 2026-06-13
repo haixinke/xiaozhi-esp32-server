@@ -587,15 +587,13 @@ switch {
   transform: translateY(0);
 }
 
-/* 信纸：固定高度保证 scroll-view 可滚动；暖色纸面 + 极淡横线纹 */
+/* 信纸：固定高度保证 scroll-view 可滚动；暖色纸面 */
 .letter-paper {
   box-sizing: border-box;
   height: 70vh;
   padding: 32rpx 50rpx 48rpx;
   background-color: #fbf6f2;
-  background-image:
-    repeating-linear-gradient(transparent, transparent 55rpx, rgba(134, 78, 90, 0.04) 55rpx, rgba(134, 78, 90, 0.04) 56rpx),
-    linear-gradient(180deg, #fdf8f4, #f7efe9);
+  background-image: linear-gradient(180deg, #fdf8f4, #f7efe9);
 }
 
 /* 信件标题 */
@@ -1037,9 +1035,7 @@ switch {
 
 .dark .letter-paper {
   background-color: #241f33;
-  background-image:
-    repeating-linear-gradient(transparent, transparent 55rpx, rgba(196, 155, 165, 0.06) 55rpx, rgba(196, 155, 165, 0.06) 56rpx),
-    linear-gradient(180deg, #241f33, #1c1828);
+  background-image: linear-gradient(180deg, #241f33, #1c1828);
 }
 
 .dark .letter-title {

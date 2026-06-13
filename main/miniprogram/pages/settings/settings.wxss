@@ -710,6 +710,53 @@ switch {
   box-shadow: 0 4rpx 16rpx rgba(134, 78, 90, 0.25);
 }
 
+/* ===== 契约确认浮窗 ===== */
+.confirm-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2rpx solid rgba(134, 78, 90, 0.12);
+  border-radius: 24rpx;
+  padding: 32rpx 24rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.confirm-plan-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1b1c1c;
+  letter-spacing: 1rpx;
+}
+
+.confirm-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.confirm-features {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12rpx;
+  margin-top: 4rpx;
+}
+
+.confirm-note {
+  text-align: center;
+  margin-bottom: 24rpx;
+  padding: 0 16rpx;
+}
+
+.confirm-note text {
+  font-size: 22rpx;
+  color: #8a7a7e;
+  line-height: 1.5;
+  letter-spacing: 0.5rpx;
+}
+
 /* ================================================================
    DARK MODE
    ================================================================ */
@@ -1002,4 +1049,18 @@ switch {
 
 .dark .detail-btn-subscribe {
   box-shadow: 0 4rpx 16rpx rgba(134, 78, 90, 0.2);
+}
+
+/* 契约确认浮窗 - 深色模式 */
+.dark .confirm-card {
+  background: rgba(30, 28, 46, 0.9);
+  border-color: rgba(134, 78, 90, 0.2);
+}
+
+.dark .confirm-plan-name {
+  color: #e8e4e3;
+}
+
+.dark .confirm-note text {
+  color: #6a6468;
 }

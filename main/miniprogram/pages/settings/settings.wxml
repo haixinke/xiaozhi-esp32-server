@@ -158,4 +158,32 @@
       </view>
     </view>
   </view>
+
+  <!-- 契约确认浮窗（续费/升级） -->
+  <view class="contract-overlay {{showConfirmPopup ? 'contract-overlay-show' : ''}}" bindtap="onConfirmOverlayTap">
+    <view class="contract-panel" catchtap="onConfirmPanelTap" wx:if="{{confirmData}}">
+      <view class="contract-header">
+        <text class="contract-romantic-text">{{confirmData.title}}</text>
+      </view>
+
+      <view class="confirm-card">
+        <text class="confirm-plan-name">{{confirmData.planName}}</text>
+        <view class="confirm-price">
+          <text class="contract-card-promo">¥{{confirmData.promoYuan}}</text>
+          <text class="contract-card-original">¥{{confirmData.priceYuan}}</text>
+        </view>
+        <view class="confirm-features">
+          <text class="contract-feature" wx:for="{{confirmData.features}}" wx:key="code">{{item.label}}</text>
+        </view>
+      </view>
+
+      <view class="confirm-note" wx:if="{{confirmAction === 'upgrade'}}">
+        <text>实际金额以支付页为准（按比例抵扣未到期时长）</text>
+      </view>
+
+      <view class="contract-action">
+        <view class="contract-btn contract-btn-active" bindtap="onConfirmSubmit">{{confirmData.btnText}}</view>
+      </view>
+    </view>
+  </view>
 </view>

@@ -28,7 +28,13 @@ Page({
     // 契约详情浮窗
     showDetailPopup: false,
     detailLoading: false,
-    detailData: null
+    detailData: null,
+    // 契约确认浮窗（续费/升级）
+    showConfirmPopup: false,
+    confirmAction: null,
+    confirmData: null,
+    // 全量套餐缓存（用于续费/升级查表补全价格与权益）
+    allPlans: []
   },
 
   onLoad() {
@@ -80,6 +86,21 @@ Page({
     return '普通陪伴';
   },
 
+  // 套餐规范化（价格分→元 + 权益码→文案），供 loadPlans 与 loadMySubscription 共用
+  _normalizePlan(raw) {
+    return {
+      id: raw.id,
+      planCode: raw.planCode,
+      planName: raw.planName,
+      priceYuan: (raw.priceFen / 100).toFixed(2),
+      promoYuan: (raw.promoPriceFen / 100).toFixed(2),
+      sort: raw.sort,
+      features: (raw.features || []).map(function(code) {
+        return { code: code, label: featureLabel(code) };
+      })
+    };
+  },
+
   onChooseAvatar(e) {
     var avatarUrl = e.detail.avatarUrl;
     if (avatarUrl) {
@@ -112,6 +133,7 @@ Page({
       }
       var sub = subRes.data;
       var plans = (plansRes && plansRes.code === 0 && plansRes.data) ? plansRes.data : [];
+      this.setData({ allPlans: plans.map(this._normalizePlan) });
       var plan = plans.filter(function(p) { return p.planCode === sub.planCode; })[0];
       var planName = plan ? plan.planName : sub.planCode;
       var currentSort = plan ? plan.sort : 0;
@@ -173,17 +195,66 @@ Page({
   },
 
   onRenew() {
-    var planId = this.data.detailData && this.data.detailData.planId;
-    if (!planId) return;
-    this.setData({ showDetailPopup: false });
-    this._doSignContract(planId);
+    var detail = this.data.detailData;
+    if (!detail || !detail.planId) return;
+    var plan = this.data.allPlans.filter(function(p) { return p.id === detail.planId; })[0];
+    if (!plan) {
+      wx.showToast({ title: '套餐信息加载失败', icon: 'none', duration: 1500 });
+      return;
+    }
+    this.setData({
+      showDetailPopup: false,
+      confirmAction: 'renew',
+      confirmData: {
+        id: plan.id,
+        planName: plan.planName,
+        promoYuan: plan.promoYuan,
+        priceYuan: plan.priceYuan,
+        features: plan.features,
+        title: '确认续约我们的小约定？',
+        btnText: '确认续费'
+      },
+      showConfirmPopup: true
+    });
   },
 
   onUpgrade() {
-    var planId = this.data.detailData && this.data.detailData.upgradePlanId;
-    if (!planId) return;
-    this.setData({ showDetailPopup: false });
-    this._doSignContract(planId);
+    var detail = this.data.detailData;
+    if (!detail || !detail.upgradePlanId) return;
+    var plan = this.data.allPlans.filter(function(p) { return p.id === detail.upgradePlanId; })[0];
+    if (!plan) {
+      wx.showToast({ title: '套餐信息加载失败', icon: 'none', duration: 1500 });
+      return;
+    }
+    this.setData({
+      showDetailPopup: false,
+      confirmAction: 'upgrade',
+      confirmData: {
+        id: plan.id,
+        planName: plan.planName,
+        promoYuan: plan.promoYuan,
+        priceYuan: plan.priceYuan,
+        features: plan.features,
+        title: '确认升级到 ' + plan.planName + '？',
+        btnText: '确认升级'
+      },
+      showConfirmPopup: true
+    });
+  },
+
+  onConfirmSubmit() {
+    var data = this.data.confirmData;
+    if (!data || !data.id) return;
+    this.setData({ showConfirmPopup: false });
+    this._doSignContract(data.id);
+  },
+
+  onConfirmOverlayTap() {
+    this.setData({ showConfirmPopup: false });
+  },
+
+  onConfirmPanelTap() {
+    // prevent bubbling
   },
 
   onResubscribe() {
@@ -197,18 +268,7 @@ Page({
     try {
       var res = await get('/subscription/plans');
       if (res && res.code === 0 && res.data) {
-        var plans = res.data.map(function(plan) {
-          return {
-            id: plan.id,
-            planCode: plan.planCode,
-            planName: plan.planName,
-            priceYuan: (plan.priceFen / 100).toFixed(2),
-            promoYuan: (plan.promoPriceFen / 100).toFixed(2),
-            features: (plan.features || []).map(function(code) {
-              return { code: code, label: featureLabel(code) };
-            })
-          };
-        });
+        var plans = res.data.map(this._normalizePlan);
         this.setData({
           plans: plans,
           showContractPopup: true,

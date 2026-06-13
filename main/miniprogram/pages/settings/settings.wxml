@@ -110,9 +110,8 @@
   <!-- 契约详情浮窗 -->
   <view class="contract-overlay {{showDetailPopup ? 'contract-overlay-show' : ''}}" bindtap="onDetailOverlayTap">
     <view class="contract-panel" catchtap="onDetailPanelTap" wx:if="{{detailData}}">
-      <!-- 身份 + 套餐名 -->
+      <!-- 套餐名 -->
       <view class="detail-header">
-        <text class="detail-identity {{detailData.isActive ? (planCode === 'gold' ? 'detail-gold' : 'detail-silver') : 'detail-expired'}}">{{detailData.identityName}}</text>
         <text class="detail-plan-name">{{detailData.planName}}</text>
       </view>
 

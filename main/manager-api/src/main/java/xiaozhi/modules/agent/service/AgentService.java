@@ -101,5 +101,23 @@ public interface AgentService extends BaseService<AgentEntity> {
      */
     String createAgent(AgentCreateDTO dto);
 
+    /**
+     * 按订阅档位应用 agent 配置：
+     * silver → chat_history_conf=2；gold → chat_history_conf=2 + intent=function_call。
+     * 通过 userId → 伴侣 → 设备 → agent 定位，单列更新，幂等。
+     *
+     * @param userId   用户ID
+     * @param planCode 档位编码 bronze/silver/gold
+     */
+    void applySubscriptionConfig(Long userId, String planCode);
+
+    /**
+     * 将用户伴侣对应的 agent 重置为初始态：chat_history_conf=0 + intent=Intent_nointent。
+     * 订阅到期且无后续生效订阅时调用。定位失败则安全跳过。
+     *
+     * @param userId 用户ID
+     */
+    void resetToInitial(Long userId);
+
 
 }

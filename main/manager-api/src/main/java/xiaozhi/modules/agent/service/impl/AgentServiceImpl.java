@@ -19,6 +19,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
@@ -48,6 +49,8 @@ import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.agent.service.AgentTagService;
 import xiaozhi.modules.agent.service.AgentTemplateService;
 import xiaozhi.modules.agent.vo.AgentInfoVO;
+import xiaozhi.modules.companion.dao.CompanionDao;
+import xiaozhi.modules.companion.entity.CompanionEntity;
 import xiaozhi.modules.correctword.service.CorrectWordFileService;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.device.service.DeviceService;
@@ -61,6 +64,7 @@ import xiaozhi.modules.sys.enums.SuperAdminEnum;
 import xiaozhi.modules.timbre.service.TimbreService;
 
 @Service
+@Slf4j
 @AllArgsConstructor
 public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> implements AgentService {
     private final AgentDao agentDao;
@@ -76,6 +80,12 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
     private final AgentContextProviderService agentContextProviderService;
     private final AgentTagService agentTagService;
     private final CorrectWordFileService correctWordFileService;
+    private final CompanionDao companionDao;
+
+    /** gold 档对应的意图模型，需配合支持 function calling 的 LLM */
+    private static final String INTENT_FUNCTION_CALL = "Intent_function_call";
+    /** 初始/无意图模型 */
+    private static final String INTENT_NO_INTENT = "Intent_nointent";
 
     @Override
     public PageData<AgentEntity> adminAgentList(Map<String, Object> params) {
@@ -574,6 +584,59 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Override
+    public void applySubscriptionConfig(Long userId, String planCode) {
+        if (!"silver".equals(planCode) && !"gold".equals(planCode)) {
+            return;
+        }
+        String agentId = locateCompanionAgentId(userId);
+        if (agentId == null) {
+            log.info("套餐 agent 配置：未找到伴侣/设备/agent，跳过 userId={}, planCode={}", userId, planCode);
+            return;
+        }
+        UpdateWrapper<AgentEntity> wrapper = new UpdateWrapper<AgentEntity>()
+                .eq("id", agentId)
+                .set("chat_history_conf", Constant.ChatHistoryConfEnum.RECORD_TEXT_AUDIO.getCode());
+        if ("gold".equals(planCode)) {
+            wrapper.set("intent_model_id", INTENT_FUNCTION_CALL);
+        }
+        this.update(null, wrapper);
+        log.info("套餐 agent 配置已更新 userId={}, planCode={}, agentId={}", userId, planCode, agentId);
+    }
+
+    @Override
+    public void resetToInitial(Long userId) {
+        String agentId = locateCompanionAgentId(userId);
+        if (agentId == null) {
+            log.info("到期重置：未找到伴侣/设备/agent，跳过 userId={}", userId);
+            return;
+        }
+        UpdateWrapper<AgentEntity> wrapper = new UpdateWrapper<AgentEntity>()
+                .eq("id", agentId)
+                .set("chat_history_conf", Constant.ChatHistoryConfEnum.IGNORE.getCode())
+                .set("intent_model_id", INTENT_NO_INTENT);
+        this.update(null, wrapper);
+        log.info("到期已重置 agent 为初始态 userId={}, agentId={}", userId, agentId);
+    }
+
+    /**
+     * 定位用户伴侣对应的 agent：userId → 伴侣(user_id, LIMIT 1) → 设备(mac) → agentId。
+     * 任一环节缺失返回 null（调用方安全跳过）。
+     */
+    private String locateCompanionAgentId(Long userId) {
+        CompanionEntity companion = companionDao.selectOne(
+                new QueryWrapper<CompanionEntity>().eq("user_id", userId)
+                        .orderByDesc("created_at").last("LIMIT 1"));
+        if (companion == null || companion.getDeviceId() == null) {
+            return null;
+        }
+        DeviceEntity device = deviceService.getDeviceByMacAddress(companion.getDeviceId());
+        if (device == null || device.getAgentId() == null) {
+            return null;
+        }
+        return device.getAgentId();
     }
 
 }

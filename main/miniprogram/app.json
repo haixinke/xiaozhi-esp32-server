@@ -28,7 +28,7 @@
       },
       {
         "pagePath": "pages/settings/settings",
-        "text": "设置",
+        "text": "我",
         "iconPath": "images/tabbar/settings.png",
         "selectedIconPath": "images/tabbar/settings-active.png"
       }

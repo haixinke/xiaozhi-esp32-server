@@ -20,6 +20,9 @@ const STATE_IDLE = 'idle';
 const STATE_THINKING = 'thinking';
 const STATE_SPEAKING = 'speaking';
 
+// 两条消息间隔超过该阈值才显示居中时间分隔条
+const TIME_GAP_MS = 5 * 60 * 1000;
+
 Page({
   data: {
     // 主题
@@ -88,6 +91,57 @@ Page({
     return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate())
       + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds())
       + '.' + pad(date.getMilliseconds(), 3);
+  },
+
+  // 解析服务端 createdAt（ISO-8601 带时区）或数字时间戳为毫秒
+  _parseTime(value) {
+    if (!value) return Date.now();
+    if (typeof value === 'number') return value;
+    const t = new Date(value).getTime();
+    return isNaN(t) ? Date.now() : t;
+  },
+
+  // 判断两个时间戳是否落在同一天
+  _isSameDay(a, b) {
+    if (!a || !b) return false;
+    const da = new Date(a), db = new Date(b);
+    return da.getFullYear() === db.getFullYear()
+      && da.getMonth() === db.getMonth()
+      && da.getDate() === db.getDate();
+  },
+
+  // 时间分隔条文案：今天 HH:mm；昨天「昨天 HH:mm」；同年更早「M月D日」；否则带年份
+  _formatTimeLabel(ms) {
+    const d = new Date(ms);
+    const now = new Date();
+    const pad = (n) => (n < 10 ? '0' + n : '' + n);
+    const hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    if (this._isSameDay(ms, now.getTime())) return hm;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (this._isSameDay(ms, yesterday.getTime())) return '昨天 ' + hm;
+    if (d.getFullYear() === now.getFullYear()) {
+      return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+    }
+    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+  },
+
+  // 给消息数组打 showTime / timeLabel：首条，或与上一条间隔≥5分钟，或跨天，则显示分隔条
+  _stampSeparators(messages) {
+    const n = messages.length;
+    if (n === 0) return messages;
+    const out = [];
+    let prevTime = 0;
+    for (let i = 0; i < n; i++) {
+      const m = messages[i];
+      const t = m.time || 0;
+      const show = i === 0 || (t - prevTime >= TIME_GAP_MS) || !this._isSameDay(t, prevTime);
+      out.push(show
+        ? Object.assign({}, m, { showTime: true, timeLabel: this._formatTimeLabel(t) })
+        : Object.assign({}, m, { showTime: false, timeLabel: '' }));
+      prevTime = t;
+    }
+    return out;
   },
 
   // -------------------------------------------------------------------------
@@ -384,8 +438,8 @@ Page({
 
   _addMessage(role, content) {
     const id = 'msg-' + (this._msgIdSeed++);
-    const messages = this.data.messages.concat([{ id, role, content }]);
-    this.setData({ messages, scrollToView: id });
+    const messages = this.data.messages.concat([{ id, role, content, time: Date.now() }]);
+    this.setData({ messages: this._stampSeparators(messages), scrollToView: id });
   },
 
   // 下拉加载历史消息
@@ -439,6 +493,7 @@ Page({
         role: item.chatType === 1 ? 'user' : 'assistant',
         content: item.content,
         audioId: item.audioId || null,
+        time: this._parseTime(item.createdAt),
       }));
 
       // 前置插入到消息数组
@@ -448,9 +503,9 @@ Page({
 
       if (list.length < 4) {
         this._historyNoMore = true;
-        this.setData({ messages, historyNoMore: true, historyLoading: false });
+        this.setData({ messages: this._stampSeparators(messages), historyNoMore: true, historyLoading: false });
       } else {
-        this.setData({ messages, historyLoading: false });
+        this.setData({ messages: this._stampSeparators(messages), historyLoading: false });
       }
 
       // 恢复滚动位置到之前锚定的消息
@@ -476,10 +531,10 @@ Page({
     } else {
       // 第一个 chunk：立即创建气泡
       const id = 'msg-' + (this._msgIdSeed++);
-      const messages = this.data.messages.concat([{ id, role: 'assistant', content: text, typing: true }]);
+      const messages = this.data.messages.concat([{ id, role: 'assistant', content: text, typing: true, time: Date.now() }]);
       this._streamingIdx = messages.length - 1;
       this._streamingBuffer = text;
-      this.setData({ messages, scrollToView: id, chatState });
+      this.setData({ messages: this._stampSeparators(messages), scrollToView: id, chatState });
     }
   },
 
@@ -512,11 +567,11 @@ Page({
       const messages = !msg
         ? this.data.messages
         : this.data.messages.slice(0, idx).concat(this.data.messages.slice(idx + 1));
-      this.setData({ messages, chatState });
+      this.setData({ messages: this._stampSeparators(messages), chatState });
     } else {
       const messages = this.data.messages.slice();
-      messages[idx] = { id: msg.id, role: msg.role, content: content };
-      this.setData({ messages, chatState });
+      messages[idx] = { id: msg.id, role: msg.role, content: content, time: msg.time };
+      this.setData({ messages: this._stampSeparators(messages), chatState });
     }
     this._streamingIdx = -1;
   },

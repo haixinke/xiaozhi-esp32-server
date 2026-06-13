@@ -735,12 +735,30 @@ page {
   color: rgba(81, 67, 69, 0.6);
 }
 
+/* ---------------- 时间分隔条 ---------------- */
+.time-sep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18rpx 0 6rpx;
+}
+
+.time-sep-text {
+  font-size: 22rpx;
+  color: rgba(134, 78, 90, 0.5);
+  letter-spacing: 1rpx;
+}
+
 /* ================================================================
    DARK MODE
    ================================================================ */
 
 .page.dark {
   background: #121220;
+}
+
+.dark .time-sep-text {
+  color: rgba(232, 228, 227, 0.42);
 }
 
 /* 背景遮罩层 */

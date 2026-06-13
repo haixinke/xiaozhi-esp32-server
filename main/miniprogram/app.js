@@ -24,7 +24,8 @@ App({
     companionBgImage: null,    // 伴侣默认背景图 URL
     companionDataLoaded: false, // 伴侣数据是否已加载完成（无论成功或失败）
     planCode: null,            // 当前订阅档位: null/bronze/silver/gold
-    subscriptionFeatures: []   // 当前权益列表 ['voice_input','long_term_memory',...]
+    subscriptionFeatures: [],  // 当前权益列表 ['voice_input','long_term_memory',...]
+    needReconnectAfterSub: false // 订阅档位变更后需断开重连以加载最新 agent 配置（由 index 页 onShow 消费）
   },
 
   onLaunch() {

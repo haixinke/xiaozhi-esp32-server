@@ -116,6 +116,15 @@ Page({
   onShow() {
     applyTheme(this);
 
+    // 订阅档位变更后，需要断开当前连接，由用户手动「召唤」重新拉取最新 agent 配置
+    const g0 = app.globalData;
+    if (g0 && g0.needReconnectAfterSub) {
+      g0.needReconnectAfterSub = false;
+      if (this.wsManager && this.data.connectionState === 'connected') {
+        this.wsManager.disconnect();
+      }
+    }
+
     // 每次返回页面（例如从设置页面返回）刷新数据
     if (app.globalData) {
       const g = app.globalData;

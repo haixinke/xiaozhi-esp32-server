@@ -306,6 +306,8 @@ Page({
 
   async _doSignContract(planId) {
     wx.showLoading({ title: '正在下单...', mask: true });
+    // 记录购买前的档位，用于判断本次是否为续费（续费无需断开重连）
+    var previousPlanCode = getApp().globalData.planCode;
     try {
       // 1. 创建订单
       var orderRes = await post('/payment/order', {
@@ -362,13 +364,21 @@ Page({
         });
       }
 
-      // 3. 刷新全局订阅状态
+      // 3. 轮询订单直到履约完成(FULFILLED)，确保服务端已把 agent 配置落库后再刷新
       var app = getApp();
+      await this._waitOrderFulfilled(order.outTradeNo);
+
+      // 4. 刷新全局订阅状态
       if (app.fetchSubscription) {
         await app.fetchSubscription();
       }
 
-      // 4. 刷新页面状态
+      // 5. 档位变更(首次/升级/降级)才需要断开重连以加载最新 agent 配置；同档续费无需断开
+      if (app.globalData.planCode !== previousPlanCode) {
+        app.globalData.needReconnectAfterSub = true;
+      }
+
+      // 6. 刷新页面状态
       this.setData({
         showContractPopup: false,
         selectedPlanId: null
@@ -386,6 +396,27 @@ Page({
         wx.showToast({ title: '操作失败，请重试', icon: 'none', duration: 2000 });
       }
     }
+  },
+
+  // 轮询订单状态直到履约完成(FULFILLED=2)，确保服务端已落库 agent 新配置。
+  // Mock 模式下 mock 回调已同步履约，首次查询即命中；真实支付下等待微信异步回调。
+  async _waitOrderFulfilled(outTradeNo) {
+    var FULFILLED = 2;
+    var attempts = 12;
+    var interval = 1000;
+    for (var i = 0; i < attempts; i++) {
+      try {
+        var res = await get('/payment/order/' + outTradeNo);
+        if (res && res.code === 0 && res.data && res.data.status === FULFILLED) {
+          return true;
+        }
+      } catch (e) {
+        // 单次查询失败不中断轮询
+      }
+      await new Promise(function (r) { setTimeout(r, interval); });
+    }
+    console.warn('[settings] 订单履约轮询超时 outTradeNo=' + outTradeNo);
+    return false;
   },
 
   onBackpackTap() {

@@ -498,6 +498,12 @@ switch {
   text-decoration: line-through;
 }
 
+.contract-card-period {
+  font-size: 22rpx;
+  color: #8a7a7e;
+  letter-spacing: 0.5rpx;
+}
+
 .contract-card-features {
   display: flex;
   flex-direction: column;
@@ -961,6 +967,10 @@ switch {
 }
 
 .dark .contract-card-original {
+  color: #6a6468;
+}
+
+.dark .contract-card-period {
   color: #6a6468;
 }
 

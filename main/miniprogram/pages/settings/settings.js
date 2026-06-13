@@ -94,6 +94,7 @@ Page({
       planName: raw.planName,
       priceYuan: (raw.priceFen / 100).toFixed(2),
       promoYuan: (raw.promoPriceFen / 100).toFixed(2),
+      durationText: raw.durationDays ? (raw.durationDays + '天') : '',
       sort: raw.sort,
       features: (raw.features || []).map(function(code) {
         return { code: code, label: featureLabel(code) };
@@ -210,6 +211,7 @@ Page({
         planName: plan.planName,
         promoYuan: plan.promoYuan,
         priceYuan: plan.priceYuan,
+        durationText: plan.durationText,
         features: plan.features,
         title: '确认续约我们的小约定？',
         btnText: '确认续费'
@@ -234,6 +236,7 @@ Page({
         planName: plan.planName,
         promoYuan: plan.promoYuan,
         priceYuan: plan.priceYuan,
+        durationText: plan.durationText,
         features: plan.features,
         title: '确认升级到 ' + plan.planName + '？',
         btnText: '确认升级'

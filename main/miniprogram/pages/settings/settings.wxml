@@ -90,7 +90,8 @@
           <text class="contract-card-name">{{item.planName}}</text>
           <view class="contract-card-price">
             <text class="contract-card-promo">¥{{item.promoYuan}}</text>
-            <text class="contract-card-original">¥{{item.priceYuan}}</text>
+            <text class="contract-card-period" wx:if="{{item.durationText}}">/{{item.durationText}}</text>
+            <text class="contract-card-original" wx:if="{{item.promoYuan !== item.priceYuan}}">¥{{item.priceYuan}}</text>
           </view>
           <view class="contract-card-features">
             <text class="contract-feature" wx:for="{{item.features}}" wx:for-item="feat" wx:key="code">{{feat.label}}</text>
@@ -170,7 +171,8 @@
         <text class="confirm-plan-name">{{confirmData.planName}}</text>
         <view class="confirm-price">
           <text class="contract-card-promo">¥{{confirmData.promoYuan}}</text>
-          <text class="contract-card-original">¥{{confirmData.priceYuan}}</text>
+          <text class="contract-card-period" wx:if="{{confirmData.durationText}}">/{{confirmData.durationText}}</text>
+          <text class="contract-card-original" wx:if="{{confirmData.promoYuan !== confirmData.priceYuan}}">¥{{confirmData.priceYuan}}</text>
         </view>
         <view class="confirm-features">
           <text class="contract-feature" wx:for="{{confirmData.features}}" wx:key="code">{{item.label}}</text>

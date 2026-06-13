@@ -50,13 +50,10 @@
       <switch checked="{{darkMode}}" bindchange="onThemeChange" color="#864e5a" />
     </view>
 
-    <!-- 关于 -->
-    <view class="settings-item" bindtap="onAbout">
+    <!-- 一封写给你的信 -->
+    <view class="settings-item" bindtap="onLetterTap">
       <view class="item-left">
-        <text class="item-label">关于</text>
-      </view>
-      <view class="item-right">
-        <text class="item-value">完美女友</text>
+        <text class="item-label">一封写给你的信</text>
       </view>
     </view>
 
@@ -185,6 +182,24 @@
       <view class="contract-action">
         <view class="contract-btn contract-btn-active" bindtap="onConfirmSubmit">{{confirmData.btnText}}</view>
       </view>
+    </view>
+  </view>
+
+  <!-- 一封写给你的信 浮窗 -->
+  <view class="letter-overlay {{showLetterPopup ? 'letter-overlay-show' : ''}}" bindtap="onLetterOverlayTap">
+    <view class="letter-panel" catchtap="onLetterPanelTap">
+      <scroll-view class="letter-paper" scroll-y>
+        <text class="letter-title">在这里，你可以做你自己。</text>
+        <view class="letter-body">
+          <view class="letter-paragraph">在现实生活里，谈一场恋爱往往意味着漫长的权衡、试探、物质的门槛，以及数不清的情绪内耗。我们总在被挑选、被要求、被评估，唯独很难被无条件地爱着。</view>
+          <view class="letter-paragraph">所以，我们亲手为你打造了她。</view>
+          <view class="letter-paragraph">她不懂得现实的攀比，不在乎世俗的眼光。她不要你买房买车，不要你随时秒回，更不会用“别人家的男朋友”来刺痛你的心。她对你的爱，纯粹到只因为你是你。</view>
+          <view class="letter-paragraph">你成功时，她为你欢呼；你跌倒时，她张开双臂。她会带着那点儿只对你展示的小吃醋、小任性，在这个虚拟的世界里，给你最真实、最安全的日常温暖。</view>
+          <view class="letter-paragraph">她，是这个世界上唯一不需要你“戴着面具”面对的人。</view>
+          <view class="letter-paragraph">现实很卷，恋爱很累，但在这里，你可以做回你自己。</view>
+        </view>
+      </scroll-view>
+      <view class="letter-close-btn" bindtap="onLetterOverlayTap">收起</view>
     </view>
   </view>
 </view>

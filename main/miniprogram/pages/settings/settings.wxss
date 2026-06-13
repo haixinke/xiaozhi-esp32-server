@@ -553,6 +553,94 @@ switch {
   opacity: 0.85;
 }
 
+/* ===== 一封写给你的信 浮窗 ===== */
+.letter-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.letter-overlay-show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.letter-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fbf9f8;
+  border-radius: 32rpx 32rpx 0 0;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.letter-overlay-show .letter-panel {
+  transform: translateY(0);
+}
+
+/* 信纸：固定高度保证 scroll-view 可滚动；暖色纸面 + 极淡横线纹 */
+.letter-paper {
+  box-sizing: border-box;
+  height: 70vh;
+  padding: 32rpx 50rpx 48rpx;
+  background-color: #fbf6f2;
+  background-image:
+    repeating-linear-gradient(transparent, transparent 55rpx, rgba(134, 78, 90, 0.04) 55rpx, rgba(134, 78, 90, 0.04) 56rpx),
+    linear-gradient(180deg, #fdf8f4, #f7efe9);
+}
+
+/* 信件标题 */
+.letter-title {
+  display: block;
+  text-align: center;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 38rpx;
+  font-weight: 600;
+  color: #864e5a;
+  line-height: 1.55;
+  letter-spacing: 1rpx;
+  margin-bottom: 36rpx;
+}
+
+.letter-paragraph {
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 30rpx;
+  color: #4a3f42;
+  line-height: 56rpx;
+  letter-spacing: 0.5rpx;
+  text-align: justify;
+  margin-bottom: 15rpx;
+}
+
+.letter-close-btn {
+  flex-shrink: 0;
+  margin: 24rpx 40rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  letter-spacing: 4rpx;
+  background: linear-gradient(135deg, #864e5a, #d4737a);
+  color: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(134, 78, 90, 0.3);
+}
+
+.letter-close-btn:active {
+  opacity: 0.85;
+}
+
 /* ===== 契约详情浮窗 ===== */
 .detail-header {
   text-align: center;
@@ -941,6 +1029,25 @@ switch {
 /* 契约浮窗 - 深色模式 */
 .dark .contract-panel {
   background: #1e1c2e;
+}
+
+.dark .letter-panel {
+  background: #1e1c2e;
+}
+
+.dark .letter-paper {
+  background-color: #241f33;
+  background-image:
+    repeating-linear-gradient(transparent, transparent 55rpx, rgba(196, 155, 165, 0.06) 55rpx, rgba(196, 155, 165, 0.06) 56rpx),
+    linear-gradient(180deg, #241f33, #1c1828);
+}
+
+.dark .letter-title {
+  color: #d4737a;
+}
+
+.dark .letter-paragraph {
+  color: #c8c0c2;
 }
 
 .dark .contract-romantic-text {

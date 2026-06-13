@@ -34,7 +34,9 @@ Page({
     confirmAction: null,
     confirmData: null,
     // 全量套餐缓存（用于续费/升级查表补全价格与权益）
-    allPlans: []
+    allPlans: [],
+    // 信件浮窗（一封写给你的信）
+    showLetterPopup: false
   },
 
   onLoad() {
@@ -427,13 +429,15 @@ Page({
     toggleTheme(this);
   },
 
-  onAbout() {
-    wx.showModal({
-      title: '关于完美女友',
-      content: '完美女友是有温度、有灵魂、有记忆、最懂你的女友。',
-      showCancel: false,
-      confirmText: '知道了',
-      confirmColor: '#864e5a'
-    });
+  onLetterTap() {
+    this.setData({ showLetterPopup: true });
+  },
+
+  onLetterOverlayTap() {
+    this.setData({ showLetterPopup: false });
+  },
+
+  onLetterPanelTap() {
+    // prevent bubbling
   }
 });

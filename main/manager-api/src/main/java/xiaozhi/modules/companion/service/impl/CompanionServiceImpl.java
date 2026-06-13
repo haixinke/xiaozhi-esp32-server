@@ -1,6 +1,7 @@
 package xiaozhi.modules.companion.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -297,6 +298,11 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             AgentCreateDTO agentCreateDTO = new AgentCreateDTO();
             agentCreateDTO.setAgentName(agentName);
             agentId = agentService.createAgent(agentCreateDTO);
+            // 仅按已知的 agentId 更新 chat_history_conf=0。不要用 getDefaultAgentByMacAddress(deviceId)：
+            // 此时设备尚未绑定到新 agent（绑定在 Phase 2 才发生），会查不到或改到别的 agent 上。
+            agentService.update(null, new UpdateWrapper<AgentEntity>()
+                    .eq("id", agentId)
+                    .set("chat_history_conf", 0));
             log.info("聚合接口创建智能体, agentId={}, agentName={}", agentId, agentName);
         } else {
             // 校验已有智能体归属权

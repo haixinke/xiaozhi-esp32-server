@@ -7,7 +7,7 @@
   <view wx:if="{{!booting && !bindFailed}}" class="top-bar">
     <!-- AI头像和名字 -->
     <view class="ai-profile">
-      <view class="avatar-wrapper">
+      <view class="avatar-wrapper" bindtap="onAvatarTap" hover-class="avatar-wrapper-hover" hover-stay-time="80">
         <image class="avatar-image" src="{{companionAvatar || '/images/avatar-default.png'}}" mode="aspectFill"></image>
         <view class="status-dot state-{{connectionState}}"></view>
       </view>

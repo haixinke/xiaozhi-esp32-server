@@ -117,6 +117,10 @@ page {
   background: #ffb7c5;
 }
 
+.avatar-wrapper-hover {
+  opacity: 0.7;
+}
+
 /* 状态指示点 - 头像右下角 */
 .status-dot {
   position: absolute;

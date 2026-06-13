@@ -552,6 +552,10 @@ Page({
     this._onScrollToUpper();
   },
 
+  onAvatarTap() {
+    wx.showToast({ title: '女友私密空间即将上线', icon: 'none', duration: 2000 });
+  },
+
   onInputTap() {
     if (this.data.connectionState !== 'connected') {
       wx.showToast({ title: '请先召唤您的女友', icon: 'none', duration: 2000 });

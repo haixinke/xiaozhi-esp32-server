@@ -117,7 +117,7 @@
 
       <!-- 时间信息 -->
       <view class="detail-time">
-        <view class="detail-time-row">
+        <view class="detail-time-row" wx:if="{{!detailData.isActive}}">
           <text class="detail-time-label">生效日期</text>
           <text class="detail-time-value">{{detailData.startAt}}</text>
         </view>

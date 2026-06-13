@@ -271,11 +271,32 @@ Page({
           return;
         }
       } else {
-        // 真实微信支付：调用 wx.requestPayment
-        // TODO: 接入真实 wx.requestPayment
-        wx.hideLoading();
-        wx.showToast({ title: '真实支付待接入', icon: 'none', duration: 2000 });
-        return;
+        // 真实微信支付
+        var required = ['timeStamp', 'nonceStr', 'package', 'paySign'];
+        var missing = required.filter(function(k) { return !prepayParams[k]; });
+        if (missing.length) {
+          wx.hideLoading();
+          wx.showToast({ title: '支付参数异常，请重试', icon: 'none', duration: 2000 });
+          return;
+        }
+        await new Promise(function(resolve, reject) {
+          wx.requestPayment({
+            timeStamp: prepayParams.timeStamp,
+            nonceStr: prepayParams.nonceStr,
+            package: prepayParams.package,
+            signType: prepayParams.signType || 'RSA',
+            paySign: prepayParams.paySign,
+            success: resolve,
+            fail: function(err) {
+              // errMsg 含 "requestPayment:fail cancel" 表示用户取消
+              if (err && err.errMsg && err.errMsg.indexOf('cancel') > -1) {
+                reject({ cancelled: true });
+              } else {
+                reject(err);
+              }
+            }
+          });
+        });
       }
 
       // 3. 刷新全局订阅状态
@@ -295,8 +316,12 @@ Page({
       wx.showToast({ title: '契约签订成功', icon: 'success', duration: 2000 });
     } catch (err) {
       wx.hideLoading();
-      console.warn('[settings] sign contract failed:', err);
-      wx.showToast({ title: '操作失败，请重试', icon: 'none', duration: 2000 });
+      if (err && err.cancelled) {
+        wx.showToast({ title: '已取消支付', icon: 'none', duration: 1500 });
+      } else {
+        console.warn('[settings] sign contract failed:', err);
+        wx.showToast({ title: '操作失败，请重试', icon: 'none', duration: 2000 });
+      }
     }
   },
 

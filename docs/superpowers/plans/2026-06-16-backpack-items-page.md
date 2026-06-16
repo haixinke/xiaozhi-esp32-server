@@ -72,7 +72,7 @@ const L = require('./logic');
   var groups = L.groupByCategory(items);
   assert.strictEqual(groups.length, 2);
   assert.strictEqual(groups[0].category, 'consumable_change');
-  assert.strictEqual(groups[0].label, '变更券');
+  assert.strictEqual(groups[0].label, '重塑命运');
   assert.strictEqual(groups[0].items.length, 2);
   assert.strictEqual(groups[1].label, '亲密度礼物');
 
@@ -128,7 +128,7 @@ Expected: 报错 `Cannot find module './logic'`
 
 var CATEGORY_ORDER = ['consumable_change', 'voice_quota', 'outfit', 'intimacy'];
 var CATEGORY_LABEL = {
-  consumable_change: '变更券',
+  consumable_change: '重塑命运',
   voice_quota: '声音',
   outfit: '外观',
   intimacy: '亲密度礼物'
@@ -603,7 +603,7 @@ Page({
 - [ ] **Step 4: 手动验证**
 
 编译运行 → 进入「我的背包」（确保后端 `manager-api` 已起，且有上架的 SKU 种子数据）。
-Expected: 顶部金色「我的持有」chips（若用户有库存）；下方按 变更券/声音/外观/亲密度礼物 分段，每张卡片显示 emoji 图标、名称、说明、价格、持有徽标、购买按钮；促销价有划线原价。
+Expected: 顶部金色「我的持有」chips（若用户有库存）；下方按 重塑命运/声音/外观/亲密度礼物 分段，每张卡片显示 emoji 图标、名称、说明、价格、持有徽标、购买按钮；促销价有划线原价。
 
 - [ ] **Step 5: 提交**
 
@@ -980,7 +980,7 @@ Expected: `logic.test.js: ALL PASS`
 逐条核对 `docs/superpowers/specs/2026-06-15-backpack-items-page-design.md` §14：
 
 - 从「我」→「我的背包」可进入、可返回。
-- 全部有效道具按 变更券/声音/外观/亲密度礼物 分段、类内按 sort 排序。
+- 全部有效道具按 重塑命运/声音/外观/亲密度礼物 分段、类内按 sort 排序。
 - 每张卡片含图标、名称、说明、价格（促销划线）、持有徽标。
 - 「我的持有」概览条正确反映 `remainCount>0`。
 - 购买：确认面板 → 微信支付(mock) → 履约轮询 → 库存 +N、徽标与 chips 刷新。

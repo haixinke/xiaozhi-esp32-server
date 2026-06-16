@@ -30,7 +30,7 @@ const L = require('./logic');
   var groups = L.groupByCategory(items);
   assert.strictEqual(groups.length, 2);
   assert.strictEqual(groups[0].category, 'consumable_change');
-  assert.strictEqual(groups[0].label, '变更券');
+  assert.strictEqual(groups[0].label, '重塑命运');
   assert.strictEqual(groups[0].items.length, 2);
   assert.strictEqual(groups[1].label, '亲密度礼物');
 

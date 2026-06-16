@@ -3,7 +3,7 @@
 
 var CATEGORY_ORDER = ['consumable_change', 'voice_quota', 'outfit', 'intimacy'];
 var CATEGORY_LABEL = {
-  consumable_change: '变更券',
+  consumable_change: '重塑命运',
   voice_quota: '声音',
   outfit: '外观',
   intimacy: '亲密度礼物'

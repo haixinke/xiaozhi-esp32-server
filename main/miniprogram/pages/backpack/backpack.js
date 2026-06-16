@@ -35,6 +35,11 @@ Page({
   },
   onShow() {
     applyTheme(this);
+    if (this.data.allItems && this.data.allItems.length) {
+      this.refreshInventory();
+    } else if (!this.data.loading) {
+      this.loadAll();
+    }
   },
 
   // 分 → 元；整元不显示小数
@@ -82,7 +87,7 @@ Page({
       });
     } catch (err) {
       console.warn('[backpack] load failed:', err);
-      this.setData({ loading: false, error: true });
+      this.setData({ loading: false, error: true, groups: [], chips: [], allItems: [] });
     }
   },
 

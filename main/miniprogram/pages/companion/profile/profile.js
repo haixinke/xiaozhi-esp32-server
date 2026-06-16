@@ -1,10 +1,10 @@
 /**
  * profile：我的女友资料页（仅职业/性格/声音 3 项可换）。
  */
-const { getTheme, applyTheme } = require('../../utils/theme');
-const { get } = require('../../utils/request');
-const codes = require('../../config/companion-codes');
-const voiceCatalog = require('../../config/voice-catalog');
+const { getTheme, applyTheme } = require('../../../utils/theme');
+const { get } = require('../../../utils/request');
+const codes = require('../../../config/companion-codes');
+const voiceCatalog = require('../../../config/voice-catalog');
 
 Page({
   data: {

@@ -43,6 +43,18 @@ var ROLES = [
   { id: 'erciyuan', label: '潮酷二次元' },
 ];
 
+var OCCUPATIONS = [
+  { id: 'design', label: '大厂设计师' },
+  { id: 'camera', label: '自由摄影师' },
+  { id: 'medical', label: '白衣天使' },
+  { id: 'child', label: '幼儿园老师' },
+  { id: 'yoga', label: '瑜伽教练' },
+  { id: 'radio', label: '电台主播' },
+  { id: 'school', label: '大学生' },
+  { id: 'music', label: '独立音乐人' },
+  { id: 'cosplay', label: '知名Coser' }
+];
+
 var CDN_BASE_URL = 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la';
 
 var CHARACTER_AVATARS = {
@@ -90,6 +102,7 @@ module.exports = {
   RELATION_TYPES: RELATION_TYPES,
   PET_TYPES: PET_TYPES,
   ROLES: ROLES,
+  OCCUPATIONS: OCCUPATIONS,
   CHARACTER_AVATARS: CHARACTER_AVATARS,
   CHARACTER_IMAGES: CHARACTER_IMAGES,
   VOICE_STYLES: VOICE_STYLES,

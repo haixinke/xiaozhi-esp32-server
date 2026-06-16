@@ -10,7 +10,7 @@ Page({
   data: {
     darkMode: getTheme(),
     deviceId: '',
-    characterName: '', avatar: '',
+    avatar: '',
     occLabel: '', roleLabel: '', soulLabel: '', voiceLabel: ''
   },
 
@@ -32,9 +32,8 @@ Page({
       const quirkLabel = codes.getLabel(codes.QUIRKS, c.soulQuirk);
       const vv = voiceCatalog.findById(c.voice);
       this.setData({
-        characterName: c.character || '我的女友',
         avatar: c.avatar || '',
-        occLabel: c.occupation || '未设置',
+        occLabel: codes.getLabel(codes.OCCUPATIONS, c.occupation) || '未设置',
         roleLabel: codes.getLabel(codes.ROLES, c.character) || '未设置',
         soulLabel: (soulLabel || '未设置') + ' ／ ' + (quirkLabel || '未设置'),
         voiceLabel: vv ? vv.label : (c.voice || '未设置')

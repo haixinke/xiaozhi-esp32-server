@@ -4,20 +4,7 @@
  */
 const { getTheme, applyTheme } = require('../../../utils/theme');
 const { get, post } = require('../../../utils/request');
-
-const OCCUPATIONS = [
-  { id: 'design', label: '大厂设计师' },
-  { id: 'camera', label: '自由摄影师' },
-  { id: 'medical', label: '白衣天使' },
-  { id: 'child', label: '幼儿园老师' },
-  { id: 'yoga', label: '瑜伽教练' },
-  { id: 'radio', label: '电台主播' },
-  { id: 'school', label: '大学生' },
-  { id: 'music', label: '独立音乐人' },
-  { id: 'cosplay', label: '知名Coser' }
-];
-
-const LABELS = OCCUPATIONS.reduce(function (m, o) { m[o.id] = o.label; return m; }, {});
+const codes = require('../../../config/companion-codes');
 
 Page({
   data: {
@@ -25,7 +12,7 @@ Page({
     deviceId: '',
     currentOcc: '',
     currentLabel: '',
-    occupations: OCCUPATIONS,
+    occupations: codes.OCCUPATIONS,
     selected: '',
     selectedLabel: '',
     remain: 0,
@@ -49,7 +36,7 @@ Page({
       const res = await get('/companion/detail/' + this.data.deviceId);
       const c = (res && res.code === 0 && res.data) ? res.data : null;
       const occ = c ? c.occupation : '';
-      this.setData({ currentOcc: occ, currentLabel: LABELS[occ] || occ, selected: occ, selectedLabel: LABELS[occ] || occ });
+      this.setData({ currentOcc: occ, currentLabel: codes.getLabel(codes.OCCUPATIONS, occ), selected: occ, selectedLabel: codes.getLabel(codes.OCCUPATIONS, occ) });
       const inv = await get('/item/inventory');
       const list = (inv && inv.code === 0 && inv.data) ? inv.data : [];
       const row = list.filter(function (i) { return i.skuCode === 'occupation_change'; })[0];
@@ -61,7 +48,7 @@ Page({
 
   onOccTap(e) {
     const id = e.currentTarget.dataset.id;
-    const occ = OCCUPATIONS.filter(function (o) { return o.id === id; })[0];
+    const occ = codes.OCCUPATIONS.filter(function (o) { return o.id === id; })[0];
     this.setData({ selected: id, selectedLabel: occ ? occ.label : '' });
   },
 

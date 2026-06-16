@@ -1,27 +1,26 @@
 <view class="pf-container {{darkMode ? 'dark' : ''}}">
   <view class="pf-head">
     <image class="pf-ava" src="{{avatar || '/images/avatar-default.png'}}" mode="aspectFill" />
-    <view class="pf-name">{{characterName}}</view>
   </view>
 
   <view class="pf-row" bindtap="onRole">
-    <image class="pf-ic-img" src="/images/role{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" />
+    <view class="pf-ic"><image class="pf-ic-img" src="/images/role{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" /></view>
     <view class="pf-meta"><view class="pf-lb">角色</view><view class="pf-val">{{roleLabel}}</view></view>
     <view class="pf-go">更换 ›</view>
   </view>
 
   <view class="pf-row" bindtap="onOcc">
-    <view class="pf-ic">💼</view>
+    <view class="pf-ic"><image class="pf-ic-img" src="/images/occupation{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" /></view>
     <view class="pf-meta"><view class="pf-lb">职业</view><view class="pf-val">{{occLabel}}</view></view>
     <view class="pf-go">更换 ›</view>
   </view>
   <view class="pf-row" bindtap="onSoul">
-    <view class="pf-ic">🎭</view>
+    <view class="pf-ic"><image class="pf-ic-img" src="/images/soul{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" /></view>
     <view class="pf-meta"><view class="pf-lb">性格 · 灵魂特质 / 小任性</view><view class="pf-val">{{soulLabel}}</view></view>
     <view class="pf-go">更换 ›</view>
   </view>
   <view class="pf-row" bindtap="onVoice">
-    <view class="pf-ic">🎙️</view>
+    <view class="pf-ic"><image class="pf-ic-img" src="/images/voice{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" /></view>
     <view class="pf-meta"><view class="pf-lb">声音</view><view class="pf-val">{{voiceLabel}}</view></view>
     <view class="pf-go">更换 ›</view>
   </view>

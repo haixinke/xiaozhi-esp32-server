@@ -133,4 +133,12 @@ public interface DeviceService extends BaseService<DeviceEntity> {
      */
     Object callDeviceTool(String deviceId, String toolName, Map<String, Object> arguments);
 
+    /**
+     * 根据设备ID查询其绑定的智能体ID
+     *
+     * @param deviceId 设备ID
+     * @return agentId；设备不存在或未绑定则返回 null
+     */
+    String getAgentIdByDeviceId(String deviceId);
+
 }

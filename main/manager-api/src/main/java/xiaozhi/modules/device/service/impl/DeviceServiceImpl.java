@@ -872,4 +872,13 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         }
         return null;
     }
+
+    @Override
+    public String getAgentIdByDeviceId(String deviceId) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return null;
+        }
+        DeviceEntity device = baseDao.selectById(deviceId);
+        return device == null ? null : device.getAgentId();
+    }
 }

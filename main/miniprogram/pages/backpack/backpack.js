@@ -190,15 +190,17 @@ Page({
         });
       }
 
-      // 3. 轮询订单直到履约完成(FULFILLED=2)
-      var fulfilled = await this._waitOrderFulfilled(order.outTradeNo);
+      // 3. 轮询订单直到履约完成（区分 成功 / 失败 / 超时）
+      var outcome = await this._waitOrderFulfilled(order.outTradeNo);
 
       // 4. 关闭面板 + 刷新库存
       this.setData({ showSheet: false });
       await this.refreshInventory();
       wx.hideLoading();
-      if (fulfilled) {
+      if (outcome === 'ok') {
         wx.showToast({ title: '购买成功', icon: 'success', duration: 2000 });
+      } else if (outcome === 'failed') {
+        wx.showToast({ title: '购买失败，请联系客服', icon: 'none', duration: 2500 });
       } else {
         wx.showToast({ title: '支付成功，道具稍后到账', icon: 'none', duration: 2000 });
       }
@@ -215,20 +217,26 @@ Page({
     }
   },
 
-  // 轮询订单状态直到 FULFILLED=2（12 次 × 1s）。mock 模式下首次即命中。
+  // 轮询订单状态：'ok'=已履约 / 'failed'=终态失败(取消/退款/超时) / 'timeout'=轮询超时
   async _waitOrderFulfilled(outTradeNo) {
-    var FULFILLED = 2;
     for (var i = 0; i < 12; i++) {
       try {
         var res = await get('/payment/order/' + outTradeNo);
-        if (res && res.code === 0 && res.data && res.data.status === FULFILLED) return true;
+        if (res && res.code === 0 && res.data) {
+          var terminal = logic.orderTerminal(res.data.status);
+          if (terminal === 'fulfilled') return 'ok';
+          if (terminal === 'failed') {
+            console.warn('[backpack] 订单履约失败 outTradeNo=' + outTradeNo + ' status=' + res.data.status);
+            return 'failed';
+          }
+        }
       } catch (e) {
         // 单次查询失败不中断轮询
       }
       await new Promise(function (r) { setTimeout(r, 1000); });
     }
     console.warn('[backpack] 订单履约轮询超时 outTradeNo=' + outTradeNo);
-    return false;
+    return 'timeout';
   },
 
   // 购买成功后仅刷新库存（轻量）

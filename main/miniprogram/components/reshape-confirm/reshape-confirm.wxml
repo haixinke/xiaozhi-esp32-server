@@ -1,0 +1,15 @@
+<view class="rc-overlay {{show ? 'rc-show' : ''}}" bindtap="onOverlay">
+  <view class="rc-sheet" catchtap="onStop" wx:if="{{show}}">
+    <view class="rc-grab"></view>
+    <view class="rc-title">{{title}}</view>
+    <view class="rc-sub">确认后将消耗一张{{voucherName}}，立即生效</view>
+    <view class="rc-change">
+      <view class="rc-half">由 <text class="rc-from">{{from}}</text></view>
+      <view class="rc-arrow">→</view>
+      <view class="rc-half rc-right">变为 <text class="rc-to">{{to}}</text></view>
+    </view>
+    <view class="rc-listen" wx:if="{{listenable}}" bindtap="onListen">▶ 再试听一下「{{to}}」</view>
+    <view class="rc-cost">将消耗 1 张{{voucherName}}（剩余 {{remainCount}} 张）</view>
+    <view class="rc-btn" bindtap="onConfirm">确认重塑</view>
+  </view>
+</view>

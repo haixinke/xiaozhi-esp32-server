@@ -207,3 +207,6 @@ main/manager-mobile/env/.env.development
 
 # Knowledge graph (regenerate with /graphify)
 graphify-out/
+
+# Visual companion mockups (transient)
+.superpowers/

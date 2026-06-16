@@ -19,16 +19,15 @@
     <view class="cv-more">更多音色持续上新中</view>
 
     <view class="cv-foot">
-      <view class="cv-info">将消耗 1 张换声音券（剩 {{remain}} 张）</view>
+      <view class="cv-info">将消耗 1 张声音变更券（剩 {{remain}} 张）</view>
       <view class="cv-btn {{(!selected || submitting) ? 'dis' : ''}}" bindtap="onConfirmTap">确认更换</view>
     </view>
   </block>
 
   <view class="cv-success" wx:else>
-    <view class="cv-spark">✨</view>
     <view class="cv-st">命运已重塑</view>
     <view class="cv-ss">她的声音已更新为「{{selectedLabel}}」，下一次对话将以全新姿态陪你</view>
-    <view class="cv-row-sum"><text class="cv-rk">消耗</text><text class="cv-rv">1 张换声音券</text></view>
+    <view class="cv-row-sum"><text class="cv-rk">消耗</text><text class="cv-rv">1 张声音变更券</text></view>
     <view class="cv-done" bindtap="onDone">完成</view>
   </view>
 

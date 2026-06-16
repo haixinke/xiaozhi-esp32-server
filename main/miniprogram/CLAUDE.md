@@ -140,6 +140,15 @@ WebSocket 消息流：
 | 玻璃态不可见 | `backdrop-filter: blur()`、透明度、边框颜色 |
 | 加载失败 | appid、图片资源、语法错误 |
 
+## UI 设计规范
+
+### 禁止 emoji 图标
+
+小程序 UI 中**不得出现任何 emoji**（如 🎨 📷 ✨ 这类表情符号）。硬性约定：
+
+- emoji 在不同机型/系统上渲染不一致，会破坏「Ethereal Companion」瓷白玻璃态的统一质感
+- 需要图标时改用本地 PNG 资源（`/images/*.png`，暗色态加 `-dark` 后缀，参考背包页 `bp-ico-img`）或纯 CSS 图形
+
 ## 深色模式开发规范
 
 工具函数：`utils/theme.js`（`getTheme`, `applyTheme`, `toggleTheme`, `applyGlobalTheme`）

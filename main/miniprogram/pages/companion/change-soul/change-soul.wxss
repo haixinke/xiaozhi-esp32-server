@@ -8,8 +8,8 @@
 .cs-trait { background:rgba(255,255,255,.75); border:2rpx solid transparent; border-radius:20rpx; padding:24rpx; text-align:center; font-size:26rpx; color:#3a2a2e }
 .cs-container.dark .cs-trait { background:rgba(30,28,46,.85); color:#e8e4e3 }
 .cs-trait.sel { border-color:#864e5a; background:rgba(134,78,90,.1); color:#864e5a; font-weight:600 }
-.cs-quirks { display:flex; flex-wrap:wrap; gap:16rpx }
-.cs-quirk { background:rgba(255,255,255,.75); border:2rpx solid transparent; border-radius:40rpx; padding:16rpx 28rpx; font-size:24rpx; color:#3a2a2e }
+.cs-quirks { display:grid; grid-template-columns:repeat(2,1fr); gap:16rpx }
+.cs-quirk { background:rgba(255,255,255,.75); border:2rpx solid transparent; border-radius:20rpx; padding:24rpx; text-align:center; font-size:26rpx; color:#3a2a2e }
 .cs-container.dark .cs-quirk { background:rgba(30,28,46,.85); color:#e8e4e3 }
 .cs-quirk.sel { border-color:#864e5a; background:rgba(134,78,90,.12); color:#864e5a; font-weight:600 }
 .cs-foot { position:fixed; left:0; right:0; bottom:0; background:rgba(251,249,248,.96); backdrop-filter:blur(12rpx); border-top:1rpx solid rgba(134,78,90,.1); display:flex; align-items:center; gap:20rpx; padding:20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom)) }

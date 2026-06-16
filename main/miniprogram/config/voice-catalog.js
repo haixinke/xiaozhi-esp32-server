@@ -8,10 +8,10 @@
 var CDN = 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la';
 
 var DEFAULT_VOICES = [
-  { id: 'TTS_HSDSTTS_V2_0001', label: '温糯', audioUrl: CDN + '/girlfriend/voice/female_xiaohe.mp3', tag: 'default' },
-  { id: 'TTS_HSDSTTS_V2_0020', label: '撒娇', audioUrl: CDN + '/girlfriend/voice/female_sajiao.mp3', tag: 'default' },
-  { id: 'TTS_HSDSTTS_V2_0017', label: '知性', audioUrl: CDN + '/girlfriend/voice/female_sophie.mp3', tag: 'default' },
-  { id: 'TTS_HSDSTTS_V2_0022', label: '甜美', audioUrl: CDN + '/girlfriend/voice/female_tianmei.mp3', tag: 'default' }
+  { id: 'TTS_HSDSTTS_V2_0001', label: '温糯', audioUrl: CDN + '/girlfriend/voice/female_xiaohe.mp3', tag: '声音像加了温的珍珠奶茶，听着就让人想一直聊下去' },
+  { id: 'TTS_HSDSTTS_V2_0020', label: '撒娇', audioUrl: CDN + '/girlfriend/voice/female_sajiao.mp3', tag: '尾音轻轻上扬的那个瞬间，好像连空气都变软了' },
+  { id: 'TTS_HSDSTTS_V2_0017', label: '知性', audioUrl: CDN + '/girlfriend/voice/female_sophie.mp3', tag: '不急不躁，温柔却有力量，喧嚣世界里找到了一处安静的角落' },
+  { id: 'TTS_HSDSTTS_V2_0022', label: '甜美', audioUrl: CDN + '/girlfriend/voice/female_tianmei.mp3', tag: '只要听到这个声音，今天的烦恼就自动静音了' }
 ];
 
 // 扩展位：后续上新的高级/订阅音色在此追加，无需改页面结构。

@@ -1,5 +1,5 @@
 /**
- * change-soul：换性格。一张 soul_quirk_change 同时改灵魂特质(max2)+小任性(单选)。
+ * change-soul：换性格。一张 soul_quirk_change 同时改灵魂特质(必选2)+小任性(必选1)。
  * 提交时把灵魂特质逗号分隔成 soulTraits、小任性成 soulQuirk 一并 POST。
  */
 const { getTheme, applyTheme } = require('../../../utils/theme');
@@ -96,8 +96,11 @@ Page({
 
   onConfirmTap() {
     if (this.data.submitting) return;
-    if (this.data.traitSel.length < 1 || !this.data.quirkSel) {
-      wx.showToast({ title: '请选择灵魂特质和小任性', icon: 'none' }); return;
+    if (this.data.traitSel.length < 2) {
+      wx.showToast({ title: '请选择 2 条灵魂特质', icon: 'none' }); return;
+    }
+    if (!this.data.quirkSel) {
+      wx.showToast({ title: '请选择 1 条小任性', icon: 'none' }); return;
     }
     if (!this._isChanged()) { wx.showToast({ title: '内容未发生变化', icon: 'none' }); return; }
     if (this.data.remain <= 0) { this._noVoucher(); return; }

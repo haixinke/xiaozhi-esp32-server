@@ -18,7 +18,6 @@
   font-size: 30rpx; color: #864e5a; letter-spacing: 4rpx; font-weight: 600;
   display: flex; align-items: center; gap: 14rpx; margin: 28rpx 8rpx 18rpx;
 }
-.bp-cat-dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: #d4737a; }
 
 /* 道具卡片（瓷白玻璃态） */
 .bp-item {

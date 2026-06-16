@@ -2,7 +2,7 @@
   <block wx:if="{{!done}}">
     <view class="cs-cur">当前 · {{curTraitsLabel || '未设置'}} ／ {{curQuirkLabel || '未设置'}}</view>
 
-    <view class="cs-title">灵魂特质（最多 2 条）</view>
+    <view class="cs-title">灵魂特质（选 2 条）</view>
     <view class="cs-traits">
       <view class="cs-trait {{item.sel ? 'sel' : ''}}" wx:for="{{traits}}" wx:key="id"
             data-index="{{index}}" bindtap="onTraitTap">{{item.label}}</view>
@@ -15,13 +15,12 @@
     </view>
 
     <view class="cs-foot">
-      <view class="cs-info">将消耗 1 张换性格券（剩 {{remain}} 张）</view>
+      <view class="cs-info">将消耗 1 张性格重组券（剩 {{remain}} 张）</view>
       <view class="cs-btn {{submitting ? 'dis' : ''}}" bindtap="onConfirmTap">确认更换</view>
     </view>
   </block>
 
   <view class="cs-success" wx:else>
-    <view class="cs-spark">✨</view>
     <view class="cs-st">命运已重塑</view>
     <view class="cs-ss">她的性格已更新，下一次对话将以全新姿态陪你</view>
     <view class="cs-row"><text class="cs-rk">消耗</text><text class="cs-rv">1 张换性格券</text></view>

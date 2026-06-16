@@ -4,18 +4,16 @@
     <view class="co-grid">
       <view class="co-cell {{selected === item.id ? 'sel' : ''}}" wx:for="{{occupations}}" wx:key="id"
             data-id="{{item.id}}" bindtap="onOccTap">
-        <view class="co-ic">{{item.icon}}</view>
         <view class="co-lb">{{item.label}}</view>
       </view>
     </view>
     <view class="co-foot">
-      <view class="co-info">将消耗 1 张换职业券（剩 {{remain}} 张）</view>
+      <view class="co-info">将消耗 1 张身份变更券（剩 {{remain}} 张）</view>
       <view class="co-btn {{(!selected || submitting) ? 'dis' : ''}}" bindtap="onConfirmTap">确认更换</view>
     </view>
   </block>
 
   <view class="co-success" wx:else>
-    <view class="co-spark">✨</view>
     <view class="co-st">命运已重塑</view>
     <view class="co-ss">她的职业已更新为「{{doneLabel}}」，下一次对话将以全新姿态陪你</view>
     <view class="co-row"><text class="co-rk">消耗</text><text class="co-rv">1 张换职业券</text></view>

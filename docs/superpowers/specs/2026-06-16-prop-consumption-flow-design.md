@@ -168,6 +168,23 @@
 - 「完成」→ 返回来源入口（背包或资料页），并触发库存刷新（`/item/inventory`）。
 - 若返回入口是背包，`onShow` 已有 `refreshInventory()`，券徽标自动 -1。
 
+### 7.1 在线女友需断开重连（本期必做）
+
+重塑改的是 agent 配置（系统提示词 + TTS 音色），但**当前在线的 WebSocket 会话仍持有旧配置**，必须断开，用户再次「召唤」时才会加载新属性。这与「我」页面**订阅档位变更后断开重连**是同一个问题，复用同一套机制：
+
+- 复用现有 flag 模式：重塑成功后，更换页设置 `app.globalData.needReconnectAfterReshape = true`（镜像订阅的 `needReconnectAfterSub`）。
+- `pages/index/index.js` 的 `onShow`（现订阅处理在 line 173–177）新增**并行**判断：
+  ```js
+  if (g.needReconnectAfterReshape) {
+    g.needReconnectAfterReshape = false;
+    if (this.wsManager && this.data.connectionState === 'connected') {
+      this.wsManager.disconnect();   // 用户再次点「召唤」才重连，加载新 agent 配置
+    }
+  }
+  ```
+- **无需在更换页判断女友是否在线**：`onShow` 仅在 `connectionState === 'connected'` 时才断开；若本就不在线，断开为 no-op，下次召唤自然加载新配置。
+- 成功态文案「下一次对话将以全新姿态陪你」已覆盖此语义；可选增强：若更换页能感知当前在线（如 `app.globalData.connectionState`），成功态追加「她正在线，点召唤重新唤醒即可」。
+
 ---
 
 ## 8. 数据契约
@@ -267,11 +284,25 @@ if (voiceChanged) {
 
 因此本期**不实现**克隆音色的订阅门禁；换到任何声音（默认/克隆）统一只扣 `voice_change`。订阅门禁作为**后续项**：待产品确认要用订阅卡克隆音色时，再新增 `FeatureCode.CUSTOM_VOICE` + 在 update 注入 `SubscriptionService` 并在「新 voice 为克隆音色」时 `requireFeature`。
 
-### 9.5 重塑生效需同步 agent（**建议补，待评审**）
+### 9.5 重塑生效必须同步 agent（本期必做）
 
-`update` 当前**不**重新同步 agent 系统提示词与 TTS 音色。重塑职业/性格/声音后，agent 的人设 prompt 与发音应随之更新。建议在 `update` 写库成功后调用既有的 `syncPromptToAgent(agentId, companionId)` 并更新 `agent.ttsVoiceId`（参照 `setup` 中的写法，约 line 261）。
+`update` 当前**不**重新同步 agent 系统提示词与 TTS 音色。重塑职业/性格/声音后，agent 的人设 prompt 与发音必须随之更新——否则扣了券、数据库变了，但在线 agent 仍用旧配置说话。
 
-> 评审时确认：是 update 内自动同步（推荐，原子），还是由前端再调 `/companion/sync-prompt`。
+实现很轻：`syncPromptToAgent(String agentId, Long companionId)`（line 216）**已同时**完成「按 companion 各字段重建 system prompt」+「`agent.setTtsVoiceId(companion.getVoice())`」+「`agentService.updateById(agent)`」（参照 `setup` 用法，line 261）。`update` 只需在写库成功后调一次：
+
+```java
+// companionDao.updateById(entity) 之后，仅当重塑相关字段变化时同步
+if (occupationChanged || soulChanged || voiceChanged) {
+    String agentId = resolveAgentIdByDeviceId(entity.getDeviceId()); // 见下
+    if (agentId != null) {
+        syncPromptToAgent(agentId, entity.getId());
+    }
+}
+```
+
+- `resolveAgentIdByDeviceId`：`DeviceEntity` 持有 `agentId` 字段，按 `deviceId` 查设备取其 `agentId`（`CompanionServiceImpl` 已注入 `deviceService`，可走设备查询；若缺现成方法则在 `DeviceService` 加一个 `getAgentIdByDeviceId` 查询）。
+- 同步与扣券/写库放在同一事务内（沿用 `setup` 的 `TransactionTemplate` 模式，保证「扣券 + 改库 + 同步 agent」原子）。
+- 不需要前端再调 `/companion/sync-prompt`——update 内原子完成。
 
 ---
 
@@ -334,7 +365,8 @@ pages/settings/settings.js                # 伴侣卡片/头像 → navigateTo p
 - [ ] 无券：`remainCount===0` 时点确认 → 弹窗「还没有{券}」+ 价签 +「去背包获取」/「再想想」；「去获取」跳背包对应卡片。
 - [ ] 服务端 10321 → 前端降级为无券拦截弹窗（不卡死、不重复提交）。
 - [ ] 后端：改 occupation/soulTraits/soulQuirk/voice 任一 → 对应券扣减、`item_consume_log` 落库；无券抛 10321；扣减在事务内、与写库同进退。
-- [ ] 重塑生效：agent 系统提示词与 TTS 音色随之更新（§9.5，按评审结论）。
+- [ ] 重塑生效：update 内同步 agent 系统提示词 + TTS 音色（§9.5），与扣券/写库同事务。
+- [ ] 在线女友：重塑成功后设 `needReconnectAfterReshape`，回到聊天页 `onShow` 主动断开 WS；用户再次「召唤」后才加载新职业/性格/声音（§7.1）。
 - [ ] 暗色模式与现有页面一致；不引入新主色（复用 Ethereal Companion token）。
 
 ---
@@ -343,6 +375,5 @@ pages/settings/settings.js                # 伴侣卡片/头像 → navigateTo p
 
 1. **背包卡片双 CTA**：`remainCount>0` 时主「使用」+ 次「加购」的呈现形式（badge 区小链接 or 长按），评审时定。
 2. **`voice_change` bizType**：新增 `ConsumeBizType.VOICE_CHANGE`（推荐 a）还是复用 `VOICE_CLONE`（b）。
-3. **agent 同步时机**：update 内自动同步（推荐）还是前端再调 `/companion/sync-prompt`。
-4. **音色目录扩展来源**：`config/voice-catalog.js` 静态扩展 vs 后端 timbre 接口下发，评审时定。
-5. **克隆音色订阅门禁**：确认本期不做（§9.4），后续单独排期。
+3. **音色目录扩展来源**：`config/voice-catalog.js` 静态扩展 vs 后端 timbre 接口下发，评审时定。
+4. **克隆音色订阅门禁**：确认本期不做（§9.4），后续单独排期。

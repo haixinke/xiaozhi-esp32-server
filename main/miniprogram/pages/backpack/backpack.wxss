@@ -1,0 +1,4 @@
+.bp-container { min-height: 100vh; background: #f6f3f2; padding: 40rpx 32rpx 60rpx; }
+.bp-container.dark { background: #121220; }
+.bp-placeholder { text-align: center; color: #8a7a7e; padding-top: 200rpx; }
+.dark .bp-placeholder { color: #6a6468; }

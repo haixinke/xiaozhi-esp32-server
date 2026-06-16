@@ -422,7 +422,7 @@ Page({
   },
 
   onBackpackTap() {
-    wx.showToast({ title: '即将上线', icon: 'none', duration: 1500 });
+    wx.navigateTo({ url: '/pages/backpack/backpack' });
   },
 
   onThemeChange() {

@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/backpack/backpack",
     "pages/settings/settings",
     "pages/welcome/welcome",
     "pages/destiny/destiny",

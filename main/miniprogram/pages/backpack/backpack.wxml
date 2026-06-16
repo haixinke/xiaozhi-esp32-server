@@ -1,0 +1,3 @@
+<view class="bp-container {{darkMode ? 'dark' : ''}}">
+  <view class="bp-placeholder">我的背包（建设中）</view>
+</view>

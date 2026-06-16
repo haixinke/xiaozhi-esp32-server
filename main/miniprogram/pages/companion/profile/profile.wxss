@@ -1,0 +1,13 @@
+.pf-container { min-height:100vh; background:#f6f3f2; padding:32rpx 28rpx; box-sizing:border-box }
+.pf-container.dark { background:#121220 }
+.pf-head { text-align:center; padding:24rpx 0 40rpx }
+.pf-ava { width:144rpx; height:144rpx; border-radius:50%; background:linear-gradient(135deg,#d8a8ae,#864e5a); box-shadow:0 8rpx 24rpx rgba(134,78,90,.25) }
+.pf-name { font-size:34rpx; font-weight:600; color:#3a2a2e; margin-top:20rpx }
+.pf-container.dark .pf-name { color:#e8e4e3 }
+.pf-row { background:rgba(255,255,255,.75); border:1rpx solid rgba(255,255,255,.8); border-radius:24rpx; padding:28rpx; display:flex; align-items:center; gap:20rpx; margin-bottom:20rpx; backdrop-filter:blur(8rpx) }
+.pf-container.dark .pf-row { background:rgba(30,28,46,.85); border-color:rgba(255,255,255,.1) }
+.pf-ic { width:72rpx; height:72rpx; border-radius:20rpx; background:rgba(184,134,11,.12); display:flex; align-items:center; justify-content:center; font-size:36rpx }
+.pf-meta { flex:1 } .pf-lb { font-size:22rpx; color:#8a7a7e } .pf-val { font-size:28rpx; font-weight:600; color:#3a2a2e; margin-top:6rpx }
+.pf-container.dark .pf-val { color:#e8e4e3 }
+.pf-go { font-size:24rpx; color:#864e5a; font-weight:600 }
+.pf-note { text-align:center; font-size:20rpx; color:#b8860b; margin-top:32rpx; line-height:1.6 }

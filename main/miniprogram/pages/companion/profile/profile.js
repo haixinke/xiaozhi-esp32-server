@@ -11,7 +11,7 @@ Page({
     darkMode: getTheme(),
     deviceId: '',
     characterName: '', avatar: '',
-    occLabel: '', soulLabel: '', voiceLabel: ''
+    occLabel: '', roleLabel: '', soulLabel: '', voiceLabel: ''
   },
 
   onLoad() {
@@ -35,6 +35,7 @@ Page({
         characterName: c.character || '我的女友',
         avatar: c.avatar || '',
         occLabel: c.occupation || '未设置',
+        roleLabel: codes.getLabel(codes.ROLES, c.character) || '未设置',
         soulLabel: (soulLabel || '未设置') + ' ／ ' + (quirkLabel || '未设置'),
         voiceLabel: vv ? vv.label : (c.voice || '未设置')
       });
@@ -45,5 +46,6 @@ Page({
 
   onOcc() { wx.navigateTo({ url: '/pages/companion/change-occupation/change-occupation' }); },
   onSoul() { wx.navigateTo({ url: '/pages/companion/change-soul/change-soul' }); },
-  onVoice() { wx.navigateTo({ url: '/pages/companion/change-voice/change-voice' }); }
+  onVoice() { wx.navigateTo({ url: '/pages/companion/change-voice/change-voice' }); },
+  onRole() { wx.navigateTo({ url: '/pages/companion/change-role/change-role' }); }
 });

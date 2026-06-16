@@ -124,10 +124,11 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         // 扣券决策抽到纯函数 ReshapeVoucherRule（便于单测）。扣减在写库前集中完成，
         // 事务内后续任何异常都会让扣减一起回滚。
         ReshapeVoucherRule.After after = ReshapeVoucherRule.after(
-                dto.getOccupation(), dto.getSoulTraits(), dto.getSoulQuirk(), dto.getVoice());
+                dto.getCharacter(), dto.getOccupation(), dto.getSoulTraits(), dto.getSoulQuirk(), dto.getVoice());
         Set<String> consumeSkus = ReshapeVoucherRule.decide(entity, after);
         for (String sku : consumeSkus) {
             String bizType = switch (sku) {
+                case ReshapeVoucherRule.ROLE_CHANGE -> ConsumeBizType.ROLE_CHANGE;
                 case ReshapeVoucherRule.OCCUPATION_CHANGE -> ConsumeBizType.OCCUPATION_CHANGE;
                 case ReshapeVoucherRule.SOUL_QUIRK_CHANGE -> ConsumeBizType.SOUL_QUIRK_CHANGE;
                 case ReshapeVoucherRule.VOICE_CHANGE -> ConsumeBizType.VOICE_CHANGE;
@@ -135,6 +136,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             };
             itemService.consume(entity.getUserId(), sku, 1, bizType, entity.getDeviceId());
         }
+        boolean characterChanged = consumeSkus.contains(ReshapeVoucherRule.ROLE_CHANGE);
         boolean occupationChanged = consumeSkus.contains(ReshapeVoucherRule.OCCUPATION_CHANGE);
         boolean soulChanged = consumeSkus.contains(ReshapeVoucherRule.SOUL_QUIRK_CHANGE);
         boolean voiceChanged = consumeSkus.contains(ReshapeVoucherRule.VOICE_CHANGE);
@@ -159,7 +161,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         }
         if (dto.getPastLifeSecret() != null) entity.setPastLifeSecret(dto.getPastLifeSecret());
 
-        if (dto.getCharacter() != null && !dto.getCharacter().equals(entity.getCharacter())) {
+        if (characterChanged) {
             entity.setCharacter(dto.getCharacter());
             needRecalcBirth = true;
         }

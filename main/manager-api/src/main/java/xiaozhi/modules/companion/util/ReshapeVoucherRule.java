@@ -10,6 +10,7 @@ import java.util.Set;
  *
  * <p>规则（与产品决策一致）：
  * <ul>
+ *   <li>角色变化 -> 扣 role_change</li>
  *   <li>职业变化 -> 扣 occupation_change</li>
  *   <li>灵魂特质 或 小任性 任一变化 -> 扣 1 张 soul_quirk_change</li>
  *   <li>声音变化 -> 扣 voice_change</li>
@@ -18,6 +19,7 @@ import java.util.Set;
  */
 public final class ReshapeVoucherRule {
 
+    public static final String ROLE_CHANGE = "role_change";
     public static final String OCCUPATION_CHANGE = "occupation_change";
     public static final String SOUL_QUIRK_CHANGE = "soul_quirk_change";
     public static final String VOICE_CHANGE = "voice_change";
@@ -25,11 +27,14 @@ public final class ReshapeVoucherRule {
     private ReshapeVoucherRule() {
     }
 
-    /** 决定本次 update 需要消耗的券（保持「职业->性格->声音」顺序）。after 可为 null。 */
+    /** 决定本次 update 需要消耗的券（保持「角色->职业->性格->声音」顺序）。after 可为 null。 */
     public static Set<String> decide(CompanionEntity before, After after) {
         Set<String> skus = new LinkedHashSet<>();
         if (after == null) {
             return skus;
+        }
+        if (changed(after.character, before.getCharacter())) {
+            skus.add(ROLE_CHANGE);
         }
         if (changed(after.occupation, before.getOccupation())) {
             skus.add(OCCUPATION_CHANGE);
@@ -45,7 +50,7 @@ public final class ReshapeVoucherRule {
         return skus;
     }
 
-    /** 职业或性格或声音任一变化，都需要重新同步 agent 系统提示词与 TTS 音色。 */
+    /** 角色或职业或性格或声音任一变化，都需要重新同步 agent 系统提示词与 TTS 音色。 */
     public static boolean needsAgentSync(Set<String> skus) {
         return skus != null && !skus.isEmpty();
     }
@@ -55,17 +60,19 @@ public final class ReshapeVoucherRule {
     }
 
     /** update DTO 的投影，避免把整个 DTO 带入纯函数。null 表示「不改」。 */
-    public static After after(String occupation, String soulTraits, String soulQuirk, String voice) {
-        return new After(occupation, soulTraits, soulQuirk, voice);
+    public static After after(String character, String occupation, String soulTraits, String soulQuirk, String voice) {
+        return new After(character, occupation, soulTraits, soulQuirk, voice);
     }
 
     public static final class After {
+        private final String character;
         private final String occupation;
         private final String soulTraits;
         private final String soulQuirk;
         private final String voice;
 
-        private After(String occupation, String soulTraits, String soulQuirk, String voice) {
+        private After(String character, String occupation, String soulTraits, String soulQuirk, String voice) {
+            this.character = character;
             this.occupation = occupation;
             this.soulTraits = soulTraits;
             this.soulQuirk = soulQuirk;

@@ -1,0 +1,36 @@
+<view class="co-container {{darkMode ? 'dark' : ''}}">
+  <block wx:if="{{!done}}">
+    <view class="co-hint">左右滑动，为她选择新的角色</view>
+    <view class="char-section">
+      <swiper class="char-swiper" current="{{currentIdx}}" bindchange="onCharChange"
+              circular previous-margin="60rpx" next-margin="60rpx">
+        <swiper-item wx:for="{{characters}}" wx:key="id">
+          <view class="char-card {{index === currentIdx ? 'char-card-active' : ''}}">
+            <image class="char-image" src="{{item.image}}" mode="aspectFill" />
+            <view class="char-overlay"><text class="char-name">{{item.name}}</text></view>
+          </view>
+        </swiper-item>
+      </swiper>
+      <view class="char-dots">
+        <view wx:for="{{characters}}" wx:key="id"
+              class="char-dot {{index === currentIdx ? 'char-dot-active' : ''}}" />
+      </view>
+    </view>
+
+    <view class="co-foot">
+      <view class="co-info">将消耗 1 张角色变更券（剩 {{remain}} 张）</view>
+      <view class="co-btn {{(submitting || isSameAsCurrent) ? 'dis' : ''}}" bindtap="onConfirmTap">确认更换</view>
+    </view>
+  </block>
+
+  <view class="co-success" wx:else>
+    <view class="co-st">命运已重塑</view>
+    <view class="co-ss">她的角色已更新为「{{doneLabel}}」，下一次对话将以全新姿态陪你</view>
+    <view class="co-row"><text class="co-rk">消耗</text><text class="co-rv">1 张换角色券</text></view>
+    <view class="co-done" bindtap="onDone">完成</view>
+  </view>
+
+  <reshape-confirm show="{{showConfirm}}" title="为她换上新角色" from="{{currentLabel}}" to="{{selectedName}}"
+                   voucherName="换角色券" remainCount="{{remain}}"
+                   bind:confirm="onReshape" bind:close="onCloseConfirm" />
+</view>

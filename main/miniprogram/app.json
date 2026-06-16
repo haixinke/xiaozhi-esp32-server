@@ -10,7 +10,8 @@
     "pages/companion/profile/profile",
     "pages/companion/change-occupation/change-occupation",
     "pages/companion/change-soul/change-soul",
-    "pages/companion/change-voice/change-voice"
+    "pages/companion/change-voice/change-voice",
+    "pages/companion/change-role/change-role"
   ],
   "window": {
     "navigationBarTitleText": "完美女友",

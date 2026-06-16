@@ -14,6 +14,8 @@ public final class ConsumeBizType {
     public static final String VOICE_CLONE = "voice_clone";
     /** 换声音（重塑命运：变更女友音色） */
     public static final String VOICE_CHANGE = "voice_change";
+    /** 角色变更 */
+    public static final String ROLE_CHANGE = "role_change";
     /** 亲密度礼物 */
     public static final String INTIMACY_GIFT = "intimacy_gift";
 

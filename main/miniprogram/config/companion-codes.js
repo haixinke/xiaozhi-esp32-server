@@ -36,6 +36,13 @@ var PET_TYPES = [
   { id: 'dog', label: '狗' },
 ];
 
+var ROLES = [
+  { id: 'baiyueguang', label: '高冷白月光' },
+  { id: 'linjiamei', label: '元气邻家妹' },
+  { id: 'zhixingyujie', label: '知性御姐' },
+  { id: 'erciyuan', label: '潮酷二次元' },
+];
+
 var CDN_BASE_URL = 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la';
 
 var CHARACTER_AVATARS = {
@@ -82,6 +89,7 @@ module.exports = {
   QUIRKS: QUIRKS,
   RELATION_TYPES: RELATION_TYPES,
   PET_TYPES: PET_TYPES,
+  ROLES: ROLES,
   CHARACTER_AVATARS: CHARACTER_AVATARS,
   CHARACTER_IMAGES: CHARACTER_IMAGES,
   VOICE_STYLES: VOICE_STYLES,

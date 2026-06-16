@@ -13,7 +13,8 @@ var ICON_BY_CATEGORY = {
 var ICON_IMG_BY_SKU = {
   occupation_change: 'occupation',
   soul_quirk_change: 'soul',
-  voice_change: 'voice'
+  voice_change: 'voice',
+  role_change: 'role'
 };
 
 Page({
@@ -113,7 +114,8 @@ Page({
       var target = ({
         occupation_change: '/pages/companion/change-occupation/change-occupation',
         soul_quirk_change: '/pages/companion/change-soul/change-soul',
-        voice_change: '/pages/companion/change-voice/change-voice'
+        voice_change: '/pages/companion/change-voice/change-voice',
+        role_change: '/pages/companion/change-role/change-role'
       })[item.skuCode];
       if (target) {
         wx.navigateTo({ url: target + '?sku=' + item.skuCode });

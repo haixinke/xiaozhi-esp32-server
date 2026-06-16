@@ -4,6 +4,12 @@
     <view class="pf-name">{{characterName}}</view>
   </view>
 
+  <view class="pf-row" bindtap="onRole">
+    <image class="pf-ic-img" src="/images/role{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" />
+    <view class="pf-meta"><view class="pf-lb">角色</view><view class="pf-val">{{roleLabel}}</view></view>
+    <view class="pf-go">更换 ›</view>
+  </view>
+
   <view class="pf-row" bindtap="onOcc">
     <view class="pf-ic">💼</view>
     <view class="pf-meta"><view class="pf-lb">职业</view><view class="pf-val">{{occLabel}}</view></view>
@@ -19,6 +25,4 @@
     <view class="pf-meta"><view class="pf-lb">声音</view><view class="pf-val">{{voiceLabel}}</view></view>
     <view class="pf-go">更换 ›</view>
   </view>
-
-  <view class="pf-note">每项更换消耗 1 张对应券（职业券 / 性格券 / 声音券）</view>
 </view>

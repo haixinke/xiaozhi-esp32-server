@@ -1,3 +1,48 @@
 <view class="bp-container {{darkMode ? 'dark' : ''}}">
-  <view class="bp-placeholder">我的背包（建设中）</view>
+
+  <!-- 我的持有概览 -->
+  <view class="bp-holder" wx:if="{{chips.length}}">
+    <view class="bp-holder-label">我 的 持 有</view>
+    <view class="bp-chips">
+      <view class="bp-chip" wx:for="{{chips}}" wx:key="skuCode">
+        {{item.skuName}}<text wx:if="{{!item.unlocked}}"> ×{{item.count}}</text><text wx:else> ✓</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载骨架 -->
+  <block wx:if="{{loading}}">
+    <view class="bp-skeleton" wx:for="{{[1,2,3,4]}}" wx:key="*this"></view>
+  </block>
+
+  <!-- 错误 -->
+  <view class="bp-state" wx:elif="{{error}}">
+    <text class="bp-state-text">加载失败</text>
+    <view class="bp-retry" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 目录空 -->
+  <view class="bp-state" wx:elif="{{empty}}">
+    <text class="bp-state-text">道具马上就来</text>
+  </view>
+
+  <!-- 分类目录 -->
+  <block wx:else>
+    <view class="bp-cat" wx:for="{{groups}}" wx:for-item="group" wx:key="category">
+      <view class="bp-cat-title"><view class="bp-cat-dot"></view>{{group.label}}</view>
+      <view class="bp-item" wx:for="{{group.items}}" wx:for-item="sku" wx:key="skuCode">
+        <view class="bp-ico bp-ico-{{sku.category}}">{{sku.iconEmoji}}</view>
+        <view class="bp-meta">
+          <view class="bp-nm">{{sku.skuName}}</view>
+          <view class="bp-ds">{{sku.description}}</view>
+        </view>
+        <view class="bp-right">
+          <view class="bp-badge bp-badge-{{sku.badgeType}}" wx:if="{{sku.badgeType !== 'none'}}">{{sku.badgeText}}</view>
+          <view class="bp-px" wx:if="{{sku.cta === 'buy'}}">¥{{sku.priceYuan}}<text class="bp-px-orig" wx:if="{{sku.hasPromo}}"> ¥{{sku.origYuan}}</text></view>
+          <view class="bp-cta {{sku.cta === 'go-equip' ? 'bp-cta-ghost' : ''}}" data-sku="{{sku.skuCode}}" bindtap="onCardTap">{{sku.cta === 'go-equip' ? '去换装' : '购买'}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+
 </view>

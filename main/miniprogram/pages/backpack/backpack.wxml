@@ -71,7 +71,7 @@
       </view>
       <button class="bp-pay" bindtap="onPay">微信支付 ¥{{sheetTotalYuan}}</button>
       <view class="bp-sheet-note" wx:if="{{sheetItem.category === 'intimacy'}}">亲密度效果将在后续版本生效</view>
-      <view class="bp-sheet-note" wx:else>券类道具数量固定为 1</view>
+      <view class="bp-sheet-note" wx:elif="{{sheetItem.category === 'consumable_change' || sheetItem.category === 'outfit'}}">券类道具数量固定为 1</view>
     </view>
   </view>
 

@@ -216,7 +216,7 @@ onLoad / 下拉刷新
 wx.requestPayment 成功
   └─ 关闭面板，显示「支付成功，道具入包中…」轻提示
   └─ 轮询 GET /payment/order/{outTradeNo}
-       ├─ 每 1s 一次，最多 8 次
+       ├─ 每 1s 一次，最多 12 次（与「我的契约」`_waitOrderFulfilled` 一致）
        ├─ status===2（已发货）→ 成功：GET /item/inventory 刷新 + toast「购买成功」+ 更新 chips
        ├─ 超时仍未到 2（停在 1 已支付）→ 视为成功但延迟：toast「支付成功，道具稍后到账」，
        │    本地乐观 +1 remainCount（下次 onShow 再校正）

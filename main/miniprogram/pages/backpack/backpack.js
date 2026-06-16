@@ -3,12 +3,17 @@ const { get, post } = require('../../utils/request');
 const logic = require('./logic');
 
 var ICON_BY_SKU = {
-  occupation_change: '👘', soul_quirk_change: '🌀', voice_change: '🎤',
   voice_clone_quota: '🎙️',
   rose: '🌹', milktea: '🥤', diamond_ring: '💎'
 };
 var ICON_BY_CATEGORY = {
   consumable_change: '🎟️', voice_quota: '🎙️', outfit: '👗', intimacy: '🎁'
+};
+// 自带浅/深 PNG 图标的道具：值为 /images/<stem>[-dark].png 的 stem
+var ICON_IMG_BY_SKU = {
+  occupation_change: 'occupation',
+  soul_quirk_change: 'soul',
+  voice_change: 'voice'
 };
 
 Page({
@@ -59,6 +64,7 @@ Page({
       var view = logic.cardView(it);
       return Object.assign({}, it, {
         iconEmoji: self._emoji(it),
+        iconImg: ICON_IMG_BY_SKU[it.skuCode] || '',
         priceYuan: self._yuan(it.effectivePriceFen),
         origYuan: it.hasPromo ? self._yuan(it.priceFen) : '',
         badgeType: view.badgeType,

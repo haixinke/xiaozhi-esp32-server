@@ -31,7 +31,10 @@
     <view class="bp-cat" wx:for="{{groups}}" wx:for-item="group" wx:key="category">
       <view class="bp-cat-title"><view class="bp-cat-dot"></view>{{group.label}}</view>
       <view class="bp-item" wx:for="{{group.items}}" wx:for-item="sku" wx:key="skuCode">
-        <view class="bp-ico bp-ico-{{sku.category}}">{{sku.iconEmoji}}</view>
+        <view class="bp-ico bp-ico-{{sku.category}}">
+          <image wx:if="{{sku.iconImg}}" class="bp-ico-img" src="/images/{{sku.iconImg}}{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" />
+          <block wx:else>{{sku.iconEmoji}}</block>
+        </view>
         <view class="bp-meta">
           <view class="bp-nm">{{sku.skuName}}</view>
           <view class="bp-ds">{{sku.description}}</view>
@@ -51,7 +54,10 @@
       <view class="bp-grab"></view>
       <view class="bp-romantic">想给她一点小惊喜吗？</view>
       <view class="bp-sheet-row">
-        <view class="bp-ico bp-ico-{{sheetItem.category}}">{{sheetItem.iconEmoji}}</view>
+        <view class="bp-ico bp-ico-{{sheetItem.category}}">
+          <image wx:if="{{sheetItem.iconImg}}" class="bp-ico-img" src="/images/{{sheetItem.iconImg}}{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" />
+          <block wx:else>{{sheetItem.iconEmoji}}</block>
+        </view>
         <view class="bp-meta">
           <view class="bp-nm">{{sheetItem.skuName}}</view>
           <view class="bp-ds">{{sheetItem.description}}</view>

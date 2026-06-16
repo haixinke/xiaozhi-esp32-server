@@ -1,0 +1,28 @@
+.cs-container { min-height:100vh; background:#f6f3f2; padding:24rpx 28rpx 160rpx; box-sizing:border-box }
+.cs-container.dark { background:#121220 }
+.cs-cur { background:rgba(184,134,11,.08); border:1rpx solid rgba(184,134,11,.2); border-radius:20rpx; padding:24rpx; font-size:24rpx; color:#6a5a3e; margin-bottom:28rpx }
+.cs-container.dark .cs-cur { color:#daa520; background:rgba(218,165,32,.1) }
+.cs-title { font-size:26rpx; color:#864e5a; font-weight:600; margin:24rpx 4rpx 16rpx }
+.cs-container.dark .cs-title { color:#d8a8ae }
+.cs-traits { display:grid; grid-template-columns:repeat(2,1fr); gap:16rpx }
+.cs-trait { background:rgba(255,255,255,.75); border:2rpx solid transparent; border-radius:20rpx; padding:24rpx; text-align:center; font-size:26rpx; color:#3a2a2e }
+.cs-container.dark .cs-trait { background:rgba(30,28,46,.85); color:#e8e4e3 }
+.cs-trait.sel { border-color:#864e5a; background:rgba(134,78,90,.1); color:#864e5a; font-weight:600 }
+.cs-quirks { display:flex; flex-wrap:wrap; gap:16rpx }
+.cs-quirk { background:rgba(255,255,255,.75); border:2rpx solid transparent; border-radius:40rpx; padding:16rpx 28rpx; font-size:24rpx; color:#3a2a2e }
+.cs-container.dark .cs-quirk { background:rgba(30,28,46,.85); color:#e8e4e3 }
+.cs-quirk.sel { border-color:#864e5a; background:rgba(134,78,90,.12); color:#864e5a; font-weight:600 }
+.cs-foot { position:fixed; left:0; right:0; bottom:0; background:rgba(251,249,248,.96); backdrop-filter:blur(12rpx); border-top:1rpx solid rgba(134,78,90,.1); display:flex; align-items:center; gap:20rpx; padding:20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom)) }
+.cs-container.dark .cs-foot { background:#1e1c2e }
+.cs-info { flex:1; font-size:22rpx; color:#8a7a7e }
+.cs-btn { background:linear-gradient(135deg,#864e5a,#d4737a); color:#fff; font-size:28rpx; font-weight:600; padding:24rpx 52rpx; border-radius:48rpx; box-shadow:0 8rpx 24rpx rgba(134,78,90,.3) }
+.cs-btn.dis { background:#d4c4c6; box-shadow:none }
+.cs-success { display:flex; flex-direction:column; align-items:center; padding-top:200rpx; text-align:center }
+.cs-spark { font-size:112rpx; filter:drop-shadow(0 8rpx 16rpx rgba(184,134,11,.4)) }
+.cs-st { font-size:36rpx; font-weight:700; color:#3a2a2e; margin-top:32rpx }
+.cs-container.dark .cs-st { color:#e8e4e3 }
+.cs-ss { font-size:24rpx; color:#8a7a7e; margin-top:16rpx; line-height:1.6; width:80% }
+.cs-row { display:flex; justify-content:space-between; width:84%; background:rgba(255,255,255,.8); border:1rpx solid rgba(134,78,90,.12); border-radius:24rpx; padding:24rpx; margin:40rpx 0 }
+.cs-container.dark .cs-row { background:rgba(30,28,46,.85) }
+.cs-rk { font-size:24rpx; color:#8a7a7e } .cs-rv { font-size:24rpx; color:#b8860b }
+.cs-done { background:linear-gradient(135deg,#864e5a,#d4737a); color:#fff; font-size:28rpx; font-weight:600; padding:24rpx 80rpx; border-radius:48rpx; box-shadow:0 8rpx 24rpx rgba(134,78,90,.3) }

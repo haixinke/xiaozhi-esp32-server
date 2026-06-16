@@ -425,6 +425,10 @@ Page({
     wx.navigateTo({ url: '/pages/backpack/backpack' });
   },
 
+  onCompanionTap() {
+    wx.navigateTo({ url: '/pages/companion/profile/profile' });
+  },
+
   onThemeChange() {
     toggleTheme(this);
   },

@@ -6,7 +6,11 @@
     "pages/welcome/welcome",
     "pages/destiny/destiny",
     "pages/soul-resonance/soul-resonance",
-    "pages/memory-anchor/memory-anchor"
+    "pages/memory-anchor/memory-anchor",
+    "pages/companion/profile/profile",
+    "pages/companion/change-occupation/change-occupation",
+    "pages/companion/change-soul/change-soul",
+    "pages/companion/change-voice/change-voice"
   ],
   "window": {
     "navigationBarTitleText": "完美女友",

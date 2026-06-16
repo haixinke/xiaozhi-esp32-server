@@ -1,0 +1,38 @@
+<view class="cv-container {{darkMode ? 'dark' : ''}}">
+  <block wx:if="{{!done}}">
+    <view class="cv-cur">当前 · {{curLabel || '未设置'}}　点 ▶ 试听，选择她的新音色</view>
+
+    <view class="cv-title">系统音色</view>
+    <view class="cv-list">
+      <view class="cv-row {{selected === item.id ? 'sel' : ''}}" wx:for="{{voices}}" wx:key="id"
+            data-id="{{item.id}}" bindtap="onVoiceTap">
+        <view class="cv-play {{playingId === item.id ? 'playing' : ''}}" catchtap="onPlay" data-id="{{item.id}}">
+          {{playingId === item.id ? '♪' : '▶'}}
+        </view>
+        <view class="cv-info">
+          <view class="cv-name">{{item.label}}</view>
+          <view class="cv-tag">{{item.tag === 'default' ? '默认' : (item.tag || '')}}</view>
+        </view>
+        <view class="cv-check" wx:if="{{selected === item.id}}">✓</view>
+      </view>
+    </view>
+    <view class="cv-more">更多音色持续上新中</view>
+
+    <view class="cv-foot">
+      <view class="cv-info">将消耗 1 张换声音券（剩 {{remain}} 张）</view>
+      <view class="cv-btn {{(!selected || submitting) ? 'dis' : ''}}" bindtap="onConfirmTap">确认更换</view>
+    </view>
+  </block>
+
+  <view class="cv-success" wx:else>
+    <view class="cv-spark">✨</view>
+    <view class="cv-st">命运已重塑</view>
+    <view class="cv-ss">她的声音已更新为「{{selectedLabel}}」，下一次对话将以全新姿态陪你</view>
+    <view class="cv-row-sum"><text class="cv-rk">消耗</text><text class="cv-rv">1 张换声音券</text></view>
+    <view class="cv-done" bindtap="onDone">完成</view>
+  </view>
+
+  <reshape-confirm show="{{showConfirm}}" title="为她换上新声音" from="{{curLabel}}" to="{{selectedLabel}}"
+                   voucherName="换声音券" remainCount="{{remain}}" listenable="{{true}}" audioUrl="{{selectedAudio}}"
+                   bind:confirm="onReshape" bind:listen="onListen" bind:close="onCloseConfirm" />
+</view>

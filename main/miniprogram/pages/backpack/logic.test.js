@@ -37,8 +37,18 @@ const L = require('./logic');
   // cardView
   var outfitOwned = { category: 'outfit', remainCount: 1 };
   assert.deepStrictEqual(L.cardView(outfitOwned), { badgeType: 'unlocked', badgeText: '已解锁', cta: 'go-equip' });
+  // consumable_change 且持有 > 0 -> use（去更换）
+  var held = { category: 'consumable_change', remainCount: 2 };
+  assert.strictEqual(L.cardView(held).cta, 'use');
+  assert.strictEqual(L.cardView(held).badgeType, 'owned');
   var owned = { category: 'consumable_change', remainCount: 3 };
-  assert.deepStrictEqual(L.cardView(owned), { badgeType: 'owned', badgeText: '拥有 ×3', cta: 'buy' });
+  assert.deepStrictEqual(L.cardView(owned), { badgeType: 'owned', badgeText: '拥有 ×3', cta: 'use' });
+  // consumable_change 且持有 0 -> buy
+  var none = { category: 'consumable_change', remainCount: 0 };
+  assert.strictEqual(L.cardView(none).cta, 'buy');
+  // 其它类别持有 > 0（如 voice_quota）-> 仍 buy（本类不进更换页）
+  var quota = { category: 'voice_quota', remainCount: 3 };
+  assert.strictEqual(L.cardView(quota).cta, 'buy');
   var fresh = { category: 'intimacy', remainCount: 0 };
   assert.deepStrictEqual(L.cardView(fresh), { badgeType: 'none', badgeText: '', cta: 'buy' });
 

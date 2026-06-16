@@ -66,6 +66,9 @@ function cardView(item) {
   if (item.category === 'outfit' && item.remainCount > 0) {
     return { badgeType: 'unlocked', badgeText: '已解锁', cta: 'go-equip' };
   }
+  if (item.category === 'consumable_change' && item.remainCount > 0) {
+    return { badgeType: 'owned', badgeText: '拥有 ×' + item.remainCount, cta: 'use' };
+  }
   if (item.remainCount > 0) {
     return { badgeType: 'owned', badgeText: '拥有 ×' + item.remainCount, cta: 'buy' };
   }

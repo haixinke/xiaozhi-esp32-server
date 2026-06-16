@@ -113,8 +113,10 @@ Page({
   _changeQty(q) {
     var rule = this.data.sheetRule;
     if (!rule || !rule.stepper) return;
+    var item = this.data.sheetItem;
+    if (!item) return;
     q = Math.max(rule.min, Math.min(rule.max, q));
-    var unit = this.data.sheetItem.effectivePriceFen;
+    var unit = item.effectivePriceFen;
     this.setData({ sheetQty: q, sheetTotalYuan: this._yuan(unit * q) });
   },
   onQtyInc() { this._changeQty((this.data.sheetQty || 1) + 1); },

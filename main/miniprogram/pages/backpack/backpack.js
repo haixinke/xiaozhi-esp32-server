@@ -109,8 +109,25 @@ Page({
       wx.showToast({ title: '换装功能即将上线', icon: 'none', duration: 1500 });
       return;
     }
+    if (item.cta === 'use') {
+      var target = ({
+        occupation_change: '/pages/companion/change-occupation/change-occupation',
+        soul_quirk_change: '/pages/companion/change-soul/change-soul',
+        voice_change: '/pages/companion/change-voice/change-voice'
+      })[item.skuCode];
+      if (target) {
+        wx.navigateTo({ url: target + '?sku=' + item.skuCode });
+      } else {
+        wx.showToast({ title: '该道具暂不支持使用', icon: 'none' });
+      }
+      return;
+    }
     var rule = logic.quantityRule(item.category);
     var qty = rule.defaultQty;
+    this._openSheet(item, rule, qty);
+  },
+
+  _openSheet(item, rule, qty) {
     this.setData({
       showSheet: true,
       sheetItem: item,
@@ -119,6 +136,15 @@ Page({
       sheetUnitYuan: this._yuan(item.effectivePriceFen),
       sheetTotalYuan: this._yuan(item.effectivePriceFen * qty)
     });
+  },
+
+  // consumable_change 持有时，次入口「加购」强制走购买面板
+  onBuyAgain(e) {
+    var skuCode = e.currentTarget.dataset.sku;
+    var item = (this.data.allItems || []).filter(function (it) { return it.skuCode === skuCode; })[0];
+    if (!item) return;
+    var rule = logic.quantityRule(item.category);
+    this._openSheet(item, rule, rule.defaultQty);
   },
 
   _changeQty(q) {

@@ -115,3 +115,6 @@
 .dark .bp-sum { color: #6a6468; }
 .dark .bp-sum-a { color: #d4737a; }
 .dark .bp-sheet-note { color: #6a6468; }
+
+.bp-right-cta { display:flex; align-items:center; gap:12rpx; }
+.bp-cta-add { font-size:22rpx; color:#b8860b; padding:6rpx 4rpx; }

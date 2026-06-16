@@ -42,7 +42,13 @@
         <view class="bp-right">
           <view class="bp-badge bp-badge-{{sku.badgeType}}" wx:if="{{sku.badgeType !== 'none'}}">{{sku.badgeText}}</view>
           <view class="bp-px" wx:if="{{sku.cta === 'buy'}}">¥{{sku.priceYuan}}<text class="bp-px-orig" wx:if="{{sku.hasPromo}}"> ¥{{sku.origYuan}}</text></view>
-          <view class="bp-cta {{sku.cta === 'go-equip' ? 'bp-cta-ghost' : ''}}" data-sku="{{sku.skuCode}}" bindtap="onCardTap">{{sku.cta === 'go-equip' ? '去换装' : '购买'}}</view>
+          <view class="bp-right-cta">
+            <block wx:if="{{sku.cta === 'use'}}">
+              <view class="bp-cta-add" data-sku="{{sku.skuCode}}" bindtap="onBuyAgain">加购</view>
+              <view class="bp-cta" data-sku="{{sku.skuCode}}" bindtap="onCardTap">使用</view>
+            </block>
+            <view class="bp-cta {{sku.cta === 'go-equip' ? 'bp-cta-ghost' : ''}}" wx:else data-sku="{{sku.skuCode}}" bindtap="onCardTap">{{sku.cta === 'go-equip' ? '去换装' : '购买'}}</view>
+          </view>
         </view>
       </view>
     </view>

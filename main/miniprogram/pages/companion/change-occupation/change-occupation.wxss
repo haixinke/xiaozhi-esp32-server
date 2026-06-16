@@ -1,0 +1,26 @@
+.co-container { min-height:100vh; background:#f6f3f2; padding:24rpx 28rpx 160rpx; box-sizing:border-box }
+.co-container.dark { background:#121220 }
+.co-cur { background:rgba(184,134,11,.08); border:1rpx solid rgba(184,134,11,.2); border-radius:20rpx; padding:24rpx; font-size:24rpx; color:#6a5a3e; margin-bottom:28rpx }
+.co-container.dark .co-cur { color:#daa520; background:rgba(218,165,32,.1) }
+.co-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20rpx }
+.co-cell { background:rgba(255,255,255,.75); border:2rpx solid transparent; border-radius:24rpx; padding:28rpx 12rpx; text-align:center; backdrop-filter:blur(8rpx) }
+.co-container.dark .co-cell { background:rgba(30,28,46,.85) }
+.co-cell.sel { border-color:#864e5a; background:rgba(134,78,90,.1); box-shadow:0 6rpx 18rpx rgba(134,78,90,.18) }
+.co-ic { font-size:48rpx }
+.co-lb { font-size:22rpx; color:#3a2a2e; margin-top:8rpx; font-weight:600 }
+.co-cell.sel .co-lb { color:#864e5a }
+.co-container.dark .co-lb { color:#e8e4e3 }
+.co-foot { position:fixed; left:0; right:0; bottom:0; background:rgba(251,249,248,.96); backdrop-filter:blur(12rpx); border-top:1rpx solid rgba(134,78,90,.1); display:flex; align-items:center; gap:20rpx; padding:20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom)) }
+.co-container.dark .co-foot { background:#1e1c2e }
+.co-info { flex:1; font-size:22rpx; color:#8a7a7e }
+.co-btn { background:linear-gradient(135deg,#864e5a,#d4737a); color:#fff; font-size:28rpx; font-weight:600; padding:24rpx 52rpx; border-radius:48rpx; box-shadow:0 8rpx 24rpx rgba(134,78,90,.3) }
+.co-btn.dis { background:#d4c4c6; box-shadow:none }
+.co-success { display:flex; flex-direction:column; align-items:center; padding-top:200rpx; text-align:center }
+.co-spark { font-size:112rpx; filter:drop-shadow(0 8rpx 16rpx rgba(184,134,11,.4)) }
+.co-st { font-size:36rpx; font-weight:700; color:#3a2a2e; margin-top:32rpx }
+.co-container.dark .co-st { color:#e8e4e3 }
+.co-ss { font-size:24rpx; color:#8a7a7e; margin-top:16rpx; line-height:1.6; width:80% }
+.co-row { display:flex; justify-content:space-between; width:84%; background:rgba(255,255,255,.8); border:1rpx solid rgba(134,78,90,.12); border-radius:24rpx; padding:24rpx; margin:40rpx 0 }
+.co-container.dark .co-row { background:rgba(30,28,46,.85) }
+.co-rk { font-size:24rpx; color:#8a7a7e } .co-rv { font-size:24rpx; color:#b8860b }
+.co-done { background:linear-gradient(135deg,#864e5a,#d4737a); color:#fff; font-size:28rpx; font-weight:600; padding:24rpx 80rpx; border-radius:48rpx; box-shadow:0 8rpx 24rpx rgba(134,78,90,.3) }

@@ -58,7 +58,7 @@
   <view class="bp-overlay {{showSheet ? 'bp-overlay-show' : ''}}" bindtap="onSheetOverlayTap">
     <view class="bp-sheet" catchtap="onSheetPanelTap" wx:if="{{sheetItem}}">
       <view class="bp-grab"></view>
-      <view class="bp-romantic">想给她一点小惊喜吗？</view>
+      <view class="bp-romantic">想要一点不一样的她吗？</view>
       <view class="bp-sheet-row">
         <view class="bp-ico bp-ico-{{sheetItem.category}}">
           <image wx:if="{{sheetItem.iconImg}}" class="bp-ico-img" src="/images/{{sheetItem.iconImg}}{{darkMode ? '-dark' : ''}}.png" mode="aspectFit" />

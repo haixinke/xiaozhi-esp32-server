@@ -36,7 +36,7 @@
     <view class="entry-card" bindtap="onBackpackTap">
       <!-- <view class="entry-icon-area entry-icon-backpack"></view> -->
       <text class="entry-title">我的背包</text>
-      <text class="entry-desc">查看道具</text>
+      <text class="entry-desc">管理道具</text>
     </view>
     <view class="entry-card" bindtap="onCompanionTap">
       <text class="entry-title">我的女友</text>

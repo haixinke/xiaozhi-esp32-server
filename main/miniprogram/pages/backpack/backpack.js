@@ -19,7 +19,14 @@ Page({
     empty: false,
     groups: [],
     chips: [],
-    allItems: []
+    allItems: [],
+    showSheet: false,
+    sheetItem: null,
+    sheetRule: null,
+    sheetQty: 1,
+    sheetUnitYuan: '',
+    sheetTotalYuan: '',
+    paying: false
   },
 
   onLoad() {
@@ -81,5 +88,41 @@ Page({
 
   onRetry() {
     this.loadAll();
-  }
+  },
+
+  onCardTap(e) {
+    var skuCode = e.currentTarget.dataset.sku;
+    var item = (this.data.allItems || []).filter(function (it) { return it.skuCode === skuCode; })[0];
+    if (!item) return;
+    if (item.cta === 'go-equip') {
+      wx.showToast({ title: '换装功能即将上线', icon: 'none', duration: 1500 });
+      return;
+    }
+    var rule = logic.quantityRule(item.category);
+    var qty = rule.defaultQty;
+    this.setData({
+      showSheet: true,
+      sheetItem: item,
+      sheetRule: rule,
+      sheetQty: qty,
+      sheetUnitYuan: this._yuan(item.effectivePriceFen),
+      sheetTotalYuan: this._yuan(item.effectivePriceFen * qty)
+    });
+  },
+
+  _changeQty(q) {
+    var rule = this.data.sheetRule;
+    if (!rule || !rule.stepper) return;
+    q = Math.max(rule.min, Math.min(rule.max, q));
+    var unit = this.data.sheetItem.effectivePriceFen;
+    this.setData({ sheetQty: q, sheetTotalYuan: this._yuan(unit * q) });
+  },
+  onQtyInc() { this._changeQty((this.data.sheetQty || 1) + 1); },
+  onQtyDec() { this._changeQty((this.data.sheetQty || 1) - 1); },
+
+  onSheetOverlayTap() {
+    if (this.data.paying) return; // 支付中禁止关闭
+    this.setData({ showSheet: false });
+  },
+  onSheetPanelTap() { /* 阻止冒泡 */ }
 });

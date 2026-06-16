@@ -45,4 +45,34 @@
     </view>
   </block>
 
+  <!-- 购买确认面板 -->
+  <view class="bp-overlay {{showSheet ? 'bp-overlay-show' : ''}}" bindtap="onSheetOverlayTap">
+    <view class="bp-sheet" catchtap="onSheetPanelTap" wx:if="{{sheetItem}}">
+      <view class="bp-grab"></view>
+      <view class="bp-romantic">想给她一点小惊喜吗？</view>
+      <view class="bp-sheet-row">
+        <view class="bp-ico bp-ico-{{sheetItem.category}}">{{sheetItem.iconEmoji}}</view>
+        <view class="bp-meta">
+          <view class="bp-nm">{{sheetItem.skuName}}</view>
+          <view class="bp-ds">{{sheetItem.description}}</view>
+        </view>
+      </view>
+      <view class="bp-qty" wx:if="{{sheetRule.stepper}}">
+        <text class="bp-qty-label">数量</text>
+        <view class="bp-step">
+          <view class="bp-step-btn {{sheetQty <= sheetRule.min ? 'bp-step-disabled' : ''}}" bindtap="onQtyDec">−</view>
+          <view class="bp-step-n">{{sheetQty}}</view>
+          <view class="bp-step-btn {{sheetQty >= sheetRule.max ? 'bp-step-disabled' : ''}}" bindtap="onQtyInc">+</view>
+        </view>
+      </view>
+      <view class="bp-sum">
+        <text>合计（¥{{sheetUnitYuan}} × {{sheetQty}}）</text>
+        <text class="bp-sum-a">¥{{sheetTotalYuan}}</text>
+      </view>
+      <button class="bp-pay" bindtap="onPay">微信支付 ¥{{sheetTotalYuan}}</button>
+      <view class="bp-sheet-note" wx:if="{{sheetItem.category === 'intimacy'}}">亲密度效果将在后续版本生效</view>
+      <view class="bp-sheet-note" wx:else>券类道具数量固定为 1</view>
+    </view>
+  </view>
+
 </view>

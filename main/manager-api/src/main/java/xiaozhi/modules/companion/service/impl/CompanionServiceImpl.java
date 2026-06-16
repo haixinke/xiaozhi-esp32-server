@@ -24,6 +24,7 @@ import xiaozhi.modules.companion.util.CharacterAge;
 import xiaozhi.modules.companion.util.CompanionBirthCalculator;
 import xiaozhi.modules.companion.util.CompanionLabels;
 import xiaozhi.modules.companion.util.CompanionMood;
+import xiaozhi.modules.companion.util.ReshapeVoucherRule;
 import xiaozhi.modules.companion.vo.CompanionSetupVO;
 import xiaozhi.modules.companion.vo.CompanionVO;
 import xiaozhi.modules.device.dto.DeviceReportReqDTO;
@@ -37,6 +38,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -119,17 +121,23 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             throw new RenException(ErrorCode.NO_PERMISSION);
         }
 
-        // 门禁校验与道具消耗：都放在实际写入之前集中完成，事务内任何后续异常会让道具扣减一起回滚。
-        boolean occupationChanged = dto.getOccupation() != null && !dto.getOccupation().equals(entity.getOccupation());
-        boolean soulQuirkChanged = dto.getSoulQuirk() != null && !dto.getSoulQuirk().equals(entity.getSoulQuirk());
-        if (occupationChanged) {
-            itemService.consume(entity.getUserId(), "occupation_change", 1,
-                    ConsumeBizType.OCCUPATION_CHANGE, entity.getDeviceId());
+        // 扣券决策抽到纯函数 ReshapeVoucherRule（便于单测）。扣减在写库前集中完成，
+        // 事务内后续任何异常都会让扣减一起回滚。
+        ReshapeVoucherRule.After after = ReshapeVoucherRule.after(
+                dto.getOccupation(), dto.getSoulTraits(), dto.getSoulQuirk(), dto.getVoice());
+        Set<String> consumeSkus = ReshapeVoucherRule.decide(entity, after);
+        for (String sku : consumeSkus) {
+            String bizType = switch (sku) {
+                case ReshapeVoucherRule.OCCUPATION_CHANGE -> ConsumeBizType.OCCUPATION_CHANGE;
+                case ReshapeVoucherRule.SOUL_QUIRK_CHANGE -> ConsumeBizType.SOUL_QUIRK_CHANGE;
+                case ReshapeVoucherRule.VOICE_CHANGE -> ConsumeBizType.VOICE_CHANGE;
+                default -> sku;
+            };
+            itemService.consume(entity.getUserId(), sku, 1, bizType, entity.getDeviceId());
         }
-        if (soulQuirkChanged) {
-            itemService.consume(entity.getUserId(), "soul_quirk_change", 1,
-                    ConsumeBizType.SOUL_QUIRK_CHANGE, entity.getDeviceId());
-        }
+        boolean occupationChanged = consumeSkus.contains(ReshapeVoucherRule.OCCUPATION_CHANGE);
+        boolean soulChanged = consumeSkus.contains(ReshapeVoucherRule.SOUL_QUIRK_CHANGE);
+        boolean voiceChanged = consumeSkus.contains(ReshapeVoucherRule.VOICE_CHANGE);
 
         boolean needRecalcBirth = false;
 
@@ -139,7 +147,9 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         if (occupationChanged) {
             entity.setOccupation(dto.getOccupation());
         }
-        if (dto.getVoice() != null) entity.setVoice(dto.getVoice());
+        if (voiceChanged) {
+            entity.setVoice(dto.getVoice());
+        }
         if (dto.getQuirksText() != null) entity.setQuirksText(dto.getQuirksText());
         if (dto.getPetType() != null) entity.setPetType(dto.getPetType());
         if (dto.getPetName() != null) entity.setPetName(dto.getPetName());
@@ -153,9 +163,13 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             entity.setCharacter(dto.getCharacter());
             needRecalcBirth = true;
         }
-        if (dto.getSoulTraits() != null) entity.setSoulTraits(dto.getSoulTraits());
-        if (soulQuirkChanged) {
-            entity.setSoulQuirk(dto.getSoulQuirk());
+        if (soulChanged) {
+            if (dto.getSoulTraits() != null) {
+                entity.setSoulTraits(dto.getSoulTraits());
+            }
+            if (dto.getSoulQuirk() != null) {
+                entity.setSoulQuirk(dto.getSoulQuirk());
+            }
         }
         if (dto.getRelationType() != null) {
             entity.setRelationType(dto.getRelationType());
@@ -180,6 +194,16 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
 
         companionDao.updateById(entity);
         log.info("伴侣信息已更新，deviceId={}", dto.getDeviceId());
+
+        // 重塑相关字段变化 -> 同步 agent 系统提示词与 TTS 音色（与扣券/写库同事务）。
+        if (ReshapeVoucherRule.needsAgentSync(consumeSkus)) {
+            String agentId = deviceService.getAgentIdByDeviceId(entity.getDeviceId());
+            if (agentId != null && !agentId.isBlank()) {
+                syncPromptToAgent(agentId, entity.getId());
+            } else {
+                log.warn("重塑后未找到 agent，跳过同步，deviceId={}", entity.getDeviceId());
+            }
+        }
 
         return CompanionVO.toVO(entity);
     }

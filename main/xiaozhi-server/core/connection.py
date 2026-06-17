@@ -203,6 +203,11 @@ class ConnectionHandler:
         # 初始化提示词管理器
         self.prompt_manager = PromptManager(self.config, self.logger)
 
+        # 初始化通话状态
+        self.calling = False
+        # 标记当前是否为来电接听模式
+        self.incoming_call = None
+
     async def handle_connection(self, ws: websockets.ServerConnection):
         try:
             # 获取运行中的事件循环（必须在异步上下文中）
@@ -555,7 +560,10 @@ class ConnectionHandler:
         # 更新上下文信息
         self.prompt_manager.update_context_info(self, self.client_ip)
         enhanced_prompt = self.prompt_manager.build_enhanced_prompt(
-            self.config["prompt"], self.device_id, self.client_ip
+            self.config["prompt"],
+            self.device_id,
+            self.client_ip,
+            emoji_enabled=(self.features or {}).get("emoji", True),
         )
         if enhanced_prompt:
             self.change_system_prompt(enhanced_prompt)

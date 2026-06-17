@@ -4,7 +4,7 @@
  */
 
 // 基础 URL，可按需修改
-const BASE_URL = 'http://192.168.4.12:8002/xiaozhi';
+const BASE_URL = 'http://192.168.48.81:8002/xiaozhi';
 
 /**
  * 发起 HTTP 请求

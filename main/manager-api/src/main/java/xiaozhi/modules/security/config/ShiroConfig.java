@@ -74,6 +74,7 @@ public class ShiroConfig {
         Map<String, String> filterMap = new LinkedHashMap<>();
         filterMap.put("/ota/**", "anon");
         filterMap.put("/otaMag/download/**", "anon");
+        filterMap.put("/actuator/**", "anon");
         filterMap.put("/webjars/**", "anon");
         filterMap.put("/druid/**", "anon");
         filterMap.put("/v3/api-docs/**", "anon");

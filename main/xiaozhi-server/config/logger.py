@@ -76,8 +76,10 @@ def setup_logging():
         log_dir = log_config.get("log_dir", "tmp")
         log_file = log_config.get("log_file", "server.log")
         data_dir = log_config.get("data_dir", "data")
+        log_to_file = log_config.get("log_to_file", True)  # 生产环境容器可设为 false，仅输出到 stdout
 
-        os.makedirs(log_dir, exist_ok=True)
+        if log_to_file:
+            os.makedirs(log_dir, exist_ok=True)
         os.makedirs(data_dir, exist_ok=True)
 
         # 配置日志输出
@@ -86,24 +88,22 @@ def setup_logging():
         # 输出到控制台
         logger.add(sys.stdout, format=log_format, level=log_level, filter=formatter)
 
-        # 输出到文件 - 统一目录，按大小轮转
-        # 日志文件完整路径
-        log_file_path = os.path.join(log_dir, log_file)
-
-        # 添加日志处理器
-        logger.add(
-            log_file_path,
-            format=log_format_file,
-            level=log_level,
-            filter=formatter,
-            rotation="10 MB",  # 每个文件最大10MB
-            retention="30 days",  # 保留30天
-            compression=None,
-            encoding="utf-8",
-            enqueue=True,  # 异步安全
-            backtrace=True,
-            diagnose=True,
-        )
+        # 输出到文件 - 容器环境可关闭（log_to_file: false），由运行时采集 stdout
+        if log_to_file:
+            log_file_path = os.path.join(log_dir, log_file)
+            logger.add(
+                log_file_path,
+                format=log_format_file,
+                level=log_level,
+                filter=formatter,
+                rotation="10 MB",  # 每个文件最大10MB
+                retention="30 days",  # 保留30天
+                compression=None,
+                encoding="utf-8",
+                enqueue=True,  # 异步安全
+                backtrace=True,
+                diagnose=True,
+            )
         _logger_initialized = True  # 标记为已初始化
 
     return logger

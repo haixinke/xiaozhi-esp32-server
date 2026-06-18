@@ -14,9 +14,13 @@ services:
       - TZ=Asia/Shanghai
       - REPORTER=docker-seekdb
     volumes:
-      - ./oceanbase/data:/root/ob  # 数据持久化
+      # 数据持久化：seekdb 实际读写 /var/lib/oceanbase/，必须挂载此路径才能持久化
+      # 默认挂载到项目外的 ~/dockervol/oceanbase/seekdb-data，避免数据被误拷入镜像或被 IDE/git 扫描
+      # 可通过环境变量 OCEANBASE_DATA_DIR 覆盖，例：OCEANBASE_DATA_DIR=/data/seekdb docker compose up -d
+      - ${OCEANBASE_DATA_DIR:-~/dockervol/oceanbase/seekdb-data}:/var/lib/oceanbase
     healthcheck:
-      test: ["CMD", "bash", "-c", "obclient -h127.0.0.1 -P2881 -uroot -p123456 -Dtest -e'SELECT 1'"]
+      # seekdb slim 镜像不含 obclient，改用 mysql 客户端做连通性探测
+      test: ["CMD", "mysql", "-h127.0.0.1", "-P2881", "-uroot", "-p123456", "-e", "SELECT 1"]
       interval: 10s
       timeout: 5s
       retries: 10

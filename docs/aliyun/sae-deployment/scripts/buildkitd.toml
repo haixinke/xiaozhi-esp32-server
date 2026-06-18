@@ -1,0 +1,24 @@
+# buildx 构建器使用的 buildkit 配置
+# 用途：为 buildx 容器化构建器配置 Docker Hub 镜像加速，避免国内网络拉取 docker.io 超时
+# 注：buildx builder 不读宿主机 daemon.json 的 registry-mirrors，必须在此独立配置
+
+debug = false
+
+[registry."docker.io"]
+  mirrors = [
+    "f48b3qz8.mirror.aliyuncs.com",
+    "docker.1ms.run",
+    "docker.rainbond.cc",
+  ]
+
+[registry."f48b3qz8.mirror.aliyuncs.com"]
+  http = false
+  insecure = false
+
+[registry."docker.1ms.run"]
+  http = false
+  insecure = false
+
+[registry."docker.rainbond.cc"]
+  http = false
+  insecure = false

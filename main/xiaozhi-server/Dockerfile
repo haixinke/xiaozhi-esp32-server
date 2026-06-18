@@ -1,0 +1,41 @@
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc ffmpeg libopus0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip \
+    && pip install -r requirements.txt
+
+FROM python:3.12-slim AS runner
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg libopus0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r app -g 1001 \
+    && useradd -r -g app -u 1001 app
+
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY . .
+
+RUN mkdir -p /app/models /app/data /app/tmp /app/music \
+    && chown -R app:app /app
+
+USER app
+
+ENV PYTHONUNBUFFERED=1 \
+    TZ=Asia/Shanghai \
+    LOG_DIR=/app/tmp \
+    DATA_DIR=/app/data
+
+EXPOSE 8000 8003
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+  CMD python -c "import socket,sys; s=socket.socket(); s.settimeout(3); s.connect(('127.0.0.1',8000)); s.close()" || exit 1
+
+CMD ["python", "app.py"]

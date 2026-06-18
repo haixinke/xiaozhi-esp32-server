@@ -84,49 +84,12 @@
         <logger name="org.springboot.sample" level="INFO" />
     </springProfile>
     
-    <!-- 生产环境配置 - 合并两个版本的最佳实践 -->
+    <!-- 生产环境配置 - 容器环境仅输出到控制台，由SAE日志采集 -->
     <springProfile name="prod">
-        <!-- 使用本地日志路径 -->
-        <appender name="PROD_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>${LOG_HOME}/xiaozhi-esp32-api.log</file>
-            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-                <fileNamePattern>${LOG_HOME}/xiaozhi-esp32-api.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-                <maxFileSize>10MB</maxFileSize>
-                <maxHistory>30</maxHistory>
-                <totalSizeCap>2GB</totalSizeCap>
-            </rollingPolicy>
-            <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
-                <charset>UTF-8</charset>
-            </encoder>
-        </appender>
-        
-        <!-- 生产环境错误日志 -->
-        <appender name="PROD_ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>${LOG_HOME}/error.log</file>
-            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-                <level>ERROR</level>
-            </filter>
-            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-                <fileNamePattern>${LOG_HOME}/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-                <maxFileSize>10MB</maxFileSize>
-                <maxHistory>30</maxHistory>
-                <totalSizeCap>1GB</totalSizeCap>
-            </rollingPolicy>
-            <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
-                <charset>UTF-8</charset>
-            </encoder>
-        </appender>
-        
-        <!-- 生产环境根日志配置 -->
         <root level="INFO">
-            <appender-ref ref="PROD_FILE" />
-            <appender-ref ref="PROD_ERROR_FILE" />
             <appender-ref ref="CONSOLE" />
         </root>
-        
-        <!-- 特定包的日志级别 -->
+
         <logger name="xiaozhi" level="INFO" />
         <logger name="org.springframework.web" level="ERROR" />
         <logger name="org.springboot.sample" level="ERROR" />

@@ -1,0 +1,36 @@
+# Maven 构建产物
+target/
+*.jar
+!**/src/main/**/*.jar
+!**/src/test/**/*.jar
+
+# IDE / 编辑器
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+*.iml
+
+# 版本控制
+.git/
+.gitignore
+
+# 运行期日志
+logs/
+*.log
+
+# 文档
+docs/
+*.md
+!README.md
+CLAUDE.md
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# Docker 自身
+Dockerfile
+.dockerignore

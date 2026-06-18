@@ -80,41 +80,32 @@ pip install aliyun-sae-cli
 ### 3.3 项目目录约定
 
 ```text
-sae-deploy/
-├── xiaozhi-server/
-│   ├── Dockerfile
-│   └── .dockerignore
-├── manager-api/
-│   ├── Dockerfile
-│   └── .dockerignore
-└── scripts/
-    └── build-push.sh
+sae-deployment/
+├── scripts/
+│   └── build-push.sh      ← 构建推送脚本
+└── ../sae-deployment-handbook.md
 ```
 
-Dockerfile 可直接复用 `docs/ack-deployment/01-containerization.md` 中的示例。
+脚本位于 `docs/aliyun/sae-deployment/scripts/build-push.sh`，已配置 ACR 地址与自动登录。
 
 ---
 
 ## 4. 构建镜像并推送 ACR
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
+完整脚本位于 `docs/aliyun/sae-deployment/scripts/build-push.sh`，使用方式：
 
-REGISTRY=registry-vpc.cn-hangzhou.aliyuncs.com/your-namespace
-VERSION=${VERSION:-$(git rev-parse --short HEAD)}
+```bash
+# 在项目根目录执行
+export ACR_USERNAME="<你的阿里云账号>"
+export ACR_PASSWORD="<你的密码或RAM子账号AccessKey>"
+bash docs/aliyun/sae-deployment/scripts/build-push.sh
+```
 
-# xiaozhi-server
-docker build -t ${REGISTRY}/xiaozhi-server:${VERSION} \
-  -f main/xiaozhi-server/Dockerfile main/xiaozhi-server/
-docker push ${REGISTRY}/xiaozhi-server:${VERSION}
+也可手动指定版本号：
 
-# manager-api
-docker build -t ${REGISTRY}/manager-api:${VERSION} \
-  -f main/manager-api/Dockerfile main/manager-api/
-docker push ${REGISTRY}/manager-api:${VERSION}
-
-echo "Pushed version: ${VERSION}"
+```bash
+VERSION=v1.0 bash docs/aliyun/sae-deployment/scripts/build-push.sh
 ```
 
 ---
@@ -137,13 +128,18 @@ echo "Pushed version: ${VERSION}"
    ```text
    SPRING_PROFILES_ACTIVE=prod
    SERVER_PORT=8002
-   SPRING_DATASOURCE_DRUID_URL=jdbc:mysql://<rds-host>:3306/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-   SPRING_DATASOURCE_DRUID_USERNAME=xiaozhi
-   SPRING_DATASOURCE_DRUID_PASSWORD=<your-password>
-   SPRING_DATA_REDIS_HOST=<redis-host>
+   SPRING_DATASOURCE_DRUID_URL=jdbc:mysql://172.30.60.94:2886/chat_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
+   SPRING_DATASOURCE_DRUID_USERNAME=root
+   SPRING_DATASOURCE_DRUID_PASSWORD=WhUf7ooYCGEmROZ2BmgI
+   SPRING_DATA_REDIS_HOST=r-uf6iq6t8wvhkzjiqfs.redis.rds.aliyuncs.com
    SPRING_DATA_REDIS_PORT=6379
-   SPRING_DATA_REDIS_PASSWORD=<your-redis-password>
+   SPRING_DATA_REDIS_PASSWORD=
+   SPRING_DATA_REDIS_DATABASE=0
+   MINI_EGG_APPID=wx39b7e29b272b1866
+   MINI_EGG_SECRET=43e1d9ad13641ea0baf66768436623a2
+   KNIFE4J_ENABLE=false
    ```
+   > `KNIFE4J_ENABLE` 默认值为 `false`，未设置时生产环境不会暴露 Knife4j 接口文档；仅在需要临时调试时显式设为 `true`。
 6. 开启 **访问日志** 和 **应用监控**。
 7. 点击 **创建应用**。
 
@@ -167,11 +163,16 @@ aliyun sae CreateApplication \
   --Envs '[
     {"name":"SPRING_PROFILES_ACTIVE","value":"prod"},
     {"name":"SERVER_PORT","value":"8002"},
-    {"name":"SPRING_DATASOURCE_DRUID_URL","value":"jdbc:mysql://<rds-host>:3306/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai"},
+    {"name":"SPRING_DATASOURCE_DRUID_URL","value":"jdbc:mysql://<rds-host>:3306/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true"},
     {"name":"SPRING_DATASOURCE_DRUID_USERNAME","value":"xiaozhi"},
     {"name":"SPRING_DATASOURCE_DRUID_PASSWORD","value":"<your-password>"},
     {"name":"SPRING_DATA_REDIS_HOST","value":"<redis-host>"},
-    {"name":"SPRING_DATA_REDIS_PORT","value":"6379"}
+    {"name":"SPRING_DATA_REDIS_PORT","value":"6379"},
+    {"name":"SPRING_DATA_REDIS_PASSWORD","value":"<your-redis-password>"},
+    {"name":"SPRING_DATA_REDIS_DATABASE","value":"0"},
+    {"name":"MINI_EGG_APPID","value":"<your-appid>"},
+    {"name":"MINI_EGG_SECRET","value":"<your-secret>"},
+    {"name":"KNIFE4J_ENABLE","value":"false"}
   ]'
 ```
 

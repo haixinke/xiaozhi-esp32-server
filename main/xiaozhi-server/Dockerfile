@@ -21,12 +21,11 @@ RUN apt-get update \
 
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
-COPY . .
-
-RUN mkdir -p /app/models /app/data /app/tmp /app/music \
-    && chown -R app:app /app
+COPY --chown=app:app . .
 
 USER app
+
+RUN mkdir -p /app/models /app/data /app/tmp /app/music
 
 ENV PYTHONUNBUFFERED=1 \
     TZ=Asia/Shanghai \

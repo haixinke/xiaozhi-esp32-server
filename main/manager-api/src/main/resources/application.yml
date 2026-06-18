@@ -27,6 +27,11 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+# 微信支付：dev 默认走 mock，生产环境必须显式设置为 false（通过 env: WECHAT_PAY_MOCK=false 或 prod profile 覆盖）
+wechat:
+  pay:
+    mock: true
+
 knife4j:
   enable: true
   basic:

@@ -54,6 +54,8 @@ wechat:
   miniprogram:
     appid: ${MINI_EGG_APPID:}
     secret: ${MINI_EGG_SECRET:}
+  pay:
+    mock: false
 
 # Spring Boot Actuator 健康检查端点，仅暴露 health/info
 management:

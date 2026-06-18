@@ -249,6 +249,12 @@
             <artifactId>lunar</artifactId>
             <version>1.3.9</version>
         </dependency>
+        <!-- 微信支付APIv3 官方SDK -->
+        <dependency>
+            <groupId>com.github.wechatpay-apiv3</groupId>
+            <artifactId>wechatpay-java</artifactId>
+            <version>0.2.17</version>
+        </dependency>
     </dependencies>
 
     <!-- 阿里云maven仓库 -->

@@ -27,7 +27,7 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "true")
 @ConditionalOnMissingBean(name = "wechatPayV3Client")
 @RequiredArgsConstructor
 public class MockWechatPayClient implements WechatPayClient {

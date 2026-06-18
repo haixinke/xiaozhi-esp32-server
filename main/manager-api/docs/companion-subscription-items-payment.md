@@ -211,15 +211,28 @@ CREATE TABLE payment_callback_log (
 ```
 wechat.miniprogram.appid          # 已存在
 wechat.miniprogram.secret         # 已存在
+wechat.pay.mock                   # 是否走 mock，生产必须 false（boolean）
 wechat.pay.mchid                  # 商户号
 wechat.pay.serial_no              # 商户证书序列号
-wechat.pay.private_key            # 商户私钥(PEM,加密存储)
-wechat.pay.api_v3_key             # APIv3密钥
-wechat.pay.notify_url             # 回调URL
-wechat.pay.platform_cert_auto     # 平台证书是否自动下载(true)
+wechat.pay.private_key            # 商户私钥 PEM（AESUtils 加密入库）
+wechat.pay.api_v3_key             # APIv3 密钥（AESUtils 加密入库）
+wechat.pay.notify_url             # 回调 URL（HTTPS 公网可达）
 ```
 
-> 私钥与 V3 key 等敏感字段建议使用项目已有的 `AESUtils` 加密入库，运行时解密。`payment` 模块启动时构造一个单例的 `WechatPayClient`。
+> 私钥与 APIv3 密钥使用 `AESUtils.encrypt(server.secret, plain)` 加密后写入 `sys_params`，运行时由 `WechatPayProperties.loadReal` 解密。`payment` 模块启动时由 `WechatPayV3Client` 构造单例（基于 wechatpay-java 的 `RSAAutoCertificateConfig`，平台证书自动下载、滚动更新，无需人工维护证书文件）。
+
+#### 上线前 6 项配置写入操作单
+
+| 步骤 | 操作 |
+|---|---|
+| 1 | 商户平台「账户中心 → API 安全」获取 `mchid`、`serial_no`、下载 API 证书包（含 `apiclient_key.pem`），并设置 32 字节 APIv3 密钥。 |
+| 2 | 用 `AESUtils.encrypt(serverSecret, pemPlain)` 加密 `apiclient_key.pem` 全文 → 写入 `wechat.pay.private_key`。 |
+| 3 | 用 `AESUtils.encrypt(serverSecret, apiV3Plain)` 加密 APIv3 密钥 → 写入 `wechat.pay.api_v3_key`。 |
+| 4 | `mchid` / `serial_no` / `notify_url`（HTTPS 公网地址）按明文写入对应参数。 |
+| 5 | 商户平台「APIv3 → 回调通知」配置同一个 `notify_url`；「产品中心 → 开发配置 → 支付配置」绑定小程序 `appid` 并开通 JSAPI。 |
+| 6 | 将 `wechat.pay.mock` 置为 `false`；用 `WECHAT_PAY_MOCK=false` 环境变量或 `application-prod.yml` 覆盖应用层配置；重启服务，启动日志应有 `WechatPayV3Client initialized, mchid=...`。 |
+
+> `serverSecret` 取自 `sys_params.server.secret`，由 `SysParamsServiceImpl.initServerSecret()` 在首次启动时自动生成。运维需用同一个值加解密，否则启动期 `WechatPayProperties.loadReal` 会抛 `配置项解密失败` 终止启动。
 
 ---
 

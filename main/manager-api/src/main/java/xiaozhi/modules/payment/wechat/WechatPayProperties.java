@@ -9,6 +9,7 @@ import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 
 /**
@@ -86,8 +87,8 @@ public class WechatPayProperties {
     private static void validateNotifyUrl(String notifyUrl) {
         URL url;
         try {
-            url = new URL(notifyUrl);
-        } catch (MalformedURLException e) {
+            url = URI.create(notifyUrl).toURL();
+        } catch (MalformedURLException | IllegalArgumentException e) {
             throw new RenException(ErrorCode.PAY_CHANNEL_NOT_AVAILABLE,
                     ENV_NOTIFY_URL + " 格式无效");
         }

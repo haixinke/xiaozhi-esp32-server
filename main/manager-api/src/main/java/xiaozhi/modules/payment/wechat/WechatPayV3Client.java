@@ -3,9 +3,9 @@ package xiaozhi.modules.payment.wechat;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.wechat.pay.java.core.Config;
 import com.wechat.pay.java.core.RSAPublicKeyConfig;
 import com.wechat.pay.java.core.notification.NotificationParser;
+import com.wechat.pay.java.core.notification.RSAPublicKeyNotificationConfig;
 import com.wechat.pay.java.core.notification.RequestParam;
 import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
 import com.wechat.pay.java.service.payments.jsapi.model.Amount;
@@ -59,7 +59,7 @@ public class WechatPayV3Client implements WechatPayClient {
     @PostConstruct
     public void init() {
         this.props = WechatPayProperties.loadReal();
-        Config sdkConfig = new RSAPublicKeyConfig.Builder()
+        RSAPublicKeyConfig sdkConfig = new RSAPublicKeyConfig.Builder()
                 .merchantId(props.getMchid())
                 .privateKey(props.getPrivateKey())
                 .merchantSerialNumber(props.getSerialNo())
@@ -69,7 +69,13 @@ public class WechatPayV3Client implements WechatPayClient {
                 .build();
         this.jsapiService = new JsapiServiceExtension.Builder().config(sdkConfig).build();
         this.refundService = new RefundService.Builder().config(sdkConfig).build();
-        this.notificationParser = new NotificationParser(sdkConfig);
+
+        RSAPublicKeyNotificationConfig notificationConfig = new RSAPublicKeyNotificationConfig.Builder()
+                .apiV3Key(props.getApiV3Key())
+                .publicKeyId(props.getPubKeyId())
+                .publicKey(props.getPubKey())
+                .build();
+        this.notificationParser = new NotificationParser(notificationConfig);
         log.info("WechatPayV3Client initialized, mchid={}, appid={}",
                 props.getMchid(), props.getAppid());
     }

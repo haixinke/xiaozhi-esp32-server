@@ -23,7 +23,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
-import xiaozhi.modules.sys.service.SysParamsService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +34,7 @@ import java.util.Map;
  * 与 {@link MockWechatPayClient#getClass()} 上的 {@code @ConditionalOnMissingBean(name="wechatPayV3Client")}
  * 配合：真实 client 加载后 mock 自动让位。</p>
  *
- * <p>启动期 {@link PostConstruct} 会从 {@code sys_params} 加载并解密配置；
+ * <p>启动期 {@link PostConstruct} 会从环境变量加载配置；
  * 任何关键配置缺失立即抛 {@link RenException}，导致 Spring 容器启动失败 ——
  * 这正是 {@link WechatPayClientStartupGuard} 期望的"配错不允许上线"语义。</p>
  */
@@ -45,20 +44,17 @@ import java.util.Map;
 @ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "false")
 public class WechatPayV3Client implements WechatPayClient {
 
-    private final SysParamsService sysParamsService;
-
     private volatile WechatPayProperties props;
     private volatile JsapiServiceExtension jsapiService;
     private volatile RefundService refundService;
     private volatile NotificationParser notificationParser;
 
-    public WechatPayV3Client(SysParamsService sysParamsService) {
-        this.sysParamsService = sysParamsService;
+    public WechatPayV3Client() {
     }
 
     @PostConstruct
     public void init() {
-        this.props = WechatPayProperties.loadReal(sysParamsService);
+        this.props = WechatPayProperties.loadReal();
         RSAAutoCertificateConfig sdkConfig = new RSAAutoCertificateConfig.Builder()
                 .merchantId(props.getMchid())
                 .privateKey(props.getPrivateKey())
@@ -124,7 +120,7 @@ public class WechatPayV3Client implements WechatPayClient {
         } catch (Exception e) {
             log.error("[wechat-pay-v3] jsapiPrepay 失败 outTradeNo={}, mchid={}",
                     req.getOutTradeNo(), props.getMchid(), e);
-            throw new RenException(ErrorCode.PAY_CHANNEL_NOT_AVAILABLE);
+            throw new RenException(ErrorCode.PAY_CHANNEL_NOT_AVAILABLE, e.getMessage());
         }
     }
 

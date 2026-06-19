@@ -3,6 +3,8 @@ package xiaozhi.common.utils;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
+import java.util.Locale;
+
 /**
  * 国际化
  * Copyright (c) 人人开源 All rights reserved.
@@ -20,6 +22,9 @@ public class MessageUtils {
             // 延迟初始化，确保Spring上下文已完全初始化
             messageSource = (MessageSource) SpringContextUtils.getBean("messageSource");
         }
-        return messageSource.getMessage(code + "", params, LocaleContextHolder.getLocale());
+        Locale locale = LocaleContextHolder.getLocale();
+        String defaultMessage = messageSource.getMessage(code + "", params,
+                "Error code: " + code, Locale.getDefault());
+        return messageSource.getMessage(code + "", params, defaultMessage, locale);
     }
 }

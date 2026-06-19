@@ -128,17 +128,24 @@ VERSION=v1.0 bash docs/aliyun/sae-deployment/scripts/build-push.sh
    ```text
    SPRING_PROFILES_ACTIVE=prod
    SERVER_PORT=8002
-   SPRING_DATASOURCE_DRUID_URL=jdbc:mysql://172.30.60.94:2886/chat_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
-   SPRING_DATASOURCE_DRUID_USERNAME=root
-   SPRING_DATASOURCE_DRUID_PASSWORD=WhUf7ooYCGEmROZ2BmgI
-   SPRING_DATA_REDIS_HOST=r-uf6iq6t8wvhkzjiqfs.redis.rds.aliyuncs.com
+   SPRING_DATASOURCE_DRUID_URL=jdbc:mysql://<rds-host>:<port>/<db-name>?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
+   SPRING_DATASOURCE_DRUID_USERNAME=<your-db-username>
+   SPRING_DATASOURCE_DRUID_PASSWORD=<your-db-password>
+   SPRING_DATA_REDIS_HOST=<redis-host>
    SPRING_DATA_REDIS_PORT=6379
-   SPRING_DATA_REDIS_PASSWORD=
+   SPRING_DATA_REDIS_PASSWORD=<your-redis-password>
    SPRING_DATA_REDIS_DATABASE=0
-   MINI_EGG_APPID=wx39b7e29b272b1866
-   MINI_EGG_SECRET=43e1d9ad13641ea0baf66768436623a2
+   MINI_GF_APPID=<your-appid>
+   MINI_GF_SECRET=<your-secret>
+   WECHAT_MINIPROGRAM_APPID=<your-appid>
+   WECHAT_PAY_MCHID=<your-mchid>
+   WECHAT_PAY_SERIAL_NO=<your-serial-no>
+   WECHAT_PAY_PRIVATE_KEY=<your-private-key-pem>
+   WECHAT_PAY_API_V3_KEY=<your-api-v3-key>
+   WECHAT_PAY_NOTIFY_URL=<https://your-domain/payment/notify>
    KNIFE4J_ENABLE=false
    ```
+   > `WECHAT_PAY_*` 敏感配置建议通过 SAE **保密字典（Secret）** 注入，不要直接写在普通环境变量里。
    > `KNIFE4J_ENABLE` 默认值为 `false`，未设置时生产环境不会暴露 Knife4j 接口文档；仅在需要临时调试时显式设为 `true`。
 6. 开启 **访问日志** 和 **应用监控**。
 7. 点击 **创建应用**。
@@ -170,8 +177,14 @@ aliyun sae CreateApplication \
     {"name":"SPRING_DATA_REDIS_PORT","value":"6379"},
     {"name":"SPRING_DATA_REDIS_PASSWORD","value":"<your-redis-password>"},
     {"name":"SPRING_DATA_REDIS_DATABASE","value":"0"},
-    {"name":"MINI_EGG_APPID","value":"<your-appid>"},
-    {"name":"MINI_EGG_SECRET","value":"<your-secret>"},
+    {"name":"MINI_GF_APPID","value":"<your-appid>"},
+    {"name":"MINI_GF_SECRET","value":"<your-secret>"},
+    {"name":"WECHAT_MINIPROGRAM_APPID","value":"<your-appid>"},
+    {"name":"WECHAT_PAY_MCHID","value":"<your-mchid>"},
+    {"name":"WECHAT_PAY_SERIAL_NO","value":"<your-serial-no>"},
+    {"name":"WECHAT_PAY_PRIVATE_KEY","value":"<your-private-key-pem>"},
+    {"name":"WECHAT_PAY_API_V3_KEY","value":"<your-api-v3-key>"},
+    {"name":"WECHAT_PAY_NOTIFY_URL","value":"<https://your-domain/payment/notify>"},
     {"name":"KNIFE4J_ENABLE","value":"false"}
   ]'
 ```

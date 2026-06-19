@@ -53,5 +53,7 @@ spring:
 # 微信小程序配置
 wechat:
   miniprogram:
-    appid: ${MINI_EGG_APPID:wx39b7e29b272b1866}
-    secret: ${MINI_EGG_SECRET:43e1d9ad13641ea0baf66768436623a2}
+    appid: ${MINI_GF_APPID:}
+    secret: ${MINI_GF_SECRET:}
+  pay:
+    mock: true

@@ -1,0 +1,8 @@
+node_modules
+dist
+logs
+.webpack_cache
+.env.local
+.env.*.local
+*.log
+.DS_Store

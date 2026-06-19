@@ -214,3 +214,4 @@ graphify-out/
 # 本地部署执行器（含 ACR 凭据，禁止提交）
 scripts/run-build-xiaozhi.sh
 scripts/run-build-manager.sh
+scripts/run-build-web.sh

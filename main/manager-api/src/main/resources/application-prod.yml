@@ -52,8 +52,8 @@ spring:
 
 wechat:
   miniprogram:
-    appid: ${MINI_GF_APPID:}
-    secret: ${MINI_GF_SECRET:}
+    appid: ${WECHAT_MINIPROGRAM_APPID:}
+    secret: ${WECHAT_MINIPROGRAM_SECRET:}
   pay:
     mock: false
 

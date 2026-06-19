@@ -135,13 +135,14 @@ VERSION=v1.0 bash docs/aliyun/sae-deployment/scripts/build-push.sh
    SPRING_DATA_REDIS_PORT=6379
    SPRING_DATA_REDIS_PASSWORD=<your-redis-password>
    SPRING_DATA_REDIS_DATABASE=0
-   MINI_GF_APPID=<your-appid>
-   MINI_GF_SECRET=<your-secret>
    WECHAT_MINIPROGRAM_APPID=<your-appid>
+   WECHAT_MINIPROGRAM_SECRET=<your-secret>
    WECHAT_PAY_MCHID=<your-mchid>
    WECHAT_PAY_SERIAL_NO=<your-serial-no>
    WECHAT_PAY_PRIVATE_KEY=<your-private-key-pem>
    WECHAT_PAY_API_V3_KEY=<your-api-v3-key>
+   WECHAT_PAY_PUB_KEY_ID=<your-pub-key-id>
+   WECHAT_PAY_PUB_KEY=<your-pub-key-pem>
    WECHAT_PAY_NOTIFY_URL=<https://your-domain/payment/notify>
    KNIFE4J_ENABLE=false
    ```
@@ -177,13 +178,14 @@ aliyun sae CreateApplication \
     {"name":"SPRING_DATA_REDIS_PORT","value":"6379"},
     {"name":"SPRING_DATA_REDIS_PASSWORD","value":"<your-redis-password>"},
     {"name":"SPRING_DATA_REDIS_DATABASE","value":"0"},
-    {"name":"MINI_GF_APPID","value":"<your-appid>"},
-    {"name":"MINI_GF_SECRET","value":"<your-secret>"},
     {"name":"WECHAT_MINIPROGRAM_APPID","value":"<your-appid>"},
+    {"name":"WECHAT_MINIPROGRAM_SECRET","value":"<your-secret>"},
     {"name":"WECHAT_PAY_MCHID","value":"<your-mchid>"},
     {"name":"WECHAT_PAY_SERIAL_NO","value":"<your-serial-no>"},
     {"name":"WECHAT_PAY_PRIVATE_KEY","value":"<your-private-key-pem>"},
     {"name":"WECHAT_PAY_API_V3_KEY","value":"<your-api-v3-key>"},
+    {"name":"WECHAT_PAY_PUB_KEY_ID","value":"<your-pub-key-id>"},
+    {"name":"WECHAT_PAY_PUB_KEY","value":"<your-pub-key-pem>"},
     {"name":"WECHAT_PAY_NOTIFY_URL","value":"<https://your-domain/payment/notify>"},
     {"name":"KNIFE4J_ENABLE","value":"false"}
   ]'

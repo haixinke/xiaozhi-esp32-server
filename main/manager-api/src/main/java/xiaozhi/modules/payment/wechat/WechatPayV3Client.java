@@ -3,7 +3,8 @@ package xiaozhi.modules.payment.wechat;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.wechat.pay.java.core.RSAAutoCertificateConfig;
+import com.wechat.pay.java.core.Config;
+import com.wechat.pay.java.core.RSAPublicKeyConfig;
 import com.wechat.pay.java.core.notification.NotificationParser;
 import com.wechat.pay.java.core.notification.RequestParam;
 import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
@@ -30,6 +31,9 @@ import java.util.Map;
 /**
  * 微信支付 V3 JSAPI 真实客户端实现，基于官方 SDK <code>wechatpay-java</code>。
  *
+ * <p>采用微信支付公钥模式（{@link RSAPublicKeyConfig}），不再依赖平台证书自动下载，
+ * 适配仅开放公钥入口的商户号。</p>
+ *
  * <p>启用条件：{@code wechat.pay.mock=false}（默认）。bean 名称固定为 {@code wechatPayV3Client}，
  * 与 {@link MockWechatPayClient#getClass()} 上的 {@code @ConditionalOnMissingBean(name="wechatPayV3Client")}
  * 配合：真实 client 加载后 mock 自动让位。</p>
@@ -55,17 +59,19 @@ public class WechatPayV3Client implements WechatPayClient {
     @PostConstruct
     public void init() {
         this.props = WechatPayProperties.loadReal();
-        RSAAutoCertificateConfig sdkConfig = new RSAAutoCertificateConfig.Builder()
+        Config sdkConfig = new RSAPublicKeyConfig.Builder()
                 .merchantId(props.getMchid())
                 .privateKey(props.getPrivateKey())
                 .merchantSerialNumber(props.getSerialNo())
                 .apiV3Key(props.getApiV3Key())
+                .publicKeyId(props.getPubKeyId())
+                .publicKey(props.getPubKey())
                 .build();
         this.jsapiService = new JsapiServiceExtension.Builder().config(sdkConfig).build();
         this.refundService = new RefundService.Builder().config(sdkConfig).build();
         this.notificationParser = new NotificationParser(sdkConfig);
-        log.info("WechatPayV3Client initialized, mchid={}, appid={}, notifyUrl={}",
-                props.getMchid(), props.getAppid(), props.getNotifyUrl());
+        log.info("WechatPayV3Client initialized, mchid={}, appid={}",
+                props.getMchid(), props.getAppid());
     }
 
     @Override

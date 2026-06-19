@@ -42,7 +42,7 @@ stringData:
   MYSQL_USERNAME: "xiaozhi"
   MYSQL_PASSWORD: "<your-strong-password>"
   REDIS_PASSWORD: "<your-redis-password>"
-  MINI_GF_SECRET: "<wechat-mini-secret>"
+  WECHAT_MINIPROGRAM_SECRET: "<wechat-mini-secret>"
 ```
 
 > 生产环境建议使用 **阿里云 KMS + ACK Secret 托管** 或 **OOS 加密参数** 注入。
@@ -111,11 +111,11 @@ spec:
                 secretKeyRef:
                   name: manager-api-secret
                   key: REDIS_PASSWORD
-            - name: MINI_GF_SECRET
+            - name: WECHAT_MINIPROGRAM_SECRET
               valueFrom:
                 secretKeyRef:
                   name: manager-api-secret
-                  key: MINI_GF_SECRET
+                  key: WECHAT_MINIPROGRAM_SECRET
           resources:
             requests:
               cpu: "500m"

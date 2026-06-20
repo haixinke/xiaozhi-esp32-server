@@ -1,7 +1,13 @@
 FROM python:3.12-slim AS builder
 
 WORKDIR /app
-RUN apt-get update \
+RUN set -e; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list; \
+    fi \
+    && apt-get update \
     && apt-get install -y --no-install-recommends gcc ffmpeg libopus0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -13,7 +19,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 FROM python:3.12-slim AS runner
 WORKDIR /app
 
-RUN apt-get update \
+RUN set -e; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list; \
+    fi \
+    && apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg libopus0 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -r app -g 1001 \
@@ -23,9 +35,10 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --chown=app:app . .
 
-USER app
+RUN mkdir -p /app/models /app/data /app/tmp /app/music \
+    && chown -R app:app /app
 
-RUN mkdir -p /app/models /app/data /app/tmp /app/music
+USER app
 
 ENV PYTHONUNBUFFERED=1 \
     TZ=Asia/Shanghai \

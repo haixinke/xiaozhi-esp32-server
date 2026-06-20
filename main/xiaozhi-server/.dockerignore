@@ -27,7 +27,9 @@ tmp/
 *.log
 
 # 模型与数据（生产环境通过 NAS / Volume 挂载，不打入镜像）
-models/
+models/*
+!models/snakers4_silero-vad/
+!models/snakers4_silero-vad/**
 data/.config.yaml
 data/.wakeup_words.yaml
 data/*.db

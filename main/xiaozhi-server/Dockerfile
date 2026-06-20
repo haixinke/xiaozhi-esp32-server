@@ -36,9 +36,11 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --chown=app:app . .
 
 RUN mkdir -p /app/models /app/data /app/tmp /app/music \
-    && chown -R app:app /app
+    && chown -R app:app /app \
+    && chmod +x /app/start.sh
 
-USER app
+# 使用 root 运行，以便读取 SAE ConfigMap 挂载的配置文件
+# USER app
 
 ENV PYTHONUNBUFFERED=1 \
     TZ=Asia/Shanghai \
@@ -50,4 +52,4 @@ EXPOSE 8000 8003
 HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=5 \
   CMD python -c "import socket,sys; s=socket.socket(); s.settimeout(3); s.connect(('127.0.0.1',8000)); s.close()" || exit 1
 
-CMD ["python", "app.py"]
+CMD ["/app/start.sh"]

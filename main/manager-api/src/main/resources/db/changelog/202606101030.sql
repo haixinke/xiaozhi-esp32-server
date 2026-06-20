@@ -175,8 +175,8 @@ VALUES
 -- 种子数据：道具 SKU
 INSERT INTO ai_item_sku (sku_code, sku_name, category, price_fen, attributes, description, sort)
 VALUES
-('occupation_change', '职业变更券', 'consumable_change', 29900, NULL, '一次性变更女友职业', 10),
-('soul_quirk_change', '小任性变更券', 'consumable_change', 9900, NULL, '一次性变更女友小任性', 11),
+('occupation_change', '身份变更', 'consumable_change', 29900, NULL, '变更女友职业身份', 10),
+('soul_quirk_change', '灵魂变更', 'consumable_change', 9900, NULL, '变更女友的灵魂特质，包括她的小任性', 11),
 ('voice_clone_quota', '声音克隆额度', 'voice_quota', 29900, NULL, '可进行一次声音克隆', 12),
 ('outfit_office', 'OL职场套装', 'outfit', 800, '{"outfitImage":""}', '职场OL换装', 21),
 ('rose', '玫瑰花', 'intimacy', 200, '{"intimacyDelta":5}', '亲密度+5', 30),

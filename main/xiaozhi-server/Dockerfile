@@ -47,7 +47,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 EXPOSE 8000 8003
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=5 \
   CMD python -c "import socket,sys; s=socket.socket(); s.settimeout(3); s.connect(('127.0.0.1',8000)); s.close()" || exit 1
 
 CMD ["python", "app.py"]

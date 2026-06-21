@@ -126,7 +126,7 @@ Page({
         this._updateStatusText();
         // AI 说完后自动进入下一轮倾听
         if (this.wsManager && this._mgr.getState().state === 'connected') {
-          this.wsManager.sendListenStart();
+          this.wsManager.sendListenStart('auto');
         }
       },
       onError: (err, scope) => {
@@ -197,7 +197,7 @@ Page({
     this.audioManager.ready().then(() => {
       if (!this.audioManager || !this.wsManager) return;
       this.audioManager.startRecord();
-      this.wsManager.sendListenStart();
+      this.wsManager.sendListenStart('auto');
     }).catch((err) => {
       logger.error('AudioManager not ready:', err);
       wx.showToast({ title: '音频引擎未就绪', icon: 'none' });
@@ -241,7 +241,7 @@ Page({
       this._restartingRecord = false;
       if (!this.audioManager || !this.wsManager) return;
       this.audioManager.startRecord();
-      this.wsManager.sendListenStart();
+      this.wsManager.sendListenStart('auto');
     }, 100);
   },
 

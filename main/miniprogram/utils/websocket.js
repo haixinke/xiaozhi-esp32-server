@@ -163,8 +163,8 @@ class WebSocketManager {
     });
   }
 
-  sendListenStart() {
-    return this.send({ type: 'listen', mode: 'manual', state: 'start' });
+  sendListenStart(mode = 'manual') {
+    return this.send({ type: 'listen', mode, state: 'start' });
   }
 
   sendListenStop() {

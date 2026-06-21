@@ -693,7 +693,7 @@ Page({
         confirmColor: '#864e5a',
         success: (res) => {
           if (res.confirm) {
-            wx.navigateTo({ url: '/pages/settings/settings' });
+            wx.switchTab({ url: '/pages/settings/settings' });
           }
         },
       });

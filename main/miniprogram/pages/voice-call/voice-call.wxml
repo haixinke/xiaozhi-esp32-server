@@ -1,0 +1,55 @@
+<!--pages/voice-call/voice-call.wxml-->
+<view class="container {{darkMode ? 'dark' : ''}}">
+  <view class="safe-area-top"></view>
+
+  <!-- 呼叫中状态 -->
+  <view wx:if="{{callState === 'calling'}}" class="panel calling-panel">
+    <view class="call-avatar-wrap">
+      <image class="call-avatar" src="{{companionAvatar || '/images/avatar-default.png'}}" mode="aspectFill" />
+      <view class="call-avatar-ring"></view>
+    </view>
+    <text class="call-name">{{companionName}}</text>
+    <text class="call-status">正在呼叫…</text>
+    <view class="call-actions">
+      <view class="call-btn call-btn-cancel" bindtap="onCancelCall" hover-class="call-btn-hover" hover-stay-time="80">
+        <text class="call-btn-text">取消</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 通话中状态 -->
+  <view wx:if="{{callState === 'connected'}}" class="panel connected-panel">
+    <view class="call-avatar-wrap">
+      <image class="call-avatar" src="{{companionAvatar || '/images/avatar-default.png'}}" mode="aspectFill" />
+    </view>
+    <text class="call-name">{{companionName}}</text>
+    <text class="call-duration">{{formattedDuration}}</text>
+    <text class="call-status">{{callStatusText}}</text>
+
+    <view class="call-controls">
+      <view class="control-row">
+        <view class="control-btn" bindtap="onToggleMute" hover-class="control-btn-hover" hover-stay-time="80">
+          <view class="control-icon-wrap">
+            <image class="control-icon" src="{{isMuted ? (darkMode ? '/images/mic-off-dark.png' : '/images/mic-off.png') : (darkMode ? '/images/mic-dark.png' : '/images/mic.png')}}" mode="aspectFit" />
+          </view>
+          <text class="control-label">{{isMuted ? '静音中' : '静音'}}</text>
+        </view>
+        <view class="control-btn" bindtap="onToggleSpeaker" hover-class="control-btn-hover" hover-stay-time="80">
+          <view class="control-icon-wrap">
+            <image class="control-icon" src="{{isSpeakerOn ? (darkMode ? '/images/speaker-dark.png' : '/images/speaker.png') : (darkMode ? '/images/earpiece-dark.png' : '/images/earpiece.png')}}" mode="aspectFit" />
+          </view>
+          <text class="control-label">{{isSpeakerOn ? '免提' : '听筒'}}</text>
+        </view>
+      </view>
+      <view class="control-row control-row-main">
+        <view class="call-btn call-btn-hangup" bindtap="onHangup" hover-class="call-btn-hover" hover-stay-time="80">
+          <text class="call-btn-text">挂断</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="back-to-chat" bindtap="onBackToChat" hover-class="back-to-chat-hover" hover-stay-time="80">
+      <text class="back-to-chat-text">返回聊天</text>
+    </view>
+  </view>
+</view>

@@ -693,6 +693,7 @@ Page({
         confirmColor: '#864e5a',
         success: (res) => {
           if (res.confirm) {
+            app.globalData.openContractPopupAfterSwitch = true;
             wx.switchTab({ url: '/pages/settings/settings' });
           }
         },

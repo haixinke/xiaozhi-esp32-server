@@ -50,6 +50,13 @@ Page({
     });
     this.loadCompanionAvatar();
     this.loadSubscription();
+
+    // 从语音通话等入口跳转来时，自动打开契约购买浮窗
+    var app = getApp();
+    if (app.globalData.openContractPopupAfterSwitch) {
+      app.globalData.openContractPopupAfterSwitch = false;
+      this.loadPlans();
+    }
   },
 
   loadCompanionAvatar() {

@@ -128,7 +128,7 @@
 
       <!-- + 号多功能入口 -->
       <view class="tool-toggle-btn" bindtap="onToolPanelToggle" hover-class="tool-toggle-btn-hover" hover-stay-time="80">
-        <image class="tool-toggle-icon" src="{{darkMode ? '/images/plus-dark.png' : '/images/plus.png'}}" mode="aspectFit" />
+        <image class="tool-toggle-icon" src="{{darkMode ? '/images/jiahao-dark.png' : '/images/jiahao.png'}}" mode="aspectFit" />
       </view>
 
       <!-- 文字模式 -->
@@ -163,6 +163,11 @@
           <text class="voice-btn-text">{{recordCancelled ? '松开 取消' : '按住 说话'}}</text>
         </view>
       </block>
+
+      <!-- + 号多功能入口 -->
+      <view class="tool-toggle-btn" bindtap="onToolPanelToggle" hover-class="tool-toggle-btn-hover" hover-stay-time="80">
+        <image class="tool-toggle-icon" src="{{darkMode ? '/images/jiahao-dark.png' : '/images/jiahao.png'}}" mode="aspectFit" />
+      </view>
     </view>
 
     <!-- 底部多功能浮窗 -->

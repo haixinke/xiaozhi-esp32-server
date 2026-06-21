@@ -45,11 +45,22 @@ class WebSocketManager {
     this._destroyed = false;
     this._manualClose = false;   // disconnect() 主动断开时为 true
     this._helloSent = false;
+
+    this._stateListeners = new Set();
   }
 
   // -------------------------------------------------------------------------
   // 公开方法
   // -------------------------------------------------------------------------
+
+  onStateChange(callback) {
+    if (typeof callback !== 'function') return;
+    this._stateListeners.add(callback);
+  }
+
+  offStateChange(callback) {
+    this._stateListeners.delete(callback);
+  }
 
   /**
    * 建立连接。重复调用会先断开再重连。
@@ -125,6 +136,7 @@ class WebSocketManager {
   destroy() {
     this._destroyed = true;
     this.disconnect();
+    this._stateListeners.clear();
     this.options = {};
   }
 
@@ -338,6 +350,9 @@ class WebSocketManager {
   _setState(next) {
     if (this.state === next) return;
     this.state = next;
+    this._stateListeners.forEach((fn) => {
+      try { fn(next); } catch (_) {}
+    });
     if (this.options && this.options.onStateChange) {
       try { this.options.onStateChange(next); } catch (_) {}
     }

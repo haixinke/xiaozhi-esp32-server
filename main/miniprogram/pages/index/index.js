@@ -11,6 +11,7 @@
 
 const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
+const logger = require('../../utils/logger');
 const { get } = require('../../utils/request');
 const { getTheme, applyTheme } = require('../../utils/theme');
 
@@ -159,7 +160,7 @@ Page({
       .then(() => this._bootstrap())
       .catch((err) => {
         if (err.message === 'redirecting to destiny') return;
-        console.error('启动失败:', err);
+        logger.error('启动失败:', err);
         if (err.message === 'device not bound') {
           this.setData({ booting: false, bindFailed: true });
         } else {
@@ -222,7 +223,7 @@ Page({
       .then(() => this._bootstrap())
       .catch((err) => {
         if (err.message === 'redirecting to destiny') return;
-        console.error('重试绑定失败:', err);
+        logger.error('重试绑定失败:', err);
         if (err.message === 'device not bound') {
           this.setData({ booting: false, bindFailed: true });
         } else {
@@ -349,12 +350,12 @@ Page({
         // 播放队列清空：若还在 speaking 状态则可视为补完
       },
       onError: (err, scope) => {
-        console.warn('[Audio:' + scope + ']', err);
+        logger.warn('[Audio:' + scope + ']', err);
       },
     });
 
     this.audioManager.ready().catch((err) => {
-      console.error('Opus runtime not ready:', err);
+      logger.error('Opus runtime not ready:', err);
       wx.showToast({ title: '音频引擎加载失败', icon: 'none' });
     });
   },
@@ -383,20 +384,21 @@ Page({
       },
       onMessage: (msg) => this._handleWSMessage(msg),
       onError: (err, scope) => {
-        console.warn('[WS:' + scope + ']', err && err.message ? err.message : err);
+        logger.warn('[WS:' + scope + ']', err && err.message ? err.message : err);
       },
     });
     // 不在这里自动连接，等待用户手动触发
   },
 
   _connectToChat() {
-    if (!this.wsManager) return;
+    if (!this.wsManager) return false;
     const g = app.globalData;
     if (!g || !g.wsUrl || !g.virtualMAC) {
       wx.showToast({ title: '连接信息未就绪', icon: 'none' });
-      return;
+      return false;
     }
     this.wsManager.connect(g.wsUrl, g.virtualMAC, g.wsToken);
+    return true;
   },
 
   // -------------------------------------------------------------------------
@@ -610,7 +612,7 @@ Page({
   },
 
   onSummon() {
-    this._connectToChat();
+    return this._connectToChat();
   },
 
   onDisconnect() {
@@ -649,7 +651,7 @@ Page({
     try {
       this.wsManager.sendText(text);
     } catch (err) {
-      console.error('发送文本失败:', err);
+      logger.error('发送文本失败:', err);
       wx.showToast({ title: '发送失败，请重试', icon: 'none' });
       return;
     }
@@ -707,13 +709,13 @@ Page({
 
     // 3. 确保 WebSocket 已连接
     if (this.data.connectionState !== 'connected') {
-      this.onSummon();
-      let waited = 0;
-      while (this.data.connectionState !== 'connected' && waited < 10000) {
-        await new Promise((r) => setTimeout(r, 200));
-        waited += 200;
+      const summoned = this.onSummon();
+      if (!summoned) {
+        wx.showToast({ title: '连接失败，请重试', icon: 'none' });
+        return;
       }
-      if (this.data.connectionState !== 'connected') {
+      const connected = await this._waitForConnection(10000);
+      if (!connected) {
         wx.showToast({ title: '连接失败，请重试', icon: 'none' });
         return;
       }
@@ -725,6 +727,48 @@ Page({
     wx.navigateTo({ url: '/pages/voice-call/voice-call' });
   },
 
+  _waitForConnection(timeoutMs) {
+    return new Promise((resolve) => {
+      if (this.data.connectionState === 'connected') {
+        resolve(true);
+        return;
+      }
+      if (!this.wsManager) {
+        resolve(false);
+        return;
+      }
+
+      // connect() 可能已在注册监听器前同步切换到 connecting
+      let sawConnecting = this.wsManager.state === 'connecting' || this.data.connectionState === 'connecting';
+
+      const timer = setTimeout(() => {
+        if (this.wsManager) this.wsManager.offStateChange(handler);
+        resolve(false);
+      }, timeoutMs);
+
+      const handler = (state) => {
+        if (state === 'connecting') {
+          sawConnecting = true;
+          return;
+        }
+        if (state === 'connected') {
+          clearTimeout(timer);
+          if (this.wsManager) this.wsManager.offStateChange(handler);
+          resolve(true);
+          return;
+        }
+        // 连接失败后立即退出，避免空等到超时
+        if (sawConnecting && state === 'disconnected') {
+          clearTimeout(timer);
+          if (this.wsManager) this.wsManager.offStateChange(handler);
+          resolve(false);
+        }
+      };
+
+      this.wsManager.onStateChange(handler);
+    });
+  },
+
   _hasVoiceCallFeature() {
     const features = (app.globalData && app.globalData.subscriptionFeatures) || [];
     return features.indexOf('voice_call') !== -1;
@@ -733,44 +777,54 @@ Page({
   _ensureRecordPermission() {
     return new Promise((resolve) => {
       wx.getSetting({
-        success: (res) => {
-          const auth = res.authSetting && res.authSetting['scope.record'];
-          if (auth === true) {
-            resolve(true);
-            return;
-          }
-          if (auth === false) {
-            wx.showModal({
-              title: '需要麦克风权限',
-              content: '语音通话需要访问您的麦克风',
-              confirmText: '去设置',
-              cancelText: '取消',
-              success: (modalRes) => {
-                if (modalRes.confirm) {
-                  wx.openSetting({
-                    success: (settingRes) => {
-                      resolve(!!(settingRes.authSetting && settingRes.authSetting['scope.record']));
-                    },
-                    fail: () => resolve(false),
-                  });
-                } else {
-                  resolve(false);
-                }
-              },
-            });
-            return;
-          }
-          wx.authorize({
-            scope: 'scope.record',
-            success: () => resolve(true),
-            fail: () => {
-              wx.showToast({ title: '需要麦克风权限', icon: 'none' });
-              resolve(false);
-            },
-          });
-        },
+        success: (res) => this._handleRecordSetting(res, resolve),
         fail: () => resolve(false),
       });
+    });
+  },
+
+  _handleRecordSetting(res, resolve) {
+    const auth = res.authSetting && res.authSetting['scope.record'];
+    if (auth === true) {
+      resolve(true);
+      return;
+    }
+    if (auth === false) {
+      this._openRecordSettings(resolve);
+      return;
+    }
+    this._requestRecordAuthorize(resolve);
+  },
+
+  _openRecordSettings(resolve) {
+    wx.showModal({
+      title: '需要麦克风权限',
+      content: '语音通话需要访问您的麦克风',
+      confirmText: '去设置',
+      cancelText: '取消',
+      success: (modalRes) => {
+        if (!modalRes.confirm) {
+          resolve(false);
+          return;
+        }
+        wx.openSetting({
+          success: (settingRes) => {
+            resolve(!!(settingRes.authSetting && settingRes.authSetting['scope.record']));
+          },
+          fail: () => resolve(false),
+        });
+      },
+    });
+  },
+
+  _requestRecordAuthorize(resolve) {
+    wx.authorize({
+      scope: 'scope.record',
+      success: () => resolve(true),
+      fail: () => {
+        wx.showToast({ title: '需要麦克风权限', icon: 'none' });
+        resolve(false);
+      },
     });
   },
 

@@ -7,6 +7,7 @@
 const VoiceCallManager = require('../../utils/voice-call-manager');
 const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
+const logger = require('../../utils/logger');
 const { getTheme, applyTheme } = require('../../utils/theme');
 
 const app = getApp();
@@ -37,6 +38,7 @@ Page({
   _isUserSpeaking: false,
   _isAiSpeaking: false,
   _returningToChat: false,
+  _restartingRecord: false,
 
   audioManager: null,
   wsManager: null,
@@ -108,7 +110,7 @@ Page({
 
     this.audioManager = new AudioManager({
       onAudioFrame: (frame) => {
-        if (this.data.isMuted) return;
+        if (this.data.isMuted || this._restartingRecord) return;
         if (this.wsManager) this.wsManager.sendAudioFrame(frame);
       },
       onRecordStart: () => {
@@ -128,7 +130,7 @@ Page({
         }
       },
       onError: (err, scope) => {
-        console.warn('[VoiceCall Audio:' + scope + ']', err);
+        logger.warn('[VoiceCall Audio:' + scope + ']', err);
       },
     });
 
@@ -142,7 +144,7 @@ Page({
       },
       onMessage: (msg) => this._handleWSMessage(msg),
       onError: (err, scope) => {
-        console.warn('[VoiceCall WS:' + scope + ']', err);
+        logger.warn('[VoiceCall WS:' + scope + ']', err && err.message ? err.message : err);
       },
     });
 
@@ -153,39 +155,61 @@ Page({
   },
 
   _waitForHelloAndStart() {
-    const startedAt = Date.now();
-    const TIMEOUT_MS = 10000;
+    if (!this.wsManager) return;
+    if (this.wsManager.isConnected()) {
+      this._startRecordingAfterReady();
+      return;
+    }
 
-    const check = () => {
-      if (!this.wsManager) return;
-      if (this.wsManager.isConnected()) {
-        this.audioManager.ready().then(() => {
-          this.audioManager.startRecord();
-          this.wsManager.sendListenStart();
-        }).catch((err) => {
-          console.error('AudioManager not ready:', err);
-          wx.showToast({ title: '音频引擎未就绪', icon: 'none' });
-          this._mgr.hangup();
-          wx.navigateBack();
-        });
-        return;
+    const TIMEOUT_MS = 10000;
+    let timeoutTimer = null;
+    let handler = null;
+
+    const cleanup = () => {
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+        timeoutTimer = null;
       }
-      if (Date.now() - startedAt >= TIMEOUT_MS) {
-        console.warn('VoiceCall: wait for hello timeout');
-        wx.showToast({ title: '通话连接超时', icon: 'none' });
-        this._mgr.hangup();
-        wx.navigateBack();
-        return;
+      if (handler && this.wsManager) {
+        this.wsManager.offStateChange(handler);
       }
-      setTimeout(check, 100);
+      handler = null;
     };
-    check();
+
+    handler = (state) => {
+      if (state !== 'connected') return;
+      cleanup();
+      this._startRecordingAfterReady();
+    };
+
+    timeoutTimer = setTimeout(() => {
+      cleanup();
+      wx.showToast({ title: '通话连接超时', icon: 'none' });
+      this._mgr.hangup();
+      wx.navigateBack();
+    }, TIMEOUT_MS);
+
+    this.wsManager.onStateChange(handler);
+  },
+
+  _startRecordingAfterReady() {
+    if (!this.audioManager || !this.wsManager) return;
+    this.audioManager.ready().then(() => {
+      if (!this.audioManager || !this.wsManager) return;
+      this.audioManager.startRecord();
+      this.wsManager.sendListenStart();
+    }).catch((err) => {
+      logger.error('AudioManager not ready:', err);
+      wx.showToast({ title: '音频引擎未就绪', icon: 'none' });
+      this._mgr.hangup();
+      wx.navigateBack();
+    });
   },
 
   _handleWSMessage(msg) {
     switch (msg.type) {
       case 'audio':
-        if (this.audioManager) {
+        if (this.audioManager && !this._restartingRecord) {
           this.audioManager.appendOpusFrame(msg.data);
           this._isAiSpeaking = true;
           this._updateStatusText();
@@ -210,9 +234,11 @@ Page({
 
   _restartRecord() {
     if (!this.audioManager || !this.wsManager) return;
+    this._restartingRecord = true;
     this.audioManager.stopRecord();
     this.wsManager.sendListenStop();
     setTimeout(() => {
+      this._restartingRecord = false;
       if (!this.audioManager || !this.wsManager) return;
       this.audioManager.startRecord();
       this.wsManager.sendListenStart();
@@ -244,10 +270,10 @@ Page({
       wx.setInnerAudioOption({
         speakerOn: next,
         success: () => {
-          console.log('audio output switched, speakerOn=' + next);
+          logger.log('audio output switched, speakerOn=' + next);
         },
         fail: (err) => {
-          console.warn('setInnerAudioOption failed:', err);
+          logger.warn('setInnerAudioOption failed:', err);
         },
       });
     }

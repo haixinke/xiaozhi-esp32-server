@@ -118,6 +118,7 @@ class VoiceCallManager {
     this._stopDurationTimer();
     this._stopRecordRestartTimer();
     this._stopMedia();
+    this.clearMedia();
     this._setState(STATE_ENDED);
   }
 

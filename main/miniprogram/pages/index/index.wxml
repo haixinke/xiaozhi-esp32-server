@@ -126,11 +126,6 @@
         />
       </view>
 
-      <!-- + 号多功能入口 -->
-      <view class="tool-toggle-btn" bindtap="onToolPanelToggle" hover-class="tool-toggle-btn-hover" hover-stay-time="80">
-        <image class="tool-toggle-icon" src="{{darkMode ? '/images/jiahao-dark.png' : '/images/jiahao.png'}}" mode="aspectFit" />
-      </view>
-
       <!-- 文字模式 -->
       <block wx:if="{{inputMode === 'text'}}">
         <view class="input-wrapper" bindtap="onInputTap">

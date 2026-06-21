@@ -749,6 +749,99 @@ page {
   letter-spacing: 1rpx;
 }
 
+/* ---------------- + 号按钮与浮窗 ---------------- */
+.tool-toggle-btn {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 12rpx;
+  border-radius: 50%;
+  background: rgba(134, 78, 90, 0.08);
+}
+
+.tool-toggle-btn-hover {
+  background: rgba(134, 78, 90, 0.16);
+}
+
+.tool-toggle-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.tool-panel-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 100;
+}
+
+.tool-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+}
+
+.tool-panel-title {
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+
+.tool-panel-title-text {
+  font-size: 26rpx;
+  color: rgba(134, 78, 90, 0.6);
+}
+
+.tool-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tool-grid-item {
+  width: 33.3333%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 0;
+}
+
+.tool-grid-item-empty {
+  pointer-events: none;
+}
+
+.tool-grid-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  background: rgba(134, 78, 90, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
+}
+
+.tool-grid-item-hover .tool-grid-icon-wrap {
+  background: rgba(134, 78, 90, 0.16);
+}
+
+.tool-grid-icon {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.tool-grid-label {
+  font-size: 24rpx;
+  color: #4a4a4a;
+}
+
 /* ================================================================
    DARK MODE
    ================================================================ */
@@ -908,6 +1001,30 @@ page {
 /* 头像边框 */
 .dark .status-dot {
   border-color: #121220;
+}
+
+.dark .tool-toggle-btn {
+  background: rgba(30, 28, 46, 0.9);
+}
+
+.dark .tool-panel {
+  background: #1e1e2e;
+}
+
+.dark .tool-panel-title-text {
+  color: rgba(232, 228, 227, 0.5);
+}
+
+.dark .tool-grid-icon-wrap {
+  background: rgba(232, 228, 227, 0.08);
+}
+
+.dark .tool-grid-item-hover .tool-grid-icon-wrap {
+  background: rgba(232, 228, 227, 0.16);
+}
+
+.dark .tool-grid-label {
+  color: #e8e4e3;
 }
 
 /* 历史加载 */

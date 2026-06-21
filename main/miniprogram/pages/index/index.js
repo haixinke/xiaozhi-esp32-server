@@ -68,6 +68,9 @@ Page({
     // 订阅权益灰度
     hasVoiceInput: false,        // 是否有语音输入权限
     hasLongTermMemory: false,    // 是否有聊天历史权限
+
+    // 多功能浮窗
+    showToolPanel: false,
   },
 
   // 非响应式资源，挂在 this 上以避免 setData 开销
@@ -654,6 +657,18 @@ Page({
   onToggleInputMode() {
     const next = this.data.inputMode === 'text' ? 'voice' : 'text';
     this.setData({ inputMode: next });
+  },
+
+  onToolPanelToggle() {
+    this.setData({ showToolPanel: !this.data.showToolPanel });
+  },
+
+  onToolPanelMaskTap() {
+    this.setData({ showToolPanel: false });
+  },
+
+  onToolPanelCatch() {
+    // 阻止冒泡，避免点击面板自身关闭浮窗
   },
 
   onVoiceTouchStart(e) {

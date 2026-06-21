@@ -126,6 +126,11 @@
         />
       </view>
 
+      <!-- + 号多功能入口 -->
+      <view class="tool-toggle-btn" bindtap="onToolPanelToggle" hover-class="tool-toggle-btn-hover" hover-stay-time="80">
+        <image class="tool-toggle-icon" src="{{darkMode ? '/images/plus-dark.png' : '/images/plus.png'}}" mode="aspectFit" />
+      </view>
+
       <!-- 文字模式 -->
       <block wx:if="{{inputMode === 'text'}}">
         <view class="input-wrapper" bindtap="onInputTap">
@@ -158,6 +163,26 @@
           <text class="voice-btn-text">{{recordCancelled ? '松开 取消' : '按住 说话'}}</text>
         </view>
       </block>
+    </view>
+
+    <!-- 底部多功能浮窗 -->
+    <view wx:if="{{showToolPanel}}" class="tool-panel-mask" catchtap="onToolPanelMaskTap">
+      <view class="tool-panel {{darkMode ? 'dark' : ''}}" catchtap="onToolPanelCatch">
+        <view class="tool-panel-title"><text class="tool-panel-title-text">更多</text></view>
+        <view class="tool-grid">
+          <view class="tool-grid-item" bindtap="onVoiceCallTap" hover-class="tool-grid-item-hover" hover-stay-time="80">
+            <view class="tool-grid-icon-wrap">
+              <image class="tool-grid-icon" src="{{darkMode ? '/images/phone-dark.png' : '/images/phone.png'}}" mode="aspectFit" />
+            </view>
+            <text class="tool-grid-label">语音通话</text>
+          </view>
+          <!-- 预留 5 个空位 -->
+          <view class="tool-grid-item tool-grid-item-empty"></view>
+          <view class="tool-grid-item tool-grid-item-empty"></view>
+          <view class="tool-grid-item tool-grid-item-empty"></view>
+          <view class="tool-grid-item tool-grid-item-empty"></view>
+        </view>
+      </view>
     </view>
   </view>
 </view>

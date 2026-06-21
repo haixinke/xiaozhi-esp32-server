@@ -671,6 +671,101 @@ Page({
     // 阻止冒泡，避免点击面板自身关闭浮窗
   },
 
+  async onVoiceCallTap() {
+    this.setData({ showToolPanel: false });
+
+    // 1. 权益检查
+    if (!this._hasVoiceCallFeature()) {
+      wx.showModal({
+        title: '甜蜜契约',
+        content: '签订契约后即可与女友语音通话',
+        showCancel: true,
+        cancelText: '知道了',
+        confirmText: '去订阅',
+        confirmColor: '#864e5a',
+        success: (res) => {
+          if (res.confirm) {
+            // TODO: 跳转到订阅页（如果后续有）
+            wx.showToast({ title: '订阅功能即将开放', icon: 'none' });
+          }
+        },
+      });
+      return;
+    }
+
+    // 2. 权限检查
+    const permitted = await this._ensureRecordPermission();
+    if (!permitted) return;
+
+    // 3. 确保 WebSocket 已连接
+    if (this.data.connectionState !== 'connected') {
+      this.onSummon();
+      let waited = 0;
+      while (this.data.connectionState !== 'connected' && waited < 10000) {
+        await new Promise((r) => setTimeout(r, 200));
+        waited += 200;
+      }
+      if (this.data.connectionState !== 'connected') {
+        wx.showToast({ title: '连接失败，请重试', icon: 'none' });
+        return;
+      }
+    }
+
+    // 4. 初始化通话状态并跳转
+    const VoiceCallManager = require('../../utils/voice-call-manager');
+    VoiceCallManager().startCall();
+    wx.navigateTo({ url: '/pages/voice-call/voice-call' });
+  },
+
+  _hasVoiceCallFeature() {
+    const features = (app.globalData && app.globalData.subscriptionFeatures) || [];
+    return features.indexOf('voice_call') !== -1;
+  },
+
+  _ensureRecordPermission() {
+    return new Promise((resolve) => {
+      wx.getSetting({
+        success: (res) => {
+          const auth = res.authSetting && res.authSetting['scope.record'];
+          if (auth === true) {
+            resolve(true);
+            return;
+          }
+          if (auth === false) {
+            wx.showModal({
+              title: '需要麦克风权限',
+              content: '语音通话需要访问您的麦克风',
+              confirmText: '去设置',
+              cancelText: '取消',
+              success: (modalRes) => {
+                if (modalRes.confirm) {
+                  wx.openSetting({
+                    success: (settingRes) => {
+                      resolve(!!(settingRes.authSetting && settingRes.authSetting['scope.record']));
+                    },
+                    fail: () => resolve(false),
+                  });
+                } else {
+                  resolve(false);
+                }
+              },
+            });
+            return;
+          }
+          wx.authorize({
+            scope: 'scope.record',
+            success: () => resolve(true),
+            fail: () => {
+              wx.showToast({ title: '需要麦克风权限', icon: 'none' });
+              resolve(false);
+            },
+          });
+        },
+        fail: () => resolve(false),
+      });
+    });
+  },
+
   onVoiceTouchStart(e) {
     if (!this._isReadyForAction()) return;
     if (this.data.chatState !== STATE_IDLE) return;

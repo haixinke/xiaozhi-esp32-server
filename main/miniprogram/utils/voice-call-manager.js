@@ -40,6 +40,30 @@ class VoiceCallManager {
     this._durationTimer = null;
     this._recordRestartTimer = null;
     this._recordRestartCallback = null;
+
+    this._audioManager = null;
+    this._wsManager = null;
+  }
+
+  setMedia(audioManager, wsManager) {
+    this._audioManager = audioManager || null;
+    this._wsManager = wsManager || null;
+  }
+
+  clearMedia() {
+    this._audioManager = null;
+    this._wsManager = null;
+  }
+
+  _stopMedia() {
+    if (this._audioManager) {
+      try { this._audioManager.stopRecord(); } catch (_) {}
+      try { this._audioManager.stopPlayback(); } catch (_) {}
+    }
+    if (this._wsManager) {
+      try { this._wsManager.sendListenStop(); } catch (_) {}
+      try { this._wsManager.disconnect(); } catch (_) {}
+    }
   }
 
   getState() {
@@ -93,6 +117,7 @@ class VoiceCallManager {
   hangup() {
     this._stopDurationTimer();
     this._stopRecordRestartTimer();
+    this._stopMedia();
     this._setState(STATE_ENDED);
   }
 
@@ -115,6 +140,8 @@ class VoiceCallManager {
     this._stopRecordRestartTimer();
     this._listeners.clear();
     this._recordRestartCallback = null;
+    this._audioManager = null;
+    this._wsManager = null;
   }
 
   _startDurationTimer() {

@@ -83,13 +83,6 @@ Page({
       this._startMedia();
     }
 
-    if (state.state === 'ended' && !this._returningToChat) {
-      // 例如后台自动挂断或异常结束，需要清理资源
-      this._cleanupResources();
-      wx.navigateBack();
-      return;
-    }
-
     this.setData({
       callState: state.state,
       formattedDuration: formatDuration(state.durationSeconds),
@@ -154,6 +147,7 @@ Page({
     });
 
     this.wsManager.connect(g.wsUrl, g.virtualMAC, g.wsToken);
+    this._mgr.setMedia(this.audioManager, this.wsManager);
 
     this._waitForHelloAndStart();
   },
@@ -225,29 +219,16 @@ Page({
     }, 100);
   },
 
-  _stopMedia() {
-    if (this.audioManager) {
-      try { this.audioManager.stopRecord(); } catch (_) {}
-      try { this.audioManager.stopPlayback(); } catch (_) {}
-    }
-    if (this.wsManager) {
-      try { this.wsManager.sendListenStop(); } catch (_) {}
-      try { this.wsManager.disconnect(); } catch (_) {}
-    }
-  },
-
   onCancelCall() {
     if (this._callTimer) {
       clearTimeout(this._callTimer);
       this._callTimer = null;
     }
-    this._stopMedia();
     this._mgr.hangup();
     wx.navigateBack();
   },
 
   onHangup() {
-    this._stopMedia();
     this._mgr.hangup();
     wx.navigateBack();
   },
@@ -287,7 +268,7 @@ Page({
     }
 
     if (this._returningToChat) {
-      // 返回聊天页保持通话：不停止媒体，只移除本页订阅
+      // 返回聊天页保持通话：媒体由 VoiceCallManager 继续持有
       this._returningToChat = false;
       return;
     }
@@ -296,7 +277,7 @@ Page({
   },
 
   _cleanupResources() {
-    this._stopMedia();
+    if (this._mgr) this._mgr.clearMedia();
     if (this.audioManager) {
       this.audioManager.destroy();
       this.audioManager = null;

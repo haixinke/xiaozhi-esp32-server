@@ -1,10 +1,12 @@
 /**
  * pages/voice-call/voice-call.js
  *
- * 语音通话页：呼叫等待 + 通话中控制。
+ * 语音通话页：呼叫等待 + 通话中控制 + 双向语音。
  */
 
 const VoiceCallManager = require('../../utils/voice-call-manager');
+const AudioManager = require('../../utils/audio');
+const WebSocketManager = require('../../utils/websocket');
 const { getTheme, applyTheme } = require('../../utils/theme');
 
 const app = getApp();
@@ -31,11 +33,19 @@ Page({
   _mgr: null,
   _unsubscribe: null,
   _callTimer: null,
+  _hasStartedMedia: false,
+  _isUserSpeaking: false,
+  _isAiSpeaking: false,
+
+  audioManager: null,
+  wsManager: null,
 
   onLoad() {
     this._mgr = VoiceCallManager();
     this._unsubscribe = (state) => this._syncState(state);
     this._mgr.onStateChange(this._unsubscribe);
+
+    this._mgr.setOnRecordRestart(() => this._restartRecord());
 
     const g = app.globalData || {};
     this.setData({
@@ -59,17 +69,144 @@ Page({
   },
 
   _syncState(state) {
-    let statusText = '正在呼叫…';
-    if (state.state === 'connected') {
-      statusText = '通话中';
+    if (state.state === 'connected' && !this._hasStartedMedia) {
+      this._hasStartedMedia = true;
+      this._startMedia();
     }
+
     this.setData({
       callState: state.state,
       formattedDuration: formatDuration(state.durationSeconds),
       isMuted: state.isMuted,
       isSpeakerOn: state.isSpeakerOn,
-      callStatusText: statusText,
+      callStatusText: this._computeStatusText(state.state),
     });
+  },
+
+  _computeStatusText(state) {
+    if (state === 'calling') return '正在呼叫…';
+    if (this._isAiSpeaking) return '女友正在说…';
+    if (this._isUserSpeaking) return '正在听…';
+    return '通话中';
+  },
+
+  _updateStatusText() {
+    this.setData({ callStatusText: this._computeStatusText(this._mgr.getState().state) });
+  },
+
+  _startMedia() {
+    const g = app.globalData;
+
+    this.audioManager = new AudioManager({
+      onAudioFrame: (frame) => {
+        if (this.data.isMuted) return;
+        if (this.wsManager) this.wsManager.sendAudioFrame(frame);
+      },
+      onRecordStart: () => {
+        this._isUserSpeaking = true;
+        this._updateStatusText();
+      },
+      onRecordStop: () => {
+        this._isUserSpeaking = false;
+        this._updateStatusText();
+      },
+      onPlayEnd: () => {
+        this._isAiSpeaking = false;
+        this._updateStatusText();
+        // AI 说完后自动进入下一轮倾听
+        if (this.wsManager && this._mgr.getState().state === 'connected') {
+          this.wsManager.sendListenStart();
+        }
+      },
+      onError: (err, scope) => {
+        console.warn('[VoiceCall Audio:' + scope + ']', err);
+      },
+    });
+
+    this.wsManager = new WebSocketManager({
+      onStateChange: (wsState) => {
+        if (wsState === 'disconnected' && this._mgr.getState().state === 'connected') {
+          wx.showToast({ title: '通话已断开', icon: 'none' });
+          this._mgr.hangup();
+          wx.navigateBack();
+        }
+      },
+      onMessage: (msg) => this._handleWSMessage(msg),
+      onError: (err, scope) => {
+        console.warn('[VoiceCall WS:' + scope + ']', err);
+      },
+    });
+
+    this.wsManager.connect(g.wsUrl, g.virtualMAC, g.wsToken);
+
+    this._waitForHelloAndStart();
+  },
+
+  _waitForHelloAndStart() {
+    const check = () => {
+      if (!this.wsManager || !this.wsManager.isConnected()) {
+        setTimeout(check, 100);
+        return;
+      }
+      this.audioManager.ready().then(() => {
+        this.audioManager.startRecord();
+        this.wsManager.sendListenStart();
+      }).catch((err) => {
+        console.error('AudioManager not ready:', err);
+        wx.showToast({ title: '音频引擎未就绪', icon: 'none' });
+        this._mgr.hangup();
+        wx.navigateBack();
+      });
+    };
+    check();
+  },
+
+  _handleWSMessage(msg) {
+    switch (msg.type) {
+      case 'audio':
+        if (this.audioManager) {
+          this.audioManager.appendOpusFrame(msg.data);
+          this._isAiSpeaking = true;
+          this._updateStatusText();
+        }
+        break;
+      case 'tts':
+        if (msg.state === 'start') {
+          this._isAiSpeaking = true;
+        } else if (msg.state === 'stop') {
+          this._isAiSpeaking = false;
+        }
+        this._updateStatusText();
+        break;
+      case 'goodbye':
+        this._mgr.hangup();
+        wx.navigateBack();
+        break;
+      default:
+        break;
+    }
+  },
+
+  _restartRecord() {
+    if (!this.audioManager || !this.wsManager) return;
+    this.audioManager.stopRecord();
+    this.wsManager.sendListenStop();
+    setTimeout(() => {
+      if (!this.audioManager || !this.wsManager) return;
+      this.audioManager.startRecord();
+      this.wsManager.sendListenStart();
+    }, 100);
+  },
+
+  _stopMedia() {
+    if (this.audioManager) {
+      try { this.audioManager.stopRecord(); } catch (_) {}
+      try { this.audioManager.stopPlayback(); } catch (_) {}
+    }
+    if (this.wsManager) {
+      try { this.wsManager.sendListenStop(); } catch (_) {}
+      try { this.wsManager.disconnect(); } catch (_) {}
+    }
   },
 
   onCancelCall() {
@@ -77,11 +214,13 @@ Page({
       clearTimeout(this._callTimer);
       this._callTimer = null;
     }
+    this._stopMedia();
     this._mgr.hangup();
     wx.navigateBack();
   },
 
   onHangup() {
+    this._stopMedia();
     this._mgr.hangup();
     wx.navigateBack();
   },
@@ -105,6 +244,15 @@ Page({
     }
     if (this._mgr && this._unsubscribe) {
       this._mgr.offStateChange(this._unsubscribe);
+    }
+    this._stopMedia();
+    if (this.audioManager) {
+      this.audioManager.destroy();
+      this.audioManager = null;
+    }
+    if (this.wsManager) {
+      this.wsManager.destroy();
+      this.wsManager = null;
     }
   },
 });

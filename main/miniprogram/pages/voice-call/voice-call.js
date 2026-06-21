@@ -83,6 +83,13 @@ Page({
       this._startMedia();
     }
 
+    if (state.state === 'ended' && !this._returningToChat) {
+      // 例如后台自动挂断或异常结束，需要清理资源
+      this._cleanupResources();
+      wx.navigateBack();
+      return;
+    }
+
     this.setData({
       callState: state.state,
       formattedDuration: formatDuration(state.durationSeconds),
@@ -285,6 +292,10 @@ Page({
       return;
     }
 
+    this._cleanupResources();
+  },
+
+  _cleanupResources() {
     this._stopMedia();
     if (this.audioManager) {
       this.audioManager.destroy();

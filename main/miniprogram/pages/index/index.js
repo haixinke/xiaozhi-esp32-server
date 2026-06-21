@@ -693,8 +693,7 @@ Page({
         confirmColor: '#864e5a',
         success: (res) => {
           if (res.confirm) {
-            // TODO: 跳转到订阅页（如果后续有）
-            wx.showToast({ title: '订阅功能即将开放', icon: 'none' });
+            wx.navigateTo({ url: '/pages/settings/settings' });
           }
         },
       });

@@ -37,8 +37,10 @@ Page({
   _hasStartedMedia: false,
   _isUserSpeaking: false,
   _isAiSpeaking: false,
+  _aiSpeakingTimer: null,
   _returningToChat: false,
   _restartingRecord: false,
+  _destroyed: false,
 
   audioManager: null,
   wsManager: null,
@@ -105,25 +107,52 @@ Page({
     this.setData({ callStatusText: this._computeStatusText(this._mgr.getState().state) });
   },
 
+  _setAiSpeaking(isSpeaking) {
+    if (this._destroyed) return;
+    if (this._isAiSpeaking === isSpeaking) return;
+    this._isAiSpeaking = isSpeaking;
+    // AI 说话时优先显示 AI 状态
+    if (isSpeaking) this._isUserSpeaking = false;
+    this._updateStatusText();
+
+    if (this._aiSpeakingTimer) {
+      clearTimeout(this._aiSpeakingTimer);
+      this._aiSpeakingTimer = null;
+    }
+
+    // 安全超时：如果 AI 说话状态异常未重置，120 秒后强制恢复
+    if (isSpeaking) {
+      this._aiSpeakingTimer = setTimeout(() => {
+        this._aiSpeakingTimer = null;
+        if (this._isAiSpeaking) {
+          logger.warn('[VoiceCall] AI 说话状态看门狗超时，强制重置状态');
+          this._setAiSpeaking(false);
+        }
+      }, 120000);
+    }
+  },
+
   _startMedia() {
     const g = app.globalData;
 
     this.audioManager = new AudioManager({
       onAudioFrame: (frame) => {
-        if (this.data.isMuted || this._restartingRecord) return;
+        if (this.data.isMuted || this._restartingRecord || this._isAiSpeaking) return;
         if (this.wsManager) this.wsManager.sendAudioFrame(frame);
       },
       onRecordStart: () => {
+        if (this._destroyed) return;
         this._isUserSpeaking = true;
         this._updateStatusText();
       },
       onRecordStop: () => {
+        if (this._destroyed) return;
         this._isUserSpeaking = false;
         this._updateStatusText();
       },
       onPlayEnd: () => {
-        this._isAiSpeaking = false;
-        this._updateStatusText();
+        if (this._destroyed) return;
+        this._setAiSpeaking(false);
         // AI 说完后自动进入下一轮倾听
         if (this.wsManager && this._mgr.getState().state === 'connected') {
           this.wsManager.sendListenStart('auto');
@@ -211,17 +240,17 @@ Page({
       case 'audio':
         if (this.audioManager && !this._restartingRecord) {
           this.audioManager.appendOpusFrame(msg.data);
-          this._isAiSpeaking = true;
-          this._updateStatusText();
+          this._setAiSpeaking(true);
         }
         break;
       case 'tts':
         if (msg.state === 'start') {
-          this._isAiSpeaking = true;
+          this._setAiSpeaking(true);
+          this._updateStatusText();
         } else if (msg.state === 'stop') {
-          this._isAiSpeaking = false;
+          // 以实际播放结束为准，不在这里提前清除说话状态，
+          // 避免 tts stop 后仍在播放的末尾音频被回采。
         }
-        this._updateStatusText();
         break;
       case 'goodbye':
         this._mgr.hangup();
@@ -285,9 +314,14 @@ Page({
   },
 
   _cleanup() {
+    this._destroyed = true;
     if (this._callTimer) {
       clearTimeout(this._callTimer);
       this._callTimer = null;
+    }
+    if (this._aiSpeakingTimer) {
+      clearTimeout(this._aiSpeakingTimer);
+      this._aiSpeakingTimer = null;
     }
     if (this._mgr && this._unsubscribe) {
       this._mgr.offStateChange(this._unsubscribe);

@@ -231,6 +231,18 @@ Page({
 
   onToggleSpeaker() {
     this._mgr.toggleSpeaker();
+    const next = this._mgr.getState().isSpeakerOn;
+    if (wx.setInnerAudioOption) {
+      wx.setInnerAudioOption({
+        speakerOn: next,
+        success: () => {
+          console.log('audio output switched, speakerOn=' + next);
+        },
+        fail: (err) => {
+          console.warn('setInnerAudioOption failed:', err);
+        },
+      });
+    }
   },
 
   onBackToChat() {

@@ -1,6 +1,7 @@
 {
   "usingComponents": {
     "voice-button": "../../components/voice-button/voice-button",
-    "chat-bubble": "../../components/chat-bubble/chat-bubble"
+    "chat-bubble": "../../components/chat-bubble/chat-bubble",
+    "floating-call-ball": "../../components/floating-call-ball/floating-call-ball"
   }
 }

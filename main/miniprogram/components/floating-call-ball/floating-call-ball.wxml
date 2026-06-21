@@ -1,0 +1,15 @@
+<!--components/floating-call-ball/floating-call-ball.wxml-->
+<view wx:if="{{visible}}" class="floating-ball {{darkMode ? 'dark' : ''}} {{expanded ? 'expanded' : ''}}" style="top: {{top}}px;" bindtap="onTap">
+  <view class="ball-core">
+    <image class="ball-avatar" src="{{companionAvatar || '/images/avatar-default.png'}}" mode="aspectFill" />
+    <text class="ball-duration">{{formattedDuration}}</text>
+  </view>
+  <view wx:if="{{expanded}}" class="ball-actions" catchtap="onActionsCatch">
+    <view class="ball-action" bindtap="onBackToCall" hover-class="ball-action-hover" hover-stay-time="80">
+      <text class="ball-action-text">返回通话</text>
+    </view>
+    <view class="ball-action ball-action-hangup" bindtap="onHangup" hover-class="ball-action-hover" hover-stay-time="80">
+      <text class="ball-action-text">挂断</text>
+    </view>
+  </view>
+</view>

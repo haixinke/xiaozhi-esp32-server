@@ -71,6 +71,9 @@ Page({
 
     // 多功能浮窗
     showToolPanel: false,
+
+    // 悬浮通话小球位置
+    floatingBallTop: 400,
   },
 
   // 非响应式资源，挂在 this 上以避免 setData 开销
@@ -168,6 +171,10 @@ Page({
     // 监听小程序切回前台 → 触发重连
     this._appShowHandler = () => this._handleAppShow();
     if (wx.onAppShow) wx.onAppShow(this._appShowHandler);
+
+    // 切后台时自动挂断语音通话
+    this._appHideHandler = () => this._handleAppHide();
+    if (wx.onAppHide) wx.onAppHide(this._appHideHandler);
   },
 
   onShow() {
@@ -320,6 +327,7 @@ Page({
         // 兜底：使用窗口高度的70%作为默认值
         this.setData({ scrollViewHeight: windowHeight * 0.7 });
       }
+      this.setData({ floatingBallTop: windowHeight * 0.55 });
     });
   },
 
@@ -839,6 +847,16 @@ Page({
     // 保持当前连接状态，如果已断开则等待用户操作
   },
 
+  _handleAppHide() {
+    // 切后台时自动挂断语音通话
+    const VoiceCallManager = require('../../utils/voice-call-manager');
+    const mgr = VoiceCallManager();
+    const state = mgr.getState().state;
+    if (state === 'connected' || state === 'calling') {
+      mgr.hangup();
+    }
+  },
+
   _applyFeatures() {
     var features = (app.globalData && app.globalData.subscriptionFeatures) || [];
     var newHasLongTermMemory = features.indexOf('long_term_memory') !== -1;
@@ -863,6 +881,10 @@ Page({
     if (this._appShowHandler && wx.offAppShow) {
       try { wx.offAppShow(this._appShowHandler); } catch (_) {}
       this._appShowHandler = null;
+    }
+    if (this._appHideHandler && wx.offAppHide) {
+      try { wx.offAppHide(this._appHideHandler); } catch (_) {}
+      this._appHideHandler = null;
     }
     if (this.wsManager) {
       try { this.wsManager.destroy(); } catch (_) {}

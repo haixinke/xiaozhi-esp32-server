@@ -185,4 +185,11 @@
       </view>
     </view>
   </view>
+
+  <floating-call-ball
+    wx:if="{{!booting && !bindFailed}}"
+    darkMode="{{darkMode}}"
+    companionAvatar="{{companionAvatar}}"
+    top="{{floatingBallTop}}"
+  />
 </view>

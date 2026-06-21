@@ -25,6 +25,8 @@ const STATE_CONNECTED = 'connected';
 const STATE_ENDING = 'ending';
 const STATE_ENDED = 'ended';
 
+const RECORD_RESTART_INTERVAL_MS = 10 * 60 * 1000;
+
 class VoiceCallManager {
   constructor() {
     this._state = STATE_IDLE;
@@ -32,7 +34,12 @@ class VoiceCallManager {
     this._isMuted = false;
     this._isSpeakerOn = true;
     this._startTime = null;
+    this._recordRestartAt = null;
     this._listeners = new Set();
+
+    this._durationTimer = null;
+    this._recordRestartTimer = null;
+    this._recordRestartCallback = null;
   }
 
   getState() {
@@ -42,6 +49,7 @@ class VoiceCallManager {
       isMuted: this._isMuted,
       isSpeakerOn: this._isSpeakerOn,
       startTime: this._startTime,
+      recordRestartAt: this._recordRestartAt,
     };
   }
 
@@ -77,10 +85,14 @@ class VoiceCallManager {
 
   connect() {
     this._startTime = Date.now();
+    this._startDurationTimer();
+    this._scheduleRecordRestart();
     this._setState(STATE_CONNECTED);
   }
 
   hangup() {
+    this._stopDurationTimer();
+    this._stopRecordRestartTimer();
     this._setState(STATE_ENDED);
   }
 
@@ -92,6 +104,59 @@ class VoiceCallManager {
   toggleSpeaker() {
     this._isSpeakerOn = !this._isSpeakerOn;
     this._emit();
+  }
+
+  setOnRecordRestart(callback) {
+    this._recordRestartCallback = callback;
+  }
+
+  destroy() {
+    this._stopDurationTimer();
+    this._stopRecordRestartTimer();
+    this._listeners.clear();
+    this._recordRestartCallback = null;
+  }
+
+  _startDurationTimer() {
+    this._stopDurationTimer();
+    this._durationTimer = setInterval(() => {
+      this._durationSeconds += 1;
+      this._emit();
+    }, 1000);
+  }
+
+  _stopDurationTimer() {
+    if (this._durationTimer) {
+      clearInterval(this._durationTimer);
+      this._durationTimer = null;
+    }
+  }
+
+  _scheduleRecordRestart() {
+    this._stopRecordRestartTimer();
+    this._recordRestartAt = Date.now() + RECORD_RESTART_INTERVAL_MS;
+    this._recordRestartTimer = setTimeout(() => {
+      this._recordRestartTimer = null;
+      this._recordRestartAt = null;
+      if (this._state === STATE_CONNECTED && this._recordRestartCallback) {
+        this._recordRestartCallback();
+      }
+      if (this._state === STATE_CONNECTED) {
+        this._scheduleRecordRestart();
+      }
+    }, RECORD_RESTART_INTERVAL_MS);
+  }
+
+  _stopRecordRestartTimer() {
+    if (this._recordRestartTimer) {
+      clearTimeout(this._recordRestartTimer);
+      this._recordRestartTimer = null;
+    }
+    this._recordRestartAt = null;
+  }
+
+  _triggerRecordRestartForTest() {
+    if (this._recordRestartCallback) this._recordRestartCallback();
   }
 }
 

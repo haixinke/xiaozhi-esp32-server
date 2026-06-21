@@ -42,3 +42,23 @@ const VoiceCallManager = require('./voice-call-manager');
 
   console.log('state subscription test: PASS');
 })();
+
+(function () {
+  const mgr = new VoiceCallManager.VoiceCallManager();
+  let restarted = false;
+  mgr.setOnRecordRestart(() => { restarted = true; });
+
+  mgr.startCall();
+  mgr.connect();
+
+  assert.strictEqual(mgr.getState().durationSeconds, 0);
+  const remaining = mgr.getState().recordRestartAt - Date.now();
+  assert.ok(remaining > 9 * 60 * 1000 && remaining <= 10 * 60 * 1000, 'recordRestartAt out of range');
+
+  mgr._triggerRecordRestartForTest();
+  assert.strictEqual(restarted, true);
+
+  mgr.hangup();
+  mgr.destroy();
+  console.log('duration/restart test: PASS');
+})();

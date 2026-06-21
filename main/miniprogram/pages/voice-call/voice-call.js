@@ -36,6 +36,7 @@ Page({
   _hasStartedMedia: false,
   _isUserSpeaking: false,
   _isAiSpeaking: false,
+  _returningToChat: false,
 
   audioManager: null,
   wsManager: null,
@@ -53,7 +54,15 @@ Page({
       companionAvatar: g.companionAvatar || '',
     });
 
-    // 模拟 2-8 秒呼叫等待
+    const state = this._mgr.getState().state;
+    if (state === 'connected') {
+      // 从悬浮小球返回，媒体已在运行
+      this._hasStartedMedia = true;
+      this._syncState(this._mgr.getState());
+      return;
+    }
+
+    // 新通话：模拟 2-8 秒呼叫等待
     const delay = 2000 + Math.floor(Math.random() * 6000);
     this._callTimer = setTimeout(() => {
       this._mgr.connect();
@@ -143,20 +152,31 @@ Page({
   },
 
   _waitForHelloAndStart() {
+    const startedAt = Date.now();
+    const TIMEOUT_MS = 10000;
+
     const check = () => {
-      if (!this.wsManager || !this.wsManager.isConnected()) {
-        setTimeout(check, 100);
+      if (!this.wsManager) return;
+      if (this.wsManager.isConnected()) {
+        this.audioManager.ready().then(() => {
+          this.audioManager.startRecord();
+          this.wsManager.sendListenStart();
+        }).catch((err) => {
+          console.error('AudioManager not ready:', err);
+          wx.showToast({ title: '音频引擎未就绪', icon: 'none' });
+          this._mgr.hangup();
+          wx.navigateBack();
+        });
         return;
       }
-      this.audioManager.ready().then(() => {
-        this.audioManager.startRecord();
-        this.wsManager.sendListenStart();
-      }).catch((err) => {
-        console.error('AudioManager not ready:', err);
-        wx.showToast({ title: '音频引擎未就绪', icon: 'none' });
+      if (Date.now() - startedAt >= TIMEOUT_MS) {
+        console.warn('VoiceCall: wait for hello timeout');
+        wx.showToast({ title: '通话连接超时', icon: 'none' });
         this._mgr.hangup();
         wx.navigateBack();
-      });
+        return;
+      }
+      setTimeout(check, 100);
     };
     check();
   },
@@ -246,6 +266,7 @@ Page({
   },
 
   onBackToChat() {
+    this._returningToChat = true;
     wx.navigateBack();
   },
 
@@ -257,6 +278,13 @@ Page({
     if (this._mgr && this._unsubscribe) {
       this._mgr.offStateChange(this._unsubscribe);
     }
+
+    if (this._returningToChat) {
+      // 返回聊天页保持通话：不停止媒体，只移除本页订阅
+      this._returningToChat = false;
+      return;
+    }
+
     this._stopMedia();
     if (this.audioManager) {
       this.audioManager.destroy();

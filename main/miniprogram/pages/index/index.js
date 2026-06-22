@@ -665,8 +665,29 @@ Page({
   },
 
   onToggleInputMode() {
+    if (!this.data.hasVoiceInput) {
+      this._showContractPopup('签订契约后即可使用语音输入与女友聊天');
+      return;
+    }
     const next = this.data.inputMode === 'text' ? 'voice' : 'text';
     this.setData({ inputMode: next });
+  },
+
+  _showContractPopup(content) {
+    wx.showModal({
+      title: '甜蜜契约',
+      content,
+      showCancel: true,
+      cancelText: '知道了',
+      confirmText: '去订阅',
+      confirmColor: '#864e5a',
+      success: (res) => {
+        if (res.confirm) {
+          app.globalData.openContractPopupAfterSwitch = true;
+          wx.switchTab({ url: '/pages/settings/settings' });
+        }
+      },
+    });
   },
 
   onToolPanelToggle() {
@@ -686,20 +707,7 @@ Page({
 
     // 1. 权益检查
     if (!this._hasVoiceCallFeature()) {
-      wx.showModal({
-        title: '甜蜜契约',
-        content: '签订契约后即可与女友语音通话',
-        showCancel: true,
-        cancelText: '知道了',
-        confirmText: '去订阅',
-        confirmColor: '#864e5a',
-        success: (res) => {
-          if (res.confirm) {
-            app.globalData.openContractPopupAfterSwitch = true;
-            wx.switchTab({ url: '/pages/settings/settings' });
-          }
-        },
-      });
+      this._showContractPopup('签订契约后即可与女友语音通话');
       return;
     }
 
@@ -831,6 +839,13 @@ Page({
   onVoiceTouchStart(e) {
     if (!this._isReadyForAction()) return;
     if (this.data.chatState !== STATE_IDLE) return;
+
+    // 兜底校验：已进入语音模式但无权益时，按住说话触发购买引导。
+    // 提前 return 可防止 recording 被置为 true，因此 onVoiceTouchEnd 会自然跳过。
+    if (!this.data.hasVoiceInput) {
+      this._showContractPopup('签订契约后即可使用语音输入与女友聊天');
+      return;
+    }
 
     const touch = (e.touches && e.touches[0]) || {};
     this._voiceStartY = touch.clientY || 0;

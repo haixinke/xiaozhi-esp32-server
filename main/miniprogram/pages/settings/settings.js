@@ -5,7 +5,8 @@ const { get, post } = require('../../utils/request');
 function featureLabel(code) {
   var labels = {
     'long_term_memory': '永久留存甜蜜回忆',
-    'voice_input': '和女友语音聊天',
+    'voice_input': '语音输入',
+    'voice_call': '语音通话',
     'superpower': '赋予女友超能力（天气）',
     'social_moments': '看女友的私密空间'
   };

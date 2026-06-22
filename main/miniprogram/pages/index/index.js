@@ -473,7 +473,7 @@ Page({
   _loadHistoryMessages() {
     if (this._historyLoading || this._historyNoMore) return;
     if (!this.data.hasLongTermMemory) {
-      this._showContractPopup('签订契约后即可查看聊天回忆');
+      this._showContractPopup('签订契约后即可查看和女友的文字、音频聊天回忆');
       this._historyNoMore = true;
       this.setData({ historyNoMore: true });
       return;

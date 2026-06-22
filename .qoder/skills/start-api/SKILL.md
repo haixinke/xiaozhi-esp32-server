@@ -22,7 +22,7 @@ Start the Java Spring Boot backend at `main/manager-api/` (port 8002).
 3. Check build result — if failed, stop and output error
 4. Start in background:
    ```bash
-   mkdir -p /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/logs && nohup java -jar /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/target/xiaozhi-esp32-api-*.jar > /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/logs/api.log 2>&1 &
+   mkdir -p /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/logs && nohup java -jar /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/target/xiaozhi-esp32-api-*.jar > /dev/null 2>&1 &
    ```
-5. Wait 5-8 seconds (Spring Boot starts slowly), output `logs/api.log` last 20 lines
+5. Wait 5-8 seconds (Spring Boot starts slowly), output `logs/xiaozhi-esp32-api.log` last 20 lines
 6. Confirm success if log contains `Started AdminApplication`

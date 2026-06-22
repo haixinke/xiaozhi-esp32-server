@@ -756,7 +756,6 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 12rpx;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(30rpx);

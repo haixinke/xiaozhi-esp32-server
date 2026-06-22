@@ -1,6 +1,7 @@
 package xiaozhi.modules.agent.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -23,7 +24,13 @@ public class AgentChatAudioEntity {
     private String id;
 
     /**
-     * 音频opus数据
+     * 音频opus数据（兼容旧数据，新数据为null）
      */
     private byte[] audio;
+
+    /**
+     * OSS对象存储路径（新数据存储路径）
+     */
+    @TableField(value = "oss_key")
+    private String ossKey;
 }

@@ -292,4 +292,8 @@ public interface ErrorCode {
     int ITEM_SKU_NOT_FOUND = 10320; // 道具不存在
     int ITEM_INSUFFICIENT = 10321; // 道具数量不足
     int ITEM_CONSUME_FAILED = 10322; // 道具消耗失败
+
+    // OSS相关错误码
+    int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败
+    int OSS_DELETE_FILE_ERROR = 10401; // OSS删除文件失败
 }

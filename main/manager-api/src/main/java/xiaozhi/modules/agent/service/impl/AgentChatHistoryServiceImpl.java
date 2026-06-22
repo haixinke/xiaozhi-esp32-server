@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import cn.hutool.core.collection.ListUtil;
 import org.apache.commons.lang3.StringUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +19,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 import xiaozhi.common.constant.Constant;
+import xiaozhi.common.oss.OssService;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.ConvertUtils;
 import xiaozhi.common.utils.JsonUtils;
 import xiaozhi.common.utils.ToolUtil;
 import xiaozhi.modules.agent.Enums.AgentChatHistoryType;
+import xiaozhi.modules.agent.dao.AiAgentChatAudioDao;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
 import xiaozhi.modules.agent.dto.AgentChatHistoryDTO;
 import xiaozhi.modules.agent.dto.AgentChatSessionDTO;
@@ -39,12 +42,15 @@ import xiaozhi.modules.agent.vo.AgentChatHistoryUserVO;
  * @version 1.0, 2025/4/30
  * @since 1.0.0
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryDao, AgentChatHistoryEntity>
         implements AgentChatHistoryService {
 
     private final AgentChatTitleService agentChatTitleService;
+    private final OssService ossService;
+    private final AiAgentChatAudioDao aiAgentChatAudioDao;
 
     @Override
     public PageData<AgentChatSessionDTO> getSessionListByAgentId(Map<String, Object> params) {
@@ -100,6 +106,19 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
                 // 每批删除1000条
                 List<List<String>> batch = ListUtil.split(audioIds, 1000);
                 batch.forEach(dataList -> {
+                    // 先从OSS删除对象
+                    if (ossService.isEnabled()) {
+                        try {
+                            List<String> ossKeys = aiAgentChatAudioDao.getOssKeysByAudioIds(dataList);
+                            if (ToolUtil.isNotEmpty(ossKeys)) {
+                                ossService.deleteBatch(ossKeys);
+                            }
+                        } catch (Exception e) {
+                            log.error("批量删除OSS音频对象部分失败, agentId={}, failedOssKeys将在后续清理,",
+                                    agentId, e);
+                        }
+                    }
+                    // 再删除DB记录
                     baseMapper.deleteAudioByIds(dataList);
                 });
             }

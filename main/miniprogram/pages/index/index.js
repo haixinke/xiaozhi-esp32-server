@@ -473,13 +473,7 @@ Page({
   _loadHistoryMessages() {
     if (this._historyLoading || this._historyNoMore) return;
     if (!this.data.hasLongTermMemory) {
-      wx.showModal({
-        title: '甜蜜回忆',
-        content: '签订契约后即可查看聊天回忆',
-        showCancel: false,
-        confirmText: '知道了',
-        confirmColor: '#864e5a'
-      });
+      this._showContractPopup('签订契约后即可查看聊天回忆');
       this._historyNoMore = true;
       this.setData({ historyNoMore: true });
       return;

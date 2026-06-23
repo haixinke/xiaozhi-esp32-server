@@ -9,6 +9,7 @@ const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
 const logger = require('../../utils/logger');
 const { getTheme, applyTheme } = require('../../utils/theme');
+const { RINGBACK_TONE_URL } = require('../../config/companion-codes');
 
 const app = getApp();
 
@@ -43,6 +44,7 @@ Page({
 
   audioManager: null,
   wsManager: null,
+  _innerAudioContext: null,
 
   onLoad() {
     this._mgr = VoiceCallManager();
@@ -65,7 +67,8 @@ Page({
       return;
     }
 
-    // 新通话：模拟 2-8 秒呼叫等待
+    // 新通话：播放彩铃并模拟 2-8 秒呼叫等待
+    this._startRingback();
     const delay = 2000 + Math.floor(Math.random() * 6000);
     this._callTimer = setTimeout(() => {
       this._mgr.connect();
@@ -83,7 +86,12 @@ Page({
   _syncState(state) {
     if (state.state === 'connected' && !this._hasStartedMedia) {
       this._hasStartedMedia = true;
+      this._stopRingback();
       this._startMedia();
+    }
+
+    if (state.state !== 'calling') {
+      this._stopRingback();
     }
 
     this.setData({
@@ -103,6 +111,28 @@ Page({
 
   _updateStatusText() {
     this.setData({ callStatusText: this._computeStatusText(this._mgr.getState().state) });
+  },
+
+  _startRingback() {
+    if (this._innerAudioContext) return;
+    if (typeof wx === 'undefined' || !wx.createInnerAudioContext) return;
+
+    const ctx = wx.createInnerAudioContext();
+    if (!ctx) return;
+    ctx.src = RINGBACK_TONE_URL;
+    ctx.loop = true;
+    ctx.onError((err) => {
+      logger.warn('[VoiceCall Ringback]', err && err.errMsg ? err.errMsg : err);
+    });
+    ctx.play();
+    this._innerAudioContext = ctx;
+  },
+
+  _stopRingback() {
+    if (!this._innerAudioContext) return;
+    try { this._innerAudioContext.stop(); } catch (_) {}
+    try { this._innerAudioContext.destroy(); } catch (_) {}
+    this._innerAudioContext = null;
   },
 
   _setAiSpeaking(isSpeaking) {
@@ -287,11 +317,13 @@ Page({
       clearTimeout(this._callTimer);
       this._callTimer = null;
     }
+    this._stopRingback();
     this._mgr.hangup();
     wx.navigateBack();
   },
 
   onHangup() {
+    this._stopRingback();
     this._mgr.hangup();
     wx.navigateBack();
   },
@@ -307,6 +339,7 @@ Page({
 
   _cleanup() {
     this._destroyed = true;
+    this._stopRingback();
     if (this._callTimer) {
       clearTimeout(this._callTimer);
       this._callTimer = null;

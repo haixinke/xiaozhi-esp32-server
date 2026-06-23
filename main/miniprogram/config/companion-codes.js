@@ -79,6 +79,7 @@ var VOICE_STYLES = {
 };
 
 var VIDEO_BASE_URL = CDN_BASE_URL + '/girlfriend/video';
+var RINGBACK_TONE_URL = CDN_BASE_URL + '/girlfriend/music/music-guitar.mp3';
 
 /**
  * 根据编码获取显示标签
@@ -107,5 +108,6 @@ module.exports = {
   CHARACTER_IMAGES: CHARACTER_IMAGES,
   VOICE_STYLES: VOICE_STYLES,
   VIDEO_BASE_URL: VIDEO_BASE_URL,
+  RINGBACK_TONE_URL: RINGBACK_TONE_URL,
   getLabel: getLabel,
 };

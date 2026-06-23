@@ -7,6 +7,36 @@ let navigateBackCount = 0;
 let hangupCount = 0;
 let mutedState = false;
 let toggleMuteCount = 0;
+let innerAudioContextRecords = [];
+
+function createMockInnerAudioContext() {
+  const ctx = {
+    src: '',
+    loop: false,
+    playCount: 0,
+    stopCount: 0,
+    destroyCount: 0,
+    paused: true,
+    _errorHandler: null,
+    play() {
+      this.playCount += 1;
+      this.paused = false;
+    },
+    stop() {
+      this.stopCount += 1;
+      this.paused = true;
+    },
+    destroy() {
+      this.destroyCount += 1;
+      this.paused = true;
+    },
+    onError(handler) {
+      this._errorHandler = handler;
+    },
+  };
+  innerAudioContextRecords.push(ctx);
+  return ctx;
+}
 
 const originalWx = {
   setInnerAudioOption(options) {
@@ -16,6 +46,9 @@ const originalWx = {
   showToast() {},
   navigateBack() {
     navigateBackCount += 1;
+  },
+  createInnerAudioContext() {
+    return createMockInnerAudioContext();
   },
 };
 
@@ -49,6 +82,7 @@ Module._load = function(request, _parent, _isMain) {
         offStateChange() {},
         setOnRecordRestart() {},
         setMedia() {},
+        connect() {},
         hangup() { hangupCount += 1; },
         toggleMute() {
           mutedState = !mutedState;
@@ -85,6 +119,9 @@ Module._load = function(request, _parent, _isMain) {
       applyTheme() {},
     };
   }
+  if (request === '../../config/companion-codes') {
+    return { RINGBACK_TONE_URL: 'https://cdn.example.com/ringback.mp3' };
+  }
   return originalLoad.apply(this, arguments);
 };
 
@@ -97,21 +134,38 @@ require('./voice-call');
     Object.assign(this.data || (this.data = {}), data);
   };
 
-  // 1. onLoad sets companion data and starts the call timer.
+  // 1. onLoad sets companion data and starts the call timer and ringback.
   page.onLoad();
   assert.strictEqual(page.data.companionName, '女友', 'companionName should be set');
   assert.ok(page._callTimer, 'call timer should be started');
+  assert.strictEqual(innerAudioContextRecords.length, 1, 'ringback audio context should be created');
+  const ringback = innerAudioContextRecords[0];
+  assert.strictEqual(ringback.src, 'https://cdn.example.com/ringback.mp3', 'ringback src should be set');
+  assert.strictEqual(ringback.loop, true, 'ringback should loop');
+  assert.strictEqual(ringback.playCount, 1, 'ringback should start playing');
 
-  // 2. onCancelCall clears the timer, hangs up and navigates back.
+  // 2. onCancelCall clears the timer, stops ringback, hangs up and navigates back.
   page.onCancelCall();
   assert.strictEqual(page._callTimer, null, 'call timer should be cleared');
+  assert.strictEqual(ringback.stopCount, 1, 'ringback should stop on cancel');
+  assert.strictEqual(ringback.destroyCount, 1, 'ringback should be destroyed on cancel');
   assert.strictEqual(hangupCount, 1, 'hangup should be called on cancel');
   assert.strictEqual(navigateBackCount, 1, 'navigateBack should be called on cancel');
 
-  // 3. onHangup hangs up and navigates back.
+  // 3. onHangup stops ringback, hangs up and navigates back.
   hangupCount = 0;
   navigateBackCount = 0;
-  page.onHangup();
+  innerAudioContextRecords.length = 0;
+  const hangupPage = Object.create(pageConfig);
+  hangupPage.setData = function(data) {
+    Object.assign(this.data || (this.data = {}), data);
+  };
+  hangupPage.onLoad();
+  const hangupRingback = innerAudioContextRecords[0];
+  assert.ok(hangupRingback, 'ringback should be created for hangup test');
+  hangupPage.onHangup();
+  assert.strictEqual(hangupRingback.stopCount, 1, 'ringback should stop on hangup');
+  assert.strictEqual(hangupRingback.destroyCount, 1, 'ringback should be destroyed on hangup');
   assert.strictEqual(hangupCount, 1, 'hangup should be called on hangup');
   assert.strictEqual(navigateBackCount, 1, 'navigateBack should be called on hangup');
 
@@ -131,6 +185,20 @@ require('./voice-call');
   page._startMedia();
   assert.strictEqual(setInnerAudioOptionCalls.length, 1, 'setInnerAudioOption should be called on media start');
   assert.strictEqual(setInnerAudioOptionCalls[0].speakerOn, true, 'speakerOn should default to true');
+
+  // 6. Ringback stops when call connects.
+  innerAudioContextRecords.length = 0;
+  const connectPage = Object.create(pageConfig);
+  connectPage.setData = function(data) {
+    Object.assign(this.data || (this.data = {}), data);
+  };
+  connectPage.onLoad();
+  const connectRingback = innerAudioContextRecords[0];
+  assert.ok(connectRingback, 'ringback should be created for connect test');
+  assert.strictEqual(connectRingback.playCount, 1, 'ringback should be playing before connect');
+  connectPage._syncState({ state: 'connected', durationSeconds: 0, isMuted: false });
+  assert.strictEqual(connectRingback.stopCount, 1, 'ringback should stop on connect');
+  assert.strictEqual(connectRingback.destroyCount, 1, 'ringback should be destroyed on connect');
 
   console.log('voice-call.test.js: ALL PASS');
 })();

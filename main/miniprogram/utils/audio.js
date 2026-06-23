@@ -216,24 +216,58 @@ class AudioManager {
 
   stopPlayback() {
     this._playQueue.length = 0;
-    if (this._activeSources.size > 0) {
-      this._activeSources.forEach((src) => {
-        try { src.stop(0); } catch (_) {}
-        try { src.disconnect(); } catch (_) {}
-      });
-      this._activeSources.clear();
-    }
+    this._stopActiveSources();
     this._isPlaying = false;
     this._nextStartTime = 0;
   }
 
-  _ensureAudioContext() {
-    if (this._audioCtx) return this._audioCtx;
+  /**
+   * Recreate the WebAudioContext so the next playback schedules on a fresh
+   * context. This gives the runtime a chance to pick up a changed system audio
+   * route (e.g. after wx.setInnerAudioOption), because WebAudioContext does not
+   * observe route changes while it is alive.
+   *
+   * Active sources are stopped and queued frames are discarded so playback on
+   * the new context starts cleanly.
+   */
+  resetAudioContext() {
+    if (this._destroyed) return;
+    this._playQueue.length = 0;
+    this._stopActiveSources();
+    this._isPlaying = false;
+    this._nextStartTime = 0;
+
+    const oldCtx = this._audioCtx;
+    this._audioCtx = this._createAudioContext();
+
+    if (oldCtx && typeof oldCtx.close === 'function') {
+      try { oldCtx.close(); } catch (_) {}
+    }
+  }
+
+  _stopActiveSources() {
+    if (!this._activeSources || this._activeSources.size === 0) return;
+    try {
+      this._activeSources.forEach((src) => {
+        try { src.stop(0); } catch (_) {}
+        try { src.disconnect(); } catch (_) {}
+      });
+    } finally {
+      this._activeSources.clear();
+    }
+  }
+
+  _createAudioContext() {
     if (typeof wx === 'undefined' || !wx.createWebAudioContext) {
       this._emitError(new Error('wx.createWebAudioContext requires base lib >= 2.19.0'), 'play');
       return null;
     }
-    this._audioCtx = wx.createWebAudioContext();
+    return wx.createWebAudioContext();
+  }
+
+  _ensureAudioContext() {
+    if (this._audioCtx) return this._audioCtx;
+    this._audioCtx = this._createAudioContext();
     return this._audioCtx;
   }
 

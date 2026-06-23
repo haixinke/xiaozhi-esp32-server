@@ -292,19 +292,41 @@ Page({
     this._mgr.toggleMute();
   },
 
+  _speakerTogglePending: false,
+
   onToggleSpeaker() {
-    this._mgr.toggleSpeaker();
-    const next = this._mgr.getState().isSpeakerOn;
+    if (this._speakerTogglePending) return;
+    this._speakerTogglePending = true;
+
+    const next = !this._mgr.getState().isSpeakerOn;
+    const finish = () => {
+      this._speakerTogglePending = false;
+    };
+    const applyRoute = () => {
+      this._mgr.toggleSpeaker();
+      // WebAudioContext does not observe wx.setInnerAudioOption route changes
+      // while it is alive; reset the context so the next frame is scheduled on
+      // a fresh context that picks up the new route.
+      if (this.audioManager) {
+        this.audioManager.resetAudioContext();
+      }
+      finish();
+    };
     if (wx.setInnerAudioOption) {
       wx.setInnerAudioOption({
         speakerOn: next,
         success: () => {
           logger.log('audio output switched, speakerOn=' + next);
+          applyRoute();
         },
         fail: (err) => {
           logger.warn('setInnerAudioOption failed:', err);
+          wx.showToast({ title: '切换失败，请重试', icon: 'none' });
+          finish();
         },
       });
+    } else {
+      applyRoute();
     }
   },
 

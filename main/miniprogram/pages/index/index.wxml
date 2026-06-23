@@ -53,17 +53,19 @@
     class="conversation"
     style="height: {{scrollViewHeight}}px;"
     scroll-y="true"
-    scroll-with-animation="true"
+    scroll-with-animation="{{scrollWithAnimation}}"
     enhanced="true"
     bounces="{{false}}"
     show-scrollbar="false"
     scroll-into-view="{{scrollToView}}"
+    scroll-top="{{scrollTop}}"
     refresher-enabled="{{!historyNoMore}}"
     refresher-threshold="{{80}}"
     refresher-default-style="none"
     refresher-background="transparent"
     refresher-triggered="{{historyLoading}}"
     bindrefresherrefresh="onPullDownRefresh"
+    bindscroll="_onConversationScroll"
   >
     <!-- 自定义下拉刷新指示器 -->
     <view slot="refresher" class="refresher-container">

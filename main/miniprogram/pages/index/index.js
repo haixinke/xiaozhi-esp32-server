@@ -42,6 +42,8 @@ Page({
     // 消息列表
     messages: [],
     scrollToView: '',
+    scrollTop: 0,
+    scrollWithAnimation: true,
 
     // 历史记录加载状态
     historyLoading: false,
@@ -89,8 +91,10 @@ Page({
   _historyPage: 1,
   _historyLoading: false,
   _historyNoMore: false,
+  _historyNonce: 0,
   _sessionStartTime: null,
   _voiceStartY: 0,
+  _scrollTop: 0,
 
   // 生成本地时间的 ISO 格式字符串（与后端 LocalDateTime 对齐）
   _formatLocalDateTime(date) {
@@ -460,14 +464,61 @@ Page({
   _addMessage(role, content) {
     const id = 'msg-' + (this._msgIdSeed++);
     const messages = this.data.messages.concat([{ id, role, content, time: Date.now() }]);
-    this.setData({ messages: this._stampSeparators(messages), scrollToView: id });
+    this.setData({ messages: this._stampSeparators(messages), scrollToView: id, scrollTop: 0 });
   },
 
-  // 下拉加载历史消息
+  _onConversationScroll(e) {
+    this._scrollTop = (e && e.detail && e.detail.scrollTop) || 0;
+  },
+
   _onScrollToUpper() {
     if (this._historyLoading || this._historyNoMore) return;
     if (!this._sessionStartTime) return;
     this._loadHistoryMessages();
+  },
+
+  _queryMessageOffset(id, callback) {
+    if (!id) {
+      callback(0);
+      return;
+    }
+    const safeId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(id) : id;
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.conversation').boundingClientRect();
+    query.select('#' + safeId).boundingClientRect();
+    query.exec((res) => {
+      const conversationRect = res[0];
+      const msgRect = res[1];
+      if (!conversationRect || !msgRect) {
+        callback(0);
+        return;
+      }
+      callback(msgRect.top - conversationRect.top + this._scrollTop);
+    });
+  },
+
+  _queryMessageAnchor(id, callback) {
+    if (!id) {
+      callback({ offsetTop: 0, viewportOffset: 0 });
+      return;
+    }
+    const safeId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(id) : id;
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.conversation').boundingClientRect();
+    query.select('#' + safeId).boundingClientRect();
+    query.exec((res) => {
+      const conversationRect = res[0];
+      const msgRect = res[1];
+      if (!conversationRect || !msgRect) {
+        callback({ offsetTop: 0, viewportOffset: 0 });
+        return;
+      }
+      const viewportOffset = msgRect.top - conversationRect.top;
+      callback({
+        offsetTop: viewportOffset + this._scrollTop,
+        viewportOffset,
+      });
+    });
   },
 
   _loadHistoryMessages() {
@@ -478,59 +529,77 @@ Page({
       this.setData({ historyNoMore: true });
       return;
     }
-    this._historyLoading = true;
-    this.setData({ historyLoading: true });
 
-    const g = app.globalData;
-    const params = {
-      agentId: g.agentId,
-      macAddress: g.virtualMAC,
-      page: this._historyPage,
-      limit: 15,
-      createdBefore: this._sessionStartTime,
-    };
+    // 选取当前最顶部消息作为视觉锚点，保持加载前后视觉位置不变
+    const anchorId = (this.data.messages[0] && this.data.messages[0].id) || '';
 
-    get('/agent/chat-history/list', params).then((res) => {
-      const list = (res.data && res.data.list) || [];
-      if (list.length === 0) {
-        this._historyNoMore = true;
+    this._queryMessageAnchor(anchorId, (anchor) => {
+      const anchorViewportOffset = anchor.viewportOffset;
+
+      this._historyLoading = true;
+      this.setData({ historyLoading: true });
+
+      const g = app.globalData;
+      const params = {
+        agentId: g.agentId,
+        macAddress: g.virtualMAC,
+        page: this._historyPage,
+        limit: 15,
+        createdBefore: this._sessionStartTime,
+      };
+
+      get('/agent/chat-history/list', params).then((res) => {
+        const list = (res.data && res.data.list) || [];
+        if (list.length === 0) {
+          this._historyNoMore = true;
+          this._historyLoading = false;
+          this.setData({ historyNoMore: true, historyLoading: false });
+          return;
+        }
+
+        // 映射为消息格式，API 返回按 created_at DESC，需要反转为时间正序
+        const historyMsgs = list.reverse().map((item, idx) => ({
+          id: 'hist-' + this._historyPage + '-' + idx + '-' + (this._historyNonce++),
+          role: item.chatType === 1 ? 'user' : 'assistant',
+          content: item.content,
+          audioId: item.audioId || null,
+          time: this._parseTime(item.createdAt),
+        }));
+
+        // 前置插入到消息数组
+        const messages = historyMsgs.concat(this.data.messages);
+        this._historyPage++;
         this._historyLoading = false;
-        this.setData({ historyNoMore: true, historyLoading: false });
-        return;
-      }
 
-      // 记录当前滚动位置
-      const anchorId = this.data.scrollToView;
+        const noMore = list.length < 15;
+        const nextData = {
+          messages: this._stampSeparators(messages),
+          historyLoading: false,
+          scrollToView: '',
+        };
+        if (noMore) {
+          this._historyNoMore = true;
+          nextData.historyNoMore = true;
+        }
 
-      // 映射为消息格式，API 返回按 created_at DESC，需要反转为时间正序
-      const historyMsgs = list.reverse().map((item, idx) => ({
-        id: 'hist-' + this._historyPage + '-' + idx,
-        role: item.chatType === 1 ? 'user' : 'assistant',
-        content: item.content,
-        audioId: item.audioId || null,
-        time: this._parseTime(item.createdAt),
-      }));
-
-      // 前置插入到消息数组
-      const messages = historyMsgs.concat(this.data.messages);
-      this._historyPage++;
-      this._historyLoading = false;
-
-      if (list.length < 15) {
-        this._historyNoMore = true;
-        this.setData({ messages: this._stampSeparators(messages), historyNoMore: true, historyLoading: false });
-      } else {
-        this.setData({ messages: this._stampSeparators(messages), historyLoading: false });
-      }
-
-      // 恢复滚动位置到之前锚定的消息
-      if (anchorId) {
-        setTimeout(() => { this.setData({ scrollToView: anchorId }); }, 50);
-      }
-    }).catch(() => {
-      this._historyLoading = false;
-      this.setData({ historyLoading: false });
-      wx.showToast({ title: '加载失败', icon: 'none' });
+        this.setData(nextData, () => {
+          if (!anchorId) return;
+          // 等 refresher 回弹动画结束后再校正位置，避免与回弹冲突产生晃动
+          const needDelay = this._scrollTop < 0;
+          setTimeout(() => {
+            this._queryMessageOffset(anchorId, (newOffset) => {
+              const newScrollTop = newOffset - anchorViewportOffset;
+              this.setData({ scrollWithAnimation: false, scrollTop: newScrollTop }, () => {
+                this.setData({ scrollWithAnimation: true });
+              });
+            });
+          }, needDelay ? 300 : 0);
+        });
+      }).catch(() => {
+        this._historyLoading = false;
+        this.setData({ historyLoading: false });
+        wx.showToast({ title: '加载失败', icon: 'none' });
+      });
     });
   },
 
@@ -549,7 +618,7 @@ Page({
       const messages = this.data.messages.concat([{ id, role: 'assistant', content: text, typing: true, time: Date.now() }]);
       this._streamingIdx = messages.length - 1;
       this._streamingBuffer = text;
-      this.setData({ messages: this._stampSeparators(messages), scrollToView: id, chatState });
+      this.setData({ messages: this._stampSeparators(messages), scrollToView: id, scrollTop: 0, chatState });
     }
   },
 
@@ -594,7 +663,7 @@ Page({
   _scrollToBottom() {
     if (this.data.messages.length === 0) return;
     const last = this.data.messages[this.data.messages.length - 1];
-    if (last && last.id) this.setData({ scrollToView: last.id });
+    if (last && last.id) this.setData({ scrollToView: last.id, scrollTop: 0 });
   },
 
   // -------------------------------------------------------------------------

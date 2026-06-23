@@ -486,7 +486,7 @@ Page({
       agentId: g.agentId,
       macAddress: g.virtualMAC,
       page: this._historyPage,
-      limit: 4,
+      limit: 15,
       createdBefore: this._sessionStartTime,
     };
 
@@ -516,7 +516,7 @@ Page({
       this._historyPage++;
       this._historyLoading = false;
 
-      if (list.length < 4) {
+      if (list.length < 15) {
         this._historyNoMore = true;
         this.setData({ messages: this._stampSeparators(messages), historyNoMore: true, historyLoading: false });
       } else {

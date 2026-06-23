@@ -67,9 +67,9 @@ Page({
       return;
     }
 
-    // 新通话：播放彩铃并模拟 2-8 秒呼叫等待
+    // 新通话：播放彩铃并模拟 3-8 秒呼叫等待
     this._startRingback();
-    const delay = 2000 + Math.floor(Math.random() * 6000);
+    const delay = 3000 + Math.floor(Math.random() * 6000);
     this._callTimer = setTimeout(() => {
       this._mgr.connect();
     }, delay);

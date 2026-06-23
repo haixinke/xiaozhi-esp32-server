@@ -4,7 +4,7 @@
  */
 
 // 基础 URL，可按需修改
-const BASE_URL = 'http://192.168.170.250:8002/xiaozhi';
+const BASE_URL = 'http://192.168.48.81:8002/xiaozhi';
 
 // const BASE_URL = 'https://chat-api.benniu.tech/xiaozhi';
 

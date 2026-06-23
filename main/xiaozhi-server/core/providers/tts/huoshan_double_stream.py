@@ -531,7 +531,7 @@ class TTSProvider(TTSProviderBase):
                         if self.resource_type:
                             tts_text = self.get_tts_text(self.conn.sentence_id)
                             if tts_text:
-                                logger.bind(tag=TAG).info(
+                                logger.bind(tag=TAG).debug(
                                     f"句子语音生成成功： {tts_text}"
                                 )
                                 self.tts_audio_queue.put(

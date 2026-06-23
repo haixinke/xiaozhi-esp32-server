@@ -215,3 +215,4 @@ graphify-out/
 scripts/run-build-xiaozhi.sh
 scripts/run-build-manager.sh
 scripts/run-build-web.sh
+scripts/run-mirror-funasr.sh

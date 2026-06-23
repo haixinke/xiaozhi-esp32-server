@@ -223,7 +223,7 @@ class MemoryProvider(MemoryProviderBase):
                     messages.append({"role": message.role, "content": content})
 
                 # 保存前日志
-                logger.bind(tag=TAG).info(f"""
+                logger.bind(tag=TAG).debug(f"""
 【PowerMem 保存记忆】开始
 User ID: {self.role_id}
 Session ID: {session_id or 'N/A'}
@@ -233,7 +233,7 @@ UserMemory Mode: {self.enable_user_profile}
 
                 # Add memory using PowerMem SDK
                 add_start = time.time()
-                logger.bind(tag=TAG).info(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages if messages else 'empty'}")
+                logger.bind(tag=TAG).debug(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages if messages else 'empty'}")
                 result = self.memory_client.add(
                     messages=messages,
                     user_id=self.role_id,
@@ -251,7 +251,7 @@ UserMemory Mode: {self.enable_user_profile}
                     logger.bind(tag=TAG).debug(f"Async await took {await_time:.2f}s")
 
                 # 保存后日志 - 打印完整结果
-                logger.bind(tag=TAG).info(f"""
+                logger.bind(tag=TAG).debug(f"""
 【PowerMem 保存记忆】完成
 User ID: {self.role_id}
 Result: {json.dumps(result, ensure_ascii=False, indent=2) if result else 'None'}

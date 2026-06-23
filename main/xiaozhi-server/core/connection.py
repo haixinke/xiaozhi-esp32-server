@@ -949,7 +949,7 @@ class ConnectionHandler:
             )
 
             # [DEBUG] 打印完整 LLM 对话上下文（临时调试用，上线前删除）
-            self.logger.bind(tag=TAG).info(f"""
+            self.logger.bind(tag=TAG).debug(f"""
 ========== [DEBUG] LLM 完整对话上下文 ==========
 Session ID: {self.session_id}
 对话消息总数: {len(llm_dialogue)}
@@ -960,12 +960,12 @@ Session ID: {self.session_id}
                 role = msg.get("role", "unknown")
                 content = msg.get("content", "")
                 tool_calls = msg.get("tool_calls", None)
-                self.logger.bind(tag=TAG).info(f"[{i}] role={role} | content={content}")
+                self.logger.bind(tag=TAG).debug(f"[{i}] role={role} | content={content}")
                 if tool_calls:
                     self.logger.bind(tag=TAG).info(f"[{i}] tool_calls={json.dumps(tool_calls, ensure_ascii=False, indent=2)}")
             if functions is not None:
-                self.logger.bind(tag=TAG).info(f"========== [DEBUG] 可用工具列表 ==========\n{json.dumps(functions, ensure_ascii=False, indent=2)}")
-            self.logger.bind(tag=TAG).info("========== [DEBUG] LLM 对话上下文结束 ==========\n")
+                self.logger.bind(tag=TAG).debug(f"========== [DEBUG] 可用工具列表 ==========\n{json.dumps(functions, ensure_ascii=False, indent=2)}")
+            self.logger.bind(tag=TAG).debug("========== [DEBUG] LLM 对话上下文结束 ==========\n")
             # [DEBUG END]
 
             if self.intent_type == "function_call" and functions is not None:

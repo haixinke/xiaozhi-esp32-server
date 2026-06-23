@@ -5,7 +5,7 @@
  *
  * Responsibilities:
  *   - 维护通话状态机：idle → calling → connected → ended。
- *   - 维护通话时长、静音、免提状态。
+ *   - 维护通话时长、静音状态。
  *   - 提供状态变更订阅，供页面和组件同步。
  *
  * Lifecycle:
@@ -14,7 +14,6 @@
  *   // 2-8s later
  *   mgr.connect();
  *   mgr.toggleMute();
- *   mgr.toggleSpeaker();
  *   mgr.hangup();
  * --------------------------------------------------------------------------
  */
@@ -32,7 +31,6 @@ class VoiceCallManager {
     this._state = STATE_IDLE;
     this._durationSeconds = 0;
     this._isMuted = false;
-    this._isSpeakerOn = true;
     this._startTime = null;
     this._recordRestartAt = null;
     this._listeners = new Set();
@@ -71,7 +69,6 @@ class VoiceCallManager {
       state: this._state,
       durationSeconds: this._durationSeconds,
       isMuted: this._isMuted,
-      isSpeakerOn: this._isSpeakerOn,
       startTime: this._startTime,
       recordRestartAt: this._recordRestartAt,
     };
@@ -102,7 +99,6 @@ class VoiceCallManager {
   startCall() {
     this._durationSeconds = 0;
     this._isMuted = false;
-    this._isSpeakerOn = true;
     this._startTime = null;
     this._setState(STATE_CALLING);
   }
@@ -124,11 +120,6 @@ class VoiceCallManager {
 
   toggleMute() {
     this._isMuted = !this._isMuted;
-    this._emit();
-  }
-
-  toggleSpeaker() {
-    this._isSpeakerOn = !this._isSpeakerOn;
     this._emit();
   }
 

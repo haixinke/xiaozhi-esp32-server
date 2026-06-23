@@ -3,35 +3,20 @@ const Module = require('module');
 
 let pageConfig = null;
 let setInnerAudioOptionCalls = [];
-let toastMessages = [];
-let managerState = { isSpeakerOn: true };
-let toggleCount = 0;
-let resetContextCount = 0;
-let setInnerAudioOptionShouldFail = false;
+let navigateBackCount = 0;
+let hangupCount = 0;
+let mutedState = false;
+let toggleMuteCount = 0;
 
 const originalWx = {
   setInnerAudioOption(options) {
     setInnerAudioOptionCalls.push(options);
-    if (setInnerAudioOptionShouldFail) {
-      if (options.fail) {
-        options.fail({ errMsg: 'setInnerAudioOption:fail' });
-      }
-      if (options.complete) {
-        options.complete();
-      }
-      return;
-    }
-    if (options.success) {
-      options.success();
-    }
-    if (options.complete) {
-      options.complete();
-    }
+    if (options.success) options.success();
   },
-  showToast(options) {
-    toastMessages.push(options);
+  showToast() {},
+  navigateBack() {
+    navigateBackCount += 1;
   },
-  navigateBack() {},
 };
 
 global.Page = function(config) {
@@ -57,16 +42,18 @@ Module._load = function(request, _parent, _isMain) {
   if (request === '../../utils/voice-call-manager') {
     return function() {
       return {
-        getState() { return managerState; },
-        toggleSpeaker() {
-          managerState.isSpeakerOn = !managerState.isSpeakerOn;
-          toggleCount += 1;
+        getState() {
+          return { state: 'calling', durationSeconds: 0, isMuted: mutedState };
         },
         onStateChange() {},
         offStateChange() {},
         setOnRecordRestart() {},
         setMedia() {},
-        hangup() {},
+        hangup() { hangupCount += 1; },
+        toggleMute() {
+          mutedState = !mutedState;
+          toggleMuteCount += 1;
+        },
       };
     };
   }
@@ -74,7 +61,7 @@ Module._load = function(request, _parent, _isMain) {
     return class MockAudioManager {
       constructor() {}
       ready() { return Promise.resolve(this); }
-      resetAudioContext() { resetContextCount += 1; }
+      startRecord() {}
       destroy() {}
     };
   }
@@ -84,7 +71,8 @@ Module._load = function(request, _parent, _isMain) {
       connect() {}
       onStateChange() {}
       offStateChange() {}
-      isConnected() { return false; }
+      isConnected() { return true; }
+      sendListenStart() {}
       destroy() {}
     };
   }
@@ -109,75 +97,40 @@ require('./voice-call');
     Object.assign(this.data || (this.data = {}), data);
   };
 
-  // Wire up the manager and audio manager directly to test onToggleSpeaker.
-  page._mgr = {
-    getState() { return managerState; },
-    toggleSpeaker() {
-      managerState.isSpeakerOn = !managerState.isSpeakerOn;
-      toggleCount += 1;
-    },
-  };
-  page.audioManager = { resetAudioContext() { resetContextCount += 1; } };
+  // 1. onLoad sets companion data and starts the call timer.
+  page.onLoad();
+  assert.strictEqual(page.data.companionName, '女友', 'companionName should be set');
+  assert.ok(page._callTimer, 'call timer should be started');
 
-  // 1. First toggle: speaker -> earpiece.
+  // 2. onCancelCall clears the timer, hangs up and navigates back.
+  page.onCancelCall();
+  assert.strictEqual(page._callTimer, null, 'call timer should be cleared');
+  assert.strictEqual(hangupCount, 1, 'hangup should be called on cancel');
+  assert.strictEqual(navigateBackCount, 1, 'navigateBack should be called on cancel');
+
+  // 3. onHangup hangs up and navigates back.
+  hangupCount = 0;
+  navigateBackCount = 0;
+  page.onHangup();
+  assert.strictEqual(hangupCount, 1, 'hangup should be called on hangup');
+  assert.strictEqual(navigateBackCount, 1, 'navigateBack should be called on hangup');
+
+  // 4. Mute toggle works.
+  mutedState = false;
+  toggleMuteCount = 0;
+  page.onToggleMute();
+  assert.strictEqual(toggleMuteCount, 1, 'toggleMute should be called');
+  assert.strictEqual(mutedState, true, 'mute state should toggle on');
+
+  page.onToggleMute();
+  assert.strictEqual(toggleMuteCount, 2, 'toggleMute should be called again');
+  assert.strictEqual(mutedState, false, 'mute state should toggle off');
+
+  // 5. _startMedia defaults to speaker mode.
   setInnerAudioOptionCalls.length = 0;
-  toastMessages.length = 0;
-  toggleCount = 0;
-  resetContextCount = 0;
-  setInnerAudioOptionShouldFail = false;
-  managerState.isSpeakerOn = true;
-
-  page.onToggleSpeaker();
-  assert.strictEqual(setInnerAudioOptionCalls.length, 1, 'setInnerAudioOption should be called once');
-  assert.strictEqual(setInnerAudioOptionCalls[0].speakerOn, false, 'should request earpiece');
-  assert.strictEqual(toggleCount, 1, 'toggleSpeaker should be called on success');
-  assert.strictEqual(managerState.isSpeakerOn, false, 'state should be earpiece');
-  assert.strictEqual(resetContextCount, 1, 'resetAudioContext should be called on success');
-  assert.strictEqual(page._speakerTogglePending, false, 'pending flag should be cleared');
-
-  // 2. Second toggle: earpiece -> speaker.
-  page.onToggleSpeaker();
-  assert.strictEqual(setInnerAudioOptionCalls.length, 2, 'setInnerAudioOption should be called again');
-  assert.strictEqual(setInnerAudioOptionCalls[1].speakerOn, true, 'should request speaker');
-  assert.strictEqual(toggleCount, 2, 'toggleSpeaker should be called again');
-  assert.strictEqual(managerState.isSpeakerOn, true, 'state should be speaker');
-  assert.strictEqual(resetContextCount, 2, 'resetAudioContext should be called again');
-
-  // 3. Pending toggle is ignored.
-  page._speakerTogglePending = true;
-  page.onToggleSpeaker();
-  assert.strictEqual(setInnerAudioOptionCalls.length, 2, 'no new setInnerAudioOption call while pending');
-  page._speakerTogglePending = false;
-
-  // 4. Failure path: state does not change, toast is shown, pending flag cleared.
-  setInnerAudioOptionShouldFail = true;
-  managerState.isSpeakerOn = true;
-  toggleCount = 0;
-  resetContextCount = 0;
-
-  page.onToggleSpeaker();
-  assert.strictEqual(setInnerAudioOptionCalls.length, 3, 'setInnerAudioOption should be called on failure test');
-  assert.strictEqual(toggleCount, 0, 'toggleSpeaker should not be called on failure');
-  assert.strictEqual(managerState.isSpeakerOn, true, 'state should remain unchanged on failure');
-  assert.strictEqual(resetContextCount, 0, 'resetAudioContext should not be called on failure');
-  assert.strictEqual(toastMessages.length, 1, 'toast should be shown on failure');
-  assert.strictEqual(page._speakerTogglePending, false, 'pending flag should be cleared on failure');
-
-  // 5. Fallback path when wx.setInnerAudioOption is unavailable.
-  setInnerAudioOptionShouldFail = false;
-  const savedSetInnerAudioOption = global.wx.setInnerAudioOption;
-  delete global.wx.setInnerAudioOption;
-  managerState.isSpeakerOn = true;
-  toggleCount = 0;
-  resetContextCount = 0;
-
-  page.onToggleSpeaker();
-  assert.strictEqual(toggleCount, 1, 'toggleSpeaker should be called in fallback');
-  assert.strictEqual(managerState.isSpeakerOn, false, 'state should toggle in fallback');
-  assert.strictEqual(resetContextCount, 1, 'resetAudioContext should be called in fallback');
-  assert.strictEqual(page._speakerTogglePending, false, 'pending flag should be cleared in fallback');
-
-  global.wx.setInnerAudioOption = savedSetInnerAudioOption;
+  page._startMedia();
+  assert.strictEqual(setInnerAudioOptionCalls.length, 1, 'setInnerAudioOption should be called on media start');
+  assert.strictEqual(setInnerAudioOptionCalls[0].speakerOn, true, 'speakerOn should default to true');
 
   console.log('voice-call.test.js: ALL PASS');
 })();

@@ -34,12 +34,6 @@
           </view>
           <text class="control-label">{{isMuted ? '静音中' : '静音'}}</text>
         </view>
-        <view class="control-btn" bindtap="onToggleSpeaker" hover-class="control-btn-hover" hover-stay-time="80">
-          <view class="control-icon-wrap">
-            <image class="control-icon" src="{{isSpeakerOn ? (darkMode ? '/images/speaker-dark.png' : '/images/speaker.png') : (darkMode ? '/images/earpiece-dark.png' : '/images/earpiece.png')}}" mode="aspectFit" />
-          </view>
-          <text class="control-label">{{isSpeakerOn ? '免提' : '听筒'}}</text>
-        </view>
       </view>
       <view class="control-row control-row-main">
         <view class="call-btn call-btn-hangup" bindtap="onHangup" hover-class="call-btn-hover" hover-stay-time="80">

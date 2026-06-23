@@ -28,7 +28,6 @@ Page({
     formattedDuration: '00:00',
     callStatusText: '正在呼叫…',
     isMuted: false,
-    isSpeakerOn: true,
   },
 
   _mgr: null,
@@ -91,7 +90,6 @@ Page({
       callState: state.state,
       formattedDuration: formatDuration(state.durationSeconds),
       isMuted: state.isMuted,
-      isSpeakerOn: state.isSpeakerOn,
       callStatusText: this._computeStatusText(state.state),
     });
   },
@@ -134,6 +132,16 @@ Page({
 
   _startMedia() {
     const g = app.globalData;
+
+    // 默认使用免提（扬声器）播放，禁止用户切换。
+    if (wx.setInnerAudioOption) {
+      wx.setInnerAudioOption({
+        speakerOn: true,
+        fail: (err) => {
+          logger.warn('[VoiceCall] setInnerAudioOption failed:', err);
+        },
+      });
+    }
 
     this.audioManager = new AudioManager({
       onAudioFrame: (frame) => {
@@ -290,44 +298,6 @@ Page({
 
   onToggleMute() {
     this._mgr.toggleMute();
-  },
-
-  _speakerTogglePending: false,
-
-  onToggleSpeaker() {
-    if (this._speakerTogglePending) return;
-    this._speakerTogglePending = true;
-
-    const next = !this._mgr.getState().isSpeakerOn;
-    const finish = () => {
-      this._speakerTogglePending = false;
-    };
-    const applyRoute = () => {
-      this._mgr.toggleSpeaker();
-      // WebAudioContext does not observe wx.setInnerAudioOption route changes
-      // while it is alive; reset the context so the next frame is scheduled on
-      // a fresh context that picks up the new route.
-      if (this.audioManager) {
-        this.audioManager.resetAudioContext();
-      }
-      finish();
-    };
-    if (wx.setInnerAudioOption) {
-      wx.setInnerAudioOption({
-        speakerOn: next,
-        success: () => {
-          logger.log('audio output switched, speakerOn=' + next);
-          applyRoute();
-        },
-        fail: (err) => {
-          logger.warn('setInnerAudioOption failed:', err);
-          wx.showToast({ title: '切换失败，请重试', icon: 'none' });
-          finish();
-        },
-      });
-    } else {
-      applyRoute();
-    }
   },
 
   onBackToChat() {

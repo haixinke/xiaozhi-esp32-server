@@ -17,11 +17,6 @@ const VoiceCallManager = require('./voice-call-manager');
   mgr.toggleMute();
   assert.strictEqual(mgr.getState().isMuted, false);
 
-  mgr.toggleSpeaker();
-  assert.strictEqual(mgr.getState().isSpeakerOn, false);
-  mgr.toggleSpeaker();
-  assert.strictEqual(mgr.getState().isSpeakerOn, true);
-
   mgr.hangup();
   assert.strictEqual(mgr.getState().state, VoiceCallManager.STATE_ENDED);
 

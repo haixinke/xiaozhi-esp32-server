@@ -3,7 +3,7 @@
   <view class="cb-bubble">
     <view class="cb-glow"></view>
     <view class="cb-content">
-      <text class="cb-text" selectable="{{!typing}}">{{content}}</text>
+      <text class="cb-text" user-select="{{typing ? 'none' : 'text'}}">{{content}}</text>
       <view wx:if="{{role === 'assistant' && audioId}}" class="cb-audio" bindtap="_onPlayTap">
         <view class="cb-audio-icon {{audioPlaying ? 'cb-audio-playing' : ''}}">
           <view wx:if="{{audioPlaying}}" class="cb-audio-bars">

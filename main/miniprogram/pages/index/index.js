@@ -108,14 +108,17 @@ Page({
   _parseTime(value) {
     if (!value) return Date.now();
     if (typeof value === 'number') return value;
-    const t = new Date(value).getTime();
+    // iOS 不支持 "yyyy-MM-dd HH:mm:ss" 格式，需要替换成 ISO 8601 的 "T" 分隔格式
+    const normalized = value.replace(' ', 'T');
+    const t = new Date(normalized).getTime();
     return isNaN(t) ? Date.now() : t;
   },
 
   // 判断两个时间戳是否落在同一天
   _isSameDay(a, b) {
     if (!a || !b) return false;
-    const da = new Date(a), db = new Date(b);
+    const da = new Date(this._parseTime(a));
+    const db = new Date(this._parseTime(b));
     return da.getFullYear() === db.getFullYear()
       && da.getMonth() === db.getMonth()
       && da.getDate() === db.getDate();
@@ -326,13 +329,13 @@ Page({
       const topBarHeight = (res[0] && res[0].height) || 0;
       const inputBarHeight = (res[1] && res[1].height) || 0;
       const scrollViewHeight = windowHeight - topBarHeight - inputBarHeight;
-      if (scrollViewHeight > 0) {
-        this.setData({ scrollViewHeight });
-      } else {
-        // 兜底：使用窗口高度的70%作为默认值
-        this.setData({ scrollViewHeight: windowHeight * 0.7 });
-      }
-      this.setData({ floatingBallTop: windowHeight * 0.55 });
+      const finalHeight = scrollViewHeight > 0 ? scrollViewHeight : windowHeight * 0.7;
+      this.setData({ scrollViewHeight: finalHeight, floatingBallTop: windowHeight * 0.55 }, () => {
+        // 有长期记忆权限时，进入页面自动加载一批历史消息，让列表可滚动
+        if (this.data.hasLongTermMemory) {
+          this._loadHistoryMessages();
+        }
+      });
     });
   },
 
@@ -463,7 +466,7 @@ Page({
 
   _addMessage(role, content) {
     const id = 'msg-' + (this._msgIdSeed++);
-    const messages = this.data.messages.concat([{ id, role, content, time: Date.now() }]);
+    const messages = this.data.messages.concat([{ id, role, content, audioId: '', time: Date.now() }]);
     this.setData({ messages: this._stampSeparators(messages), scrollToView: id, scrollTop: 0 });
   },
 
@@ -562,7 +565,7 @@ Page({
           id: 'hist-' + this._historyPage + '-' + idx + '-' + (this._historyNonce++),
           role: item.chatType === 1 ? 'user' : 'assistant',
           content: item.content,
-          audioId: item.audioId || null,
+          audioId: item.audioId || '',
           time: this._parseTime(item.createdAt),
         }));
 
@@ -583,17 +586,17 @@ Page({
         }
 
         this.setData(nextData, () => {
-          if (!anchorId) return;
-          // 等 refresher 回弹动画结束后再校正位置，避免与回弹冲突产生晃动
-          const needDelay = this._scrollTop < 0;
-          setTimeout(() => {
+          if (anchorId) {
             this._queryMessageOffset(anchorId, (newOffset) => {
               const newScrollTop = newOffset - anchorViewportOffset;
               this.setData({ scrollWithAnimation: false, scrollTop: newScrollTop }, () => {
                 this.setData({ scrollWithAnimation: true });
               });
             });
-          }, needDelay ? 300 : 0);
+          } else {
+            // 初始进入页面加载历史时，滚动到最新消息（最底部）
+            this._scrollToBottom();
+          }
         });
       }).catch(() => {
         this._historyLoading = false;
@@ -615,7 +618,7 @@ Page({
     } else {
       // 第一个 chunk：立即创建气泡
       const id = 'msg-' + (this._msgIdSeed++);
-      const messages = this.data.messages.concat([{ id, role: 'assistant', content: text, typing: true, time: Date.now() }]);
+      const messages = this.data.messages.concat([{ id, role: 'assistant', content: text, typing: true, audioId: '', time: Date.now() }]);
       this._streamingIdx = messages.length - 1;
       this._streamingBuffer = text;
       this.setData({ messages: this._stampSeparators(messages), scrollToView: id, scrollTop: 0, chatState });
@@ -684,11 +687,6 @@ Page({
         this.wsManager.disconnect();
       } catch (_) {}
     }
-  },
-
-  // 下拉刷新事件处理（scroll-view refresher 触发）
-  onPullDownRefresh() {
-    this._onScrollToUpper();
   },
 
   onAvatarTap() {

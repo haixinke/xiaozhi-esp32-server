@@ -59,18 +59,10 @@
     show-scrollbar="false"
     scroll-into-view="{{scrollToView}}"
     scroll-top="{{scrollTop}}"
-    refresher-enabled="{{!historyNoMore}}"
-    refresher-threshold="{{80}}"
-    refresher-default-style="none"
-    refresher-background="transparent"
-    refresher-triggered="{{historyLoading}}"
-    bindrefresherrefresh="onPullDownRefresh"
+    upper-threshold="100"
     bindscroll="_onConversationScroll"
+    bindscrolltoupper="_onScrollToUpper"
   >
-    <!-- 自定义下拉刷新指示器 -->
-    <view slot="refresher" class="refresher-container">
-      <view class="refresher-spinner"></view>
-    </view>
 
     <view class="conversation-inner">
       <!-- 历史记录加载状态 -->
@@ -82,7 +74,7 @@
       <!-- 消息列表（含流式回复） -->
       <block wx:for="{{messages}}" wx:key="id">
         <view id="{{item.id}}">
-          <view wx:if="{{item.showTime}}" class="time-sep"><text class="time-sep-text">{{item.timeLabel}}</text></view>
+          <view wx:if="{{item.showTime}}" class="time-sep"><text class="time-sep-text" user-select="none">{{item.timeLabel}}</text></view>
           <chat-bubble role="{{item.role}}" content="{{item.content}}" typing="{{item.typing}}" audioId="{{item.audioId}}" darkMode="{{darkMode}}" />
         </view>
       </block>

@@ -180,23 +180,3 @@
 .dark .control-label {
   color: #e8e4e3;
 }
-
-.back-to-chat {
-  margin-top: 40rpx;
-  padding: 16rpx 32rpx;
-  border-radius: 32rpx;
-  background: rgba(134, 78, 90, 0.08);
-}
-
-.back-to-chat-hover {
-  background: rgba(134, 78, 90, 0.16);
-}
-
-.back-to-chat-text {
-  font-size: 26rpx;
-  color: #864e5a;
-}
-
-.dark .back-to-chat-text {
-  color: #e8e4e3;
-}

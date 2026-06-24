@@ -42,8 +42,5 @@
       </view>
     </view>
 
-    <view class="back-to-chat" bindtap="onBackToChat" hover-class="back-to-chat-hover" hover-stay-time="80">
-      <text class="back-to-chat-text">返回聊天</text>
-    </view>
   </view>
 </view>

@@ -38,7 +38,6 @@ Page({
   _isUserSpeaking: false,
   _isAiSpeaking: false,
   _aiSpeakingTimer: null,
-  _returningToChat: false,
   _restartingRecord: false,
   _destroyed: false,
 
@@ -332,11 +331,6 @@ Page({
     this._mgr.toggleMute();
   },
 
-  onBackToChat() {
-    this._returningToChat = true;
-    wx.navigateBack();
-  },
-
   _cleanup() {
     this._destroyed = true;
     this._stopRingback();
@@ -350,12 +344,6 @@ Page({
     }
     if (this._mgr && this._unsubscribe) {
       this._mgr.offStateChange(this._unsubscribe);
-    }
-
-    if (this._returningToChat) {
-      // 返回聊天页保持通话：媒体由 VoiceCallManager 继续持有
-      this._returningToChat = false;
-      return;
     }
 
     this._cleanupResources();

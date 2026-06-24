@@ -467,7 +467,9 @@ Page({
   _addMessage(role, content) {
     const id = 'msg-' + (this._msgIdSeed++);
     const messages = this.data.messages.concat([{ id, role, content, audioId: '', time: Date.now() }]);
-    this.setData({ messages: this._stampSeparators(messages), scrollToView: id, scrollTop: 0 });
+    this.setData({ messages: this._stampSeparators(messages) }, () => {
+      this.setData({ scrollToView: id });
+    });
   },
 
   _onConversationScroll(e) {
@@ -621,7 +623,9 @@ Page({
       const messages = this.data.messages.concat([{ id, role: 'assistant', content: text, typing: true, audioId: '', time: Date.now() }]);
       this._streamingIdx = messages.length - 1;
       this._streamingBuffer = text;
-      this.setData({ messages: this._stampSeparators(messages), scrollToView: id, scrollTop: 0, chatState });
+      this.setData({ messages: this._stampSeparators(messages), chatState }, () => {
+        this.setData({ scrollToView: id });
+      });
     }
   },
 
@@ -666,7 +670,7 @@ Page({
   _scrollToBottom() {
     if (this.data.messages.length === 0) return;
     const last = this.data.messages[this.data.messages.length - 1];
-    if (last && last.id) this.setData({ scrollToView: last.id, scrollTop: 0 });
+    if (last && last.id) this.setData({ scrollToView: last.id });
   },
 
   // -------------------------------------------------------------------------

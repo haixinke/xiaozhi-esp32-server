@@ -4,9 +4,9 @@
  */
 
 // 基础 URL，可按需修改
-// const BASE_URL = 'http://192.168.4.12:8002/xiaozhi';
+const BASE_URL = 'http://192.168.48.81:8002/xiaozhi';
 
-const BASE_URL = 'https://chat-api.benniu.tech/xiaozhi';
+// const BASE_URL = 'https://chat-api.benniu.tech/xiaozhi';
 
 /**
  * 发起 HTTP 请求
@@ -16,7 +16,7 @@ const BASE_URL = 'https://chat-api.benniu.tech/xiaozhi';
  * @param {Object} [options.data] - 请求体
  * @param {Object} [options.header] - 额外请求头
  * @param {boolean} [options._isRetry=false] - 内部标记，防止无限重试
- * @returns {Promise<any>}
+ * @returns {Promise<any>}/
  */
 function request(options) {
   return new Promise((resolve, reject) => {

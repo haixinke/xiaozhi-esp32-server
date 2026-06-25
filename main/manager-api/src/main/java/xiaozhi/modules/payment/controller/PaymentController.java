@@ -11,9 +11,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import xiaozhi.common.exception.ErrorCode;
+import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.IpUtils;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.payment.dto.CreateOrderDTO;
+import xiaozhi.modules.payment.entity.PaymentOrderEntity;
 import xiaozhi.modules.payment.service.PaymentOrderService;
 import xiaozhi.modules.payment.vo.OrderVO;
 import xiaozhi.modules.payment.vo.PrepayVO;
@@ -56,6 +59,21 @@ public class PaymentController {
     public Result<Void> cancel(@PathVariable("outTradeNo") String outTradeNo) {
         Long userId = SecurityUser.getUserId();
         paymentOrderService.cancel(userId, outTradeNo);
+        return new Result<>();
+    }
+
+    @PostMapping("/order/{outTradeNo}/query")
+    @Operation(summary = "主动查询订单支付状态并触发履约")
+    public Result<Void> queryAndFulfill(@PathVariable("outTradeNo") String outTradeNo) {
+        Long userId = SecurityUser.getUserId();
+        PaymentOrderEntity order = paymentOrderService.loadByOutTradeNo(outTradeNo);
+        if (order == null) {
+            throw new RenException(ErrorCode.PAY_ORDER_NOT_FOUND);
+        }
+        if (!order.getUserId().equals(userId)) {
+            throw new RenException(ErrorCode.NO_PERMISSION);
+        }
+        paymentOrderService.queryAndFulfill(outTradeNo);
         return new Result<>();
     }
 }

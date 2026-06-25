@@ -21,6 +21,9 @@ public interface PaymentOrderService {
     /** 用户主动取消未支付订单 */
     void cancel(Long userId, String outTradeNo);
 
+    /** 主动查询微信支付订单状态并触发履约（内部使用/回调补偿） */
+    void queryAndFulfill(String outTradeNo);
+
     /** 内部使用：根据商户单号取实体（不校验所属，回调用） */
     PaymentOrderEntity loadByOutTradeNo(String outTradeNo);
 }

@@ -49,8 +49,18 @@ public interface PaymentOrderDao extends BaseMapper<PaymentOrderEntity> {
     List<PaymentOrderEntity> findPaidBefore(@Param("threshold") Date threshold, @Param("limit") int limit);
 
     /**
-     * 查询已过期的待支付订单（expire_at 早于当前时间且仍为 PENDING 状态）。
+     * 查询已过期或临近过期的待支付订单（PENDING 状态且 expire_at 早于当前时间）。
      */
     @Select("SELECT * FROM ai_payment_order WHERE status = 0 AND expire_at < #{now} LIMIT #{limit}")
     List<PaymentOrderEntity> findExpiredPending(@Param("now") Date now, @Param("limit") int limit);
+
+    /**
+     * 查询已创建一段时间但仍未支付的订单，用于主动查单兜底。
+     * 条件：PENDING 状态、创建时间早于 threshold、尚未过期。
+     */
+    @Select("SELECT * FROM ai_payment_order WHERE status = 0 AND created_at < #{threshold} " +
+            "AND expire_at > #{now} ORDER BY created_at ASC LIMIT #{limit}")
+    List<PaymentOrderEntity> findPendingForReconcile(@Param("threshold") Date threshold,
+                                                       @Param("now") Date now,
+                                                       @Param("limit") int limit);
 }

@@ -60,11 +60,11 @@ wechat:
 # 阿里云OSS配置
 aliyun:
   oss:
-    endpoint: ${ALIYUN_OSS_ENDPOINT:}
-    access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID:}
-    access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
-    bucket-name: ${ALIYUN_OSS_BUCKET_NAME:}
-    region: ${ALIYUN_OSS_REGION:}
+    endpoint: ${OSS_ENDPOINT:}
+    access-key-id: ${OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+    bucket-name: ${OSS_BUCKET_NAME:}
+    region: ${OSS_REGION:}
 
 # Spring Boot Actuator 健康检查端点，仅暴露 health/info
 management:

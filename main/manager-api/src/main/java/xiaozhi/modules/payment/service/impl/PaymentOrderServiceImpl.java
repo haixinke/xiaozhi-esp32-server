@@ -20,10 +20,12 @@ import xiaozhi.modules.payment.entity.PaymentOrderEntity;
 import xiaozhi.modules.payment.enums.OrderStatus;
 import xiaozhi.modules.payment.enums.PayChannel;
 import xiaozhi.modules.payment.enums.ProductType;
+import xiaozhi.modules.payment.service.FulfillmentDispatcher;
 import xiaozhi.modules.payment.service.PaymentOrderService;
 import xiaozhi.modules.payment.vo.OrderVO;
 import xiaozhi.modules.payment.vo.PrepayVO;
 import xiaozhi.modules.payment.wechat.WechatPayClient;
+import xiaozhi.modules.payment.wechat.WechatPayClient.QueryResult;
 import xiaozhi.modules.subscription.dao.SubscriptionPlanDao;
 import xiaozhi.modules.subscription.dao.UserSubscriptionDao;
 import xiaozhi.modules.subscription.entity.SubscriptionPlanEntity;
@@ -59,6 +61,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     private final WechatUserDao wechatUserDao;
     private final StringRedisTemplate stringRedisTemplate;
     private final PlatformTransactionManager transactionManager;
+    private final FulfillmentDispatcher fulfillmentDispatcher;
 
     /** 创建支付订单并调用支付通道预下单。 */
     @Override
@@ -255,6 +258,110 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
             return null;
         }
         return orderDao.selectOne(new QueryWrapper<PaymentOrderEntity>().eq("out_trade_no", outTradeNo));
+    }
+
+    /**
+     * 主动查询微信支付订单状态并触发履约。
+     * 用于回调失败时的补偿：小程序前端触发或定时任务兜底。
+     */
+    @Override
+    public void queryAndFulfill(String outTradeNo) {
+        PaymentOrderEntity order = loadOrderForQuery(outTradeNo);
+        QueryResult queryResult = queryWechatPay(outTradeNo);
+        if (!queryResult.isPaid()) {
+            log.info("主动查单确认订单未支付 outTradeNo={}", outTradeNo);
+            return;
+        }
+        validateQueryAmount(queryResult, order.getAmountFen());
+        advanceToPaidIfNeeded(order, queryResult);
+        fulfillIfNeeded(order);
+        log.info("主动查单履约成功 outTradeNo={}", outTradeNo);
+    }
+
+    /**
+     * 加载订单并校验是否允许查单履约。
+     */
+    private PaymentOrderEntity loadOrderForQuery(String outTradeNo) {
+        PaymentOrderEntity order = loadByOutTradeNo(outTradeNo);
+        if (order == null) {
+            log.warn("主动查单失败，订单不存在 outTradeNo={}", outTradeNo);
+            throw new RenException(ErrorCode.PAY_ORDER_NOT_FOUND);
+        }
+
+        Integer status = order.getStatus();
+        if (status != null && status == OrderStatus.FULFILLED) {
+            log.info("主动查单跳过，订单已履约 outTradeNo={}", outTradeNo);
+            return order;
+        }
+        if (status == null || (status != OrderStatus.PENDING && status != OrderStatus.PAID)) {
+            log.warn("主动查单跳过，订单状态不允许 outTradeNo={}, status={}", outTradeNo, status);
+            throw new RenException(ErrorCode.PAY_ORDER_STATUS_INVALID);
+        }
+        return order;
+    }
+
+    /**
+     * 调用微信支付查单接口。
+     */
+    private QueryResult queryWechatPay(String outTradeNo) {
+        QueryResult queryResult = wechatPayClient.queryOrder(outTradeNo);
+        if (!queryResult.isSuccess()) {
+            log.error("主动查单调用微信支付失败 outTradeNo={}, message={}", outTradeNo, queryResult.getMessage());
+            throw new RenException(ErrorCode.PAY_CHANNEL_NOT_AVAILABLE);
+        }
+        return queryResult;
+    }
+
+    /**
+     * 校验微信支付返回金额与订单金额一致。
+     */
+    private void validateQueryAmount(QueryResult queryResult, long expectedAmountFen) {
+        if (queryResult.getAmountFen() != expectedAmountFen) {
+            log.error("主动查单金额不一致 wxAmount={}, orderAmount={}",
+                    queryResult.getAmountFen(), expectedAmountFen);
+            throw new RenException(ErrorCode.PAY_ORDER_STATUS_INVALID);
+        }
+    }
+
+    /**
+     * 如果订单还是 PENDING，原子地推进到 PAID；已是 PAID 则跳过。
+     * 处理并发：markPaid 失败时重查状态，确认是 FULFILLED 则直接返回，是 PAID 则继续。
+     */
+    private void advanceToPaidIfNeeded(PaymentOrderEntity order, QueryResult queryResult) {
+        Integer status = order.getStatus();
+        if (status != null && status == OrderStatus.PAID) {
+            return;
+        }
+
+        int updated = orderDao.markPaid(order.getId(), new Date(), queryResult.getTransactionId());
+        if (updated <= 0) {
+            PaymentOrderEntity refreshed = orderDao.selectById(order.getId());
+            Integer refreshedStatus = refreshed != null ? refreshed.getStatus() : null;
+            if (refreshedStatus != null && refreshedStatus == OrderStatus.FULFILLED) {
+                log.info("主动查单跳过，并发线程已完成履约 outTradeNo={}", order.getOutTradeNo());
+                return;
+            }
+            if (refreshedStatus == null || refreshedStatus != OrderStatus.PAID) {
+                log.warn("主动查单 markPaid 失败，订单状态异常 outTradeNo={}", order.getOutTradeNo());
+                throw new RenException(ErrorCode.PAY_ORDER_STATUS_INVALID);
+            }
+        }
+    }
+
+    /**
+     * 在事务内执行履约，并原子地推进到 FULFILLED。
+     */
+    private void fulfillIfNeeded(PaymentOrderEntity order) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            PaymentOrderEntity refreshed = orderDao.selectById(order.getId());
+            Integer refreshedStatus = refreshed != null ? refreshed.getStatus() : null;
+            if (refreshedStatus != null && refreshedStatus == OrderStatus.FULFILLED) {
+                return;
+            }
+            fulfillmentDispatcher.dispatch(refreshed);
+            orderDao.markFulfilled(refreshed.getId(), new Date());
+        });
     }
 
     /**

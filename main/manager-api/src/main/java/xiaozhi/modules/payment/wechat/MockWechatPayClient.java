@@ -13,6 +13,7 @@ import xiaozhi.modules.sys.service.SysParamsService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 微信支付客户端 Mock 实现（仅本地联调/测试使用）。
@@ -33,6 +34,9 @@ import java.util.UUID;
 public class MockWechatPayClient implements WechatPayClient {
 
     private final SysParamsService sysParamsService;
+
+    /** Mock 模式下记录已支付订单，用于 queryOrder 本地联调 */
+    private final Map<String, QueryResult> mockPaidOrders = new ConcurrentHashMap<>();
 
     @Value("${wechat.miniprogram.appid:}")
     private String appidFallback;
@@ -102,12 +106,35 @@ public class MockWechatPayClient implements WechatPayClient {
             Long amt = json.getLong("amountFen");
             r.setAmountFen(amt != null ? amt : 0L);
             r.setMessage("mock notify parsed");
+
+            // 记录 mock 支付状态，便于 queryOrder 本地联调
+            QueryResult qr = new QueryResult();
+            qr.setSuccess(true);
+            qr.setPaid(true);
+            qr.setTransactionId(r.getTransactionId());
+            qr.setAmountFen(r.getAmountFen());
+            qr.setMessage("mock paid by notify");
+            mockPaidOrders.put(r.getOutTradeNo(), qr);
         } catch (Exception e) {
             log.warn("[mock-wechat-pay] parseNotify failed", e);
             r.setValid(false);
             r.setPaySuccess(false);
             r.setMessage("parse error: " + e.getMessage());
         }
+        return r;
+    }
+
+    @Override
+    public QueryResult queryOrder(String outTradeNo) {
+        QueryResult cached = mockPaidOrders.get(outTradeNo);
+        if (cached != null) {
+            log.info("[mock-wechat-pay] queryOrder 命中 mock 已支付记录 outTradeNo={}", outTradeNo);
+            return cached;
+        }
+        QueryResult r = new QueryResult();
+        r.setSuccess(true);
+        r.setPaid(false);
+        r.setMessage("mock not paid");
         return r;
     }
 

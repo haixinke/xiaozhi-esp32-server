@@ -12,6 +12,7 @@ import com.wechat.pay.java.service.payments.jsapi.model.Amount;
 import com.wechat.pay.java.service.payments.jsapi.model.CloseOrderRequest;
 import com.wechat.pay.java.service.payments.jsapi.model.Payer;
 import com.wechat.pay.java.service.payments.jsapi.model.PrepayWithRequestPaymentResponse;
+import com.wechat.pay.java.service.payments.jsapi.model.QueryOrderByOutTradeNoRequest;
 import com.wechat.pay.java.service.payments.model.Transaction;
 import com.wechat.pay.java.service.refund.RefundService;
 import com.wechat.pay.java.service.refund.model.AmountReq;
@@ -177,6 +178,32 @@ public class WechatPayV3Client implements WechatPayClient {
             result.setMessage("退款请求失败，请稍后重试");
         }
         return result;
+    }
+
+    /**
+     * 主动查询微信支付订单状态。
+     */
+    @Override
+    public QueryResult queryOrder(String outTradeNo) {
+        QueryResult r = new QueryResult();
+        try {
+            QueryOrderByOutTradeNoRequest req = new QueryOrderByOutTradeNoRequest();
+            req.setOutTradeNo(outTradeNo);
+            req.setMchid(props.getMchid());
+            Transaction tx = jsapiService.queryOrderByOutTradeNo(req);
+            r.setSuccess(true);
+            r.setPaid(tx.getTradeState() == Transaction.TradeStateEnum.SUCCESS);
+            r.setTransactionId(tx.getTransactionId());
+            r.setAmountFen(tx.getAmount() != null && tx.getAmount().getTotal() != null
+                    ? tx.getAmount().getTotal().longValue() : 0L);
+            r.setMessage("trade_state=" + tx.getTradeState());
+        } catch (Exception e) {
+            log.error("[wechat-pay-v3] queryOrder 失败 outTradeNo={}", outTradeNo, e);
+            r.setSuccess(false);
+            r.setPaid(false);
+            r.setMessage("query error: " + e.getMessage());
+        }
+        return r;
     }
 
     /**

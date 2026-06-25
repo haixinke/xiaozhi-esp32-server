@@ -9,6 +9,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import xiaozhi.modules.payment.dao.PaymentOrderDao;
 import xiaozhi.modules.payment.entity.PaymentOrderEntity;
 import xiaozhi.modules.payment.service.FulfillmentDispatcher;
+import xiaozhi.modules.payment.service.PaymentOrderService;
 
 import java.util.Date;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
  * 支付订单维护定时任务：
  * <ol>
  *   <li>重试已支付但履约超时的订单（PAID 状态且 paid_at 超过 5 分钟）</li>
+ *   <li>主动查询已创建一段时间的 PENDING 订单，若已支付则推进履约（回调丢失兜底）</li>
  *   <li>关闭已过期的待支付订单（PENDING 状态且 expire_at 已过期）</li>
  * </ol>
  */
@@ -31,8 +33,12 @@ public class PaymentOrderMaintenanceTask {
     /** 每次扫描最大处理订单数 */
     private static final int BATCH_LIMIT = 50;
 
+    /** 订单创建多久后才开始主动查单（毫秒）：3 分钟 */
+    private static final long RECONCILE_MIN_AGE_MS = 3 * 60 * 1000L;
+
     private final PaymentOrderDao orderDao;
     private final FulfillmentDispatcher fulfillmentDispatcher;
+    private final PaymentOrderService paymentOrderService;
     private final PlatformTransactionManager transactionManager;
 
     /**
@@ -68,6 +74,36 @@ public class PaymentOrderMaintenanceTask {
             }
         }
         log.info("PAID 订单履约重试完成：成功 {}，失败 {}", success, fail);
+    }
+
+    /**
+     * 每 5 分钟执行一次，主动查询已创建一段时间的 PENDING 订单。
+     * 若微信支付状态为已支付，则推进到 PAID 并履约，防止回调丢失导致订单错误超时。
+     */
+    @Scheduled(fixedDelay = 5 * 60 * 1000, initialDelay = 45 * 1000)
+    public void reconcilePendingOrders() {
+        Date now = new Date();
+        Date threshold = new Date(now.getTime() - RECONCILE_MIN_AGE_MS);
+        List<PaymentOrderEntity> orders = orderDao.findPendingForReconcile(threshold, now, BATCH_LIMIT);
+        if (orders.isEmpty()) {
+            return;
+        }
+        log.info("扫描到 {} 笔待查单 PENDING 订单，开始主动查询微信支付", orders.size());
+        int success = 0;
+        int fail = 0;
+        for (PaymentOrderEntity order : orders) {
+            try {
+                paymentOrderService.queryAndFulfill(order.getOutTradeNo());
+                success++;
+            } catch (Exception e) {
+                // queryAndFulfill 内部已记录详细日志；
+                // 这里只统计失败数量，单个失败不阻断批量处理
+                fail++;
+                log.warn("主动查单失败 orderId={}, outTradeNo={}: {}",
+                        order.getId(), order.getOutTradeNo(), e.getMessage());
+            }
+        }
+        log.info("PENDING 订单主动查单完成：成功 {}，失败 {}", success, fail);
     }
 
     /**

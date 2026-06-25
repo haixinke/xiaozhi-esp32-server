@@ -372,6 +372,13 @@ Page({
             }
           });
         });
+
+        // 主动触发后端查单，补偿微信异步回调可能丢失的情况
+        try {
+          await post('/payment/order/' + order.outTradeNo + '/query');
+        } catch (e) {
+          console.warn('[settings] 主动查单失败 outTradeNo=' + order.outTradeNo, e);
+        }
       }
 
       // 3. 轮询订单直到履约完成(FULFILLED)，确保服务端已把 agent 配置落库后再刷新

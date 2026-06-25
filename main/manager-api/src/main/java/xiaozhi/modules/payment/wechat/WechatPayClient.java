@@ -36,6 +36,11 @@ public interface WechatPayClient {
      */
     NotifyResult parseNotify(Map<String, String> headers, String body);
 
+    /**
+     * 主动查询订单支付状态。
+     */
+    QueryResult queryOrder(String outTradeNo);
+
     @Data
     class PrepayRequest {
         private String outTradeNo;
@@ -73,6 +78,17 @@ public interface WechatPayClient {
         /** 是否实际是支付成功事件 */
         private boolean paySuccess;
         private String outTradeNo;
+        private String transactionId;
+        private long amountFen;
+        private String message;
+    }
+
+    @Data
+    class QueryResult {
+        /** 查询是否成功（网络/签名层面的成功） */
+        private boolean success;
+        /** 订单是否已支付 */
+        private boolean paid;
         private String transactionId;
         private long amountFen;
         private String message;

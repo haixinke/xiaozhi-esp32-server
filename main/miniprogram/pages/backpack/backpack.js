@@ -227,6 +227,13 @@ Page({
             }
           });
         });
+
+        // 主动触发后端查单，补偿微信异步回调可能丢失的情况
+        try {
+          await post('/payment/order/' + order.outTradeNo + '/query');
+        } catch (e) {
+          console.warn('[backpack] 主动查单失败 outTradeNo=' + order.outTradeNo, e);
+        }
       }
 
       // 3. 轮询订单直到履约完成（区分 成功 / 失败 / 超时）

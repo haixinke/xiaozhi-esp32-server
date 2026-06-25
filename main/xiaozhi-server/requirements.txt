@@ -1,13 +1,12 @@
 # -*- coding:utf-8 -*-
-#--------- 本项目推荐环境是python3.12，以下暂时不推荐升级的依赖
-torch==2.2.2
-torchaudio==2.2.2
+#--------- 本项目推荐环境是python3.12
+# VAD 使用 onnxruntime 推理，不再需要 torch/torchaudio
+onnxruntime>=1.16.1
 numpy==1.26.4
 #--------- cozepy0.20.0要求websockets<15.0.0，以下暂时不推荐升级的依赖
 websockets==14.2
 #--------- 以下是可升级的依赖
 pyyml==0.0.2
-silero_vad==6.1.0
 opuslib_next==1.1.5
 pydub==0.25.1
 # 以下本地 ASR 相关依赖当前使用外部阿里 ASR 接口时不需要，

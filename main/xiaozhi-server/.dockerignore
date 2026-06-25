@@ -1,65 +1,41 @@
-# Python 缓存与编译产物
+# Python 缓存
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
 
 # 虚拟环境
 .venv/
 venv/
 env/
-ENV/
 
-# IDE / 编辑器
+# IDE
 .idea/
 .vscode/
-*.iml
-*.swp
+.claude/
 
-# 版本控制
-.git/
-.gitignore
-
-# 运行期目录与日志
+# 运行时数据（NAS 挂载）
+models/
+music/
+data/
 logs/
 tmp/
-*.log
-
-# 模型与数据（生产环境通过 NAS / Volume 挂载，不打入镜像）
-models/*
-!models/snakers4_silero-vad/
-!models/snakers4_silero-vad/**
-data/.config.yaml
-data/.wakeup_words.yaml
-data/*.db
-music/
-
-# 本地运行时生成的数据库与大型数据目录（包含稀疏文件，打入镜像会导致 chown 失败且镜像质量过大）
 oceanbase/
-memory/
-performance_tester/
-audit.log
 
-# 设备运行时生成的资源（唤醒词音频、绑定码语音等）
+# 运行时生成文件
+audit.log
+*.log
 config/assets/wakeup_words/
 config/assets/bind_code/
 
 # 测试与文档
-tests/
-test/
+performance_tester/
 docs/
 *.md
-!README.md
 
 # 构建产物
-dist/
-build/
-*.egg-info/
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Docker 自身
 Dockerfile
 .dockerignore
+docker-compose*.yml
+.DS_Store
+.git/
+.gitignore

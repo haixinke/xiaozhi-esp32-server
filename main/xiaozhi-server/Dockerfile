@@ -8,7 +8,7 @@ RUN set -e; \
         sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list; \
     fi \
     && apt-get update \
-    && apt-get install -y --no-install-recommends gcc ffmpeg libopus0 \
+    && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -35,21 +35,21 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --chown=app:app . .
 
+# 创建运行时所需目录（NAS 挂载点）
 RUN mkdir -p /app/models /app/data /app/tmp /app/music \
     && chown -R app:app /app \
     && chmod +x /app/start.sh
 
-# 使用 root 运行，以便读取 SAE ConfigMap 挂载的配置文件
-# USER app
-
 ENV PYTHONUNBUFFERED=1 \
     TZ=Asia/Shanghai \
     LOG_DIR=/app/tmp \
-    DATA_DIR=/app/data
+    DATA_DIR=/app/data \
+    NAS_MOUNT_PATH="" \
+    MODEL_DIR=/app/models
 
 EXPOSE 8000 8003
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
   CMD python -c "import socket,sys; s=socket.socket(); s.settimeout(3); s.connect(('127.0.0.1',8000)); s.close()" || exit 1
 
 CMD ["/app/start.sh"]

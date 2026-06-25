@@ -163,12 +163,12 @@ CREATE TABLE IF NOT EXISTS ai_payment_callback_log (
 -- 种子数据：3 档订阅
 INSERT INTO ai_subscription_plan (plan_code, plan_name, duration_days, price_fen, promo_price_fen, features, bonus_items, description, sort)
 VALUES
-('silver', '白银月卡', 30, 1990, 990,
- '["long_term_memory"]',
+('silver', '心动互联', 30, 1990, 990,
+ '["long_term_memory","voice_input"]',
  NULL,
- '长久记忆', 20),
+ '灵魂共鸣', 20),
 ('gold', '黄金月卡', 30, 3990, 1990,
- '["long_term_memory","voice_input","superpower","social_moments"]',
+ '["long_term_memory","voice_input","voice_call","superpower","social_moments"]',
  NULL,
  '全部权益：长久记忆 + 语音输入 + 超能力 + 朋友圈；', 30);
 

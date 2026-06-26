@@ -32,11 +32,12 @@ public class AgentChatAudioServiceImpl extends ServiceImpl<AiAgentChatAudioDao, 
     private final OssService ossService;
 
     @Override
-    public String saveAudio(byte[] audioData) {
+    public String saveAudio(byte[] audioData, String macAddress) {
         AssertUtils.isNull(audioData, ErrorCode.VOICEPRINT_AUDIO_EMPTY, "audioData");
         if (audioData.length == 0) {
             throw new RenException(ErrorCode.VOICEPRINT_AUDIO_EMPTY, "audioData");
         }
+        AssertUtils.isBlank(macAddress, ErrorCode.VOICEPRINT_AUDIO_EMPTY, "macAddress");
 
         AgentChatAudioEntity entity = new AgentChatAudioEntity();
 
@@ -44,7 +45,7 @@ public class AgentChatAudioServiceImpl extends ServiceImpl<AiAgentChatAudioDao, 
             // OSS模式：先save获取UUID，再上传到OSS
             entity.setAudio(null);
             save(entity);
-            String ossKey = OssService.buildAudioOssKey(entity.getId());
+            String ossKey = OssService.buildAudioOssKey(entity.getId(), macAddress);
             try {
                 ossService.upload(ossKey, audioData);
                 entity.setOssKey(ossKey);

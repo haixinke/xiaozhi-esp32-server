@@ -43,6 +43,9 @@ import xiaozhi.modules.agent.entity.AgentChatAudioEntity;
 @DisplayName("AgentChatAudioServiceImpl 测试")
 class AgentChatAudioServiceImplTest {
 
+    private static final String MAC_ADDRESS = "AA:BB:CC:DD:EE:FF";
+    private static final String OSS_KEY = "chat-audio/" + MAC_ADDRESS + "/audio-123.wav";
+
     @Mock
     private AiAgentChatAudioDao baseMapper;
 
@@ -81,13 +84,13 @@ class AgentChatAudioServiceImplTest {
     void saveAudio_ossEnabled_uploadsToOss() {
         byte[] audioData = new byte[] { 1, 2, 3 };
         when(ossService.isEnabled()).thenReturn(true);
-        when(ossService.upload(any(), eq(audioData))).thenReturn("chat-audio/audio-123.wav");
+        when(ossService.upload(any(), eq(audioData))).thenReturn(OSS_KEY);
 
-        String audioId = audioService.saveAudio(audioData);
+        String audioId = audioService.saveAudio(audioData, MAC_ADDRESS);
 
         assertThat(audioId).isEqualTo("audio-123");
         verify(baseMapper).insert(any(AgentChatAudioEntity.class));
-        verify(ossService).upload("chat-audio/audio-123.wav", audioData);
+        verify(ossService).upload(OSS_KEY, audioData);
         verify(baseMapper).updateById(any(AgentChatAudioEntity.class));
     }
 
@@ -98,7 +101,7 @@ class AgentChatAudioServiceImplTest {
         when(ossService.isEnabled()).thenReturn(true);
         when(ossService.upload(any(), eq(audioData))).thenThrow(new ClientException("upload failed"));
 
-        String audioId = audioService.saveAudio(audioData);
+        String audioId = audioService.saveAudio(audioData, MAC_ADDRESS);
 
         assertThat(audioId).isEqualTo("audio-123");
         verify(baseMapper).updateById(any(AgentChatAudioEntity.class));
@@ -110,7 +113,7 @@ class AgentChatAudioServiceImplTest {
         byte[] audioData = new byte[] { 1, 2, 3 };
         when(ossService.isEnabled()).thenReturn(false);
 
-        String audioId = audioService.saveAudio(audioData);
+        String audioId = audioService.saveAudio(audioData, MAC_ADDRESS);
 
         assertThat(audioId).isEqualTo("audio-123");
         verify(ossService, never()).upload(any(), any());
@@ -120,7 +123,7 @@ class AgentChatAudioServiceImplTest {
     @Test
     @DisplayName("saveAudio - null数据抛出异常")
     void saveAudio_nullData_throwsException() {
-        assertThatThrownBy(() -> audioService.saveAudio(null))
+        assertThatThrownBy(() -> audioService.saveAudio(null, MAC_ADDRESS))
                 .isInstanceOf(RenException.class)
                 .satisfies(ex -> assertThat(((RenException) ex).getCode()).isEqualTo(ErrorCode.VOICEPRINT_AUDIO_EMPTY));
     }
@@ -128,7 +131,15 @@ class AgentChatAudioServiceImplTest {
     @Test
     @DisplayName("saveAudio - 空数组抛出异常")
     void saveAudio_emptyData_throwsException() {
-        assertThatThrownBy(() -> audioService.saveAudio(new byte[0]))
+        assertThatThrownBy(() -> audioService.saveAudio(new byte[0], MAC_ADDRESS))
+                .isInstanceOf(RenException.class)
+                .satisfies(ex -> assertThat(((RenException) ex).getCode()).isEqualTo(ErrorCode.VOICEPRINT_AUDIO_EMPTY));
+    }
+
+    @Test
+    @DisplayName("saveAudio - 空macAddress抛出异常")
+    void saveAudio_blankMacAddress_throwsException() {
+        assertThatThrownBy(() -> audioService.saveAudio(new byte[] { 1, 2, 3 }, "  "))
                 .isInstanceOf(RenException.class)
                 .satisfies(ex -> assertThat(((RenException) ex).getCode()).isEqualTo(ErrorCode.VOICEPRINT_AUDIO_EMPTY));
     }
@@ -147,10 +158,10 @@ class AgentChatAudioServiceImplTest {
     @DisplayName("getAudio - 有oss_key且OSS启用时从OSS下载")
     void getAudio_ossKeyEnabled_downloadsFromOss() {
         byte[] ossData = new byte[] { 4, 5, 6 };
-        AgentChatAudioEntity entity = createEntity("audio-123", "chat-audio/audio-123.wav", null);
+        AgentChatAudioEntity entity = createEntity("audio-123", OSS_KEY, null);
         when(baseMapper.selectById("audio-123")).thenReturn(entity);
         when(ossService.isEnabled()).thenReturn(true);
-        when(ossService.download("chat-audio/audio-123.wav")).thenReturn(ossData);
+        when(ossService.download(OSS_KEY)).thenReturn(ossData);
 
         byte[] result = audioService.getAudio("audio-123");
 
@@ -174,10 +185,10 @@ class AgentChatAudioServiceImplTest {
     @DisplayName("getAudio - OSS下载失败时回退到BLOB")
     void getAudio_ossDownloadFailed_fallsBackToBlob() {
         byte[] blobData = new byte[] { 7, 8, 9 };
-        AgentChatAudioEntity entity = createEntity("audio-123", "chat-audio/audio-123.wav", blobData);
+        AgentChatAudioEntity entity = createEntity("audio-123", OSS_KEY, blobData);
         when(baseMapper.selectById("audio-123")).thenReturn(entity);
         when(ossService.isEnabled()).thenReturn(true);
-        when(ossService.download("chat-audio/audio-123.wav")).thenThrow(new ClientException("download failed"));
+        when(ossService.download(OSS_KEY)).thenThrow(new ClientException("download failed"));
 
         byte[] result = audioService.getAudio("audio-123");
 
@@ -188,7 +199,7 @@ class AgentChatAudioServiceImplTest {
     @DisplayName("getAudio - OSS禁用时返回BLOB")
     void getAudio_ossDisabled_returnsBlob() {
         byte[] blobData = new byte[] { 7, 8, 9 };
-        AgentChatAudioEntity entity = createEntity("audio-123", "chat-audio/audio-123.wav", blobData);
+        AgentChatAudioEntity entity = createEntity("audio-123", OSS_KEY, blobData);
         when(baseMapper.selectById("audio-123")).thenReturn(entity);
         when(ossService.isEnabled()).thenReturn(false);
 

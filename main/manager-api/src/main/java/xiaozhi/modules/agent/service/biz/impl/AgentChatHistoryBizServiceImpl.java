@@ -91,11 +91,12 @@ public class AgentChatHistoryBizServiceImpl implements AgentChatHistoryBizServic
      */
     private String saveChatAudio(AgentChatHistoryReportDTO report) {
         String audioId = null;
+        String macAddress = report.getMacAddress();
 
         if (report.getAudioBase64() != null && !report.getAudioBase64().isEmpty()) {
             try {
                 byte[] audioData = Base64.getDecoder().decode(report.getAudioBase64());
-                audioId = agentChatAudioService.saveAudio(audioData);
+                audioId = agentChatAudioService.saveAudio(audioData, macAddress);
                 log.info("音频数据保存成功，audioId={}", audioId);
             } catch (Exception e) {
                 log.error("音频数据保存失败", e);

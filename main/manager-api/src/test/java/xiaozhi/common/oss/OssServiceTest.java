@@ -200,7 +200,23 @@ class OssServiceTest {
     @Test
     @DisplayName("buildAudioOssKey - 构造音频OSS键")
     void buildAudioOssKey_validId_returnsPath() {
-        String result = OssService.buildAudioOssKey("audio-123");
-        assertThat(result).isEqualTo("chat-audio/audio-123.wav");
+        String result = OssService.buildAudioOssKey("audio-123", "AA:BB:CC:DD:EE:FF");
+        assertThat(result).isEqualTo("chat-audio/AA:BB:CC:DD:EE:FF/audio-123.wav");
+    }
+
+    @Test
+    @DisplayName("buildAudioOssKey - 空audioId抛出异常")
+    void buildAudioOssKey_blankAudioId_throwsException() {
+        assertThatThrownBy(() -> OssService.buildAudioOssKey("  ", "AA:BB:CC:DD:EE:FF"))
+                .isInstanceOf(RenException.class)
+                .satisfies(ex -> assertThat(((RenException) ex).getCode()).isEqualTo(ErrorCode.OSS_DELETE_FILE_ERROR));
+    }
+
+    @Test
+    @DisplayName("buildAudioOssKey - 空macAddress抛出异常")
+    void buildAudioOssKey_blankMacAddress_throwsException() {
+        assertThatThrownBy(() -> OssService.buildAudioOssKey("audio-123", "  "))
+                .isInstanceOf(RenException.class)
+                .satisfies(ex -> assertThat(((RenException) ex).getCode()).isEqualTo(ErrorCode.OSS_DELETE_FILE_ERROR));
     }
 }

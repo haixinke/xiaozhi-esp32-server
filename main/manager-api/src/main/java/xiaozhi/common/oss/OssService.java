@@ -110,9 +110,12 @@ public class OssService {
      * 构造音频OSS对象键
      *
      * @param audioId 音频ID
+     * @param macAddress 设备MAC地址
      * @return OSS对象键
      */
-    public static String buildAudioOssKey(String audioId) {
-        return "chat-audio/" + audioId + ".wav";
+    public static String buildAudioOssKey(String audioId, String macAddress) {
+        AssertUtils.isBlank(audioId, ErrorCode.OSS_DELETE_FILE_ERROR, "audioId");
+        AssertUtils.isBlank(macAddress, ErrorCode.OSS_DELETE_FILE_ERROR, "macAddress");
+        return "chat-audio/" + macAddress + "/" + audioId + ".wav";
     }
 }

@@ -16,9 +16,10 @@ public interface AgentChatAudioService extends IService<AgentChatAudioEntity> {
      * 保存音频数据
      *
      * @param audioData 音频数据
+     * @param macAddress 设备MAC地址
      * @return 音频ID
      */
-    String saveAudio(byte[] audioData);
+    String saveAudio(byte[] audioData, String macAddress);
 
     /**
      * 获取音频数据

@@ -76,7 +76,7 @@ class AgentChatHistoryServiceImplTest {
     void deleteByAgentId_deleteAudio_cleansOssAndDb() {
         String agentId = "agent-123";
         List<String> audioIds = Arrays.asList("audio-1", "audio-2");
-        List<String> ossKeys = Arrays.asList("chat-audio/audio-1.wav", "chat-audio/audio-2.wav");
+        List<String> ossKeys = Arrays.asList("chat-audio/AA:BB:CC:DD:EE:FF/audio-1.wav", "chat-audio/AA:BB:CC:DD:EE:FF/audio-2.wav");
 
         when(baseMapper.getAudioIdsByAgentId(agentId)).thenReturn(audioIds);
         when(ossService.isEnabled()).thenReturn(true);
@@ -126,7 +126,7 @@ class AgentChatHistoryServiceImplTest {
     void deleteByAgentId_ossDeleteFailed_stillDeletesDb() {
         String agentId = "agent-123";
         List<String> audioIds = Arrays.asList("audio-1");
-        List<String> ossKeys = Arrays.asList("chat-audio/audio-1.wav");
+        List<String> ossKeys = Arrays.asList("chat-audio/AA:BB:CC:DD:EE:FF/audio-1.wav");
 
         when(baseMapper.getAudioIdsByAgentId(agentId)).thenReturn(audioIds);
         when(ossService.isEnabled()).thenReturn(true);

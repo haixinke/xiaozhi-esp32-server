@@ -2,6 +2,7 @@ package xiaozhi.modules.companion.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -254,37 +255,42 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
 
     @Override
     public void refreshAllMoods() {
-        List<CompanionEntity> companions = companionDao.selectList(null);
-        if (companions == null || companions.isEmpty()) {
-            log.info("没有需要刷新心情的伴侣");
-            return;
-        }
+        long pageSize = 500L;
+        long page = 1L;
+        long totalSuccess = 0;
+        long totalFailed = 0;
 
-        log.info("开始刷新伴侣今日心情，总数={}", companions.size());
-        int success = 0;
-        int failed = 0;
+        log.info("开始刷新伴侣今日心情");
+        while (true) {
+            Page<CompanionEntity> pageResult = companionDao.selectPage(new Page<>(page, pageSize), null);
+            List<CompanionEntity> companions = pageResult.getRecords();
+            if (companions == null || companions.isEmpty()) {
+                break;
+            }
 
-        for (CompanionEntity companion : companions) {
-            try {
-                CompanionMood newMood = CompanionMood.random();
-                companion.setMood(newMood.name());
-                companionDao.updateById(companion);
+            for (CompanionEntity companion : companions) {
+                try {
+                    companion.setMood(CompanionMood.random().name());
+                    companionDao.updateById(companion);
 
-                String agentId = deviceService.getAgentIdByDeviceId(companion.getDeviceId());
-                if (agentId != null && !agentId.isBlank()) {
-                    AgentEntity agent = agentService.selectById(agentId);
-                    if (agent != null) {
+                    String agentId = deviceService.getAgentIdByDeviceId(companion.getDeviceId());
+                    if (agentId != null && !agentId.isBlank()) {
                         doSyncPromptToAgent(agentId, companion);
                     }
+                    totalSuccess++;
+                } catch (Exception e) {
+                    totalFailed++;
+                    log.warn("刷新伴侣心情失败，companionId={}: {}", companion.getId(), e.getMessage());
                 }
-                success++;
-            } catch (Exception e) {
-                failed++;
-                log.warn("刷新伴侣心情失败，companionId={}: {}", companion.getId(), e.getMessage());
             }
+
+            if (pageResult.getCurrent() * pageSize >= pageResult.getTotal()) {
+                break;
+            }
+            page++;
         }
 
-        log.info("伴侣今日心情刷新完成，成功={}，失败={}", success, failed);
+        log.info("伴侣今日心情刷新完成，成功={}，失败={}", totalSuccess, totalFailed);
     }
 
     @Override

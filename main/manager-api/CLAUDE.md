@@ -112,6 +112,19 @@ xiaozhi
 - 校验分组：`AddGroup`、`UpdateGroup`、`DefaultGroup`。
 - 实体/DTO/VO 中广泛使用 Lombok `@Data`。
 
+## 开发约定
+
+### 定时任务大数据处理铁律
+
+**业务定时任务需要大量处理数据时，必须采用批量/分页方式，禁止一次性全表查询加载到内存。**
+
+- 使用 MyBatis-Plus `Page` 分页查询，默认单页大小不超过 500 条
+- 单条记录处理失败必须捕获异常，不得影响同页其他记录
+- 优先在数据库层完成批量更新；确需在应用层更新时，逐条处理并配合分页
+- 日志必须记录总处理数、成功数、失败数，便于排查
+
+反例：`List<Entity> all = dao.selectList(null)` 一次性加载全表。
+
 ## 业务文档
 
 - [订阅、道具、微信支付技术方案](docs/companion-subscription-items-payment.md) — 套餐订阅（青铜/白银/黄金）、道具购买（SKU+库存+核销）、微信支付 V3 JSAPI 的后端设计与实现参考。

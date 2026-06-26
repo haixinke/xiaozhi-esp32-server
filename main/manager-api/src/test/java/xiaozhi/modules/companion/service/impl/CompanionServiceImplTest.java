@@ -28,6 +28,7 @@ import xiaozhi.modules.security.user.SecurityUser;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.transaction.PlatformTransactionManager;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -161,11 +162,14 @@ class CompanionServiceImplTest {
     }
 
     @Test
-    @DisplayName("refreshAllMoods() 为所有伴侣刷新心情并同步提示词")
+    @DisplayName("refreshAllMoods() 分页刷新所有伴侣心情并同步提示词")
     void refreshAllMoods_updatesAllCompanionsAndSyncs() {
         CompanionEntity c1 = companionEntity(1L, 100L, "device-1", "CALM");
         CompanionEntity c2 = companionEntity(2L, 101L, "device-2", "JOY");
-        when(companionDao.selectList(any())).thenReturn(List.of(c1, c2));
+        Page<CompanionEntity> page = new Page<>(1, 500);
+        page.setRecords(List.of(c1, c2));
+        page.setTotal(2);
+        when(companionDao.selectPage(any(Page.class), any())).thenReturn(page);
 
         when(deviceService.getAgentIdByDeviceId("device-1")).thenReturn("agent-1");
         when(deviceService.getAgentIdByDeviceId("device-2")).thenReturn("agent-2");
@@ -185,7 +189,10 @@ class CompanionServiceImplTest {
     void refreshAllMoods_missingAgent_skipsAndContinues() {
         CompanionEntity c1 = companionEntity(1L, 100L, "device-1", "CALM");
         CompanionEntity c2 = companionEntity(2L, 101L, "device-2", "JOY");
-        when(companionDao.selectList(any())).thenReturn(List.of(c1, c2));
+        Page<CompanionEntity> page = new Page<>(1, 500);
+        page.setRecords(List.of(c1, c2));
+        page.setTotal(2);
+        when(companionDao.selectPage(any(Page.class), any())).thenReturn(page);
 
         when(deviceService.getAgentIdByDeviceId("device-1")).thenReturn(null);
         when(deviceService.getAgentIdByDeviceId("device-2")).thenReturn("agent-2");

@@ -213,6 +213,33 @@
   background: rgba(184, 134, 11, 0.1);
 }
 
+/* --- 状态 pill --- */
+.bond-status-row {
+  display: flex;
+  gap: 16rpx;
+  justify-content: center;
+  margin-top: 24rpx;
+  flex-wrap: wrap;
+}
+
+.bond-status-pill {
+  padding: 10rpx 24rpx;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  line-height: 1.4;
+  letter-spacing: 0.5rpx;
+}
+
+.bond-status-menstrual {
+  background: rgba(134, 78, 90, 0.1);
+  color: #864e5a;
+}
+
+.bond-status-mood {
+  background: rgba(134, 78, 90, 0.08);
+  color: #864e5a;
+}
+
 /* --- 功能入口（并列卡片） --- */
 .entry-row {
   display: flex;
@@ -953,6 +980,16 @@ switch {
 .dark .bond-gold {
   color: #daa520;
   background: rgba(184, 134, 11, 0.15);
+}
+
+.dark .bond-status-menstrual {
+  background: rgba(212, 115, 122, 0.15);
+  color: #d4a0a6;
+}
+
+.dark .bond-status-mood {
+  background: rgba(212, 115, 122, 0.12);
+  color: #d4a0a6;
 }
 
 .dark .entry-card {

@@ -13,12 +13,29 @@ function featureLabel(code) {
   return labels[code] || code;
 }
 
+function moodLabel(code) {
+  var labels = {
+    'JOY': '愉快',
+    'CALM': '平静',
+    'EXCITEMENT': '兴奋',
+    'CURIOSITY': '好奇',
+    'CARE': '关怀',
+    'ANXIETY': '焦虑',
+    'FRUSTRATION': '沮丧',
+    'FATIGUE': '疲惫'
+  };
+  return labels[code] || code;
+}
+
 Page({
   data: {
     darkMode: getTheme(),
     // 羁绊面板
     companionAvatar: '',
     userAvatar: '/images/user-default.png',
+    menstrualStatus: null,
+    mood: null,
+    moodLabel: '',
     planCode: null,
     identityName: '普通陪伴',
     // 契约浮窗（购买）
@@ -50,6 +67,7 @@ Page({
       userAvatar: wx.getStorageSync('userAvatar') || '/images/user-default.png'
     });
     this.loadCompanionAvatar();
+    this.loadCompanionStatus();
     this.loadSubscription();
 
     // 从语音通话等入口跳转来时，自动打开契约购买浮窗
@@ -64,6 +82,16 @@ Page({
     var app = getApp();
     this.setData({
       companionAvatar: app.globalData.companionAvatar || '/images/avatar-default.png'
+    });
+  },
+
+  loadCompanionStatus() {
+    var app = getApp();
+    var mood = app.globalData.companionMood || null;
+    this.setData({
+      menstrualStatus: app.globalData.companionMenstrualStatus || null,
+      mood: mood,
+      moodLabel: mood ? moodLabel(mood) : ''
     });
   },
 

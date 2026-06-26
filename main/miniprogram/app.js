@@ -22,6 +22,8 @@ App({
     destinyFlow: null,         // 命运初见向导流程的中间数据
     companionAvatar: null,     // 伴侣头像 URL
     companionBgImage: null,    // 伴侣默认背景图 URL
+    companionMood: null,       // 伴侣今日心情编码
+    companionMenstrualStatus: null, // 伴侣经期状态
     companionDataLoaded: false, // 伴侣数据是否已加载完成（无论成功或失败）
     planCode: null,            // 当前订阅档位: null/bronze/silver/gold
     subscriptionFeatures: [],  // 当前权益列表 ['voice_input','long_term_memory',...]
@@ -190,6 +192,8 @@ App({
       if (res && res.code === 0 && res.data) {
         this.globalData.companionAvatar = res.data.avatar || null;
         this.globalData.companionBgImage = res.data.defaultImage || null;
+        this.globalData.companionMood = res.data.mood || null;
+        this.globalData.companionMenstrualStatus = res.data.menstrualStatus || null;
       }
     } catch (err) {
       console.warn('获取伴侣数据失败:', err);

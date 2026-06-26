@@ -1,3 +1,0 @@
--- AI 伴侣今日心情定时刷新功能
--- ai_companion.mood 字段已存在（VARCHAR(16) NOT NULL），无需修改表结构。
--- 该迁移仅作为功能上线的标记。

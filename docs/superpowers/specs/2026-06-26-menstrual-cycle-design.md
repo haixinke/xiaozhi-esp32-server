@@ -55,17 +55,17 @@
 1. **伴侣创建时初始化周期**
    - 仅当 `type = 'gf'` 时生成
    - 根据角色编码、星座、创建时间做哈希/随机，得到 26~32 天的周期长度和 4~6 天的经期长度
-   - `menstrual_cycle_start` 设为过去某个随机日期，让创建时可能处于任意阶段
+   - `menstrual_cycle_start` 设为 `[今天 - cycleLength + 1, 今天]` 范围内的随机日期，让创建时可能处于周期任意阶段
 
 2. **每日心情刷新任务增强**
    - `CompanionMoodRefreshTask` 刷新心情前，计算伴侣当前经期阶段
-   - 经期期间：降低 `EXCITEMENT`/`CURIOSITY` 权重，提高 `FATIGUE`/`ANXIETY`/`CARE` 权重
+   - 经期期间：基于默认权重，将 `EXCITEMENT`/`CURIOSITY` 各下调 5，将 `FATIGUE`/`ANXIETY`/`CARE` 各上调 5，总权重保持 100
    - 非经期：使用默认权重
 
 3. **系统提示词同步增强**
    - `CompanionLabels.SYSTEM_PROMPT_TEMPLATE` 新增 `# Menstrual State` 段落
-   - 注入当前阶段描述，例如：“你正在经期第 2 天，小腹有点不舒服，容易累，可能会想向用户撒娇求关心”
-   - 非 gf 类型或不在经期时，该段落弱化或不注入
+   - 仅当 `type = 'gf'` 且处于经期时，注入详细描述，例如：“你正在经期第 2 天，小腹有点不舒服，容易累，可能会想向用户撒娇求关心”
+   - 非 gf 类型或不在经期时，`{{menstrualState}}` 替换为空字符串，不额外强调经期状态
 
 4. **查询接口**
    - 在现有伴侣详情接口的 `CompanionVO` 中新增 `menstrualStatus` 字段

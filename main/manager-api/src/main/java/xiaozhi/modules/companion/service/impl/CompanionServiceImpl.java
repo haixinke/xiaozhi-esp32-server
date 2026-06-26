@@ -395,6 +395,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         String birthdayLabel = companion.getBirthday() != null
                 ? new java.text.SimpleDateFormat("yyyy年MM月dd日").format(companion.getBirthday()) : "未知";
         String moodLabel = CompanionMood.fromCode(companion.getMood()).getLabel();
+        String menstrualStateLabel = renderMenstrualState(companion);
 
         // 替换模板变量
         String prompt = CompanionLabels.SYSTEM_PROMPT_TEMPLATE
@@ -406,7 +407,8 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
                 .replace("{{soulTraits}}", soulTraitsLabel)
                 .replace("{{soulQuirk}}", soulQuirkLabel)
                 .replace("{{birthday}}", birthdayLabel)
-                .replace("{{mood}}", moodLabel);
+                .replace("{{mood}}", moodLabel)
+                .replace("{{menstrualState}}", menstrualStateLabel);
 
         // 查询并更新智能体系统提示词和音色
         AgentEntity agent = agentService.selectById(agentId);
@@ -418,6 +420,29 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         agentService.updateById(agent);
 
         log.info("伴侣系统提示词已同步, companionId={}, agentId={}", companion.getId(), agentId);
+    }
+
+    private String renderMenstrualState(CompanionEntity companion) {
+        if (!"gf".equals(companion.getType())
+                || companion.getMenstrualCycleStart() == null
+                || companion.getMenstrualCycleLength() == null
+                || companion.getMenstrualPeriodLength() == null) {
+            return "";
+        }
+
+        LocalDate start = companion.getMenstrualCycleStart().toInstant()
+                .atZone(ZoneId.of("Asia/Shanghai"))
+                .toLocalDate();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+        MenstrualPhase phase = MenstrualCycleUtil.computePhase(
+                start, companion.getMenstrualCycleLength(), companion.getMenstrualPeriodLength(), today);
+
+        if (phase != MenstrualPhase.MENSTRUATION) {
+            return "";
+        }
+
+        int day = MenstrualCycleUtil.cycleDay(start, companion.getMenstrualCycleLength(), today);
+        return "你正在经期第 " + day + " 天，小腹有点不舒服，容易累，可能会想向用户撒娇求关心。可以自然地说'今天肚子好难受，你哄哄我嘛'。";
     }
 
     @Override

@@ -274,6 +274,80 @@ class CompanionServiceImplTest {
     }
 
     @Test
+    @DisplayName("syncPromptToAgent() 经期 gf 提示词包含经期状态")
+    void syncPromptToAgent_menstruatingGf_includesMenstrualState() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+
+            java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"));
+            CompanionEntity companion = companionEntity(1L, userId, "device-123", "JOY");
+            companion.setType("gf");
+            companion.setMenstrualCycleStart(java.util.Date.from(today.minusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Shanghai")).toInstant()));
+            companion.setMenstrualCycleLength(28);
+            companion.setMenstrualPeriodLength(5);
+            when(companionDao.selectById(1L)).thenReturn(companion);
+
+            String agentId = "agent-123";
+            when(agentService.selectById(agentId)).thenReturn(agentEntity(userId));
+
+            companionService.syncPromptToAgent(agentId, 1L);
+
+            AgentEntity updated = captureUpdatedAgent();
+            assertThat(updated.getSystemPrompt()).contains("经期");
+            assertThat(updated.getSystemPrompt()).doesNotContain("{{menstrualState}}");
+        }
+    }
+
+    @Test
+    @DisplayName("syncPromptToAgent() 非经期 gf 提示词不包含经期状态")
+    void syncPromptToAgent_nonMenstruatingGf_excludesMenstrualState() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+
+            java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"));
+            CompanionEntity companion = companionEntity(1L, userId, "device-123", "JOY");
+            companion.setType("gf");
+            companion.setMenstrualCycleStart(java.util.Date.from(today.minusDays(10).atStartOfDay(java.time.ZoneId.of("Asia/Shanghai")).toInstant()));
+            companion.setMenstrualCycleLength(28);
+            companion.setMenstrualPeriodLength(5);
+            when(companionDao.selectById(1L)).thenReturn(companion);
+
+            String agentId = "agent-123";
+            when(agentService.selectById(agentId)).thenReturn(agentEntity(userId));
+
+            companionService.syncPromptToAgent(agentId, 1L);
+
+            AgentEntity updated = captureUpdatedAgent();
+            assertThat(updated.getSystemPrompt()).doesNotContain("经期");
+            assertThat(updated.getSystemPrompt()).doesNotContain("{{menstrualState}}");
+        }
+    }
+
+    @Test
+    @DisplayName("syncPromptToAgent() bf 提示词不包含经期状态")
+    void syncPromptToAgent_bf_excludesMenstrualState() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+
+            CompanionEntity companion = companionEntity(1L, userId, "device-123", "JOY");
+            companion.setType("bf");
+            when(companionDao.selectById(1L)).thenReturn(companion);
+
+            String agentId = "agent-123";
+            when(agentService.selectById(agentId)).thenReturn(agentEntity(userId));
+
+            companionService.syncPromptToAgent(agentId, 1L);
+
+            AgentEntity updated = captureUpdatedAgent();
+            assertThat(updated.getSystemPrompt()).doesNotContain("经期");
+            assertThat(updated.getSystemPrompt()).doesNotContain("{{menstrualState}}");
+        }
+    }
+
+    @Test
     @DisplayName("syncPromptToAgent() 生成的提示词包含今日心情")
     void syncPromptToAgent_includesMoodInPrompt() {
         Long userId = 100L;

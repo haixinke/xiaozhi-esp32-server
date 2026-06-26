@@ -83,6 +83,15 @@ public class CompanionEntity {
     @Schema(description = "今日心情")
     private String mood;
 
+    @Schema(description = "经期开始日期")
+    private Date menstrualCycleStart;
+
+    @Schema(description = "周期长度（天）")
+    private Integer menstrualCycleLength;
+
+    @Schema(description = "经期长度（天）")
+    private Integer menstrualPeriodLength;
+
     @Schema(description = "前世秘密")
     private String pastLifeSecret;
 

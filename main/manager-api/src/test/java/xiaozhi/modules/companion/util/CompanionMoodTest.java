@@ -53,6 +53,33 @@ class CompanionMoodTest {
     }
 
     @Test
+    @DisplayName("random(Map) 应用权重调整后分布发生预期偏移")
+    void random_withAdjustments_shiftsDistribution() {
+        Map<CompanionMood, Integer> adjustments = Map.of(
+                CompanionMood.EXCITEMENT, -5,
+                CompanionMood.CURIOSITY, -5,
+                CompanionMood.FATIGUE, 5,
+                CompanionMood.ANXIETY, 5,
+                CompanionMood.CARE, 5
+        );
+
+        int total = 10_000;
+        Map<CompanionMood, Long> counts = Arrays.stream(CompanionMood.values())
+                .collect(Collectors.toMap(m -> m, m -> 0L));
+
+        for (int i = 0; i < total; i++) {
+            CompanionMood mood = CompanionMood.random(adjustments);
+            counts.merge(mood, 1L, Long::sum);
+        }
+
+        assertThat(counts.get(CompanionMood.FATIGUE)).isGreaterThan(700L);
+        assertThat(counts.get(CompanionMood.ANXIETY)).isGreaterThan(700L);
+        assertThat(counts.get(CompanionMood.CARE)).isGreaterThan(1200L);
+        assertThat(counts.get(CompanionMood.EXCITEMENT)).isLessThan(1200L);
+        assertThat(counts.get(CompanionMood.CURIOSITY)).isLessThan(1200L);
+    }
+
+    @Test
     @DisplayName("valueOf 可正确解析心情编码")
     void valueOf_parsesMoodCode() {
         assertThat(CompanionMood.valueOf("JOY")).isEqualTo(CompanionMood.JOY);

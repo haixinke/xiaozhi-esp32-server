@@ -1,5 +1,7 @@
 package xiaozhi.modules.companion.util;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -39,15 +41,30 @@ public enum CompanionMood {
      * @return 随机心情
      */
     public static CompanionMood random() {
+        return random(null);
+    }
+
+    /**
+     * 按权重随机选取一个心情，并应用额外的权重调整。
+     * 调整值可为正或负，最终权重不得低于 1。
+     *
+     * @param adjustments 心情 → 权重调整值映射
+     * @return 随机心情
+     */
+    public static CompanionMood random(Map<CompanionMood, Integer> adjustments) {
+        Map<CompanionMood, Integer> effectiveWeights = new EnumMap<>(CompanionMood.class);
         int totalWeight = 0;
         for (CompanionMood mood : values()) {
-            totalWeight += mood.weight;
+            int adjustment = adjustments != null ? adjustments.getOrDefault(mood, 0) : 0;
+            int weight = Math.max(1, mood.weight + adjustment);
+            effectiveWeights.put(mood, weight);
+            totalWeight += weight;
         }
 
         int random = ThreadLocalRandom.current().nextInt(totalWeight);
         int cumulative = 0;
         for (CompanionMood mood : values()) {
-            cumulative += mood.weight;
+            cumulative += effectiveWeights.get(mood);
             if (random < cumulative) {
                 return mood;
             }

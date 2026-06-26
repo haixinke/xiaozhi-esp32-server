@@ -122,6 +122,27 @@ class CompanionServiceImplTest {
     }
 
     @Test
+    @DisplayName("create() 返回的 VO 包含经期状态")
+    void create_gfCompanion_voContainsMenstrualStatus() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+            security.when(SecurityUser::getUser).thenReturn(userDetail(userId));
+
+            when(deviceService.getAgentIdByDeviceId("device-123")).thenReturn(null);
+
+            CompanionCreateDTO dto = createDto();
+            dto.setType("gf");
+
+            CompanionVO vo = companionService.create(dto);
+
+            assertThat(vo.getMenstrualStatus()).isNotNull();
+            assertThat(vo.getMenstrualStatus().getPhase()).isNotBlank();
+            assertThat(vo.getMenstrualStatus().getCycleDay()).isBetween(1, 32);
+        }
+    }
+
+    @Test
     @DisplayName("create() 为 bf 伴侣不生成生理期参数")
     void create_bfCompanion_doesNotGenerateMenstrualCycle() {
         Long userId = 100L;

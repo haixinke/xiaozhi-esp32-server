@@ -2,7 +2,12 @@ package xiaozhi.modules.companion.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import xiaozhi.modules.companion.entity.CompanionEntity;
+import xiaozhi.modules.companion.util.MenstrualCycleUtil;
+import xiaozhi.modules.companion.util.MenstrualPhase;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 
 @Data
@@ -84,7 +89,10 @@ public class CompanionVO {
     @Schema(description = "修改时间")
     private Date updatedAt;
 
-    public static CompanionVO toVO(xiaozhi.modules.companion.entity.CompanionEntity entity) {
+    @Schema(description = "经期状态")
+    private MenstrualStatusVO menstrualStatus;
+
+    public static CompanionVO toVO(CompanionEntity entity) {
         CompanionVO vo = new CompanionVO();
         vo.setId(entity.getId());
         vo.setUserId(entity.getUserId());
@@ -111,6 +119,46 @@ public class CompanionVO {
         vo.setPastLifeSecret(entity.getPastLifeSecret());
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
+        vo.setMenstrualStatus(buildMenstrualStatus(entity));
         return vo;
+    }
+
+    private static MenstrualStatusVO buildMenstrualStatus(CompanionEntity entity) {
+        if (!"gf".equals(entity.getType())
+                || entity.getMenstrualCycleStart() == null
+                || entity.getMenstrualCycleLength() == null
+                || entity.getMenstrualPeriodLength() == null) {
+            return null;
+        }
+
+        LocalDate start = entity.getMenstrualCycleStart().toInstant()
+                .atZone(ZoneId.of("Asia/Shanghai"))
+                .toLocalDate();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+        MenstrualPhase phase = MenstrualCycleUtil.computePhase(
+                start, entity.getMenstrualCycleLength(), entity.getMenstrualPeriodLength(), today);
+
+        MenstrualStatusVO status = new MenstrualStatusVO();
+        status.setPhase(phase.name());
+        status.setPhaseLabel(phase.getLabel());
+        status.setCycleDay(MenstrualCycleUtil.cycleDay(start, entity.getMenstrualCycleLength(), today));
+        status.setDaysUntilNextPeriod(MenstrualCycleUtil.daysUntilNextPeriod(start, entity.getMenstrualCycleLength(), today));
+        return status;
+    }
+
+    @Data
+    @Schema(description = "经期状态")
+    public static class MenstrualStatusVO {
+        @Schema(description = "阶段编码")
+        private String phase;
+
+        @Schema(description = "阶段中文")
+        private String phaseLabel;
+
+        @Schema(description = "周期第几天")
+        private Integer cycleDay;
+
+        @Schema(description = "距离下次经期天数")
+        private Integer daysUntilNextPeriod;
     }
 }

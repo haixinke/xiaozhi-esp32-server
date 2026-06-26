@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("CompanionMood 心情枚举")
 class CompanionMoodTest {
@@ -61,9 +60,18 @@ class CompanionMoodTest {
     }
 
     @Test
-    @DisplayName("valueOf 对非法编码抛出异常")
-    void valueOf_invalidCode_throwsException() {
-        assertThatThrownBy(() -> CompanionMood.valueOf("UNKNOWN"))
-                .isInstanceOf(IllegalArgumentException.class);
+    @DisplayName("fromCode 对空值或非法编码回退到平静")
+    void fromCode_invalidOrBlank_returnsCalm() {
+        assertThat(CompanionMood.fromCode(null)).isEqualTo(CompanionMood.CALM);
+        assertThat(CompanionMood.fromCode("")).isEqualTo(CompanionMood.CALM);
+        assertThat(CompanionMood.fromCode("unknown")).isEqualTo(CompanionMood.CALM);
+    }
+
+    @Test
+    @DisplayName("fromCode 支持大小写不敏感匹配")
+    void fromCode_caseInsensitive_returnsMood() {
+        assertThat(CompanionMood.fromCode("joy")).isEqualTo(CompanionMood.JOY);
+        assertThat(CompanionMood.fromCode("Calm")).isEqualTo(CompanionMood.CALM);
     }
 }
+

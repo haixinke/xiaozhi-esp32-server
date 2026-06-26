@@ -17,6 +17,7 @@ import xiaozhi.modules.agent.entity.AgentEntity;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.companion.dao.CompanionDao;
 import xiaozhi.modules.companion.dto.CompanionCreateDTO;
+import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.entity.CompanionEntity;
 import xiaozhi.modules.companion.service.CompanionService;
 import xiaozhi.modules.companion.util.CompanionMood;
@@ -95,8 +96,8 @@ class CompanionServiceImplTest {
     }
 
     @Test
-    @DisplayName("create() 使用加权随机心情初始化，并同步提示词到已有 agent")
-    void create_assignsRandomMoodAndSyncsPrompt() {
+    @DisplayName("create() 固定使用愉快心情初始化，并同步提示词到已有 agent")
+    void create_assignsJoyMoodAndSyncsPrompt() {
         Long userId = 100L;
         try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
             security.when(SecurityUser::getUserId).thenReturn(userId);
@@ -110,12 +111,12 @@ class CompanionServiceImplTest {
 
             CompanionVO vo = companionService.create(dto);
 
-            assertThat(vo.getMood()).isIn(moodNames());
+            assertThat(vo.getMood()).isEqualTo("JOY");
             verify(companionDao).insert(any(CompanionEntity.class));
             verify(agentService).updateById(any(AgentEntity.class));
             // 心情标签应当出现在系统提示词中
             AgentEntity updated = captureUpdatedAgent();
-            assertThat(updated.getSystemPrompt()).contains(CompanionMood.valueOf(vo.getMood()).getLabel());
+            assertThat(updated.getSystemPrompt()).contains(CompanionMood.JOY.getLabel());
         }
     }
 
@@ -131,9 +132,31 @@ class CompanionServiceImplTest {
 
             CompanionVO vo = companionService.create(createDto());
 
-            assertThat(vo.getMood()).isIn(moodNames());
+            assertThat(vo.getMood()).isEqualTo("JOY");
             verify(agentService, never()).selectById(anyString());
             verify(agentService, never()).updateById(any(AgentEntity.class));
+        }
+    }
+
+    @Test
+    @DisplayName("update() 将心情转换为大写并持久化")
+    void update_moodIsNormalizedToUpperCase() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+
+            CompanionEntity existing = companionEntity(1L, userId, "device-123", "CALM");
+            when(companionDao.selectOne(any())).thenReturn(existing);
+
+            CompanionUpdateDTO dto = new CompanionUpdateDTO();
+            dto.setDeviceId("device-123");
+            dto.setMood("joy");
+
+            companionService.update(dto);
+
+            org.mockito.ArgumentCaptor<CompanionEntity> captor = org.mockito.ArgumentCaptor.forClass(CompanionEntity.class);
+            verify(companionDao).updateById(captor.capture());
+            assertThat(captor.getValue().getMood()).isEqualTo("JOY");
         }
     }
 
@@ -153,7 +176,7 @@ class CompanionServiceImplTest {
 
         verify(companionDao, times(2)).updateById(any(CompanionEntity.class));
         verify(agentService, times(2)).updateById(any(AgentEntity.class));
-        assertThat(c1.getMood()).isIn(moodNames()).isNotEqualTo("CALM");
+        assertThat(c1.getMood()).isIn(moodNames());
         assertThat(c2.getMood()).isIn(moodNames());
     }
 

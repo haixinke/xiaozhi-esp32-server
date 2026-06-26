@@ -98,7 +98,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         entity.setRelationType(dto.getRelationType());
         entity.setPetType(dto.getPetType());
         entity.setPetName(dto.getPetName());
-        entity.setMood(CompanionMood.random().name());
+        entity.setMood(CompanionMood.JOY.name());
         entity.setPastLifeSecret(dto.getPastLifeSecret());
         entity.setIntimacy(deriveIntimacy(dto.getRelationType()));
         entity.setCreatedBy(userId);

@@ -148,6 +148,8 @@ Page({
       wx.setStorageSync('agentId', data.agentId);
       app.globalData.companionAvatar = data.companion.avatar || null;
       app.globalData.companionBgImage = data.companion.defaultImage || null;
+      app.globalData.companionMood = data.companion.mood || null;
+      app.globalData.companionMenstrualStatus = data.companion.menstrualStatus || null;
       app.globalData.companionDataLoaded = true;
       app.globalData.needsDestiny = false;
 

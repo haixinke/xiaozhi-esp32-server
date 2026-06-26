@@ -26,11 +26,11 @@
 
     <!-- 状态 pill -->
     <view class="bond-status-row" wx:if="{{menstrualStatus || mood}}">
-      <view class="bond-status-pill bond-status-menstrual" wx:if="{{menstrualStatus && menstrualStatus.phase === 'MENSTRUATION'}}">
-        <text class="bond-status-text">经期第 {{menstrualStatus.cycleDay}} 天</text>
-      </view>
       <view class="bond-status-pill bond-status-mood" wx:if="{{mood}}">
         <text class="bond-status-text">心情：{{moodLabel}}</text>
+      </view>
+      <view class="bond-status-pill bond-status-menstrual" wx:if="{{menstrualStatus && menstrualStatus.phase === 'MENSTRUATION'}}">
+        <text class="bond-status-text">经期第 {{menstrualStatus.cycleDay}} 天</text>
       </view>
     </view>
 

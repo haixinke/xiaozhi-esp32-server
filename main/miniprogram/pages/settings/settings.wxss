@@ -187,7 +187,7 @@
 .bond-identity {
   display: flex;
   justify-content: center;
-  margin-top: 28rpx;
+  margin-top: -30rpx;
 }
 
 .bond-identity-name {

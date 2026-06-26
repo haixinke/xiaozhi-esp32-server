@@ -209,6 +209,28 @@ class CompanionServiceImplTest {
     }
 
     @Test
+    @DisplayName("refreshAllMoods() 经期 gf 伴侣正常刷新心情")
+    void refreshAllMoods_menstruatingGfCompanion_updatesMood() {
+        CompanionEntity c1 = companionEntity(1L, 100L, "device-1", "CALM");
+        c1.setType("gf");
+        java.time.LocalDate startDate = java.time.LocalDate.now().minusDays(1);
+        c1.setMenstrualCycleStart(java.util.Date.from(startDate.atStartOfDay(java.time.ZoneId.of("Asia/Shanghai")).toInstant()));
+        c1.setMenstrualCycleLength(28);
+        c1.setMenstrualPeriodLength(5);
+        Page<CompanionEntity> page = new Page<>(1, 500);
+        page.setRecords(List.of(c1));
+        page.setTotal(1);
+        when(companionDao.selectPage(any(Page.class), any())).thenReturn(page);
+
+        when(deviceService.getAgentIdByDeviceId("device-1")).thenReturn(null);
+
+        companionService.refreshAllMoods();
+
+        verify(companionDao).updateById(any(CompanionEntity.class));
+        assertThat(c1.getMood()).isIn(moodNames());
+    }
+
+    @Test
     @DisplayName("refreshAllMoods() 分页刷新所有伴侣心情并同步提示词")
     void refreshAllMoods_updatesAllCompanionsAndSyncs() {
         CompanionEntity c1 = companionEntity(1L, 100L, "device-1", "CALM");

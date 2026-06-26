@@ -25,6 +25,8 @@ import xiaozhi.modules.companion.util.CharacterAge;
 import xiaozhi.modules.companion.util.CompanionBirthCalculator;
 import xiaozhi.modules.companion.util.CompanionLabels;
 import xiaozhi.modules.companion.util.CompanionMood;
+import xiaozhi.modules.companion.util.MenstrualCycleUtil;
+import xiaozhi.modules.companion.util.MenstrualPhase;
 import xiaozhi.modules.companion.util.ReshapeVoucherRule;
 import xiaozhi.modules.companion.vo.CompanionSetupVO;
 import xiaozhi.modules.companion.vo.CompanionVO;
@@ -275,6 +277,33 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         entity.setMenstrualPeriodLength(periodLength);
     }
 
+    private Map<CompanionMood, Integer> computeMoodAdjustments(CompanionEntity companion) {
+        if (!"gf".equals(companion.getType())
+                || companion.getMenstrualCycleStart() == null
+                || companion.getMenstrualCycleLength() == null
+                || companion.getMenstrualPeriodLength() == null) {
+            return null;
+        }
+
+        LocalDate start = companion.getMenstrualCycleStart().toInstant()
+                .atZone(ZoneId.of("Asia/Shanghai"))
+                .toLocalDate();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+        MenstrualPhase phase = MenstrualCycleUtil.computePhase(
+                start, companion.getMenstrualCycleLength(), companion.getMenstrualPeriodLength(), today);
+
+        if (phase == MenstrualPhase.MENSTRUATION) {
+            return Map.of(
+                    CompanionMood.EXCITEMENT, -5,
+                    CompanionMood.CURIOSITY, -5,
+                    CompanionMood.FATIGUE, 5,
+                    CompanionMood.ANXIETY, 5,
+                    CompanionMood.CARE, 5
+            );
+        }
+        return null;
+    }
+
     private int deriveCycleLength(CompanionEntity entity) {
         int hash = Objects.hash(entity.getCharacter(), entity.getZodiac(), entity.getUserId());
         return 26 + (Math.abs(hash) % 7);
@@ -302,7 +331,8 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
 
             for (CompanionEntity companion : companions) {
                 try {
-                    companion.setMood(CompanionMood.random().name());
+                    Map<CompanionMood, Integer> adjustments = computeMoodAdjustments(companion);
+                    companion.setMood(CompanionMood.random(adjustments).name());
                     companionDao.updateById(companion);
 
                     String agentId = deviceService.getAgentIdByDeviceId(companion.getDeviceId());

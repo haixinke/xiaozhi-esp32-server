@@ -1,6 +1,5 @@
 package xiaozhi.modules.companion.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +10,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.agent.entity.AgentEntity;
@@ -80,9 +80,9 @@ class CompanionServiceImplTest {
         companionService = new CompanionServiceImpl(companionDao, agentService, deviceService, transactionManager, itemService);
 
         // BaseServiceImpl 使用 baseDao 执行 selectById / updateById
-        Field baseMapperField = ServiceImpl.class.getDeclaredField("baseMapper");
-        baseMapperField.setAccessible(true);
-        baseMapperField.set(companionService, companionDao);
+        Field baseDaoField = BaseServiceImpl.class.getDeclaredField("baseDao");
+        baseDaoField.setAccessible(true);
+        baseDaoField.set(companionService, companionDao);
 
         when(companionDao.selectOne(any())).thenReturn(null);
         doAnswer(invocation -> {

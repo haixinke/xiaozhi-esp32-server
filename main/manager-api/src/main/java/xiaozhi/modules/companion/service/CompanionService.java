@@ -18,5 +18,7 @@ public interface CompanionService extends BaseService<CompanionEntity> {
 
     void syncPromptToAgent(String agentId, Long companionId);
 
+    void refreshAllMoods();
+
     CompanionSetupVO setup(CompanionSetupDTO dto);
 }

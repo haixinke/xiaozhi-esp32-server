@@ -38,6 +38,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -97,13 +98,23 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         entity.setRelationType(dto.getRelationType());
         entity.setPetType(dto.getPetType());
         entity.setPetName(dto.getPetName());
-        entity.setMood(CompanionMood.CALM.name());
+        entity.setMood(CompanionMood.random().name());
         entity.setPastLifeSecret(dto.getPastLifeSecret());
         entity.setIntimacy(deriveIntimacy(dto.getRelationType()));
         entity.setCreatedBy(userId);
 
         companionDao.insert(entity);
         log.info("伴侣创建成功，deviceId={}, type={}, character={}", dto.getDeviceId(), dto.getType(), dto.getCharacter());
+
+        // 6. 如果设备已绑定 agent，立即同步包含今日心情的提示词
+        String agentId = deviceService.getAgentIdByDeviceId(dto.getDeviceId());
+        if (agentId != null && !agentId.isBlank()) {
+            try {
+                doSyncPromptToAgent(agentId, entity);
+            } catch (Exception e) {
+                log.warn("创建伴侣后同步提示词失败，deviceId={}: {}", dto.getDeviceId(), e.getMessage());
+            }
+        }
 
         return CompanionVO.toVO(entity);
     }
@@ -157,7 +168,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         if (dto.getPetName() != null) entity.setPetName(dto.getPetName());
         if (dto.getMood() != null) {
             validateMood(dto.getMood());
-            entity.setMood(dto.getMood());
+            entity.setMood(dto.getMood().toUpperCase());
         }
         if (dto.getPastLifeSecret() != null) entity.setPastLifeSecret(dto.getPastLifeSecret());
 
@@ -226,7 +237,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
 
     private void validateMood(String mood) {
         boolean valid = Arrays.stream(CompanionMood.values())
-                .anyMatch(m -> m.name().equals(mood));
+                .anyMatch(m -> m.name().equals(mood.toUpperCase()));
         if (!valid) {
             throw new RenException(ErrorCode.PARAM_TYPE_INVALID);
         }
@@ -239,6 +250,41 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             case "bickering" -> 0.5f;
             default -> 0.5f;
         };
+    }
+
+    @Override
+    public void refreshAllMoods() {
+        List<CompanionEntity> companions = companionDao.selectList(null);
+        if (companions == null || companions.isEmpty()) {
+            log.info("没有需要刷新心情的伴侣");
+            return;
+        }
+
+        log.info("开始刷新伴侣今日心情，总数={}", companions.size());
+        int success = 0;
+        int failed = 0;
+
+        for (CompanionEntity companion : companions) {
+            try {
+                CompanionMood newMood = CompanionMood.random();
+                companion.setMood(newMood.name());
+                companionDao.updateById(companion);
+
+                String agentId = deviceService.getAgentIdByDeviceId(companion.getDeviceId());
+                if (agentId != null && !agentId.isBlank()) {
+                    AgentEntity agent = agentService.selectById(agentId);
+                    if (agent != null) {
+                        doSyncPromptToAgent(agentId, companion);
+                    }
+                }
+                success++;
+            } catch (Exception e) {
+                failed++;
+                log.warn("刷新伴侣心情失败，companionId={}: {}", companion.getId(), e.getMessage());
+            }
+        }
+
+        log.info("伴侣今日心情刷新完成，成功={}，失败={}", success, failed);
     }
 
     @Override
@@ -263,6 +309,13 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             throw new RenException(ErrorCode.NO_PERMISSION);
         }
 
+        doSyncPromptToAgent(agentId, companion);
+    }
+
+    /**
+     * 执行实际的提示词构建与同步，不包含权限校验，供内部和定时任务使用。
+     */
+    private void doSyncPromptToAgent(String agentId, CompanionEntity companion) {
         // 解析标签
         String characterLabel = CompanionLabels.getLabel(CompanionLabels.CHARACTER, companion.getCharacter());
         String occupationLabel = CompanionLabels.getLabel(CompanionLabels.OCCUPATION, companion.getOccupation());
@@ -273,6 +326,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         String soulQuirkLabel = CompanionLabels.getLabel(CompanionLabels.SOUL_QUIRK, companion.getSoulQuirk());
         String birthdayLabel = companion.getBirthday() != null
                 ? new java.text.SimpleDateFormat("yyyy年MM月dd日").format(companion.getBirthday()) : "未知";
+        String moodLabel = CompanionMood.fromCode(companion.getMood()).getLabel();
 
         // 替换模板变量
         String prompt = CompanionLabels.SYSTEM_PROMPT_TEMPLATE
@@ -283,15 +337,19 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
                 .replace("{{petName}}", petNameLabel)
                 .replace("{{soulTraits}}", soulTraitsLabel)
                 .replace("{{soulQuirk}}", soulQuirkLabel)
-                .replace("{{birthday}}", birthdayLabel);
+                .replace("{{birthday}}", birthdayLabel)
+                .replace("{{mood}}", moodLabel);
 
-        // 更新智能体系统提示词和音色
+        // 查询并更新智能体系统提示词和音色
+        AgentEntity agent = agentService.selectById(agentId);
+        if (agent == null) {
+            throw new RenException(ErrorCode.AGENT_NOT_FOUND);
+        }
         agent.setSystemPrompt(prompt);
         agent.setTtsVoiceId(companion.getVoice());
         agentService.updateById(agent);
 
-        log.info("伴侣系统提示词已同步, companionId={}, agentId={}", companionId, agentId);
-        log.info("替换后的系统提示词:\n{}", prompt);
+        log.info("伴侣系统提示词已同步, companionId={}, agentId={}", companion.getId(), agentId);
     }
 
     @Override

@@ -35,11 +35,14 @@ import xiaozhi.modules.item.enums.ConsumeBizType;
 import xiaozhi.modules.item.service.ItemService;
 import xiaozhi.modules.security.user.SecurityUser;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -102,6 +105,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         entity.setMood(CompanionMood.JOY.name());
         entity.setPastLifeSecret(dto.getPastLifeSecret());
         entity.setIntimacy(deriveIntimacy(dto.getRelationType()));
+        initializeMenstrualCycle(entity);
         entity.setCreatedBy(userId);
 
         companionDao.insert(entity);
@@ -251,6 +255,34 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             case "bickering" -> 0.5f;
             default -> 0.5f;
         };
+    }
+
+    private void initializeMenstrualCycle(CompanionEntity entity) {
+        if (!"gf".equals(entity.getType())) {
+            return;
+        }
+
+        int cycleLength = deriveCycleLength(entity);
+        int periodLength = derivePeriodLength(entity);
+
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+        int maxOffset = cycleLength - 1;
+        int offset = Math.abs(Objects.hash(entity.getCharacter(), entity.getZodiac(), entity.getCreatedAt())) % (maxOffset + 1);
+        LocalDate startDate = today.minusDays(offset);
+
+        entity.setMenstrualCycleStart(Date.from(startDate.atStartOfDay(ZoneId.of("Asia/Shanghai")).toInstant()));
+        entity.setMenstrualCycleLength(cycleLength);
+        entity.setMenstrualPeriodLength(periodLength);
+    }
+
+    private int deriveCycleLength(CompanionEntity entity) {
+        int hash = Objects.hash(entity.getCharacter(), entity.getZodiac(), entity.getUserId());
+        return 26 + (Math.abs(hash) % 7);
+    }
+
+    private int derivePeriodLength(CompanionEntity entity) {
+        int hash = Objects.hash(entity.getOccupation(), entity.getSoulQuirk(), entity.getUserId());
+        return 4 + (Math.abs(hash) % 3);
     }
 
     @Override

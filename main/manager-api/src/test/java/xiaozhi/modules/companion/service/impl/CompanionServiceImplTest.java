@@ -34,6 +34,8 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Locale;
 
+import org.mockito.ArgumentCaptor;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -94,6 +96,51 @@ class CompanionServiceImplTest {
         }).when(companionDao).insert(any(CompanionEntity.class));
         when(companionDao.updateById(any(CompanionEntity.class))).thenReturn(1);
         when(agentService.updateById(any(AgentEntity.class))).thenReturn(true);
+    }
+
+    @Test
+    @DisplayName("create() 为 gf 伴侣自动生成生理期参数")
+    void create_gfCompanion_generatesMenstrualCycle() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+            security.when(SecurityUser::getUser).thenReturn(userDetail(userId));
+
+            when(deviceService.getAgentIdByDeviceId("device-123")).thenReturn(null);
+
+            CompanionCreateDTO dto = createDto();
+            dto.setType("gf");
+
+            CompanionVO vo = companionService.create(dto);
+
+            assertThat(vo.getType()).isEqualTo("gf");
+            CompanionEntity captured = captureInsertedCompanion();
+            assertThat(captured.getMenstrualCycleStart()).isNotNull();
+            assertThat(captured.getMenstrualCycleLength()).isBetween(26, 32);
+            assertThat(captured.getMenstrualPeriodLength()).isBetween(4, 6);
+        }
+    }
+
+    @Test
+    @DisplayName("create() 为 bf 伴侣不生成生理期参数")
+    void create_bfCompanion_doesNotGenerateMenstrualCycle() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+            security.when(SecurityUser::getUser).thenReturn(userDetail(userId));
+
+            when(deviceService.getAgentIdByDeviceId("device-123")).thenReturn(null);
+
+            CompanionCreateDTO dto = createDto();
+            dto.setType("bf");
+
+            companionService.create(dto);
+
+            CompanionEntity captured = captureInsertedCompanion();
+            assertThat(captured.getMenstrualCycleStart()).isNull();
+            assertThat(captured.getMenstrualCycleLength()).isNull();
+            assertThat(captured.getMenstrualPeriodLength()).isNull();
+        }
     }
 
     @Test
@@ -225,8 +272,14 @@ class CompanionServiceImplTest {
     }
 
     private AgentEntity captureUpdatedAgent() {
-        org.mockito.ArgumentCaptor<AgentEntity> captor = org.mockito.ArgumentCaptor.forClass(AgentEntity.class);
+        ArgumentCaptor<AgentEntity> captor = ArgumentCaptor.forClass(AgentEntity.class);
         verify(agentService).updateById(captor.capture());
+        return captor.getValue();
+    }
+
+    private CompanionEntity captureInsertedCompanion() {
+        ArgumentCaptor<CompanionEntity> captor = ArgumentCaptor.forClass(CompanionEntity.class);
+        verify(companionDao).insert(captor.capture());
         return captor.getValue();
     }
 

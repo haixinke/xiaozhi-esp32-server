@@ -2,6 +2,11 @@
 
   <!-- 我们的羁绊面板 -->
   <view class="bond-card">
+    <!-- 身份标签 -->
+    <view class="bond-identity">
+      <text class="bond-identity-name {{planCode === 'gold' ? 'bond-gold' : planCode === 'silver' ? 'bond-silver' : 'bond-free'}}">{{identityName}}</text>
+    </view>
+
     <!-- 头像区域：用户 + 红线 + 伴侣 -->
     <view class="bond-avatars">
       <view class="bond-avatar-wrap bond-user">
@@ -17,11 +22,6 @@
         <image class="bond-avatar {{planCode === 'gold' ? 'avatar-glow' : ''}}" src="{{companionAvatar}}" mode="aspectFill" />
         <text class="bond-avatar-label">她</text>
       </view>
-    </view>
-
-    <!-- 身份标签 -->
-    <view class="bond-identity">
-      <text class="bond-identity-name {{planCode === 'gold' ? 'bond-gold' : planCode === 'silver' ? 'bond-silver' : 'bond-free'}}">{{identityName}}</text>
     </view>
 
     <!-- 状态 pill -->

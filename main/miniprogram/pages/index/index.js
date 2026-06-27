@@ -24,6 +24,9 @@ const STATE_SPEAKING = 'speaking';
 // 两条消息间隔超过该阈值才显示居中时间分隔条
 const TIME_GAP_MS = 5 * 60 * 1000;
 
+// 空闲多久无交互自动断开连接（控制后端会话成本，对用户无感，下次发消息秒级重连）
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+
 Page({
   data: {
     // 主题
@@ -83,6 +86,8 @@ Page({
   audioManager: null,
   wsManager: null,
   _bootTimer: null,
+  _idleTimer: null,
+  _pendingText: '',
   _appShowHandler: null,
   _msgIdSeed: 1,
   _streamingIdx: -1,
@@ -188,21 +193,16 @@ Page({
   onShow() {
     applyTheme(this);
 
-    // 订阅档位变更后，需要断开当前连接，由用户手动「召唤」重新拉取最新 agent 配置
+    // 订阅档位变更或重塑命运（换职业/性格/声音）后，自动以最新 agent 配置重连（connect 会先断开旧会话）
     const g0 = app.globalData;
-    if (g0 && g0.needReconnectAfterSub) {
+    const needFreshConfig = g0 && (g0.needReconnectAfterSub || g0.needReconnectAfterReshape);
+    if (g0) {
       g0.needReconnectAfterSub = false;
-      if (this.wsManager && this.data.connectionState === 'connected') {
-        this.wsManager.disconnect();
-      }
-    }
-
-    // 重塑命运（换职业/性格/声音）后，断开当前连接，由用户手动「召唤」重新拉取最新 agent 配置
-    if (g0 && g0.needReconnectAfterReshape) {
       g0.needReconnectAfterReshape = false;
-      if (this.wsManager && this.data.connectionState === 'connected') {
-        this.wsManager.disconnect();
-      }
+    }
+    if (needFreshConfig && this.wsManager) {
+      this._pendingText = '';
+      this._connectToChat();
     }
 
     // 每次返回页面（例如从设置页面返回）刷新数据
@@ -311,8 +311,9 @@ Page({
     this._sessionStartTime = this._formatLocalDateTime(new Date());
 
     this._initAudio();
-    // 不再自动连接 WebSocket，等待用户点击"召唤"按钮
     this._initWebSocketManager();
+    // 进入页面即自动连接，呈现「在场」；空闲超时会自动断开以控成本
+    this._connectToChat();
 
     // 等待视图渲染完毕后计算 scroll-view 高度
     setTimeout(() => {
@@ -368,15 +369,22 @@ Page({
   },
 
   _initWebSocketManager() {
-    const g = app.globalData;
     this.wsManager = new WebSocketManager({
       onStateChange: (state) => {
         this.setData({ connectionState: state });
+        if (state === 'connected') {
+          // 连接建立后开始空闲计时
+          this._resetIdleTimer();
+        }
         if (state === 'disconnected') {
-          // 连接断开时禁用自动重连，等待用户手动召唤
-          try {
-            this.wsManager.disconnect();
-          } catch (_) {}
+          // 网络抖动断开交给 websocket.js 的退避重连自愈；主动断开（退下/空闲）不会走到这里触发重连
+          // 若有待补发消息但连接最终断开，回填输入框并提示
+          if (this._pendingText) {
+            const pending = this._pendingText;
+            this._pendingText = '';
+            this.setData({ inputText: pending });
+            wx.showToast({ title: '发送失败，请重试', icon: 'none' });
+          }
         }
         if (state === 'disconnected' && this.data.chatState !== STATE_IDLE) {
           // 连接断开时把会话状态拉回 idle
@@ -394,7 +402,6 @@ Page({
         logger.warn('[WS:' + scope + ']', err && err.message ? err.message : err);
       },
     });
-    // 不在这里自动连接，等待用户手动触发
   },
 
   _connectToChat() {
@@ -418,6 +425,20 @@ Page({
         this.setData({ sessionId: msg.sessionId || '' });
         // 用连接时间替换页面启动时间，更精确避免当前会话消息与历史重复
         this._sessionStartTime = this._formatLocalDateTime(new Date());
+        // 握手完成：补发空闲断开期间排队的消息
+        if (this._pendingText) {
+          const pending = this._pendingText;
+          this._pendingText = '';
+          try {
+            this.wsManager.sendText(pending);
+            this.setData({ chatState: STATE_THINKING });
+          } catch (err) {
+            logger.error('补发文本失败:', err);
+            this.setData({ inputText: pending, chatState: STATE_IDLE });
+            wx.showToast({ title: '发送失败，请重试', icon: 'none' });
+          }
+        }
+        this._resetIdleTimer();
         break;
 
       case 'audio':
@@ -698,9 +719,7 @@ Page({
   },
 
   onInputTap() {
-    if (this.data.connectionState !== 'connected') {
-      wx.showToast({ title: '请先召唤您的女友', icon: 'none', duration: 2000 });
-    }
+    // 已进入页面即自动连接；空闲断开后由发送消息触发重连，无需手动召唤
   },
 
   onTextInput(e) {
@@ -710,7 +729,17 @@ Page({
   onTextSend() {
     const text = (this.data.inputText || '').trim();
     if (!text) return;
-    if (!this._isReadyForAction()) return;
+
+    // 未连接（空闲断开/连接中）：排队该消息，触发重连，握手完成后自动补发
+    if (this.data.connectionState !== 'connected') {
+      this._pendingText = text;
+      this.setData({ inputText: '', chatState: STATE_THINKING });
+      if (this.data.connectionState === 'disconnected') {
+        this._connectToChat();
+        wx.showToast({ title: '她正在赶来…', icon: 'none' });
+      }
+      return;
+    }
 
     // 发送文本消息到服务器
     try {
@@ -720,6 +749,8 @@ Page({
       wx.showToast({ title: '发送失败，请重试', icon: 'none' });
       return;
     }
+
+    this._resetIdleTimer();
 
     // 清空输入框并更新状态
     // 注意：不在这里添加用户消息，等待服务端的 stt 消息来触发显示
@@ -915,6 +946,7 @@ Page({
     const touch = (e.touches && e.touches[0]) || {};
     this._voiceStartY = touch.clientY || 0;
     this.setData({ recording: true, recordCancelled: false });
+    this._resetIdleTimer();
 
     // 开始录音并通知服务端开始监听
     if (this.audioManager) this.audioManager.startRecord();
@@ -964,12 +996,38 @@ Page({
     try { this.wsManager && this.wsManager.sendAbort(); } catch (_) {}
   },
 
+  // 语音模式专用就绪校验：语音不做音频缓冲补发，未连接时触发重连并提示用户重按
   _isReadyForAction() {
     if (this.data.connectionState !== 'connected') {
-      wx.showToast({ title: '请先召唤您的女友', icon: 'none' });
+      if (this.data.connectionState === 'disconnected') {
+        this._connectToChat();
+      }
+      wx.showToast({ title: '她正在赶来，稍候再按住说话', icon: 'none' });
       return false;
     }
     return true;
+  },
+
+  // 空闲计时：N 分钟无交互且会话空闲时主动断开，控制后端会话成本；下次交互秒级重连
+  _resetIdleTimer() {
+    if (this._idleTimer) {
+      clearTimeout(this._idleTimer);
+      this._idleTimer = null;
+    }
+    this._idleTimer = setTimeout(() => {
+      this._idleTimer = null;
+      if (this.data.connectionState !== 'connected') return;
+      if (this.data.chatState !== STATE_IDLE) return;
+      // 语音通话激活时跳过（其连接独立，但避免任何意外）
+      try {
+        const VoiceCallManager = require('../../utils/voice-call-manager');
+        const callState = VoiceCallManager().getState().state;
+        if (callState === 'connected' || callState === 'calling') return;
+      } catch (_) {}
+      if (this.wsManager) {
+        try { this.wsManager.disconnect(); } catch (_) {}
+      }
+    }, IDLE_TIMEOUT_MS);
   },
 
   _reconnect() {
@@ -977,8 +1035,11 @@ Page({
   },
 
   _handleAppShow() {
-    // 从后台恢复：不再自动重连，需要用户手动点击召唤按钮
-    // 保持当前连接状态，如果已断开则等待用户操作
+    // 从后台恢复：若连接已断开则自动重连，恢复「在场」
+    if (this.wsManager && this.data.connectionState === 'disconnected') {
+      this._connectToChat();
+      this._resetIdleTimer();
+    }
   },
 
   _handleAppHide() {
@@ -1008,6 +1069,7 @@ Page({
 
   _teardown() {
     if (this._flushTimer) { clearTimeout(this._flushTimer); this._flushTimer = null; }
+    if (this._idleTimer) { clearTimeout(this._idleTimer); this._idleTimer = null; }
     if (this._bootTimer) {
       clearInterval(this._bootTimer);
       this._bootTimer = null;

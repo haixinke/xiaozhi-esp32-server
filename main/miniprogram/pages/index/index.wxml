@@ -132,7 +132,7 @@
             bindconfirm="onTextSend"
             confirm-type="send"
             maxlength="500"
-            disabled="{{connectionState !== 'connected' || chatState === 'thinking'}}"
+            disabled="{{chatState === 'thinking'}}"
             adjust-position="{{true}}"
             cursor-spacing="20"
           />

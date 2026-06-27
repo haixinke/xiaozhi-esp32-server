@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>微信支付流程 - 现有方案</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot {
+      width: 12px; height: 12px; background: #fb7185;
+      border-radius: 50%; animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem; border: 1px solid #1e293b;
+      padding: 1.5rem; overflow-x: auto;
+    }
+    svg { width: 100%; min-width: 1100px; display: block; }
+    .cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem; margin-top: 2rem;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem;
+    }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>小程序微信支付流程 - 现有方案</h1>
+      </div>
+      <p class="subtitle">完全依赖微信异步回调通知，回调失败时订单会错误超时</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1300 900">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrowhead-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrowhead-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- Title -->
+        <text x="650" y="45" fill="white" font-size="16" font-weight="700" text-anchor="middle">微信支付时序图 - 现有方案（纯回调模式）</text>
+
+        <!-- Participant boxes -->
+        <rect x="50" y="70" width="120" height="50" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="110" y="95" fill="white" font-size="11" font-weight="600" text-anchor="middle">用户</text>
+        <text x="110" y="111" fill="#94a3b8" font-size="9" text-anchor="middle">User</text>
+
+        <rect x="290" y="70" width="140" height="50" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="360" y="95" fill="white" font-size="11" font-weight="600" text-anchor="middle">微信小程序</text>
+        <text x="360" y="111" fill="#94a3b8" font-size="9" text-anchor="middle">Mini Program</text>
+
+        <rect x="550" y="70" width="140" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="620" y="95" fill="white" font-size="11" font-weight="600" text-anchor="middle">manager-api</text>
+        <text x="620" y="111" fill="#94a3b8" font-size="9" text-anchor="middle">Java Backend</text>
+
+        <rect x="810" y="70" width="140" height="50" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="880" y="95" fill="white" font-size="11" font-weight="600" text-anchor="middle">微信支付</text>
+        <text x="880" y="111" fill="#94a3b8" font-size="9" text-anchor="middle">WeChat Pay</text>
+
+        <rect x="1070" y="70" width="120" height="50" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1130" y="95" fill="white" font-size="11" font-weight="600" text-anchor="middle">数据库</text>
+        <text x="1130" y="111" fill="#94a3b8" font-size="9" text-anchor="middle">MySQL</text>
+
+        <!-- Lifelines -->
+        <line x1="110" y1="120" x2="110" y2="800" stroke="#334155" stroke-width="1" stroke-dasharray="5,5"/>
+        <line x1="360" y1="120" x2="360" y2="800" stroke="#334155" stroke-width="1" stroke-dasharray="5,5"/>
+        <line x1="620" y1="120" x2="620" y2="800" stroke="#334155" stroke-width="1" stroke-dasharray="5,5"/>
+        <line x1="880" y1="120" x2="880" y2="800" stroke="#334155" stroke-width="1" stroke-dasharray="5,5"/>
+        <line x1="1130" y1="120" x2="1130" y2="800" stroke="#334155" stroke-width="1" stroke-dasharray="5,5"/>
+
+        <!-- Messages -->
+        <!-- 1. 用户点击购买 -->
+        <line x1="110" y1="150" x2="360" y2="150" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="235" y="145" fill="#94a3b8" font-size="9" text-anchor="middle">1. 点击购买套餐</text>
+
+        <!-- 2. 小程序创建订单 -->
+        <line x1="360" y1="185" x2="620" y2="185" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="490" y="180" fill="#22d3ee" font-size="9" text-anchor="middle">2. POST /payment/order</text>
+
+        <!-- 3. 创建PENDING订单 -->
+        <line x1="620" y1="220" x2="1130" y2="220" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="875" y="215" fill="#94a3b8" font-size="9" text-anchor="middle">3. INSERT status=PENDING</text>
+
+        <!-- 4. 预下单 -->
+        <line x1="620" y1="255" x2="880" y2="255" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="750" y="250" fill="#94a3b8" font-size="9" text-anchor="middle">4. JSAPI 预下单</text>
+
+        <!-- 5. 返回prepay_id -->
+        <line x1="880" y1="290" x2="620" y2="290" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="750" y="285" fill="#94a3b8" font-size="9" text-anchor="middle">5. 返回 prepay_id</text>
+
+        <!-- 6. 返回prepayParams -->
+        <line x1="620" y1="325" x2="360" y2="325" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="490" y="320" fill="#94a3b8" font-size="9" text-anchor="middle">6. 返回 prepayParams</text>
+
+        <!-- 7. 调起支付 -->
+        <line x1="360" y1="360" x2="110" y2="360" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="235" y="355" fill="#94a3b8" font-size="9" text-anchor="middle">7. 调起 wx.requestPayment</text>
+
+        <!-- 8. 用户完成支付 -->
+        <line x1="110" y1="395" x2="880" y2="395" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="495" y="390" fill="#94a3b8" font-size="9" text-anchor="middle">8. 输入密码/指纹完成支付</text>
+
+        <!-- 9. 微信回调 -->
+        <line x1="880" y1="430" x2="620" y2="430" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="750" y="425" fill="#fbbf24" font-size="9" text-anchor="middle">9. 异步回调 /payment/notify</text>
+
+        <!-- 10. UPDATE PAID -->
+        <line x1="620" y1="465" x2="1130" y2="465" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="875" y="460" fill="#94a3b8" font-size="9" text-anchor="middle">10. UPDATE status=PAID</text>
+
+        <!-- 11. 开通订阅 -->
+        <line x1="620" y1="500" x2="1130" y2="500" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="875" y="495" fill="#94a3b8" font-size="9" text-anchor="middle">11. 开通用户订阅</text>
+
+        <!-- 12. UPDATE FULFILLED -->
+        <line x1="620" y1="535" x2="1130" y2="535" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="875" y="530" fill="#94a3b8" font-size="9" text-anchor="middle">12. UPDATE status=FULFILLED</text>
+
+        <!-- 13. 返回SUCCESS -->
+        <line x1="620" y1="570" x2="880" y2="570" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="750" y="565" fill="#94a3b8" font-size="9" text-anchor="middle">13. 返回 SUCCESS</text>
+
+        <!-- 14. 支付结果通知小程序 -->
+        <line x1="880" y1="605" x2="360" y2="605" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="620" y="600" fill="#94a3b8" font-size="9" text-anchor="middle">14. wx.requestPayment success 回调</text>
+
+        <!-- 15. 查询订单 -->
+        <line x1="360" y1="640" x2="620" y2="640" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="490" y="635" fill="#94a3b8" font-size="9" text-anchor="middle">15. GET /payment/order/{outTradeNo}</text>
+
+        <!-- 16. 返回FULFILLED -->
+        <line x1="620" y1="675" x2="360" y2="675" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="490" y="670" fill="#94a3b8" font-size="9" text-anchor="middle">16. 返回 FULFILLED</text>
+
+        <!-- 17. 展示成功 -->
+        <line x1="360" y1="710" x2="110" y2="710" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="235" y="705" fill="#94a3b8" font-size="9" text-anchor="middle">17. 展示「支付成功，已开通」</text>
+
+        <!-- Risk warning box -->
+        <rect x="470" y="760" width="660" height="80" rx="8" fill="rgba(136, 19, 55, 0.2)" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <text x="650" y="785" fill="#fb7185" font-size="11" font-weight="600" text-anchor="middle">风险点：第 9 步回调失败时（如 404/500/超时）</text>
+        <text x="650" y="805" fill="#fb7185" font-size="9" text-anchor="middle">微信会重试，但最多 24 小时；若持续失败，订单 15 分钟后被标记为 EXPIRED</text>
+        <text x="650" y="825" fill="#fb7185" font-size="9" text-anchor="middle">结果：用户已扣款，商户已到账，但系统认为未支付，订阅不生效</text>
+
+        <!-- Legend -->
+        <text x="90" y="760" fill="white" font-size="10" font-weight="600">图例</text>
+        <line x1="90" y1="775" x2="140" y2="775" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="150" y="779" fill="#94a3b8" font-size="8">前端请求</text>
+        <line x1="90" y1="795" x2="140" y2="795" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="150" y="799" fill="#94a3b8" font-size="8">后端处理</text>
+        <line x1="90" y1="815" x2="140" y2="815" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="150" y="819" fill="#94a3b8" font-size="8">微信支付交互</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>正常流程</h3>
+        </div>
+        <ul>
+          <li>• 用户下单 → 后端创建 PENDING 订单</li>
+          <li>• 后端调微信 prepay 获取支付参数</li>
+          <li>• 小程序调起微信支付控件</li>
+          <li>• 用户支付成功后微信异步回调后端</li>
+          <li>• 后端 markPaid → 履约 → markFulfilled</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>单点故障</h3>
+        </div>
+        <ul>
+          <li>• 完全依赖一条异步回调链路</li>
+          <li>• 回调地址错误/超时/被拦截都会失败</li>
+          <li>• 失败 15 分钟后订单被标为 EXPIRED</li>
+          <li>• retryPaidOrders 只处理 PAID 订单</li>
+          <li>• PENDING 订单不会被主动挽救</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>真实影响</h3>
+        </div>
+        <ul>
+          <li>• 用户已扣款但订阅未开通</li>
+          <li>• 商户已到账但系统无记录</li>
+          <li>• 需要人工对账、手动补单</li>
+          <li>• 用户体验差，投诉率高</li>
+          <li>• 财务数据与业务数据不一致</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">
+      xiaozhi-esp32-server • manager-api 支付模块 • 现有方案分析
+    </p>
+  </div>
+</body>
+</html>

@@ -381,7 +381,10 @@ class WebSocketManager {
     this._pongTimeoutTimer = setTimeout(() => {
       this._pongTimeoutTimer = null;
       this._emitError(new Error('pong timeout: server not responding'), 'connect');
-      this.disconnect();
+      // 心跳超时视为被动断开：拆掉旧 socket 后走退避重连自愈，而非置 _manualClose 永久断开
+      this._teardownSocket(false);
+      this._setState('disconnected');
+      this._scheduleReconnect();
     }, PONG_TIMEOUT_MS);
   }
 

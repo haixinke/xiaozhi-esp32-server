@@ -478,7 +478,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             AgentCreateDTO agentCreateDTO = new AgentCreateDTO();
             agentCreateDTO.setAgentName(agentName);
             agentId = agentService.createAgent(agentCreateDTO);
-            // 仅按已知的 agentId 更新 chat_history_conf=0。不要用 getDefaultAgentByMacAddress(deviceId)：
+            // 仅按已知的 agentId 更新 chat_history_conf=0。
             // 此时设备尚未绑定到新 agent（绑定在 Phase 2 才发生），会查不到或改到别的 agent 上。
             agentService.update(null, new UpdateWrapper<AgentEntity>()
                     .eq("id", agentId)

@@ -52,6 +52,10 @@
       <text class="entry-title">我的女友</text>
       <text class="entry-desc">她的资料</text>
     </view>
+    <view class="entry-card" bindtap="onOrdersTap">
+      <text class="entry-title">我的订单</text>
+      <text class="entry-desc">消费记录</text>
+    </view>
   </view>
 
   <!-- 设置项列表 -->

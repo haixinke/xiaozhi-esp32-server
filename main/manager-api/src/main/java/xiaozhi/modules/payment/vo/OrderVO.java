@@ -1,7 +1,10 @@
 package xiaozhi.modules.payment.vo;
 
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import xiaozhi.modules.payment.entity.PaymentOrderEntity;
 
 import java.util.Date;
@@ -46,6 +49,9 @@ public class OrderVO {
     @Schema(description = "创建时间")
     private Date createdAt;
 
+    @Schema(description = "商品名称（从快照解析）")
+    private String productName;
+
     /** 将 Entity 转换为 VO（隐藏内部字段如 prepayId、clientIp 等） */
     public static OrderVO toVO(PaymentOrderEntity entity) {
         OrderVO vo = new OrderVO();
@@ -61,6 +67,29 @@ public class OrderVO {
         vo.setPaidAt(entity.getPaidAt());
         vo.setFulfilledAt(entity.getFulfilledAt());
         vo.setCreatedAt(entity.getCreatedAt());
+        vo.setProductName(extractProductName(entity.getProductSnapshot(), entity.getProductType()));
         return vo;
+    }
+
+    /**
+     * 从订单商品快照JSON中提取商品名称。
+     * SUBSCRIPTION 类型取 planName，ITEM 类型取 skuName。
+     * 解析失败时回退为类型兜底文案。
+     */
+    private static String extractProductName(String snapshot, String productType) {
+        String fallback = "SUBSCRIPTION".equals(productType) ? "订阅套餐" : "道具";
+        if (StringUtils.isBlank(snapshot)) {
+            return fallback;
+        }
+        try {
+            JSONObject snap = JSONUtil.parseObj(snapshot);
+            String name = snap.getStr("planName");
+            if (StringUtils.isBlank(name)) {
+                name = snap.getStr("skuName");
+            }
+            return StringUtils.isBlank(name) ? fallback : name;
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 }

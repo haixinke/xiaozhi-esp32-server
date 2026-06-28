@@ -218,7 +218,7 @@ Page({
 
   formatDate(dateStr) {
     if (!dateStr) return '';
-    var d = new Date(dateStr);
+    var d = new Date(String(dateStr).replace(/ /g, 'T'));
     var y = d.getFullYear();
     var m = d.getMonth() + 1;
     var day = d.getDate();
@@ -470,6 +470,10 @@ Page({
 
   onCompanionTap() {
     wx.navigateTo({ url: '/pages/companion/profile/profile' });
+  },
+
+  onOrdersTap() {
+    wx.navigateTo({ url: '/pages/orders/orders' });
   },
 
   onThemeChange() {

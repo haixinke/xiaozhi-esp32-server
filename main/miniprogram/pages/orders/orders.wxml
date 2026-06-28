@@ -1,0 +1,58 @@
+<view class="orders-container {{darkMode ? 'dark' : ''}}">
+
+  <!-- 顶部Tab筛选 -->
+  <view class="orders-tabs">
+    <view class="orders-tab {{activeTab === item.key ? 'orders-tab-active' : ''}}"
+          wx:for="{{tabs}}" wx:key="key"
+          data-key="{{item.key}}" bindtap="onTabTap">
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+
+  <!-- 加载骨架 -->
+  <block wx:if="{{loading}}">
+    <view class="order-skeleton" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+      <view class="order-skel-line order-skel-name"></view>
+      <view class="order-skel-line order-skel-meta"></view>
+      <view class="order-skel-line order-skel-price"></view>
+    </view>
+  </block>
+
+  <!-- 错误状态 -->
+  <view class="orders-state" wx:elif="{{error}}">
+    <text class="orders-state-text">加载失败</text>
+    <view class="orders-retry" bindtap="onRetry">重试</view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="orders-state" wx:elif="{{empty}}">
+    <text class="orders-state-text">{{emptyText}}</text>
+  </view>
+
+  <!-- 订单列表 -->
+  <block wx:else>
+    <view class="order-card" wx:for="{{filteredOrders}}" wx:key="id">
+      <!-- 卡片头部：商品名 + 状态标签 -->
+      <view class="order-card-header">
+        <text class="order-product-name">{{item.productName}}</text>
+        <view class="order-status-tag order-status-{{item.statusClass}}">{{item.statusText}}</view>
+      </view>
+
+      <!-- 卡片主体：类型标签 + 金额 + 数量 -->
+      <view class="order-card-body">
+        <view class="order-type-tag order-type-{{item.typeClass}}">{{item.typeLabel}}</view>
+        <view class="order-amount-row">
+          <text class="order-amount">¥{{item.amountYuan}}</text>
+          <text class="order-qty" wx:if="{{item.quantity > 1}}">×{{item.quantity}}</text>
+        </view>
+      </view>
+
+      <!-- 卡片底部：订单号 + 下单时间 -->
+      <view class="order-card-footer">
+        <text class="order-trade-no">订单号 {{item.outTradeNo}}</text>
+        <text class="order-time">{{item.createdText}}</text>
+      </view>
+    </view>
+  </block>
+
+</view>

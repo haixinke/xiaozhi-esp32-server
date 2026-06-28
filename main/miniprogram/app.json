@@ -12,7 +12,8 @@
     "pages/companion/change-soul/change-soul",
     "pages/companion/change-voice/change-voice",
     "pages/companion/change-role/change-role",
-    "pages/voice-call/voice-call"
+    "pages/voice-call/voice-call",
+    "pages/orders/orders"
   ],
   "window": {
     "navigationBarTitleText": "笨笨女友",

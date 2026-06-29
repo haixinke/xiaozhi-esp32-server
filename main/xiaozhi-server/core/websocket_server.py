@@ -70,7 +70,7 @@ class WebSocketServer:
 
         # 连接数管理
         server_config = self.config["server"]
-        self._max_connections = max(1, int(server_config.get("max_connections", 50)))
+        self._max_connections = max(1, int(server_config.get("max_connections", 80)))
         self._warning_ratio = min(1.0, max(0.0, float(server_config.get("max_connections_warning_ratio", 0.8))))
         self._active_connections = 0
         self._warning_threshold = int(self._max_connections * self._warning_ratio)

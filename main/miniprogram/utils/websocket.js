@@ -363,7 +363,12 @@ class WebSocketManager {
     this._pingTimer = setInterval(() => {
       if (this.state === 'connected') {
         this.sendPing();
-        this._startPongTimeout();
+        // 仅在没有活跃 pong 超时计时器时才启动新的，
+        // 避免每次 ping 都重置计时器导致超时永远不触发。
+        // 正确逻辑：发 ping → 等 pong → 收到 pong 清除计时器 → 下次 ping 再启动
+        if (!this._pongTimeoutTimer) {
+          this._startPongTimeout();
+        }
       }
     }, PING_INTERVAL_MS);
   }

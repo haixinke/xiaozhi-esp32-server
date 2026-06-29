@@ -331,6 +331,7 @@ App({
     this.globalData.subscriptionFeatures = [];
     wx.removeStorageSync('token');
     wx.removeStorageSync('openid');
+    wx.removeStorageSync('agentId');
     wx.removeStorageSync('planCode');
     wx.removeStorageSync('subscriptionFeatures');
     wx.removeStorageSync('tokenIssuedAt');

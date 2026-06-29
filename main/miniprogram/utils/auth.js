@@ -2,6 +2,8 @@
  * 登录态管理模块
  */
 
+var TOKEN_REFRESH_BUFFER_SECONDS = 300; // 提前 5 分钟视为过期，抵消客户端时钟漂移
+
 /**
  * 获取当前 token
  * @returns {string|null}
@@ -11,19 +13,22 @@ function getToken() {
 }
 
 /**
- * 保存 token 和 openid
+ * 保存 token、openid 以及签发时间、有效期
  * @param {string} token
  * @param {string} openid
+ * @param {number} [expireInSeconds] 有效期（秒），后端 /wechat/login 返回
  */
-function setToken(token, openid) {
-  console.log('[setToken] 保存token - token存在:', !!token, 'token长度:', token ? token.length : 0, 'token前缀:', token ? token.substring(0, 20) : 'N/A');
+function setToken(token, openid, expireInSeconds) {
+  console.log('[setToken] 保存token - 存在:', !!token, '长度:', token ? token.length : 0, 'expire(s):', expireInSeconds || 0);
   wx.setStorageSync('token', token);
   if (openid) {
     wx.setStorageSync('openid', openid);
   }
-  // 验证保存是否成功
-  const savedToken = wx.getStorageSync('token');
-  console.log('[setToken] 验证保存 - 读取到的token存在:', !!savedToken, '读取到的token前缀:', savedToken ? savedToken.substring(0, 20) : 'N/A');
+  wx.setStorageSync('tokenIssuedAt', Date.now());
+  wx.setStorageSync('tokenExpireIn', expireInSeconds || 0);
+
+  var savedToken = wx.getStorageSync('token');
+  console.log('[setToken] 验证保存 - 读取到的token存在:', !!savedToken);
 }
 
 /**
@@ -33,6 +38,8 @@ function clearToken() {
   wx.removeStorageSync('token');
   wx.removeStorageSync('openid');
   wx.removeStorageSync('agentId');
+  wx.removeStorageSync('tokenIssuedAt');
+  wx.removeStorageSync('tokenExpireIn');
 }
 
 /**
@@ -41,6 +48,37 @@ function clearToken() {
  */
 function isLoggedIn() {
   return !!wx.getStorageSync('token');
+}
+
+/**
+ * 读取本地 token 元信息
+ * @returns {{token: string|null, issuedAt: number, expireIn: number}}
+ */
+function getTokenInfo() {
+  return {
+    token: wx.getStorageSync('token') || null,
+    issuedAt: wx.getStorageSync('tokenIssuedAt') || 0,
+    expireIn: wx.getStorageSync('tokenExpireIn') || 0
+  };
+}
+
+/**
+ * 判断 token 是否已经过期或即将过期
+ * - 无 token 视为过期
+ * - 未记录签发时间/有效期的老 token，也视为过期，触发一次刷新后即可修复
+ * @param {number} [bufferSeconds] 提前量，默认 300 秒
+ * @returns {boolean}
+ */
+function isTokenExpiredOrAboutToExpire(bufferSeconds) {
+  if (bufferSeconds === undefined || bufferSeconds === null) {
+    bufferSeconds = TOKEN_REFRESH_BUFFER_SECONDS;
+  }
+  var info = getTokenInfo();
+  if (!info.token) return true;
+  if (!info.issuedAt || !info.expireIn) return true;
+
+  var expiresAt = info.issuedAt + info.expireIn * 1000;
+  return Date.now() + bufferSeconds * 1000 >= expiresAt;
 }
 
 /**
@@ -58,5 +96,7 @@ module.exports = {
   setToken,
   clearToken,
   isLoggedIn,
-  refreshLogin
+  refreshLogin,
+  getTokenInfo,
+  isTokenExpiredOrAboutToExpire
 };

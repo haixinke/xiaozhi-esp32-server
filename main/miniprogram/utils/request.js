@@ -47,7 +47,8 @@ function request(options) {
       },
       success: (res) => {
         if (res.statusCode === 401 && !options._isRetry) {
-          // Token 过期，重新静默登录后重试
+          // Token 过期，重新静默登录后重试（silentLogin 有单例锁，多个并发 401 会复用同一次登录）
+          console.warn('[request] 收到 401，尝试静默登录后重试:', options.url);
           const app = getApp();
           app.silentLogin().then(() => {
             request({ ...options, _isRetry: true }).then(resolve).catch(reject);

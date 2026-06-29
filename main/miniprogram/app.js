@@ -4,7 +4,7 @@
  */
 
 const { post, get } = require('./utils/request');
-const { setToken } = require('./utils/auth');
+const { setToken, isTokenExpiredOrAboutToExpire } = require('./utils/auth');
 const { checkOrRegisterDevice, completeDeviceBinding } = require('./utils/device');
 const { applyGlobalTheme } = require('./utils/theme');
 
@@ -30,15 +30,35 @@ App({
     needReconnectAfterSub: false // 订阅档位变更后需断开重连以加载最新 agent 配置（由 index 页 onShow 消费）
   },
 
+  // 单例锁：保证同时只有一个 wx.login 请求在跑
+  _loginPromise: null,
+
   onLaunch() {
     applyGlobalTheme();
     this.initInBackground();
   },
 
+  /**
+   * 小程序切回前台时检查 token
+   * 如果 token 即将过期，执行静默刷新
+   */
+  onShow() {
+    // 仅在已有登录记录时检查过期（全新用户由 initInBackground 处理）
+    if (!wx.getStorageSync('token')) return;
+    if (!isTokenExpiredOrAboutToExpire()) return;
+
+    console.log('[app onShow] token 即将过期，执行静默刷新');
+    this.silentLogin().then(() => {
+      console.log('[app onShow] 静默刷新成功');
+    }).catch(err => {
+      console.error('[app onShow] 静默刷新失败:', err);
+    });
+  },
+
   initInBackground() {
-    // 1. 尝试从 storage 恢复登录态
+    // 1. 尝试从 storage 恢复登录态，且 token 未过期
     const token = wx.getStorageSync('token');
-    if (token) {
+    if (token && !isTokenExpiredOrAboutToExpire()) {
       this.globalData.token = token;
       this.globalData.openid = wx.getStorageSync('openid');
       this.globalData.virtualMAC = wx.getStorageSync('openid');
@@ -62,7 +82,7 @@ App({
       return;
     }
 
-    // 2. 未登录，先静默登录，根据返回结果判断是否需要跳转
+    // 2. token 缺失或已过期，走静默登录
     this.silentLogin().then(() => {
       console.log('后台登录成功');
 
@@ -86,11 +106,18 @@ App({
   },
 
   /**
-   * 微信静默登录
+   * 微信静默登录（带单例锁）
+   * 多次调用会复用同一个 Promise，避免并发 wx.login
    * wx.login() 获取 code → 后端换取 token + openid
    */
   async silentLogin() {
-    return new Promise((resolve, reject) => {
+    if (this._loginPromise) {
+      console.log('[silentLogin] 复用进行中的登录请求');
+      return this._loginPromise;
+    }
+
+    console.log('[silentLogin] 开始新的登录请求');
+    this._loginPromise = new Promise((resolve, reject) => {
       wx.login({
         success: async (loginRes) => {
           if (!loginRes.code) {
@@ -112,10 +139,10 @@ App({
             const openid = loginData.openid;
             const agentId = loginData.agentId;
 
-            // 保存登录态
+            // 保存登录态及有效期
             this.globalData.token = token;
             this.globalData.openid = openid;
-            setToken(token, openid);
+            setToken(token, openid, loginData.expire);
 
             // 保存 agentId 到 storage（可能为null）
             if (agentId) {
@@ -126,7 +153,7 @@ App({
             // 使用 openid 作为设备标识
             this.globalData.virtualMAC = openid;
 
-            console.log('静默登录成功, OpenID:', openid.substring(0, 8) + '...', 'AgentId:', agentId, 'Token:', token ? token.substring(0, 20) + '...' : 'null');
+            console.log('静默登录成功, OpenID:', openid.substring(0, 8) + '...', 'AgentId:', agentId, 'hasToken:', !!token);
             resolve();
           } catch (err) {
             console.error('静默登录请求失败:', err);
@@ -139,6 +166,13 @@ App({
         }
       });
     });
+
+    // 请求结束后释放锁，成功/失败都释放
+    this._loginPromise.finally(() => {
+      this._loginPromise = null;
+    });
+
+    return this._loginPromise;
   },
 
   /**
@@ -299,5 +333,7 @@ App({
     wx.removeStorageSync('openid');
     wx.removeStorageSync('planCode');
     wx.removeStorageSync('subscriptionFeatures');
+    wx.removeStorageSync('tokenIssuedAt');
+    wx.removeStorageSync('tokenExpireIn');
   }
 });

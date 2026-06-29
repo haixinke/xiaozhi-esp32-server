@@ -191,3 +191,69 @@ def _check_chat_quota(self) -> bool:
    - 验证付费用户（has chat_no_limit）不受限
    - 验证小程序主动层：本地计数达零时客户端直接拦截，不发送消息
 4. **跨天测试**: 手动删除 Redis key 或等待 TTL 过期，验证重置后可继续聊天
+
+---
+
+## 代码审查修复（Code Review Fixes）
+
+实现完成后经代码审查发现 4 个问题（2 HIGH / 2 MEDIUM），均已修复：
+
+### Fix 1 (HIGH): 语音输入路径缺少客户端侧配额拦截
+
+**问题**: `onVoiceTouchStart()` 只在 `onTextSend()` 中做了 `chatRemaining === 0` 检查，语音输入路径可绕过客户端拦截，用户按住说话仍会发送音频到服务端。
+
+**修复文件**: `main/miniprogram/pages/index/index.js`
+
+**修复方式**: 在 `onVoiceTouchStart()` 的 `hasVoiceInput` 权益检查之后、开始录音之前，增加配额检查：
+```javascript
+// 配额检查：免费用户配额耗尽时拦截语音输入
+if (this.data.chatRemaining === 0) {
+  this.setData({ showQuotaExceeded: true });
+  return;
+}
+```
+
+### Fix 2 (HIGH): 排队消息补发时未递减本地配额计数
+
+**问题**: 用户断连时发消息走 `_pendingText` 排队路径，重连后 hello 回调补发 `sendText(pending)` 成功，但两处都未递减 `chatRemaining`，导致本地计数与服务端 Redis 不一致。
+
+**修复文件**: `main/miniprogram/pages/index/index.js`
+
+**修复方式**: 在 hello 回调中 `sendText(pending)` 成功后递减本地配额计数：
+```javascript
+this.wsManager.sendText(pending);
+// 补发成功后递减本地配额计数
+var newRemaining = this.data.chatRemaining;
+if (newRemaining > 0) {
+  newRemaining = newRemaining - 1;
+}
+this.setData({ chatState: STATE_THINKING, chatRemaining: newRemaining });
+```
+
+**设计说明**: 不在排队时（`_pendingText = text`）递减，因为连接可能最终失败导致消息回填输入框（L387-390）。仅在补发成功后递减，保证计数与实际发送次数一致。
+
+### Fix 3 (MEDIUM): getChatQuotaInfo 中 Integer.parseInt 无异常保护
+
+**问题**: `ConfigServiceImpl.getChatQuotaInfo()` 中 `Integer.parseInt(count.toString())` 若 Redis 返回非数字字符串会抛 `NumberFormatException`，导致接口 500 错误。
+
+**修复文件**: `main/manager-api/src/main/java/xiaozhi/modules/config/service/impl/ConfigServiceImpl.java`
+
+**修复方式**: 用 try-catch 包裹，异常时回退为 0：
+```java
+int used = 0;
+if (count != null) {
+    try {
+        used = Integer.parseInt(count.toString());
+    } catch (NumberFormatException e) {
+        used = 0;
+    }
+}
+```
+
+### Fix 4 (MEDIUM): 注释拼写错误
+
+**问题**: `connection.py` 第 960 行注释 `仅顾层调用` 应为 `仅顶层调用`。
+
+**修复文件**: `main/xiaozhi-server/core/connection.py`
+
+**修复方式**: 修正拼写 `仅顾层` → `仅顶层`。

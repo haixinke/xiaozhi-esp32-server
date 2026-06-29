@@ -12,6 +12,8 @@ import xiaozhi.modules.subscription.service.SubscriptionService;
 import xiaozhi.modules.subscription.vo.EntitlementVO;
 import xiaozhi.modules.subscription.vo.SubscriptionPlanVO;
 import xiaozhi.modules.subscription.vo.UserSubscriptionVO;
+import xiaozhi.modules.config.service.ConfigService;
+import xiaozhi.modules.config.vo.ChatQuotaResultVO;
 
 import java.util.List;
 
@@ -22,6 +24,7 @@ import java.util.List;
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
+    private final ConfigService configService;
 
     @GetMapping("/plans")
     @Operation(summary = "列出可购买的订阅档位（公开）")
@@ -41,5 +44,12 @@ public class SubscriptionController {
     public Result<EntitlementVO> entitlements() {
         Long userId = SecurityUser.getUserId();
         return new Result<EntitlementVO>().ok(subscriptionService.getEntitlements(userId));
+    }
+
+    @GetMapping("/chat-quota")
+    @Operation(summary = "我的今日聊天配额")
+    public Result<ChatQuotaResultVO> chatQuota() {
+        Long userId = SecurityUser.getUserId();
+        return new Result<ChatQuotaResultVO>().ok(configService.getChatQuotaInfo(userId));
     }
 }

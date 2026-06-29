@@ -195,4 +195,14 @@ public class RedisKeys {
         return "device:address_book:all";
     }
 
+    /**
+     * 用户每日聊天计数Key
+     *
+     * @param userId 用户ID
+     * @param date   日期 yyyyMMdd
+     */
+    public static String getChatDailyCountKey(Long userId, String date) {
+        return "user:" + userId + ":chat_daily:" + date;
+    }
+
 }

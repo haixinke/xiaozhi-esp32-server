@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -36,6 +40,7 @@ import xiaozhi.modules.correctword.service.CorrectWordFileService;
 import xiaozhi.modules.agent.vo.AgentVoicePrintVO;
 import xiaozhi.modules.correctword.vo.CorrectWordSimpleVO;
 import xiaozhi.modules.config.service.ConfigService;
+import xiaozhi.modules.config.vo.ChatQuotaResultVO;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.model.entity.ModelConfigEntity;
@@ -46,6 +51,7 @@ import xiaozhi.modules.timbre.service.TimbreService;
 import xiaozhi.modules.timbre.vo.TimbreDetailsVO;
 import xiaozhi.modules.voiceclone.entity.VoiceCloneEntity;
 import xiaozhi.modules.voiceclone.service.VoiceCloneService;
+import xiaozhi.modules.subscription.service.SubscriptionService;
 
 @Service
 @AllArgsConstructor
@@ -63,6 +69,10 @@ public class ConfigServiceImpl implements ConfigService {
     private final VoiceCloneService cloneVoiceService;
     private final AgentVoicePrintDao agentVoicePrintDao;
     private final CorrectWordFileService correctWordFileService;
+    private final SubscriptionService subscriptionService;
+
+    private static final int FREE_DAILY_CHAT_LIMIT = 30;
+    private static final String FEATURE_CHAT_NO_LIMIT = "chat_no_limit";
 
     @Override
     public Object getConfig(Boolean isCache) {
@@ -550,5 +560,80 @@ public class ConfigServiceImpl implements ConfigService {
         }
         result.put("prompt", prompt);
         result.put("summaryMemory", summaryMemory);
+    }
+
+    @Override
+    public ChatQuotaResultVO checkAndIncrementChatQuota(String macAddress) {
+        ChatQuotaResultVO result = new ChatQuotaResultVO();
+        result.setTotal(FREE_DAILY_CHAT_LIMIT);
+
+        // 1. macAddress → DeviceEntity → userId
+        DeviceEntity device = deviceService.getDeviceByMacAddress(macAddress);
+        if (device == null || device.getUserId() == null) {
+            // 设备不存在或无绑定用户，保守放行
+            result.setAllowed(true);
+            result.setRemaining(FREE_DAILY_CHAT_LIMIT);
+            return result;
+        }
+        Long userId = device.getUserId();
+
+        // 2. 检查用户是否有 chat_no_limit 权益
+        if (subscriptionService.hasFeature(userId, FEATURE_CHAT_NO_LIMIT)) {
+            result.setAllowed(true);
+            result.setRemaining(-1); // -1 表示无限
+            return result;
+        }
+
+        // 3. Redis 原子自增计数
+        String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        String redisKey = RedisKeys.getChatDailyCountKey(userId, today);
+
+        long secondsUntilMidnight = Duration.between(
+                LocalDateTime.now(),
+                LocalDate.now().plusDays(1).atStartOfDay()
+        ).getSeconds();
+        if (secondsUntilMidnight <= 0) {
+            secondsUntilMidnight = 1;
+        }
+
+        Long currentCount = redisUtils.increment(redisKey, secondsUntilMidnight);
+
+        if (currentCount <= FREE_DAILY_CHAT_LIMIT) {
+            result.setAllowed(true);
+            result.setRemaining((int) (FREE_DAILY_CHAT_LIMIT - currentCount));
+        } else {
+            result.setAllowed(false);
+            result.setRemaining(0);
+            result.setMessage("每日免费对话 30 轮已用完，升级套餐可无限畅聊");
+        }
+        return result;
+    }
+
+    @Override
+    public ChatQuotaResultVO getChatQuotaInfo(Long userId) {
+        ChatQuotaResultVO result = new ChatQuotaResultVO();
+        result.setTotal(FREE_DAILY_CHAT_LIMIT);
+
+        if (subscriptionService.hasFeature(userId, FEATURE_CHAT_NO_LIMIT)) {
+            result.setAllowed(true);
+            result.setRemaining(-1);
+            return result;
+        }
+
+        String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        String redisKey = RedisKeys.getChatDailyCountKey(userId, today);
+        Object count = redisUtils.get(redisKey);
+        int used = 0;
+        if (count != null) {
+            try {
+                used = Integer.parseInt(count.toString());
+            } catch (NumberFormatException e) {
+                used = 0;
+            }
+        }
+
+        result.setAllowed(used < FREE_DAILY_CHAT_LIMIT);
+        result.setRemaining(Math.max(0, FREE_DAILY_CHAT_LIMIT - used));
+        return result;
     }
 }

@@ -14,8 +14,10 @@ import lombok.AllArgsConstructor;
 import xiaozhi.common.utils.Result;
 import xiaozhi.common.validator.ValidatorUtils;
 import xiaozhi.modules.config.dto.AgentModelsDTO;
+import xiaozhi.modules.config.dto.ChatQuotaCheckDTO;
 import xiaozhi.modules.config.dto.CorrectWordsDTO;
 import xiaozhi.modules.config.service.ConfigService;
+import xiaozhi.modules.config.vo.ChatQuotaResultVO;
 
 /**
  * xiaozhi-server 配置获取
@@ -51,5 +53,13 @@ public class ConfigController {
         ValidatorUtils.validateEntity(dto);
         List<String> list = configService.getCorrectWords(dto.getMacAddress());
         return new Result<Object>().ok(list);
+    }
+
+    @PostMapping("chat-quota/check")
+    @Operation(summary = "聊天配额检查（服务间调用）")
+    public Result<ChatQuotaResultVO> checkChatQuota(@Valid @RequestBody ChatQuotaCheckDTO dto) {
+        ValidatorUtils.validateEntity(dto);
+        ChatQuotaResultVO result = configService.checkAndIncrementChatQuota(dto.getMacAddress());
+        return new Result<ChatQuotaResultVO>().ok(result);
     }
 }

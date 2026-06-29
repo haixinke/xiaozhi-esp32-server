@@ -259,6 +259,22 @@ async def lookup_address_book(caller_mac: str, nickname: str) -> Optional[Dict]:
         return None
 
 
+async def check_chat_quota(mac_address: str) -> Optional[Dict]:
+    """检查聊天配额（先加后查，原子操作）"""
+    if not ManageApiClient._instance:
+        return None
+    try:
+        return await ManageApiClient._instance._execute_async_request(
+            "POST",
+            "/config/chat-quota/check",
+            json={"macAddress": mac_address},
+        )
+    except Exception as e:
+        print(f"聊天配额检查失败: {e}")
+        # 失败时保守放行，不影响用户体验
+        return {"allowed": True, "remaining": -1, "total": 30}
+
+
 def init_service(config):
     ManageApiClient(config)
 

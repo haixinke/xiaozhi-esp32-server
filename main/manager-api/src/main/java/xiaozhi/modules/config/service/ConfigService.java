@@ -3,6 +3,8 @@ package xiaozhi.modules.config.service;
 import java.util.List;
 import java.util.Map;
 
+import xiaozhi.modules.config.vo.ChatQuotaResultVO;
+
 public interface ConfigService {
     /**
      * 获取服务器配置
@@ -28,4 +30,20 @@ public interface ConfigService {
      * @return 替换词列表，格式如 ["模板1|模板01", "模板2|模板02"]
      */
     List<String> getCorrectWords(String macAddress);
+
+    /**
+     * 检查聊天配额并自增计数（服务间调用）
+     *
+     * @param macAddress 设备MAC地址
+     * @return 配额检查结果
+     */
+    ChatQuotaResultVO checkAndIncrementChatQuota(String macAddress);
+
+    /**
+     * 查询用户今日聊天配额信息（只读不加）
+     *
+     * @param userId 用户ID
+     * @return 配额信息
+     */
+    ChatQuotaResultVO getChatQuotaInfo(Long userId);
 }

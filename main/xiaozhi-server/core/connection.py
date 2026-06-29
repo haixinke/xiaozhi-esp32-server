@@ -911,9 +911,40 @@ class ConnectionHandler:
 
     def change_system_prompt(self, prompt):
         self.prompt = prompt
-        # 更新系统prompt至上下文
+        # 更新系统 prompt至上下文
         self.dialogue.update_system_message(self.prompt)
-
+    
+    def _check_chat_quota(self) -> bool:
+        """检查聊天配额。超限时发送 WebSocket 事件并返回 True，放行返回 False。"""
+        try:
+            from config.manage_api_client import check_chat_quota
+            future = asyncio.run_coroutine_threadsafe(
+                check_chat_quota(self.headers.get("device-id")),
+                self.loop,
+            )
+            result = future.result(timeout=5)
+    
+            if result is None or result.get("allowed", True):
+                return False  # 放行
+    
+            # 超限：发送 WebSocket 事件（非 TTS），由小程序端 UI 层处理
+            self.logger.bind(tag=TAG).info(
+                f"用户聊天配额已用尽: device_id={self.headers.get('device-id')}"
+            )
+            asyncio.run_coroutine_threadsafe(
+                self.websocket.send(json.dumps({
+                    "type": "quota_exceeded",
+                    "remaining": 0,
+                    "total": result.get("total", 30),
+                })),
+                self.loop,
+            )
+            return True  # 超限，跳过 LLM
+    
+        except Exception as e:
+            self.logger.bind(tag=TAG).warning(f"配额检查异常，保守放行: {e}")
+            return False
+    
     def chat(self, query, depth=0):
         # 保存当前任务的sentence_id到局部变量，避免被新任务覆盖
         current_sentence_id = None
@@ -925,6 +956,12 @@ class ConnectionHandler:
         if depth == 0:
             current_sentence_id = str(uuid.uuid4().hex)
             self.sentence_id = current_sentence_id  # 更新共享属性
+
+            # 配额检查：仅顶层调用、且连接来自 API 管理模式时检查
+            if self.read_config_from_api and not self.close_after_chat:
+                if self._check_chat_quota():
+                    return  # 超限，已发送 WebSocket 事件，跳过 LLM
+
             self.dialogue.put(Message(role="user", content=query))
             self.tts.tts_text_queue.put(
                 TTSMessageDTO(

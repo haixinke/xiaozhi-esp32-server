@@ -75,6 +75,10 @@ Page({
     hasVoiceInput: false,        // 是否有语音输入权限
     hasLongTermMemory: false,    // 是否有聊天历史权限
 
+    // 聊天配额
+    chatRemaining: -1,           // 剩余次数：-1=不限, >=0 显示剩余
+    showQuotaExceeded: false,    // 是否显示配额耗尽弹窗
+
     // 多功能浮窗
     showToolPanel: false,
 
@@ -431,7 +435,12 @@ Page({
           this._pendingText = '';
           try {
             this.wsManager.sendText(pending);
-            this.setData({ chatState: STATE_THINKING });
+            // 补发成功后递减本地配额计数
+            var newRemaining = this.data.chatRemaining;
+            if (newRemaining > 0) {
+              newRemaining = newRemaining - 1;
+            }
+            this.setData({ chatState: STATE_THINKING, chatRemaining: newRemaining });
           } catch (err) {
             logger.error('补发文本失败:', err);
             this.setData({ inputText: pending, chatState: STATE_IDLE });
@@ -465,6 +474,15 @@ Page({
 
       case 'goodbye':
         this._finalizeStreaming(STATE_IDLE);
+        break;
+
+      case 'quota_exceeded':
+        // 配额耗尽：显示升级引导弹窗，不在聊天流中插入消息
+        this.setData({
+          chatRemaining: 0,
+          showQuotaExceeded: true,
+          chatState: STATE_IDLE,
+        });
         break;
 
       default:
@@ -730,6 +748,12 @@ Page({
     const text = (this.data.inputText || '').trim();
     if (!text) return;
 
+    // 配额检查：本地计数达零时客户端直接拦截
+    if (this.data.chatRemaining === 0) {
+      this.setData({ showQuotaExceeded: true });
+      return;
+    }
+
     // 未连接（空闲断开/连接中）：排队该消息，触发重连，握手完成后自动补发
     if (this.data.connectionState !== 'connected') {
       this._pendingText = text;
@@ -754,9 +778,15 @@ Page({
 
     // 清空输入框并更新状态
     // 注意：不在这里添加用户消息，等待服务端的 stt 消息来触发显示
+    // 发送成功后递减本地配额计数
+    var newRemaining = this.data.chatRemaining;
+    if (newRemaining > 0) {
+      newRemaining = newRemaining - 1;
+    }
     this.setData({
       inputText: '',
       chatState: STATE_THINKING,
+      chatRemaining: newRemaining,
     });
   },
 
@@ -784,6 +814,16 @@ Page({
         }
       },
     });
+  },
+
+  onQuotaUpgrade() {
+    this.setData({ showQuotaExceeded: false });
+    app.globalData.openContractPopupAfterSwitch = true;
+    wx.switchTab({ url: '/pages/settings/settings' });
+  },
+
+  onQuotaDismiss() {
+    this.setData({ showQuotaExceeded: false });
   },
 
   onToolPanelToggle() {
@@ -943,6 +983,12 @@ Page({
       return;
     }
 
+    // 配额检查：免费用户配额耗尽时拦截语音输入
+    if (this.data.chatRemaining === 0) {
+      this.setData({ showQuotaExceeded: true });
+      return;
+    }
+
     const touch = (e.touches && e.touches[0]) || {};
     this._voiceStartY = touch.clientY || 0;
     this.setData({ recording: true, recordCancelled: false });
@@ -1060,10 +1106,19 @@ Page({
       this._historyNoMore = false;
       this._historyPage = 1;
     }
+
+    // 配额信息
+    var quota = (app.globalData && app.globalData.chatQuota) || null;
+    var chatRemaining = -1;
+    if (quota && quota.remaining !== undefined && quota.remaining !== null) {
+      chatRemaining = quota.remaining; // -1=无限, >=0 显示剩余
+    }
+
     this.setData({
       hasVoiceInput: features.indexOf('voice_input') !== -1,
       hasLongTermMemory: newHasLongTermMemory,
       historyNoMore: this._historyNoMore,
+      chatRemaining: chatRemaining,
     });
   },
 

@@ -185,4 +185,16 @@
     companionAvatar="{{companionAvatar}}"
     top="{{floatingBallTop}}"
   />
+
+  <!-- 配额耗尽弹窗 -->
+  <view class="quota-mask" wx:if="{{showQuotaExceeded}}" catchtap="onQuotaDismiss">
+    <view class="quota-popup" catchtap="">
+      <view class="quota-title">她今天有些累了</view>
+      <view class="quota-desc">每日免费对话 30 轮已用完，升级套餐可无限畅聊</view>
+      <view class="quota-btn-group">
+        <button class="quota-btn quota-btn-primary" bindtap="onQuotaUpgrade">立即升级</button>
+        <button class="quota-btn quota-btn-secondary" bindtap="onQuotaDismiss">明天再来</button>
+      </view>
+    </view>
+  </view>
 </view>

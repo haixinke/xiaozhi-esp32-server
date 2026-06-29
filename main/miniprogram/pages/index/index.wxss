@@ -1038,3 +1038,88 @@ page {
 .dark .history-nomore-text {
   color: rgba(196, 155, 165, 0.5);
 }
+
+/* ===== 配额耗尽弹窗 ===== */
+.quota-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quota-popup {
+  width: 580rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 48rpx 40rpx 40rpx;
+  text-align: center;
+  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.15);
+}
+
+.quota-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.quota-desc {
+  font-size: 28rpx;
+  color: #888;
+  margin-bottom: 48rpx;
+  line-height: 1.5;
+}
+
+.quota-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.quota-btn {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  border: none;
+}
+
+.quota-btn::after {
+  border: none;
+}
+
+.quota-btn-primary {
+  background: linear-gradient(135deg, #864e5a, #b86b7a);
+  color: #fff;
+}
+
+.quota-btn-secondary {
+  background: #f5f5f5;
+  color: #666;
+}
+
+/* 暗色模式 */
+.dark .quota-popup {
+  background: #2a2a2a;
+}
+
+.dark .quota-title {
+  color: #e8e4e3;
+}
+
+.dark .quota-desc {
+  color: #999;
+}
+
+.dark .quota-btn-secondary {
+  background: #3a3a3a;
+  color: #ccc;
+}

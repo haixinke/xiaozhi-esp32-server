@@ -1,0 +1,70 @@
+{
+  "runs": [
+    {
+      "date": "2026-06-01T08:34:47.794536+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 874
+    },
+    {
+      "date": "2026-06-10T22:07:34.718277+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 109
+    },
+    {
+      "date": "2026-06-13T08:21:17.370809+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 11,
+      "mode": "update (code-only, AST)"
+    },
+    {
+      "date": "2026-06-13T11:11:44.959579+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 5,
+      "mode": "update (code-only, AST)"
+    },
+    {
+      "date": "2026-06-16T12:43:38.302289+00:00",
+      "input_tokens": 7626,
+      "output_tokens": 702,
+      "files": 24,
+      "mode": "update"
+    },
+    {
+      "date": "2026-06-16T14:48:37.004325+00:00",
+      "input_tokens": 7824,
+      "output_tokens": 707,
+      "files": 24
+    },
+    {
+      "date": "2026-06-21T15:21:14.167527+00:00",
+      "input_tokens": 20851,
+      "output_tokens": 1827,
+      "files": 104
+    },
+    {
+      "date": "2026-06-26T00:13:50.539757+00:00",
+      "input_tokens": 28000,
+      "output_tokens": 5200,
+      "files": 1005
+    },
+    {
+      "date": "2026-06-26T14:38:21.374047+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 27,
+      "mode": "update (code-only, AST)"
+    },
+    {
+      "date": "2026-06-29T07:36:53.855440+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 221
+    }
+  ],
+  "total_input_tokens": 64301,
+  "total_output_tokens": 8436
+}

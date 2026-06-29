@@ -205,8 +205,13 @@ sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01.tar.bz2
 # main/manager-api/src/main/resources/application-dev.yml
 main/manager-mobile/env/.env.development
 
-# Knowledge graph (regenerate with /graphify)
-graphify-out/
+# Knowledge graph outputs (regenerate with /graphify)
+graphify-out/**
+!graphify-out/GRAPH_REPORT.md
+!graphify-out/graph.html
+!graphify-out/graph.json
+!graphify-out/manifest.json
+!graphify-out/cost.json
 
 # Visual companion mockups (transient)
 .superpowers/

@@ -44,6 +44,7 @@ class ManageApiClient:
             raise Exception("请先配置manager-api的secret")
 
         cls._secret = cls.config.get("secret")
+        cls.free_daily_chat_limit = config.get("chat_quota", {}).get("free_daily_limit", 30)
         cls.max_retries = cls.config.get("max_retries", 6)  # 最大重试次数
         cls.retry_delay = cls.config.get("retry_delay", 10)  # 初始重试延迟(秒)
         # 不在这里创建 AsyncClient，延迟到实际使用时创建
@@ -272,7 +273,7 @@ async def check_chat_quota(mac_address: str) -> Optional[Dict]:
     except Exception as e:
         print(f"聊天配额检查失败: {e}")
         # 失败时保守放行，不影响用户体验
-        return {"allowed": True, "remaining": -1, "total": 30}
+        return {"allowed": True, "remaining": -1, "total": ManageApiClient.free_daily_chat_limit}
 
 
 def init_service(config):

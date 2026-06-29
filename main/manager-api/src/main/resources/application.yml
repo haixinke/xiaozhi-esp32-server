@@ -41,6 +41,12 @@ knife4j:
   setting:
     enableFooter: false
 
+# 聊天配额
+chat:
+  quota:
+    # 免费用户每日聊天轮次上限
+    free-daily-limit: 30
+
 renren:
   redis:
     open: true

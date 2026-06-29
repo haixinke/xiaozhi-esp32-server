@@ -17,7 +17,8 @@ import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
@@ -54,7 +55,7 @@ import xiaozhi.modules.voiceclone.service.VoiceCloneService;
 import xiaozhi.modules.subscription.service.SubscriptionService;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ConfigServiceImpl implements ConfigService {
     private final SysParamsService sysParamsService;
     private final DeviceService deviceService;
@@ -71,7 +72,9 @@ public class ConfigServiceImpl implements ConfigService {
     private final CorrectWordFileService correctWordFileService;
     private final SubscriptionService subscriptionService;
 
-    private static final int FREE_DAILY_CHAT_LIMIT = 30;
+    @Value("${chat.quota.free-daily-limit:30}")
+    private int freeDailyChatLimit;
+
     private static final String FEATURE_CHAT_NO_LIMIT = "chat_no_limit";
 
     @Override
@@ -565,14 +568,14 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public ChatQuotaResultVO checkAndIncrementChatQuota(String macAddress) {
         ChatQuotaResultVO result = new ChatQuotaResultVO();
-        result.setTotal(FREE_DAILY_CHAT_LIMIT);
+        result.setTotal(freeDailyChatLimit);
 
         // 1. macAddress → DeviceEntity → userId
         DeviceEntity device = deviceService.getDeviceByMacAddress(macAddress);
         if (device == null || device.getUserId() == null) {
             // 设备不存在或无绑定用户，保守放行
             result.setAllowed(true);
-            result.setRemaining(FREE_DAILY_CHAT_LIMIT);
+            result.setRemaining(freeDailyChatLimit);
             return result;
         }
         Long userId = device.getUserId();
@@ -598,13 +601,13 @@ public class ConfigServiceImpl implements ConfigService {
 
         Long currentCount = redisUtils.increment(redisKey, secondsUntilMidnight);
 
-        if (currentCount <= FREE_DAILY_CHAT_LIMIT) {
+        if (currentCount <= freeDailyChatLimit) {
             result.setAllowed(true);
-            result.setRemaining((int) (FREE_DAILY_CHAT_LIMIT - currentCount));
+            result.setRemaining((int) (freeDailyChatLimit - currentCount));
         } else {
             result.setAllowed(false);
             result.setRemaining(0);
-            result.setMessage("每日免费对话 30 轮已用完，升级套餐可无限畅聊");
+            result.setMessage("每日免费对话 " + freeDailyChatLimit + " 轮已用完，升级套餐可无限畅聊");
         }
         return result;
     }
@@ -612,7 +615,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public ChatQuotaResultVO getChatQuotaInfo(Long userId) {
         ChatQuotaResultVO result = new ChatQuotaResultVO();
-        result.setTotal(FREE_DAILY_CHAT_LIMIT);
+        result.setTotal(freeDailyChatLimit);
 
         if (subscriptionService.hasFeature(userId, FEATURE_CHAT_NO_LIMIT)) {
             result.setAllowed(true);
@@ -632,8 +635,8 @@ public class ConfigServiceImpl implements ConfigService {
             }
         }
 
-        result.setAllowed(used < FREE_DAILY_CHAT_LIMIT);
-        result.setRemaining(Math.max(0, FREE_DAILY_CHAT_LIMIT - used));
+        result.setAllowed(used < freeDailyChatLimit);
+        result.setRemaining(Math.max(0, freeDailyChatLimit - used));
         return result;
     }
 }

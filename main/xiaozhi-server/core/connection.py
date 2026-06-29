@@ -935,7 +935,7 @@ class ConnectionHandler:
                 self.websocket.send(json.dumps({
                     "type": "quota_exceeded",
                     "remaining": 0,
-                    "total": result.get("total", 30),
+                    "total": result.get("total", self.config.get("chat_quota", {}).get("free_daily_limit", 30)),
                 })),
                 self.loop,
             )

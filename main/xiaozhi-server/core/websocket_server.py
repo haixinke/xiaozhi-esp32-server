@@ -68,6 +68,13 @@ class WebSocketServer:
         expire_seconds = auth_config.get("expire_seconds", None)
         self.auth = AuthManager(secret_key=secret_key, expire_seconds=expire_seconds)
 
+        # 连接数管理
+        server_config = self.config["server"]
+        self._max_connections = max(1, int(server_config.get("max_connections", 50)))
+        self._warning_ratio = min(1.0, max(0.0, float(server_config.get("max_connections_warning_ratio", 0.8))))
+        self._active_connections = 0
+        self._warning_threshold = int(self._max_connections * self._warning_ratio)
+
     async def start(self):
         server_config = self.config["server"]
         host = server_config.get("ip", "0.0.0.0")
@@ -106,42 +113,72 @@ class WebSocketServer:
                 ][0]
 
         """处理新连接，每次创建独立的ConnectionHandler"""
-        # 先认证，后建立连接
-        try:
-            await self._handle_auth(websocket)
-        except AuthenticationError:
-            await websocket.send("认证失败")
-            await websocket.close()
-            return
-        # 创建ConnectionHandler时传入当前server实例
-        handler = ConnectionHandler(
-            self.config,
-            self._vad,
-            self._asr,
-            self._llm,
-            self._memory,
-            self._intent,
-            self,  # 传入server实例
-        )
-        try:
-            await handler.handle_connection(websocket)
-        except Exception as e:
-            self.logger.bind(tag=TAG).error(f"处理连接时出错: {e}")
-        finally:
-            # 强制关闭连接（如果还没有关闭的话）
+        # --- 连接数限制检查 ---
+        if self._active_connections >= self._max_connections:
+            self.logger.bind(tag=TAG).warning(
+                f"连接数已达上限({self._active_connections}/{self._max_connections})，拒绝新连接"
+            )
             try:
-                # 安全地检查WebSocket状态并关闭
-                if hasattr(websocket, "closed") and not websocket.closed:
-                    await websocket.close()
-                elif hasattr(websocket, "state") and websocket.state.name != "CLOSED":
-                    await websocket.close()
-                else:
-                    # 如果没有closed属性，直接尝试关闭
-                    await websocket.close()
-            except Exception as close_error:
-                self.logger.bind(tag=TAG).error(
-                    f"服务器端强制关闭连接时出错: {close_error}"
-                )
+                await websocket.close(1013, "服务器连接数已满，请稍后重试")
+            except Exception:
+                pass
+            return
+
+        # 计数器 +1（从此处开始，所有退出路径都必须 -1）
+        self._active_connections += 1
+        # 告警日志
+        if self._active_connections >= self._warning_threshold:
+            self.logger.bind(tag=TAG).warning(
+                f"连接数接近上限: {self._active_connections}/{self._max_connections}"
+            )
+        else:
+            self.logger.bind(tag=TAG).info(
+                f"新连接接入，当前连接数: {self._active_connections}/{self._max_connections}"
+            )
+
+        try:
+            # 先认证，后建立连接
+            try:
+                await self._handle_auth(websocket)
+            except AuthenticationError:
+                await websocket.send("认证失败")
+                await websocket.close()
+                return
+            # 创建ConnectionHandler时传入当前server实例
+            handler = ConnectionHandler(
+                self.config,
+                self._vad,
+                self._asr,
+                self._llm,
+                self._memory,
+                self._intent,
+                self,  # 传入server实例
+            )
+            try:
+                await handler.handle_connection(websocket)
+            except Exception as e:
+                self.logger.bind(tag=TAG).error(f"处理连接时出错: {e}")
+            finally:
+                # 强制关闭连接（如果还没有关闭的话）
+                try:
+                    # 安全地检查WebSocket状态并关闭
+                    if hasattr(websocket, "closed") and not websocket.closed:
+                        await websocket.close()
+                    elif hasattr(websocket, "state") and websocket.state.name != "CLOSED":
+                        await websocket.close()
+                    else:
+                        # 如果没有closed属性，直接尝试关闭
+                        await websocket.close()
+                except Exception as close_error:
+                    self.logger.bind(tag=TAG).error(
+                        f"服务器端强制关闭连接时出错: {close_error}"
+                    )
+        finally:
+            # 递减连接计数（无论是认证失败还是正常结束）
+            self._active_connections -= 1
+            self.logger.bind(tag=TAG).debug(
+                f"连接断开，当前连接数: {self._active_connections}/{self._max_connections}"
+            )
 
     async def _http_response(self, websocket, request_headers):
         # 检查是否为 WebSocket 升级请求

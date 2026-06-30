@@ -23,10 +23,11 @@ page {
   display: flex;
   justify-content: center;
   gap: 8rpx;
+  width: fit-content;
   background: rgba(134, 78, 90, 0.08);
   border-radius: 40rpx;
   padding: 6rpx;
-  margin-bottom: 24rpx;
+  margin: 0 auto 24rpx;
 }
 
 .sub-tab {

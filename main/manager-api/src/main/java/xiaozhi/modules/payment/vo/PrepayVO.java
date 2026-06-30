@@ -20,4 +20,13 @@ public class PrepayVO {
 
     @Schema(description = "拉起支付参数(直接喂给 wx.requestPayment)")
     private Map<String, String> prepayParams;
+
+    @Schema(description = "升级折抵金额(分)，无折抵时为0")
+    private Long creditFen;
+
+    @Schema(description = "折抵后额外赠送天数，无赠送时为0")
+    private Integer bonusDays;
+
+    @Schema(description = "新套餐原始促销价(分)，供前端展示划线价")
+    private Long originalPriceFen;
 }

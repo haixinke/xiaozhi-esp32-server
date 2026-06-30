@@ -1,4 +1,6 @@
 {
-  "navigationStyle": "custom",
+  "navigationBarTitleText": "我的契约",
+  "navigationBarBackgroundColor": "#f6f3f2",
+  "navigationBarTextStyle": "black",
   "usingComponents": {}
 }

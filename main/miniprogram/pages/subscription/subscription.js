@@ -1,6 +1,7 @@
 // pages/subscription/subscription.js
 var { getTheme, applyTheme } = require('../../utils/theme');
 var { get, post } = require('../../utils/request');
+var logger = require('../../utils/logger');
 
 var PLAN_RANK = { silver: 1, gold: 2 };
 
@@ -102,18 +103,11 @@ Page({
     from: 'settings',
     paying: false,
     actionInfo: { text: '', action: '' },
-    featureCount: 0,
-    statusBarHeight: 0,
-    navBarHeight: 44
+    featureCount: 0
   },
 
   onLoad(options) {
-    var sysInfo = wx.getSystemInfoSync();
-    var menuBtn = wx.getMenuButtonBoundingClientRect();
-    var navBarHeight = (menuBtn.top - sysInfo.statusBarHeight) * 2 + menuBtn.height;
     this.setData({
-      statusBarHeight: sysInfo.statusBarHeight,
-      navBarHeight: navBarHeight,
       from: options.from || 'settings',
       activeTab: options.tab || 'silver'
     });
@@ -184,7 +178,7 @@ Page({
         loading: false
       });
     } catch (err) {
-      console.warn('[subscription] load failed:', err);
+      logger.warn('[subscription] load failed:', err);
       wx.showToast({ title: '加载失败', icon: 'none', duration: 1500 });
       this.setData({ loading: false });
     }
@@ -219,10 +213,6 @@ Page({
     }
   },
 
-  onBack() {
-    wx.navigateBack();
-  },
-
   onPurchaseTap() {
     if (this.data.paying) return;
     var actionInfo = this.data.actionInfo;
@@ -236,97 +226,103 @@ Page({
     wx.showLoading({ title: '正在下单...', mask: true });
     var previousPlanCode = getApp().globalData.planCode;
     try {
-      // 1. Create order
-      var orderRes = await post('/payment/order', {
-        productType: 'SUBSCRIPTION',
-        productRefId: planId,
-        quantity: 1
-      });
-      if (!orderRes || orderRes.code !== 0 || !orderRes.data) {
-        wx.hideLoading();
-        wx.showToast({ title: (orderRes && orderRes.msg) || '下单失败', icon: 'none', duration: 2000 });
-        return;
-      }
-      var order = orderRes.data;
-      var prepayParams = order.prepayParams || {};
-
-      // 2. Mock or real payment
-      if (prepayParams.mockNotifyUrl) {
-        var notifyRes = await post('/payment/notify/mock', {
-          outTradeNo: order.outTradeNo,
-          transactionId: 'MOCK_TX_' + Date.now(),
-          amountFen: order.amountFen
-        });
-        if (!notifyRes || notifyRes.code !== 'SUCCESS') {
-          wx.hideLoading();
-          wx.showToast({ title: '支付失败，请重试', icon: 'none', duration: 2000 });
-          return;
-        }
-      } else {
-        var required = ['timeStamp', 'nonceStr', 'package', 'paySign'];
-        var missing = required.filter(function(k) { return !prepayParams[k]; });
-        if (missing.length) {
-          wx.hideLoading();
-          wx.showToast({ title: '支付参数异常，请重试', icon: 'none', duration: 2000 });
-          return;
-        }
-        await new Promise(function(resolve, reject) {
-          wx.requestPayment({
-            timeStamp: prepayParams.timeStamp,
-            nonceStr: prepayParams.nonceStr,
-            package: prepayParams.package,
-            signType: prepayParams.signType || 'RSA',
-            paySign: prepayParams.paySign,
-            success: resolve,
-            fail: function(err) {
-              if (err && err.errMsg && err.errMsg.indexOf('cancel') > -1) {
-                reject({ cancelled: true });
-              } else {
-                reject(err);
-              }
-            }
-          });
-        });
-        // Query order to compensate async callback
-        try {
-          await post('/payment/order/' + order.outTradeNo + '/query');
-        } catch (e) {
-          console.warn('[subscription] query failed outTradeNo=' + order.outTradeNo, e);
-        }
-      }
-
-      // 3. Poll until fulfilled
-      var app = getApp();
-      await this._waitOrderFulfilled(order.outTradeNo);
-
-      // 4. Refresh global subscription state
-      if (app.fetchSubscription) {
-        await app.fetchSubscription();
-      }
-
-      // 5. Mark reconnect if plan changed
-      if (app.globalData.planCode !== previousPlanCode) {
-        app.globalData.needReconnectAfterSub = true;
-      }
-
-      wx.hideLoading();
-      wx.showToast({ title: '契约签订成功', icon: 'success', duration: 2000 });
-
-      // 6. Navigate back after short delay
-      setTimeout(function() {
-        wx.navigateBack();
-      }, 1500);
+      var order = await this._createSubscriptionOrder(planId);
+      await this._processPayment(order);
+      await this._finalizePurchase(order, previousPlanCode);
     } catch (err) {
       wx.hideLoading();
       if (err && err.cancelled) {
         wx.showToast({ title: '已取消支付', icon: 'none', duration: 1500 });
       } else {
-        console.warn('[subscription] sign contract failed:', err);
-        wx.showToast({ title: '操作失败，请重试', icon: 'none', duration: 2000 });
+        logger.warn('[subscription] sign contract failed:', err);
+        wx.showToast({ title: err.message || '操作失败，请重试', icon: 'none', duration: 2000 });
       }
     } finally {
       this.setData({ paying: false });
     }
+  },
+
+  async _createSubscriptionOrder(planId) {
+    var orderRes = await post('/payment/order', {
+      productType: 'SUBSCRIPTION',
+      productRefId: planId,
+      quantity: 1
+    });
+    if (!orderRes || orderRes.code !== 0 || !orderRes.data) {
+      throw new Error((orderRes && orderRes.msg) || '下单失败');
+    }
+    return orderRes.data;
+  },
+
+  async _processPayment(order) {
+    var prepayParams = order.prepayParams || {};
+    if (prepayParams.mockNotifyUrl) {
+      await this._processMockPayment(order);
+    } else {
+      await this._processWechatPayment(order, prepayParams);
+    }
+  },
+
+  async _processMockPayment(order) {
+    var notifyRes = await post('/payment/notify/mock', {
+      outTradeNo: order.outTradeNo,
+      transactionId: 'MOCK_TX_' + Date.now(),
+      amountFen: order.amountFen
+    });
+    if (!notifyRes || notifyRes.code !== 'SUCCESS') {
+      throw new Error('支付失败，请重试');
+    }
+  },
+
+  async _processWechatPayment(order, prepayParams) {
+    var required = ['timeStamp', 'nonceStr', 'package', 'paySign'];
+    var missing = required.filter(function(k) { return !prepayParams[k]; });
+    if (missing.length) {
+      throw new Error('支付参数异常，请重试');
+    }
+    await new Promise(function(resolve, reject) {
+      wx.requestPayment({
+        timeStamp: prepayParams.timeStamp,
+        nonceStr: prepayParams.nonceStr,
+        package: prepayParams.package,
+        signType: prepayParams.signType || 'RSA',
+        paySign: prepayParams.paySign,
+        success: resolve,
+        fail: function(err) {
+          if (err && err.errMsg && err.errMsg.indexOf('cancel') > -1) {
+            reject({ cancelled: true });
+          } else {
+            reject(err);
+          }
+        }
+      });
+    });
+    // Query order to compensate async callback
+    try {
+      await post('/payment/order/' + order.outTradeNo + '/query');
+    } catch (e) {
+      logger.warn('[subscription] query failed outTradeNo=' + order.outTradeNo, e);
+    }
+  },
+
+  async _finalizePurchase(order, previousPlanCode) {
+    var app = getApp();
+    await this._waitOrderFulfilled(order.outTradeNo);
+
+    if (app.fetchSubscription) {
+      await app.fetchSubscription();
+    }
+
+    if (app.globalData.planCode !== previousPlanCode) {
+      app.globalData.needReconnectAfterSub = true;
+    }
+
+    wx.hideLoading();
+    wx.showToast({ title: '契约签订成功', icon: 'success', duration: 2000 });
+
+    setTimeout(function() {
+      wx.navigateBack();
+    }, 1500);
   },
 
   async _waitOrderFulfilled(outTradeNo) {
@@ -344,7 +340,7 @@ Page({
       }
       await new Promise(function(r) { setTimeout(r, interval); });
     }
-    console.warn('[subscription] order fulfillment poll timeout outTradeNo=' + outTradeNo);
+    logger.warn('[subscription] order fulfillment poll timeout outTradeNo=' + outTradeNo);
     return false;
   }
 });

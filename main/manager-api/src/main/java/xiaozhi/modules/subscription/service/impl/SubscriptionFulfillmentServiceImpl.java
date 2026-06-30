@@ -48,26 +48,42 @@ public class SubscriptionFulfillmentServiceImpl implements SubscriptionFulfillme
         // 1) 计算 startAt：区分升级与续费
         Date now = new Date();
         Date startAt = now;
-        UserSubscriptionEntity active = subscriptionDao.selectOne(new QueryWrapper<UserSubscriptionEntity>()
-                .eq("user_id", userId)
-                .eq("status", SubscriptionStatus.ACTIVE.getValue())
-                .gt("end_at", now)
-                .orderByDesc("end_at")
-                .last("LIMIT 1"));
-        if (active != null) {
-            if (active.getPlanId().equals(planId)) {
-                // 同套餐续费 → 堆叠到旧订阅到期之后
-                startAt = active.getEndAt();
+        // 查询用户所有生效中的订阅（含堆叠续费产生的多条记录）
+        List<UserSubscriptionEntity> allActive = subscriptionDao.selectList(
+                new QueryWrapper<UserSubscriptionEntity>()
+                        .eq("user_id", userId)
+                        .eq("status", SubscriptionStatus.ACTIVE.getValue())
+                        .gt("end_at", now)
+                        .orderByDesc("end_at"));
+        if (!allActive.isEmpty()) {
+            UserSubscriptionEntity latest = allActive.get(0); // end_at 最远的那条
+            if (latest.getPlanCode().equals(plan.getPlanCode())) {
+                // 同档位续费（含不同周期）→ 堆叠到最远到期时间之后
+                startAt = latest.getEndAt();
             } else {
-                // 升级 → 立即过期旧订阅，新订阅从 now 开始
-                log.info("套餐升级 userId={}, oldPlanId={}, oldPlanCode={}, newPlanId={}, newPlanCode={}",
-                        userId, active.getPlanId(), active.getPlanCode(), planId, plan.getPlanCode());
-                active.setStatus(SubscriptionStatus.EXPIRED.getValue());
-                active.setEndAt(now);
-                subscriptionDao.updateById(active);
+                // 跨档位升级 → 立即过期【所有】旧订阅，新订阅从 now 开始
+                log.info("套餐升级 userId={}, oldPlanCode={}, newPlanCode={}, 过期旧订阅{}条",
+                        userId, latest.getPlanCode(), plan.getPlanCode(), allActive.size());
+                for (UserSubscriptionEntity old : allActive) {
+                    old.setStatus(SubscriptionStatus.EXPIRED.getValue());
+                    old.setEndAt(now);
+                    subscriptionDao.updateById(old);
+                }
             }
         }
         Date endAt = new Date(startAt.getTime() + plan.getDurationDays() * 24L * 60 * 60 * 1000);
+
+        // 升级折抵赠送天数：从订单快照中读取
+        int bonusDays = 0;
+        try {
+            cn.hutool.json.JSONObject snap = cn.hutool.json.JSONUtil.parseObj(order.getProductSnapshot());
+            bonusDays = snap.getInt("_bonusDays", 0);
+        } catch (Exception ignore) {
+        }
+        if (bonusDays > 0) {
+            endAt = new Date(endAt.getTime() + bonusDays * 24L * 60 * 60 * 1000);
+            log.info("升级赠送天数 userId={}, bonusDays={}, newEndAt={}", userId, bonusDays, endAt);
+        }
 
         // 2) 写订阅记录（基于 uk_order 实现幂等）
         UserSubscriptionEntity entity = new UserSubscriptionEntity();

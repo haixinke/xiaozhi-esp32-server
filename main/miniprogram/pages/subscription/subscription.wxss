@@ -1,56 +1,35 @@
 /* pages/subscription/subscription.wxss */
 /* Ethereal Companion - 订阅页面 */
 
+/* 覆盖全局 page { overflow: hidden } 以启用页面滚动 */
+page {
+  height: auto;
+  overflow: auto;
+}
+
 /* ===== Page Base ===== */
 .sub-page {
   min-height: 100vh;
   background: #f6f3f2;
-  position: relative;
 }
 
-/* ===== Custom Nav Bar ===== */
-.nav-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: #f6f3f2;
+/* ===== Body ===== */
+.sub-body {
+  padding: 24rpx 32rpx 0;
 }
 
-.nav-content {
-  display: flex;
-  align-items: center;
-  padding: 0 24rpx;
-}
-
-.nav-back {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-back-icon {
-  font-size: 48rpx;
-  color: #1b1c1c;
-  font-weight: 300;
-  line-height: 1;
-}
-
-.nav-tabs {
-  flex: 1;
+/* ===== Capsule Tabs ===== */
+.sub-tabs {
   display: flex;
   justify-content: center;
   gap: 8rpx;
   background: rgba(134, 78, 90, 0.08);
   border-radius: 40rpx;
   padding: 6rpx;
-  margin: 0 48rpx 0 0;
+  margin-bottom: 24rpx;
 }
 
-.nav-tab {
+.sub-tab {
   padding: 12rpx 36rpx;
   border-radius: 34rpx;
   font-size: 28rpx;
@@ -60,19 +39,10 @@
   letter-spacing: 1rpx;
 }
 
-.nav-tab-active {
+.sub-tab-active {
   background: #864e5a;
   color: #ffffff;
   box-shadow: 0 4rpx 12rpx rgba(134, 78, 90, 0.3);
-}
-
-/* ===== Body ===== */
-.sub-body {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 24rpx 32rpx 0;
 }
 
 /* ===== Header ===== */
@@ -291,6 +261,17 @@
   box-shadow: none;
 }
 
+.credit-info {
+  margin-bottom: 16rpx;
+  text-align: center;
+}
+
+.credit-info-text {
+  font-size: 22rpx;
+  color: #864e5a;
+  letter-spacing: 0.5rpx;
+}
+
 .sub-terms {
   display: block;
   text-align: center;
@@ -308,23 +289,15 @@
   background: #121220;
 }
 
-.dark .nav-bar {
-  background: #121220;
-}
-
-.dark .nav-back-icon {
-  color: #e8e4e3;
-}
-
-.dark .nav-tabs {
+.dark .sub-tabs {
   background: rgba(134, 78, 90, 0.15);
 }
 
-.dark .nav-tab {
+.dark .sub-tab {
   color: #6a6468;
 }
 
-.dark .nav-tab-active {
+.dark .sub-tab-active {
   background: #864e5a;
   color: #ffffff;
 }
@@ -428,4 +401,8 @@
 
 .dark .sub-terms {
   color: #6a6468;
+}
+
+.dark .credit-info-text {
+  color: #d4737a;
 }

@@ -118,11 +118,25 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                 updateTx.executeWithoutResult(status -> attachPrepayId(order.getId(), pid));
             }
 
+            // 5) 构建返回 VO（含折抵明细）
             PrepayVO vo = new PrepayVO();
             vo.setOutTradeNo(order.getOutTradeNo());
             vo.setAmountFen(order.getAmountFen());
             vo.setPayChannel(order.getPayChannel());
             vo.setPrepayParams(prepay.getJsapiParams());
+            // 折抵信息从快照中提取
+            vo.setCreditFen(0L);
+            vo.setBonusDays(0);
+            vo.setOriginalPriceFen(order.getAmountFen());
+            if (ProductType.SUBSCRIPTION.equals(type)) {
+                try {
+                    cn.hutool.json.JSONObject snap = JSONUtil.parseObj(order.getProductSnapshot());
+                    vo.setCreditFen(snap.getLong("_creditFen", 0L));
+                    vo.setBonusDays(snap.getInt("_bonusDays", 0));
+                    vo.setOriginalPriceFen(snap.getLong("_originalPriceFen", order.getAmountFen()));
+                } catch (Exception ignore) {
+                }
+            }
             return vo;
         } finally {
             // 锁不主动释放，保留 5 秒窗口
@@ -141,7 +155,10 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
             if (plan == null || plan.getStatus() == null || plan.getStatus() != 1) {
                 throw new RenException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
             }
-            amountFen = plan.getPromoPriceFen() != null ? plan.getPromoPriceFen() : plan.getPriceFen();
+            long originalPriceFen = plan.getPromoPriceFen() != null ? plan.getPromoPriceFen() : plan.getPriceFen();
+            amountFen = originalPriceFen;
+            long creditFen = 0;
+            int bonusDays = 0;
 
             // 升级折算：若用户有生效中低级套餐，剩余时间折算抵扣
             UserSubscriptionEntity activeSub = subscriptionDao.selectOne(new QueryWrapper<UserSubscriptionEntity>()
@@ -150,22 +167,39 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                     .gt("end_at", new Date())
                     .orderByDesc("end_at")
                     .last("LIMIT 1"));
-            if (activeSub != null && !activeSub.getPlanId().equals(plan.getId())) {
+            if (activeSub != null && !activeSub.getPlanCode().equals(plan.getPlanCode())) {
                 SubscriptionPlanEntity oldPlan = planDao.selectById(activeSub.getPlanId());
-                if (oldPlan != null && oldPlan.getSort() < plan.getSort()) {
+                if (oldPlan != null) {
+                    if (oldPlan.getSort() >= plan.getSort()) {
+                        // 降级拦截：当前套餐档位 >= 新套餐，不允许下单
+                        throw new RenException(ErrorCode.SUBSCRIPTION_DOWNGRADE_DENIED);
+                    }
                     long remainingMs = activeSub.getEndAt().getTime() - System.currentTimeMillis();
                     if (remainingMs > 0) {
                         long oldPlanDurationMs = oldPlan.getDurationDays() * 24L * 60 * 60 * 1000;
                         long oldPriceFen = oldPlan.getPromoPriceFen() != null ? oldPlan.getPromoPriceFen() : oldPlan.getPriceFen();
-                        long creditFen = remainingMs * oldPriceFen / oldPlanDurationMs;
-                        amountFen = Math.max(1, amountFen - creditFen);
-                        log.info("升级折算 userId={}, oldPlan={}, newPlan={}, creditFen={}, finalFen={}",
-                                userId, oldPlan.getPlanCode(), plan.getPlanCode(), creditFen, amountFen);
+                        creditFen = remainingMs * oldPriceFen / oldPlanDurationMs;
+                        if (creditFen >= originalPriceFen) {
+                            // 折抵金额 >= 新套餐价，多余部分转为额外赠送天数
+                            long excessFen = creditFen - originalPriceFen;
+                            long newDailyFen = originalPriceFen / plan.getDurationDays();
+                            bonusDays = newDailyFen > 0 ? (int) (excessFen / newDailyFen) : 0;
+                            amountFen = 1; // 微信支付最低 1 分
+                        } else {
+                            amountFen = originalPriceFen - creditFen;
+                        }
+                        log.info("升级折算 userId={}, oldPlan={}, newPlan={}, creditFen={}, bonusDays={}, finalFen={}",
+                                userId, oldPlan.getPlanCode(), plan.getPlanCode(), creditFen, bonusDays, amountFen);
                     }
                 }
             }
 
-            snapshot = JSONUtil.toJsonStr(plan);
+            // 快照中嵌入折抵信息，供履约时读取
+            cn.hutool.json.JSONObject snapObj = JSONUtil.parseObj(JSONUtil.toJsonStr(plan));
+            snapObj.set("_creditFen", creditFen);
+            snapObj.set("_bonusDays", bonusDays);
+            snapObj.set("_originalPriceFen", originalPriceFen);
+            snapshot = snapObj.toString();
         } else if (ProductType.ITEM.equals(type)) {
             ItemSkuEntity sku = itemService.getBySkuId(dto.getProductRefId());
             if (sku.getStatus() == null || sku.getStatus() != 1) {

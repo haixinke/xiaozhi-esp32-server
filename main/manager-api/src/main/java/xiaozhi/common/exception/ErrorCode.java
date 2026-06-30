@@ -287,6 +287,7 @@ public interface ErrorCode {
     int SUBSCRIPTION_PLAN_NOT_FOUND = 10310; // 订阅档位不存在
     int SUBSCRIPTION_NOT_ACTIVE = 10311; // 当前没有生效的订阅
     int SUBSCRIPTION_FEATURE_DENIED = 10312; // 当前订阅未包含该能力
+    int SUBSCRIPTION_DOWNGRADE_DENIED = 10313; // 不允许降级订阅
 
     // 道具相关错误码
     int ITEM_SKU_NOT_FOUND = 10320; // 道具不存在

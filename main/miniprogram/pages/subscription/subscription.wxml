@@ -1,21 +1,15 @@
 <view class="sub-page {{darkMode ? 'dark' : ''}}">
-  <!-- 自定义导航栏 -->
-  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
-    <view class="nav-content" style="height: {{navBarHeight}}px;">
-      <view class="nav-back" bindtap="onBack">
-        <text class="nav-back-icon">‹</text>
-      </view>
-      <view class="nav-tabs">
-        <view class="nav-tab {{activeTab==='silver' ? 'nav-tab-active' : ''}}"
-              data-tab="silver" bindtap="onTabSwitch">心动互联</view>
-        <view class="nav-tab {{activeTab==='gold' ? 'nav-tab-active' : ''}}"
-              data-tab="gold" bindtap="onTabSwitch">灵魂共鸣</view>
-      </view>
-    </view>
-  </view>
 
   <!-- 主体内容 -->
-  <scroll-view scroll-y class="sub-body" style="top: {{statusBarHeight + navBarHeight}}px;" wx:if="{{!loading}}">
+  <view class="sub-body" wx:if="{{!loading}}">
+    <!-- 胶囊 Tab -->
+    <view class="sub-tabs">
+      <view class="sub-tab {{activeTab==='silver' ? 'sub-tab-active' : ''}}"
+            data-tab="silver" bindtap="onTabSwitch">心动互联</view>
+      <view class="sub-tab {{activeTab==='gold' ? 'sub-tab-active' : ''}}"
+            data-tab="gold" bindtap="onTabSwitch">灵魂共鸣</view>
+    </view>
+
     <!-- 标题区 -->
     <view class="sub-header">
       <text class="sub-title">签订 {{activeTab === 'gold' ? '灵魂共鸣' : '心动互联'}}</text>
@@ -69,7 +63,7 @@
 
     <!-- 底部占位，防止内容被固定栏遮挡 -->
     <view class="bottom-placeholder"></view>
-  </scroll-view>
+  </view>
 
   <!-- 加载中 -->
   <view class="sub-loading" wx:if="{{loading}}">
@@ -78,6 +72,10 @@
 
   <!-- 固定底部栏 -->
   <view class="sub-bottom-bar" wx:if="{{!loading && selectedPlan}}">
+    <!-- 升级折抵提示 -->
+    <view class="credit-info" wx:if="{{actionInfo.action === 'upgrade' && currentSub && currentSub.isActive}}">
+      <text class="credit-info-text">已有{{currentSub.planName}}剩余时长将按比例折抵，实付以支付页为准</text>
+    </view>
     <view class="sub-buy-btn {{actionInfo.action === 'disabled' ? 'btn-disabled' : ''}}"
           bindtap="onPurchaseTap">
       {{actionInfo.text}}

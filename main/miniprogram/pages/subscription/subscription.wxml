@@ -1,0 +1,87 @@
+<view class="sub-page {{darkMode ? 'dark' : ''}}">
+  <!-- 自定义导航栏 -->
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content" style="height: {{navBarHeight}}px;">
+      <view class="nav-back" bindtap="onBack">
+        <text class="nav-back-icon">‹</text>
+      </view>
+      <view class="nav-tabs">
+        <view class="nav-tab {{activeTab==='silver' ? 'nav-tab-active' : ''}}"
+              data-tab="silver" bindtap="onTabSwitch">心动互联</view>
+        <view class="nav-tab {{activeTab==='gold' ? 'nav-tab-active' : ''}}"
+              data-tab="gold" bindtap="onTabSwitch">灵魂共鸣</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 主体内容 -->
+  <scroll-view scroll-y class="sub-body" style="top: {{statusBarHeight + navBarHeight}}px;" wx:if="{{!loading}}">
+    <!-- 标题区 -->
+    <view class="sub-header">
+      <text class="sub-title">签订 {{activeTab === 'gold' ? '灵魂共鸣' : '心动互联'}}</text>
+      <text class="sub-subtitle">解锁 {{featureCount}} 项专属权益</text>
+    </view>
+
+    <!-- 已订阅状态条 -->
+    <view class="sub-status-bar" wx:if="{{currentSub && currentSub.isActive}}">
+      <text class="sub-status-text">当前：{{currentSub.planName}} · 剩余{{currentSub.remainingText}}</text>
+    </view>
+
+    <!-- 周期卡片 -->
+    <scroll-view scroll-x class="period-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="period-cards">
+        <view class="period-card {{selectedPlanId === item.id ? 'period-card-active' : ''}}"
+              wx:for="{{currentPlans}}" wx:key="id"
+              data-id="{{item.id}}" bindtap="onPeriodSelect">
+          <text class="period-label">{{item.periodLabel}}</text>
+          <text class="period-price">¥{{item.promoYuan}}</text>
+          <text class="period-original" wx:if="{{item.promoYuan !== item.priceYuan}}">¥{{item.priceYuan}}</text>
+          <text class="period-monthly" wx:if="{{item.monthlyYuan}}">¥{{item.monthlyYuan}}/月</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 权益对比表 -->
+    <view class="feature-table">
+      <view class="feature-row feature-header-row">
+        <view class="feature-name-col">
+          <text class="feature-header-text">权益说明</text>
+        </view>
+        <view class="feature-tier-col">
+          <text class="feature-tier-text">心动互联</text>
+        </view>
+        <view class="feature-tier-col">
+          <text class="feature-tier-text">灵魂共鸣</text>
+        </view>
+      </view>
+      <view class="feature-row" wx:for="{{allFeatures}}" wx:key="code">
+        <view class="feature-name-col">
+          <text class="feature-name">{{item.label}}</text>
+        </view>
+        <view class="feature-tier-col">
+          <text class="feature-check {{item.silver ? 'check-yes' : 'check-no'}}">{{item.silver ? '✓' : '—'}}</text>
+        </view>
+        <view class="feature-tier-col">
+          <text class="feature-check {{item.gold ? 'check-yes' : 'check-no'}}">{{item.gold ? '✓' : '—'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部占位，防止内容被固定栏遮挡 -->
+    <view class="bottom-placeholder"></view>
+  </scroll-view>
+
+  <!-- 加载中 -->
+  <view class="sub-loading" wx:if="{{loading}}">
+    <text class="sub-loading-text">加载中...</text>
+  </view>
+
+  <!-- 固定底部栏 -->
+  <view class="sub-bottom-bar" wx:if="{{!loading && selectedPlan}}">
+    <view class="sub-buy-btn {{actionInfo.action === 'disabled' ? 'btn-disabled' : ''}}"
+          bindtap="onPurchaseTap">
+      {{actionInfo.text}}
+    </view>
+    <text class="sub-terms">支付代表同意《会员服务与续费条款》</text>
+  </view>
+</view>

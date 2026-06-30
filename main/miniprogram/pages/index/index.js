@@ -809,8 +809,7 @@ Page({
       confirmColor: '#864e5a',
       success: (res) => {
         if (res.confirm) {
-          app.globalData.openContractPopupAfterSwitch = true;
-          wx.switchTab({ url: '/pages/settings/settings' });
+          wx.navigateTo({ url: '/pages/subscription/subscription?from=voiceCall&tab=gold' });
         }
       },
     });
@@ -818,8 +817,7 @@ Page({
 
   onQuotaUpgrade() {
     this.setData({ showQuotaExceeded: false });
-    app.globalData.openContractPopupAfterSwitch = true;
-    wx.switchTab({ url: '/pages/settings/settings' });
+    wx.navigateTo({ url: '/pages/subscription/subscription?from=quotaUpgrade' });
   },
 
   onQuotaDismiss() {

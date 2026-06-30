@@ -13,7 +13,8 @@
     "pages/companion/change-voice/change-voice",
     "pages/companion/change-role/change-role",
     "pages/voice-call/voice-call",
-    "pages/orders/orders"
+    "pages/orders/orders",
+    "pages/subscription/subscription"
   ],
   "window": {
     "navigationBarTitleText": "笨笨女友",

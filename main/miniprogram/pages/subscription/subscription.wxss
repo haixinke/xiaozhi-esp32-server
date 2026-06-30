@@ -27,7 +27,7 @@ page {
   background: rgba(134, 78, 90, 0.08);
   border-radius: 40rpx;
   padding: 6rpx;
-  margin: 0 auto 24rpx;
+  margin: 0 auto 20rpx;
 }
 
 .sub-tab {
@@ -48,7 +48,7 @@ page {
 
 /* ===== Header ===== */
 .sub-header {
-  padding: 32rpx 0 24rpx;
+  padding: 0rpx 0 24rpx;
 }
 
 .sub-title {

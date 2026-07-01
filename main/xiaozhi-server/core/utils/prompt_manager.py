@@ -102,8 +102,19 @@ class PromptManager:
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"加载提示词模板失败: {e}")
 
-    def get_quick_prompt(self, user_prompt: str, device_id: str = None) -> str:
-        """快速获取系统提示词（使用用户配置）"""
+    def get_quick_prompt(
+        self,
+        user_prompt: str,
+        device_id: str = None,
+        emoji_enabled: bool = True,
+    ) -> str:
+        """快速获取系统提示词（基于模板渲染静态约束，动态变量填空）
+
+        与 build_enhanced_prompt 的区别：不触发外部 I/O（IP 定位、天气查询、
+        数据库上下文），动态变量用占位符填充，保持零延迟启动。静态行为约束段
+        （anti_ai_smell / conversation_rhythm / tts_format_constraints 等）照常生效。
+        <memory> 与 {{current_time}} 保持模板原样，由 dialogue.py 在运行时注入。
+        """
         device_cache_key = f"device_prompt:{device_id}"
         cached_device_prompt = self.cache_manager.get(
             self.CacheType.DEVICE_PROMPT, device_cache_key
@@ -116,14 +127,51 @@ class PromptManager:
                 f"设备 {device_id} 无缓存提示词，使用传入的提示词"
             )
 
-        # 使用传入的提示词并缓存（如果有设备ID）
-        if device_id:
-            device_cache_key = f"device_prompt:{device_id}"
-            self.cache_manager.set(self.CacheType.DEVICE_PROMPT, device_cache_key, user_prompt)
-            self.logger.bind(tag=TAG).debug(f"设备 {device_id} 的提示词已缓存")
+        # 模板未加载时，回退到原始 user_prompt
+        if not self.base_prompt_template:
+            if device_id:
+                self.cache_manager.set(
+                    self.CacheType.DEVICE_PROMPT, device_cache_key, user_prompt
+                )
+            self.logger.bind(tag=TAG).debug(f"模板未加载，使用原始提示词: {user_prompt}")
+            return user_prompt
 
-        self.logger.bind(tag=TAG).debug(f"使用快速提示词: {user_prompt}")
-        return user_prompt
+        try:
+            today_date, today_weekday, lunar_date = self._get_current_time_info()
+            language = (
+                self.config.get("TTS", {})
+                .get(self.config.get("selected_module", {}).get("TTS", ""), {})
+                .get("language") or "中文"
+            )
+
+            template = Template(self.base_prompt_template)
+            quick_prompt = template.render(
+                base_prompt=user_prompt,
+                current_time="{{current_time}}",
+                today_date=today_date,
+                today_weekday=today_weekday,
+                lunar_date=lunar_date,
+                local_address="未知",
+                weather_info="未知",
+                emojiList=EMOJI_List,
+                device_id=device_id,
+                client_ip=None,
+                dynamic_context="",
+                language=language,
+                emoji_enabled=emoji_enabled,
+            )
+
+            if device_id:
+                self.cache_manager.set(
+                    self.CacheType.DEVICE_PROMPT, device_cache_key, quick_prompt
+                )
+            self.logger.bind(tag=TAG).info(
+                f"快速提示词模板渲染成功，长度: {len(quick_prompt)}"
+            )
+            return quick_prompt
+        except Exception as e:
+            self.logger.bind(tag=TAG).error(f"快速提示词渲染失败，回退原始提示词: {e}")
+            return user_prompt
 
     def _get_current_time_info(self) -> tuple:
         """获取当前时间信息"""

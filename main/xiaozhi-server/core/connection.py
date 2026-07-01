@@ -559,7 +559,11 @@ class ConnectionHandler:
             if self.config.get("prompt") is not None:
                 user_prompt = self.config["prompt"]
                 # 使用快速提示词进行初始化
-                prompt = self.prompt_manager.get_quick_prompt(user_prompt)
+                prompt = self.prompt_manager.get_quick_prompt(
+                    user_prompt,
+                    device_id=self.device_id,
+                    emoji_enabled=(self.features or {}).get("emoji", True),
+                )
                 self.change_system_prompt(prompt)
                 self.logger.bind(tag=TAG).info(
                     f"快速初始化组件: prompt成功 {prompt[:50]}..."

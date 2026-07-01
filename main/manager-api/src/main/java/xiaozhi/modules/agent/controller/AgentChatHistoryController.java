@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,6 +46,8 @@ import xiaozhi.modules.agent.vo.AgentChatHistoryListVO;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.agent.service.biz.AgentChatHistoryBizService;
 import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.subscription.enums.FeatureCode;
+import xiaozhi.modules.subscription.service.SubscriptionService;
 
 @Tag(name = "智能体聊天历史管理")
 @RequiredArgsConstructor
@@ -54,6 +57,7 @@ public class AgentChatHistoryController {
     private final AgentChatHistoryBizService agentChatHistoryBizService;
     private final AgentChatHistoryService agentChatHistoryService;
     private final AgentService agentService;
+    private final SubscriptionService subscriptionService;
     private final RedisUtils redisUtils;
 
     /**
@@ -99,6 +103,25 @@ public class AgentChatHistoryController {
         PageData<AgentChatHistoryListVO> page = agentChatHistoryService.getChatHistoryList(agentId, macAddress,
                 createdBefore, params);
         return new Result<PageData<AgentChatHistoryListVO>>().ok(page);
+    }
+
+    /**
+     * 撤回用户消息（硬删除）
+     * <p>
+     * 仅 Gold 套餐订阅者拥有 message_delete 权益码时可撤回。撤回会同时删除历史文本行
+     * 及其关联音频（含 OSS 对象）。只允许撤回用户本人发送的消息。
+     *
+     * @param messageId 消息ID
+     */
+    @Operation(summary = "撤回用户消息（硬删除）")
+    @RequiresPermissions("sys:role:normal")
+    @DeleteMapping("/{messageId}")
+    public Result<Boolean> recall(@PathVariable("messageId") Long messageId) {
+        UserDetail user = SecurityUser.getUser();
+        // 权益门控：message_delete 仅 Gold 套餐拥有
+        subscriptionService.requireFeature(user.getId(), FeatureCode.MESSAGE_DELETE);
+        agentChatHistoryService.recall(messageId, user.getId());
+        return new Result<Boolean>().ok(true);
     }
 
     /**

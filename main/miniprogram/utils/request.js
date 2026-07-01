@@ -6,7 +6,7 @@
 // 基础 URL，可按需修改
 // const BASE_URL = 'https://chat-api.benniu.tech/xiaozhi';
 
-const BASE_URL = 'http://192.168.48.81:8002/xiaozhi';
+const BASE_URL = 'http://192.168.171.99:8002/xiaozhi';
 
 /**
  * 发起 HTTP 请求
@@ -99,6 +99,13 @@ function put(url, data, header) {
 }
 
 /**
+ * DELETE 请求快捷方法
+ */
+function del(url, data, header) {
+  return request({ url, method: 'DELETE', data, header });
+}
+
+/**
  * 获取当前 BASE_URL
  */
 function getBaseUrl() {
@@ -110,6 +117,7 @@ module.exports = {
   get,
   post,
   put,
+  del,
   getBaseUrl,
   BASE_URL
 };

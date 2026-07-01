@@ -28,4 +28,14 @@ public interface AgentChatAudioService extends IService<AgentChatAudioEntity> {
      * @return 音频数据
      */
     byte[] getAudio(String audioId);
+
+    /**
+     * 删除音频数据（含 OSS 对象），用于消息撤回
+     * <p>
+     * 若音频存储在 OSS，先删除 OSS 对象（失败仅告警，不阻断），
+     * 再删除 ai_agent_chat_audio 表行。audioId 为空或不存在时直接返回。
+     *
+     * @param audioId 音频ID
+     */
+    void deleteAudioWithOss(String audioId);
 }

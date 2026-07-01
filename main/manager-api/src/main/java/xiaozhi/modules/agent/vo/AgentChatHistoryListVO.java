@@ -5,6 +5,9 @@ import lombok.Data;
 
 @Data
 public class AgentChatHistoryListVO {
+    @Schema(description = "消息ID")
+    private Long id;
+
     @Schema(description = "聊天类型：1-用户，2-智能体")
     private Byte chatType;
 

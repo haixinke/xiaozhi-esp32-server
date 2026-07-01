@@ -82,4 +82,15 @@ public interface AgentChatHistoryService extends IService<AgentChatHistoryEntity
      * @return 分页的聊天记录列表
      */
     PageData<AgentChatHistoryListVO> getChatHistoryList(String agentId, String macAddress, String createdBefore, Map<String, Object> params);
+
+    /**
+     * 撤回用户消息（硬删除）
+     * <p>
+     * 仅允许撤回用户消息（chatType=1）。校验 agent 归属后，删除历史行及其关联音频
+     * （含 OSS 对象）。消息不存在或非用户消息均按无权限处理。
+     *
+     * @param messageId 消息ID
+     * @param userId    当前用户ID
+     */
+    void recall(Long messageId, Long userId);
 }

@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 
 import cn.hutool.core.collection.ListUtil;
 import org.apache.commons.lang3.StringUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +19,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 import xiaozhi.common.constant.Constant;
+import xiaozhi.common.exception.ErrorCode;
+import xiaozhi.common.exception.RenException;
 import xiaozhi.common.oss.OssService;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.ConvertUtils;
@@ -30,8 +32,10 @@ import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
 import xiaozhi.modules.agent.dto.AgentChatHistoryDTO;
 import xiaozhi.modules.agent.dto.AgentChatSessionDTO;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
+import xiaozhi.modules.agent.service.AgentChatAudioService;
 import xiaozhi.modules.agent.service.AgentChatHistoryService;
 import xiaozhi.modules.agent.service.AgentChatTitleService;
+import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.agent.vo.AgentChatHistoryListVO;
 import xiaozhi.modules.agent.vo.AgentChatHistoryUserVO;
 
@@ -44,13 +48,25 @@ import xiaozhi.modules.agent.vo.AgentChatHistoryUserVO;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryDao, AgentChatHistoryEntity>
         implements AgentChatHistoryService {
 
     private final AgentChatTitleService agentChatTitleService;
     private final OssService ossService;
     private final AiAgentChatAudioDao aiAgentChatAudioDao;
+    // @Lazy 代理注入，打破与 AgentServiceImpl 的循环依赖（AgentService -> 本类 -> AgentService）
+    private final AgentService agentService;
+    private final AgentChatAudioService agentChatAudioService;
+
+    public AgentChatHistoryServiceImpl(AgentChatTitleService agentChatTitleService, OssService ossService,
+            AiAgentChatAudioDao aiAgentChatAudioDao, @Lazy AgentService agentService,
+            AgentChatAudioService agentChatAudioService) {
+        this.agentChatTitleService = agentChatTitleService;
+        this.ossService = ossService;
+        this.aiAgentChatAudioDao = aiAgentChatAudioDao;
+        this.agentService = agentService;
+        this.agentChatAudioService = agentChatAudioService;
+    }
 
     @Override
     public PageData<AgentChatSessionDTO> getSessionListByAgentId(Map<String, Object> params) {
@@ -213,8 +229,9 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
         int limit = Math.min(Integer.parseInt(params.get(Constant.LIMIT).toString()), 50);
 
         LambdaQueryWrapper<AgentChatHistoryEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.select(AgentChatHistoryEntity::getChatType, AgentChatHistoryEntity::getContent,
-                AgentChatHistoryEntity::getCreatedAt, AgentChatHistoryEntity::getAudioId)
+        wrapper.select(AgentChatHistoryEntity::getId, AgentChatHistoryEntity::getChatType,
+                AgentChatHistoryEntity::getContent, AgentChatHistoryEntity::getCreatedAt,
+                AgentChatHistoryEntity::getAudioId)
                 .eq(AgentChatHistoryEntity::getAgentId, agentId)
                 .eq(AgentChatHistoryEntity::getMacAddress, macAddress)
                 .in(AgentChatHistoryEntity::getChatType,
@@ -231,5 +248,30 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
         List<AgentChatHistoryListVO> records = ConvertUtils.sourceToTarget(result.getRecords(),
                 AgentChatHistoryListVO.class);
         return new PageData<>(records, result.getTotal());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void recall(Long messageId, Long userId) {
+        AgentChatHistoryEntity entity = this.getById(messageId);
+        if (entity == null) {
+            // 消息不存在视同无权限，避免暴露存在性
+            throw new RenException(ErrorCode.CHAT_HISTORY_NO_PERMISSION);
+        }
+        // 仅允许撤回用户消息（Byte.equals 接收自动装箱的 byte 参数）
+        if (entity.getChatType() == null
+                || !entity.getChatType().equals(AgentChatHistoryType.USER.getValue())) {
+            throw new RenException(ErrorCode.CHAT_HISTORY_NO_PERMISSION);
+        }
+        // 校验 agent 归属
+        if (!agentService.checkAgentPermission(entity.getAgentId(), userId)) {
+            throw new RenException(ErrorCode.CHAT_HISTORY_NO_PERMISSION);
+        }
+        // 删除关联音频（含 OSS 对象）
+        if (StringUtils.isNotBlank(entity.getAudioId())) {
+            agentChatAudioService.deleteAudioWithOss(entity.getAudioId());
+        }
+        // 删除历史行（直接走 baseMapper，避免 ServiceImpl.removeById 触发 TableInfo 逻辑删除检查）
+        this.baseMapper.deleteById(messageId);
     }
 }

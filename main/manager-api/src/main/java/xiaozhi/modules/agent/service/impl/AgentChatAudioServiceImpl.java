@@ -85,4 +85,24 @@ public class AgentChatAudioServiceImpl extends ServiceImpl<AiAgentChatAudioDao, 
         // 回退：从BLOB读取（旧数据或OSS未配置）
         return entity.getAudio();
     }
+
+    @Override
+    public void deleteAudioWithOss(String audioId) {
+        if (audioId == null || audioId.isEmpty()) {
+            return;
+        }
+        AgentChatAudioEntity entity = getById(audioId);
+        if (entity == null) {
+            return;
+        }
+        // 优先清理 OSS 对象（失败仅告警，不阻断行删除）
+        if (entity.getOssKey() != null && ossService.isEnabled()) {
+            try {
+                ossService.delete(entity.getOssKey());
+            } catch (OSSException | ClientException e) {
+                log.warn("删除OSS音频对象失败, audioId={}, ossKey={}", audioId, entity.getOssKey(), e);
+            }
+        }
+        removeById(audioId);
+    }
 }

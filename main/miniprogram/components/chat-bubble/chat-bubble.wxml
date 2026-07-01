@@ -1,19 +1,24 @@
 <!--components/chat-bubble/chat-bubble.wxml-->
 <view class="cb-row cb-{{role}} {{typing ? 'cb-typing' : ''}} {{darkMode ? 'dark' : ''}}">
-  <view class="cb-bubble">
-    <view class="cb-glow"></view>
-    <view class="cb-content">
-      <text class="cb-text" user-select="{{typing ? 'none' : 'text'}}">{{content}}</text>
-      <view wx:if="{{role === 'assistant' && audioId}}" class="cb-audio" bindtap="_onPlayTap">
-        <view class="cb-audio-icon {{audioPlaying ? 'cb-audio-playing' : ''}}">
-          <view wx:if="{{audioPlaying}}" class="cb-audio-bars">
-            <view class="cb-audio-bar"></view>
-            <view class="cb-audio-bar"></view>
-            <view class="cb-audio-bar"></view>
+  <block wx:if="{{recalled}}">
+    <view class="cb-recalled"><text class="cb-recalled-text" user-select="none">该消息已撤回</text></view>
+  </block>
+  <block wx:else>
+    <view class="cb-bubble">
+      <view class="cb-glow"></view>
+      <view class="cb-content">
+        <text class="cb-text" user-select="{{typing ? 'none' : 'text'}}">{{content}}</text>
+        <view wx:if="{{role === 'assistant' && audioId}}" class="cb-audio" bindtap="_onPlayTap">
+          <view class="cb-audio-icon {{audioPlaying ? 'cb-audio-playing' : ''}}">
+            <view wx:if="{{audioPlaying}}" class="cb-audio-bars">
+              <view class="cb-audio-bar"></view>
+              <view class="cb-audio-bar"></view>
+              <view class="cb-audio-bar"></view>
+            </view>
+            <view wx:else class="cb-audio-triangle"></view>
           </view>
-          <view wx:else class="cb-audio-triangle"></view>
         </view>
       </view>
     </view>
-  </view>
+  </block>
 </view>

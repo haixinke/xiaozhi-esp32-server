@@ -33,6 +33,11 @@ Component({
       type: Boolean,
       value: false,
     },
+    /** 是否已撤回（展示灰条占位） */
+    recalled: {
+      type: Boolean,
+      value: false,
+    },
   },
 
   data: {

@@ -1,14 +1,17 @@
 package xiaozhi.modules.agent.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,13 +30,17 @@ import org.springframework.context.MessageSource;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
+import xiaozhi.common.exception.RenException;
 import xiaozhi.common.oss.OssService;
 import xiaozhi.common.utils.MessageUtils;
 import xiaozhi.common.utils.SpringContextUtils;
+import xiaozhi.modules.agent.Enums.AgentChatHistoryType;
 import xiaozhi.modules.agent.dao.AiAgentChatAudioDao;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
+import xiaozhi.modules.agent.service.AgentChatAudioService;
 import xiaozhi.modules.agent.service.AgentChatTitleService;
+import xiaozhi.modules.agent.service.AgentService;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AgentChatHistoryServiceImpl 测试")
@@ -51,6 +58,12 @@ class AgentChatHistoryServiceImplTest {
     @Mock
     private AiAgentChatAudioDao aiAgentChatAudioDao;
 
+    @Mock
+    private AgentService agentService;
+
+    @Mock
+    private AgentChatAudioService agentChatAudioService;
+
     private AgentChatHistoryServiceImpl historyService;
 
     @BeforeAll
@@ -65,7 +78,8 @@ class AgentChatHistoryServiceImplTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        historyService = new AgentChatHistoryServiceImpl(agentChatTitleService, ossService, aiAgentChatAudioDao);
+        historyService = new AgentChatHistoryServiceImpl(agentChatTitleService, ossService,
+                aiAgentChatAudioDao, agentService, agentChatAudioService);
         Field baseMapperField = ServiceImpl.class.getDeclaredField("baseMapper");
         baseMapperField.setAccessible(true);
         baseMapperField.set(historyService, baseMapper);
@@ -164,5 +178,89 @@ class AgentChatHistoryServiceImplTest {
         verify(baseMapper).deleteAudioByIds(audioIds);
         verify(baseMapper, never()).deleteAudioIdByAgentId(any());
         verify(baseMapper).deleteHistoryByAgentId(agentId);
+    }
+
+    // ==================== recall ====================
+
+    @Test
+    @DisplayName("recall - 消息不存在时按无权限处理")
+    void recall_messageNotFound_throws() {
+        Long messageId = 100L;
+        when(baseMapper.selectById(messageId)).thenReturn(null);
+
+        assertThatThrownBy(() -> historyService.recall(messageId, 1L))
+            .isInstanceOf(RenException.class);
+
+        verify(agentChatAudioService, never()).deleteAudioWithOss(anyString());
+        verify(baseMapper, never()).deleteById((Serializable) any());
+    }
+
+    @Test
+    @DisplayName("recall - 非用户消息（智能体消息）拒绝撤回")
+    void recall_agentMessage_throws() {
+        Long messageId = 101L;
+        AgentChatHistoryEntity entity = AgentChatHistoryEntity.builder()
+            .id(messageId).agentId("agent-1").chatType(AgentChatHistoryType.AGENT.getValue())
+            .audioId("audio-1").build();
+        when(baseMapper.selectById(messageId)).thenReturn(entity);
+
+        assertThatThrownBy(() -> historyService.recall(messageId, 1L))
+            .isInstanceOf(RenException.class);
+
+        verify(agentService, never()).checkAgentPermission(anyString(), any());
+        verify(agentChatAudioService, never()).deleteAudioWithOss(anyString());
+        verify(baseMapper, never()).deleteById((Serializable) any());
+    }
+
+    @Test
+    @DisplayName("recall - 无 agent 归属权限时拒绝撤回")
+    void recall_noAgentPermission_throws() {
+        Long messageId = 102L;
+        Long userId = 7L;
+        AgentChatHistoryEntity entity = AgentChatHistoryEntity.builder()
+            .id(messageId).agentId("agent-1").chatType(AgentChatHistoryType.USER.getValue())
+            .audioId("audio-1").build();
+        when(baseMapper.selectById(messageId)).thenReturn(entity);
+        when(agentService.checkAgentPermission("agent-1", userId)).thenReturn(false);
+
+        assertThatThrownBy(() -> historyService.recall(messageId, userId))
+            .isInstanceOf(RenException.class);
+
+        verify(agentChatAudioService, never()).deleteAudioWithOss(anyString());
+        verify(baseMapper, never()).deleteById((Serializable) any());
+    }
+
+    @Test
+    @DisplayName("recall - 成功撤回用户消息并删除关联音频")
+    void recall_userMessageWithAudio_deletesAudioAndRow() {
+        Long messageId = 103L;
+        Long userId = 9L;
+        AgentChatHistoryEntity entity = AgentChatHistoryEntity.builder()
+            .id(messageId).agentId("agent-1").chatType(AgentChatHistoryType.USER.getValue())
+            .audioId("audio-1").build();
+        when(baseMapper.selectById(messageId)).thenReturn(entity);
+        when(agentService.checkAgentPermission("agent-1", userId)).thenReturn(true);
+
+        historyService.recall(messageId, userId);
+
+        verify(agentChatAudioService).deleteAudioWithOss("audio-1");
+        verify(baseMapper).deleteById((Serializable) messageId);
+    }
+
+    @Test
+    @DisplayName("recall - 无音频ID时跳过音频删除，仅删历史行")
+    void recall_userMessageWithoutAudio_skipsAudioDeletion() {
+        Long messageId = 104L;
+        Long userId = 9L;
+        AgentChatHistoryEntity entity = AgentChatHistoryEntity.builder()
+            .id(messageId).agentId("agent-1").chatType(AgentChatHistoryType.USER.getValue())
+            .audioId("").build();
+        when(baseMapper.selectById(messageId)).thenReturn(entity);
+        when(agentService.checkAgentPermission("agent-1", userId)).thenReturn(true);
+
+        historyService.recall(messageId, userId);
+
+        verify(agentChatAudioService, never()).deleteAudioWithOss(anyString());
+        verify(baseMapper).deleteById((Serializable) messageId);
     }
 }

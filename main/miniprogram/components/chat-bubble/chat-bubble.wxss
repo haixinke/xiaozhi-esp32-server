@@ -220,3 +220,21 @@
 .cb-row.dark .cb-audio-bar {
   background: #f0dce0;
 }
+
+/* ----- 撤回占位 ----- */
+.cb-recalled {
+  align-self: center;
+  max-width: 78%;
+  padding: 8rpx 20rpx;
+}
+
+.cb-recalled-text {
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: rgba(27, 28, 28, 0.4);
+  text-align: center;
+}
+
+.cb-row.dark .cb-recalled-text {
+  color: rgba(232, 228, 227, 0.4);
+}

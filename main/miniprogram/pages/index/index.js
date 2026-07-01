@@ -12,7 +12,7 @@
 const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
 const logger = require('../../utils/logger');
-const { get } = require('../../utils/request');
+const { get, del } = require('../../utils/request');
 const { getTheme, applyTheme } = require('../../utils/theme');
 
 const app = getApp();
@@ -74,6 +74,7 @@ Page({
     // 订阅权益灰度
     hasVoiceInput: false,        // 是否有语音输入权限
     hasLongTermMemory: false,    // 是否有聊天历史权限
+    hasMessageDelete: false,     // 是否有消息撤回权限
 
     // 聊天配额
     chatRemaining: -1,           // 剩余次数：-1=不限, >=0 显示剩余
@@ -604,6 +605,7 @@ Page({
         // 映射为消息格式，API 返回按 created_at DESC，需要反转为时间正序
         const historyMsgs = list.reverse().map((item, idx) => ({
           id: 'hist-' + this._historyPage + '-' + idx + '-' + (this._historyNonce++),
+          messageId: item.id,           // 后端消息ID，用于撤回
           role: item.chatType === 1 ? 'user' : 'assistant',
           content: item.content,
           audioId: item.audioId || '',
@@ -812,6 +814,49 @@ Page({
           wx.navigateTo({ url: '/pages/subscription/subscription?from=voiceCall&tab=gold' });
         }
       },
+    });
+  },
+
+  // 长按消息：仅 Gold 套餐（message_delete 权益）可撤回，且仅历史消息带后端 messageId
+  onMsgLongPress(e) {
+    const localId = e.currentTarget.dataset.id;
+    const idx = this.data.messages.findIndex((m) => m.id === localId);
+    if (idx < 0) { return; }
+    const msg = this.data.messages[idx];
+
+    if (!this.data.hasMessageDelete) {
+      this._showContractPopup('签订契约后即可撤回与女友的历史消息');
+      return;
+    }
+    if (!msg.messageId) {
+      // 实时消息由服务端 stt 回显，无后端 messageId，当次会话内不支持撤回
+      wx.showToast({ title: '该消息暂不支持撤回', icon: 'none' });
+      return;
+    }
+    wx.showActionSheet({
+      itemList: ['撤回'],
+      success: (r) => {
+        if (r.tapIndex === 0) {
+          this.onRecall(msg, idx);
+        }
+      },
+    });
+  },
+
+  onRecall(msg, idx) {
+    del('/agent/chat-history/' + msg.messageId).then((res) => {
+      if (res && res.code === 0) {
+        this.setData({ [`messages[${idx}].recalled`]: true });
+        return;
+      }
+      // 后端权益校验兜底（订阅过期/被降级）：10312 = ErrorCode.SUBSCRIPTION_FEATURE_DENIED
+      if (res && res.code === 10312) {
+        this._showContractPopup('签订契约后即可撤回与女友的历史消息');
+      } else {
+        wx.showToast({ title: (res && res.msg) || '撤回失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.showToast({ title: '撤回失败，请稍后重试', icon: 'none' });
     });
   },
 
@@ -1115,6 +1160,7 @@ Page({
     this.setData({
       hasVoiceInput: features.indexOf('voice_input') !== -1,
       hasLongTermMemory: newHasLongTermMemory,
+      hasMessageDelete: features.indexOf('message_delete') !== -1,
       historyNoMore: this._historyNoMore,
       chatRemaining: chatRemaining,
     });

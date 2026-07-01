@@ -562,7 +562,7 @@ class ConnectionHandler:
                 prompt = self.prompt_manager.get_quick_prompt(
                     user_prompt,
                     device_id=self.device_id,
-                    emoji_enabled=(self.features or {}).get("emoji", True),
+                    emoji_enabled=(self.features or {}).get("emoji", False),
                 )
                 self.change_system_prompt(prompt)
                 self.logger.bind(tag=TAG).info(
@@ -604,7 +604,7 @@ class ConnectionHandler:
             self.config["prompt"],
             self.device_id,
             self.client_ip,
-            emoji_enabled=(self.features or {}).get("emoji", True),
+            emoji_enabled=(self.features or {}).get("emoji", False),
         )
         if enhanced_prompt:
             self.change_system_prompt(enhanced_prompt)
@@ -1117,7 +1117,7 @@ Session ID: {self.session_id}
 
                 # 在llm回复中获取情绪表情，一轮对话只在开头获取一次
                 if emotion_flag and content is not None and content.strip():
-                    if (self.features or {}).get("emoji", True):
+                    if (self.features or {}).get("emoji", False):
                         asyncio.run_coroutine_threadsafe(
                             textUtils.get_emotion(self, content),
                             self.loop,

@@ -53,10 +53,10 @@
           <text class="feature-name">{{item.label}}</text>
         </view>
         <view class="feature-tier-col">
-          <text class="feature-check {{item.silver ? 'check-yes' : 'check-no'}}">{{item.silver ? '✓' : '—'}}</text>
+          <text class="feature-check {{item.silver ? 'check-yes' : 'check-no'}}">{{item.silverDisplay}}</text>
         </view>
         <view class="feature-tier-col">
-          <text class="feature-check {{item.gold ? 'check-yes' : 'check-no'}}">{{item.gold ? '✓' : '—'}}</text>
+          <text class="feature-check {{item.gold ? 'check-yes' : 'check-no'}}">{{item.goldDisplay}}</text>
         </view>
       </view>
     </view>

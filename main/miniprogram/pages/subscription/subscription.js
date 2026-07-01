@@ -7,7 +7,7 @@ var PLAN_RANK = { silver: 1, gold: 2 };
 
 function featureLabel(code) {
   var labels = {
-    'long_term_memory': '永久留存甜蜜回忆',
+    'long_term_memory': '消息漫游天数',
     'voice_input': '语音输入',
     'voice_call': '语音通话',
     'superpower': '赋予女友超能力（天气）',
@@ -63,12 +63,20 @@ function buildFeatureTable(silverPlans, goldPlans) {
       if (allCodes.indexOf(f.code) === -1) allCodes.push(f.code);
     });
   }
+  var displayValues = {
+    'long_term_memory': { silver: '120', gold: '180' }
+  };
   return allCodes.map(function(code) {
+    var custom = displayValues[code];
+    var hasSilver = !!silverFeatures[code];
+    var hasGold = !!goldFeatures[code];
     return {
       code: code,
       label: featureLabel(code),
-      silver: !!silverFeatures[code],
-      gold: !!goldFeatures[code]
+      silver: hasSilver,
+      gold: hasGold,
+      silverDisplay: custom && hasSilver ? custom.silver : (hasSilver ? '✓' : '—'),
+      goldDisplay: custom && hasGold ? custom.gold : (hasGold ? '✓' : '—')
     };
   });
 }

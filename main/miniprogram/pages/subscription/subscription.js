@@ -8,11 +8,13 @@ var PLAN_RANK = { silver: 1, gold: 2 };
 function featureLabel(code) {
   var labels = {
     'long_term_memory': '消息漫游天数',
-    'voice_input': '语音输入',
-    'voice_call': '语音通话',
-    'superpower': '赋予女友超能力（天气）',
-    'social_moments': '看女友的私密空间',
-    'chat_no_limit': '不限次聊天'
+    'chat_no_limit': '每日对话无限畅聊',
+    'voice_input': '语音输入，解放双手',
+    'superpower': '女友超能力(天气、新闻)',
+    'voice_call': '语音通话无限畅聊',
+    'memory_enhance': '记忆增强',
+    'message_speed': '消息回复速度提升',
+    'message_delete': '历史消息撤回'
   };
   return labels[code] || code;
 }

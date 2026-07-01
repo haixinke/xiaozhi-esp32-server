@@ -295,9 +295,9 @@ class TTSProvider(TTSProviderBase):
                 if message.sentence_id != self.conn.sentence_id:
                     continue
 
-                logger.bind(tag=TAG).debug(
-                    f"收到TTS任务｜{message.sentence_type.name} ｜ {message.content_type.name} | 会话ID: {message.sentence_id}"
-                )
+                # logger.bind(tag=TAG).debug(
+                #     f"收到TTS任务｜{message.sentence_type.name} ｜ {message.content_type.name} | 会话ID: {message.sentence_id}"
+                # )
 
                 if message.sentence_type == SentenceType.FIRST:
                     # 重置流式处理状态
@@ -323,9 +323,9 @@ class TTSProvider(TTSProviderBase):
                 elif ContentType.TEXT == message.content_type:
                     if message.content_detail:
                         try:
-                            logger.bind(tag=TAG).debug(
-                                f"开始发送TTS文本: {message.content_detail}"
-                            )
+                            # logger.bind(tag=TAG).debug(
+                            #     f"开始发送TTS文本: {message.content_detail}"
+                            # )
                             future = asyncio.run_coroutine_threadsafe(
                                 self.text_to_speak(message.content_detail, None),
                                 loop=self.conn.loop,

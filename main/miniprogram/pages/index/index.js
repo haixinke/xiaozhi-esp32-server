@@ -824,6 +824,9 @@ Page({
     if (idx < 0) { return; }
     const msg = this.data.messages[idx];
 
+    // 仅用户自己发送的消息可撤回，女友消息不弹出任何入口
+    if (msg.role !== 'user') { return; }
+
     if (!this.data.hasMessageDelete) {
       this._showContractPopup('签订契约后即可撤回与女友的历史消息');
       return;

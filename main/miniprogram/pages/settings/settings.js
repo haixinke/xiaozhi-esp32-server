@@ -27,6 +27,9 @@ Page({
     moodLabel: '',
     planCode: null,
     identityName: '普通陪伴',
+    // 用户ID（最多显示前11位）
+    userId: '',
+    userDisplayId: '',
     // 信件浮窗（一封写给你的信）
     showLetterPopup: false
   },
@@ -40,9 +43,21 @@ Page({
     this.setData({
       userAvatar: wx.getStorageSync('userAvatar') || '/images/user-default.png'
     });
+    this.loadUserId();
     this.loadCompanionAvatar();
     this.loadCompanionStatus();
     this.loadSubscription();
+  },
+
+  loadUserId() {
+    var app = getApp();
+    var userId = app.globalData.userId;
+    if (userId) {
+      this.setData({
+        userId: userId,
+        userDisplayId: String(userId).slice(0, 11)
+      });
+    }
   },
 
   loadCompanionAvatar() {

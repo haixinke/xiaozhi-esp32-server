@@ -18,6 +18,9 @@ public class WechatLoginRespDTO implements Serializable {
     @Schema(description = "微信openid")
     private String openid;
 
+    @Schema(description = "用户ID")
+    private Long userId;
+
     @Schema(description = "是否为新自动创建的用户")
     private Boolean isNewUser;
 

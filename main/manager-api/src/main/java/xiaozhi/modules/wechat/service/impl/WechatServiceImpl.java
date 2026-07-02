@@ -115,6 +115,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         resp.setToken(tokenDTO.getToken());
         resp.setExpire(tokenDTO.getExpire());
         resp.setOpenid(openid);
+        resp.setUserId(userId);
         resp.setIsNewUser(isNewUser);
         resp.setAgentId(agentId);
         return resp;

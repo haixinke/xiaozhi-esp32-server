@@ -27,7 +27,7 @@
     <!-- 状态 pill -->
     <view class="bond-status-row" wx:if="{{menstrualStatus || mood}}">
       <view class="bond-status-pill bond-status-mood" wx:if="{{mood}}">
-        <text class="bond-status-text">心情：{{moodLabel}}</text>
+        <text class="bond-status-text">她的心情：{{moodLabel}}</text>
       </view>
       <view class="bond-status-pill bond-status-menstrual" wx:if="{{menstrualStatus && menstrualStatus.phase === 'MENSTRUATION'}}">
         <text class="bond-status-text">经期第 {{menstrualStatus.cycleDay}} 天</text>
@@ -75,6 +75,16 @@
       </view>
     </view>
 
+    <!-- 用户ID -->
+    <view class="settings-item">
+      <view class="item-left">
+        <text class="item-label">用户ID</text>
+      </view>
+      <view class="item-right">
+        <text class="item-value">{{userDisplayId}}</text>
+      </view>
+    </view>
+
     <!-- 版本信息 -->
     <view class="settings-item">
       <view class="item-left">
@@ -88,7 +98,7 @@
 
   <!-- 底部信息 -->
   <view class="settings-footer">
-    <text class="footer-text">完美女友 © 2026</text>
+    <text class="footer-text">笨笨女友 © 2026</text>
   </view>
 
   <!-- 一封写给你的信 浮窗 -->

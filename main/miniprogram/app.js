@@ -11,6 +11,7 @@ const { applyGlobalTheme } = require('./utils/theme');
 App({
   globalData: {
     token: null,
+    userId: null,
     openid: null,
     virtualMAC: null,
     wsToken: null,
@@ -62,6 +63,7 @@ App({
     if (token && !isTokenExpiredOrAboutToExpire()) {
       this.globalData.token = token;
       this.globalData.openid = wx.getStorageSync('openid');
+      this.globalData.userId = wx.getStorageSync('userId');
       this.globalData.virtualMAC = wx.getStorageSync('openid');
       this.globalData.agentId = wx.getStorageSync('agentId');
 
@@ -138,12 +140,18 @@ App({
             const loginData = response.data;
             const token = loginData.token;
             const openid = loginData.openid;
+            const userId = loginData.userId;
             const agentId = loginData.agentId;
 
             // 保存登录态及有效期
             this.globalData.token = token;
             this.globalData.openid = openid;
+            this.globalData.userId = userId;
             setToken(token, openid, loginData.expire);
+
+            if (userId) {
+              wx.setStorageSync('userId', userId);
+            }
 
             // 保存 agentId 到 storage（可能为null）
             if (agentId) {
@@ -336,11 +344,13 @@ App({
    */
   clearLoginState() {
     this.globalData.token = null;
+    this.globalData.userId = null;
     this.globalData.openid = null;
     this.globalData.agentId = null;
     this.globalData.planCode = null;
     this.globalData.subscriptionFeatures = [];
     wx.removeStorageSync('token');
+    wx.removeStorageSync('userId');
     wx.removeStorageSync('openid');
     wx.removeStorageSync('agentId');
     wx.removeStorageSync('planCode');

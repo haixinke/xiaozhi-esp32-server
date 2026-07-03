@@ -13,8 +13,8 @@
 - **后端服务** → `main/manager-api/`
 - **web服务** → `main/manager-web/`
 - **移动服务** → `main/manager-mobile/`
-- **演示项目** / **演示web项目** → `main/demo-web/`
-- **小程序** → `main/miniprogram/`
+- **数字人项目** → `main/digital-human/`
+- **女友小程序** → `main/miniprogram/`
 
 | 子项目 | 语言 / 技术栈 | 端口 | 用途 |
 |---|---|---|---|
@@ -22,8 +22,8 @@
 | `main/manager-api/` | Java 21 / Spring Boot 3.4.3 | 8002 (`/xiaozhi`) | 管理后台 REST API，设备注册，Python 服务端的配置来源 |
 | `main/manager-web/` | Vue.js 2 / Vue CLI | 8001 (dev) | Web 管理控制台 ("智控台") |
 | `main/manager-mobile/` | Uni-app / Vue 3 / Vite | — | 移动端管理后台 (H5、微信小程序、iOS、Android) |
-| `main/demo-web/` | HTML / CSS / JS / Vite | 8006 | 演示项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
-| `main/miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "完美女友"微信小程序：AI 伴侣聊天 |
+| `main/digital-human/` | HTML / CSS / JS / Python |  | 数字人项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
+| `main/miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "笨笨女友"微信小程序：AI 伴侣聊天 |
 
 每个子项目都有自己的 `CLAUDE.md`，包含详细的架构说明和常用命令。
 
@@ -38,7 +38,7 @@
                                     ┌────────▼────────┐
                                     │  manager-api    │◄──── REST ────┐
                                     │  (Java Spring)  │               │
-                                    │  端口 8002       │◄── MySQL + Redis
+                                    │  端口 8002       │◄── Oceanbase + Redis
                                     └────────┬────────┘               │
                                              │                        │
                                    ┌─────────┴──────────┐             │
@@ -76,7 +76,7 @@ Java API 向 Python 服务端暴露运行时配置，使得管理控制台无需
 |---|---|
 | `main/xiaozhi-server/config.yaml` | 服务端基础配置 (已提交) |
 | `main/xiaozhi-server/data/.config.yaml` | 本地覆盖配置和密钥 (gitignore，启动时必须存在) |
-| `main/manager-api/src/main/resources/application-dev.yml` | Java 开发环境配置 (MySQL / Redis) |
+| `main/manager-api/src/main/resources/application-dev.yml` | Java 开发环境配置 (Oceanbase（兼容MySQL） / Redis) |
 | `main/manager-web/vue.config.js` | Vue 构建配置，代理 `/xiaozhi` 到 `localhost:8002` |
 | `main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml` | Liquibase 迁移日志 |
 

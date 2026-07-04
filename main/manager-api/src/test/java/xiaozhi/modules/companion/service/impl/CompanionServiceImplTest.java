@@ -563,6 +563,26 @@ class CompanionServiceImplTest {
         }
     }
 
+    @Test
+    @DisplayName("getIntimacyInfo() 满级时 nextLevelName 为 null")
+    void getIntimacyInfo_maxedTier_nextLevelNameIsNull() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+
+            CompanionEntity companion = companionEntity(1L, userId, "device-123", "JOY");
+            companion.setIntimacy(0.95f);   // 深爱档
+            when(companionDao.selectOne(any())).thenReturn(companion);
+
+            xiaozhi.modules.companion.vo.CompanionIntimacyVO vo =
+                    companionService.getIntimacyInfo("device-123");
+
+            assertThat(vo.getLevel()).isEqualTo(5);
+            assertThat(vo.getLevelName()).isEqualTo("深爱");
+            assertThat(vo.getNextLevelName()).isNull();
+        }
+    }
+
     private AgentEntity captureUpdatedAgent() {
         ArgumentCaptor<AgentEntity> captor = ArgumentCaptor.forClass(AgentEntity.class);
         verify(agentService).updateById(captor.capture());

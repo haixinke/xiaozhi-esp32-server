@@ -276,12 +276,14 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         int streak = companion.getActiveStreak() != null ? companion.getActiveStreak() : 0;
         String lastActive = companion.getLastActiveDate() != null
                 ? companion.getLastActiveDate().toString() : null;
+        IntimacyLevel nextLevel = level.next();
+        String nextLevelName = nextLevel == level ? null : nextLevel.getLabel();
         return new CompanionIntimacyVO(
                 intimacy,
                 level.getLevel(),
                 level.getLabel(),
                 level.progressWithin(intimacy),
-                level.next().getLabel(),
+                nextLevelName,
                 streak,
                 lastActive);
     }

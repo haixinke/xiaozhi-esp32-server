@@ -23,7 +23,7 @@ public class CompanionIntimacyVO {
     @Schema(description = "当前档内进度 0~1")
     private Float progressToNext;
 
-    @Schema(description = "下一等级名（已满级则与当前相同）")
+    @Schema(description = "下一等级名（已满级则为 null）")
     private String nextLevelName;
 
     @Schema(description = "连续陪伴天数")

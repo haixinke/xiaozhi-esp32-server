@@ -25,6 +25,7 @@ import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.entity.CompanionEntity;
 import xiaozhi.modules.companion.service.CompanionService;
 import xiaozhi.modules.companion.util.CharacterAge;
+import xiaozhi.modules.companion.util.IntimacyLevel;
 import xiaozhi.modules.companion.util.IntimacyRule;
 import xiaozhi.modules.companion.util.CompanionBirthCalculator;
 import xiaozhi.modules.companion.util.CompanionLabels;
@@ -501,20 +502,12 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
     }
 
     /**
-     * 将亲密度(0.0~1.0)渲染成关系阶段描述，供系统提示词使用。
-     * 亲密度为空时按新相识处理。
+     * 将亲密度渲染成关系阶段描述，供系统提示词/实时上下文使用。
+     * 亲密度为空时按 0（初识）处理。
      */
     private String renderIntimacy(CompanionEntity companion) {
         float value = companion.getIntimacy() != null ? companion.getIntimacy() : 0f;
-        if (value < 0.2f) {
-            return "你们刚认识不久，还在互相熟悉试探的阶段。语气可以温柔但略带一点点分寸和小矜持，别一上来就过分黏腻或用太亲昵的称呼。";
-        } else if (value < 0.5f) {
-            return "你们已经挺熟了，聊得来。可以自然撒娇、开玩笑、偶尔小傲娇，像正在升温的关系。";
-        } else if (value < 0.8f) {
-            return "你们很亲密了，是彼此认定的人。可以黏人、直球表达喜欢、有只属于你们的默契和玩笑。";
-        } else {
-            return "你们是深度依恋的爱人，毫无保留地偏爱他。可以极度亲昵、放心地撒娇耍赖，把他当成生活里最重要的人。";
-        }
+        return IntimacyLevel.of(value).getPromptDescription();
     }
 
     private String renderMenstrualState(CompanionEntity companion) {

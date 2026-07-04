@@ -22,6 +22,7 @@ import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.entity.CompanionEntity;
 import xiaozhi.modules.companion.service.CompanionService;
 import xiaozhi.modules.companion.util.CompanionMood;
+import xiaozhi.modules.companion.util.IntimacyLevel;
 import xiaozhi.modules.companion.vo.CompanionVO;
 import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.item.service.ItemService;
@@ -439,6 +440,20 @@ class CompanionServiceImplTest {
             assertThat(captor.getValue().getRelationType()).isEqualTo("bickering");
             assertThat(captor.getValue().getIntimacy()).isEqualTo(0.72f);
         }
+    }
+
+    @Test
+    @DisplayName("buildRealtimeContext() 关系亲密度按 5 档取文案")
+    void buildRealtimeContext_intimacyUsesFiveTierDescription() {
+        CompanionEntity companion = companionEntity(1L, 100L, "device-123", "JOY");
+        companion.setType("bf"); // 排除经期，聚焦亲密度
+        companion.setIntimacy(0.35f); // 心动
+        when(companionDao.selectOne(any())).thenReturn(companion);
+
+        java.util.Map<String, String> ctx = companionService.buildRealtimeContext("device-123");
+
+        assertThat(ctx.get("关系亲密度"))
+                .isEqualTo(IntimacyLevel.CRUSH.getPromptDescription());
     }
 
     private AgentEntity captureUpdatedAgent() {

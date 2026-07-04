@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 @Data
@@ -73,6 +74,15 @@ public class CompanionEntity {
 
     @Schema(description = "亲密程度: 0.0~1.0")
     private Float intimacy;
+
+    @Schema(description = "最近活跃日")
+    private LocalDate lastActiveDate;
+
+    @Schema(description = "连续活跃天数")
+    private Integer activeStreak;
+
+    @Schema(description = "亲密度最近处理日期")
+    private LocalDate intimacyUpdatedDate;
 
     @Schema(description = "宠物类型编码: cat/dog")
     private String petType;

@@ -187,9 +187,10 @@ class CompanionServiceImplTest {
             assertThat(vo.getMood()).isEqualTo("JOY");
             verify(companionDao).insert(any(CompanionEntity.class));
             verify(agentService).updateById(any(AgentEntity.class));
-            // 心情标签应当出现在系统提示词中
+            // 提示词已同步到 agent，但不再烤入易变的心情值（心情改由实时上下文注入）
             AgentEntity updated = captureUpdatedAgent();
-            assertThat(updated.getSystemPrompt()).contains(CompanionMood.JOY.getLabel());
+            assertThat(updated.getSystemPrompt()).contains("元气邻家妹");
+            assertThat(updated.getSystemPrompt()).doesNotContain(CompanionMood.JOY.getLabel());
         }
     }
 
@@ -256,8 +257,8 @@ class CompanionServiceImplTest {
     }
 
     @Test
-    @DisplayName("refreshAllMoods() 分页刷新所有伴侣心情并同步提示词")
-    void refreshAllMoods_updatesAllCompanionsAndSyncs() {
+    @DisplayName("refreshAllMoods() 分页刷新所有伴侣心情并登记实时上下文源（不再重建提示词）")
+    void refreshAllMoods_updatesAllCompanionsAndRegistersContext() {
         CompanionEntity c1 = companionEntity(1L, 100L, "device-1", "CALM");
         CompanionEntity c2 = companionEntity(2L, 101L, "device-2", "JOY");
         Page<CompanionEntity> page = new Page<>(1, 500);
@@ -267,13 +268,14 @@ class CompanionServiceImplTest {
 
         when(deviceService.getAgentIdByDeviceId("device-1")).thenReturn("agent-1");
         when(deviceService.getAgentIdByDeviceId("device-2")).thenReturn("agent-2");
-        when(agentService.selectById("agent-1")).thenReturn(agentEntity(100L));
-        when(agentService.selectById("agent-2")).thenReturn(agentEntity(101L));
 
         companionService.refreshAllMoods();
 
         verify(companionDao, times(2)).updateById(any(CompanionEntity.class));
-        verify(agentService, times(2)).updateById(any(AgentEntity.class));
+        // 心情改由实时注入：定时任务不再重建 agent 提示词
+        verify(agentService, never()).updateById(any(AgentEntity.class));
+        // 但会为每个有 agent 的伴侣幂等登记实时上下文源
+        verify(agentContextProviderService, times(2)).saveOrUpdateByAgentId(any());
         assertThat(c1.getMood()).isIn(moodNames());
         assertThat(c2.getMood()).isIn(moodNames());
     }
@@ -290,17 +292,18 @@ class CompanionServiceImplTest {
 
         when(deviceService.getAgentIdByDeviceId("device-1")).thenReturn(null);
         when(deviceService.getAgentIdByDeviceId("device-2")).thenReturn("agent-2");
-        when(agentService.selectById("agent-2")).thenReturn(agentEntity(101L));
 
         companionService.refreshAllMoods();
 
         verify(companionDao, times(2)).updateById(any(CompanionEntity.class));
-        verify(agentService, times(1)).updateById(any(AgentEntity.class));
+        verify(agentService, never()).updateById(any(AgentEntity.class));
+        // 仅 device-2 有 agent，登记一次实时上下文源
+        verify(agentContextProviderService, times(1)).saveOrUpdateByAgentId(any());
     }
 
     @Test
-    @DisplayName("syncPromptToAgent() 经期 gf 提示词包含经期状态")
-    void syncPromptToAgent_menstruatingGf_includesMenstrualState() {
+    @DisplayName("syncPromptToAgent() 经期 gf 的静态提示词不再包含经期状态（改由实时注入）")
+    void syncPromptToAgent_menstruatingGf_excludesMenstrualStateFromStaticPrompt() {
         Long userId = 100L;
         try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
             security.when(SecurityUser::getUserId).thenReturn(userId);
@@ -319,7 +322,7 @@ class CompanionServiceImplTest {
             companionService.syncPromptToAgent(agentId, 1L);
 
             AgentEntity updated = captureUpdatedAgent();
-            assertThat(updated.getSystemPrompt()).contains("经期");
+            assertThat(updated.getSystemPrompt()).doesNotContain("经期");
             assertThat(updated.getSystemPrompt()).doesNotContain("{{menstrualState}}");
         }
     }
@@ -373,8 +376,8 @@ class CompanionServiceImplTest {
     }
 
     @Test
-    @DisplayName("syncPromptToAgent() 生成的提示词包含今日心情")
-    void syncPromptToAgent_includesMoodInPrompt() {
+    @DisplayName("syncPromptToAgent() 静态提示词不再烤入今日心情值（改由实时注入）")
+    void syncPromptToAgent_excludesMoodValueFromStaticPrompt() {
         Long userId = 100L;
         String agentId = "agent-123";
         CompanionEntity companion = companionEntity(1L, userId, "device-123", "EXCITEMENT");
@@ -388,7 +391,8 @@ class CompanionServiceImplTest {
             companionService.syncPromptToAgent(agentId, 1L);
 
             AgentEntity updated = captureUpdatedAgent();
-            assertThat(updated.getSystemPrompt()).contains("兴奋");
+            assertThat(updated.getSystemPrompt()).doesNotContain(CompanionMood.EXCITEMENT.getLabel());
+            assertThat(updated.getSystemPrompt()).doesNotContain("{{mood}}");
         }
     }
 

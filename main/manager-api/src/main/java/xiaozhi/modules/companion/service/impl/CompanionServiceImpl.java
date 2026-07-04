@@ -343,9 +343,11 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
                     companion.setMood(CompanionMood.random(adjustments).name());
                     companionDao.updateById(companion);
 
+                    // 心情已改由实时上下文每轮注入，无需重建提示词；仅确保实时上下文源已登记
+                    // （幂等，用于给 ③ 上线前创建的老 agent 补登记）。
                     String agentId = deviceService.getAgentIdByDeviceId(companion.getDeviceId());
                     if (agentId != null && !agentId.isBlank()) {
-                        doSyncPromptToAgent(agentId, companion);
+                        ensureCompanionContextProvider(agentId);
                     }
                     totalSuccess++;
                 } catch (Exception e) {
@@ -402,10 +404,9 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         String soulQuirkLabel = CompanionLabels.getLabel(CompanionLabels.SOUL_QUIRK, companion.getSoulQuirk());
         String birthdayLabel = companion.getBirthday() != null
                 ? new java.text.SimpleDateFormat("yyyy年MM月dd日").format(companion.getBirthday()) : "未知";
-        String moodLabel = CompanionMood.fromCode(companion.getMood()).getLabel();
-        String menstrualStateLabel = renderMenstrualState(companion);
-        String intimacyLabel = renderIntimacy(companion);
 
+        // 心情/亲密度/生理状态已改由 xiaozhi-server 每轮通过 /config/companion-context 实时注入，
+        // 不再烤进静态提示词，避免与实时值冲突，也省去每日重建提示词。
         // 替换模板变量
         String prompt = CompanionLabels.SYSTEM_PROMPT_TEMPLATE
                 .replace("{{character}}", characterLabel)
@@ -415,10 +416,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
                 .replace("{{petName}}", petNameLabel)
                 .replace("{{soulTraits}}", soulTraitsLabel)
                 .replace("{{soulQuirk}}", soulQuirkLabel)
-                .replace("{{birthday}}", birthdayLabel)
-                .replace("{{mood}}", moodLabel)
-                .replace("{{menstrualState}}", menstrualStateLabel)
-                .replace("{{intimacy}}", intimacyLabel);
+                .replace("{{birthday}}", birthdayLabel);
 
         // 查询并更新智能体系统提示词和音色
         AgentEntity agent = agentService.selectById(agentId);

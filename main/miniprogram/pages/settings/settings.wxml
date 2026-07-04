@@ -97,9 +97,9 @@
   </view>
 
   <!-- 底部信息 -->
-  <view class="settings-footer">
+  <!-- <view class="settings-footer">
     <text class="footer-text">笨笨女友 © 2026</text>
-  </view>
+  </view> -->
 
   <!-- 一封写给你的信 浮窗 -->
   <view class="letter-overlay {{showLetterPopup ? 'letter-overlay-show' : ''}}" bindtap="onLetterOverlayTap">

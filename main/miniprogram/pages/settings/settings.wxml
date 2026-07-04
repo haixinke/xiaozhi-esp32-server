@@ -1,5 +1,7 @@
 <view class="settings-container {{darkMode ? 'dark' : ''}}">
 
+  <scroll-view class="settings-scroll" scroll-y>
+
   <!-- 我们的羁绊面板 -->
   <view class="bond-card">
     <!-- 身份标签 -->
@@ -112,6 +114,8 @@
       </view>
     </view>
   </view>
+
+  </scroll-view>
 
   <!-- 底部信息 -->
   <!-- <view class="settings-footer">

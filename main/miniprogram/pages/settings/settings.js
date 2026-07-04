@@ -27,6 +27,9 @@ Page({
     moodLabel: '',
     planCode: null,
     identityName: '普通陪伴',
+    // 亲密度 / 关系等级
+    intimacy: null,
+    levelUp: false,
     // 用户ID（最多显示前11位）
     userId: '',
     userDisplayId: '',
@@ -46,6 +49,7 @@ Page({
     this.loadUserId();
     this.loadCompanionAvatar();
     this.loadCompanionStatus();
+    this.loadIntimacy();
     this.loadSubscription();
   },
 
@@ -75,6 +79,64 @@ Page({
       mood: mood,
       moodLabel: mood ? moodLabel(mood) : ''
     });
+  },
+
+  async loadIntimacy() {
+    var app = getApp();
+    var deviceId = (app.globalData && app.globalData.virtualMAC) || '';
+    if (!deviceId) {
+      this.setData({ intimacy: null, levelUp: false });
+      return;
+    }
+    try {
+      var res = await get('/companion/intimacy/' + deviceId);
+      if (!res || res.code !== 0 || !res.data) {
+        this.setData({ intimacy: null, levelUp: false });
+        return;
+      }
+      var info = res.data;
+      var cachedLevel = wx.getStorageSync('intimacyLevel');
+      var level = info.level || 0;
+      var levelUp = false;
+      // 首次缓存（无历史值）不触发庆祝，避免每次新设备都弹
+      if (cachedLevel !== '' && cachedLevel !== null && typeof cachedLevel !== 'undefined' && level > cachedLevel) {
+        levelUp = true;
+      }
+      this.setData({
+        intimacy: {
+          level: level,
+          levelName: info.levelName || '',
+          progressToNext: info.progressToNext || 0,
+          nextLevelName: info.nextLevelName || '',
+          streak: info.streak || 0,
+          intimacy: info.intimacy || 0
+        },
+        levelUp: levelUp
+      });
+      // 仅当未触发庆祝时立刻同步缓存；触发庆祝时在关闭浮层后再写入
+      if (!levelUp) {
+        wx.setStorageSync('intimacyLevel', level);
+      }
+    } catch (err) {
+      console.warn('[settings] intimacy load failed:', err);
+      this.setData({ intimacy: null, levelUp: false });
+    }
+  },
+
+  onLevelUpClose() {
+    var info = this.data.intimacy;
+    if (info && info.level) {
+      wx.setStorageSync('intimacyLevel', info.level);
+    }
+    this.setData({ levelUp: false });
+  },
+
+  onLevelUpOverlayTap() {
+    this.onLevelUpClose();
+  },
+
+  onLevelUpPanelTap() {
+    // 防止冒泡关闭
   },
 
   async loadSubscription() {

@@ -34,6 +34,23 @@
       </view>
     </view>
 
+    <!-- 关系等级 -->
+    <view class="bond-level" wx:if="{{intimacy}}">
+      <view class="bond-level-head">
+        <text class="bond-level-name">{{intimacy.levelName}}</text>
+        <text class="bond-level-streak" wx:if="{{intimacy.streak > 0}}">已连续陪伴 {{intimacy.streak}} 天</text>
+      </view>
+      <view class="bond-level-track">
+        <view class="bond-level-fill" style="width: {{intimacy.progressToNext * 100}}%"></view>
+      </view>
+      <view class="bond-level-foot" wx:if="{{intimacy.nextLevelName}}">
+        <text class="bond-level-hint">距离「{{intimacy.nextLevelName}}」还差一点</text>
+      </view>
+      <view class="bond-level-foot bond-level-foot-done" wx:else>
+        <text class="bond-level-hint">已达当前最高关系等级</text>
+      </view>
+    </view>
+
   </view>
 
   <!-- 功能入口 -->
@@ -118,4 +135,21 @@
       <view class="letter-close-btn" bindtap="onLetterOverlayTap">收起</view>
     </view>
   </view>
+
+  <!-- 关系升级庆祝浮层 -->
+  <view class="levelup-overlay {{levelUp ? 'levelup-overlay-show' : ''}}" bindtap="onLevelUpOverlayTap">
+    <view class="levelup-panel" catchtap="onLevelUpPanelTap">
+      <view class="levelup-halo">
+        <view class="levelup-ring levelup-ring-1"></view>
+        <view class="levelup-ring levelup-ring-2"></view>
+        <view class="levelup-ring levelup-ring-3"></view>
+        <text class="levelup-emblem">Lv</text>
+      </view>
+      <text class="levelup-title">关系升级</text>
+      <text class="levelup-level" wx:if="{{intimacy}}">{{intimacy.levelName}}</text>
+      <text class="levelup-desc">你们的羁绊更深了一层</text>
+      <view class="levelup-close-btn" bindtap="onLevelUpClose">收下祝福</view>
+    </view>
+  </view>
 </view>
+

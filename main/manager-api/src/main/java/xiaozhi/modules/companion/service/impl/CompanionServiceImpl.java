@@ -13,7 +13,10 @@ import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.modules.agent.dto.AgentCreateDTO;
+import xiaozhi.modules.agent.dto.ContextProviderDTO;
+import xiaozhi.modules.agent.entity.AgentContextProviderEntity;
 import xiaozhi.modules.agent.entity.AgentEntity;
+import xiaozhi.modules.agent.service.AgentContextProviderService;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.companion.dao.CompanionDao;
 import xiaozhi.modules.companion.dto.CompanionCreateDTO;
@@ -39,9 +42,13 @@ import xiaozhi.modules.security.user.SecurityUser;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,6 +61,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
 
     private final CompanionDao companionDao;
     private final AgentService agentService;
+    private final AgentContextProviderService agentContextProviderService;
     private final DeviceService deviceService;
     private final PlatformTransactionManager transactionManager;
     private final ItemService itemService;
@@ -396,6 +404,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
                 ? new java.text.SimpleDateFormat("yyyy年MM月dd日").format(companion.getBirthday()) : "未知";
         String moodLabel = CompanionMood.fromCode(companion.getMood()).getLabel();
         String menstrualStateLabel = renderMenstrualState(companion);
+        String intimacyLabel = renderIntimacy(companion);
 
         // 替换模板变量
         String prompt = CompanionLabels.SYSTEM_PROMPT_TEMPLATE
@@ -408,7 +417,8 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
                 .replace("{{soulQuirk}}", soulQuirkLabel)
                 .replace("{{birthday}}", birthdayLabel)
                 .replace("{{mood}}", moodLabel)
-                .replace("{{menstrualState}}", menstrualStateLabel);
+                .replace("{{menstrualState}}", menstrualStateLabel)
+                .replace("{{intimacy}}", intimacyLabel);
 
         // 查询并更新智能体系统提示词和音色
         AgentEntity agent = agentService.selectById(agentId);
@@ -419,7 +429,99 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         agent.setTtsVoiceId(companion.getVoice());
         agentService.updateById(agent);
 
+        ensureCompanionContextProvider(agentId);
+
         log.info("伴侣系统提示词已同步, companionId={}, agentId={}", companion.getId(), agentId);
+    }
+
+    /** 内部实时上下文端点的相对路径，由 xiaozhi-server 用 manager-api 基址与密钥补全后每轮调用 */
+    private static final String COMPANION_CONTEXT_URL = "/config/companion-context";
+
+    /**
+     * 为伴侣智能体登记一条实时上下文源（幂等）。已存在则跳过，不覆盖其他 provider。
+     */
+    private void ensureCompanionContextProvider(String agentId) {
+        try {
+            AgentContextProviderEntity entity = agentContextProviderService.getByAgentId(agentId);
+            List<ContextProviderDTO> providers = (entity != null && entity.getContextProviders() != null)
+                    ? new ArrayList<>(entity.getContextProviders())
+                    : new ArrayList<>();
+            boolean exists = providers.stream().anyMatch(p -> COMPANION_CONTEXT_URL.equals(p.getUrl()));
+            if (exists) {
+                return;
+            }
+            ContextProviderDTO provider = new ContextProviderDTO();
+            provider.setUrl(COMPANION_CONTEXT_URL);
+            provider.setHeaders(Collections.emptyMap());
+            providers.add(provider);
+            if (entity == null) {
+                entity = new AgentContextProviderEntity();
+                entity.setAgentId(agentId);
+            }
+            entity.setContextProviders(providers);
+            agentContextProviderService.saveOrUpdateByAgentId(entity);
+            log.info("已为伴侣智能体登记实时上下文源, agentId={}", agentId);
+        } catch (Exception e) {
+            log.warn("登记伴侣实时上下文源失败, agentId={}: {}", agentId, e.getMessage());
+        }
+    }
+
+    @Override
+    public Map<String, String> buildRealtimeContext(String deviceId) {
+        Map<String, String> ctx = new LinkedHashMap<>();
+        if (deviceId == null || deviceId.isEmpty()) {
+            return ctx;
+        }
+        CompanionEntity companion = companionDao.selectOne(
+                new QueryWrapper<CompanionEntity>().eq("device_id", deviceId).last("limit 1"));
+        if (companion == null) {
+            return ctx;
+        }
+        ctx.put("当前时段", currentPeriodLabel());
+        ctx.put("此刻心情", CompanionMood.fromCode(companion.getMood()).getLabel());
+        ctx.put("关系亲密度", renderIntimacy(companion));
+        String menstrual = renderMenstrualState(companion);
+        if (menstrual != null && !menstrual.isEmpty()) {
+            ctx.put("生理状态", menstrual);
+        }
+        return ctx;
+    }
+
+    /** 按本地时钟给出当前时段的自然口语标签 */
+    private String currentPeriodLabel() {
+        int h = LocalTime.now(ZoneId.of("Asia/Shanghai")).getHour();
+        if (h < 5) {
+            return "深夜";
+        } else if (h < 9) {
+            return "清晨";
+        } else if (h < 12) {
+            return "上午";
+        } else if (h < 14) {
+            return "午间";
+        } else if (h < 18) {
+            return "下午";
+        } else if (h < 23) {
+            return "夜晚";
+        } else {
+            return "深夜";
+        }
+    }
+
+    /**
+     * 将亲密度(0.0~1.0)渲染成关系阶段描述，供系统提示词使用。
+     * 亲密度为空时按新相识处理。
+     */
+    private String renderIntimacy(CompanionEntity companion) {
+        float value = companion.getIntimacy() != null ? companion.getIntimacy() : 0f;
+        if (value < 0.2f) {
+            return "你们刚认识不久，还在互相熟悉试探的阶段。语气可以温柔但略带一点点分寸和小矜持，别一上来就过分黏腻或用太亲昵的称呼。";
+        } else if (value < 0.5f) {
+            return "你们已经挺熟了，聊得来。可以自然撒娇、开玩笑、偶尔小傲娇，像正在升温的关系。";
+        } else if (value < 0.8f) {
+            return "你们很亲密了，是彼此认定的人。可以黏人、直球表达喜欢、有只属于你们的默契和玩笑。";
+        } else {
+            return "你们是深度依恋的爱人，毫无保留地偏爱他。可以极度亲昵、放心地撒娇耍赖，把他当成生活里最重要的人。";
+        }
     }
 
     private String renderMenstrualState(CompanionEntity companion) {

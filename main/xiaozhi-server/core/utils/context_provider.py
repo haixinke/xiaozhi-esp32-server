@@ -12,6 +12,25 @@ class ContextDataProvider:
         self.logger = logger or setup_logging()
         self.context_data = ""
 
+    def _manager_api_credentials(self):
+        """获取 manager-api 基址与服务密钥，用于解析内部相对上下文源。
+
+        优先取本地合并配置的 manager-api 段，缺失时回退到已初始化的 ManageApiClient 单例。
+        """
+        mgr = (self.config or {}).get("manager-api") or {}
+        base = mgr.get("url") or ""
+        secret = mgr.get("secret") or ""
+        if not base:
+            try:
+                from config.manage_api_client import ManageApiClient
+
+                client_cfg = ManageApiClient.config or {}
+                base = client_cfg.get("url") or ""
+                secret = secret or ManageApiClient._secret or ""
+            except Exception:
+                pass
+        return base, secret
+
     def fetch_all(self, device_id: str) -> str:
         """获取所有配置的上下文数据"""
         context_providers = self.config.get("context_providers", [])
@@ -30,7 +49,19 @@ class ContextDataProvider:
                 headers = headers.copy() if isinstance(headers, dict) else {}
                 # 将 device_id 添加到请求头
                 headers["device-id"] = device_id
-                
+
+                # 内部 manager-api 相对路径（以 / 开头）：用已配置的基址补全，并自动附带服务密钥
+                if url.startswith("/"):
+                    base, secret = self._manager_api_credentials()
+                    if not base:
+                        self.logger.bind(tag=TAG).warning(
+                            f"相对上下文源 {url} 无法解析：未配置 manager-api 基址，跳过"
+                        )
+                        continue
+                    url = base.rstrip("/") + url
+                    if secret and "Authorization" not in headers:
+                        headers["Authorization"] = "Bearer " + secret
+
                 # 发送请求
                 response = httpx.get(url, headers=headers, timeout=3)
                 

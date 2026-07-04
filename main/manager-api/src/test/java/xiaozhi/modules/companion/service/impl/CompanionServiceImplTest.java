@@ -14,6 +14,7 @@ import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.agent.entity.AgentEntity;
+import xiaozhi.modules.agent.service.AgentContextProviderService;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.companion.dao.CompanionDao;
 import xiaozhi.modules.companion.dto.CompanionCreateDTO;
@@ -59,6 +60,9 @@ class CompanionServiceImplTest {
     private AgentService agentService;
 
     @Mock
+    private AgentContextProviderService agentContextProviderService;
+
+    @Mock
     private DeviceService deviceService;
 
     @Mock
@@ -81,7 +85,7 @@ class CompanionServiceImplTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        companionService = new CompanionServiceImpl(companionDao, agentService, deviceService, transactionManager, itemService);
+        companionService = new CompanionServiceImpl(companionDao, agentService, agentContextProviderService, deviceService, transactionManager, itemService);
 
         // BaseServiceImpl 使用 baseDao 执行 selectById / updateById
         Field baseDaoField = BaseServiceImpl.class.getDeclaredField("baseDao");

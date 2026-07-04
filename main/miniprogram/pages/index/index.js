@@ -97,6 +97,7 @@ Page({
   _msgIdSeed: 1,
   _streamingIdx: -1,
   _streamingBuffer: '',
+  _pendingEmoji: '',
   _flushTimer: null,
   _historyPage: 1,
   _historyLoading: false,
@@ -396,6 +397,7 @@ Page({
           this.setData({ chatState: STATE_IDLE });
           this._streamingIdx = -1;
           this._streamingBuffer = '';
+          this._pendingEmoji = '';
           if (this._flushTimer) { clearTimeout(this._flushTimer); this._flushTimer = null; }
           if (this.audioManager) {
             try { this.audioManager.stopPlayback(); } catch (_) {}
@@ -463,10 +465,9 @@ Page({
         break;
 
       case 'llm':
-        // 流式文本：就地更新 messages 中的流式消息
-        if (msg.text) {
-          this._appendStreamingText(msg.text, STATE_THINKING);
-        }
+        // 本产品 llm 仅承载一个情绪 emoji（服务端 get_emotion），作为整条回复首个气泡的前缀，
+        // 不再单独成泡，正文由后续 tts sentence_start 逐句下发
+        if (msg.text) this._pendingEmoji = msg.text;
         break;
 
       case 'tts':
@@ -495,13 +496,22 @@ Page({
   _handleTtsState(msg) {
     if (msg.state === 'start') {
       this.setData({ chatState: STATE_SPEAKING });
-    } else if (msg.state === 'sentence_start' || msg.state === 'sentence_end') {
-      if (msg.text) {
-        this._appendStreamingText(msg.text, STATE_SPEAKING);
-      }
+    } else if (msg.state === 'sentence_start') {
+      // 一句一气泡：像真人发微信一样陆续冒出，节奏由 TTS 逐句下发天然决定
+      if (msg.text) this._pushSentenceBubble(msg.text);
     } else if (msg.state === 'stop') {
       this._finalizeStreaming(STATE_IDLE);
+      this._pendingEmoji = '';
     }
+  },
+
+  // 把一整句作为独立气泡推入：先定格上一句，再开新气泡（首句带上情绪 emoji 前缀）
+  _pushSentenceBubble(text) {
+    this._finalizeStreaming(STATE_SPEAKING);
+    const emoji = this._pendingEmoji || '';
+    this._pendingEmoji = '';
+    const content = (emoji ? emoji + ' ' : '') + text;
+    this._appendStreamingText(content, STATE_SPEAKING);
   },
 
   _addMessage(role, content) {

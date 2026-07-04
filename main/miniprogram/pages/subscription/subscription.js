@@ -10,7 +10,7 @@ function featureLabel(code) {
     'long_term_memory': '消息漫游天数',
     'chat_no_limit': '每日对话无限畅聊',
     'voice_input': '语音输入，解放双手',
-    'superpower': '女友超能力(天气、新闻)',
+    'superpower': '女友超能力(天气)',
     'voice_call': '语音通话无限畅聊',
     'memory_enhance': '记忆增强',
     'message_speed': '消息回复速度提升',

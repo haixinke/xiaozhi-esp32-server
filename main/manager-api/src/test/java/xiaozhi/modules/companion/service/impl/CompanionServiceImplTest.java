@@ -13,6 +13,7 @@ import org.mockito.quality.Strictness;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.SpringContextUtils;
+import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
 import xiaozhi.modules.agent.entity.AgentEntity;
 import xiaozhi.modules.agent.service.AgentContextProviderService;
 import xiaozhi.modules.agent.service.AgentService;
@@ -72,6 +73,9 @@ class CompanionServiceImplTest {
     @Mock
     private ItemService itemService;
 
+    @Mock
+    private AiAgentChatHistoryDao chatHistoryDao;
+
     private CompanionService companionService;
 
     @BeforeAll
@@ -86,7 +90,8 @@ class CompanionServiceImplTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        companionService = new CompanionServiceImpl(companionDao, agentService, agentContextProviderService, deviceService, transactionManager, itemService);
+        companionService = new CompanionServiceImpl(companionDao, agentService,
+                agentContextProviderService, deviceService, transactionManager, itemService, chatHistoryDao);
 
         // BaseServiceImpl 使用 baseDao 执行 selectById / updateById
         Field baseDaoField = BaseServiceImpl.class.getDeclaredField("baseDao");
@@ -454,6 +459,85 @@ class CompanionServiceImplTest {
 
         assertThat(ctx.get("关系亲密度"))
                 .isEqualTo(IntimacyLevel.CRUSH.getPromptDescription());
+    }
+
+    @Test
+    @DisplayName("refreshAllIntimacy() 昨日活跃伴侣涨亲密度并累加连续天数")
+    void refreshAllIntimacy_activeCompanion_growsAndStreaks() {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"));
+        java.time.LocalDate yesterday = today.minusDays(1);
+
+        CompanionEntity c1 = companionEntity(1L, 100L, "device-1", "CALM");
+        c1.setIntimacy(0.35f);
+        c1.setActiveStreak(2);
+        c1.setLastActiveDate(yesterday.minusDays(1)); // 昨天的前一天活跃 -> 连续
+        Page<CompanionEntity> page = new Page<>(1, 500);
+        page.setRecords(List.of(c1));
+        page.setTotal(1);
+        when(companionDao.selectPage(any(Page.class), any())).thenReturn(page);
+        when(deviceService.getAgentIdByDeviceId("device-1")).thenReturn("agent-1");
+
+        java.util.Map<String, Object> row = new java.util.HashMap<>();
+        row.put("agentId", "agent-1");
+        row.put("userMsgs", 10L);
+        when(chatHistoryDao.selectMaps(any())).thenReturn(List.of(row));
+
+        companionService.refreshAllIntimacy();
+
+        org.mockito.ArgumentCaptor<CompanionEntity> captor =
+                org.mockito.ArgumentCaptor.forClass(CompanionEntity.class);
+        verify(companionDao).updateById(captor.capture());
+        CompanionEntity saved = captor.getValue();
+        assertThat(saved.getIntimacy()).isGreaterThan(0.35f);
+        assertThat(saved.getActiveStreak()).isEqualTo(3);
+        assertThat(saved.getLastActiveDate()).isEqualTo(yesterday);
+        assertThat(saved.getIntimacyUpdatedDate()).isEqualTo(today);
+    }
+
+    @Test
+    @DisplayName("refreshAllIntimacy() 冷落超宽限期衰减并清零连续天数")
+    void refreshAllIntimacy_neglected_decaysAndResetsStreak() {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"));
+        java.time.LocalDate yesterday = today.minusDays(1);
+
+        CompanionEntity c1 = companionEntity(1L, 100L, "device-1", "CALM");
+        c1.setIntimacy(0.70f);
+        c1.setActiveStreak(5);
+        c1.setLastActiveDate(yesterday.minusDays(9)); // 早已冷落，超宽限
+        Page<CompanionEntity> page = new Page<>(1, 500);
+        page.setRecords(List.of(c1));
+        page.setTotal(1);
+        when(companionDao.selectPage(any(Page.class), any())).thenReturn(page);
+        when(deviceService.getAgentIdByDeviceId("device-1")).thenReturn("agent-1");
+        when(chatHistoryDao.selectMaps(any())).thenReturn(java.util.Collections.emptyList());
+
+        companionService.refreshAllIntimacy();
+
+        org.mockito.ArgumentCaptor<CompanionEntity> captor =
+                org.mockito.ArgumentCaptor.forClass(CompanionEntity.class);
+        verify(companionDao).updateById(captor.capture());
+        CompanionEntity saved = captor.getValue();
+        assertThat(saved.getIntimacy()).isLessThan(0.70f);
+        assertThat(saved.getActiveStreak()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("refreshAllIntimacy() 同日已处理则幂等跳过")
+    void refreshAllIntimacy_alreadyProcessedToday_skips() {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"));
+
+        CompanionEntity c1 = companionEntity(1L, 100L, "device-1", "CALM");
+        c1.setIntimacy(0.35f);
+        c1.setIntimacyUpdatedDate(today);
+        Page<CompanionEntity> page = new Page<>(1, 500);
+        page.setRecords(List.of(c1));
+        page.setTotal(1);
+        when(companionDao.selectPage(any(Page.class), any())).thenReturn(page);
+        when(chatHistoryDao.selectMaps(any())).thenReturn(java.util.Collections.emptyList());
+
+        companionService.refreshAllIntimacy();
+
+        verify(companionDao, never()).updateById(any(CompanionEntity.class));
     }
 
     private AgentEntity captureUpdatedAgent() {

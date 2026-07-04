@@ -21,5 +21,7 @@ public class CompanionMoodRefreshTask {
     public void refreshMoods() {
         log.info("定时任务：开始刷新 AI 伴侣今日心情");
         companionService.refreshAllMoods();
+        log.info("定时任务：开始刷新 AI 伴侣亲密度");
+        companionService.refreshAllIntimacy();
     }
 }

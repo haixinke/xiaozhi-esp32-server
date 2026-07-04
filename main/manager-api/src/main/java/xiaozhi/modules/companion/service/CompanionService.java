@@ -22,6 +22,11 @@ public interface CompanionService extends BaseService<CompanionEntity> {
 
     void refreshAllMoods();
 
+    /**
+     * 每日批处理：基于昨天的互动，更新所有伴侣的亲密度、连续天数与最近活跃日。
+     */
+    void refreshAllIntimacy();
+
     CompanionSetupVO setup(CompanionSetupDTO dto);
 
     /**

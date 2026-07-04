@@ -14,6 +14,8 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.modules.agent.dto.AgentCreateDTO;
 import xiaozhi.modules.agent.dto.ContextProviderDTO;
+import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
+import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.agent.entity.AgentContextProviderEntity;
 import xiaozhi.modules.agent.entity.AgentEntity;
 import xiaozhi.modules.agent.service.AgentContextProviderService;
@@ -46,10 +48,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +72,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
     private final DeviceService deviceService;
     private final PlatformTransactionManager transactionManager;
     private final ItemService itemService;
+    private final AiAgentChatHistoryDao chatHistoryDao;
 
     @Override
     public CompanionVO create(CompanionCreateDTO dto) {
@@ -359,6 +365,101 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         }
 
         log.info("伴侣今日心情刷新完成，成功={}，失败={}", totalSuccess, totalFailed);
+    }
+
+    private static final DateTimeFormatter CHAT_TS_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+
+    @Override
+    public void refreshAllIntimacy() {
+        ZoneId zone = ZoneId.of("Asia/Shanghai");
+        LocalDate today = LocalDate.now(zone);
+        LocalDate yesterday = today.minusDays(1);
+        String windowStart = yesterday.atStartOfDay(zone).format(CHAT_TS_FORMAT);
+        String windowEnd = today.atStartOfDay(zone).format(CHAT_TS_FORMAT);
+
+        Map<String, Integer> msgByAgent = queryYesterdayUserMsgCounts(windowStart, windowEnd);
+
+        long pageSize = 500L;
+        long page = 1L;
+        long success = 0;
+        long failed = 0;
+        log.info("开始刷新伴侣亲密度，日窗 [{}, {})", windowStart, windowEnd);
+
+        while (true) {
+            Page<CompanionEntity> pageResult = companionDao.selectPage(new Page<>(page, pageSize), null);
+            List<CompanionEntity> companions = pageResult.getRecords();
+            if (companions == null || companions.isEmpty()) {
+                break;
+            }
+            for (CompanionEntity companion : companions) {
+                try {
+                    if (today.equals(companion.getIntimacyUpdatedDate())) {
+                        continue; // 幂等：同日已处理
+                    }
+                    applyDailyIntimacy(companion, msgByAgent, yesterday, today);
+                    companionDao.updateById(companion);
+                    success++;
+                } catch (Exception e) {
+                    failed++;
+                    log.warn("刷新伴侣亲密度失败，companionId={}: {}", companion.getId(), e.getMessage());
+                }
+            }
+            if (pageResult.getCurrent() * pageSize >= pageResult.getTotal()) {
+                break;
+            }
+            page++;
+        }
+        log.info("伴侣亲密度刷新完成，成功={}，失败={}", success, failed);
+    }
+
+    private void applyDailyIntimacy(CompanionEntity companion, Map<String, Integer> msgByAgent,
+                                    LocalDate yesterday, LocalDate today) {
+        float intimacy = companion.getIntimacy() != null
+                ? companion.getIntimacy()
+                : IntimacyRule.startValue(companion.getRelationType());
+        int streak = companion.getActiveStreak() != null ? companion.getActiveStreak() : 0;
+        LocalDate lastActive = companion.getLastActiveDate();
+
+        String agentId = deviceService.getAgentIdByDeviceId(companion.getDeviceId());
+        int userMsgs = (agentId != null) ? msgByAgent.getOrDefault(agentId, 0) : 0;
+
+        if (userMsgs > 0) {
+            boolean consecutive = lastActive != null && lastActive.equals(yesterday.minusDays(1));
+            int newStreak = IntimacyRule.nextStreak(streak, true, consecutive);
+            intimacy = IntimacyRule.grow(intimacy, userMsgs, newStreak);
+            companion.setActiveStreak(newStreak);
+            companion.setLastActiveDate(yesterday);
+        } else {
+            if (lastActive != null) {
+                int daysSince = (int) ChronoUnit.DAYS.between(lastActive, yesterday);
+                intimacy = IntimacyRule.decay(intimacy, daysSince);
+            }
+            companion.setActiveStreak(0);
+        }
+        companion.setIntimacy(intimacy);
+        companion.setIntimacyUpdatedDate(today);
+    }
+
+    private Map<String, Integer> queryYesterdayUserMsgCounts(String windowStart, String windowEnd) {
+        List<Map<String, Object>> rows = chatHistoryDao.selectMaps(
+                new QueryWrapper<AgentChatHistoryEntity>()
+                        .select("agent_id AS agentId", "COUNT(*) AS userMsgs")
+                        .eq("chat_type", 1)
+                        .ge("created_at", windowStart)
+                        .lt("created_at", windowEnd)
+                        .groupBy("agent_id"));
+        Map<String, Integer> map = new HashMap<>();
+        if (rows != null) {
+            for (Map<String, Object> r : rows) {
+                Object agent = r.get("agentId");
+                Object count = r.get("userMsgs");
+                if (agent != null && count instanceof Number) {
+                    map.put(agent.toString(), ((Number) count).intValue());
+                }
+            }
+        }
+        return map;
     }
 
     @Override

@@ -35,6 +35,7 @@ import xiaozhi.modules.companion.util.CompanionMood;
 import xiaozhi.modules.companion.util.MenstrualCycleUtil;
 import xiaozhi.modules.companion.util.MenstrualPhase;
 import xiaozhi.modules.companion.util.ReshapeVoucherRule;
+import xiaozhi.modules.companion.vo.CompanionIntimacyVO;
 import xiaozhi.modules.companion.vo.CompanionSetupVO;
 import xiaozhi.modules.companion.vo.CompanionVO;
 import xiaozhi.modules.device.dto.DeviceReportReqDTO;
@@ -255,6 +256,34 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
             throw new RenException(ErrorCode.NO_PERMISSION);
         }
         return CompanionVO.toVO(entity);
+    }
+
+    @Override
+    public CompanionIntimacyVO getIntimacyInfo(String deviceId) {
+        QueryWrapper<CompanionEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("device_id", deviceId);
+        CompanionEntity companion = companionDao.selectOne(wrapper);
+        if (companion == null) {
+            throw new RenException(ErrorCode.COMPANION_NOT_FOUND);
+        }
+        if (!companion.getUserId().equals(SecurityUser.getUserId())) {
+            throw new RenException(ErrorCode.NO_PERMISSION);
+        }
+        float intimacy = companion.getIntimacy() != null
+                ? companion.getIntimacy()
+                : IntimacyRule.startValue(companion.getRelationType());
+        IntimacyLevel level = IntimacyLevel.of(intimacy);
+        int streak = companion.getActiveStreak() != null ? companion.getActiveStreak() : 0;
+        String lastActive = companion.getLastActiveDate() != null
+                ? companion.getLastActiveDate().toString() : null;
+        return new CompanionIntimacyVO(
+                intimacy,
+                level.getLevel(),
+                level.getLabel(),
+                level.progressWithin(intimacy),
+                level.next().getLabel(),
+                streak,
+                lastActive);
     }
 
     private void validateMood(String mood) {

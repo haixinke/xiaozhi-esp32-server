@@ -540,6 +540,29 @@ class CompanionServiceImplTest {
         verify(companionDao, never()).updateById(any(CompanionEntity.class));
     }
 
+    @Test
+    @DisplayName("getIntimacyInfo() 返回等级、进度与连续天数")
+    void getIntimacyInfo_returnsLevelAndProgress() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+
+            CompanionEntity companion = companionEntity(1L, userId, "device-123", "JOY");
+            companion.setIntimacy(0.5f);   // 暧昧档中点
+            companion.setActiveStreak(4);
+            when(companionDao.selectOne(any())).thenReturn(companion);
+
+            xiaozhi.modules.companion.vo.CompanionIntimacyVO vo =
+                    companionService.getIntimacyInfo("device-123");
+
+            assertThat(vo.getLevel()).isEqualTo(3);
+            assertThat(vo.getLevelName()).isEqualTo("暧昧");
+            assertThat(vo.getNextLevelName()).isEqualTo("恋人");
+            assertThat(vo.getProgressToNext()).isEqualTo(0.5f, org.assertj.core.api.Assertions.within(1e-4f));
+            assertThat(vo.getStreak()).isEqualTo(4);
+        }
+    }
+
     private AgentEntity captureUpdatedAgent() {
         ArgumentCaptor<AgentEntity> captor = ArgumentCaptor.forClass(AgentEntity.class);
         verify(agentService).updateById(captor.capture());

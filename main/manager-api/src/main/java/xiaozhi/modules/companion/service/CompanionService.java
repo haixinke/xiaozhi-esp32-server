@@ -5,6 +5,7 @@ import xiaozhi.modules.companion.dto.CompanionCreateDTO;
 import xiaozhi.modules.companion.dto.CompanionSetupDTO;
 import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.entity.CompanionEntity;
+import xiaozhi.modules.companion.vo.CompanionIntimacyVO;
 import xiaozhi.modules.companion.vo.CompanionSetupVO;
 import xiaozhi.modules.companion.vo.CompanionVO;
 
@@ -26,6 +27,11 @@ public interface CompanionService extends BaseService<CompanionEntity> {
      * 每日批处理：基于昨天的互动，更新所有伴侣的亲密度、连续天数与最近活跃日。
      */
     void refreshAllIntimacy();
+
+    /**
+     * 查询伴侣亲密度等级信息，供小程序渲染关系卡。
+     */
+    CompanionIntimacyVO getIntimacyInfo(String deviceId);
 
     CompanionSetupVO setup(CompanionSetupDTO dto);
 

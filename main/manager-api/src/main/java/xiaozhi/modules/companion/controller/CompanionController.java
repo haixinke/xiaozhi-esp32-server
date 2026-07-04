@@ -11,6 +11,7 @@ import xiaozhi.modules.companion.dto.CompanionSetupDTO;
 import xiaozhi.modules.companion.dto.CompanionSyncPromptDTO;
 import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.service.CompanionService;
+import xiaozhi.modules.companion.vo.CompanionIntimacyVO;
 import xiaozhi.modules.companion.vo.CompanionSetupVO;
 import xiaozhi.modules.companion.vo.CompanionVO;
 
@@ -38,6 +39,12 @@ public class CompanionController {
     @Operation(summary = "根据设备ID查询伴侣")
     public Result<CompanionVO> detail(@PathVariable String deviceId) {
         return new Result<CompanionVO>().ok(companionService.getByDeviceId(deviceId));
+    }
+
+    @GetMapping("/intimacy/{deviceId}")
+    @Operation(summary = "查询伴侣亲密度等级信息")
+    public Result<CompanionIntimacyVO> intimacy(@PathVariable String deviceId) {
+        return new Result<CompanionIntimacyVO>().ok(companionService.getIntimacyInfo(deviceId));
     }
 
     @PostMapping("/sync-prompt")

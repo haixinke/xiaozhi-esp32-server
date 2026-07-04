@@ -25,6 +25,7 @@ import xiaozhi.modules.companion.dto.CompanionUpdateDTO;
 import xiaozhi.modules.companion.entity.CompanionEntity;
 import xiaozhi.modules.companion.service.CompanionService;
 import xiaozhi.modules.companion.util.CharacterAge;
+import xiaozhi.modules.companion.util.IntimacyRule;
 import xiaozhi.modules.companion.util.CompanionBirthCalculator;
 import xiaozhi.modules.companion.util.CompanionLabels;
 import xiaozhi.modules.companion.util.CompanionMood;
@@ -201,7 +202,6 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
         }
         if (dto.getRelationType() != null) {
             entity.setRelationType(dto.getRelationType());
-            entity.setIntimacy(deriveIntimacy(dto.getRelationType()));
         }
 
         if (needRecalcBirth) {
@@ -259,12 +259,7 @@ public class CompanionServiceImpl extends BaseServiceImpl<CompanionDao, Companio
     }
 
     private static float deriveIntimacy(String relationType) {
-        return switch (relationType) {
-            case "childhood" -> 0.7f;
-            case "loveAtFirst" -> 0.6f;
-            case "bickering" -> 0.5f;
-            default -> 0.5f;
-        };
+        return IntimacyRule.startValue(relationType);
     }
 
     private void initializeMenstrualCycle(CompanionEntity entity) {

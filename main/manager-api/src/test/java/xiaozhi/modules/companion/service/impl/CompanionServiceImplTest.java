@@ -396,6 +396,51 @@ class CompanionServiceImplTest {
         }
     }
 
+    @Test
+    @DisplayName("create() 起步亲密度取自 IntimacyRule（心动档）")
+    void create_startsIntimacyAtCrushTier() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+            security.when(SecurityUser::getUser).thenReturn(userDetail(userId));
+            when(deviceService.getAgentIdByDeviceId("device-123")).thenReturn(null);
+
+            CompanionCreateDTO dto = createDto();
+            dto.setRelationType("childhood");
+
+            companionService.create(dto);
+
+            CompanionEntity captured = captureInsertedCompanion();
+            assertThat(captured.getIntimacy()).isEqualTo(0.38f);
+        }
+    }
+
+    @Test
+    @DisplayName("update() 变更 relationType 不重置已养成的 intimacy")
+    void update_relationTypeChange_keepsEarnedIntimacy() {
+        Long userId = 100L;
+        try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
+            security.when(SecurityUser::getUserId).thenReturn(userId);
+
+            CompanionEntity existing = companionEntity(1L, userId, "device-123", "JOY");
+            existing.setRelationType("childhood");
+            existing.setIntimacy(0.72f); // 已养成
+            when(companionDao.selectOne(any())).thenReturn(existing);
+
+            CompanionUpdateDTO dto = new CompanionUpdateDTO();
+            dto.setDeviceId("device-123");
+            dto.setRelationType("bickering");
+
+            companionService.update(dto);
+
+            org.mockito.ArgumentCaptor<CompanionEntity> captor =
+                    org.mockito.ArgumentCaptor.forClass(CompanionEntity.class);
+            verify(companionDao).updateById(captor.capture());
+            assertThat(captor.getValue().getRelationType()).isEqualTo("bickering");
+            assertThat(captor.getValue().getIntimacy()).isEqualTo(0.72f);
+        }
+    }
+
     private AgentEntity captureUpdatedAgent() {
         ArgumentCaptor<AgentEntity> captor = ArgumentCaptor.forClass(AgentEntity.class);
         verify(agentService).updateById(captor.capture());

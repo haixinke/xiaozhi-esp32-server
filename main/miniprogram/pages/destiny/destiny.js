@@ -54,6 +54,9 @@ const VOICES = [
   { id: 'TTS_HSDSTTS_V2_0022', label: '甜美', audioUrl: 'https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/girlfriend/voice/female_tianmei.mp3' },
 ];
 
+// 默认音色：甜美
+const DEFAULT_VOICE = VOICES.find(function (v) { return v.label === '甜美'; }) || VOICES[0];
+
 Page({
   data: {
     statusBarHeight: 44,
@@ -62,8 +65,8 @@ Page({
     occupations: OCCUPATIONS,
     selectedOccupation: '',
     voices: VOICES,
-    selectedVoice: VOICES[0].id,
-    selectedVoiceLabel: VOICES[0].label,
+    selectedVoice: DEFAULT_VOICE.id,
+    selectedVoiceLabel: DEFAULT_VOICE.label,
     showVoicePicker: false,
     playingVoiceId: '',
     quirks: '',

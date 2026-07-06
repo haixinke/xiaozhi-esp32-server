@@ -1051,6 +1051,7 @@ Page({
     this._resetIdleTimer();
 
     // 开始录音并通知服务端开始监听
+    console.log('[DEBUG-VOICE] onVoiceTouchStart -> startRecord + sendListenStart, conn=' + this.data.connectionState + ' chat=' + this.data.chatState);
     if (this.audioManager) this.audioManager.startRecord();
     if (this.wsManager) this.wsManager.sendListenStart();
   },
@@ -1079,7 +1080,9 @@ Page({
     } else {
       // 正常发送：通知服务端停止监听
       if (this.wsManager) this.wsManager.sendListenStop();
-      this.setData({ chatState: STATE_THINKING });
+      // 必须复位 recording，否则后续 touchcancel 会通过其守卫误发 abort，
+      // 中断刚由 listen stop 启动的 ASR，导致用户说话无回应。
+      this.setData({ recording: false, recordCancelled: false, chatState: STATE_THINKING });
     }
   },
 

@@ -188,20 +188,12 @@ class WebSocketManager {
    * 发送 Opus 二进制帧。AudioManager 输出的 ArrayBuffer 直接喂进来即可。
    */
   sendAudioFrame(frame) {
-    if (!this.socket || this.state !== 'connected') {
-      console.warn('[DEBUG-VOICE] sendAudioFrame DROPPED state=' + this.state + ' hasSocket=' + !!this.socket);
-      return false;
-    }
+    if (!this.socket || this.state !== 'connected') return false;
     if (!frame) return false;
     try {
       this.socket.send({ data: frame });
-      this._dbgSent = (this._dbgSent || 0) + 1;
-      if (this._dbgSent <= 3 || this._dbgSent % 20 === 0) {
-        console.log('[DEBUG-VOICE] sendAudioFrame #' + this._dbgSent + ' bytes=' + (frame.byteLength || frame.length));
-      }
       return true;
     } catch (e) {
-      console.error('[DEBUG-VOICE] sendAudioFrame FAILED', e);
       this._emitError(e, 'send');
       return false;
     }

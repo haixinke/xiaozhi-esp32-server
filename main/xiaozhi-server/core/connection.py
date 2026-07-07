@@ -405,16 +405,6 @@ class ConnectionHandler:
         if isinstance(message, str):
             await handleTextMessage(self, message)
         elif isinstance(message, bytes):
-            # [DEBUG-VOICE] 诊断：二进制音频帧是否到达服务端
-            try:
-                self._dbg_bytes_in = getattr(self, "_dbg_bytes_in", 0) + 1
-                self.logger.bind(tag=TAG).debug(
-                    f"[DEBUG-VOICE] binary frame #{self._dbg_bytes_in} len={len(message)} "
-                    f"vad={self.vad is not None} asr={self.asr is not None} "
-                    f"mqtt={self.conn_from_mqtt_gateway} bind_done={self.bind_completed_event.is_set()}"
-                )
-            except Exception:
-                pass
             if self.vad is None or self.asr is None:
                 return
 

@@ -15,16 +15,6 @@ TAG = __name__
 
 
 async def handleAudioMessage(conn: "ConnectionHandler", audio):
-    # [DEBUG-VOICE] 诊断：音频帧是否到达 ASR 处理路径
-    try:
-        conn._dbg_audio_in = getattr(conn, "_dbg_audio_in", 0) + 1
-        conn.logger.bind(tag=TAG).debug(
-            f"[DEBUG-VOICE] handleAudioMessage #{conn._dbg_audio_in} len={len(audio) if audio else 0} "
-            f"mode={conn.client_listen_mode} woken={getattr(conn, 'just_woken_up', False)} "
-            f"need_bind={conn.need_bind} vad={conn.vad is not None} asr={conn.asr is not None}"
-        )
-    except Exception:
-        pass
     # 当前片段是否有人说话
     have_voice = conn.vad.is_vad(conn, audio)
     # 如果设备刚刚被唤醒，短暂忽略VAD检测

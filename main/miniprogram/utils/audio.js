@@ -126,8 +126,6 @@ class AudioManager {
       this._recorder.onFrameRecorded((res) => {
         if (!this._isRecording || !res || !res.frameBuffer) return;
         try {
-          this._dbgFramesIn = (this._dbgFramesIn || 0) + 1;
-          console.log('[DEBUG-VOICE] recorder onFrameRecorded #' + this._dbgFramesIn + ' bytes=' + (res.frameBuffer && res.frameBuffer.byteLength));
           this._handleRecordedFrame(res.frameBuffer);
         } catch (e) {
           this._emitError(e, 'encode');
@@ -179,15 +177,8 @@ class AudioManager {
 
   _encodeAndEmit(pcmFrame) {
     if (!this.options.onAudioFrame) return;
-    try {
-      const encoded = this.encoder.encode(pcmFrame);
-      this._dbgEmitted = (this._dbgEmitted || 0) + 1;
-      console.log('[DEBUG-VOICE] _encodeAndEmit #' + this._dbgEmitted + ' encodedBytes=' + (encoded && (encoded.byteLength || encoded.length)));
-      this.options.onAudioFrame(encoded);
-    } catch (e) {
-      console.error('[DEBUG-VOICE] _encodeAndEmit FAILED', e);
-      this._emitError(e, 'encode');
-    }
+    const encoded = this.encoder.encode(pcmFrame);
+    this.options.onAudioFrame(encoded);
   }
 
   // -------------------------------------------------------------------------

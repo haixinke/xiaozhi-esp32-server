@@ -365,6 +365,12 @@ Page({
       },
       onError: (err, scope) => {
         logger.warn('[Audio:' + scope + ']', err);
+        if (scope === 'record') {
+          // 录音启动失败（常见于麦克风权限未授予，RecorderManager 报 file error）：
+          // 复位录音状态并明确提示，避免用户面对“按住无反应”无法定位。
+          this.setData({ recording: false, recordCancelled: false });
+          wx.showToast({ title: '录音失败，请在设置中开启麦克风权限', icon: 'none' });
+        }
       },
     });
 
@@ -802,12 +808,18 @@ Page({
     });
   },
 
-  onToggleInputMode() {
+  async onToggleInputMode() {
     if (!this.data.hasVoiceInput) {
       this._showContractPopup('签订契约后即可使用语音输入与女友聊天');
       return;
     }
     const next = this.data.inputMode === 'text' ? 'voice' : 'text';
+    // 切到语音模式前先确保麦克风权限，否则清缓存后授权丢失会导致
+    // RecorderManager.start 报 file error，录不出任何音频。
+    if (next === 'voice') {
+      const permitted = await this._ensureRecordPermission();
+      if (!permitted) return;
+    }
     this.setData({ inputMode: next });
   },
 
@@ -1051,7 +1063,6 @@ Page({
     this._resetIdleTimer();
 
     // 开始录音并通知服务端开始监听
-    console.log('[DEBUG-VOICE] onVoiceTouchStart -> startRecord + sendListenStart, conn=' + this.data.connectionState + ' chat=' + this.data.chatState);
     if (this.audioManager) this.audioManager.startRecord();
     if (this.wsManager) this.wsManager.sendListenStart();
   },

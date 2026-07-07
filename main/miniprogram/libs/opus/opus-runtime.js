@@ -50,7 +50,7 @@ function getOpusRuntime() {
 
   runtimePromise = loadWasmRuntime()
     .catch((err) => {
-      console.warn('[opus-runtime] WASM unavailable, using JS stub:', err && err.message);
+      console.error('[opus-runtime] Opus WASM 不可用，已回退 JS stub（此时语音为假帧，服务端无法识别，多见于部分 Android 机型）:', err && err.message);
       return buildStubRuntime();
     })
     .then((rt) => {

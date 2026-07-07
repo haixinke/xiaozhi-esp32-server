@@ -66,7 +66,15 @@ class AudioManager {
     });
 
     this._readyPromise = Promise.all([this.encoder.ready(), this.decoder.ready()])
-      .then(() => this);
+      .then(() => {
+        // Opus WASM 加载失败时会回退到 stub，stub 产出的假帧服务端无法识别。
+        // 记录 codec 模式，供录音链路拦截并告警，避免静默失效（Android 尤易触发）。
+        this._codecMode = this.encoder.mode;
+        if (this._codecMode === 'stub') {
+          this._emitError(new Error('Opus 编码器回退到 stub，真 Opus 不可用'), 'codec');
+        }
+        return this;
+      });
 
     // Recording state
     this._recorder = null;
@@ -81,6 +89,12 @@ class AudioManager {
     this._activeSources = new Set();
 
     this._destroyed = false;
+    // 录音 file error 自愈：标记本轮是否已重试过，避免无限重试。
+    this._recordRetried = false;
+    // 自愈重试定时器句柄：destroy/stopRecord 时需清除，避免对已销毁实例触发 startRecord。
+    this._recordRetryTimer = null;
+    // Opus 编解码运行模式：'wasm'（真 Opus）| 'stub'（假帧，服务端无法识别）| null（未就绪）。
+    this._codecMode = null;
   }
 
   /** Resolves when both encoder and decoder runtimes are loaded. */
@@ -96,6 +110,10 @@ class AudioManager {
     if (this._destroyed) throw new Error('AudioManager destroyed');
     if (this._isRecording) return;
 
+    // 录音前先停止播放并释放播放资源：iOS 全局只有一套音频会话，
+    // 播放（WebAudioContext / InnerAudio）占用会话时启动录音会触发 file error。
+    this.stopPlayback();
+
     if (typeof wx === 'undefined' || !wx.getRecorderManager) {
       this._emitError(new Error('wx.getRecorderManager unavailable'), 'record');
       return;
@@ -105,6 +123,11 @@ class AudioManager {
       this._recorder = wx.getRecorderManager();
       this._recorder.onStart(() => {
         this._isRecording = true;
+        this._recordRetried = false;
+        if (this._recordRetryTimer) {
+          clearTimeout(this._recordRetryTimer);
+          this._recordRetryTimer = null;
+        }
         this._pcmBacklog = new Int16Array(0);
         if (this.options.onRecordStart) this.options.onRecordStart();
       });
@@ -121,7 +144,20 @@ class AudioManager {
       });
       this._recorder.onError((err) => {
         this._isRecording = false;
-        this._emitError(new Error('recorder error: ' + (err && err.errMsg)), 'record');
+        const errMsg = (err && err.errMsg) || '';
+        // iOS 音频会话偶发被占用会报 "file error"，自动重试一次自愈：
+        // 先停掉旧会话、短延时后重新拉起录音；仍失败才向上抛错。
+        if (!this._recordRetried && /file error/i.test(errMsg)) {
+          this._recordRetried = true;
+          try { this._recorder.stop(); } catch (_) {}
+          this._recordRetryTimer = setTimeout(() => {
+            this._recordRetryTimer = null;
+            if (this._destroyed || this._isRecording) return;
+            this.startRecord();
+          }, 300);
+          return;
+        }
+        this._emitError(new Error('recorder error: ' + errMsg), 'record');
       });
       this._recorder.onFrameRecorded((res) => {
         if (!this._isRecording || !res || !res.frameBuffer) return;
@@ -144,6 +180,12 @@ class AudioManager {
   }
 
   stopRecord() {
+    // 即使正在自愈重试窗口内（_isRecording 已被 onError 置 false），也要清掉重试定时器，
+    // 否则用户停止后仍会被定时器拉起一次录音。
+    if (this._recordRetryTimer) {
+      clearTimeout(this._recordRetryTimer);
+      this._recordRetryTimer = null;
+    }
     if (!this._recorder || !this._isRecording) return;
     try {
       this._recorder.stop();
@@ -177,6 +219,9 @@ class AudioManager {
 
   _encodeAndEmit(pcmFrame) {
     if (!this.options.onAudioFrame) return;
+    // Opus 回退到 stub 时产出的并非真 Opus 帧，服务端无法识别，直接丢弃避免污染 ASR；
+    // 用户提示已在 ready() 阶段通过 'codec' 错误发出。
+    if (this._codecMode === 'stub') return;
     const encoded = this.encoder.encode(pcmFrame);
     this.options.onAudioFrame(encoded);
   }
@@ -319,6 +364,10 @@ class AudioManager {
   destroy() {
     if (this._destroyed) return;
     this._destroyed = true;
+    if (this._recordRetryTimer) {
+      clearTimeout(this._recordRetryTimer);
+      this._recordRetryTimer = null;
+    }
     try { this.stopRecord(); } catch (_) {}
     try { this.stopPlayback(); } catch (_) {}
     if (this._audioCtx && typeof this._audioCtx.close === 'function') {

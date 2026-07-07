@@ -370,6 +370,10 @@ Page({
           // 复位录音状态并明确提示，避免用户面对“按住无反应”无法定位。
           this.setData({ recording: false, recordCancelled: false });
           wx.showToast({ title: '录音失败，请在设置中开启麦克风权限', icon: 'none' });
+        } else if (scope === 'codec') {
+          // 语音编码引擎回退到 stub（多见于部分 Android 机型 WASM 不可用），
+          // 此时语音无法被服务端识别，明确提示用户。
+          wx.showToast({ title: '语音引擎加载失败，请重启微信后重试', icon: 'none' });
         }
       },
     });

@@ -197,6 +197,9 @@ Page({
       },
       onError: (err, scope) => {
         logger.warn('[VoiceCall Audio:' + scope + ']', err);
+        if (scope === 'codec') {
+          wx.showToast({ title: '语音引擎加载失败，请重启微信后重试', icon: 'none' });
+        }
       },
     });
 
@@ -344,6 +347,12 @@ Page({
     }
     if (this._mgr && this._unsubscribe) {
       this._mgr.offStateChange(this._unsubscribe);
+    }
+
+    // 通话结束恢复默认音频输出模式：避免 _startMedia 里设的 speakerOn:true
+    // 残留到全局会话，影响聊天页后续录音/播放。
+    if (wx.setInnerAudioOption) {
+      wx.setInnerAudioOption({ speakerOn: false, fail: () => {} });
     }
 
     this._cleanupResources();

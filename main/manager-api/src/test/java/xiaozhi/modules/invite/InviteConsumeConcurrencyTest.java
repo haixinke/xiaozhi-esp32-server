@@ -105,6 +105,12 @@ class InviteConsumeConcurrencyTest {
         // 契约保证：同一被邀请人对同一码仅一次成功消耗（幂等），其余均得"已使用"。
         assertThat(success.get()).isEqualTo(1);
         assertThat(alreadyUsed.get() + errors.get()).isEqualTo(threads - 1);
+
+        // DB-state invariant matching the @DisplayName
+        assertThat(inviteCodeDao.selectById(createdCodeIds.get(0)).getUsedCount()).isEqualTo(1);
+        assertThat(inviteUsageDao.selectCount(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<xiaozhi.modules.invite.entity.InviteUsageEntity>()
+                        .eq("code_id", createdCodeIds.get(0)))).isEqualTo(1L);
     }
 
     @Test

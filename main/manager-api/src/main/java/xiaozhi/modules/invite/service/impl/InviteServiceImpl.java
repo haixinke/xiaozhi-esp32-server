@@ -204,15 +204,16 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(InviteCodeUpdateDTO dto) {
-        InviteCodeEntity entity = baseDao.selectById(dto.getId());
+        InviteCodeEntity entity = baseDao.selectByIdForUpdate(dto.getId());
         if (entity == null) {
             throw new RenException("邀请码不存在");
         }
         if (dto.getQuota() != null) {
-            int used = entity.getUsedCount() == null ? 0 : entity.getUsedCount();
-            if (dto.getQuota() < used) {
-                throw new RenException("配额不能小于已使用数量");
+            int currentQuota = entity.getQuota() == null ? 0 : entity.getQuota();
+            if (dto.getQuota() < currentQuota) {
+                throw new RenException("配额只允许调增");
             }
+            int used = entity.getUsedCount() == null ? 0 : entity.getUsedCount();
             entity.setQuota(dto.getQuota());
             entity.setRemaining(dto.getQuota() - used);
         }
@@ -232,7 +233,7 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        InviteCodeEntity entity = baseDao.selectById(id);
+        InviteCodeEntity entity = baseDao.selectByIdForUpdate(id);
         if (entity == null) {
             throw new RenException("邀请码不存在");
         }

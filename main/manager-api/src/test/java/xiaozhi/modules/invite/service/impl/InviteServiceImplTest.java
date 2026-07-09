@@ -285,7 +285,7 @@ class InviteServiceImplTest {
     @DisplayName("update - quota 调增允许并重算 remaining")
     void update_increaseQuota() {
         InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 7, 1, null); // used=3
-        when(inviteCodeDao.selectById(1L)).thenReturn(entity);
+        when(inviteCodeDao.selectByIdForUpdate(1L)).thenReturn(entity);
 
         xiaozhi.modules.invite.dto.InviteCodeUpdateDTO dto =
                 new xiaozhi.modules.invite.dto.InviteCodeUpdateDTO();
@@ -299,10 +299,29 @@ class InviteServiceImplTest {
     }
 
     @Test
+    @DisplayName("update - quota 调减被拒绝（仅允许调增）")
+    void update_decreaseQuota_rejected() {
+        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 7, 1, null); // used=3, quota=10
+        when(inviteCodeDao.selectByIdForUpdate(1L)).thenReturn(entity);
+
+        xiaozhi.modules.invite.dto.InviteCodeUpdateDTO dto =
+                new xiaozhi.modules.invite.dto.InviteCodeUpdateDTO();
+        dto.setId(1L);
+        dto.setQuota(8); // 8 < current 10 → rejected; 8 >= used(3) so old guard would have allowed
+        try {
+            service.update(dto);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("调增");
+        }
+        verify(inviteCodeDao, never()).updateById(any());
+    }
+
+    @Test
     @DisplayName("update - quota 小于 used_count 抛异常")
     void update_quotaBelowUsed() {
         InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 2, 1, null); // used=8
-        when(inviteCodeDao.selectById(1L)).thenReturn(entity);
+        when(inviteCodeDao.selectByIdForUpdate(1L)).thenReturn(entity);
 
         xiaozhi.modules.invite.dto.InviteCodeUpdateDTO dto =
                 new xiaozhi.modules.invite.dto.InviteCodeUpdateDTO();
@@ -312,7 +331,7 @@ class InviteServiceImplTest {
             service.update(dto);
             assertThat(false).as("应抛异常").isTrue();
         } catch (RenException e) {
-            assertThat(e.getMsg()).contains("配额不能小于已使用数量");
+            assertThat(e.getMsg()).contains("调增");
         }
         verify(inviteCodeDao, never()).updateById(any());
     }
@@ -321,7 +340,7 @@ class InviteServiceImplTest {
     @DisplayName("delete - used_count=0 可删")
     void delete_unused() {
         InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 10, 1, null); // used=0
-        when(inviteCodeDao.selectById(1L)).thenReturn(entity);
+        when(inviteCodeDao.selectByIdForUpdate(1L)).thenReturn(entity);
         service.delete(1L);
         verify(inviteCodeDao).deleteById((java.io.Serializable) 1L);
     }
@@ -330,7 +349,7 @@ class InviteServiceImplTest {
     @DisplayName("delete - used_count>0 拒绝")
     void delete_used() {
         InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 7, 1, null); // used=3
-        when(inviteCodeDao.selectById(1L)).thenReturn(entity);
+        when(inviteCodeDao.selectByIdForUpdate(1L)).thenReturn(entity);
         try {
             service.delete(1L);
             assertThat(false).as("应抛异常").isTrue();

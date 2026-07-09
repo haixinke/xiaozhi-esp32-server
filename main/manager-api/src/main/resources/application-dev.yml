@@ -12,7 +12,7 @@ spring:
     druid:
       #OceanBase (MySQL 兼容模式)
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1:2881/chat_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
+      url: jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
       username: root
       password: 123456
       initial-size: 10
@@ -41,7 +41,7 @@ spring:
       host: 127.0.0.1         # Redis服务器地址
       port: 6379              # Redis服务器连接端口
       password:              # Redis服务器连接密码（默认为空）
-      database: 0            # Redis数据库索引（默认为0）
+      database: 1            # Redis数据库索引（默认为0）
       timeout: 10000ms       # 连接超时时间（毫秒）
       lettuce:
         pool:
@@ -53,8 +53,8 @@ spring:
 # 微信小程序配置
 wechat:
   miniprogram:
-    appid: ${WECHAT_MINIPROGRAM_APPID}
-    secret: ${WECHAT_MINIPROGRAM_SECRET}
+    appid: ${EGG_MINIPROGRAM_APPID}
+    secret: ${EGG_MINIPROGRAM_SECRET}
   pay:
     mock: true
 

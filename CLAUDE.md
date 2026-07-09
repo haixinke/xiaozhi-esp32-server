@@ -15,6 +15,7 @@
 - **移动服务** → `main/manager-mobile/`
 - **数字人项目** → `main/digital-human/`
 - **女友小程序** → `main/miniprogram/`
+- **蛋宝宝小程序** → `main/egg-miniprogram/`
 
 | 子项目 | 语言 / 技术栈 | 端口 | 用途 |
 |---|---|---|---|
@@ -24,6 +25,7 @@
 | `main/manager-mobile/` | Uni-app / Vue 3 / Vite | — | 移动端管理后台 (H5、微信小程序、iOS、Android) |
 | `main/digital-human/` | HTML / CSS / JS / Python |  | 数字人项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
 | `main/miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "笨笨女友"微信小程序：AI 伴侣聊天 |
+| main/egg-miniprogram/ | 微信小程序 (WXML/WXSS/JS) | — | "蛋宝宝"微信小程序：孵化类AI宠物 |
 
 每个子项目都有自己的 `CLAUDE.md`，包含详细的架构说明和常用命令。
 

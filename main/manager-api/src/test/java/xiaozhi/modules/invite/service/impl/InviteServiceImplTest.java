@@ -261,6 +261,85 @@ class InviteServiceImplTest {
         assertThat(vo.getMessage()).isEqualTo("success");
     }
 
+    @Test
+    @DisplayName("createEnterprise - 生成企业码 quota 来自入参 owner=NULL")
+    void createEnterprise() {
+        xiaozhi.modules.invite.dto.InviteCodeCreateDTO dto =
+                new xiaozhi.modules.invite.dto.InviteCodeCreateDTO();
+        dto.setQuota(100);
+        dto.setStatus(1);
+        dto.setRemark("展会A");
+
+        xiaozhi.modules.invite.vo.InviteCodeVO vo = service.createEnterprise(dto);
+
+        assertThat(vo.getType()).isEqualTo(InviteCodeType.ENTERPRISE);
+        assertThat(vo.getOwnerUserId()).isNull();
+        assertThat(vo.getQuota()).isEqualTo(100);
+        assertThat(vo.getRemaining()).isEqualTo(100);
+        assertThat(vo.getUsedCount()).isZero();
+        assertThat(vo.getRemark()).isEqualTo("展会A");
+        verify(inviteCodeDao).insert(any(InviteCodeEntity.class));
+    }
+
+    @Test
+    @DisplayName("update - quota 调增允许并重算 remaining")
+    void update_increaseQuota() {
+        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 7, 1, null); // used=3
+        when(inviteCodeDao.selectById(1L)).thenReturn(entity);
+
+        xiaozhi.modules.invite.dto.InviteCodeUpdateDTO dto =
+                new xiaozhi.modules.invite.dto.InviteCodeUpdateDTO();
+        dto.setId(1L);
+        dto.setQuota(20);
+        service.update(dto);
+
+        assertThat(entity.getQuota()).isEqualTo(20);
+        assertThat(entity.getRemaining()).isEqualTo(17); // 20-3
+        verify(inviteCodeDao).updateById(entity);
+    }
+
+    @Test
+    @DisplayName("update - quota 小于 used_count 抛异常")
+    void update_quotaBelowUsed() {
+        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 2, 1, null); // used=8
+        when(inviteCodeDao.selectById(1L)).thenReturn(entity);
+
+        xiaozhi.modules.invite.dto.InviteCodeUpdateDTO dto =
+                new xiaozhi.modules.invite.dto.InviteCodeUpdateDTO();
+        dto.setId(1L);
+        dto.setQuota(5); // < used(8)
+        try {
+            service.update(dto);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("配额不能小于已使用数量");
+        }
+        verify(inviteCodeDao, never()).updateById(any());
+    }
+
+    @Test
+    @DisplayName("delete - used_count=0 可删")
+    void delete_unused() {
+        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 10, 1, null); // used=0
+        when(inviteCodeDao.selectById(1L)).thenReturn(entity);
+        service.delete(1L);
+        verify(inviteCodeDao).deleteById((java.io.Serializable) 1L);
+    }
+
+    @Test
+    @DisplayName("delete - used_count>0 拒绝")
+    void delete_used() {
+        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 7, 1, null); // used=3
+        when(inviteCodeDao.selectById(1L)).thenReturn(entity);
+        try {
+            service.delete(1L);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("已被使用");
+        }
+        verify(inviteCodeDao, never()).deleteById((java.io.Serializable) any());
+    }
+
     private static InviteCodeEntity codeEntity(Long id, String code, Long owner,
             int quota, int remaining, int status, Date expire) {
         InviteCodeEntity e = new InviteCodeEntity();

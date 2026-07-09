@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
@@ -180,32 +181,122 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public InviteCodeVO createEnterprise(InviteCodeCreateDTO dto) {
-        throw new UnsupportedOperationException("Task 6");
+        if (dto.getQuota() == null || dto.getQuota() <= 0) {
+            throw new RenException("配额必须大于0");
+        }
+        InviteCodeEntity entity = new InviteCodeEntity();
+        entity.setCode(generateUniqueCode());
+        entity.setType(InviteCodeType.ENTERPRISE);
+        entity.setOwnerUserId(null);
+        entity.setQuota(dto.getQuota());
+        entity.setUsedCount(0);
+        entity.setRemaining(dto.getQuota());
+        entity.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
+        entity.setExpireTime(dto.getExpireTime());
+        entity.setRemark(dto.getRemark());
+        entity.setCreateDate(now());
+        baseDao.insert(entity);
+        return toVO(entity);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void update(InviteCodeUpdateDTO dto) {
-        throw new UnsupportedOperationException("Task 6");
+        InviteCodeEntity entity = baseDao.selectById(dto.getId());
+        if (entity == null) {
+            throw new RenException("邀请码不存在");
+        }
+        if (dto.getQuota() != null) {
+            int used = entity.getUsedCount() == null ? 0 : entity.getUsedCount();
+            if (dto.getQuota() < used) {
+                throw new RenException("配额不能小于已使用数量");
+            }
+            entity.setQuota(dto.getQuota());
+            entity.setRemaining(dto.getQuota() - used);
+        }
+        if (dto.getStatus() != null) {
+            entity.setStatus(dto.getStatus());
+        }
+        if (dto.getExpireTime() != null) {
+            entity.setExpireTime(dto.getExpireTime());
+        }
+        if (dto.getRemark() != null) {
+            entity.setRemark(dto.getRemark());
+        }
+        entity.setUpdateDate(now());
+        baseDao.updateById(entity);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        throw new UnsupportedOperationException("Task 6");
+        InviteCodeEntity entity = baseDao.selectById(id);
+        if (entity == null) {
+            throw new RenException("邀请码不存在");
+        }
+        int used = entity.getUsedCount() == null ? 0 : entity.getUsedCount();
+        if (used > 0) {
+            throw new RenException("邀请码已被使用，无法删除");
+        }
+        baseDao.deleteById(id);
     }
 
     @Override
     public PageData<InviteCodeVO> page(Map<String, Object> params) {
-        throw new UnsupportedOperationException("Task 6");
+        IPage<InviteCodeEntity> page = getPage(params, "create_date", false);
+        QueryWrapper<InviteCodeEntity> wrapper = new QueryWrapper<>();
+        if (params.get("type") != null) {
+            wrapper.eq("type", params.get("type"));
+        }
+        if (params.get("status") != null) {
+            wrapper.eq("status", params.get("status"));
+        }
+        if (params.get("ownerUserId") != null) {
+            wrapper.eq("owner_user_id", params.get("ownerUserId"));
+        }
+        IPage<InviteCodeEntity> result = baseDao.selectPage(page, wrapper);
+        List<InviteCodeVO> list = result.getRecords().stream()
+                .map(this::toVO).collect(Collectors.toList());
+        return new PageData<>(list, result.getTotal());
     }
 
     @Override
     public PageData<InviteUsageVO> usageList(Long codeId, Map<String, Object> params) {
-        throw new UnsupportedOperationException("Task 6");
+        long cur = params.get("page") == null ? 1 : Long.parseLong(params.get("page").toString());
+        long limit = params.get("limit") == null ? 10 : Long.parseLong(params.get("limit").toString());
+        Page<InviteUsageEntity> page = new Page<>(cur, limit);
+        QueryWrapper<InviteUsageEntity> wrapper =
+                new QueryWrapper<InviteUsageEntity>().eq("code_id", codeId);
+        IPage<InviteUsageEntity> result = inviteUsageDao.selectPage(page, wrapper);
+        List<InviteUsageVO> list = result.getRecords().stream()
+                .map(this::toUsageVO).collect(Collectors.toList());
+        return new PageData<>(list, result.getTotal());
     }
 
     @Override
     public InviteStatsVO stats() {
-        throw new UnsupportedOperationException("Task 6");
+        InviteStatsVO vo = new InviteStatsVO();
+        vo.setTotalCodes(toInt(baseDao.selectCount(null)));
+        vo.setTotalConsumed(toInt(inviteUsageDao.selectCount(null)));
+        vo.setPersonalCount(toInt(baseDao.selectCount(
+                new QueryWrapper<InviteCodeEntity>().eq("type", InviteCodeType.PERSONAL))));
+        vo.setEnterpriseCount(toInt(baseDao.selectCount(
+                new QueryWrapper<InviteCodeEntity>().eq("type", InviteCodeType.ENTERPRISE))));
+        return vo;
+    }
+
+    private static int toInt(Long v) {
+        return v == null ? 0 : Math.toIntExact(v);
+    }
+
+    private InviteUsageVO toUsageVO(InviteUsageEntity e) {
+        InviteUsageVO vo = new InviteUsageVO();
+        vo.setId(e.getId());
+        vo.setCodeId(e.getCodeId());
+        vo.setInviteeUserId(e.getInviteeUserId());
+        vo.setCreateDate(e.getCreateDate());
+        return vo;
     }
 }

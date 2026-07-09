@@ -76,15 +76,30 @@ PRD 原文存在一处矛盾（第 43 行"一个用户可以有三个邀请码" 
 
 ```
 modules/invite/
-├── entity/   InviteCodeEntity.java, InviteUsageEntity.java
-├── dao/      InviteCodeDao.java, InviteUsageDao.java   (继承 BaseMapper)
-├── dto/      InviteCodeCreateDTO.java, InviteConsumeDTO.java, InviteCodeUpdateDTO.java
-├── vo/       InviteCodeVO.java, InviteUsageVO.java
-├── service/  InviteService.java + impl/InviteServiceImpl.java
-└── controller/ InviteController.java   (管理员侧)  +  InviteMpController.java  (小程序侧)
+├── entity/     InviteCodeEntity.java, InviteUsageEntity.java
+├── dao/        InviteCodeDao.java, InviteUsageDao.java   (继承 BaseMapper)
+├── dto/        InviteCodeCreateDTO.java, InviteConsumeDTO.java, InviteCodeUpdateDTO.java
+├── vo/         InviteCodeVO.java, InviteUsageVO.java, InviteConsumeVO.java, InviteStatsVO.java
+├── constant/  InviteCodeType.java
+├── util/       InviteCodeGenerator.java
+├── service/    InviteService.java + impl/InviteServiceImpl.java
+└── controller/ InviteController.java
 ```
 
-### 4.1 管理员侧（`/invite`，走 Shiro 管理员认证，供 manager-web）
+### 4.1 控制器布局（单控制器 + 角色隔离）
+
+仓库无 `/mp/` 命名空间惯例（`PetController`/`ItemController` 等小程序与管理后台共用同一控制器，靠 `@RequiresPermissions` 区分角色）。本设计沿用此惯例：**单 `InviteController` 挂 `/invite`**，管理员方法用 `@RequiresPermissions("sys:role:superAdmin")`，小程序方法用 `@RequiresPermissions("sys:role:normal")`。
+
+### 4.2 接口清单
+
+**小程序侧（`sys:role:normal`，微信登录态 token）**
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/invite/mine` | 查"我的"个人邀请码（含 quota/used/remaining/状态） |
+| POST | `/invite/consume` | 消耗邀请码领蛋（body: `{code}`，当前登录用户作为被邀请人） |
+
+**管理员侧（`sys:role:superAdmin`，供 manager-web）**
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -95,23 +110,16 @@ modules/invite/
 | GET | `/invite/{id}/usage` | 查某码的使用记录（传播链路） |
 | GET | `/invite/stats` | 概览统计（总码数、总消耗、按类型） |
 
-### 4.2 小程序侧（`/mp/invite`，走微信登录态 token）
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/mp/invite/mine` | 查"我的"个人邀请码（含 quota/used/remaining/状态） |
-| POST | `/mp/invite/consume` | 消耗邀请码领蛋（body: `{code}`，当前登录用户作为被邀请人） |
-
 ### 4.3 关键决策
 
 - 个人码不暴露创建接口：自动生成，用户只能查和分享。
 - 企业码 quota 只允许调增：防止运营误操作把已发放码额度砍到低于 used_count 造成数据矛盾。
-- `/mp/invite/consume` 是消耗的唯一入口：内部完成"校验→扣减→写使用记录"原子事务；未来/现有的领取蛋流程（`/pet/birth` 等）调用此接口或直接调用 `InviteService.consume`。先做独立接口，等领蛋流程落地再决定是接口调用还是服务层直调。
-- 个人码自动生成：`WechatServiceImpl.createSysUserForOpenid` 末尾注入 `InviteService.createPersonalCode(userId)`（quota 从系统参数读，默认 5）。与现有 `AgentService` 注入方式一致，轻量耦合。
+- `/invite/consume` 是消耗的唯一入口：内部完成"校验→扣减→写使用记录"原子事务；未来/现有的领取蛋流程（`/pet/birth` 等）调用此接口或直接调用 `InviteService.consume`。先做独立接口，等领蛋流程落地再决定是接口调用还是服务层直调。
+- 个人码自动生成：`WechatServiceImpl.createSysUserForOpenid` 末尾注入 `InviteService.createPersonalCode(userId)`（quota 从配置 `invite.personal.quota` 读，默认 5）。`createPersonalCode` 用 `@Transactional(propagation = REQUIRES_NEW)`，并在 login 处 try/catch + log，确保邀请码生成失败不阻断登录。与现有 `AgentService` 注入方式一致，轻量耦合。
 
 ## 5. 消耗流程与并发控制
 
-### 5.1 `POST /mp/invite/consume` 流程（`InviteService.consume(code, inviteeUserId)`）
+### 5.1 `POST /invite/consume` 流程（`InviteService.consume(code, inviteeUserId)`）
 
 1. 取当前登录用户 userId（被邀请人）—— 由 controller 从 `SecurityUser` 注入。
 2. 根据 code 查 `ai_invite_code`（`SELECT ... FOR UPDATE` 行锁）。
@@ -167,7 +175,7 @@ modules/invite/
 
 ### 7.2 集成测试（`InviteConsumeIntegrationTest`，真实内存库 + 事务回滚）
 
-- 完整消耗 HTTP 链路：登录 → `/mp/invite/consume` → 主表扣减 + usage 表落库。
+- 完整消耗 HTTP 链路：登录 → `/invite/consume` → 主表扣减 + usage 表落库。
 - 唯一键并发：多线程同 (code, invitee) 并发消耗，断言 usage 仅 1 行、used_count 仅 +1。
 - 多被邀请人并发抢同一码（remaining=2，3 人抢）：断言成功 2 人、1 人得"无剩余"。
 - 管理员侧 CRUD + 权限：非管理员调用 `/invite` 被拦截。

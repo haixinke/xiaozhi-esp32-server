@@ -38,6 +38,9 @@ public class WechatUserEntity {
     @Schema(description = "微信头像URL")
     private String avatarUrl;
 
+    @Schema(description = "用户授权手机号")
+    private String phone;
+
     @Schema(description = "创建时间")
     private Date createDate;
 

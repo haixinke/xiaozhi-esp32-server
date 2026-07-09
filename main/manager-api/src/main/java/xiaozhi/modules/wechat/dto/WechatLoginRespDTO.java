@@ -24,6 +24,9 @@ public class WechatLoginRespDTO implements Serializable {
     @Schema(description = "是否为新自动创建的用户")
     private Boolean isNewUser;
 
+    @Schema(description = "是否已绑定手机号")
+    private Boolean hasPhone;
+
     @Schema(description = "智能体ID")
     private String agentId;
 }

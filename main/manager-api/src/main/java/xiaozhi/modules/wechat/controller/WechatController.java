@@ -14,6 +14,8 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.wechat.dto.WechatBindAccountReqDTO;
+import xiaozhi.modules.wechat.dto.WechatBindPhoneReqDTO;
+import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
 import xiaozhi.modules.wechat.dto.WechatLoginReqDTO;
 import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
 import xiaozhi.modules.wechat.service.WechatService;
@@ -45,5 +47,16 @@ public class WechatController {
         }
         wechatService.bindAccount(userId, dto.getUsername(), dto.getPassword());
         return new Result<>();
+    }
+
+    @PostMapping("/bindPhone")
+    @Operation(summary = "绑定微信授权手机号")
+    public Result<WechatBindPhoneRespDTO> bindPhone(@RequestBody @Valid WechatBindPhoneReqDTO dto) {
+        Long userId = SecurityUser.getUserId();
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        WechatBindPhoneRespDTO resp = wechatService.bindPhone(userId, dto.getPhoneCode());
+        return new Result<WechatBindPhoneRespDTO>().ok(resp);
     }
 }

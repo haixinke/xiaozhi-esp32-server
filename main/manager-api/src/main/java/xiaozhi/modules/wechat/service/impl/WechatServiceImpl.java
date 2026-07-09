@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.TokenDTO;
+import xiaozhi.common.redis.RedisKeys;
+import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.security.password.PasswordUtils;
@@ -29,6 +31,7 @@ import xiaozhi.modules.sys.dao.SysUserDao;
 import xiaozhi.modules.sys.entity.SysUserEntity;
 import xiaozhi.modules.sys.enums.SuperAdminEnum;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
+import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
 import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
 import xiaozhi.modules.wechat.service.WechatService;
@@ -43,11 +46,14 @@ import xiaozhi.modules.agent.service.AgentService;
 public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUserEntity> implements WechatService {
 
     private static final String JSCODE2SESSION_URL = "https://api.weixin.qq.com/sns/jscode2session";
+    private static final String STABLE_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/stable_token";
+    private static final String GET_PHONE_URL = "https://api.weixin.qq.com/wxa/business/getuserphonenumber";
 
     private final SysUserDao sysUserDao;
     private final SysUserTokenService sysUserTokenService;
     private final AgentService agentService;
     private final xiaozhi.modules.invite.service.InviteService inviteService;
+    private final RedisUtils redisUtils;
 
     @Value("${wechat.miniprogram.appid:}")
     private String appid;
@@ -118,6 +124,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         resp.setOpenid(openid);
         resp.setUserId(userId);
         resp.setIsNewUser(isNewUser);
+        resp.setHasPhone(StringUtils.isNotBlank(wechatUser.getPhone()));
         resp.setAgentId(agentId);
         return resp;
     }
@@ -159,6 +166,162 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             wechatUser.setUserId(targetUser.getId());
             baseDao.updateById(wechatUser);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public WechatBindPhoneRespDTO bindPhone(Long currentUserId, String phoneCode) {
+        if (currentUserId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        if (StringUtils.isBlank(phoneCode)) {
+            throw new RenException(ErrorCode.NOT_NULL);
+        }
+        if (StringUtils.isBlank(appid) || StringUtils.isBlank(secret)) {
+            throw new RenException("微信小程序未配置appid/secret");
+        }
+
+        // 1. 定位当前登录态对应的微信记录
+        WechatUserEntity wechatUser = baseDao.selectOne(
+                new QueryWrapper<WechatUserEntity>().eq("user_id", currentUserId));
+        if (wechatUser == null) {
+            throw new RenException("当前账号不是微信登录账号，无法绑定手机号");
+        }
+
+        // 2. 用 getPhoneNumber code 换取明文手机号
+        String accessToken = getAccessToken();
+        String phone = getPhoneNumber(accessToken, phoneCode);
+
+        // 3. 写入 ai_wechat_user（按 openid 更新单条，避免误改其他账号）
+        baseDao.update(null,
+                new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<WechatUserEntity>()
+                        .eq("openid", wechatUser.getOpenid())
+                        .set("phone", phone));
+
+        // 4. 返回脱敏手机号，日志同样脱敏
+        String masked = maskPhone(phone);
+        log.info("微信用户绑定手机号成功 openid={}, phone={}", wechatUser.getOpenid(), masked);
+
+        WechatBindPhoneRespDTO resp = new WechatBindPhoneRespDTO();
+        resp.setPhone(masked);
+        return resp;
+    }
+
+    /**
+     * 获取微信小程序普通 access_token（带 Redis 缓存）。
+     * getuserphonenumber 等服务端接口需要该 token，有效期 7200s。
+     */
+    private String getAccessToken() {
+        String key = RedisKeys.getWechatAccessTokenKey();
+        Object cached = redisUtils.get(key);
+        if (cached instanceof String s && !s.isBlank()) {
+            return s;
+        }
+
+        JSONObject body = new JSONObject();
+        body.set("grant_type", "stable_token");
+        body.set("appid", appid);
+        body.set("secret", secret);
+        body.set("force_refresh", false);
+
+        String respBody;
+        try {
+            respBody = httpPost(STABLE_TOKEN_URL, body.toString());
+        } catch (Exception e) {
+            log.error("调用微信stable_token失败", e);
+            throw new RenException("调用微信access_token接口失败: " + e.getMessage());
+        }
+
+        try {
+            if (StringUtils.isBlank(respBody)) {
+                throw new RenException("微信access_token接口返回为空");
+            }
+            JSONObject json = JSONUtil.parseObj(respBody);
+            Integer errcode = json.getInt("errcode");
+            if (errcode != null && errcode != 0) {
+                log.warn("获取微信access_token失败 errcode={}, errmsg={}", errcode, json.getStr("errmsg"));
+                throw new RenException("获取微信access_token失败");
+            }
+            String accessToken = json.getStr("access_token");
+            Integer expiresIn = json.getInt("expires_in");
+            if (StringUtils.isBlank(accessToken)) {
+                throw new RenException("微信access_token为空");
+            }
+            // 提前 300s 失效，留安全余量
+            long ttl = (expiresIn == null ? 7200 : expiresIn) - 300L;
+            redisUtils.set(key, accessToken, Math.max(ttl, 60L));
+            return accessToken;
+        } catch (RenException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("解析微信access_token响应失败", e);
+            throw new RenException("解析微信access_token响应失败");
+        }
+    }
+
+    /**
+     * 调用微信 getuserphonenumber 接口换取明文手机号
+     */
+    private String getPhoneNumber(String accessToken, String phoneCode) {
+        JSONObject body = new JSONObject();
+        body.set("code", phoneCode);
+
+        String respBody;
+        try {
+            respBody = httpPost(GET_PHONE_URL + "?access_token=" + accessToken, body.toString());
+        } catch (Exception e) {
+            log.error("调用微信getuserphonenumber失败", e);
+            throw new RenException("调用微信手机号接口失败: " + e.getMessage());
+        }
+
+        try {
+            if (StringUtils.isBlank(respBody)) {
+                throw new RenException("微信手机号接口返回为空");
+            }
+            JSONObject json = JSONUtil.parseObj(respBody);
+            Integer errcode = json.getInt("errcode");
+            if (errcode == null || errcode != 0) {
+                log.warn("获取微信手机号失败 errcode={}, errmsg={}", errcode, json.getStr("errmsg"));
+                throw new RenException("获取微信手机号失败");
+            }
+            JSONObject phoneInfo = json.getJSONObject("phone_info");
+            if (phoneInfo == null) {
+                throw new RenException("微信手机号信息为空");
+            }
+            String phone = phoneInfo.getStr("phoneNumber");
+            if (StringUtils.isBlank(phone)) {
+                throw new RenException("微信返回的手机号为空");
+            }
+            return phone;
+        } catch (RenException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("解析微信手机号响应失败", e);
+            throw new RenException("解析微信手机号响应失败");
+        }
+    }
+
+    /**
+     * 对微信开放接口发起 POST 请求，返回响应体。
+     * 包级可见，便于单测以子类重写的方式注入桩响应。
+     */
+    String httpPost(String url, String jsonBody) {
+        try (HttpResponse response = HttpRequest.post(url)
+                .body(jsonBody)
+                .timeout(10_000)
+                .execute()) {
+            return response.body();
+        }
+    }
+
+    /**
+     * 手机号脱敏：保留前3位和后4位，如 138****1234
+     */
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 7) {
+            return "***";
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
     }
 
     /**

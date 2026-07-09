@@ -205,4 +205,11 @@ public class RedisKeys {
         return "user:" + userId + ":chat_daily:" + date;
     }
 
+    /**
+     * 微信小程序普通 access_token 缓存Key（getuserphonenumber 等接口使用）
+     */
+    public static String getWechatAccessTokenKey() {
+        return "wechat:miniprogram:access_token";
+    }
+
 }

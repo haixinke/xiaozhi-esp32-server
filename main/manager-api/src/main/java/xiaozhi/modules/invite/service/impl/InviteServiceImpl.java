@@ -122,8 +122,61 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
 
     // 以下方法在后续任务实现
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public InviteConsumeVO consume(String code, Long inviteeUserId) {
-        throw new UnsupportedOperationException("Task 5");
+        if (code == null || code.isBlank()) {
+            throw new RenException(ErrorCode.NOT_NULL);
+        }
+        if (inviteeUserId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+
+        InviteCodeEntity entity = baseDao.selectByCodeForUpdate(code);
+        if (entity == null) {
+            throw new RenException("邀请码无效");
+        }
+        if (entity.getStatus() == null || entity.getStatus() != 1) {
+            throw new RenException("邀请码已失效");
+        }
+        if (entity.getExpireTime() != null && !entity.getExpireTime().after(now())) {
+            throw new RenException("邀请码已过期");
+        }
+        if (entity.getRemaining() == null || entity.getRemaining() <= 0) {
+            throw new RenException("邀请码已无剩余");
+        }
+        if (entity.getOwnerUserId() != null && entity.getOwnerUserId().equals(inviteeUserId)) {
+            throw new RenException("不能使用自己的邀请码");
+        }
+
+        // 幂等：同一被邀请人对同一码重复消耗不扣减
+        Long used = inviteUsageDao.selectCount(new QueryWrapper<InviteUsageEntity>()
+                .eq("code_id", entity.getId()).eq("invitee_user_id", inviteeUserId));
+        if (used != null && used > 0) {
+            InviteConsumeVO vo = new InviteConsumeVO();
+            vo.setCodeId(entity.getId());
+            vo.setRemaining(entity.getRemaining());
+            vo.setStatus(entity.getStatus());
+            vo.setMessage("已使用过该邀请码");
+            return vo;
+        }
+
+        int affected = baseDao.decrementRemaining(entity.getId());
+        if (affected == 0) {
+            throw new RenException("邀请码已无剩余");
+        }
+
+        InviteUsageEntity usage = new InviteUsageEntity();
+        usage.setCodeId(entity.getId());
+        usage.setInviteeUserId(inviteeUserId);
+        usage.setCreateDate(now());
+        inviteUsageDao.insert(usage);
+
+        InviteConsumeVO vo = new InviteConsumeVO();
+        vo.setCodeId(entity.getId());
+        vo.setRemaining(entity.getRemaining() - 1);
+        vo.setStatus(entity.getStatus());
+        vo.setMessage("success");
+        return vo;
     }
 
     @Override

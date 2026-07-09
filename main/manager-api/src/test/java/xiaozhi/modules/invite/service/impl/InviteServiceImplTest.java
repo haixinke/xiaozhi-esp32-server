@@ -35,6 +35,7 @@ import xiaozhi.modules.invite.dao.InviteCodeDao;
 import xiaozhi.modules.invite.dao.InviteUsageDao;
 import xiaozhi.modules.invite.entity.InviteCodeEntity;
 import xiaozhi.modules.invite.vo.InviteCodeVO;
+import xiaozhi.modules.invite.vo.InviteConsumeVO;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -133,6 +134,146 @@ class InviteServiceImplTest {
         } catch (RenException ex) {
             assertThat(ex.getMsg()).contains("个人邀请码");
         }
+    }
+
+    @Test
+    @DisplayName("consume - 正常消耗：扣减并写使用记录")
+    void consume_normal() {
+        InviteCodeEntity entity = codeEntity(1L, "CCCC4444", 200L, 5, 5, 1, null);
+        when(inviteCodeDao.selectByCodeForUpdate("CCCC4444")).thenReturn(entity);
+        when(inviteUsageDao.selectCount(any())).thenReturn(0L);
+        when(inviteCodeDao.decrementRemaining(1L)).thenReturn(1);
+
+        InviteConsumeVO vo = service.consume("CCCC4444", 300L);
+
+        assertThat(vo.getMessage()).isEqualTo("success");
+        assertThat(vo.getRemaining()).isEqualTo(4);
+        verify(inviteCodeDao).decrementRemaining(1L);
+        verify(inviteUsageDao).insert(any());
+    }
+
+    @Test
+    @DisplayName("consume - 码不存在抛 邀请码无效")
+    void consume_notFound() {
+        when(inviteCodeDao.selectByCodeForUpdate(any())).thenReturn(null);
+        try {
+            service.consume("NOPE", 1L);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("无效");
+        }
+        verify(inviteCodeDao, never()).decrementRemaining(any());
+    }
+
+    @Test
+    @DisplayName("consume - status=0 抛 已失效")
+    void consume_disabled() {
+        InviteCodeEntity entity = codeEntity(1L, "X", 200L, 5, 3, 0, null);
+        when(inviteCodeDao.selectByCodeForUpdate(any())).thenReturn(entity);
+        try {
+            service.consume("X", 300L);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("失效");
+        }
+    }
+
+    @Test
+    @DisplayName("consume - 已过期抛 已过期")
+    void consume_expired() {
+        InviteCodeEntity entity = codeEntity(1L, "X", 200L, 5, 3, 1,
+                Date.from(Instant.parse("2026-07-01T00:00:00Z")));
+        when(inviteCodeDao.selectByCodeForUpdate(any())).thenReturn(entity);
+        try {
+            service.consume("X", 300L);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("过期");
+        }
+    }
+
+    @Test
+    @DisplayName("consume - remaining=0 抛 已无剩余")
+    void consume_noRemaining() {
+        InviteCodeEntity entity = codeEntity(1L, "X", 200L, 5, 0, 1, null);
+        when(inviteCodeDao.selectByCodeForUpdate(any())).thenReturn(entity);
+        try {
+            service.consume("X", 300L);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("无剩余");
+        }
+    }
+
+    @Test
+    @DisplayName("consume - 自邀拦截：owner==invitee 抛异常")
+    void consume_selfInvite() {
+        InviteCodeEntity entity = codeEntity(1L, "X", 300L, 5, 5, 1, null);
+        when(inviteCodeDao.selectByCodeForUpdate(any())).thenReturn(entity);
+        try {
+            service.consume("X", 300L);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("自己的邀请码");
+        }
+        verify(inviteCodeDao, never()).decrementRemaining(any());
+    }
+
+    @Test
+    @DisplayName("consume - 幂等：同被邀请人重复消耗不扣减，返回 已使用过")
+    void consume_idempotent() {
+        InviteCodeEntity entity = codeEntity(1L, "X", 200L, 5, 4, 1, null);
+        when(inviteCodeDao.selectByCodeForUpdate(any())).thenReturn(entity);
+        when(inviteUsageDao.selectCount(any())).thenReturn(1L);
+
+        InviteConsumeVO vo = service.consume("X", 300L);
+
+        assertThat(vo.getMessage()).contains("已使用");
+        assertThat(vo.getRemaining()).isEqualTo(4);
+        verify(inviteCodeDao, never()).decrementRemaining(any());
+        verify(inviteUsageDao, never()).insert(any());
+    }
+
+    @Test
+    @DisplayName("consume - 并发抢空：decrementRemaining 返回 0 抛 已无剩余")
+    void consume_raceEmpty() {
+        InviteCodeEntity entity = codeEntity(1L, "X", 200L, 5, 1, 1, null);
+        when(inviteCodeDao.selectByCodeForUpdate(any())).thenReturn(entity);
+        when(inviteUsageDao.selectCount(any())).thenReturn(0L);
+        when(inviteCodeDao.decrementRemaining(1L)).thenReturn(0);
+        try {
+            service.consume("X", 300L);
+            assertThat(false).as("应抛异常").isTrue();
+        } catch (RenException e) {
+            assertThat(e.getMsg()).contains("无剩余");
+        }
+    }
+
+    @Test
+    @DisplayName("consume - 企业码 owner=NULL 不受自邀限制")
+    void consume_enterpriseNoOwner() {
+        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 10, 1, null);
+        when(inviteCodeDao.selectByCodeForUpdate(any())).thenReturn(entity);
+        when(inviteUsageDao.selectCount(any())).thenReturn(0L);
+        when(inviteCodeDao.decrementRemaining(1L)).thenReturn(1);
+
+        InviteConsumeVO vo = service.consume("X", 300L);
+        assertThat(vo.getMessage()).isEqualTo("success");
+    }
+
+    private static InviteCodeEntity codeEntity(Long id, String code, Long owner,
+            int quota, int remaining, int status, Date expire) {
+        InviteCodeEntity e = new InviteCodeEntity();
+        e.setId(id);
+        e.setCode(code);
+        e.setType(owner == null ? InviteCodeType.ENTERPRISE : InviteCodeType.PERSONAL);
+        e.setOwnerUserId(owner);
+        e.setQuota(quota);
+        e.setUsedCount(quota - remaining);
+        e.setRemaining(remaining);
+        e.setStatus(status);
+        e.setExpireTime(expire);
+        return e;
     }
 
     private static void setField(Class<?> clazz, Object target, String name, Object value)

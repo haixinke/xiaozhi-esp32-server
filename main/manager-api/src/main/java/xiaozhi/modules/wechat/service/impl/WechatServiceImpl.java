@@ -47,6 +47,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private final SysUserDao sysUserDao;
     private final SysUserTokenService sysUserTokenService;
     private final AgentService agentService;
+    private final xiaozhi.modules.invite.service.InviteService inviteService;
 
     @Value("${wechat.miniprogram.appid:}")
     private String appid;
@@ -202,6 +203,12 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         user.setCreateDate(new Date());
         user.setUpdateDate(new Date());
         sysUserDao.insert(user);
+        // 自动为该 openid 用户生成个人邀请码（失败不阻断登录）
+        try {
+            inviteService.createPersonalCode(user.getId());
+        } catch (Exception e) {
+            log.warn("为新用户生成个人邀请码失败 userId={}, err={}", user.getId(), e.getMessage());
+        }
         return new UserCreationResult(user.getId(), username);
     }
 

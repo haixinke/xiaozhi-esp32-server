@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "nav-bar": "../../components/nav-bar/nav-bar",
+    "egg-avatar": "../../components/egg-avatar/egg-avatar",
+    "list-row": "../../components/list-row/list-row",
+    "card": "../../components/card/card"
+  }
+}

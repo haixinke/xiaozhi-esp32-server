@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "nav-bar": "../../components/nav-bar/nav-bar",
+    "pet-avatar": "../../components/pet-avatar/pet-avatar"
+  }
+}

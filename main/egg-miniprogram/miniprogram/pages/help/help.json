@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "nav-bar": "../../components/nav-bar/nav-bar",
+    "collapse-item": "../../components/collapse-item/collapse-item"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "nav-bar": "../../components/nav-bar/nav-bar",
+    "card": "../../components/card/card",
+    "app-button": "../../components/button/button"
+  }
+}

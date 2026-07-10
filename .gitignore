@@ -194,6 +194,7 @@ uploadfile
 !main/manager-mobile/**/.env*
 !main/manager-mobile/**/*.json
 !main/miniprogram/**/*.json
+!main/egg-miniprogram/**/*.json
 !main/xiaozhi-server/**/*.json
 
 !main/digital-human/**/*.json

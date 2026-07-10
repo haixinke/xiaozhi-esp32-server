@@ -1,0 +1,44 @@
+{
+  "pages": [
+    "pages/welcome/welcome",
+    "pages/home/home",
+    "pages/add-device/add-device",
+    "pages/hatch-guide/hatch-guide",
+    "pages/nickname/nickname",
+    "pages/wish/wish",
+    "pages/lesson/lesson",
+    "pages/doodle/doodle",
+    "pages/hatch/hatch",
+    "pages/collection-card/collection-card",
+    "pages/album/album",
+    "pages/invite-codes/invite-codes",
+    "pages/exhibition-scenes/exhibition-scenes",
+    "pages/exhibition-scene/exhibition-scene",
+    "pages/chat/chat",
+    "pages/pet-detail/pet-detail",
+    "pages/my/my",
+    "pages/profile/profile",
+    "pages/settings/settings",
+    "pages/account/account",
+    "pages/help/help",
+    "pages/deregister/deregister",
+    "pages/privacy/privacy"
+  ],
+  "tabBar": {
+    "color": "#8C8C88",
+    "selectedColor": "#002900",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "蛋宝宝", "iconPath": "assets/tab/egg.png", "selectedIconPath": "assets/tab/egg-active.png" },
+      { "pagePath": "pages/my/my", "text": "我的", "iconPath": "assets/tab/me.png", "selectedIconPath": "assets/tab/me-active.png" }
+    ]
+  },
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#FAFAF8",
+    "backgroundTextStyle": "dark"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,59 +1,8 @@
 # AGENTS.md
 
-Codex instructions for the egg-miniprogram subproject. This project does not currently have a local `CLAUDE.md`, so these rules are based on the README, PRD, WeChat project files, and current source shape.
+本文件为代理工具（Codex 等）的入口指引。本子项目的全部工作指引已统一维护在 [CLAUDE.md](./CLAUDE.md) 中，请以该文件为准。
 
-## Project Shape
-
-- Native WeChat Mini Program using JavaScript, WXML, WXSS, and JSON.
-- The project root is this directory. `project.config.json` does not define a separate `miniprogramRoot`.
-- There is no package manager, build script, app-wide request wrapper, app-wide auth module, or automated test framework yet.
-- Current source is mostly a UI skeleton with static or simulated data. Do not describe unimplemented flows as production behavior.
-- There is no executable CloudBase or `wx.cloud` integration in the current source.
-- **修改样式**：参考 [DESIGN.md](./DESIGN.md)
-
-## Common Checks
-
-Run these from the repository root or this subproject when changing source:
-
-```sh
-find main/egg-miniprogram -type f -name '*.js' -print0 | xargs -0 -n1 node --check
-find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
-```
-
-Also verify changed pages in WeChat DevTools. Use real-device testing when touching camera, scan, subscription messages, customer service, login, device binding, or audio/video behavior.
-
-## Directory Conventions
-
-- Keep pages and components in standard four-file WeChat Mini Program shape: `.js`, `.json`, `.wxml`, `.wxss`.
-- Register new pages in `app.json`.
-- Register custom components through `usingComponents`.
-- Reuse style tokens and layout conventions from `app.wxss`.
-- Keep static assets under the existing assets structure.
-
-## Product And State Rules
-
-- Treat backend-owned state as authoritative once APIs exist: device ownership, pet ownership, hatch state, events, personality, skills, achievements, invites, and account status.
-- Query parameters and client-side IDs are hints only. Do not trust them for ownership or authorization.
-- Client-only locks, such as one-time gender or birthday edits, must be enforced by the backend when the backend is introduced.
-- Account deletion, cooling periods, and related copy are currently UI/product text only unless backed by APIs.
-- The hatch-time rule has a known product conflict: current code comments say interactions do not change hatch date, while the PRD mentions tasks reducing hatch time. Confirm product direction before changing this behavior.
-
-## API And Auth Rules
-
-- Auth architecture is not implemented yet. Choose and document the approach before adding login, token storage, refresh, or backend calls.
-- Do not claim CloudBase login-free auth unless real CloudBase integration is added.
-- Never commit app secrets, tokens, openid, unionid, `wx.login` code, customer-service IDs, template IDs, private API URLs, or real user data.
-- Avoid logging sensitive request or account information.
-
-## WeChat Feature Notes
-
-- Subscription messages and customer service currently use placeholders or static IDs.
-- Avatar selection uses WeChat profile/avatar capabilities.
-- Scan and device flows are simulated in current source.
-- Chat, device, pet, hatch, and invite behavior are not wired to real backend APIs yet.
-
-## Version Control Notes
-
-- This subproject currently contains untracked working files in many directories. Do not reformat or reorganize them unless the task explicitly asks.
-- `project.private.config.json`, `.DS_Store`, generated outputs, and local tool state should stay local.
-- Be careful with root ignore rules. Essential Mini Program `.json` files must be included in review even if global ignore patterns hide them.
+- 项目概述、目录结构、与后端 `manager-api` / 聊天服务 `xiaozhi-server` 的交互契约、开发校验命令、约定与注意事项：见 [CLAUDE.md](./CLAUDE.md)
+- 设计规范（改样式必读）：见 [DESIGN.md](./DESIGN.md)
+- 产品需求：见 [docs/蛋宝宝小程序PRD.md](./docs/蛋宝宝小程序PRD.md)、[docs/蛋宝宝小程序MVP_PRD.md](./docs/蛋宝宝小程序MVP_PRD.md)
+- 设备/宠物身份模型与 adopt/hatch 接口草案：见 [docs/egg-pet-identity-and-hatch-api.md](./docs/egg-pet-identity-and-hatch-api.md)

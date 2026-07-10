@@ -249,6 +249,18 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setMbti(pet.getMbti());
         vo.setPersonality(pet.getPersonality());
         vo.setTodayMood(pet.getTodayMood());
+        vo.setHatchStatus(pet.getHatchStatus());
+        vo.setHatchStartTime(pet.getHatchStartTime());
+        vo.setExpectedHatchTime(pet.getExpectedHatchTime());
+        vo.setHatchedAt(pet.getHatchedAt());
+        vo.setAcceleratedMinutes(pet.getAcceleratedMinutes());
+        vo.setAvatarUrl(pet.getAvatarUrl());
+        vo.setPrototype(pet.getPrototype());
+        vo.setGender(pet.getGender());
+        vo.setBloodType(pet.getBloodType());
+        vo.setPersonalityBrief(pet.getPersonalityBrief());
+        vo.setTodayMoodDate(pet.getTodayMoodDate());
+        vo.setTodayMoodSentence(pet.getTodayMoodSentence());
         vo.setCreateDate(pet.getCreateDate());
         return vo;
     }

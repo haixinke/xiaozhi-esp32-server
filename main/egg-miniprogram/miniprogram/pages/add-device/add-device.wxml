@@ -1,0 +1,32 @@
+<view class="page">
+  <nav-bar title="添加蛋宝宝"></nav-bar>
+
+  <view class="content">
+    <view class="intro">
+      <text class="intro-title">输入激活码</text>
+      <text class="intro-desc">购买或受邀后获得的激活码都从这里输入。添加成功会告诉你原型，具体款式留到破壳时揭晓。</text>
+    </view>
+
+    <view class="code-block">
+      <text class="label">激活码</text>
+      <input class="code-input" value="{{code}}" bindinput="onCodeInput"
+             placeholder="请输入激活码" />
+    </view>
+
+    <text wx:if="{{error}}" class="error">{{error}}</text>
+
+    <view class="note">添加时会告诉你蛋宝宝的原型（例如锦鲤、玉兔），但具体款式要等破壳那一刻才会揭晓。</view>
+
+    <view class="spacer"></view>
+    <btn text="{{submitting ? '正在校验…' : '添加蛋宝宝'}}" disabled="{{!canSubmit || submitting}}" bind:tap="onValidate"></btn>
+  </view>
+
+  <!-- 校验成功轻惊喜浮层 -->
+  <view wx:if="{{success}}" class="success-mask">
+    <view class="success-egg-stage">
+      <view class="success-glow"></view>
+      <view class="success-egg"></view>
+    </view>
+    <text class="success-text">你获得了一只{{success.prototype}}蛋宝宝</text>
+  </view>
+</view>

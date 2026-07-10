@@ -1,0 +1,9 @@
+<view class="page">
+  <image class="scene-bg" src="{{scene.image}}" mode="aspectFill"></image><view class="scene-dim"></view>
+  <view class="topbar" style="padding-top:{{statusBarHeight}}px;"><view class="round-btn" bindtap="onBack"><view class="back-icon"></view></view><view class="change-btn" bindtap="onChangeScene">六个场景</view></view>
+  <view class="pet-hotspot" bindtap="onTapPet"></view>
+  <view class="hotspot" wx:for="{{hotspots}}" wx:key="label" style="left:{{item.x}};top:{{item.y}};" data-index="{{index}}" catchtap="onTapHotspot"><view class="hotspot-dot"></view><text>{{item.label}}</text></view>
+  <view wx:if="{{ripple}}" class="ripple" style="left:{{ripple.x}};top:{{ripple.y}};"></view>
+  <view class="scene-title"><text class="kicker">展会体验 · 破壳后生活场景</text><text class="name">{{scene.label}}</text></view>
+  <view wx:if="{{bubble}}" class="bubble">{{bubble}}</view>
+</view>

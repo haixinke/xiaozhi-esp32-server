@@ -1,0 +1,171 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #FFFFFF;
+}
+
+.pending-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 40rpx 56rpx;
+  text-align: center;
+}
+
+.pending-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: #F5F8ED;
+  color: #54632C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42rpx;
+}
+
+.pending-title { margin-top: 30rpx; font-size: 36rpx; font-weight: 600; color: #1A1A1A; }
+.pending-desc { margin-top: 20rpx; font-size: 25rpx; line-height: 1.75; color: #5C5C5C; }
+.pending-note { margin-top: 24rpx; padding: 14rpx 22rpx; border-radius: 999rpx; background: #FAFAEF; color: #6E6B35; font-size: 22rpx; }
+
+.content {
+  flex: 1;
+  padding: 40rpx 40rpx 0;
+  background: #FAFAF8;
+  box-sizing: border-box;
+}
+
+.warn-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40rpx;
+}
+
+.warn-badge {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  background: #FDECEA; /* --error-surface */
+  border: 3rpx solid #D9463C; /* --error */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+
+.warn-mark {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #D9463C;
+  line-height: 1;
+}
+
+.warn-title {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  text-align: center;
+}
+
+.deletion-card {
+  display: block;
+  margin-bottom: 24rpx;
+}
+.hardware-card {
+  display: block;
+  margin-bottom: 24rpx;
+}
+.cooldown-card {
+  display: block;
+  margin-bottom: 40rpx;
+}
+
+.deletion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.deletion-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+}
+
+.x-badge {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: #FDECEA; /* --error-surface */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2rpx;
+}
+
+.x-mark {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #D9463C;
+  line-height: 1;
+}
+
+.deletion-text {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 28rpx;
+  line-height: 1.55;
+  color: #1A1A1A;
+  flex: 1;
+}
+
+.card-title {
+  display: block;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #5C5C5C;
+  margin-bottom: 20rpx;
+  letter-spacing: 0.8rpx;
+}
+
+.card-title--green {
+  color: #54632C; /* --green-on-tint */
+}
+
+.card-body {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 26rpx;
+  line-height: 1.65;
+  color: #1A1A1A;
+}
+
+.cooldown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.cooldown-item {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 26rpx;
+  line-height: 1.55;
+  color: #54632C; /* --green-on-tint */
+}
+
+.cooldown-strong {
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.button-bar {
+  padding: 24rpx 40rpx 48rpx;
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  flex-shrink: 0;
+}

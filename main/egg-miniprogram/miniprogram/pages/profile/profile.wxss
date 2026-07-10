@@ -1,0 +1,105 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #FFFFFF;
+}
+
+.content {
+  flex: 1;
+  background: #FAFAF8;
+}
+
+.avatar-section {
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56rpx 0 40rpx;
+  border-bottom: 1rpx solid #E5E3DF;
+}
+
+.avatar-btn {
+  background: transparent;
+  padding: 0;
+  margin: 0 0 24rpx;
+  line-height: normal;
+  position: relative;
+  width: 144rpx;
+  height: 144rpx;
+  overflow: visible;
+}
+.avatar-btn::after {
+  border: none;
+}
+
+.avatar-image { width: 144rpx; height: 144rpx; border-radius: 50%; display: block; }
+
+.avatar-edit-badge {
+  position: absolute;
+  bottom: -8rpx;
+  right: -8rpx;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: #002900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4rpx solid #FFFFFF;
+}
+
+.camera-icon { position: relative; width: 25rpx; height: 19rpx; border: 3rpx solid #FFFFFF; border-radius: 5rpx; }
+.camera-icon::before { content: ''; position: absolute; left: 5rpx; top: -8rpx; width: 11rpx; height: 7rpx; border-radius: 3rpx 3rpx 0 0; background: #FFFFFF; }
+.camera-lens { position: absolute; width: 8rpx; height: 8rpx; left: 6rpx; top: 3rpx; border: 2rpx solid #FFFFFF; border-radius: 50%; }
+
+.nickname-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.nickname-text {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.chevron {
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 3rpx solid #8C8C88;
+  border-right: 3rpx solid #8C8C88;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.user-id {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 24rpx;
+  color: #8C8C88;
+  letter-spacing: 0.6rpx;
+}
+
+.field-panel {
+  margin: 24rpx 40rpx 0;
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  overflow: hidden;
+  border: 1rpx solid #E5E3DF;
+  box-shadow: 0rpx 2rpx 4rpx rgba(0, 41, 0, 0.06), 0rpx 4rpx 8rpx rgba(0, 41, 0, 0.04);
+}
+
+.hint-card {
+  display: block;
+  margin: 24rpx 40rpx 40rpx;
+}
+
+.hint-text {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #6E6B35; /* --yellow-on-tint */
+}

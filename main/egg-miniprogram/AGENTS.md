@@ -9,6 +9,7 @@ Codex instructions for the egg-miniprogram subproject. This project does not cur
 - There is no package manager, build script, app-wide request wrapper, app-wide auth module, or automated test framework yet.
 - Current source is mostly a UI skeleton with static or simulated data. Do not describe unimplemented flows as production behavior.
 - There is no executable CloudBase or `wx.cloud` integration in the current source.
+- **修改样式**：参考 [DESIGN.md](./DESIGN.md)
 
 ## Common Checks
 

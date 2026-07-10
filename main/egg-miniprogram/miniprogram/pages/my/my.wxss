@@ -1,0 +1,105 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #FFFFFF;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 40rpx 40rpx 56rpx;
+  background: #FAFAF8;
+  box-sizing: border-box;
+}
+
+.user-card {
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  border: 1rpx solid #E5E3DF;
+  box-shadow: 0rpx 2rpx 4rpx rgba(0, 41, 0, 0.06), 0rpx 4rpx 8rpx rgba(0, 41, 0, 0.04);
+  margin-bottom: 32rpx;
+  box-sizing: border-box;
+}
+
+.user-card--pressed {
+  background: #F5F8ED;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  display: block;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-bottom: 12rpx;
+}
+
+.user-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.user-sub {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 26rpx;
+  color: #8C8C88;
+}
+
+.chevron {
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 3rpx solid #8C8C88;
+  border-right: 3rpx solid #8C8C88;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.menu-panel {
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  overflow: hidden;
+  border: 1rpx solid #E5E3DF;
+  box-shadow: 0rpx 2rpx 4rpx rgba(0, 41, 0, 0.06), 0rpx 4rpx 8rpx rgba(0, 41, 0, 0.04);
+}
+
+.pet-status {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  margin-bottom: 32rpx;
+  padding: 28rpx;
+  border-radius: 32rpx;
+  background: #F5F8ED;
+  border: 1rpx solid #E1EACB;
+}
+
+.pet-visual {
+  width: 82rpx;
+  height: 100rpx;
+  flex-shrink: 0;
+  border-radius: 52% 48% 48% 52% / 61% 59% 41% 39%;
+  background: #002900;
+  color: #EDE78E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+
+.pet-visual--empty { background: #FFF; border: 3rpx dashed #BFC5B0; }
+.pet-copy { flex: 1; min-width: 0; }
+.pet-title { display: block; font-size: 28rpx; font-weight: 600; color: #25301D; }
+.pet-stage { display: block; margin-top: 6rpx; font-size: 21rpx; color: #7B8268; }
+.pet-line { display: block; margin-top: 8rpx; font-size: 21rpx; color: #77756E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pet-action { padding: 12rpx 18rpx; border-radius: 999rpx; background: #002900; color: #FFF; font-size: 21rpx; }

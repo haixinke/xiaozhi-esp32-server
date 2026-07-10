@@ -1,0 +1,14 @@
+<view class="pet-avatar" style="width:{{size}}rpx;height:{{size}}rpx;">
+  <view wx:if="{{petType === '玉兔'}}" class="rabbit">
+    <view class="ear ear--left"><view class="ear-inner"></view></view>
+    <view class="ear ear--right"><view class="ear-inner"></view></view>
+    <view class="rabbit-face">
+      <view class="eye eye--left"></view><view class="eye eye--right"></view>
+      <view class="rabbit-nose"></view><view class="cheek cheek--left"></view><view class="cheek cheek--right"></view>
+    </view>
+  </view>
+  <view wx:else class="koi">
+    <view class="koi-tail"></view><view class="koi-fin"></view>
+    <view class="koi-body"><view class="koi-eye"></view><view class="koi-patch koi-patch--one"></view><view class="koi-patch koi-patch--two"></view></view>
+  </view>
+</view>

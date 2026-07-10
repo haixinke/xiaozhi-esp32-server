@@ -1,0 +1,20 @@
+<view class="page">
+  <nav-bar title="孵化修炼手册"></nav-bar>
+  <scroll-view class="content" scroll-y>
+    <view class="progress-card">
+      <view class="progress-copy"><text class="progress-kicker">HATCHING</text><text class="progress-number">{{pet.progress}}%</text></view>
+      <view class="progress-track"><view class="progress-fill" style="width: {{pet.progress}}%;"></view></view>
+      <text class="progress-note">每天做一两件就好，不需要一次全部完成。</text>
+    </view>
+
+    <text class="section-title">今天可以做</text>
+    <view class="task-list">
+      <view class="task {{item.done ? 'task--done' : ''}}" wx:for="{{tasks}}" wx:key="key" data-route="{{item.route}}" bindtap="onTask" hover-class="pressable--pressed">
+        <view class="task-status"><text>{{item.done ? '✓' : index + 1}}</text></view>
+        <view class="task-copy"><text class="task-title">{{item.title}}</text><text class="task-desc">{{item.desc}}</text></view>
+        <view class="task-side"><text class="task-reward">{{item.reward}}</text><text class="task-arrow">›</text></view>
+      </view>
+    </view>
+    <view class="quiet-note">孵化进度影响反馈、性格和收藏卡内容，不会改变物理装置的预设打开时间。</view>
+  </scroll-view>
+</view>

@@ -1,0 +1,57 @@
+<view class="page">
+  <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
+
+  <scroll-view class="content" scroll-y>
+    <view class="expo-row">
+      <view class="expo-entry" bindtap="onExhibitionDemo" hover-class="pressable--pressed"><text class="expo-spark">✦</text><text>{{pet && pet.demoMode ? '查看六个场景' : '展会快速体验'}}</text></view>
+      <view wx:if="{{pet && pet.demoMode}}" class="expo-exit" bindtap="onExitExhibition">退出体验</view>
+    </view>
+    <view wx:if="{{!pet}}" class="empty-state">
+      <view class="empty-orbit"><view class="empty-egg"></view></view>
+      <text class="empty-title">领取我的蛋宝宝</text>
+      <text class="empty-desc">输入购买或好友送给你的激活码，开始一段只属于你们的孵化旅程。</text>
+      <button class="primary-button" bindtap="onAddDevice">添加蛋宝宝</button>
+      <text class="empty-note">当前版本每个账号只能绑定 1 只</text>
+    </view>
+
+    <view wx:else class="pet-view">
+      <view class="top-row">
+        <view>
+          <text class="eyebrow">{{pet.prototype}} · {{stage === 'hatched' ? '已破壳' : '孵化记录'}}</text>
+          <text class="pet-name">{{pet.name || '还没有名字'}}</text>
+        </view>
+        <view class="progress-ring"><text>{{pet.progress}}%</text></view>
+      </view>
+
+      <view class="egg-zone" bindtap="onOpenProfile">
+        <view wx:if="{{feedback}}" class="feedback-bubble">{{feedback}}</view>
+        <view class="egg-aura {{eggMotion}}"></view>
+        <image wx:if="{{pet.demoMode}}" class="expo-home-scene" src="/assets/scenes/grass_with_egg.jpg" mode="aspectFill" catchtap="onExhibitionDemo"></image>
+        <pet-avatar wx:elif="{{stage === 'hatched'}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
+        <view wx:else class="egg {{eggMotion}}" style="background: linear-gradient(155deg, #FFFDF0 6%, {{pet.shell.color}} 58%, #F4B9AE 125%);" catchtap="onEggTap" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd">
+          <view class="egg-pattern egg-pattern--one"></view>
+          <view class="egg-pattern egg-pattern--two"></view>
+          <view class="egg-shine"></view>
+        </view>
+        <view class="egg-shadow"></view>
+        <view wx:if="{{cuddleProgress > 0}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
+        <text class="touch-hint">{{pet.demoMode ? '点击玉兔，查看六个生活场景' : stage === 'hatched' ? '轻触这里，看看它今天的档案' : '轻触听回应 · 长按 3 秒贴贴'}}</text>
+      </view>
+
+      <view class="state-card">
+        <view class="state-dot"></view>
+        <view class="state-copy">
+          <text class="state-title">{{stageText}}</text>
+          <text class="state-time">{{countdown}}</text>
+        </view>
+      </view>
+
+      <view class="daily-card" wx:if="{{dailyStatus}}">
+        <view class="daily-head"><text class="daily-label">今日状态</text><text class="mood">{{dailyStatus.mood}}</text></view>
+        <text class="daily-line">{{dailyStatus.line}}</text>
+      </view>
+
+      <button class="primary-button hatch-action" bindtap="onPrimaryAction">{{actionLabel}}</button>
+    </view>
+  </scroll-view>
+</view>

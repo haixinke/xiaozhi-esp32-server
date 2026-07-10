@@ -1,0 +1,33 @@
+<view class="page">
+  <nav-bar title="账号"></nav-bar>
+
+  <view class="content">
+
+    <view class="panel">
+      <list-row
+        label="退出登录"
+        show-chevron="{{false}}"
+        bind:rowtap="onLogout"
+      ></list-row>
+      <list-row
+        label="重置本地体验数据"
+        show-chevron="{{false}}"
+        show-border="{{false}}"
+        bind:rowtap="onResetDemo"
+      ></list-row>
+    </view>
+
+    <view class="spacer"></view>
+
+    <view class="panel danger-panel">
+      <list-row
+        label="注销账号"
+        label-color="#D9463C"
+        show-chevron="{{false}}"
+        show-border="{{false}}"
+        bind:rowtap="onDeregister"
+      ></list-row>
+    </view>
+
+  </view>
+</view>

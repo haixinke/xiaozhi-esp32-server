@@ -1,0 +1,65 @@
+/* ===========================================================
+   蛋宝宝小程序 · 全局样式
+   ===========================================================
+   单位换算：设计稿按 375px（iPhone 标准宽度）绘制，微信小程序
+   标准设备宽度为 750rpx，因此换算比例固定为 —— 设计 px × 2 = rpx。
+   本项目所有 wxss 内的 rpx 数值均已按此比例换算并写死。
+
+   颜色 token 对照表（来自 eggbabe Design System，色值直接写死到
+   各组件/页面样式中，此处仅作对照参考，不是可引用的变量）：
+     --ink            #002900   主文字 / 主要按钮
+     --ink-pressed     #001A00   按钮按下态
+     --egg-green       #9DB65B   品牌绿（switch 开启态）
+     --egg-yellow      #EDE78E   蛋壳渐变色 1
+     --egg-pink        #F4B9AE   蛋壳渐变色 2
+     --canvas          #FFFFFF   卡片/页面底色
+     --text            #1A1A1A  一级文字
+     --text-muted      #5C5C5C  二级文字
+     --text-faint      #8C8C88  三级文字/说明
+     --hairline        #E5E3DF  分隔线
+     --hairline-strong #CFCBC4  强调分隔线
+     --ink-surface     #E5EBE5  中性提示底色
+     --error           #D9463C  危险色
+     --error-surface   #FDECEA  危险底色
+     --green-surface   #F5F8ED  绿色提示底色
+     --green-on-tint   #54632C  绿色提示文字
+     --yellow-surface  #FAFAEF  黄色提示底色
+     --yellow-on-tint  #6E6B35  黄色提示文字
+
+   字体：中文统一使用 'PingFang SC'（iOS）/'Microsoft YaHei'（兜底），
+   最高字重 600 —— PingFang SC 没有真正的粗体，切勿设置 700。
+   =========================================================== */
+
+page {
+  height: 100%;
+  background: #FAFAF8;
+  color: #1A1A1A;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+}
+
+view,
+text,
+button {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
+
+.page-safe-bottom {
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.section-label {
+  display: block;
+  font-size: 24rpx;
+  color: #8C8C88;
+  letter-spacing: 1rpx;
+  margin-bottom: 16rpx;
+}
+
+.pressable--pressed {
+  opacity: 0.72;
+  transform: scale(0.99);
+}

@@ -1,0 +1,18 @@
+<view class="page">
+  <nav-bar title="破壳收藏卡"></nav-bar>
+  <scroll-view class="content" scroll-y>
+    <view wx:if="{{isNew}}" class="new-banner">获得第一张破壳收藏卡 · 已自动收入卡册</view>
+    <view class="card">
+      <view class="card-top"><text class="card-kicker">EGGBABY · BIRTH CARD</text><text class="collectible">{{card.collectible}}</text></view>
+      <view class="portrait"><view class="portrait-aura"></view><pet-avatar pet-type="{{card.prototype}}" size="{{250}}"></pet-avatar></view>
+      <text class="name">{{card.name}} <text class="gender">{{card.gender}}</text></text>
+      <text class="style">{{card.prototype}} · {{card.style}}</text>
+      <text class="personality">“{{card.personality}}”</text>
+      <view class="stats"><view><text class="stat-label">生日</text><text class="stat-value">{{card.birthday}}</text></view><view><text class="stat-label">星座</text><text class="stat-value">{{card.zodiac}}</text></view><view><text class="stat-label">MBTI</text><text class="stat-value">{{card.mbti}}</text></view><view><text class="stat-label">血型</text><text class="stat-value">{{card.bloodType}}</text></view></view>
+      <view class="record"><text>{{card.hatchQuality}}</text><text>初始主人 · {{card.originalOwner}}</text></view>
+      <view class="serial-row"><text class="serial">{{card.serial}}</text><view class="mini-code"><view></view><view></view><view></view><view></view></view></view>
+    </view>
+    <view class="actions"><button class="primary" bindtap="onProfile">查看它的档案</button><view class="action-row"><button class="secondary" bindtap="onSave">保存图片</button><button class="secondary" open-type="share">分享给好友</button></view><button class="text-button" bindtap="onAlbum">查看我的卡册</button></view>
+    <canvas canvas-id="shareCanvas" class="share-canvas"></canvas>
+  </scroll-view>
+</view>

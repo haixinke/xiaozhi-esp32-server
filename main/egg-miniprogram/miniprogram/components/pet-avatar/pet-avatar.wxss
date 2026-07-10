@@ -1,0 +1,18 @@
+.pet-avatar { position: relative; display: flex; align-items: center; justify-content: center; }
+.rabbit { position: relative; width: 76%; height: 76%; margin-top: 15%; }
+.ear { position: absolute; z-index: 1; top: -32%; width: 29%; height: 58%; border-radius: 50% 50% 38% 38%; background: #FFF9E4; box-shadow: inset -6rpx -8rpx 12rpx rgba(0,41,0,.08); }
+.ear--left { left: 14%; transform: rotate(-9deg); }.ear--right { right: 14%; transform: rotate(9deg); }
+.ear-inner { width: 42%; height: 65%; margin: 16% auto; border-radius: 50%; background: #F4B9AE; opacity: .7; }
+.rabbit-face { position: absolute; z-index: 2; inset: 0; border-radius: 50% 50% 46% 46%; background: #FFF9E4; box-shadow: inset -10rpx -12rpx 18rpx rgba(0,41,0,.08), 0 16rpx 30rpx rgba(0,41,0,.16); }
+.eye { position: absolute; top: 42%; width: 7%; height: 9%; border-radius: 50%; background: #002900; }
+.eye--left { left: 29%; }.eye--right { right: 29%; }
+.rabbit-nose { position: absolute; left: 46%; top: 55%; width: 8%; height: 7%; border-radius: 50% 50% 60% 60%; background: #D8908B; }
+.cheek { position: absolute; top: 57%; width: 14%; height: 8%; border-radius: 50%; background: rgba(244,185,174,.45); }
+.cheek--left { left: 16%; }.cheek--right { right: 16%; }
+.koi { position: relative; width: 90%; height: 66%; transform: rotate(-7deg); }
+.koi-body { position: absolute; z-index: 2; left: 12%; top: 10%; width: 72%; height: 78%; border-radius: 58% 45% 48% 58%; background: #FFF9E4; box-shadow: inset -10rpx -12rpx 18rpx rgba(0,41,0,.09), 0 16rpx 30rpx rgba(0,41,0,.16); overflow: hidden; }
+.koi-tail { position: absolute; right: 0; top: 22%; width: 34%; height: 56%; border-radius: 70% 20% 70% 20%; background: #F4B9AE; transform: rotate(45deg); }
+.koi-fin { position: absolute; z-index: 3; left: 40%; bottom: -4%; width: 30%; height: 26%; border-radius: 50%; background: #EDE78E; transform: rotate(18deg); }
+.koi-eye { position: absolute; left: 18%; top: 29%; width: 8%; height: 11%; border-radius: 50%; background: #002900; }
+.koi-patch { position: absolute; border-radius: 50%; background: #E77E72; }
+.koi-patch--one { width: 30%; height: 42%; left: 38%; top: -8%; transform: rotate(22deg); }.koi-patch--two { width: 23%; height: 34%; right: -3%; bottom: 4%; }

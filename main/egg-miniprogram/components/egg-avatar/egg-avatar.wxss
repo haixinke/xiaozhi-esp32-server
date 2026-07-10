@@ -1,0 +1,6 @@
+.egg-avatar {
+  border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%; /* --radius-egg */
+  border: 4rpx solid #FFFFFF;
+  box-shadow: 0rpx 8rpx 24rpx rgba(0, 41, 0, 0.10); /* --shadow-floating */
+  flex-shrink: 0;
+}

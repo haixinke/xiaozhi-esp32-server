@@ -1,0 +1,46 @@
+.navbar-root {
+  background: #FFFFFF; /* --canvas */
+  flex-shrink: 0;
+}
+
+.status-bar {
+  width: 100%;
+}
+
+.nav-row {
+  height: 88rpx; /* 44px */
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-bottom: 1rpx solid #E5E3DF; /* --hairline */
+}
+
+.nav-side {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 30rpx; /* 15px */
+  font-weight: 600;
+  color: #002900; /* --ink */
+}
+
+.chevron {
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 3rpx solid #002900;
+  border-right: 3rpx solid #002900;
+}
+
+.chevron-back {
+  transform: rotate(-135deg);
+  margin-left: 8rpx;
+}

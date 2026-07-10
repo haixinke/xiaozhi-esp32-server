@@ -1,0 +1,18 @@
+.mood-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 34rpx;              /* 17px */
+  padding: 0 20rpx;           /* 10px */
+  border-radius: 999rpx;
+  font-size: 22rpx;           /* 11px */
+  font-weight: 600;
+  line-height: 1;
+}
+/* 开心 / 兴奋 —— 绿系 */
+.mood-badge--positive { background: #F5F8ED; color: #54632C; }
+/* 平静 —— 黄系 */
+.mood-badge--calm { background: #FAFAEF; color: #6E6B35; }
+/* 想念 —— 粉系 */
+.mood-badge--longing { background: #FAF1EF; color: #834A3F; }
+/* 低落 —— 中性 */
+.mood-badge--low { background: #F2F1EE; color: #6B6B66; }

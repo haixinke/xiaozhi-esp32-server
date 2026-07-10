@@ -1,0 +1,7 @@
+<view
+  class="btn btn--{{variant}} {{disabled ? 'btn--disabled' : ''}}"
+  hover-class="{{disabled ? '' : 'btn--pressed'}}"
+  bindtap="onTap"
+>
+  <text class="btn-text">{{text}}</text>
+</view>

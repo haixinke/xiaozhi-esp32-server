@@ -1,0 +1,19 @@
+.card {
+  border-radius: 32rpx; /* --radius-lg */
+  padding: 48rpx; /* --space-lg */
+  box-sizing: border-box;
+}
+
+.card--base {
+  background: #FFFFFF; /* --canvas */
+  border: 1rpx solid #E5E3DF; /* --hairline */
+  box-shadow: 0rpx 2rpx 4rpx rgba(0, 41, 0, 0.06), 0rpx 4rpx 8rpx rgba(0, 41, 0, 0.04); /* --shadow-raised */
+}
+
+.card--tint-green {
+  background: #F5F8ED; /* --green-surface */
+}
+
+.card--tint-yellow {
+  background: #FAFAEF; /* --yellow-surface */
+}

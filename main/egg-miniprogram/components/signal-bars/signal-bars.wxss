@@ -1,0 +1,14 @@
+.signal-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3rpx;
+}
+.bar {
+  width: 5rpx;               /* 2.5px */
+  border-radius: 2rpx;
+  background: #CFCBC4;        /* 未点亮 */
+}
+.bar--1 { height: 8rpx; }     /* 4px */
+.bar--2 { height: 14rpx; }    /* 7px */
+.bar--3 { height: 20rpx; }    /* 10px */
+.bar--on { background: #54632C; }  /* --green-on-tint */

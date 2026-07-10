@@ -1,0 +1,36 @@
+.switch-row {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 40rpx; /* 14px 20px */
+  gap: 24rpx;
+  box-sizing: border-box;
+  background: #FFFFFF;
+}
+
+.row-border {
+  border-bottom: 1rpx solid #E5E3DF; /* --hairline */
+}
+
+.switch-text {
+  flex: 1;
+}
+
+.switch-title {
+  display: block;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 30rpx; /* 15px */
+  color: #1A1A1A; /* --text */
+  margin-bottom: 8rpx;
+}
+
+.switch-desc {
+  display: block;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 24rpx; /* 12px */
+  color: #8C8C88; /* --text-faint */
+}
+
+.switch-ctl {
+  flex-shrink: 0;
+  transform: scale(0.92);
+}

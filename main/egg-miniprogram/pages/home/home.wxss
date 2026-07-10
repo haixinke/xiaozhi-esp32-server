@@ -1,0 +1,53 @@
+.page { display: flex; flex-direction: column; height: 100vh; background: #FAFAF8; }
+.content { flex: 1; padding: 40rpx 40rpx 24rpx; box-sizing: border-box; }
+
+/* 命运时刻 banner */
+.destiny-banner {
+  display: flex; align-items: center; gap: 24rpx;
+  background: #FAFAEF; border-radius: 32rpx; padding: 32rpx;
+  margin-bottom: 40rpx;
+}
+.destiny-text { flex: 1; min-width: 0; }
+.destiny-eyebrow {
+  display: block; font-family: 'Google Sans', Arial, sans-serif;
+  font-size: 20rpx; font-weight: 700; letter-spacing: 2.4rpx; color: #6E6B35;
+}
+.destiny-desc { display: block; font-size: 26rpx; color: #6E6B35; margin-top: 10rpx; line-height: 1.5; }
+.add-btn {
+  width: 72rpx; height: 72rpx; border-radius: 50%; background: #002900;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.add-btn--pressed { background: #001A00; transform: scale(0.98); }
+.add-btn__plus { width: 30rpx; height: 30rpx; position: relative; }
+.add-btn__plus::before, .add-btn__plus::after {
+  content: ''; position: absolute; background: #FFFFFF; border-radius: 2rpx;
+}
+.add-btn__plus::before { left: 50%; top: 0; width: 4rpx; height: 100%; transform: translateX(-50%); }
+.add-btn__plus::after { top: 50%; left: 0; height: 4rpx; width: 100%; transform: translateY(-50%); }
+
+/* 空态 */
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 112rpx 40rpx 80rpx; }
+.empty__egg {
+  width: 192rpx; height: 224rpx; border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
+  border: 4rpx dashed #CFCBC4; background: #FFFFFF; margin-bottom: 48rpx;
+}
+.empty__title { font-size: 34rpx; font-weight: 600; color: #1A1A1A; margin-bottom: 16rpx; }
+.empty__desc { font-size: 26rpx; color: #8C8C88; line-height: 1.6; margin-bottom: 56rpx; max-width: 460rpx; }
+
+/* 设备卡片 */
+.device-card {
+  display: flex; align-items: center; gap: 24rpx;
+  background: #FFFFFF; border: 1rpx solid #E5E3DF; border-radius: 32rpx;
+  padding: 28rpx; margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 4rpx rgba(0,41,0,0.06), 0 4rpx 8rpx rgba(0,41,0,0.04);
+}
+.device-card--pressed { transform: scale(0.98); }
+.device-info { flex: 1; min-width: 0; }
+.device-name-row { display: flex; align-items: center; gap: 12rpx; }
+.device-name { font-size: 32rpx; font-weight: 600; color: #1A1A1A; }
+.device-status-row { display: flex; align-items: center; gap: 12rpx; margin-top: 6rpx; }
+.device-status { font-size: 24rpx; color: #8C8C88; }
+.chevron {
+  width: 16rpx; height: 16rpx; flex-shrink: 0;
+  border-top: 3rpx solid #C4C0B6; border-right: 3rpx solid #C4C0B6; transform: rotate(45deg);
+}

@@ -1,0 +1,45 @@
+<view class="page">
+  <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
+
+  <scroll-view class="content" scroll-y>
+
+    <!-- 命运时刻 banner（右侧为「添加蛋宝宝」入口，小程序不放导航栏） -->
+    <view class="destiny-banner">
+      <view class="destiny-text">
+        <text class="destiny-eyebrow">IV · 命运时刻</text>
+        <text class="destiny-desc">10/1 0:00 · 限量 500 只，预约即将开启。</text>
+      </view>
+      <view class="add-btn" hover-class="add-btn--pressed" bindtap="onAddDevice">
+        <view class="add-btn__plus"></view>
+      </view>
+    </view>
+
+    <!-- 空态：未绑定任何设备 -->
+    <view class="empty" wx:if="{{devices.length === 0}}">
+      <view class="empty__egg"></view>
+      <text class="empty__title">还没有蛋宝宝</text>
+      <text class="empty__desc">扫码或输入添加凭证，领取你的第一只蛋宝宝。</text>
+      <btn text="添加蛋宝宝" bind:tap="onAddDevice"></btn>
+    </view>
+
+    <!-- 设备卡片列表 -->
+    <view class="device-card" wx:for="{{devices}}" wx:key="id"
+          hover-class="device-card--pressed"
+          data-id="{{item.id}}" bindtap="onTapDevice">
+      <egg-avatar size="{{56}}" gradient-from="{{item.gradientFrom}}" gradient-to="{{item.gradientTo}}"></egg-avatar>
+      <view class="device-info">
+        <view class="device-name-row">
+          <text class="device-name">{{item.name}}</text>
+          <mood-badge wx:if="{{item.hatched}}" mood="{{item.mood}}"></mood-badge>
+        </view>
+        <view class="device-status-row">
+          <text class="device-status">{{item.statusText}}</text>
+          <!-- 信号格：仅「在线」展示 -->
+          <signal-bars wx:if="{{item.hatched && item.status === 'online'}}" level="{{item.signalLevel}}"></signal-bars>
+        </view>
+      </view>
+      <view class="chevron"></view>
+    </view>
+
+  </scroll-view>
+</view>

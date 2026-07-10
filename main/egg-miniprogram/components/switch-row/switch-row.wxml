@@ -1,0 +1,12 @@
+<view class="switch-row {{showBorder ? 'row-border' : ''}}">
+  <view class="switch-text">
+    <text class="switch-title">{{title}}</text>
+    <text class="switch-desc">{{desc}}</text>
+  </view>
+  <switch
+    checked="{{checked}}"
+    color="#9DB65B"
+    class="switch-ctl"
+    bindchange="onChange"
+  />
+</view>

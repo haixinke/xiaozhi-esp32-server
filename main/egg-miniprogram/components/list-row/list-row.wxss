@@ -1,0 +1,38 @@
+.row {
+  min-height: 104rpx; /* 52px */
+  padding: 0 40rpx;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  box-sizing: border-box;
+  background: #FFFFFF;
+}
+
+.row-hover {
+  background: #E5EBE5; /* --ink-surface */
+}
+
+.row-border {
+  border-bottom: 1rpx solid #E5E3DF; /* --hairline */
+}
+
+.row-label {
+  flex: 1;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 30rpx; /* 15px */
+}
+
+.row-value {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 24rpx; /* 12px */
+  color: #8C8C88; /* --text-faint */
+}
+
+.chevron {
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 3rpx solid #C4C0B6;
+  border-right: 3rpx solid #C4C0B6;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}

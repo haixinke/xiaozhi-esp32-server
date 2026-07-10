@@ -40,7 +40,7 @@
 |---|---|---|
 |二维码|快速打开小程序|扫码即用|
 |微信授权|快速注册|直接用微信账号注册登录|
-|领取蛋|参与互动|- 采用邀请制，一个用户可以有三个邀请码。（裂变传播）<br>- 控制成本|
+|领取蛋|参与互动|- 采用邀请制，一个用户可以有5个邀请码。（裂变传播）<br>- 控制成本|
 |孵化蛋|用户体验|- “孵化”体验<br>- 收集真实互动数据<br>- 验证用户耐心程度|
 |宠物破壳|仪式感、传播触点<br>|- 动画破壳（仪式感）<br>- 生成宠物造型（专属感）<br>- 随机生成宠物档案（活人感）|
 |语音对话|追平与ai体验|- 测试对话反馈效果<br>- 收集用户数据|
@@ -178,11 +178,7 @@
 
 ### 5\.4 破壳分享卡片
 
-![7977ab48ffdfc10ff48473bb797b6714\.png](图片和附件/7977ab48ffdfc10ff48473bb797b6714.png)
-
----
-
-
+![411bdd5b\-6562\-477d\-b743\-49bab6b20465\.jpeg](图片和附件/411bdd5b-6562-477d-b743-49bab6b20465.jpeg)
 
 当宠物破壳出来后，此处对用户来说是一个惊喜时刻。
 用户将开启“盲盒”知道自己这么多天培养的宠物是什么样。
@@ -216,6 +212,49 @@
 
 
 
+
+#### 5\.4\.1 提示词
+
+```Markdown
+A cute IP character introduction card, 3D rendered in a fluffy felted wool texture style.
+
+**Layout & Composition:**
+- Vertical card format with a wavy, cloud-like scalloped border (like frosting on a cake), with soft dimensional thickness and gentle drop shadows.
+- Creamy off-white background with dreamy translucent soap bubbles floating around, soft bokeh light spots, and subtle wave patterns at the bottom.
+- Centered large 3D IP character image in the upper-middle area, showing the full body of a cute plush toy-like creature.
+
+**Top Section:**
+- Title in bold, rounded, bubbly Chinese characters: "我的电子宠物搭子✨" with a soft golden outline and slight 3D extrusion.
+- Subtitle below in smaller, elegant rounded font: "[昵称]".
+
+**Bottom Info Section:**
+- Grid of rounded pill-shaped tags (two columns), each with a soft pastel background color (light pink, pale blue, lavender, cream) and a subtle white border + soft shadow.
+- Each tag contains: a small emoji icon on the left + label text in warm dark brown.
+- Tags content: "👑 昵称: [Name]" | "🐶 原型: [Prototype]" | "🎂 生日: [Date]" | "♈ 星座: [Zodiac]".
+- **Gender tag: "♂ 性别: [Gender Symbol]" — the label text is "性别:", but the value is displayed as a gender symbol only: ♂ for male input, ♀ for female input. NO Chinese characters "男" or "女" in the value field**.
+- "⚡ MBTI: [Type]".
+- One full-width horizontal tag: "☁️ 性格: [Personality traits]".
+- Bottom left: a single pill tag "🩸 血型: [Blood Type]".
+- Bottom right corner: small call-to-action text "来领养你的专属[IP昵称]吧🥰".
+
+**Color Palette:**
+- Background: warm cream (#FFF8F0), soft gradients.
+- Tag backgrounds: alternating pastel macaron colors (blush pink, baby blue, pale lilac, soft peach).
+- Text: warm dark brown (#5C4033) for readability.
+- Accents: soft gold, copper tones for decorative elements.
+
+**Lighting & Texture:**
+- Soft diffused lighting from upper left, no harsh shadows.
+- Everything should feel like it's made of soft wool, felt, or plush material.
+- Dreamy, cozy, kawaii aesthetic with a premium toy-brand quality.
+
+**Style References:**
+- Jellycat plush toy aesthetic meets Korean stationery design.
+- Pixar-level 3D rendering but with a handmade craft feel.
+- Clean, airy, Instagram-worthy product card.
+
+High resolution, 8K, studio lighting, centered composition.
+```
 
 
 

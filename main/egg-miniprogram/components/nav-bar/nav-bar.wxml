@@ -1,0 +1,11 @@
+<view class="navbar-root">
+  <view class="status-bar" style="height:{{statusBarHeight}}px"></view>
+  <view class="nav-row">
+    <view wx:if="{{showBack}}" class="nav-side" bindtap="onBack">
+      <view class="chevron chevron-back"></view>
+    </view>
+    <view wx:else class="nav-side"></view>
+    <text class="nav-title">{{title}}</text>
+    <view class="nav-side"></view>
+  </view>
+</view>

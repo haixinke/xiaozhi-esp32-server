@@ -1,0 +1,48 @@
+.page { height: 100vh; background: #F5F8ED; overflow: hidden; }
+.stage {
+  height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 48rpx 56rpx; box-sizing: border-box;
+}
+
+/* 阶段一 */
+.egg-pulse {
+  width: 224rpx; height: 262rpx; border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
+  border: 4rpx solid #FFFFFF; box-shadow: 0 8rpx 24rpx rgba(0,41,0,0.10);
+  animation: eggPulse 2s ease-in-out infinite; margin-bottom: 48rpx;
+}
+.sub { font-size: 24rpx; color: #8C8C88; margin-bottom: 20rpx; }
+.headline { font-size: 38rpx; font-weight: 600; color: #1A1A1A; margin-bottom: 56rpx; }
+@keyframes eggPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+
+/* 阶段二 */
+.burst { position: relative; width: 400rpx; height: 400rpx; display: flex; align-items: center; justify-content: center; }
+.particle {
+  position: absolute; left: 50%; top: 50%; width: 16rpx; height: 16rpx; margin: -8rpx;
+  border-radius: 50%; animation: particleBurst 0.9s ease-out forwards;
+}
+@keyframes particleBurst {
+  0% { transform: translate(0, 0); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+}
+.crack-flash {
+  position: absolute; width: 320rpx; height: 320rpx; border-radius: 50%;
+  background: radial-gradient(circle, #FFFFFF 0%, rgba(255,255,255,0) 70%);
+  animation: crackFlash 0.6s ease-out forwards;
+}
+@keyframes crackFlash {
+  0% { opacity: 0; transform: scale(0.6); }
+  40% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+.reveal-card {
+  position: relative; width: 260rpx; height: 340rpx; border-radius: 32rpx;
+  border: 6rpx solid #FFFFFF; box-shadow: 0 16rpx 48rpx rgba(0,41,0,0.18);
+  animation: popIn 0.55s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.gen-text { font-size: 28rpx; color: #54632C; margin-top: 40rpx; }
+
+@media (prefers-reduced-motion: reduce) {
+  .egg-pulse, .particle, .crack-flash, .reveal-card { animation: none; }
+  .reveal-card { opacity: 1; transform: scale(1); }
+}

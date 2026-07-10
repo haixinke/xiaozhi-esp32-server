@@ -1,0 +1,43 @@
+<view class="page">
+  <nav-bar title="{{pet.name}}"></nav-bar>
+
+  <scroll-view class="content" scroll-y>
+    <!-- 顶部：大蛋 + 昵称 + 原型 -->
+    <view class="hero">
+      <egg-avatar size="{{96}}" gradient-from="{{pet.gradientFrom}}" gradient-to="{{pet.gradientTo}}"></egg-avatar>
+      <text class="hero-name">{{pet.name}}</text>
+      <text class="hero-proto">{{pet.prototype}} · {{pet.style}}</text>
+    </view>
+
+    <!-- 灵魂底色（soul seal）：7 维性格 + 编号 · 不可更改
+         设计系统提供 SoulSealCard 组件，接入后可替换为 <soul-seal-card seal="{{soulSeal}}" /> -->
+    <view class="seal-card">
+      <view class="seal-head">
+        <text class="seal-title">灵魂底色</text>
+        <text class="seal-serial">SEAL #{{pet.sealNo}} · 不可更改</text>
+      </view>
+      <view class="trait" wx:for="{{pet.traits}}" wx:key="key">
+        <text class="trait-name">{{item.name}}</text>
+        <view class="trait-track"><view class="trait-fill" style="width: {{item.value}}%;"></view></view>
+      </view>
+      <text class="seal-summary">{{pet.summary}}</text>
+    </view>
+
+    <!-- 荣誉成就（横向滑动） -->
+    <view class="section-title">荣誉成就</view>
+    <scroll-view class="ach-scroll" scroll-x>
+      <view class="ach-card" wx:for="{{achievements}}" wx:key="id">
+        <view class="ach-medal"></view>
+        <text class="ach-name">{{item.name}}</text>
+        <text class="ach-date">{{item.date}}</text>
+      </view>
+    </scroll-view>
+
+    <!-- 技能（点击弹底部弹层介绍） -->
+    <view class="section-title">技能</view>
+    <view class="skills">
+      <view class="skill-chip" wx:for="{{skills}}" wx:key="id"
+            data-id="{{item.id}}" bindtap="onTapSkill">{{item.name}}</view>
+    </view>
+  </scroll-view>
+</view>

@@ -1,0 +1,2 @@
+<!-- mood-badge：心情标签小 pill。按 mood 值着色（开心/兴奋/平静/想念/低落） -->
+<view class="mood-badge mood-badge--{{tone}}">{{mood}}</view>

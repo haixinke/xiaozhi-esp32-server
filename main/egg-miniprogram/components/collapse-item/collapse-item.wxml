@@ -1,0 +1,9 @@
+<view class="collapse-item {{showBorder ? 'collapse-item--border' : ''}}">
+  <view class="collapse-header collapse-header--{{variant}}" bindtap="onToggle">
+    <text class="collapse-title collapse-title--{{variant}}">{{title}}</text>
+    <view class="chevron {{expanded ? 'chevron--open' : ''}}"></view>
+  </view>
+  <view wx:if="{{expanded}}" class="collapse-body">
+    <slot></slot>
+  </view>
+</view>

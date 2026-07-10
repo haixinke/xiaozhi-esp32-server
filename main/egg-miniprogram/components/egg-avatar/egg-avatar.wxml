@@ -1,0 +1,4 @@
+<view
+  class="egg-avatar"
+  style="width: {{w}}rpx; height: {{h}}rpx; background: linear-gradient(160deg, {{gradientFrom}}, {{gradientTo}});"
+></view>

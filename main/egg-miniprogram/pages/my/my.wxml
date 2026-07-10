@@ -1,0 +1,23 @@
+<view class="page">
+  <nav-bar title="我的" show-back="{{false}}"></nav-bar>
+
+  <view class="content">
+
+    <view class="user-card" hover-class="user-card--pressed" bindtap="onTapUserCard">
+      <egg-avatar size="{{56}}" gradient-from="#9DB65B" gradient-to="#EDE78E"></egg-avatar>
+      <view class="user-info">
+        <text class="user-name">{{userName}}</text>
+        <text class="user-sub">蛋宝宝 · {{eggCount}}只</text>
+      </view>
+      <view class="chevron"></view>
+    </view>
+
+    <view class="menu-panel">
+      <list-row label="系统设置" bind:rowtap="onNavSettings"></list-row>
+      <list-row label="账号" bind:rowtap="onNavAccount"></list-row>
+      <list-row label="隐私协议" bind:rowtap="onNavPrivacy"></list-row>
+      <list-row label="帮助中心" show-border="{{false}}" bind:rowtap="onNavHelp"></list-row>
+    </view>
+
+  </view>
+</view>

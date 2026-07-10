@@ -1,0 +1,74 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #FFFFFF;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  padding: 40rpx 40rpx 0;
+  background: #FAFAF8;
+  box-sizing: border-box;
+}
+
+.user-card {
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  border: 1rpx solid #E5E3DF;
+  box-shadow: 0rpx 2rpx 4rpx rgba(0, 41, 0, 0.06), 0rpx 4rpx 8rpx rgba(0, 41, 0, 0.04);
+  margin-bottom: 32rpx;
+  box-sizing: border-box;
+}
+
+.user-card--pressed {
+  background: #F5F8ED;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  display: block;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-bottom: 12rpx;
+}
+
+.user-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.user-sub {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 26rpx;
+  color: #8C8C88;
+}
+
+.chevron {
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 3rpx solid #8C8C88;
+  border-right: 3rpx solid #8C8C88;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.menu-panel {
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  overflow: hidden;
+  border: 1rpx solid #E5E3DF;
+  box-shadow: 0rpx 2rpx 4rpx rgba(0, 41, 0, 0.06), 0rpx 4rpx 8rpx rgba(0, 41, 0, 0.04);
+}

@@ -1,0 +1,9 @@
+<view
+  class="row {{showBorder ? 'row-border' : ''}}"
+  hover-class="row-hover"
+  bindtap="onTap"
+>
+  <text class="row-label" style="color:{{labelColor}}">{{label}}</text>
+  <text wx:if="{{value}}" class="row-value">{{value}}</text>
+  <view wx:if="{{showChevron}}" class="chevron"></view>
+</view>

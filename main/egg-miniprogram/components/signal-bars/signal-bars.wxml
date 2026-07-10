@@ -1,0 +1,7 @@
+<!-- signal-bars：3 格信号强度指示。仅在设备「在线」时展示。
+     level：1=弱 2=中 3=强 -->
+<view class="signal-bars">
+  <view class="bar bar--1 {{level >= 1 ? 'bar--on' : ''}}"></view>
+  <view class="bar bar--2 {{level >= 2 ? 'bar--on' : ''}}"></view>
+  <view class="bar bar--3 {{level >= 3 ? 'bar--on' : ''}}"></view>
+</view>

@@ -1,0 +1,37 @@
+<view class="page">
+  <nav-bar title="{{pet.name}}"></nav-bar>
+
+  <view class="content">
+    <!-- 呼吸中的大蛋 + 外发光 -->
+    <view class="egg-stage">
+      <view class="egg-glow"></view>
+      <view class="egg" style="background: linear-gradient(160deg, {{pet.gradientFrom}}, {{pet.gradientTo}});"></view>
+    </view>
+
+    <text class="state-text">{{pet.stateText}}</text>
+
+    <!-- 孵化进度 + 神秘感占位（破壳前反复进入的页面） -->
+    <view class="progress-card">
+      <view class="progress-head">
+        <text>孵化进度（互动带来的成长）</text>
+        <text>{{pet.progress}}%</text>
+      </view>
+      <view class="progress-track">
+        <view class="progress-fill" style="width: {{pet.progress}}%;"></view>
+      </view>
+      <view class="divider"></view>
+      <view class="progress-head">
+        <text>预计破壳日（固定，不受互动影响）</text>
+        <text>{{pet.countdownText}}</text>
+      </view>
+    </view>
+
+    <view class="mystery">
+      <text class="mystery-title">灵魂底色 · 尚未揭晓</text>
+      <text class="mystery-desc">性格、款式、名字都藏在壳里。多陪陪它，静静等待破壳的那一刻。</text>
+    </view>
+
+    <btn text="{{pet.mainBtnLabel}}" bind:tap="onMainButton"></btn>
+    <text class="hint">轻触蛋宝宝看看反应，长按 3 秒完成今日「贴贴」</text>
+  </view>
+</view>

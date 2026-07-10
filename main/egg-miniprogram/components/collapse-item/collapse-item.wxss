@@ -1,0 +1,62 @@
+.collapse-item--border {
+  border-bottom: 1rpx solid #E5E3DF; /* --hairline */
+}
+
+.collapse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  box-sizing: border-box;
+  background: #FFFFFF;
+}
+
+.collapse-header--question {
+  min-height: 108rpx; /* 54px */
+  padding: 32rpx 40rpx; /* 16px 20px */
+}
+
+.collapse-header--category {
+  padding: 32rpx 40rpx 16rpx; /* 16px 20px 8px */
+}
+
+.collapse-title {
+  flex: 1;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+}
+
+.collapse-title--question {
+  font-size: 30rpx; /* 15px */
+  color: #1A1A1A; /* --text */
+}
+
+.collapse-title--category {
+  font-size: 24rpx; /* 12px */
+  font-weight: 600;
+  color: #5C5C5C; /* --text-muted */
+  letter-spacing: 1.6rpx;
+}
+
+.chevron {
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 3rpx solid #8C8C88; /* --text-faint */
+  border-right: 3rpx solid #8C8C88;
+  transform: rotate(45deg);
+  transition: transform 0.18s ease-out; /* --ease-standard */
+  flex-shrink: 0;
+}
+
+.chevron--open {
+  transform: rotate(135deg);
+}
+
+.collapse-body {
+  padding: 0 40rpx 32rpx; /* 0 20px 16px */
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 26rpx; /* 13px */
+  line-height: 1.65;
+  color: #5C5C5C; /* --text-muted */
+  box-sizing: border-box;
+  background: #FFFFFF;
+}

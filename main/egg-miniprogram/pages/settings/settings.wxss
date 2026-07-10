@@ -1,0 +1,46 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #FFFFFF;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  padding-top: 16rpx;
+  background: #FAFAF8;
+}
+
+.section-label {
+  display: block;
+  padding: 32rpx 40rpx 16rpx;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #5C5C5C;
+  letter-spacing: 1.6rpx;
+}
+
+.panel {
+  margin: 0 40rpx;
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  overflow: hidden;
+  border: 1rpx solid #E5E3DF;
+  box-shadow: 0rpx 2rpx 4rpx rgba(0, 41, 0, 0.06), 0rpx 4rpx 8rpx rgba(0, 41, 0, 0.04);
+}
+
+.hint-box {
+  margin: 24rpx 40rpx 0;
+  padding: 24rpx 28rpx;
+  background: #E5EBE5; /* --ink-surface */
+  border-radius: 24rpx;
+}
+
+.hint-text {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: #5C5C5C;
+}

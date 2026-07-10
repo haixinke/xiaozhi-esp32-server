@@ -1,0 +1,3 @@
+<view class="card card--{{tint}} ext-class">
+  <slot></slot>
+</view>

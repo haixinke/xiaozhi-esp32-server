@@ -1,0 +1,122 @@
+<view class="page">
+  <nav-bar title="帮助中心"></nav-bar>
+
+  <view class="search-bar" bindtap="onSearchTap">
+    <view class="search-input">
+      <view class="search-icon"></view>
+      <text class="search-placeholder">搜索问题关键词</text>
+    </view>
+  </view>
+
+  <scroll-view scroll-y class="faq-scroll">
+
+    <collapse-item
+      title="设备问题"
+      variant="category"
+      expanded="{{cats.device}}"
+      bind:toggle="onToggleCat"
+      data-cat="device"
+    >
+      <view class="qa-group">
+        <collapse-item
+          wx:for="{{deviceFaqs}}"
+          wx:key="q"
+          title="{{item.q}}"
+          variant="question"
+          expanded="{{item.open}}"
+          show-border="{{index !== deviceFaqs.length - 1}}"
+          bind:toggle="onToggleFaq"
+          data-group="deviceFaqs"
+          data-index="{{index}}"
+        >
+          <text>{{item.a}}</text>
+        </collapse-item>
+      </view>
+    </collapse-item>
+
+    <collapse-item
+      title="账号"
+      variant="category"
+      expanded="{{cats.account}}"
+      bind:toggle="onToggleCat"
+      data-cat="account"
+    >
+      <view class="qa-group">
+        <collapse-item
+          wx:for="{{accountFaqs}}"
+          wx:key="q"
+          title="{{item.q}}"
+          variant="question"
+          expanded="{{item.open}}"
+          show-border="{{index !== accountFaqs.length - 1}}"
+          bind:toggle="onToggleFaq"
+          data-group="accountFaqs"
+          data-index="{{index}}"
+        >
+          <text>{{item.a}}</text>
+        </collapse-item>
+      </view>
+    </collapse-item>
+
+    <collapse-item
+      title="对话功能"
+      variant="category"
+      expanded="{{cats.chat}}"
+      bind:toggle="onToggleCat"
+      data-cat="chat"
+    >
+      <view class="qa-group">
+        <collapse-item
+          wx:for="{{chatFaqs}}"
+          wx:key="q"
+          title="{{item.q}}"
+          variant="question"
+          expanded="{{item.open}}"
+          show-border="{{index !== chatFaqs.length - 1}}"
+          bind:toggle="onToggleFaq"
+          data-group="chatFaqs"
+          data-index="{{index}}"
+        >
+          <text>{{item.a}}</text>
+        </collapse-item>
+      </view>
+    </collapse-item>
+
+    <collapse-item
+      title="其他"
+      variant="category"
+      expanded="{{cats.other}}"
+      show-border="{{false}}"
+      bind:toggle="onToggleCat"
+      data-cat="other"
+    >
+      <view class="qa-group">
+        <collapse-item
+          wx:for="{{otherFaqs}}"
+          wx:key="q"
+          title="{{item.q}}"
+          variant="question"
+          expanded="{{item.open}}"
+          show-border="{{index !== otherFaqs.length - 1}}"
+          bind:toggle="onToggleFaq"
+          data-group="otherFaqs"
+          data-index="{{index}}"
+        >
+          <text>{{item.a}}</text>
+        </collapse-item>
+      </view>
+    </collapse-item>
+
+    <view class="bottom-space"></view>
+
+  </scroll-view>
+
+  <view class="cs-bar">
+    <text class="cs-hint">没找到答案？</text>
+    <view class="cs-link" bindtap="onContactCS">
+      <text class="cs-link-text">联系客服</text>
+      <view class="cs-arrow"></view>
+    </view>
+  </view>
+
+</view>

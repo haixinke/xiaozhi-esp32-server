@@ -110,13 +110,13 @@ wx.login() → code
 
 | 方法 | 路径 | 鉴权 | 入参 / 出参 |
 |---|---|---|---|
-| POST | `/pet/adopt` | normal | `{ prototype? }` → `PetVO`（领养一颗蛋，`hatchStatus=EGG`，`deviceId=null`） |
+| POST | `/pet/adopt` | normal | `{ inviteCode }`（必填，核销裂变邀请码；prototype 后端随机锦鲤/玉兔）→ `PetVO`（`hatchStatus=EGG`，`deviceId=null`，无破壳档案） |
 | POST | `/pet/{id}/hatch` | normal | → `PetVO`（破壳：建 device+agent、回填档案、`hatchStatus=HATCHED`） |
 | GET | `/pet/{id}` | normal | → `PetVO` |
 | GET | `/pet/list` | normal | → `PetVO[]`（当前用户所有蛋） |
 | PUT | `/pet/update` | normal | `{ id, nickname }` → 更新昵称 |
 
-> 现状：后端仍是 `POST /pet/birth {deviceId}` 的"创建即出生"演示逻辑，上表为目标契约，接入时按下方"接口草案"落地。`PetVO` 字段已就绪。
+> 现状：`POST /pet/adopt` 已实现（领养 EGG 蛋 + 核销邀请码，prototype 随机；schema 由 `202607101500` 放宽 `device_id` 为可空）。`POST /pet/{id}/hatch` 破壳、`GET /pet/{id}`、孵化动作明细表 `ai_pet_hatch_action` 仍待落地。旧 `POST /pet/birth {deviceId}` 的"创建即出生"演示逻辑保留待迁移。`PetVO` 字段已就绪。
 
 `PetVO` 关键字段（与前端 `pet-store.js` 的 mock 字段对应）：
 
@@ -165,7 +165,7 @@ PRD 5.2：每个动作减少孵化时长。当前后端 `ai_pet` 只有累计 `a
 - `openid` 仅换 `token/userId`（用户身份），**不再进 device**。
 - 每只蛋破壳时后端建一条 `ai_device`：`macAddress = egg-{uuid}`、`userId = 微信userId`、`board = "wechat-egg-miniprogram"`、`alias = 昵称`；`ai_pet.deviceId` 指向它。
 - `agentId`（性格/音色/系统提示词）由 `AgentService.createAgent(AgentCreateDTO)` 创建并绑到该 device，承载该蛋的 MBTI/性格。
-- **懒创建**：领养只建 `ai_pet`（`deviceId=null`，`hatchStatus=EGG`）；device+agent **延迟到破壳**才建。`ai_pet.device_id` 唯一索引允许 NULL，无需改 schema。理由：PRD 里 MBTI/性格/造型本就破壳生成，agent 只在破壳后聊天才用得上。
+- **懒创建**：领养只建 `ai_pet`（`deviceId=null`，`hatchStatus=EGG`）；device+agent **延迟到破壳**才建。`ai_pet.device_id` 原为 NOT NULL，已由 changeset `202607101500` 放宽为可空（MySQL 唯一索引允许多 NULL，`uk_ai_pet_device_id` 保留）。理由：PRD 里 MBTI/性格/造型本就破壳生成，agent 只在破壳后聊天才用得上。
 - **device id 用 `ai_device.id`（ASSIGN_UUID）**，`macAddress` 存 `egg-{uuid前8位}` 便于日志可读。不要用 `openid` 或 `{openid}:{seq}`。
 
 #### 小程序侧身份切换

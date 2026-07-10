@@ -2,6 +2,7 @@ package xiaozhi.modules.pet.service;
 
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.service.BaseService;
+import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.vo.ChatHistoryVO;
 import xiaozhi.modules.pet.vo.MemoryVO;
@@ -12,6 +13,12 @@ import java.util.List;
 import java.util.Map;
 
 public interface PetService extends BaseService<PetEntity> {
+
+    /**
+     * 领养蛋：建 ai_pet(EGG)，不建 device/agent/档案。
+     * prototype 后端随机(锦鲤/玉兔)；inviteCode 可选，传则核销裂变邀请码(无效码回滚整次领养)。
+     */
+    PetVO adopt(Long userId, PetAdoptDTO dto);
 
     PetVO birth(String deviceId);
 

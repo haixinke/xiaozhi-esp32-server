@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.dto.PetBirthDTO;
 import xiaozhi.modules.pet.dto.PetUpdateDTO;
 import xiaozhi.modules.pet.service.PetService;
@@ -22,6 +23,15 @@ import java.util.List;
 public class PetController {
 
     private final PetService petService;
+
+    @PostMapping("/adopt")
+    @Operation(summary = "领养蛋")
+    @RequiresPermissions("sys:role:normal")
+    public Result<PetVO> adopt(@Valid @RequestBody PetAdoptDTO dto) {
+        Long userId = SecurityUser.getUserId();
+        PetVO pet = petService.adopt(userId, dto);
+        return new Result<PetVO>().ok(pet);
+    }
 
     @PostMapping("/birth")
     @Operation(summary = "宠物出生")

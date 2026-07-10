@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
@@ -17,10 +18,12 @@ import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
+import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
 import xiaozhi.modules.pet.dao.MemoryDao;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
+import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.entity.MemoryEntity;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.entity.UserProfileEntity;
@@ -39,6 +42,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
@@ -51,8 +55,14 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final AiAgentChatHistoryDao chatHistoryDao;
     private final MemoryDao memoryDao;
     private final UserProfileDao userProfileDao;
+    private final InviteService inviteService;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final String HATCH_STATUS_EGG = "EGG";
+    private static final String PROTOTYPE_KOI = "锦鲤";
+    private static final String PROTOTYPE_RABBIT = "玉兔";
+    private static final List<String> PROTOTYPES = List.of(PROTOTYPE_KOI, PROTOTYPE_RABBIT);
 
     private static final String MBTI_PROMPT = """
             根据以下八字和五行信息，推算这个AI宠物的MBTI人格类型。
@@ -80,6 +90,36 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             请直接输出性格描述，不要其他内容。""";
 
     private static final String DEFAULT_PERSONALITY = "性格温和友善，喜欢陪伴主人聊天。虽然偶尔有点小迷糊，但总能用温暖的话语让人感到安心。";
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PetVO adopt(Long userId, PetAdoptDTO dto) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+
+        // 1. 先建蛋(EGG)：不建 device/agent，不生成任何破壳档案
+        //    device_id=NULL 已由 changeset 202607101500 放宽
+        String prototype = PROTOTYPES.get(ThreadLocalRandom.current().nextInt(PROTOTYPES.size()));
+        PetEntity pet = new PetEntity();
+        pet.setUserId(userId);
+        pet.setPrototype(prototype);
+        pet.setHatchStatus(HATCH_STATUS_EGG);
+        pet.setAcceleratedMinutes(0);
+        pet.setCreator(userId);
+        petDao.insert(pet);
+
+        // 2. 核销邀请码(REQUIRES_NEW)。
+        //    无效/过期/无剩余码会抛异常 → 外层事务回滚 → 蛋回滚，不会产生孤儿蛋。
+        //    幂等：同一被邀请人对同一码重复消耗不重复扣减。
+        String inviteCode = dto.getInviteCode() == null ? null : dto.getInviteCode().trim();
+        if (inviteCode != null && !inviteCode.isBlank()) {
+            inviteService.consume(inviteCode, userId);
+        }
+
+        log.info("蛋领养成功 userId={}, petId={}, prototype={}", userId, pet.getId(), prototype);
+        return toVO(pet);
+    }
 
     @Override
     public PetVO birth(String deviceId) {

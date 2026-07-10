@@ -21,12 +21,12 @@ xiaozhi 模型里 `ai_device` 是聊天通道单位、`agentId` 1:1 挂在 devic
 - `openid` 仅换 `token/userId`，不进 device。
 - 领养只建 `ai_pet`：`deviceId=null`、`agentId=null`、`hatchStatus=EGG`、不生成档案。
 - 破壳才建 `ai_device` + `ai_agent`，回填 `ai_pet.deviceId`，生成档案。
-- `ai_pet.device_id` 允许 NULL（MySQL 唯一索引对多 NULL 不冲突），**无需改 schema**。
+- `ai_pet.device_id` 原为 NOT NULL（DDL 见 `202605071500.sql`），领养阶段需写 NULL，已由 changeset `202607101500` 放宽为可空。MySQL 唯一索引对多 NULL 不冲突，`uk_ai_pet_device_id` 保留，破壳后仍保证"一设备一宠物"。
 - device id 用 `ai_device.id`（ASSIGN_UUID），`macAddress` 存 `egg-{uuid前8位}`。
 
 ## 3. 数据模型变更
 
-- `ai_pet`：**无 schema 变更**。`device_id` 由 NOT NULL 改为可空语义（见 `202607101030.sql` 已补孵化字段；`device_id` 列定义本身需确认是否 NOT NULL，若是的需单独 changeset 放宽）。
+- `ai_pet`：新增 changeset `202607101500.sql` 将 `device_id` 由 NOT NULL 放宽为可空（原 DDL 在 `202605071500.sql`，确为 NOT NULL）。孵化字段由 `202607101030.sql` 补齐，无需再加。
 - 新增错误码（`ErrorCode`，102xx 段）：
 
 | 常量 | 值 | 含义 |
@@ -47,20 +47,19 @@ xiaozhi 模型里 `ai_device` 是聊天通道单位、`agentId` 1:1 挂在 devic
 @Data
 @Schema(description = "领养蛋请求")
 public class PetAdoptDTO {
-    @Schema(description = "原型(锦鲤/玉兔)；不传则随机或由激活码决定")
-    private String prototype;
 
-    @Schema(description = "激活码/邀请码（可选，用于核销与原型来源")
+    @NotBlank(message = "邀请码不能为空")
+    @Schema(description = "邀请码(必填,核销裂变邀请码;无效码将拒绝领养)", requiredMode = Schema.RequiredMode.REQUIRED)
     private String inviteCode;
 }
 ```
 
 - 行为：
-  1. 校验激活码（若传）—— 复用 invite 模块的核销逻辑（`InviteService.consume`），核销失败按其错误返回。
-  2. 确定原型：`inviteCode` 命中 KOI→锦鲤，否则按 `prototype` 或随机。
-  3. 建 `ai_pet`：`userId`、`nickname` 空、`prototype`、`hatchStatus=EGG`、`hatchStartTime=null`、`expectedHatchTime=null`、`acceleratedMinutes=0`、`deviceId=null`、不生成 mbti/personality/avatar。
+  1. prototype 后端随机（锦鲤/玉兔），与 inviteCode 解耦——invite 码不编码原型。
+  2. 先建 `ai_pet`：`userId`、`nickname` 空、`prototype`(随机)、`hatchStatus=EGG`、`hatchStartTime=null`、`expectedHatchTime=null`、`acceleratedMinutes=0`、`deviceId=null`、不生成 mbti/personality/avatar。
+  3. 再核销 `inviteCode`（`InviteService.consume(code, userId)`，幂等）。核销失败（无效/过期/无剩余）抛异常 → 外层 `@Transactional(rollbackFor=Exception.class)` 回滚第 2 步的 insert，不产生孤儿蛋。
   4. 返回 `PetVO`（stage 对应前端 `waiting`）。
-- 错误：激活码相关沿用 invite 错误码；`PET_ALREADY_EXISTS` 不再适用（多宠）。
+- 错误：邀请码相关沿用 invite 的 `RenException`；`PET_ALREADY_EXISTS` 不再适用（多宠）。
 
 > 倒计时起点：PRD 规定从完成首个修炼任务起算。故 adopt 阶段 `hatchStartTime/expectedHatchTime` 均为空，由首个 hatch action 写入（见第 6 节依赖）。
 
@@ -185,7 +184,7 @@ public PetVO hatch(Long userId, String petId) {
 2. **OTA 对虚拟设备的行为验证**：现有 `/ota/` 按 mac 查 `ai_device` 返回 `websocket`。需验证破壳时建的虚拟设备（`agentId` 已绑、`userId` 已写）能直接返回 `websocket.url/token`，无需走 `/device/bind` 验证码流程。若 OTA 对 board 类型或"未绑 agent"有特殊分支，需适配。
 3. **agent 默认配置**：`AgentCreateDTO` 需补齐该蛋的默认音色（TTS timbre）、LLM model、记忆开关等；落地时确认 `AgentService.createAgent` 的必填项。
 4. **AI 生图（avatarUrl）**：破壳档案头像由提示词生成（PRD 5.4.1）。同步生图会拖长破壳响应；建议破壳接口先返回不含 `avatarUrl` 的 `PetVO`，生图异步完成后回填并推送，或前端破壳动画后再拉取。需产品确认。
-5. **激活码与邀请码关系**：PRD 5.1 邀请码（用户 5 个、企业后台建）与 adopt 的 `inviteCode` 入参是否同一套，需与 invite 模块对齐。
+5. **激活码与邀请码关系**：已确认 adopt 的 `inviteCode` 即 invite 模块的裂变邀请码（`InviteService.consume`），**不携带原型信息**——prototype 由后端随机。PRD 5.1 邀请码（用户 5 个、企业后台建）与此同一套核销。
 
 ## 8. 迁移与兼容
 

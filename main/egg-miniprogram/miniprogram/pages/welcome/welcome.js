@@ -6,8 +6,9 @@ Page({
     authorizing: false
   },
 
-  onLoad() {
-    if (petStore.getUser()) {
+  async onLoad() {
+    const session = await getApp().ensureLogin().catch(() => null);
+    if (session && session.userId) {
       wx.switchTab({ url: '/pages/home/home' });
     }
   },
@@ -20,29 +21,27 @@ Page({
     wx.navigateTo({ url: '/pages/privacy/privacy' });
   },
 
-  onAuthorize() {
+  async onAuthorize() {
     if (!this.data.agreed) {
       wx.showToast({ title: '请先阅读并同意隐私政策', icon: 'none' });
       return;
     }
     if (this.data.authorizing) return;
     this.setData({ authorizing: true });
-
-    const finish = (profile) => {
+    try {
+      const session = await getApp().silentLogin();
+      if (!session || !session.userId) throw new Error('invalid login session');
       petStore.saveUser({
-        id: petStore.getIdentityId() || `user-${Date.now()}`,
-        nickname: profile.nickName || '蛋友3024',
-        avatarUrl: profile.avatarUrl || '',
+        id: session.userId,
+        nickname: '蛋友',
+        avatarUrl: '',
         authorizedAt: Date.now()
       });
       wx.switchTab({ url: '/pages/home/home' });
-    };
-
-    wx.getUserProfile({
-      desc: '用于展示你的蛋宝宝主人身份',
-      success: ({ userInfo }) => finish(userInfo || {}),
-      fail: () => wx.showToast({ title: '需要完成微信授权后才能进入', icon: 'none' }),
-      complete: () => this.setData({ authorizing: false })
-    });
+    } catch (error) {
+      wx.showToast({ title: error.userMessage || '暂时无法连接服务，请稍后重试', icon: 'none' });
+    } finally {
+      this.setData({ authorizing: false });
+    }
   }
 });

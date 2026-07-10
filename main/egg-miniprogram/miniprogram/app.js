@@ -39,7 +39,11 @@ App({
 
   onShow() {
     const session = auth.getSession();
-    if (session && !auth.isExpired() && auth.isExpiringSoon()) {
+    if (session && auth.isExpired()) {
+      this.clearLoginState();
+      return;
+    }
+    if (session && auth.isExpiringSoon()) {
       this.silentLogin().catch(() => null);
     }
   },
@@ -67,7 +71,7 @@ App({
 
   ensureLogin() {
     const session = auth.getSession();
-    if (session && !auth.isExpired()) {
+    if (session && !auth.isExpired() && !auth.isExpiringSoon()) {
       this.applySession(session);
       return Promise.resolve(session);
     }

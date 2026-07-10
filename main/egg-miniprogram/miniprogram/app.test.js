@@ -87,17 +87,57 @@ async function run() {
   assert.strictEqual(wxLoginCalls, callsBeforeRestore, 'valid session should not call wx.login');
   assert.strictEqual(appConfig.globalData.token, 'saved-token');
 
+  expiringSoon = true;
+  wxLoginResult = { code: 'expiring-ensure-code' };
+  const callsBeforeExpiringEnsure = wxLoginCalls;
+  const refreshed = await appConfig.ensureLogin.call(appConfig);
+  assert.strictEqual(wxLoginCalls, callsBeforeExpiringEnsure + 1,
+    'expiring session should use silentLogin instead of restoring');
+  assert.strictEqual(refreshed.userId, 42);
+
   expiringSoon = false;
   appConfig.onShow.call(appConfig);
   await Promise.resolve();
-  assert.strictEqual(wxLoginCalls, callsBeforeRestore, 'fresh session should not refresh');
+  assert.strictEqual(wxLoginCalls, callsBeforeExpiringEnsure + 1, 'fresh session should not refresh');
   expiringSoon = true;
   appConfig.onShow.call(appConfig);
   await appConfig._loginPromise;
-  assert.strictEqual(wxLoginCalls, callsBeforeRestore + 1, 'expiring session should refresh');
+  assert.strictEqual(wxLoginCalls, callsBeforeExpiringEnsure + 2, 'expiring session should refresh');
+
+  storedSession = restored;
+  expired = true;
+  expiringSoon = false;
+  appConfig.applySession.call(appConfig, restored);
+  const clearsBeforeExpiredShow = clearCalls;
+  const callsBeforeExpiredShow = wxLoginCalls;
+  appConfig.onShow.call(appConfig);
+  await Promise.resolve();
+  assert.strictEqual(clearCalls, clearsBeforeExpiredShow + 1,
+    'expired session should be removed from storage on show');
+  assert.strictEqual(wxLoginCalls, callsBeforeExpiredShow,
+    'expired session should not automatically log in on show');
+  ['token', 'userId', 'openid', 'isNewUser', 'hasPhone', 'agentId'].forEach((key) => {
+    assert.strictEqual(appConfig.globalData[key], null, `${key} should be cleared for expired session`);
+  });
+
+  storedSession = null;
+  wxLoginResult = { fail: new Error('launch denied') };
+  appConfig.applySession.call(appConfig, restored);
+  const unhandledRejections = [];
+  const onUnhandledRejection = (reason) => { unhandledRejections.push(reason); };
+  process.on('unhandledRejection', onUnhandledRejection);
+  appConfig.onLaunch.call(appConfig);
+  assert.strictEqual(await appConfig.globalData.authReady, null,
+    'failed launch login should resolve authReady to null');
+  await new Promise((resolve) => setImmediate(resolve));
+  process.removeListener('unhandledRejection', onUnhandledRejection);
+  assert.deepStrictEqual(unhandledRejections, [], 'launch failure should not be unhandled');
+  ['token', 'userId', 'openid', 'isNewUser', 'hasPhone', 'agentId'].forEach((key) => {
+    assert.strictEqual(appConfig.globalData[key], null, `${key} should be cleared after launch failure`);
+  });
 
   appConfig.clearLoginState.call(appConfig);
-  assert.strictEqual(clearCalls, 1);
+  assert.strictEqual(clearCalls, clearsBeforeExpiredShow + 2);
   ['token', 'userId', 'openid', 'isNewUser', 'hasPhone', 'agentId'].forEach((key) => {
     assert.strictEqual(appConfig.globalData[key], null, `${key} should be cleared`);
   });

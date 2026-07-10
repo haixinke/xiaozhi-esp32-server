@@ -52,6 +52,14 @@ function getIdentityId() {
   return read(IDENTITY_KEY);
 }
 
+const ACCOUNT_KEYS = [PET_KEY, USER_KEY, IDENTITY_KEY, EXHIBITION_BACKUP_KEY];
+
+function clearAccountData() {
+  ACCOUNT_KEYS.forEach((key) => {
+    try { wx.removeStorageSync(key); } catch (error) {}
+  });
+}
+
 function clearUser() {
   try { wx.removeStorageSync(USER_KEY); } catch (error) {}
 }
@@ -384,6 +392,7 @@ module.exports = {
   getUser,
   saveUser,
   clearUser,
+  clearAccountData,
   getIdentityId,
   getPet,
   savePet,

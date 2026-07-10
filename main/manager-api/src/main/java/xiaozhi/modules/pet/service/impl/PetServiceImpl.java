@@ -276,7 +276,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
     }
 
-    private PetVO toVO(PetEntity pet) {
+    @Override
+    public PetVO toVO(PetEntity pet) {
         PetVO vo = new PetVO();
         vo.setId(pet.getId());
         vo.setUserId(pet.getUserId());

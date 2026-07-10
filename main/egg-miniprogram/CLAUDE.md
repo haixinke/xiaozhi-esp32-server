@@ -111,12 +111,14 @@ wx.login() → code
 | 方法 | 路径 | 鉴权 | 入参 / 出参 |
 |---|---|---|---|
 | POST | `/pet/adopt` | normal | `{ inviteCode }`（必填，核销裂变邀请码；prototype 后端随机锦鲤/玉兔）→ `PetVO`（`hatchStatus=EGG`，`deviceId=null`，无破壳档案） |
+| POST | `/pet/{id}/hatch-action` | normal | `{ type, payload }` → `HatchActionResultVO`（减时 + 幂等：`addedMinutes`/`alreadyDone`/`readyToHatch`/`pet`） |
+| GET | `/pet/{id}/hatch-actions` | normal | → `HatchActionVO[]`（该蛋修炼动作明细列表） |
 | POST | `/pet/{id}/hatch` | normal | → `PetVO`（破壳：建 device+agent、回填档案、`hatchStatus=HATCHED`） |
 | GET | `/pet/{id}` | normal | → `PetVO` |
 | GET | `/pet/list` | normal | → `PetVO[]`（当前用户所有蛋） |
 | PUT | `/pet/update` | normal | `{ id, nickname }` → 更新昵称 |
 
-> 现状：`POST /pet/adopt` 已实现（领养 EGG 蛋 + 核销邀请码，prototype 随机；schema 由 `202607101500` 放宽 `device_id` 为可空）。`POST /pet/{id}/hatch` 破壳、`GET /pet/{id}`、孵化动作明细表 `ai_pet_hatch_action` 仍待落地。旧 `POST /pet/birth {deviceId}` 的"创建即出生"演示逻辑保留待迁移。`PetVO` 字段已就绪。
+> 现状：`POST /pet/adopt` 已实现（领养 EGG 蛋 + 核销邀请码，prototype 随机；schema 由 `202607101500` 放宽 `device_id` 为可空）。孵化修炼任务 `ai_pet_hatch_action` 表（changeset `202607101600`）与 `POST /pet/{id}/hatch-action`、`GET /pet/{id}/hatch-actions` 端点已落地（5 动作减时模型，详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节）。`POST /pet/{id}/hatch` 破壳、`GET /pet/{id}` 仍待落地。旧 `POST /pet/birth {deviceId}` 的"创建即出生"演示逻辑保留待迁移。`PetVO` 字段已就绪。
 
 `PetVO` 关键字段（与前端 `pet-store.js` 的 mock 字段对应）：
 
@@ -140,15 +142,21 @@ wx.login() → code
 
 #### 孵化修炼手册（5 个加速动作）
 
-PRD 5.2：每个动作减少孵化时长。当前后端 `ai_pet` 只有累计 `acceleratedMinutes` 字段，**尚无动作明细表**（许愿池/早教班/摸一摸/涂鸦的"每日一次 + payload"需要独立的 `ai_pet_hatch_action` 表，未建）。接入前需先确定该表设计。动作与奖励：
+PRD 5.2：每个动作减少孵化时长。孵化修炼任务已落地：`ai_pet_hatch_action` 表（changeset `202607101600`）+ `POST /pet/{id}/hatch-action`、`GET /pet/{id}/hatch-actions` 端点（鉴权 `sys:role:normal`）。5 动作减时表与类型、payload、前端页面：
 
-| 动作 | 减少时长 | 类型 | 前端页面 |
-|---|---|---|---|
-| 起昵称 | 12h | 输入 | `pages/nickname`（→ `PUT /pet/update`） |
-| 摸一摸 | 1h/日 | 文案 | `pages/home` 长按蛋壳 |
-| 许愿池 | 1h/日 | 单选 | `pages/wish` |
-| 蛋蛋早教班 | 1h/日 | 单选 | `pages/lesson` |
-| 彩蛋涂鸦 | 12h | AI 生成 | `pages/doodle` |
+| 动作 | `type` | 减少时长 | 幂等 | payload | 前端页面 |
+|---|---|---|---|---|---|
+| 起昵称 | `NICKNAME` | 12h（720 分） | 一次性 | `{ nickname }` | `pages/nickname` |
+| 摸一摸 | `CUDDLE` | 1h/日（60 分） | 每日 | `{ }` | `pages/home` 长按蛋壳 |
+| 许愿池 | `WISH` | 1h/日（60 分） | 每日 | `{ value }` | `pages/wish` |
+| 蛋蛋早教班 | `LESSON` | 1h/日（60 分） | 每日 | `{ value }` | `pages/lesson` |
+| 彩蛋涂鸦 | `DOODLE` | 12h（720 分） | 一次性 | `{ color, colorName, pattern }` | `pages/doodle` |
+
+减时模型：首个动作写 `hatchStartTime=now`、`expectedHatchTime=now+7d`；后续动作累加 `acceleratedMinutes` 并重算 `expectedHatchTime=hatchStartTime+7d-acceleratedMinutes`（clamp ≥ `hatchStartTime`）。日界按 `Asia/Shanghai`。"每日一次"由唯一索引 `uk_pet_action_date(pet_id, action_type, action_date)` 保证；"一次性"由业务层校验。`POST /pet/{id}/hatch-action` 响应 `HatchActionResultVO{addedMinutes, alreadyDone, readyToHatch, pet}`：当日已完成则 `alreadyDone=true, addedMinutes=0`，不重复减时。doodle 仅记录颜色/图样 payload，**不做 AI 生图**。错误码 `PET_ALREADY_HATCHED=10209`（蛋已破壳不能再提交任务）。完整契约与 payload 示例见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
+
+> 前端进度条由 `acceleratedMinutes / 10080`（7 天 = 10080 分）派生，后端不返 `progress%`。
+
+> ⚠ **偏离 PRD §5.3**：本实现按草案"任务减时"模型落地（任务累加 `acceleratedMinutes` 下推 `expectedHatchTime`），与 PRD §5.3"双轨孵化（进度不减时）"不一致，系产品明确确认选择。详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
 
 #### 破壳事件处理
 
@@ -251,7 +259,7 @@ find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 - 一个账号当前版本只能绑定 1 只蛋宝宝（`pet-store.bindPet` 的 `BOUND` 校验）；接入后端后由 `ai_pet` 的 `uk_ai_pet_device_id` 唯一索引保证一设备一宠物。
 - 昵称限制：最多 10 个字符（5 汉字），含敏感词拦截；后端 `PetUpdateDTO` 校验在后端侧补齐。
 - **不入库 / 不落日志**：AppSecret、token、openid、unionid、`wx.login` code、客服 ID、模板 ID、私有 API URL、真实用户数据。`project.private.config.json`、`.DS_Store`、生成产物保持本地。
-- 孵化时长规则存在已知产品冲突：当前 `pet-store` 注释说交互不改变破壳日，而 PRD 说任务减少孵化时间。**改这块前先确认产品方向**。
+- 孵化时长规则产品方向已确认：按**草案模型（任务减时）**落地，与 PRD §5.3 双轨孵化（进度不减时）不一致，系产品确认选择。修炼任务通过 `ai_pet_hatch_action` + `POST /pet/{id}/hatch-action` 累加 `acceleratedMinutes` 下推 `expectedHatchTime`（详见"孵化修炼手册"小节与 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节）。
 - 后端 schema 变更走 Liquibase：**新增 changeset + SQL 文件，不编辑已有 changeset**（见 `manager-api/CLAUDE.md`）。
 
 ## 相关文档

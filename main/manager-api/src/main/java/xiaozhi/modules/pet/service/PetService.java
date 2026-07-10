@@ -29,6 +29,11 @@ public interface PetService extends BaseService<PetEntity> {
     void updatePet(Long userId, String petId, String nickname);
 
     /**
+     * 将宠物实体转为视图对象。
+     */
+    PetVO toVO(PetEntity pet);
+
+    /**
      * 根据MAC地址查询聊天历史记录
      *
      * @param macAddress 设备MAC地址

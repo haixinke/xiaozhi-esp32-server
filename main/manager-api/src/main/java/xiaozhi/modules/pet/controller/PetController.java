@@ -7,10 +7,14 @@ import lombok.AllArgsConstructor;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.pet.dto.HatchActionDTO;
 import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.dto.PetBirthDTO;
 import xiaozhi.modules.pet.dto.PetUpdateDTO;
+import xiaozhi.modules.pet.service.HatchActionService;
 import xiaozhi.modules.pet.service.PetService;
+import xiaozhi.modules.pet.vo.HatchActionResultVO;
+import xiaozhi.modules.pet.vo.HatchActionVO;
 import xiaozhi.modules.pet.vo.PetVO;
 import xiaozhi.modules.security.user.SecurityUser;
 
@@ -23,6 +27,7 @@ import java.util.List;
 public class PetController {
 
     private final PetService petService;
+    private final HatchActionService hatchActionService;
 
     @PostMapping("/adopt")
     @Operation(summary = "领养蛋")
@@ -63,5 +68,21 @@ public class PetController {
         Long userId = SecurityUser.getUserId();
         petService.updatePet(userId, dto.getId(), dto.getNickname());
         return new Result<>();
+    }
+
+    @PostMapping("/{id}/hatch-action")
+    @Operation(summary = "孵化修炼动作")
+    @RequiresPermissions("sys:role:normal")
+    public Result<HatchActionResultVO> hatchAction(@PathVariable String id, @Valid @RequestBody HatchActionDTO dto) {
+        Long userId = SecurityUser.getUserId();
+        return new Result<HatchActionResultVO>().ok(hatchActionService.recordHatchAction(userId, id, dto));
+    }
+
+    @GetMapping("/{id}/hatch-actions")
+    @Operation(summary = "查询修炼动作记录")
+    @RequiresPermissions("sys:role:normal")
+    public Result<List<HatchActionVO>> hatchActions(@PathVariable String id) {
+        Long userId = SecurityUser.getUserId();
+        return new Result<List<HatchActionVO>>().ok(hatchActionService.listByPetId(userId, id));
     }
 }

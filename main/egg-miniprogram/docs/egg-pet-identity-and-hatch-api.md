@@ -3,6 +3,10 @@
 > 状态：设计草案，未实现。落地前需与产品确认孵化时长规则、动作明细表设计。
 > 关联：[../CLAUDE.md](../CLAUDE.md) "设备/宠物身份模型"小节；PRD 5.2 孵化机制、5.4 破壳档案。
 
+> ⚠ **偏离说明（重要）**：本实现按**草案模型（任务减时）**落地——完成修炼任务会**减少孵化时长**（累加 `accelerated_minutes`，下推 `expectedHatchTime`）。这与 PRD §5.3 的"双轨孵化（进度不减时）"模型**不一致**，系产品明确确认选择按草案模型走。详见第 10 节。adopt/hatch 破壳接口仍为草案未实现。
+
+> ✅ **已落地**：孵化修炼任务（hatch-action）端点 + `ai_pet_hatch_action` 表已落地，详见第 10 节。
+
 ## 1. 背景与目标
 
 笨笨女友小程序"一人一伴侣"，用 `openid` 当 `ai_device` 的 mac 成立。蛋宝宝是"一人多宠"，`openid` 不能当 device id：
@@ -29,12 +33,14 @@ xiaozhi 模型里 `ai_device` 是聊天通道单位、`agentId` 1:1 挂在 devic
 - `ai_pet`：新增 changeset `202607101500.sql` 将 `device_id` 由 NOT NULL 放宽为可空（原 DDL 在 `202605071500.sql`，确为 NOT NULL）。孵化字段由 `202607101030.sql` 补齐，无需再加。
 - 新增错误码（`ErrorCode`，102xx 段）：
 
-| 常量 | 值 | 含义 |
-|---|---|---|
-| `PET_NOT_HATCHABLE` | 10209 | 蛋未破壳，不能进入聊天/破壳前置未满足 |
-| `PET_ALREADY_HATCHED` | 10210 | 该蛋已破壳，重复破壳 |
-| `PET_HATCH_TIME_NOT_REACHED` | 10211 | 未到预计破壳时间 |
-| `PET_HATCH_NOT_STARTED` | 10212 | 尚未完成任何修炼任务，倒计时未启动 |
+| 常量 | 值 | 含义 | 状态 |
+|---|---|---|---|
+| `PET_ALREADY_HATCHED` | 10209 | 该蛋已破壳，不能再做修炼动作（hatch-action 守卫） | ✅ 已落地（见 §10） |
+| `PET_NOT_HATCHABLE` | 10213 | 蛋未破壳，不能进入聊天（破壳前置未满足） | 草案，hatch 落地时实现 |
+| `PET_HATCH_TIME_NOT_REACHED` | 10214 | 未到预计破壳时间 | 草案，hatch 落地时实现 |
+| `PET_HATCH_NOT_STARTED` | 10215 | 尚未完成任何修炼任务，倒计时未启动 | 草案，hatch 落地时实现 |
+
+> 注：原草案把 `PET_ALREADY_HATCHED` 编为 10210、`PET_NOT_HATCHABLE` 编为 10209，与 `COMPANION_NOT_FOUND=10210` 撞码。实际落地已用 10209=PET_ALREADY_HATCHED，后续 hatch 相关错误码改用 10213–10215。
 
 ## 4. 端点契约
 
@@ -180,7 +186,7 @@ public PetVO hatch(Long userId, String petId) {
 
 ## 7. 依赖与前置项
 
-1. **孵化动作明细表 `ai_pet_hatch_action`**（未建）：许愿池/早教班/摸一摸/涂鸦的"每日一次 + payload + 减少时长"需此表；首个动作写入 `hatchStartTime` 与 `expectedHatchTime = now + 7d`，后续动作累加 `acceleratedMinutes` 并重算 `expectedHatchTime`。adopt/hatch 依赖这套动作端点先落，否则 `hatch()` 会因 `PET_HATCH_NOT_STARTED` 无法破壳。建议先出该表与动作端点草案。
+1. **孵化动作明细表 `ai_pet_hatch_action`**（✅ 已落地，changeset `202607101600` + 端点 `POST /pet/{id}/hatch-action`、`GET /pet/{id}/hatch-actions`）：许愿池/早教班/摸一摸/涂鸦/起昵称的"每日一次 / 一次性 + payload + 减少时长"已由此表承载；首个动作写入 `hatchStartTime` 与 `expectedHatchTime = now + 7d`，后续动作累加 `acceleratedMinutes` 并重算 `expectedHatchTime`。完整表结构、端点契约、5 动作奖励、减时公式、幂等规则、日界、错误码、payload 示例见第 10 节。adopt/hatch 破壳端点仍依赖此机制：未完成任何修炼任务时 `hatchStartTime=null`，`hatch()` 会因 `PET_HATCH_NOT_STARTED` 无法破壳。
 2. **OTA 对虚拟设备的行为验证**：现有 `/ota/` 按 mac 查 `ai_device` 返回 `websocket`。需验证破壳时建的虚拟设备（`agentId` 已绑、`userId` 已写）能直接返回 `websocket.url/token`，无需走 `/device/bind` 验证码流程。若 OTA 对 board 类型或"未绑 agent"有特殊分支，需适配。
 3. **agent 默认配置**：`AgentCreateDTO` 需补齐该蛋的默认音色（TTS timbre）、LLM model、记忆开关等；落地时确认 `AgentService.createAgent` 的必填项。
 4. **AI 生图（avatarUrl）**：破壳档案头像由提示词生成（PRD 5.4.1）。同步生图会拖长破壳响应；建议破壳接口先返回不含 `avatarUrl` 的 `PetVO`，生图异步完成后回填并推送，或前端破壳动画后再拉取。需产品确认。
@@ -200,3 +206,109 @@ public PetVO hatch(Long userId, String petId) {
 - `chat` 前置：校验 `activeDeviceId != null`（未破壳禁入）；OTA 用 `activeDeviceId` 当 `mac`/`Device-Id`。
 - 切换活跃宠物：主动断开 WS 重连到新 device channel。
 - 登录后流程：`/wechat/login` → `/pet/list` → 选 `activePetId`。
+
+## 10. 孵化修炼任务（hatch-action）已落地实现
+
+> 状态：✅ 已落地（changeset `202607101600` + `PetController` 新增端点）。本节为**据实记录**，其余 §1–§9 仍为草案。
+
+> ⚠ **偏离 PRD §5.3**：本实现采用"任务减时"模型——每个修炼动作累加 `accelerated_minutes` 并下推 `expectedHatchTime`。与 PRD §5.3"双轨孵化（进度不减时）"不一致，系产品明确确认选择按草案模型走。
+
+### 10.1 表结构 `ai_pet_hatch_action`
+
+| 列 | 类型 | 说明 |
+|---|---|---|
+| `id` | bigint | 主键 |
+| `pet_id` | varchar | 关联 `ai_pet.id` |
+| `action_type` | varchar | 动作类型枚举（见 10.3） |
+| `payload` | varchar/json | 动作载荷（昵称/许愿值/课程值/涂鸦颜色等） |
+| `action_date` | date | 动作所在"日"（Asia/Shanghai 日界，用于每日幂等） |
+| `accelerated_minutes` | int | 该动作减少的孵化分钟数 |
+| `creator` | bigint | 创建人（用户 id） |
+| `create_date` | datetime | 创建时间 |
+
+- 唯一索引 `uk_pet_action_date(pet_id, action_type, action_date)`：保证"每日一次"动作在同一天对同一只蛋、同一动作类型只能有一条；"一次性"动作则跨天也只允许一条（业务层校验，见 10.5 幂等规则）。
+- **不改 `ai_pet` schema**：复用 `ai_pet` 现有的 `hatch_start_time`、`expected_hatch_time`、`accelerated_minutes` 字段承载减时状态。
+
+### 10.2 端点契约
+
+#### POST `/pet/{id}/hatch-action`
+
+- 鉴权：`sys:role:normal`（`SecurityUser.getUserId()`），并校验宠物归属当前用户。
+- 路径参数：`petId`
+- 请求体 `HatchActionDTO`（`{ type, payload }`）：
+
+```json
+{ "type": "WISH", "payload": { "value": "希望长出彩色花纹" } }
+```
+
+- 响应 `HatchActionResultVO`：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `addedMinutes` | int | 本次新增的加速分钟数（0 表示当日已完成/已完成，未加速） |
+| `alreadyDone` | boolean | true 表示该动作本周期已完成（命中幂等，未重复减时） |
+| `readyToHatch` | boolean | true 表示 `now >= expectedHatchTime`，已可破壳 |
+| `pet` | PetVO | 更新后的宠物视图（含最新 `expectedHatchTime`/`acceleratedMinutes`） |
+
+#### GET `/pet/{id}/hatch-actions`
+
+- 鉴权：`sys:role:normal`，校验归属。
+- 返回 `List<HatchActionVO>`：该蛋的动作明细列表（按 `create_date` 排序），供前端展示已完成动作与进度。
+
+### 10.3 五个修炼动作与奖励
+
+| `type` | 含义 | 减少时长 | 幂等类型 | payload | 前端页面 |
+|---|---|---|---|---|---|
+| `NICKNAME` | 起昵称 | 720 分（12h） | 一次性 | `{ "nickname": "小金" }` | `pages/nickname` |
+| `CUDDLE` | 摸一摸 | 60 分（1h） | 每日 | `{ }` | `pages/home` 长按蛋壳 |
+| `WISH` | 许愿池 | 60 分（1h） | 每日 | `{ "value": "许愿内容" }` | `pages/wish` |
+| `LESSON` | 蛋蛋早教班 | 60 分（1h） | 每日 | `{ "value": "课程/选择值" }` | `pages/lesson` |
+| `DOODLE` | 彩蛋涂鸦 | 720 分（12h） | 一次性 | `{ "color": "#FFD700", "colorName": "金色", "pattern": "波点" }` | `pages/doodle` |
+
+> **doodle 不做 AI 生图**：涂鸦仅记录用户选择的颜色/图样 payload，不调用 AI 生图能力。
+
+### 10.4 减时公式
+
+- **首个动作**（该蛋首次提交 hatch-action）：写入 `hatchStartTime = now`、`expectedHatchTime = now + 7d`（7 天 = 10080 分钟），`acceleratedMinutes` 置为本动作的 `accelerated_minutes`。
+- **后续动作**：`acceleratedMinutes += 本动作 accelerated_minutes`；重算 `expectedHatchTime = hatchStartTime + 7d - acceleratedMinutes`，并 clamp 至 `>= hatchStartTime`（不会减到早于倒计时起点）。
+- **日界**：`action_date` 按 `Asia/Shanghai` 时区计算，跨日即视为新的一天，"每日一次"动作可再次提交。
+- **进度派生**：后端不返 `progress%`，前端进度条由 `acceleratedMinutes / 10080` 派生（1 分钟 = 1/10080 进度）。
+
+### 10.5 幂等规则
+
+- **每日一次**（CUDDLE/WISH/LESSON）：同一 `(pet_id, action_type, action_date)` 命中唯一索引即视为当日已完成。重复提交返回 `alreadyDone=true, addedMinutes=0`，不重复减时。
+- **一次性**（NICKNAME/DOODLE）：业务层校验该动作对该蛋是否已有记录；已有则返回 `alreadyDone=true, addedMinutes=0`。跨天也不允许第二次。
+
+### 10.6 错误码
+
+| 常量 | 值 | 含义 |
+|---|---|---|
+| `PET_ALREADY_HATCHED` | 10209 | 该蛋已破壳，不能再提交修炼任务 |
+
+> 注：§3 草案表里的 `PET_NOT_HATCHABLE=10209 / PET_ALREADY_HATCHED=10210` 为草案规划值；落地实现中 `PET_ALREADY_HATCHED` 实际取 **10209**，与草案编号不同。其余 `PET_HATCH_TIME_NOT_REACHED`、`PET_HATCH_NOT_STARTED` 等仍为草案待落地（破壳接口未实现）。
+
+### 10.7 payload 各类型示例
+
+```json
+// NICKNAME
+{ "type": "NICKNAME", "payload": { "nickname": "小金" } }
+
+// CUDDLE
+{ "type": "CUDDLE", "payload": { } }
+
+// WISH
+{ "type": "WISH", "payload": { "value": "希望长出彩色花纹" } }
+
+// LESSON
+{ "type": "LESSON", "payload": { "value": "音乐启蒙" } }
+
+// DOODLE
+{ "type": "DOODLE", "payload": { "color": "#FFD700", "colorName": "金色", "pattern": "波点" } }
+```
+
+### 10.8 尚未实现（不要当作已落地）
+
+- `POST /pet/{id}/hatch` 破壳端点：未实现，仍为草案（§4.2、§6）。
+- `GET /pet/{id}` 单宠查询：未实现，仍为草案（§4.3）。
+- AI 生图（avatarUrl）、每日心情（todayMood）：未实现，不在本批次落地范围。
+- `PET_HATCH_TIME_NOT_REACHED`、`PET_HATCH_NOT_STARTED`、`PET_NOT_HATCHABLE` 等其余错误码：随破壳端点待落地。

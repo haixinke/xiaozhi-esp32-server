@@ -12,8 +12,8 @@ function createError(type, statusCode, code) {
   return { type, statusCode, code, userMessage: MESSAGES[type] };
 }
 
-function request(options) {
-  const { url, method = 'GET', data, header = {}, anonymous = false, _retried401 = false } = options;
+function performRequest(options, retried401) {
+  const { url, method = 'GET', data, header = {}, anonymous = false } = options;
   const session = auth.getSession();
 
   if (!anonymous && (!session || !session.token)) {
@@ -33,17 +33,18 @@ function request(options) {
       success: async (response) => {
         const statusCode = response && response.statusCode;
         if (statusCode === 401) {
-          if (_retried401) {
+          if (anonymous || retried401) {
             reject(createError('unauthorized', statusCode));
             return;
           }
           auth.clearSession();
           try {
             await getApp().silentLogin();
-            resolve(await request({ ...options, _retried401: true }));
           } catch (error) {
             reject(createError('unauthorized', statusCode));
+            return;
           }
+          resolve(performRequest(options, true));
           return;
         }
 
@@ -66,6 +67,10 @@ function request(options) {
       fail: () => reject(createError('network'))
     });
   });
+}
+
+function request(options) {
+  return performRequest(options, false);
 }
 
 function get(url, data, options = {}) { return request({ ...options, url, data, method: 'GET' }); }

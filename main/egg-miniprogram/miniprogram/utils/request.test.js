@@ -24,6 +24,17 @@ const api = require('./request');
   assert.deepStrictEqual(await api.post('/wechat/login', { code: 'test' }, { anonymous: true }), { userId: 42 });
   assert.strictEqual(requestCalls[0].header.Authorization, undefined);
 
+  const anonymousRequestCount = requestCalls.length;
+  const anonymousLoginCount = loginCalls;
+  responses = [{ statusCode: 401, data: {} }];
+  await assert.rejects(
+    api.post('/wechat/login', { code: 'bad' }, { anonymous: true }),
+    (error) => error.type === 'unauthorized'
+  );
+  assert.strictEqual(requestCalls.length, anonymousRequestCount + 1);
+  assert.strictEqual(loginCalls, anonymousLoginCount);
+  token = 'old-token';
+
   responses = [
     { statusCode: 401, data: { code: 10021, msg: 'expired' } },
     { statusCode: 200, data: { code: 0, data: { ok: true } } }
@@ -31,6 +42,28 @@ const api = require('./request');
   assert.deepStrictEqual(await api.get('/pet/list'), { ok: true });
   assert.strictEqual(loginCalls, 1);
   assert.strictEqual(requestCalls.at(-1).header.Authorization, 'Bearer new-token');
+
+  token = 'old-token';
+  const publicRequestLoginCount = loginCalls;
+  responses = [
+    { statusCode: 401, data: { code: 10021, msg: 'expired' } },
+    { statusCode: 200, data: { code: 0, data: { retried: true } } }
+  ];
+  assert.deepStrictEqual(
+    await api.request({ url: '/pet/list' }, true),
+    { retried: true }
+  );
+  assert.strictEqual(loginCalls, publicRequestLoginCount + 1);
+
+  token = 'old-token';
+  responses = [
+    { statusCode: 401, data: { code: 10021, msg: 'expired' } },
+    { statusCode: 200, data: { code: 10201, msg: 'bad' } }
+  ];
+  await assert.rejects(
+    api.get('/pet/list'),
+    (error) => error.type === 'business' && error.code === 10201
+  );
 
   responses = [{ statusCode: 200, data: { code: 10201, msg: 'bad' } }];
   await assert.rejects(api.get('/pet/list'), (error) => error.type === 'business' && error.code === 10201);

@@ -81,23 +81,19 @@ public class HatchActionServiceImpl implements HatchActionService {
         int added = 0;
         if (!alreadyDone) {
             int minutes = type.minutes();
-            Date now = new Date();
-            long nowTs = now.getTime();
 
-            if (pet.getHatchStartTime() == null) {
-                pet.setHatchStartTime(now);
-                pet.setExpectedHatchTime(new Date(nowTs + SEVEN_DAYS_MS));
-            }
-
-            int acc = (pet.getAcceleratedMinutes() == null ? 0 : pet.getAcceleratedMinutes()) + minutes;
-            pet.setAcceleratedMinutes(acc);
-            long base = pet.getHatchStartTime().getTime() + SEVEN_DAYS_MS - acc * ONE_MINUTE_MS;
-            long floor = pet.getHatchStartTime().getTime();
-            pet.setExpectedHatchTime(new Date(Math.max(base, floor)));
-
+            // NICKNAME 昵称校验先行(违规即抛，避免后续无谓重算)
             if (type == HatchActionType.NICKNAME) {
                 pet.setNickname(extractValidNickname(dto.getPayload()));
             }
+
+            // Model X: adopt 已设 hatchStartTime/expectedHatchTime。动作不再写起点，
+            // 只累加 acceleratedMinutes 并重算 expectedHatchTime = hatchStartTime + 7d - acc(clamp >= hatchStartTime)
+            int acc = (pet.getAcceleratedMinutes() == null ? 0 : pet.getAcceleratedMinutes()) + minutes;
+            pet.setAcceleratedMinutes(acc);
+            long startTs = pet.getHatchStartTime().getTime();
+            long base = startTs + SEVEN_DAYS_MS - acc * ONE_MINUTE_MS;
+            pet.setExpectedHatchTime(new Date(Math.max(base, startTs)));
 
             pet.setUpdater(userId);
             petDao.updateById(pet);

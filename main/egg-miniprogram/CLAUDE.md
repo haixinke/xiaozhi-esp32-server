@@ -113,19 +113,19 @@ wx.login() → code
 | POST | `/pet/adopt` | normal | `{ inviteCode }`（必填，核销裂变邀请码；prototype 后端随机锦鲤/玉兔）→ `PetVO`（`hatchStatus=EGG`，`deviceId=null`，无破壳档案） |
 | POST | `/pet/{id}/hatch-action` | normal | `{ type, payload }` → `HatchActionResultVO`（减时 + 幂等：`addedMinutes`/`alreadyDone`/`readyToHatch`/`pet`） |
 | GET | `/pet/{id}/hatch-actions` | normal | → `HatchActionVO[]`（该蛋修炼动作明细列表） |
-| POST | `/pet/{id}/hatch` | normal | → `PetVO`（破壳：建 device+agent、回填档案、`hatchStatus=HATCHED`） |
-| GET | `/pet/{id}` | normal | → `PetVO` |
+| POST | `/pet/{id}/hatch` | normal | → `PetVO`（破壳：建 device+agent、回填档案、`hatchStatus=HATCHED`）✅ 已实现 |
+| GET | `/pet/{id}` | normal | → `PetVO`（按 petId 查 + 归属校验）✅ 已实现 |
 | GET | `/pet/list` | normal | → `PetVO[]`（当前用户所有蛋） |
 | PUT | `/pet/update` | normal | `{ id, nickname }` → 更新昵称 |
 
-> 现状：`POST /pet/adopt` 已实现（领养 EGG 蛋 + 核销邀请码，prototype 随机；schema 由 `202607101500` 放宽 `device_id` 为可空）。孵化修炼任务 `ai_pet_hatch_action` 表（changeset `202607101600`）与 `POST /pet/{id}/hatch-action`、`GET /pet/{id}/hatch-actions` 端点已落地（5 动作减时模型，详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节）。`POST /pet/{id}/hatch` 破壳、`GET /pet/{id}` 仍待落地。旧 `POST /pet/birth {deviceId}` 的"创建即出生"演示逻辑保留待迁移。`PetVO` 字段已就绪。
+> 现状：`POST /pet/adopt`、`POST /pet/{id}/hatch-action`、`GET /pet/{id}/hatch-actions`、破壳 `POST /pet/{id}/hatch`、单宠查询 `GET /pet/{id}` 均已落地。schema 由 `202607101500` 放宽 `device_id` 为可空；hatch-action 表 changeset `202607101600`（5 动作减时模型，详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节）。破壳实现：`PetBirthCalculator` 算 bazi/wuxing/zodiac → LLM 推 MBTI → LLM 生成 personality（作 agent 系统提示词，`createAgent` 后 `update system_prompt`）；`personalityBrief` 内置卡片语随机；`gender/bloodType` 随机；`avatarUrl` 按 prototype（锦鲤/玉兔）从配置池随机（非 AI 生图）。建虚拟 `ai_device`（`id=ASSIGN_UUID`、`macAddress=ai_device.id`、`board=wechat-egg-miniprogram`、`autoUpdate=0`、`alias=nickname`、`agentId`），回填 `ai_pet`，单事务。错误码 `PET_ALREADY_HATCHED=10209`、`PET_HATCH_TIME_NOT_REACHED=10214`。旧 `POST /pet/birth {deviceId}` 的"创建即出生"演示逻辑、旧 `GET /pet/detail/{deviceId}` 保留待迁移。`PetVO` 字段已就绪。
 
 `PetVO` 关键字段（与前端 `pet-store.js` 的 mock 字段对应）：
 
 - 基础：`id, userId, deviceId, nickname, birthDate`
 - 命理：`bazi, wuxing, zodiac, mbti, personality, personalityBrief`
 - 每日状态：`todayMood, todayMoodDate, todayMoodSentence`
-- **孵化生命周期**：`hatchStatus`（`EGG`/`HATCHED`）、`hatchStartTime`（7 天倒计时起点，完成首个修炼任务时刻）、`expectedHatchTime`（预计破壳时间）、`hatchedAt`（实际破壳时间=生日）、`acceleratedMinutes`（累计已加速分钟）
+- **孵化生命周期**：`hatchStatus`（`EGG`/`HATCHED`）、`hatchStartTime`（7 天倒计时起点，Model X 下由 adopt 设为 `now`）、`expectedHatchTime`（预计破壳时间，`=hatchStartTime+7d-acceleratedMinutes`）、`hatchedAt`（实际破壳时间=生日）、`acceleratedMinutes`（累计已加速分钟）
 - **破壳档案**：`avatarUrl`、`prototype`（锦鲤/玉兔）、`gender`、`bloodType`
 
 #### 前后端孵化状态机映射（注意粒度差异）
@@ -152,7 +152,7 @@ PRD 5.2：每个动作减少孵化时长。孵化修炼任务已落地：`ai_pet
 | 蛋蛋早教班 | `LESSON` | 1h/日（60 分） | 每日 | `{ value }` | `pages/lesson` |
 | 彩蛋涂鸦 | `DOODLE` | 12h（720 分） | 一次性 | `{ color, colorName, pattern }` | `pages/doodle` |
 
-减时模型：首个动作写 `hatchStartTime=now`、`expectedHatchTime=now+7d`；后续动作累加 `acceleratedMinutes` 并重算 `expectedHatchTime=hatchStartTime+7d-acceleratedMinutes`（clamp ≥ `hatchStartTime`）。日界按 `Asia/Shanghai`。"每日一次"由唯一索引 `uk_pet_action_date(pet_id, action_type, action_date)` 保证；"一次性"由业务层校验。`POST /pet/{id}/hatch-action` 响应 `HatchActionResultVO{addedMinutes, alreadyDone, readyToHatch, pet}`：当日已完成则 `alreadyDone=true, addedMinutes=0`，不重复减时。doodle 仅记录颜色/图样 payload，**不做 AI 生图**。错误码 `PET_ALREADY_HATCHED=10209`（蛋已破壳不能再提交任务）。完整契约与 payload 示例见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
+减时模型（Model X）：**adopt 即设基线** `hatchStartTime=now`、`expectedHatchTime=now+7d`；hatch-action 不写起点，只累加 `acceleratedMinutes` 并重算 `expectedHatchTime=hatchStartTime+7d-acceleratedMinutes`（clamp ≥ `hatchStartTime`）。无动作蛋到 `adopt+7d` 即可破壳；有动作蛋更早破壳，动作永远让破壳更早、不推迟。日界按 `Asia/Shanghai`。"每日一次"由唯一索引 `uk_pet_action_date(pet_id, action_type, action_date)` 保证；"一次性"由业务层校验。`POST /pet/{id}/hatch-action` 响应 `HatchActionResultVO{addedMinutes, alreadyDone, readyToHatch, pet}`：当日已完成则 `alreadyDone=true, addedMinutes=0`，不重复减时。doodle 仅记录颜色/图样 payload，**不做 AI 生图**。错误码 `PET_ALREADY_HATCHED=10209`（蛋已破壳不能再提交任务）。完整契约与 payload 示例见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
 
 > 前端进度条由 `acceleratedMinutes / 10080`（7 天 = 10080 分）派生，后端不返 `progress%`。
 
@@ -160,7 +160,7 @@ PRD 5.2：每个动作减少孵化时长。孵化修炼任务已落地：`ai_pet
 
 #### 破壳事件处理
 
-`pages/hatch` 触发破壳仪式 → 成功后 `redirectTo /pages/collection-card?new=1`。后端对应 `POST /pet/{id}/hatch`：校验 `expectedHatchTime` 已到 + 用户归属 → 建 `ai_device` + `ai_agent`、回填 `ai_pet.deviceId/agentId`、`hatchStatus` 由 `EGG` → `HATCHED`、写 `hatchedAt`，并生成破壳档案属性（`avatarUrl`、`prototype`、`gender`、`bloodType`、`personalityBrief`、`mbti`、`zodiac`）。当前 `PetServiceImpl.birth()` 是"创建即出生"的演示逻辑（`birthDate=now()`，立即生成 MBTI/性格），接入孵化流程时按下方"接口草案"重写为：领养时 `hatchStatus=EGG` 且不生成档案，破壳时才生成档案并建聊天身份。**这块逻辑改动较大，未接入前不要在 mock 与后端之间假设一致**。
+`pages/hatch` 触发破壳仪式 → 成功后 `redirectTo /pages/collection-card?new=1`。后端对应 `POST /pet/{id}/hatch`（✅ 已落地，鉴权 normal，单事务）：前置 `hatchStatus==EGG`（否则 `PET_ALREADY_HATCHED`=10209）且 `now>=expectedHatchTime`（否则 `PET_HATCH_TIME_NOT_REACHED`=10214）；`PetBirthCalculator.calculate(hatchedAt)` 算 bazi/wuxing/zodiac → LLM 推 MBTI → LLM 生成 personality（作 agent 系统提示词，`createAgent` 拿默认模板后 `update system_prompt=personality`）；`personalityBrief` 内置卡片语随机；`gender/bloodType` 随机；`avatarUrl` 按 prototype（锦鲤/玉兔）从配置池随机（非 AI 生图）。建虚拟 `ai_device`（`id=ASSIGN_UUID`、`macAddress=ai_device.id`、`board="wechat-egg-miniprogram"`、`autoUpdate=0`、`alias=nickname`、`agentId`），回填 `ai_pet`（`deviceId`/`hatchStatus=HATCHED`/`hatchedAt`/`birthDate`/`bazi`/`wuxing`/`zodiac`/`mbti`/`personality`/`personalityBrief`/`gender`/`bloodType`/`avatarUrl`）。旧 `PetServiceImpl.birth()` 的"创建即出生"演示逻辑（`birthDate=now()`，立即生成 MBTI/性格）保留待迁移，前端改走 `POST /pet/{id}/hatch`。**OTA 对该虚拟设备的 WS 解析（manager-api 返回 websocket+token、xiaozhi-server 侧）尚未真机联调验证**。
 
 ### 3. 设备 / 宠物身份模型（多宠关键设计）
 
@@ -171,10 +171,10 @@ PRD 5.2：每个动作减少孵化时长。孵化修炼任务已落地：`ai_pet
 ```
 
 - `openid` 仅换 `token/userId`（用户身份），**不再进 device**。
-- 每只蛋破壳时后端建一条 `ai_device`：`macAddress = egg-{uuid}`、`userId = 微信userId`、`board = "wechat-egg-miniprogram"`、`alias = 昵称`；`ai_pet.deviceId` 指向它。
+- 每只蛋破壳时后端建一条 `ai_device`：`macAddress = ai_device.id`（device 自身 id）、`userId = 微信userId`、`board = "wechat-egg-miniprogram"`、`autoUpdate = 0`、`alias = 昵称`；`ai_pet.deviceId` 指向它。
 - `agentId`（性格/音色/系统提示词）由 `AgentService.createAgent(AgentCreateDTO)` 创建并绑到该 device，承载该蛋的 MBTI/性格。
 - **懒创建**：领养只建 `ai_pet`（`deviceId=null`，`hatchStatus=EGG`）；device+agent **延迟到破壳**才建。`ai_pet.device_id` 原为 NOT NULL，已由 changeset `202607101500` 放宽为可空（MySQL 唯一索引允许多 NULL，`uk_ai_pet_device_id` 保留）。理由：PRD 里 MBTI/性格/造型本就破壳生成，agent 只在破壳后聊天才用得上。
-- **device id 用 `ai_device.id`（ASSIGN_UUID）**，`macAddress` 存 `egg-{uuid前8位}` 便于日志可读。不要用 `openid` 或 `{openid}:{seq}`。
+- **device id 用 `ai_device.id`（ASSIGN_UUID）**，`macAddress` 存 `ai_device.id` 本身（破壳实现）。不要用 `openid` 或 `{openid}:{seq}`。
 
 #### 小程序侧身份切换
 
@@ -259,7 +259,7 @@ find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 - 一个账号当前版本只能绑定 1 只蛋宝宝（`pet-store.bindPet` 的 `BOUND` 校验）；接入后端后由 `ai_pet` 的 `uk_ai_pet_device_id` 唯一索引保证一设备一宠物。
 - 昵称限制：最多 10 个字符（5 汉字），含敏感词拦截；后端 `PetUpdateDTO` 校验在后端侧补齐。
 - **不入库 / 不落日志**：AppSecret、token、openid、unionid、`wx.login` code、客服 ID、模板 ID、私有 API URL、真实用户数据。`project.private.config.json`、`.DS_Store`、生成产物保持本地。
-- 孵化时长规则产品方向已确认：按**草案模型（任务减时）**落地，与 PRD §5.3 双轨孵化（进度不减时）不一致，系产品确认选择。修炼任务通过 `ai_pet_hatch_action` + `POST /pet/{id}/hatch-action` 累加 `acceleratedMinutes` 下推 `expectedHatchTime`（详见"孵化修炼手册"小节与 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节）。
+- 孵化时长规则产品方向已确认（Model X）：**adopt 时设基线**（`hatchStartTime=now`、`expectedHatchTime=now+7d`），修炼动作只累加 `acceleratedMinutes` 下推 `expectedHatchTime`（`=hatchStartTime+7d-acceleratedMinutes`，clamp ≥ 起点），无动作蛋到 `adopt+7d` 即可破壳。与 PRD §5.3 双轨孵化（进度不减时）不一致，系产品确认选择。详见"孵化修炼手册"小节与 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
 - 后端 schema 变更走 Liquibase：**新增 changeset + SQL 文件，不编辑已有 changeset**（见 `manager-api/CLAUDE.md`）。
 
 ## 相关文档

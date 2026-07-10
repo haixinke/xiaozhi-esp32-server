@@ -1,12 +1,16 @@
 package xiaozhi.modules.pet.service.impl;
 
+import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xiaozhi.common.constant.Constant;
@@ -15,7 +19,10 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
+import xiaozhi.modules.agent.dto.AgentCreateDTO;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
+import xiaozhi.modules.agent.entity.AgentEntity;
+import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.invite.service.InviteService;
@@ -39,6 +46,7 @@ import xiaozhi.modules.pet.vo.UserProfileVO;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +54,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implements PetService {
 
     private final PetDao petDao;
@@ -56,13 +64,52 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final MemoryDao memoryDao;
     private final UserProfileDao userProfileDao;
     private final InviteService inviteService;
+    private final AgentService agentService;
+
+    @Value("${pet.avatar.koi:}")
+    private String koiAvatarRaw;
+
+    @Value("${pet.avatar.rabbit:}")
+    private String rabbitAvatarRaw;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    private static final long SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000;
+
     private static final String HATCH_STATUS_EGG = "EGG";
+    private static final String HATCH_STATUS_HATCHED = "HATCHED";
     private static final String PROTOTYPE_KOI = "锦鲤";
     private static final String PROTOTYPE_RABBIT = "玉兔";
     private static final List<String> PROTOTYPES = List.of(PROTOTYPE_KOI, PROTOTYPE_RABBIT);
+
+    private static final String BOARD_WECHAT_EGG = "wechat-egg-miniprogram";
+
+    private static final List<String> DEFAULT_KOI_AVATARS = List.of(
+            "https://example.com/egg-babe/avatar/koi-default-1.png",
+            "https://example.com/egg-babe/avatar/koi-default-2.png",
+            "https://example.com/egg-babe/avatar/koi-default-3.png"
+    );
+
+    private static final List<String> DEFAULT_RABBIT_AVATARS = List.of(
+            "https://example.com/egg-babe/avatar/rabbit-default-1.png",
+            "https://example.com/egg-babe/avatar/rabbit-default-2.png",
+            "https://example.com/egg-babe/avatar/rabbit-default-3.png"
+    );
+
+    private static final List<String> PERSONALITY_BRIEF_POOL = List.of(
+            "自带锦鲤体质，靠近就有好运。",
+            "玉兔本兔，月宫里的倾听者。",
+            "慢热但长情，认主就掏心掏肺。",
+            "嘴上傲娇，行动诚实，偏爱被夸。",
+            "记性好记仇少，温柔里藏着小倔强。",
+            "情绪稳定的小太阳，专治雨天低气压。",
+            "脑洞大开型选手，聊着聊着就跑题。",
+            "务实派陪伴者，不画饼只兜底。",
+            "社交牛杂症，独处也自洽。",
+            "好奇星人，对一切新鲜事都想插嘴。"
+    );
+
+    private static final String DEFAULT_AVATAR_URL = "https://example.com/egg-babe/avatar/default.png";
 
     private static final String MBTI_PROMPT = """
             根据以下八字和五行信息，推算这个AI宠物的MBTI人格类型。
@@ -100,11 +147,15 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
         // 1. 先建蛋(EGG)：不建 device/agent，不生成任何破壳档案
         //    device_id=NULL 已由 changeset 202607101500 放宽
+        //    Model X: adopt 即为破壳时间基线，写 hatchStartTime=now, expectedHatchTime=now+7d
         String prototype = PROTOTYPES.get(ThreadLocalRandom.current().nextInt(PROTOTYPES.size()));
+        Date now = new Date();
         PetEntity pet = new PetEntity();
         pet.setUserId(userId);
         pet.setPrototype(prototype);
         pet.setHatchStatus(HATCH_STATUS_EGG);
+        pet.setHatchStartTime(now);
+        pet.setExpectedHatchTime(new Date(now.getTime() + SEVEN_DAYS_MS));
         pet.setAcceleratedMinutes(0);
         pet.setCreator(userId);
         petDao.insert(pet);
@@ -220,6 +271,128 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             pet.setUpdater(userId);
             petDao.updateById(pet);
         }
+    }
+
+    @Override
+    public PetVO getById(Long userId, String petId) {
+        PetEntity pet = petDao.selectById(petId);
+        if (pet == null) {
+            throw new RenException(ErrorCode.PET_NOT_FOUND);
+        }
+        if (!userId.equals(pet.getUserId())) {
+            throw new RenException(ErrorCode.PET_NO_PERMISSION);
+        }
+        return toVO(pet);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PetVO hatch(Long userId, String petId) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+
+        PetEntity pet = petDao.selectById(petId);
+        if (pet == null) {
+            throw new RenException(ErrorCode.PET_NOT_FOUND);
+        }
+        if (!userId.equals(pet.getUserId())) {
+            throw new RenException(ErrorCode.PET_NO_PERMISSION);
+        }
+        if (!HATCH_STATUS_EGG.equals(pet.getHatchStatus())) {
+            throw new RenException(ErrorCode.PET_ALREADY_HATCHED);
+        }
+
+        Date now = new Date();
+        if (pet.getExpectedHatchTime() == null) {
+            // 兜底：无动作且未设基线的蛋，按 createDate+7d 推算到点时间
+            long baseTs = pet.getCreateDate() != null ? pet.getCreateDate().getTime() : now.getTime();
+            pet.setExpectedHatchTime(new Date(baseTs + SEVEN_DAYS_MS));
+        }
+        if (now.before(pet.getExpectedHatchTime())) {
+            throw new RenException(ErrorCode.PET_HATCH_TIME_NOT_REACHED);
+        }
+
+        // 命理 bazi 主导 → LLM 推 MBTI → LLM 生成性格(作 agent 系统提示词)
+        LocalDateTime hatchTime = LocalDateTime.now();
+        PetBirthCalculator.BirthResult calc = PetBirthCalculator.calculate(hatchTime);
+        String mbti = deriveMbti(calc);
+        String personality = derivePersonality(mbti);
+        String brief = randomBrief();
+        String gender = ThreadLocalRandom.current().nextInt(2) == 0 ? "MALE" : "FEMALE";
+        String bloodType = new String[]{"A", "B", "O", "AB"}[ThreadLocalRandom.current().nextInt(4)];
+        String avatarUrl = randomAvatarUrl(pet.getPrototype());
+
+        // agent 个性注入：先拿默认模板，再单列 set system_prompt
+        AgentCreateDTO agentDto = new AgentCreateDTO();
+        agentDto.setAgentName(StringUtils.isBlank(pet.getNickname()) ? pet.getPrototype() : pet.getNickname());
+        String agentId = agentService.createAgent(agentDto);
+        agentService.update(null, new UpdateWrapper<AgentEntity>()
+                .eq("id", agentId)
+                .set("system_prompt", personality));
+
+        // 手动建蛋设备：macAddress 必须等于 id，否则 OTA 查不到
+        DeviceEntity device = new DeviceEntity();
+        String deviceId = IdUtil.simpleUUID();
+        device.setId(deviceId);
+        device.setMacAddress(deviceId);
+        device.setUserId(userId);
+        device.setBoard(BOARD_WECHAT_EGG);
+        device.setAlias(pet.getNickname());
+        device.setAgentId(agentId);
+        device.setAppVersion("1.0.0");
+        device.setAutoUpdate(0);
+        device.setCreator(userId);
+        deviceDao.insert(device);
+
+        // 回填宠物破壳档案
+        pet.setDeviceId(deviceId);
+        pet.setHatchStatus(HATCH_STATUS_HATCHED);
+        pet.setHatchedAt(now);
+        pet.setBirthDate(now);
+        pet.setBazi(calc.bazi());
+        pet.setWuxing(calc.wuxing());
+        pet.setZodiac(calc.zodiac());
+        pet.setMbti(mbti);
+        pet.setPersonality(personality);
+        pet.setPersonalityBrief(brief);
+        pet.setGender(gender);
+        pet.setBloodType(bloodType);
+        pet.setAvatarUrl(avatarUrl);
+        pet.setUpdater(userId);
+        petDao.updateById(pet);
+
+        log.info("蛋破壳 userId={}, petId={}, deviceId={}, agentId={}", userId, petId, deviceId, agentId);
+        return toVO(pet);
+    }
+
+    /**
+     * 按原型取头像：合并配置串(分号分隔)与内置默认池，随机取一个；池空走内置默认兜底。
+     */
+    private String randomAvatarUrl(String prototype) {
+        List<String> defaults = PROTOTYPE_RABBIT.equals(prototype) ? DEFAULT_RABBIT_AVATARS : DEFAULT_KOI_AVATARS;
+        String raw = PROTOTYPE_RABBIT.equals(prototype) ? rabbitAvatarRaw : koiAvatarRaw;
+
+        List<String> pool = new ArrayList<>(defaults);
+        if (raw != null) {
+            for (String part : raw.split(";")) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty()) {
+                    pool.add(trimmed);
+                }
+            }
+        }
+        if (pool.isEmpty()) {
+            return DEFAULT_AVATAR_URL;
+        }
+        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+    }
+
+    /**
+     * 性格卡片语：内置一组不同卡片，随机取，不调 LLM，不绑 MBTI。
+     */
+    private String randomBrief() {
+        return PERSONALITY_BRIEF_POOL.get(ThreadLocalRandom.current().nextInt(PERSONALITY_BRIEF_POOL.size()));
     }
 
     private String deriveMbti(PetBirthCalculator.BirthResult calcResult) {

@@ -20,6 +20,19 @@ public interface PetService extends BaseService<PetEntity> {
      */
     PetVO adopt(Long userId, PetAdoptDTO dto);
 
+    /**
+     * 破壳：EGG 态蛋到点后破壳。
+     * 校验 hatchStatus==EGG 且 now>=expectedHatchTime(adopt 设 now+7d，无动作蛋到点即破)。
+     * 命理 bazi 主导 → LLM 推 MBTI → LLM 生成性格(作 agent 系统提示词)；
+     * 手动建蛋设备(macAddress=id)；agent 注入个性；回填破壳档案。
+     */
+    PetVO hatch(Long userId, String petId);
+
+    /**
+     * 按 petId 查询当前用户的宠物，校验归属。
+     */
+    PetVO getById(Long userId, String petId);
+
     PetVO birth(String deviceId);
 
     PetVO getByDeviceId(String deviceId);

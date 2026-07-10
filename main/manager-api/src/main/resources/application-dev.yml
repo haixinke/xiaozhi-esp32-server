@@ -66,3 +66,9 @@ aliyun:
     access-key-secret: ${OSS_ACCESS_KEY_SECRET}
     bucket-name: ${OSS_BUCKET_NAME}
     region: ${OSS_REGION}
+
+# AI宠物头像配置（分号串，留空走代码内置默认池）
+pet:
+  avatar:
+    koi:
+    rabbit:

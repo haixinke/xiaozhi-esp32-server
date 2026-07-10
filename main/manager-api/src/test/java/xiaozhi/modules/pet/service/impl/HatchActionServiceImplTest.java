@@ -90,14 +90,20 @@ class HatchActionServiceImplTest {
     }
 
     @Test
-    @DisplayName("首个NICKNAME - 写 hatchStartTime/expectedHatchTime, acceleratedMinutes=720, 插1行, added=720, nickname已设")
-    void firstNickname_setsHatchTimesAndInsertsAction() {
+    @DisplayName("NICKNAME - 基于 adopt 已设的 hatchStartTime 重算 expectedHatchTime(更早), 不写 hatchStartTime, acceleratedMinutes=720")
+    void firstNickname_recomputesExpectedWithoutWritingStart() {
         PetEntity pet = eggPet();
+        // 模拟 adopt 已设的时间基线
+        long startTs = 1_700_000_000_000L;
+        Date hatchStart = new Date(startTs);
+        pet.setHatchStartTime(hatchStart);
+        pet.setExpectedHatchTime(new Date(startTs + SEVEN_DAYS_MS));
         when(petDao.selectById(PET_ID)).thenReturn(pet);
         when(hatchActionDao.selectCount(any())).thenReturn(0L);
 
         HatchActionDTO dto = dto("NICKNAME", Map.of("nickname", "小金鱼"));
 
+        long originalExpected = pet.getExpectedHatchTime().getTime();
         HatchActionResultVO result = service.recordHatchAction(USER_ID, PET_ID, dto);
 
         assertThat(result.getAddedMinutes()).isEqualTo(720);
@@ -106,14 +112,17 @@ class HatchActionServiceImplTest {
         ArgumentCaptor<PetEntity> petCaptor = ArgumentCaptor.forClass(PetEntity.class);
         verify(petDao).updateById(petCaptor.capture());
         PetEntity updated = petCaptor.getValue();
-        assertThat(updated.getHatchStartTime()).isNotNull();
+        // 动作不写 hatchStartTime(adopt 已设)
+        assertThat(updated.getHatchStartTime()).isEqualTo(hatchStart);
         assertThat(updated.getExpectedHatchTime()).isNotNull();
         long span = updated.getExpectedHatchTime().getTime() - updated.getHatchStartTime().getTime();
-        // 首个动作：expected = start + 7d - 720min
+        // expected = start + 7d - 720min
         assertThat(span).isEqualTo(SEVEN_DAYS_MS - 720 * ONE_MINUTE_MS);
         assertThat(updated.getAcceleratedMinutes()).isEqualTo(720);
         assertThat(updated.getNickname()).isEqualTo("小金鱼");
         assertThat(updated.getUpdater()).isEqualTo(USER_ID);
+        // 比动作前更早(加速使其提前)
+        assertThat(updated.getExpectedHatchTime().getTime()).isLessThan(originalExpected);
 
         ArgumentCaptor<HatchActionEntity> actCaptor = ArgumentCaptor.forClass(HatchActionEntity.class);
         verify(hatchActionDao).insert(actCaptor.capture());

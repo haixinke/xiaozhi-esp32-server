@@ -16,6 +16,7 @@ import org.springframework.context.MessageSource;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
+import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
@@ -64,13 +65,14 @@ class PetServiceImplAdoptTest {
     @Mock private MemoryDao memoryDao;
     @Mock private UserProfileDao userProfileDao;
     @Mock private InviteService inviteService;
+    @Mock private AgentService agentService;
 
     private PetServiceImpl petService;
 
     @BeforeEach
     void setUp() {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService);
+                memoryDao, userProfileDao, inviteService, agentService);
     }
 
     @Test
@@ -103,8 +105,12 @@ class PetServiceImplAdoptTest {
         assertThat(saved.getGender()).isNull();
         assertThat(saved.getBloodType()).isNull();
         assertThat(saved.getHatchedAt()).isNull();
-        assertThat(saved.getHatchStartTime()).isNull();
-        assertThat(saved.getExpectedHatchTime()).isNull();
+        // Model X: adopt 即为破壳时间基线，已写 hatchStartTime/expectedHatchTime(now+7d)
+        assertThat(saved.getHatchStartTime()).isNotNull();
+        assertThat(saved.getExpectedHatchTime()).isNotNull();
+        long sevenDaysMs = 7L * 24 * 60 * 60 * 1000;
+        long span = saved.getExpectedHatchTime().getTime() - saved.getHatchStartTime().getTime();
+        assertThat(span).isEqualTo(sevenDaysMs);
 
         // 邀请码已核销
         verify(inviteService).consume(eq("EGG-ABCD-1"), eq(userId));

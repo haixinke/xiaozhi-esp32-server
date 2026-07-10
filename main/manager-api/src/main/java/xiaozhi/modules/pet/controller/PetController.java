@@ -52,6 +52,22 @@ public class PetController {
         return new Result<PetVO>().ok(pet);
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "按petId查询宠物")
+    @RequiresPermissions("sys:role:normal")
+    public Result<PetVO> getById(@PathVariable String id) {
+        Long userId = SecurityUser.getUserId();
+        return new Result<PetVO>().ok(petService.getById(userId, id));
+    }
+
+    @PostMapping("/{id}/hatch")
+    @Operation(summary = "破壳")
+    @RequiresPermissions("sys:role:normal")
+    public Result<PetVO> hatch(@PathVariable String id) {
+        Long userId = SecurityUser.getUserId();
+        return new Result<PetVO>().ok(petService.hatch(userId, id));
+    }
+
     @GetMapping("/list")
     @Operation(summary = "查询当前用户的宠物列表")
     @RequiresPermissions("sys:role:normal")

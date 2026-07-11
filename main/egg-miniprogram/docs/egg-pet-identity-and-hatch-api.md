@@ -320,5 +320,5 @@ public PetVO hatch(Long userId, String petId) {
 ### 10.8 尚未实现（不要当作已落地）
 
 - AI 生图（avatarUrl）：本期未做，avatar 用预置配置池按 prototype 随机（见 §7.4）。生图后续。
-- 每日心情（todayMood）：未实现，不在本批次落地范围。
+- 每日心情（todayMood）：✅ 已落地（懒生成于 `GET /pet/{id}`/`GET /pet/list`，随 `PetVO.todayMood/todayMoodDate/todayMoodSentence` 返回；不新增端点。`refreshTodayMood`：`today_mood_date != 今日(Asia/Shanghai)` 时按 `MoodDecider`（5 类：开心/平静/想念/兴奋/低落，复刻前端 `getDailyStatus` 判定）取心情 → LLM 生成 ≤20字文案，失败兜底 `MoodLinePool` 静态池（egg/pet 两套，按日期确定性取）→ 幂等 `UPDATE ai_pet` 写回。破壳后活跃度基线用 `hatchedAt` 兜底，后续可接 chat-history。详见 `manager-api/docs/egg-pet-hatch-backend.md` §5.8）。
 - `PET_NOT_HATCHABLE`(10213)：仍草案，未落地。

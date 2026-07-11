@@ -128,4 +128,4 @@ xiaozhi
 ## 业务文档
 
 - [订阅、道具、微信支付技术方案](docs/companion-subscription-items-payment.md) — 套餐订阅（青铜/白银/黄金）、道具购买（SKU+库存+核销）、微信支付 V3 JSAPI 的后端设计与实现参考。
-- [蛋宝宝孵化闭环后端实现参考](docs/egg-pet-hatch-backend.md) — adopt/hatch-action/hatch 三段端点、Model X 时间模型（adopt 设基线、动作减时）、ai_pet_hatch_action 表、虚拟设备与 agent 个性注入、错误码、测试约定与后期开发指引。
+- [蛋宝宝孵化闭环后端实现参考](docs/egg-pet-hatch-backend.md) — adopt/hatch-action/hatch 三段端点、Model X 时间模型（adopt 设基线、动作减时）、ai_pet_hatch_action 表、虚拟设备与 agent 个性注入、每日心情 todayMood（懒生成 LLM+静态兜底）、错误码、测试约定与后期开发指引。

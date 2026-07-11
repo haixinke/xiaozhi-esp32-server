@@ -33,6 +33,12 @@ public interface PetService extends BaseService<PetEntity> {
      */
     PetVO getById(Long userId, String petId);
 
+    /**
+     * 按需刷新今日心情：today_mood_date != 今日(Asia/Shanghai) 则重新生成(LLM 失败兜底静态池)
+     * 并幂等写回，本地反射。已今日则不重生。
+     */
+    void refreshTodayMood(PetEntity pet);
+
     PetVO birth(String deviceId);
 
     PetVO getByDeviceId(String deviceId);

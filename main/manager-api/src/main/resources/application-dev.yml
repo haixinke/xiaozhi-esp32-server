@@ -70,5 +70,5 @@ aliyun:
 # AI宠物头像配置（分号串，留空走代码内置默认池）
 pet:
   avatar:
-    koi:
-    rabbit:
+    koi:https://egg-babe.oss-cn-shanghai.aliyuncs.com/egg-avatar/fish.png?Expires=1783726186&OSSAccessKeyId=TMP.3Kz2DPqqRBuwHwUPJ6Y139H9z3HwEKMt4CWB7yC35Dkx7nFSF99kmV3hzfXKci4CrZzasTazpAMDpuuTvB2otHc6dVm9KS&Signature=SyUG1JHx4OJT5plk6hiqhDj90D0%3D
+    rabbit:https://egg-babe.oss-cn-shanghai.aliyuncs.com/egg-avatar/yutu.png?Expires=1783726230&OSSAccessKeyId=TMP.3Kz2DPqqRBuwHwUPJ6Y139H9z3HwEKMt4CWB7yC35Dkx7nFSF99kmV3hzfXKci4CrZzasTazpAMDpuuTvB2otHc6dVm9KS&Signature=brcxZAncX%2FvV4%2BIxwPZXkDzP13k%3D

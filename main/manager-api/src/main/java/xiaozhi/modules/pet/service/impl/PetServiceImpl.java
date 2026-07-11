@@ -27,6 +27,8 @@ import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
+import xiaozhi.modules.pet.constant.MoodLinePool;
+import xiaozhi.modules.pet.constant.TodayMood;
 import xiaozhi.modules.pet.dao.MemoryDao;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
@@ -36,6 +38,7 @@ import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.entity.UserProfileEntity;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.util.MbtiParser;
+import xiaozhi.modules.pet.util.MoodDecider;
 import xiaozhi.modules.pet.util.PetBirthCalculator;
 import xiaozhi.modules.pet.util.PetMood;
 import xiaozhi.modules.pet.util.PetNicknameGenerator;
@@ -44,6 +47,7 @@ import xiaozhi.modules.pet.vo.MemoryVO;
 import xiaozhi.modules.pet.vo.PetVO;
 import xiaozhi.modules.pet.vo.UserProfileVO;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -137,6 +141,24 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             请直接输出性格描述，不要其他内容。""";
 
     private static final String DEFAULT_PERSONALITY = "性格温和友善，喜欢陪伴主人聊天。虽然偶尔有点小迷糊，但总能用温暖的话语让人感到安心。";
+
+    private static final String MOOD_SENTENCE_PROMPT = """
+            你是一个AI陪伴宠物的内心独白写手。请根据以下信息，写一句它今天的状态文案。
+
+            阶段：%s（孵化期=蛋，破壳后=宠物）
+            今日心情：%s
+            性格描述：%s
+            昵称/原型：%s
+
+            要求：
+            1. 中文，20字以内，最多不超过30字
+            2. 像宠物自己的状态，不像系统通知，不要鸡汤
+            3. 孵化期只写壳里的动静/等待/被照顾/即将破壳，不要写尾巴/跑跳等破壳后动作
+            4. 破壳后可写心情/行为/想念/今天在做什么
+            5. 不要出现心情类型字样，不要emoji，不要引号
+            请直接输出这一句话。""";
+
+    private static final String MOOD_ZONE_ID = "Asia/Shanghai";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -254,7 +276,10 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         wrapper.eq("user_id", userId);
         wrapper.orderByDesc("create_date");
         List<PetEntity> pets = petDao.selectList(wrapper);
-        return pets.stream().map(this::toVO).toList();
+        return pets.stream()
+                .peek(this::refreshTodayMood)
+                .map(this::toVO)
+                .toList();
     }
 
     @Override
@@ -282,6 +307,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         if (!userId.equals(pet.getUserId())) {
             throw new RenException(ErrorCode.PET_NO_PERMISSION);
         }
+        refreshTodayMood(pet);
         return toVO(pet);
     }
 
@@ -477,6 +503,67 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setTodayMoodSentence(pet.getTodayMoodSentence());
         vo.setCreateDate(pet.getCreateDate());
         return vo;
+    }
+
+    @Override
+    public void refreshTodayMood(PetEntity pet) {
+        if (pet == null) {
+            return;
+        }
+        LocalDate today = LocalDate.now(ZoneId.of(MOOD_ZONE_ID));
+        if (today.equals(pet.getTodayMoodDate()) && pet.getTodayMood() != null) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long baselineMs = MoodDecider.baseline(pet, now);
+        TodayMood mood = MoodDecider.decide(pet, baselineMs, now);
+        String sentence = generateMoodSentence(pet, mood, today);
+
+        // 幂等写回：仅当今日未生成时更新，防并发双写
+        UpdateWrapper<PetEntity> uw = new UpdateWrapper<>();
+        uw.eq("id", pet.getId())
+                .and(w -> w.isNull("today_mood_date").or().ne("today_mood_date", today))
+                .set("today_mood", mood.getLabel())
+                .set("today_mood_date", today)
+                .set("today_mood_sentence", sentence);
+        petDao.update(null, uw);
+
+        // 本地反射，保证本次返回的 VO 一致
+        pet.setTodayMood(mood.getLabel());
+        pet.setTodayMoodDate(today);
+        pet.setTodayMoodSentence(sentence);
+    }
+
+    /**
+     * 生成今日心情一句话：LLM 生成，失败/不可用则用静态文案池兜底（PRD §8.4）。
+     */
+    private String generateMoodSentence(PetEntity pet, TodayMood mood, LocalDate today) {
+        boolean hatched = HATCH_STATUS_HATCHED.equals(pet.getHatchStatus());
+        String stage = hatched ? "破壳后" : "孵化期";
+        String personality = StringUtils.isNotBlank(pet.getPersonality())
+                ? pet.getPersonality()
+                : (StringUtils.isNotBlank(pet.getMbti()) ? pet.getMbti() : "未知");
+        String identity = StringUtils.isNotBlank(pet.getNickname())
+                ? pet.getNickname()
+                : (StringUtils.isNotBlank(pet.getPrototype()) ? pet.getPrototype() : "蛋宝宝");
+
+        try {
+            if (llmService.isAvailable()) {
+                String prompt = String.format(MOOD_SENTENCE_PROMPT, stage, mood.getLabel(), personality, identity);
+                String resp = llmService.generateSummary("", prompt);
+                if (resp != null && !resp.isBlank()) {
+                    String s = resp.trim().replaceAll("[\"“”‘’]", "");
+                    if (s.length() > 30) {
+                        s = s.substring(0, 30);
+                    }
+                    return s;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("LLM生成今日心情文案失败，使用静态兜底", e);
+        }
+        return MoodLinePool.pick(hatched, mood, today.toString());
     }
 
     @Override

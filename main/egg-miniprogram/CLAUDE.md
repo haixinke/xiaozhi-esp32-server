@@ -118,7 +118,7 @@ wx.login() → code
 | GET | `/pet/list` | normal | → `PetVO[]`（当前用户所有蛋） |
 | PUT | `/pet/update` | normal | `{ id, nickname }` → 更新昵称 |
 
-> 现状：`POST /pet/adopt`、`POST /pet/{id}/hatch-action`、`GET /pet/{id}/hatch-actions`、破壳 `POST /pet/{id}/hatch`、单宠查询 `GET /pet/{id}` 均已落地。schema 由 `202607101500` 放宽 `device_id` 为可空；hatch-action 表 changeset `202607101600`（5 动作减时模型，详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节）。破壳实现：`PetBirthCalculator` 算 bazi/wuxing/zodiac → LLM 推 MBTI → LLM 生成 personality（作 agent 系统提示词，`createAgent` 后 `update system_prompt`）；`personalityBrief` 内置卡片语随机；`gender/bloodType` 随机；`avatarUrl` 按 prototype（锦鲤/玉兔）从配置池随机（非 AI 生图）。建虚拟 `ai_device`（`id=ASSIGN_UUID`、`macAddress=ai_device.id`、`board=wechat-egg-miniprogram`、`autoUpdate=0`、`alias=nickname`、`agentId`），回填 `ai_pet`，单事务。错误码 `PET_ALREADY_HATCHED=10209`、`PET_HATCH_TIME_NOT_REACHED=10214`。旧 `POST /pet/birth {deviceId}` 的"创建即出生"演示逻辑、旧 `GET /pet/detail/{deviceId}` 保留待迁移。`PetVO` 字段已就绪。
+> 现状：`POST /pet/adopt`、`POST /pet/{id}/hatch-action`、`GET /pet/{id}/hatch-actions`、破壳 `POST /pet/{id}/hatch`、单宠查询 `GET /pet/{id}` 均已落地。每日心情 todayMood 亦已落地（不新增端点，懒生成于 `GET /pet/{id}`/`GET /pet/list`：`today_mood_date != 今日(Asia/Shanghai)` 时按 `MoodDecider` 取 5 类心情 → LLM 生成 ≤20字文案、失败兜底 `MoodLinePool` 静态池 → 幂等写回 `ai_pet`，随 `PetVO` 返回；详见 `manager-api/docs/egg-pet-hatch-backend.md` §5.8）。schema 由 `202607101500` 放宽 `device_id` 为可空；hatch-action 表 changeset `202607101600`（5 动作减时模型，详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节）。破壳实现：`PetBirthCalculator` 算 bazi/wuxing/zodiac → LLM 推 MBTI → LLM 生成 personality（作 agent 系统提示词，`createAgent` 后 `update system_prompt`）；`personalityBrief` 内置卡片语随机；`gender/bloodType` 随机；`avatarUrl` 按 prototype（锦鲤/玉兔）从配置池随机（非 AI 生图）。建虚拟 `ai_device`（`id=ASSIGN_UUID`、`macAddress=ai_device.id`、`board=wechat-egg-miniprogram`、`autoUpdate=0`、`alias=nickname`、`agentId`），回填 `ai_pet`，单事务。错误码 `PET_ALREADY_HATCHED=10209`、`PET_HATCH_TIME_NOT_REACHED=10214`。旧 `POST /pet/birth {deviceId}` 的"创建即出生"演示逻辑、旧 `GET /pet/detail/{deviceId}` 保留待迁移。`PetVO` 字段已就绪。
 
 `PetVO` 关键字段（与前端 `pet-store.js` 的 mock 字段对应）：
 
@@ -268,7 +268,6 @@ find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 - [AGENTS.md](./AGENTS.md) — Codex 协作指引（含产品/状态/API 规则）
 - [README.md](./README.md) — MVP 说明与演示激活码
 - `docs/蛋宝宝小程序PRD.md` — 完整产品需求
-- `docs/蛋宝宝小程序MVP_PRD.md` — MVP 范围需求
 - `docs/egg-pet-identity-and-hatch-api.md` — 设备/宠物身份模型与 adopt/hatch 接口草案（多宠设计）
 - `../manager-api/CLAUDE.md` — 后端服务架构与 pet/wechat 模块
 - `../miniprogram/CLAUDE.md` — 姊妹聊天小程序（HTTP/WS/OTA 实现参照）

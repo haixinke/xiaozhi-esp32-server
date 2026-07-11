@@ -2,7 +2,7 @@
 
 > 范围：`manager-api` 中蛋宝宝（egg）从领养到破壳的后端实现。供后期开发参考。
 > 关联：[`egg-miniprogram/docs/egg-pet-identity-and-hatch-api.md`](../../egg-miniprogram/docs/egg-pet-identity-and-hatch-api.md)（接口契约/草案）、[`egg-miniprogram/CLAUDE.md`](../../egg-miniprogram/CLAUDE.md)（小程序侧交互）。
-> 状态：adopt / hatch-action / hatch / `GET /pet/{id}` 已落地并通过单测；OTA→xiaozhi-server WS 真机联调、AI 生图、每日心情、旧端点 `@Deprecated` 迁移待做。
+> 状态：adopt / hatch-action / hatch / `GET /pet/{id}` / 每日心情 todayMood 已落地并通过单测；OTA→xiaozhi-server WS 真机联调、AI 生图、旧端点 `@Deprecated` 迁移待做。
 
 ## 1. 全景
 
@@ -44,6 +44,7 @@ wx.login → /wechat/login(token,userId)
 | `bazi`/`wuxing`/`zodiac` | 命理（破壳时刻算） | hatch |
 | `mbti`/`personality`/`personality_brief` | MBTI、系统提示词、20字卡片语 | hatch |
 | `gender`/`blood_type`/`avatar_url`/`prototype` | 性别、血型、头像、原型(锦鲤/玉兔) | adopt(prototype), hatch(其余) |
+| `today_mood`/`today_mood_date`/`today_mood_sentence` | 今日心情(开心/平静/想念/兴奋/低落)、对应日期(Asia/Shanghai)、一句话 | `refreshTodayMood` 懒生成（见 §5.8） |
 
 ### 2.2 `ai_pet_hatch_action`（新增，changeset `202607101600.sql`）
 
@@ -137,7 +138,7 @@ PRD §5.3 是「双轨孵化（进度不减时）」；本实现按产品确认�
 - 整个方法 `@Transactional(rollbackFor=Exception.class)`；pet+agent+device 全 DB 操作，一致回滚。
 
 ### 4.5 `GET /pet/{id}`（鉴权 normal）
-- 按 petId 查 + 归属校验 → `PetVO`。替代旧 `GET /pet/detail/{deviceId}`（旧端点暂保留兼容）。
+- 按 petId 查 + 归属校验 → 调 `refreshTodayMood`（见 §5.8，按需生成今日心情并写回）→ `PetVO`（含 `todayMood/todayMoodDate/todayMoodSentence`）。替代旧 `GET /pet/detail/{deviceId}`（旧端点暂保留兼容）。
 
 ### 4.6 既有端点（保留）
 - `GET /pet/list`：当前用户所有蛋（按 create_date desc）。
@@ -174,6 +175,23 @@ pet:
 ### 5.7 PetServiceImpl 构造器
 从 `@AllArgsConstructor` 改为 `@RequiredArgsConstructor`：8 个 final 依赖字段（petDao/deviceDao/llmService/chatHistoryDao/memoryDao/userProfileDao/inviteService/agentService）进构造器，avatar `@Value` 字段非 final 不入构造器。**新增依赖时所有手工构造 PetServiceImpl 的测试都要更新参数列表**（PetServiceImplAdoptTest 已是 8 参）。
 
+### 5.8 每日心情 todayMood（懒生成，PRD §8）
+
+PRD §8 要求「已绑定蛋每天最多一句状态文案，按需生成、当天不变次日重算」。落地方式：
+
+- **不新增端点**：心情随 `GET /pet/{id}` / `GET /pet/list` 的 `PetVO` 返回（`todayMood`/`todayMoodDate`/`todayMoodSentence` 字段早就在 VO）。`getById`/`listByUserId` 加载 pet 后、`toVO` 前调 `refreshTodayMood(pet)`。
+- **懒生成（lazy on read）**：`refreshTodayMood` 若 `today_mood_date != 今日(Asia/Shanghai)` 则重新生成，幂等 `UPDATE ai_pet` 写回（`WHERE today_mood_date IS NULL OR != 今日`），本地反射字段保证本次 VO 一致。已今日则直接返回，不写库不调 LLM。
+- **5 类心情**（`TodayMood` 枚举，PRD §8.6）：开心/平静/想念/兴奋/低落。判定（`MoodDecider.decide`，复刻前端 `pet-store.getDailyStatus`）：
+  - `inactiveDays ≥ 4` → 低落；`≥ 2` → 想念
+  - 孵化期 `expectedHatchTime` 临近/已过（≤1天 或 <0）→ 兴奋
+  - 12h 内有活跃（baseline 距今 <12h）→ 开心
+  - 否则 mbti 软分桶：`E*` → 兴奋，`I*` → 平静；无 mbti → 按 baseline 奇偶取开心/平静
+- **活跃度基线**（`MoodDecider.baseline`）：孵化期 = `hatchStartTime`（无则 `createDate`）；破壳后 = `hatchedAt`（无则 `createDate`）。MVP 不接真实逐次互动时间（后端无 `lastInteractionAt` 字段），用阶段基线兜底；后续可接 chat-history 最近消息时间。
+- **文案生成（两者，LLM 失败兜底静态）**：`llmService.isAvailable()` 为 true 时 `generateSummary("", MOOD_SENTENCE_PROMPT)` 生成 ≤20字（超 30 截断、去引号）；不可用或抛异常则用 `MoodLinePool.pick(hatched, mood, date)` 静态池兜底（egg/pet 两套、每类 3 句、按日期 hashCode 确定性取，同一天同句）。与 derivePersonality 同款 try/catch 兜底手法。
+- **阶段文案池**：孵化期写「壳里的动静/等待/被照顾/即将破壳」，破壳后写「心情/行为/想念/今天在做什么」（PRD §8.7），不可混用。
+- **不调 LLM 的场景**：`today_mood_date == 今日` 直接返回；故二次拉取零成本。首次拉取若 LLM 不可用走静态池，下次跨天重试 LLM。
+- **遗留 `PetMood`（util）**：旧的 8 类纯随机枚举，仅 `birth()`（@Deprecated）用。新流程走 `TodayMood`（5 类、互动驱动），二者并存，迁移 birth 时再统一。
+
 ## 6. 文件地图
 
 | 文件 | 内容 |
@@ -184,10 +202,13 @@ pet:
 | `pet/dto/PetAdoptDTO.java` | adopt 入参（inviteCode） |
 | `pet/dto/HatchActionDTO.java` | hatch-action 入参（type, payload） |
 | `pet/constant/HatchActionType.java` | 5 动作枚举（minutes + oneTime + from()） |
+| `pet/constant/TodayMood.java` | 今日心情 5 类枚举（开心/平静/想念/兴奋/低落，中文 label） |
+| `pet/constant/MoodLinePool.java` | egg/pet 两套静态文案池（每类 3 句，按日期确定性取） |
+| `pet/util/MoodDecider.java` | 心情判定器（复刻前端 getDailyStatus）+ baseline 选取 |
 | `pet/entity/HatchActionEntity.java` + `pet/dao/HatchActionDao.java` | 动作明细实体/Mapper |
 | `pet/vo/HatchActionResultVO.java` / `HatchActionVO.java` | 动作响应/列表 VO |
-| `pet/service/PetService.java` | adopt / hatch / getById / list / update / 旧 birth/getByDeviceId |
-| `pet/service/impl/PetServiceImpl.java` | adopt（设基线）/ hatch（破壳全流程）/ getById / deriveMbti / derivePersonality / toVO / avatar 池 / brief 池 |
+| `pet/service/PetService.java` | adopt / hatch / getById / list / update / refreshTodayMood / 旧 birth/getByDeviceId |
+| `pet/service/impl/PetServiceImpl.java` | adopt（设基线）/ hatch（破壳全流程）/ getById / refreshTodayMood / generateMoodSentence / deriveMbti / derivePersonality / toVO / avatar 池 / brief 池 |
 | `pet/service/HatchActionService.java` + `impl/HatchActionServiceImpl.java` | 5 动作记录 + 减时重算 + 幂等 + 昵称校验 + listByPetId |
 | `pet/controller/PetController.java` | adopt / hatch-action / hatch-actions / hatch / {id} / list / update / birth / detail |
 | `common/exception/ErrorCode.java` | 10205–10209, 10214 |
@@ -195,6 +216,8 @@ pet:
 | `test/.../PetServiceImplAdoptTest.java` | adopt 5 用例（含 Model X 基线断言） |
 | `test/.../HatchActionServiceImplTest.java` | hatch-action 9 用例（基于 adopt 基线重算） |
 | `test/.../PetServiceImplHatchTest.java` | hatch 6 用例 |
+| `test/.../MoodDeciderTest.java` | 心情判定 12 用例（5 类分支 + EGG/HATCHED 分流） |
+| `test/.../PetServiceImplTodayMoodTest.java` | 今日心情 8 用例（懒生成/幂等/LLM 失败兜底/EGG 池/list+getById 接入） |
 
 ## 7. 测试约定
 
@@ -202,7 +225,8 @@ pet:
 - `@BeforeAll initMessageSource()`：`RenException(int)` 构造走 `MessageUtils` i18n 查 `SpringContextUtils.applicationContext`，单测无 Spring 上下文需 mock 注入（照抄 `PetServiceImplAdoptTest`）。
 - 构造被测 service 用 mock 依赖；`toVO` 是 PetServiceImpl 自身方法，构造真实实例即可直接用。
 - `deriveMbti`/`derivePersonality`：mock `llmService.isAvailable()` 返回 false → 走兜底，避免单测依赖 LLM。
-- 现状：adopt 5 + hatch-action 9 + hatch 6 = **20/20 绿**。
+- `refreshTodayMood` 同样 mock `isAvailable()`，覆盖 LLM 文案 / 静态兜底 / 异常兜底 / EGG 池 / 幂等不重生。
+- 现状：adopt 5 + hatch-action 9 + hatch 6 + mood-decider 12 + todayMood 8 = **40/40 绿**。
 
 ## 8. 待办与风险
 
@@ -211,9 +235,9 @@ pet:
 | **OTA→xiaozhi-server WS 真机联调** | manager-api `checkDeviceActive` 会返回 websocket+token（token 由 mac+clientId 生成）。但 xiaozhi-server(Python) 侧解析 token→mac→device→agent 的真实链路未真机验证。需小程序 + 聊天服务联调；若 Python 侧对未走 `deviceActivation` 的设备有特殊分支，需适配。 |
 | 旧端点迁移 | `POST /pet/birth` / `GET /pet/detail/{deviceId}` 待标 `@Deprecated`，存量演示数据视为已破壳。 |
 | AI 生图 | 头像用预置配置池，未做 AI 生图（代码库无生图能力）。后续集成 provider 后可异步回填 `avatar_url`。 |
-| 每日心情 | `today_mood/today_mood_sentence/today_mood_date` 字段已就绪，生成逻辑未实现。 |
+| 每日心情 | ✅ 已落地（懒生成于 `GET /pet/{id}`/`list`，LLM 失败兜底静态池，见 §5.8）。后续可接 chat-history 最近消息时间作破壳后真实活跃度基线（现为 `hatchedAt` 兜底）。 |
 | 多宠 UI | `pages/home` 现按单只蛋渲染；多宠后改列表+当前蛋。MVP 先单宠（`activePetId` 固定第一只）。 |
-| LLM 延迟 | hatch 同步 2 次 LLM 调用，可能 5–15s；后续可改异步生成档案。 |
+| LLM 延迟 | hatch 同步 2 次 LLM 调用，可能 5–15s；后续可改异步生成档案。首次拉取心情也可能触发 1 次 LLM（二次拉取因幂等不触发）。 |
 
 ## 9. 后期开发指引
 
@@ -222,4 +246,5 @@ pet:
 - **改时间模型**：务必保持「adopt 设基线、动作只减时、动作不推迟」不变量；改公式时同步改 adopt + hatch-action + hatch 三处与对应测试。
 - **接 AI 生图**：破壳接口先返回不含 `avatarUrl` 的 VO，生图异步完成回填 + 推送；或前端破壳动画后再拉取 `GET /pet/{id}`。
 - **真机验证破壳→对话**：adopt → 修炼到点 → hatch → 用返回的 `deviceId` 调 `/ota/` 拿 `websocket.url/token` → WS 连 `xiaozhi-server:8000` 验证 ASR/LLM/TTS。
-- **改 PetServiceImpl 依赖**：加/删 final 字段后，所有手工构造该类的测试（AdoptTest/HatchTest）都要更新参数列表。
+- **改 PetServiceImpl 依赖**：加/删 final 字段后，所有手工构造该类的测试（AdoptTest/HatchTest/TodayMoodTest）都要更新参数列表。
+- **改心情判定/文案**：判定逻辑在 `MoodDecider`（纯函数，单测覆盖全），文案池在 `MoodLinePool`（egg/pet 两套）。加心情类型：`TodayMood` 加枚举 + 两池各加 list + `MoodDecider` 分支。改活跃度基线：`MoodDecider.baseline`，破壳后接 chat-history 时改这里。

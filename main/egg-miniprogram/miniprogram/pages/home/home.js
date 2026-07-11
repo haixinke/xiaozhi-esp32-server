@@ -122,15 +122,17 @@ Page({
     }, 90);
     this.cuddleTimer = setTimeout(() => {
       clearInterval(this.cuddleTicker);
-      const result = petStore.completeCuddle();
       this.completedLongPress = true;
       this.setData({ cuddleProgress: 100, eggMotion: 'egg--warm' });
-      this.showFeedback(result.added ? '它暖起来了 · 孵化进度 +5%' : '它又往你这边靠了靠');
       if (wx.vibrateShort) wx.vibrateShort({ type: 'medium' });
-      setTimeout(() => {
-        this.setData({ cuddleProgress: 0, eggMotion: '' });
-        this.onShow();
-      }, 900);
+      (async () => {
+        const result = await petStore.completeCuddle();
+        this.showFeedback(result.alreadyDone ? '它又往你这边靠了靠' : '它暖起来了');
+        setTimeout(() => {
+          this.setData({ cuddleProgress: 0, eggMotion: '' });
+          this.onShow();
+        }, 900);
+      })();
     }, 3000);
   },
 
@@ -146,8 +148,6 @@ Page({
       wx.navigateTo({ url: '/pages/hatch/hatch' });
     } else if (stage === 'hatched') {
       wx.navigateTo({ url: '/pages/chat/chat' });
-    } else if (stage === 'prepared') {
-      this.showFeedback('它已经准备好了，收藏卡会在破壳日生成');
     } else {
       wx.navigateTo({ url: '/pages/hatch-guide/hatch-guide' });
     }

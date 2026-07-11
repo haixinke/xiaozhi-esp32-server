@@ -20,6 +20,7 @@ import xiaozhi.modules.security.oauth2.Oauth2Filter;
 import xiaozhi.modules.security.oauth2.Oauth2Realm;
 import xiaozhi.modules.security.secret.ServerSecretFilter;
 import xiaozhi.modules.sys.service.SysParamsService;
+import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 /**
  * Shiro的配置文件
@@ -48,7 +49,8 @@ public class ShiroConfig {
     }
 
     @Bean("shiroFilter")
-    public ShiroFilterFactoryBean shirFilter(SecurityManager securityManager, SysParamsService sysParamsService) {
+    public ShiroFilterFactoryBean shirFilter(SecurityManager securityManager, SysParamsService sysParamsService,
+            WechatPhoneGate wechatPhoneGate) {
         ShiroFilterConfiguration config = new ShiroFilterConfiguration();
         config.setFilterOncePerRequest(true);
 
@@ -58,7 +60,7 @@ public class ShiroConfig {
 
         Map<String, Filter> filters = new HashMap<>();
         // oauth过滤
-        filters.put("oauth2", new Oauth2Filter());
+        filters.put("oauth2", new Oauth2Filter(wechatPhoneGate));
         // 服务密钥过滤
         filters.put("server", new ServerSecretFilter(sysParamsService));
         shiroFilter.setFilters(filters);
@@ -104,6 +106,7 @@ public class ShiroConfig {
         filterMap.put("/companion/detail/**", "oauth2");
         filterMap.put("/voiceClone/play/**", "anon");
         filterMap.put("/wechat/login", "anon");
+        filterMap.put("/wechat/bindPhone", "oauth2");
         filterMap.put("/subscription/plans", "anon");
         filterMap.put("/subscription/me", "oauth2");
         filterMap.put("/subscription/entitlements", "oauth2");

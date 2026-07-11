@@ -19,6 +19,8 @@ assert.strictEqual(storage.size, 0);
 
 auth.saveSession(login, now);
 assert.deepStrictEqual(auth.getSession(), { ...login, issuedAt: now });
+assert.deepStrictEqual(auth.markPhoneBound(), { ...login, hasPhone: true, issuedAt: now });
+assert.deepStrictEqual(auth.getSession(), { ...login, hasPhone: true, issuedAt: now });
 assert.strictEqual(auth.hasValidSession(now + 1000), true);
 assert.strictEqual(auth.isExpiringSoon(now + 43_200_000 - 301_000), false);
 assert.strictEqual(auth.isExpiringSoon(now + 43_200_000 - 299_000), true);
@@ -26,5 +28,6 @@ assert.strictEqual(auth.isExpired(now + 43_200_000), true);
 
 auth.clearSession();
 assert.strictEqual(auth.getSession(), null);
+assert.strictEqual(auth.markPhoneBound(), null);
 assert.strictEqual(storage.size, 0);
 console.log('auth.test.js: ALL PASS');

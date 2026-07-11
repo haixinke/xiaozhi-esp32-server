@@ -99,10 +99,12 @@ wx.login() → code
 ```
 
 - `POST /wechat/login`：用 `wx.login` 的 `code` 换取 Bearer `token` + `openid` + `userId`；`isNewUser=true` 表示后端自动建了用户；`agentId` 为关联智能体。响应字段见 `WechatLoginRespDTO`。
-- `POST /wechat/bindPhone`（需认证）：用 `button open-type="getPhoneNumber"` 回调 `e.detail.code` 绑定手机号，响应 `WechatBindPhoneRespDTO`。
+- `POST /wechat/bindPhone`（需认证）：欢迎页用 `button open-type="getPhoneNumber"` 回调 `e.detail.code` 绑定手机号，响应 `WechatBindPhoneRespDTO`。手机号是进入首页的强制门槛；拒绝授权或绑定失败时必须留在欢迎页。
 - `POST /wechat/bindAccount`（需认证）：将当前微信账号绑定到已有账号（用户名+密码）。
 
 登录态管理参照 `main/miniprogram/utils/auth.js`：`token`、`openid`、签发时间、有效期存 Storage；提前 5 分钟视为过期触发静默刷新；`onShow` 检查并续期。**token / openid / wx.login code 严禁落日志、严禁入库**。
+
+启动时允许静默注册或恢复账号，但欢迎页只在登录响应 `hasPhone=true` 时进入首页。未绑定手机号的用户必须先同意隐私政策并主动授权手机号；首次流程不获取微信昵称和头像，默认使用“蛋友”和默认头像，用户后续可在“我的 → 个人信息”自行修改。
 
 ### 2. 蛋宝宝宠物创建 / 孵化 / 破壳事件
 

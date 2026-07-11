@@ -5,6 +5,7 @@ const appPath = require.resolve('./app');
 const originalLoad = Module._load;
 const originalApp = global.App;
 const originalWx = global.wx;
+const originalGetCurrentPages = global.getCurrentPages;
 
 let appConfig;
 let savedSession;
@@ -15,6 +16,8 @@ let clearCalls = 0;
 let wxLoginCalls = 0;
 let postCalls = 0;
 let wxLoginResult = { code: 'first-code' };
+let currentRoute = 'pages/welcome/welcome';
+let relaunchedTo = null;
 
 const auth = {
   getSession: () => storedSession,
@@ -53,8 +56,10 @@ global.wx = {
     wxLoginCalls += 1;
     if (wxLoginResult.fail) options.fail(wxLoginResult.fail);
     else options.success(wxLoginResult);
-  }
+  },
+  reLaunch({ url }) { relaunchedTo = url; }
 };
+global.getCurrentPages = () => currentRoute ? [{ route: currentRoute }] : [];
 
 async function run() {
   require('./app');
@@ -69,6 +74,28 @@ async function run() {
   assert.strictEqual(session.userId, 42);
   assert.strictEqual(appConfig.globalData.userId, 42);
   assert.strictEqual(savedSession.userId, 42);
+
+  currentRoute = 'pages/home/home';
+  relaunchedTo = null;
+  appConfig.enforcePhoneGate.call(appConfig, session);
+  assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
+    'unbound direct page entry must return to welcome');
+
+  relaunchedTo = null;
+  appConfig.enforcePhoneGate.call(appConfig, { ...session, hasPhone: true });
+  assert.strictEqual(relaunchedTo, null, 'bound direct page entry may continue');
+
+  currentRoute = 'pages/welcome/welcome';
+  appConfig.enforcePhoneGate.call(appConfig, session);
+  assert.strictEqual(relaunchedTo, null, 'welcome page must not relaunch itself');
+
+  currentRoute = null;
+  relaunchedTo = null;
+  appConfig.globalData.launchPath = 'pages/home/home';
+  appConfig.enforcePhoneGate.call(appConfig, session);
+  assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
+    'cold direct entry must use launch path when the page stack is empty');
+  appConfig.globalData.launchPath = 'pages/welcome/welcome';
 
   wxLoginResult = { fail: new Error('denied') };
   await assert.rejects(appConfig.silentLogin.call(appConfig), /微信登录失败/);
@@ -149,6 +176,7 @@ run().finally(() => {
   Module._load = originalLoad;
   global.App = originalApp;
   global.wx = originalWx;
+  global.getCurrentPages = originalGetCurrentPages;
   delete require.cache[appPath];
 }).catch((error) => {
   console.error(error);

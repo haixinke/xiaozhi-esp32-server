@@ -27,24 +27,48 @@ App({
     openid: null,
     isNewUser: null,
     hasPhone: null,
-    agentId: null
+    agentId: null,
+    launchPath: 'pages/welcome/welcome'
   },
 
-  onLaunch() {
-    this.globalData.authReady = this.ensureLogin().catch(() => {
-      this.applySession(null);
-      return null;
-    });
+  onLaunch(options) {
+    this.globalData.launchPath = options && options.path
+      ? options.path
+      : 'pages/welcome/welcome';
+    this.globalData.authReady = this.ensureLogin()
+      .then((session) => {
+        this.enforcePhoneGate(session);
+        return session;
+      })
+      .catch(() => {
+        this.applySession(null);
+        this.enforcePhoneGate(null);
+        return null;
+      });
   },
 
   onShow() {
     const session = auth.getSession();
     if (session && auth.isExpired()) {
       this.clearLoginState();
+      this.enforcePhoneGate(null);
       return;
     }
+    this.enforcePhoneGate(session);
     if (session && auth.isExpiringSoon()) {
       this.silentLogin().catch(() => null);
+    }
+  },
+
+  enforcePhoneGate(session) {
+    if (typeof getCurrentPages !== 'function') return;
+    const pages = getCurrentPages();
+    const current = pages && pages.length ? pages[pages.length - 1] : null;
+    const route = current ? current.route : this.globalData.launchPath;
+    if (!route || route === 'pages/welcome/welcome') return;
+    if (!session || session.hasPhone !== true) {
+      this.globalData.launchPath = 'pages/welcome/welcome';
+      wx.reLaunch({ url: '/pages/welcome/welcome' });
     }
   },
 

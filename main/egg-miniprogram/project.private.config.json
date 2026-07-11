@@ -17,5 +17,18 @@
     "showES6CompileOption": false,
     "checkInvalidKey": true,
     "bigPackageSizeSupport": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "欢迎页面",
+          "pathName": "pages/welcome/welcome",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
   }
 }

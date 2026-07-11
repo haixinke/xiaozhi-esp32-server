@@ -23,7 +23,7 @@
       <text class="agreement-text">我已阅读并同意</text>
       <text class="privacy-link" catchtap="onPrivacy">《蛋宝宝隐私政策》</text>
     </view>
-    <button class="auth-button" loading="{{authorizing}}" bindtap="onAuthorize">微信登录并进入</button>
-    <text class="auth-note">登录仅用于建立账号身份，不会请求昵称、头像或手机号</text>
+    <button class="auth-button" loading="{{authorizing}}" disabled="{{!agreed || authorizing}}" open-type="getPhoneNumber" bindgetphonenumber="onAuthorize">授权手机号并进入</button>
+    <text class="auth-note">手机号用于账号验证，不会请求昵称或头像</text>
   </view>
 </view>

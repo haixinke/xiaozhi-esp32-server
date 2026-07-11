@@ -35,5 +35,10 @@ function isExpiringSoon(now, bufferSeconds) {
 }
 function hasValidSession(now) { return !isExpired(now); }
 function clearSession() { Object.values(KEYS).forEach((key) => wx.removeStorageSync(key)); }
+function markPhoneBound() {
+  const session = getSession();
+  if (!session) return null;
+  return saveSession({ ...session, hasPhone: true }, session.issuedAt);
+}
 
-module.exports = { saveSession, getSession, clearSession, hasValidSession, isExpired, isExpiringSoon };
+module.exports = { saveSession, getSession, clearSession, markPhoneBound, hasValidSession, isExpired, isExpiringSoon };

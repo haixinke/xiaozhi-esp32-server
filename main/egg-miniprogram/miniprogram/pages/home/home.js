@@ -127,6 +127,11 @@ Page({
       if (wx.vibrateShort) wx.vibrateShort({ type: 'medium' });
       (async () => {
         const result = await petStore.completeCuddle();
+        if (!result.ok) {
+          this.showFeedback(result.message || '操作失败，请稍后重试');
+          setTimeout(() => { this.setData({ cuddleProgress: 0, eggMotion: '' }); }, 900);
+          return;
+        }
         this.showFeedback(result.alreadyDone ? '它又往你这边靠了靠' : '它暖起来了');
         setTimeout(() => {
           this.setData({ cuddleProgress: 0, eggMotion: '' });

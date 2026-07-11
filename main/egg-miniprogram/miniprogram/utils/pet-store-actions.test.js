@@ -14,6 +14,8 @@ let actionCalls = [];
 let actionResponses = [];
 let hatchCalls = 0;
 let hatchResponse = null;
+let updateNicknameCalls = [];
+let updateNicknameResponse = null;
 const originalLoad = Module._load;
 Module._load = function (req) {
   if (req === '../config/api') return { API_BASE_URL: 'https://api.example/xiaozhi' };
@@ -25,7 +27,11 @@ Module._load = function (req) {
         return actionResponses.shift();
       },
       listHatchActions: async () => [],
-      hatchPet: async () => { hatchCalls += 1; return hatchResponse; }
+      hatchPet: async () => { hatchCalls += 1; return hatchResponse; },
+      updateNickname: async (petId, nickname) => {
+        updateNicknameCalls.push({ petId, nickname });
+        return updateNicknameResponse;
+      }
     };
   }
   return originalLoad.apply(this, arguments);
@@ -66,7 +72,12 @@ function todayKey() {
 
   // === 非 demo 模式：走后端 ===
   actionCalls = [];
-  const realPet = { ...demoPet, id: 'real-1', demoMode: false };
+  const realPet = {
+    ...demoPet,
+    id: 'real-1', demoMode: false,
+    tasks: { nicknameDone: false, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
+    preferences: { wishes: [], lessons: [] }
+  };
   petStore.savePet(realPet);
   actionResponses = [{
     addedMinutes: 60, alreadyDone: false, readyToHatch: false,
@@ -89,6 +100,7 @@ function todayKey() {
   const dup = await petStore.completeLesson('学会勇敢');
   assert.strictEqual(dup.ok, true, 'real dup ok');
   assert.strictEqual(dup.alreadyDone, true, 'real duplicate alreadyDone');
+  assert.strictEqual(petStore.getPet().preferences.lessons.length, 1, 'alreadyDone retry does not double-push preferences');
 
   // === NICKNAME 非 demo ===
   actionResponses = [{
@@ -102,6 +114,27 @@ function todayKey() {
   assert.strictEqual(actionCalls.at(-1).type, 'NICKNAME');
   assert.deepStrictEqual(actionCalls.at(-1).payload, { nickname: '小金' });
   assert.strictEqual(petStore.getPet().name, '小金', 'nickname cached on pet');
+
+  // === NICKNAME 非 demo 二次编辑：后端 alreadyDone=true 时走 PUT /pet/update 兜底 ===
+  updateNicknameCalls = [];
+  actionCalls = [];
+  actionResponses = [{
+    addedMinutes: 0, alreadyDone: true, readyToHatch: false,
+    pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 720, prototype: '玉兔',
+           expectedHatchTime: new Date(Date.now() + 7 * DAY).toISOString() }
+  }];
+  updateNicknameResponse = {
+    id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 720, prototype: '玉兔',
+    nickname: '小金2', expectedHatchTime: new Date(Date.now() + 7 * DAY).toISOString()
+  };
+  const reeditResult = await petStore.updateNickname('小金2');
+  assert.strictEqual(reeditResult.ok, true, 're-edit nickname ok');
+  assert.strictEqual(reeditResult.alreadyDone, true, 're-edit alreadyDone true');
+  assert.strictEqual(updateNicknameCalls.length, 1, 're-edit calls PUT /pet/update');
+  assert.strictEqual(updateNicknameCalls[0].petId, 'real-1', 'PUT called with petId');
+  assert.strictEqual(updateNicknameCalls[0].nickname, '小金2', 'PUT called with new nickname');
+  assert.strictEqual(reeditResult.pet.name, '小金2', 're-edit pet.name is new value');
+  assert.strictEqual(petStore.getPet().name, '小金2', 're-edit nickname cached on pet');
 
   // === DOODLE 非 demo ===
   actionResponses = [{

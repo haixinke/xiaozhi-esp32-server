@@ -89,11 +89,14 @@ function toTimestamp(value) {
 }
 
 // 把后端 PetVO 映射成本地 pet 形状并缓存。
-// 修炼相关字段(tasks/shell/preferences)保留 mock 默认值——修炼动作本次不接后端。
+// 非 demo 修炼动作已接后端：后端 PetVO 不返回前端独占字段(shell/tasks/preferences/messages/inviteCodes/dailyStatus)，
+// 故这些字段从已缓存 pet 合并(首次领养无缓存时回退默认值)，避免每次 action 调用清空本地状态。
+// 后端派生字段(id/hatchStatus/acceleratedMinutes/时间戳/身份字段/todayMood/deviceId)以 vo 为唯一事实源。
 // stage/进度/倒计时由 getStage/getCountdown 从 hatchStatus/hatchAt/acceleratedMinutes 派生。
 function savePetFromVO(vo) {
   if (!vo || !vo.id) return null;
   const user = getUser();
+  const existing = read(PET_KEY);
   const accelerated = vo.acceleratedMinutes || 0;
   const progress = Math.max(0, Math.min(100, Math.round((accelerated / HATCH_TOTAL_MINUTES) * 100)));
   const hatchStartTime = toTimestamp(vo.hatchStartTime);
@@ -101,23 +104,24 @@ function savePetFromVO(vo) {
     || (hatchStartTime ? hatchStartTime + 7 * DAY : Date.now() + 7 * DAY);
   const createdAt = toTimestamp(vo.createDate) || hatchStartTime || Date.now();
   const isHatched = vo.hatchStatus === 'HATCHED';
+  const hasFullCard = !!(existing && existing.collectionCard && existing.collectionCard.serial);
   const pet = {
     id: vo.id,
     ownerId: (user && user.id) || null,
     prototype: vo.prototype || '玉兔',
-    name: vo.nickname || '',
+    name: vo.nickname || (existing ? existing.name : '') || '',
     createdAt,
     hatchAt,
     progress,
     stage: 'waiting',
     lastInteractionAt: createdAt,
-    tasks: { nicknameDone: false, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
-    preferences: { wishes: [], lessons: [] },
-    shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
-    dailyStatus: null,
-    collectionCard: isHatched ? { placeholder: true, prototype: vo.prototype } : null,
-    inviteCodes: [],
-    messages: [],
+    tasks: existing && existing.tasks !== undefined ? existing.tasks : { nicknameDone: false, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
+    preferences: existing && existing.preferences !== undefined ? existing.preferences : { wishes: [], lessons: [] },
+    shell: existing && existing.shell !== undefined ? existing.shell : { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
+    dailyStatus: existing && existing.dailyStatus !== undefined ? existing.dailyStatus : null,
+    collectionCard: isHatched ? (hasFullCard ? existing.collectionCard : buildCollectionCard(vo)) : null,
+    inviteCodes: existing && existing.inviteCodes !== undefined ? existing.inviteCodes : [],
+    messages: existing && existing.messages !== undefined ? existing.messages : [],
     todayMood: vo.todayMood || '',
     todayMoodSentence: vo.todayMoodSentence || '',
     todayMoodDate: vo.todayMoodDate || '',
@@ -137,6 +141,8 @@ function savePetFromVO(vo) {
     bloodType: vo.bloodType || '',
     avatarUrl: vo.avatarUrl || ''
   };
+  if (existing && existing.demoMode) pet.demoMode = existing.demoMode;
+  if (existing && Array.isArray(existing._hatchActions)) pet._hatchActions = existing._hatchActions;
   savePet(pet);
   setActivePetId(pet.id);
   return pet;
@@ -241,7 +247,18 @@ async function updateNickname(name) {
   }
   try {
     const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
-    const updated = savePetFromVO(result.pet);
+    let updated;
+    if (result.alreadyDone) {
+      // 后端 HatchActionService 仅在首次提交时持久化 nickname；二次提交走 PUT /pet/update 兜底。
+      try {
+        const vo = await petApi.updateNickname(pet.id, value);
+        updated = savePetFromVO(vo);
+      } catch (putError) {
+        return { ok: false, message: (putError && putError.userMessage) || '昵称保存失败，请稍后重试' };
+      }
+    } else {
+      updated = savePetFromVO(result.pet);
+    }
     updated.name = value;
     savePet(updated);
     return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };

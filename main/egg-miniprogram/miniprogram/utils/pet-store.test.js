@@ -143,4 +143,58 @@ assert.strictEqual(card.bloodType, 'A', 'card bloodType from vo');
 assert.ok(card.serial.startsWith('EGG-KOI-'), 'card serial prefix');
 assert.ok(card.hatchQuality === '完整孵化' || card.hatchQuality === '轻量孵化', 'card hatchQuality');
 
+// --- savePetFromVO: 冷启动破壳宠物生成完整收藏卡(非 placeholder) ---
+petStore.clearAccountData();
+petStore.saveUser({ id: 42, nickname: '蛋友' });
+const coldHatchedVO = {
+  ...eggVO,
+  hatchStatus: 'HATCHED',
+  expectedHatchTime: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
+  hatchedAt: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
+  bazi: '庚子', wuxing: '金水', zodiac: '水瓶座',
+  mbti: 'ENFP', personality: '热烈又好奇', personalityBrief: '好运小福星',
+  gender: 'FEMALE', bloodType: 'A', avatarUrl: 'https://img/koi.png'
+};
+const coldHatched = petStore.savePetFromVO(coldHatchedVO);
+assert.ok(coldHatched.collectionCard, 'cold-start hatched pet has collectionCard');
+assert.ok(coldHatched.collectionCard.serial, 'cold-start card has serial (not placeholder)');
+assert.strictEqual(coldHatched.collectionCard.mbti, 'ENFP', 'cold-start card mbti from vo');
+assert.strictEqual(coldHatched.collectionCard.placeholder, undefined, 'cold-start card is not a placeholder');
+
+// --- savePetFromVO: 合并前端独占字段(shell/preferences)，不被后端 VO 清空 ---
+petStore.clearAccountData();
+petStore.saveUser({ id: 42, nickname: '蛋友' });
+const tk = petStore.todayKey();
+petStore.savePet({
+  id: 'pet-1', ownerId: 42, prototype: '锦鲤', name: '小金',
+  createdAt: now, hatchAt: now + sevenDays, progress: 7, stage: 'hatching',
+  lastInteractionAt: now,
+  tasks: { nicknameDone: true, cuddleDate: tk, wishDate: '', lessonDate: '', doodleDone: false },
+  preferences: { wishes: [{ date: tk, value: '安静陪伴你' }], lessons: [{ date: tk, value: '学会勇敢' }] },
+  shell: { color: '#FF0000', colorName: '正红', pattern: '波点' },
+  dailyStatus: { date: tk, mood: '开心', line: 'x', source: 'local-fallback' },
+  collectionCard: null, inviteCodes: ['EGG-1'], messages: [{ text: 'hi' }],
+  hatchStatus: 'EGG', acceleratedMinutes: 720, demoMode: false
+});
+const mergeVO = {
+  id: 'pet-1', userId: 42, hatchStatus: 'EGG', prototype: '锦鲤',
+  acceleratedMinutes: 780,
+  expectedHatchTime: new Date(now + sevenDays).toISOString(),
+  hatchStartTime: new Date(now).toISOString(),
+  createDate: new Date(now).toISOString(),
+  nickname: '小金'
+};
+const merged = petStore.savePetFromVO(mergeVO);
+assert.strictEqual(merged.shell.color, '#FF0000', 'merge preserves existing shell.color');
+assert.strictEqual(merged.shell.colorName, '正红', 'merge preserves existing shell.colorName');
+assert.strictEqual(merged.shell.pattern, '波点', 'merge preserves existing shell.pattern');
+assert.strictEqual(merged.preferences.lessons.length, 1, 'merge preserves existing preferences.lessons');
+assert.strictEqual(merged.preferences.lessons[0].value, '学会勇敢', 'merge preserves lesson value');
+assert.strictEqual(merged.tasks.nicknameDone, true, 'merge preserves existing tasks');
+assert.strictEqual(merged.inviteCodes[0], 'EGG-1', 'merge preserves existing inviteCodes');
+assert.strictEqual(merged.messages[0].text, 'hi', 'merge preserves existing messages');
+assert.strictEqual(merged.dailyStatus.mood, '开心', 'merge preserves existing dailyStatus');
+assert.strictEqual(merged.acceleratedMinutes, 780, 'merge takes acceleratedMinutes from vo');
+assert.strictEqual(merged.name, '小金', 'merge keeps name when backend nickname present');
+
 console.log('pet-store.test.js: ALL PASS');

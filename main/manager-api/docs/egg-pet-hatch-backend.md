@@ -130,7 +130,7 @@ PRD §5.3 是「双轨孵化（进度不减时）」；本实现按产品确认�
   1. `PetBirthCalculator.calculate(now)` → bazi/wuxing/zodiac
   2. `deriveMbti(calc)`（LLM 推，不可用兜底 INFP）→ `derivePersonality(mbti)`（LLM 生成系统提示词，不可用兜底默认）
   3. `personalityBrief` = 内置卡片语池随机（不调 LLM）
-  4. `gender`/`bloodType` 随机；`avatarUrl` = 按 `prototype` 从 `pet.avatar.koi/rabbit` 配置池随机（池空走内置默认，**非 AI 生图**）
+  4. `gender`/`bloodType` 随机；`avatarUrl` = 按 `prototype` 从 `pet.avatar.koi-defaults/rabbit-defaults` 配置池随机，再叠加 `pet.avatar.koi/rabbit` 扩展池；池空走兜底图，**非 AI 生图**。
   5. `agentService.createAgent(name=nickname或prototype)` 拿默认模板 → `agentService.update(UpdateWrapper set system_prompt=personality)`
   6. 手动插 `ai_device`：`id=IdUtil.simpleUUID()`、`mac_address=id`、`board=wechat-egg-miniprogram`、`auto_update=0`、`alias=nickname`、`agent_id`、`app_version=1.0.0`
   7. 回填 `ai_pet`：`deviceId/hatchStatus=HATCHED/hatchedAt/birthDate/bazi/wuxing/zodiac/mbti/personality/personalityBrief/gender/bloodType/avatarUrl`
@@ -212,7 +212,7 @@ PRD §8 要求「已绑定蛋每天最多一句状态文案，按需生成、当
 | `pet/service/HatchActionService.java` + `impl/HatchActionServiceImpl.java` | 5 动作记录 + 减时重算 + 幂等 + 昵称校验 + listByPetId |
 | `pet/controller/PetController.java` | adopt / hatch-action / hatch-actions / hatch / {id} / list / update / birth / detail |
 | `common/exception/ErrorCode.java` | 10205–10209, 10214 |
-| `application-dev.yml` | pet.avatar.koi / pet.avatar.rabbit |
+| `application-dev.yml` / `application-prod.yml` | `pet.avatar.koi-defaults` / `rabbit-defaults`（默认池）+ `pet.avatar.koi` / `rabbit`（扩展池） |
 | `test/.../PetServiceImplAdoptTest.java` | adopt 5 用例（含 Model X 基线断言） |
 | `test/.../HatchActionServiceImplTest.java` | hatch-action 9 用例（基于 adopt 基线重算） |
 | `test/.../PetServiceImplHatchTest.java` | hatch 6 用例 |

@@ -70,6 +70,12 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final InviteService inviteService;
     private final AgentService agentService;
 
+    @Value("${pet.avatar.koi-defaults:}")
+    private String koiDefaultsRaw;
+
+    @Value("${pet.avatar.rabbit-defaults:}")
+    private String rabbitDefaultsRaw;
+
     @Value("${pet.avatar.koi:}")
     private String koiAvatarRaw;
 
@@ -87,18 +93,6 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private static final List<String> PROTOTYPES = List.of(PROTOTYPE_KOI, PROTOTYPE_RABBIT);
 
     private static final String BOARD_WECHAT_EGG = "wechat-egg-miniprogram";
-
-    private static final List<String> DEFAULT_KOI_AVATARS = List.of(
-            "https://example.com/egg-babe/avatar/koi-default-1.png",
-            "https://example.com/egg-babe/avatar/koi-default-2.png",
-            "https://example.com/egg-babe/avatar/koi-default-3.png"
-    );
-
-    private static final List<String> DEFAULT_RABBIT_AVATARS = List.of(
-            "https://example.com/egg-babe/avatar/rabbit-default-1.png",
-            "https://example.com/egg-babe/avatar/rabbit-default-2.png",
-            "https://example.com/egg-babe/avatar/rabbit-default-3.png"
-    );
 
     private static final List<String> PERSONALITY_BRIEF_POOL = List.of(
             "自带锦鲤体质，靠近就有好运。",
@@ -393,25 +387,30 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     }
 
     /**
-     * 按原型取头像：合并配置串(分号分隔)与内置默认池，随机取一个；池空走内置默认兜底。
+     * 按原型取头像：合并默认池配置与扩展池配置（均为分号分隔），随机取一个；池空走兜底。
      */
     private String randomAvatarUrl(String prototype) {
-        List<String> defaults = PROTOTYPE_RABBIT.equals(prototype) ? DEFAULT_RABBIT_AVATARS : DEFAULT_KOI_AVATARS;
-        String raw = PROTOTYPE_RABBIT.equals(prototype) ? rabbitAvatarRaw : koiAvatarRaw;
+        String defaultsRaw = PROTOTYPE_RABBIT.equals(prototype) ? rabbitDefaultsRaw : koiDefaultsRaw;
+        String extraRaw = PROTOTYPE_RABBIT.equals(prototype) ? rabbitAvatarRaw : koiAvatarRaw;
 
-        List<String> pool = new ArrayList<>(defaults);
-        if (raw != null) {
-            for (String part : raw.split(";")) {
-                String trimmed = part.trim();
-                if (!trimmed.isEmpty()) {
-                    pool.add(trimmed);
-                }
-            }
-        }
+        List<String> pool = new ArrayList<>();
+        splitAndAdd(pool, defaultsRaw);
+        splitAndAdd(pool, extraRaw);
+
         if (pool.isEmpty()) {
             return DEFAULT_AVATAR_URL;
         }
         return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+    }
+
+    private void splitAndAdd(List<String> pool, String raw) {
+        if (raw == null) return;
+        for (String part : raw.split(";")) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                pool.add(trimmed);
+            }
+        }
     }
 
     /**

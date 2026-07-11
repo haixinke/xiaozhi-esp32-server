@@ -63,14 +63,18 @@ wechat:
 # 阿里云OSS配置（未配置时回退到数据库BLOB存储）
 aliyun:
   oss:
-    endpoint: ${OSS_ENDPOINT}
-    access-key-id: ${OSS_ACCESS_KEY_ID}
-    access-key-secret: ${OSS_ACCESS_KEY_SECRET}
-    bucket-name: ${OSS_BUCKET_NAME}
-    region: ${OSS_REGION}
+    endpoint: ${OSS_ENDPOINT:}
+    access-key-id: ${OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+    bucket-name: ${OSS_BUCKET_NAME:}
+    region: ${OSS_REGION:}
 
-# AI宠物头像配置（分号串，留空走代码内置默认池）
+# AI宠物头像配置
+# pet.avatar.koi-defaults / rabbit-defaults: 默认头像池，分号分隔；未配置时走兜底图
+# pet.avatar.koi / rabbit: 扩展头像池，在默认池基础上追加，分号分隔
 pet:
   avatar:
-    koi:https://egg-babe.oss-cn-shanghai.aliyuncs.com/egg-avatar/fish.png?Expires=1783726186&OSSAccessKeyId=TMP.3Kz2DPqqRBuwHwUPJ6Y139H9z3HwEKMt4CWB7yC35Dkx7nFSF99kmV3hzfXKci4CrZzasTazpAMDpuuTvB2otHc6dVm9KS&Signature=SyUG1JHx4OJT5plk6hiqhDj90D0%3D
-    rabbit:https://egg-babe.oss-cn-shanghai.aliyuncs.com/egg-avatar/yutu.png?Expires=1783726230&OSSAccessKeyId=TMP.3Kz2DPqqRBuwHwUPJ6Y139H9z3HwEKMt4CWB7yC35Dkx7nFSF99kmV3hzfXKci4CrZzasTazpAMDpuuTvB2otHc6dVm9KS&Signature=brcxZAncX%2FvV4%2BIxwPZXkDzP13k%3D
+    koi-defaults: https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/eggbabe/fish.png
+    rabbit-defaults: https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/eggbabe/yutu.png
+    koi: ""
+    rabbit: ""

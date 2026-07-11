@@ -69,7 +69,7 @@ aliyun:
     region: ${EGG_REGION:}
 
 seedream:
-  key: {EGG_SEED_DREAM_KEY:}
+  key: ${EGG_SEED_DREAM_KEY:}
 
 # Spring Boot Actuator 健康检查端点，仅暴露 health/info
 management:

@@ -70,6 +70,9 @@ public class PetEntity {
     @Schema(description = "IP形象照片/头像URL")
     private String avatarUrl;
 
+    @Schema(description = "AI生成的破壳收藏卡图片URL")
+    private String collectionCardUrl;
+
     @Schema(description = "IP形象原型(锦鲤/玉兔等)")
     private String prototype;
 

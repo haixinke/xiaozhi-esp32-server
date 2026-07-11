@@ -25,6 +25,7 @@ import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
 import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.entity.PetEntity;
+import xiaozhi.modules.pet.service.CollectionCardImageService;
 import xiaozhi.modules.pet.vo.PetVO;
 
 import java.util.Locale;
@@ -66,13 +67,14 @@ class PetServiceImplAdoptTest {
     @Mock private UserProfileDao userProfileDao;
     @Mock private InviteService inviteService;
     @Mock private AgentService agentService;
+    @Mock private CollectionCardImageService collectionCardImageService;
 
     private PetServiceImpl petService;
 
     @BeforeEach
     void setUp() {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService);
+                memoryDao, userProfileDao, inviteService, agentService, collectionCardImageService);
     }
 
     @Test

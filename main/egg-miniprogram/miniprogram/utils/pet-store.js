@@ -132,6 +132,7 @@ function savePetFromVO(vo) {
     shell: existing && existing.shell !== undefined ? existing.shell : { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
     dailyStatus: existing && existing.dailyStatus !== undefined ? existing.dailyStatus : null,
     collectionCard: isHatched ? (hasFullCard ? existing.collectionCard : buildCollectionCard(vo)) : null,
+    collectionCardUrl: vo.collectionCardUrl || '',
     inviteCodes: existing && existing.inviteCodes !== undefined ? existing.inviteCodes : [],
     messages: existing && existing.messages !== undefined ? existing.messages : [],
     todayMood: vo.todayMood || '',
@@ -151,7 +152,8 @@ function savePetFromVO(vo) {
     personalityBrief: vo.personalityBrief || '',
     gender: vo.gender || '',
     bloodType: vo.bloodType || '',
-    avatarUrl: vo.avatarUrl || ''
+    avatarUrl: vo.avatarUrl || '',
+    collectionCardUrl: vo.collectionCardUrl || ''
   };
   if (existing && existing.demoMode) pet.demoMode = existing.demoMode;
   if (existing && Array.isArray(existing._hatchActions)) pet._hatchActions = existing._hatchActions;
@@ -508,6 +510,7 @@ function buildCollectionCard(vo) {
     personality: vo.personalityBrief || vo.personality || '',
     personalityBrief: vo.personalityBrief || '',
     avatarUrl: vo.avatarUrl || '',
+    imageUrl: vo.collectionCardUrl || vo.avatarUrl || '',
     collectible: '普通',
     hatchQuality: ratio >= 0.8 ? '完整孵化' : '轻量孵化',
     originalOwner: (user && user.nickname) || '蛋友3024'

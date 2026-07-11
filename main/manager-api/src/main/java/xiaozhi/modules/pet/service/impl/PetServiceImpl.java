@@ -36,6 +36,7 @@ import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.entity.MemoryEntity;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.entity.UserProfileEntity;
+import xiaozhi.modules.pet.service.CollectionCardImageService;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.util.MbtiParser;
 import xiaozhi.modules.pet.util.MoodDecider;
@@ -69,6 +70,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final UserProfileDao userProfileDao;
     private final InviteService inviteService;
     private final AgentService agentService;
+    private final CollectionCardImageService collectionCardImageService;
 
     @Value("${pet.avatar.koi-defaults:}")
     private String koiDefaultsRaw;
@@ -380,6 +382,13 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setAvatarUrl(avatarUrl);
         pet.setUpdater(userId);
         petDao.updateById(pet);
+
+        // 生成 AI 收藏卡图片：外部 IO，失败时返回 null 不影响主流程
+        String collectionCardUrl = collectionCardImageService.generate(pet);
+        if (StringUtils.isNotBlank(collectionCardUrl)) {
+            pet.setCollectionCardUrl(collectionCardUrl);
+            petDao.updateById(pet);
+        }
 
         log.info("蛋破壳 userId={}, petId={}, deviceId={}, agentId={}", userId, petId, deviceId, agentId);
         return toVO(pet);

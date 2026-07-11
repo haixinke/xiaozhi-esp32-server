@@ -119,6 +119,16 @@ assert.strictEqual(hatchedIdentity.bloodType, 'A', 'maps bloodType');
 assert.strictEqual(hatchedIdentity.avatarUrl, 'https://img/koi.png', 'maps avatarUrl');
 assert.strictEqual(hatchedIdentity.zodiac, '水瓶座', 'maps zodiac');
 
+// collectionCardUrl 映射
+const cardUrlVO = {
+  ...hatchedIdentityVO,
+  collectionCardUrl: 'https://img/card.png'
+};
+const cardUrlPet = petStore.savePetFromVO(cardUrlVO);
+assert.strictEqual(cardUrlPet.collectionCardUrl, 'https://img/card.png', 'maps collectionCardUrl');
+const cardWithImage = petStore.buildCollectionCard(cardUrlVO);
+assert.strictEqual(cardWithImage.imageUrl, 'https://img/card.png', 'card imageUrl prefers collectionCardUrl');
+
 // --- getStage 不再有 prepared 分支 ---
 // 构造一个 progress=100 但未到破壳时间的 pet（单轨下应落到 ready 或 soon 而非 prepared）
 const fullProgressVO = {
@@ -140,6 +150,7 @@ assert.strictEqual(card.prototype, '锦鲤', 'card prototype from vo');
 assert.strictEqual(card.mbti, 'ENFP', 'card mbti from vo');
 assert.strictEqual(card.gender, 'FEMALE', 'card gender from vo');
 assert.strictEqual(card.bloodType, 'A', 'card bloodType from vo');
+assert.strictEqual(card.imageUrl, 'https://img/koi.png', 'card imageUrl falls back to avatarUrl');
 assert.ok(card.serial.startsWith('EGG-KOI-'), 'card serial prefix');
 assert.ok(card.hatchQuality === '完整孵化' || card.hatchQuality === '轻量孵化', 'card hatchQuality');
 

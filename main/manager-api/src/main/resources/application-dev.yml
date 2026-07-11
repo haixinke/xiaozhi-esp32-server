@@ -70,7 +70,7 @@ aliyun:
     region: ${EGG_REGION:}
 
 seedream:
-  key: {EGG_SEED_DREAM_KEY:}
+  key: ${EGG_SEED_DREAM_KEY:}
 
 # AI宠物头像配置
 # pet.avatar.koi-defaults / rabbit-defaults: 默认头像池，分号分隔；未配置时走兜底图

@@ -69,13 +69,14 @@ class PetServiceImplHatchTest {
     @Mock private UserProfileDao userProfileDao;
     @Mock private InviteService inviteService;
     @Mock private AgentService agentService;
+    @Mock private CollectionCardImageService collectionCardImageService;
 
     private PetServiceImpl petService;
 
     @BeforeEach
     void setUp() {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService);
+                memoryDao, userProfileDao, inviteService, agentService, collectionCardImageService);
         // LLM 不可用 → deriveMbti/derivePersonality 走兜底(INFP/DEFAULT_PERSONALITY)，不调 LLM
         when(llmService.isAvailable()).thenReturn(false);
         when(agentService.createAgent(any())).thenReturn(AGENT_ID);

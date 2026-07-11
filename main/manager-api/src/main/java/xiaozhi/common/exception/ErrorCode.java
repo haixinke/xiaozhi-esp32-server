@@ -299,4 +299,13 @@ public interface ErrorCode {
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败
     int OSS_DELETE_FILE_ERROR = 10401; // OSS删除文件失败
+
+    // 用户资料相关错误码
+    int NICKNAME_TOO_LONG = 10215; // 昵称最多16个字符
+    int NICKNAME_SENSITIVE = 10216; // 昵称含有不适合的内容
+    int INVALID_GENDER = 10217; // 性别格式错误
+    int INVALID_MBTI = 10218; // MBTI类型错误
+    int INVALID_BIRTHDAY = 10219; // 生日格式错误
+    int AVATAR_FILE_TYPE_ERROR = 10220; // 头像文件类型错误，仅支持jpg/png/webp
+    int CITY_TOO_LONG = 10221; // 城市最多32个字符
 }

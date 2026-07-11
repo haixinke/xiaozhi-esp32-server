@@ -6,6 +6,7 @@ import com.nlf.calendar.EightChar;
 import com.nlf.calendar.Lunar;
 import com.nlf.calendar.Solar;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,6 +14,12 @@ import java.util.Map;
 public final class PetBirthCalculator {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final String[] ZODIAC_CN = {
+            "摩羯座", "水瓶座", "双鱼座", "白羊座", "金牛座", "双子座",
+            "巨蟹座", "狮子座", "处女座", "天秤座", "天蝎座", "射手座", "摩羯座"
+    };
+    private static final int[] ZODIAC_SPLIT = { 20, 19, 21, 20, 21, 22, 23, 23, 23, 24, 23, 22, 22 };
 
     private static final Map<Character, String> GANG_WUXING = Map.ofEntries(
             Map.entry('甲', "wood"), Map.entry('乙', "wood"),
@@ -95,6 +102,25 @@ public final class PetBirthCalculator {
         if (element != null) {
             wuxingCount.merge(element, 1, Integer::sum);
         }
+    }
+
+    /**
+     * 根据公历日期返回星座中文名
+     *
+     * @param date 公历日期
+     * @return 星座中文名，date 为 null 时返回 null
+     */
+    public static String zodiacOf(LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+        int month = date.getMonthValue();
+        int day = date.getDayOfMonth();
+        int index = month - 1;
+        if (day >= ZODIAC_SPLIT[index]) {
+            index++;
+        }
+        return ZODIAC_CN[index];
     }
 
     public record BirthResult(String bazi, String wuxing, String zodiac) {

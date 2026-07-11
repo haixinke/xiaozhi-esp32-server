@@ -2,6 +2,8 @@ package xiaozhi.modules.wechat.entity;
 
 import java.util.Date;
 
+import java.time.LocalDate;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -40,6 +42,18 @@ public class WechatUserEntity {
 
     @Schema(description = "用户授权手机号")
     private String phone;
+
+    @Schema(description = "性别: MALE/FEMALE/OTHER")
+    private String gender;
+
+    @Schema(description = "生日")
+    private LocalDate birthday;
+
+    @Schema(description = "常驻城市")
+    private String city;
+
+    @Schema(description = "MBTI类型")
+    private String mbti;
 
     @Schema(description = "创建时间")
     private Date createDate;

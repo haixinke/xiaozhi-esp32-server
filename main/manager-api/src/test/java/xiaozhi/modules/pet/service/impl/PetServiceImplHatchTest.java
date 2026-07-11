@@ -26,6 +26,7 @@ import xiaozhi.modules.pet.dao.MemoryDao;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
 import xiaozhi.modules.pet.entity.PetEntity;
+import xiaozhi.modules.pet.service.CollectionCardImageService;
 import xiaozhi.modules.pet.vo.PetVO;
 
 import java.util.Date;

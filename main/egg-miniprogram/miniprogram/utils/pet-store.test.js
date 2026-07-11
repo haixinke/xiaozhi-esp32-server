@@ -32,6 +32,7 @@ petStore.saveUser({ id: 42, nickname: '蛋友' });
 
 const now = Date.now();
 const sevenDays = 7 * 24 * 60 * 60 * 1000;
+const HATCH_TOTAL_MINUTES = 7 * 24 * 60;
 const eggVO = {
   id: 'pet-1',
   userId: 42,
@@ -97,5 +98,49 @@ assert.notStrictEqual(fallbackDaily.source, 'backend', 'fallback not marked back
 
 petStore.clearAccountData();
 assert.strictEqual(petStore.getActivePetId(), null, 'activePetId cleared on account clear');
+
+// --- savePetFromVO: 破壳后身份字段映射 ---
+const hatchedIdentityVO = {
+  ...eggVO,
+  hatchStatus: 'HATCHED',
+  expectedHatchTime: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
+  hatchedAt: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
+  bazi: '庚子', wuxing: '金水', zodiac: '水瓶座',
+  mbti: 'ENFP', personality: '热烈又好奇', personalityBrief: '好运小福星',
+  gender: 'FEMALE', bloodType: 'A', avatarUrl: 'https://img/koi.png',
+  todayMoodDate: petStore.todayKey()
+};
+const hatchedIdentity = petStore.savePetFromVO(hatchedIdentityVO);
+assert.strictEqual(hatchedIdentity.bazi, '庚子', 'maps bazi');
+assert.strictEqual(hatchedIdentity.mbti, 'ENFP', 'maps mbti');
+assert.strictEqual(hatchedIdentity.personality, '热烈又好奇', 'maps personality');
+assert.strictEqual(hatchedIdentity.gender, 'FEMALE', 'maps gender');
+assert.strictEqual(hatchedIdentity.bloodType, 'A', 'maps bloodType');
+assert.strictEqual(hatchedIdentity.avatarUrl, 'https://img/koi.png', 'maps avatarUrl');
+assert.strictEqual(hatchedIdentity.zodiac, '水瓶座', 'maps zodiac');
+
+// --- getStage 不再有 prepared 分支 ---
+// 构造一个 progress=100 但未到破壳时间的 pet（单轨下应落到 ready 或 soon 而非 prepared）
+const fullProgressVO = {
+  ...eggVO,
+  acceleratedMinutes: HATCH_TOTAL_MINUTES,
+  expectedHatchTime: new Date(now + sevenDays).toISOString()
+};
+const fullProgressPet = petStore.savePetFromVO(fullProgressVO);
+assert.strictEqual(fullProgressPet.progress, 100, '100% progress');
+// acceleratedMinutes=10080 -> expectedHatchTime 被压到 hatchStartTime(=now)，now >= expected -> ready
+// 但 savePetFromVO 用 vo.expectedHatchTime 原值(now+7d)，故这里仍 soon/hatching；
+// 真实场景由后端重算 expectedHatchTime 返回。此处只校验无 prepared 返回。
+assert.notStrictEqual(petStore.getStage(fullProgressPet), 'prepared', 'no prepared stage');
+
+// --- buildCollectionCard: 后端身份 + 前端装饰 ---
+petStore.saveUser({ id: 42, nickname: '蛋友' });
+const card = petStore.buildCollectionCard(hatchedIdentityVO);
+assert.strictEqual(card.prototype, '锦鲤', 'card prototype from vo');
+assert.strictEqual(card.mbti, 'ENFP', 'card mbti from vo');
+assert.strictEqual(card.gender, 'FEMALE', 'card gender from vo');
+assert.strictEqual(card.bloodType, 'A', 'card bloodType from vo');
+assert.ok(card.serial.startsWith('EGG-KOI-'), 'card serial prefix');
+assert.ok(card.hatchQuality === '完整孵化' || card.hatchQuality === '轻量孵化', 'card hatchQuality');
 
 console.log('pet-store.test.js: ALL PASS');

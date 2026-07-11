@@ -119,9 +119,22 @@ function savePetFromVO(vo) {
     messages: [],
     todayMood: vo.todayMood || '',
     todayMoodSentence: vo.todayMoodSentence || '',
+    todayMoodDate: vo.todayMoodDate || '',
     hatchStatus: vo.hatchStatus || 'EGG',
     acceleratedMinutes: accelerated,
-    deviceId: vo.deviceId || null
+    hatchStartTime: toTimestamp(vo.hatchStartTime),
+    expectedHatchTime: toTimestamp(vo.expectedHatchTime),
+    hatchedAt: toTimestamp(vo.hatchedAt),
+    deviceId: vo.deviceId || null,
+    bazi: vo.bazi || '',
+    wuxing: vo.wuxing || '',
+    zodiac: vo.zodiac || '',
+    mbti: vo.mbti || '',
+    personality: vo.personality || '',
+    personalityBrief: vo.personalityBrief || '',
+    gender: vo.gender || '',
+    bloodType: vo.bloodType || '',
+    avatarUrl: vo.avatarUrl || ''
   };
   savePet(pet);
   setActivePetId(pet.id);
@@ -270,14 +283,13 @@ function getStage(pet, now) {
   const current = now || Date.now();
   if (current >= pet.hatchAt) return 'ready';
   if (pet.hatchAt - current <= DAY) return 'soon';
-  if (pet.progress >= 100) return 'prepared';
-  return pet.progress > 0 ? 'hatching' : 'waiting';
+  // 单轨 Model X：进度满即时间到（落到 ready），不保留 prepared 中间态
+  return pet.acceleratedMinutes > 0 || pet.progress > 0 ? 'hatching' : 'waiting';
 }
 
 const STAGE_PRESENTATION = {
   waiting: { homeText: '它还在睡觉，试着叫醒它吧', actionLabel: '孵化修炼手册', myStage: '待激活' },
   hatching: { homeText: '它正在慢慢长大', actionLabel: '孵化修炼手册', myStage: '孵化中' },
-  prepared: { homeText: '准备好了，等待破壳日', actionLabel: '等待破壳日', myStage: '孵化中 · 已准备' },
   soon: { homeText: '蛋壳里传来了动静', actionLabel: '孵化修炼手册', myStage: '即将破壳' },
   ready: { homeText: '它准备好见你了', actionLabel: '查看破壳结果', myStage: '待破壳' },
   hatched: { homeText: '它终于来到你身边了', actionLabel: '和它说说话', myStage: '已破壳' }
@@ -371,6 +383,37 @@ function derivePersonality(pet) {
   return pet.prototype === '锦鲤'
     ? { mbti: 'ENFP', text: '热烈、好奇，喜欢把好运分给你。' }
     : { mbti: 'INFP', text: '温柔、细腻，擅长安静地陪伴。' };
+}
+
+// 从后端 PetVO（破壳后含身份字段）拼装收藏卡：身份字段取自 vo，装饰字段前端生成。
+function buildCollectionCard(vo) {
+  if (!vo || !vo.id) return null;
+  const hatchTs = toTimestamp(vo.hatchedAt) || toTimestamp(vo.expectedHatchTime) || Date.now();
+  const accelerated = vo.acceleratedMinutes || 0;
+  const ratio = accelerated / HATCH_TOTAL_MINUTES;
+  const prefix = vo.prototype === '锦鲤' ? 'KOI' : 'RABBIT';
+  const date = new Date(hatchTs);
+  const compact = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+  const serial = `EGG-${prefix}-${compact}-${String(simpleHash(vo.id) % 999999).padStart(6, '0')}`;
+  const user = getUser();
+  return {
+    id: `card-${vo.id}`,
+    serial,
+    prototype: vo.prototype || '玉兔',
+    style: vo.prototype === '锦鲤' ? '好运红白款' : '月白桂花款',
+    name: vo.nickname || vo.prototype || '玉兔',
+    birthday: todayKey(hatchTs),
+    zodiac: vo.zodiac || getZodiac(hatchTs),
+    gender: vo.gender || (simpleHash(vo.id) % 2 ? '♀' : '♂'),
+    mbti: vo.mbti || '',
+    bloodType: vo.bloodType || ['A', 'B', 'O', 'AB'][simpleHash(vo.id) % 4],
+    personality: vo.personality || '',
+    personalityBrief: vo.personalityBrief || '',
+    avatarUrl: vo.avatarUrl || '',
+    collectible: '普通',
+    hatchQuality: ratio >= 0.8 ? '完整孵化' : '轻量孵化',
+    originalOwner: (user && user.nickname) || '蛋友3024'
+  };
 }
 
 function createCollectionCard() {
@@ -480,6 +523,7 @@ module.exports = {
   getCountdown,
   getDailyStatus,
   recordTouch,
+  buildCollectionCard,
   createCollectionCard,
   saveMessage,
   resetDemo,

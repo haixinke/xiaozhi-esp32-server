@@ -219,7 +219,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         }
 
         JSONObject body = new JSONObject();
-        body.set("grant_type", "stable_token");
+        body.set("grant_type", "client_credential");
         body.set("appid", appid);
         body.set("secret", secret);
         body.set("force_refresh", false);

@@ -1,3 +1,4 @@
+const petApi = require('./pet-api');
 const PET_KEY = 'eggbaby_mvp_pet_v1';
 const USER_KEY = 'eggbaby_mvp_user_v1';
 const IDENTITY_KEY = 'eggbaby_mvp_identity_v1';
@@ -222,35 +223,61 @@ function addProgress(pet, amount) {
   return pet;
 }
 
-function updateNickname(name) {
+async function updateNickname(name) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
   const value = String(name || '').trim();
   if (!value) return { ok: false, message: '昵称不能为空' };
   if (Array.from(value).length > 10) return { ok: false, message: '昵称最多 10 个字符' };
   if (['违法', '诈骗', '赌博'].some(word => value.includes(word))) return { ok: false, message: '昵称含有不适合的内容，请换一个' };
-  const first = !pet.tasks.nicknameDone;
-  pet.name = value;
-  if (first) addProgress(pet, 20);
-  pet.tasks.nicknameDone = true;
-  pet.lastInteractionAt = Date.now();
-  savePet(pet);
-  return { ok: true, added: first ? 20 : 0, pet };
+  if (pet.demoMode) {
+    const first = !pet.tasks.nicknameDone;
+    pet.name = value;
+    if (first) addProgress(pet, 20);
+    pet.tasks.nicknameDone = true;
+    pet.lastInteractionAt = Date.now();
+    savePet(pet);
+    return { ok: true, alreadyDone: !first, pet };
+  }
+  try {
+    const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
+    const updated = savePetFromVO(result.pet);
+    updated.name = value;
+    savePet(updated);
+    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
+  } catch (error) {
+    return { ok: false, message: (error && error.userMessage) || '提交失败，请稍后重试' };
+  }
 }
 
-function completeDailyTask(task, value) {
+const ACTION_TYPE = { cuddle: 'CUDDLE', wish: 'WISH', lesson: 'LESSON' };
+
+async function completeDailyTask(task, value) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
-  const date = todayKey();
-  const field = `${task}Date`;
-  if (pet.tasks[field] === date) return { ok: true, added: 0, alreadyDone: true, pet };
-  pet.tasks[field] = date;
-  if (task === 'wish') pet.preferences.wishes.push({ date, value });
-  if (task === 'lesson') pet.preferences.lessons.push({ date, value });
-  addProgress(pet, 5);
-  pet.lastInteractionAt = Date.now();
-  savePet(pet);
-  return { ok: true, added: 5, alreadyDone: false, pet };
+  if (pet.demoMode) {
+    const date = todayKey();
+    const field = `${task}Date`;
+    if (pet.tasks[field] === date) return { ok: true, alreadyDone: true, pet };
+    pet.tasks[field] = date;
+    if (task === 'wish') pet.preferences.wishes.push({ date, value });
+    if (task === 'lesson') pet.preferences.lessons.push({ date, value });
+    addProgress(pet, 5);
+    pet.lastInteractionAt = Date.now();
+    savePet(pet);
+    return { ok: true, alreadyDone: false, pet };
+  }
+  try {
+    const payload = task === 'cuddle' ? {} : { value };
+    const result = await petApi.submitHatchAction(pet.id, ACTION_TYPE[task], payload);
+    const updated = savePetFromVO(result.pet);
+    if (task === 'wish') updated.preferences.wishes.push({ date: todayKey(), value });
+    if (task === 'lesson') updated.preferences.lessons.push({ date: todayKey(), value });
+    savePet(updated);
+    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
+  } catch (error) {
+    return { ok: false, message: (error && error.userMessage) || '提交失败，请稍后重试' };
+  }
 }
 
 function completeCuddle() {
@@ -265,16 +292,56 @@ function completeLesson(value) {
   return completeDailyTask('lesson', value);
 }
 
-function saveDoodle(color, colorName, pattern) {
+async function saveDoodle(color, colorName, pattern) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
-  const first = !pet.tasks.doodleDone;
-  pet.shell = { color, colorName, pattern };
-  pet.tasks.doodleDone = true;
-  if (first) addProgress(pet, 20);
-  pet.lastInteractionAt = Date.now();
-  savePet(pet);
-  return { ok: true, added: first ? 20 : 0, pet };
+  if (pet.demoMode) {
+    const first = !pet.tasks.doodleDone;
+    pet.shell = { color, colorName, pattern };
+    pet.tasks.doodleDone = true;
+    if (first) addProgress(pet, 20);
+    pet.lastInteractionAt = Date.now();
+    savePet(pet);
+    return { ok: true, alreadyDone: !first, pet };
+  }
+  try {
+    const result = await petApi.submitHatchAction(pet.id, 'DOODLE', { color, colorName, pattern });
+    const updated = savePetFromVO(result.pet);
+    updated.shell = { color, colorName, pattern };
+    savePet(updated);
+    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
+  } catch (error) {
+    return { ok: false, message: (error && error.userMessage) || '提交失败，请稍后重试' };
+  }
+}
+
+// 修炼任务完成态：demo 从 pet.tasks 读；非 demo 从 pet._hatchActions（hatch-guide onShow 拉取缓存）派生当日完成。
+function getHatchActionState(pet) {
+  if (!pet) return { nicknameDone: false, cuddleDone: false, wishDone: false, lessonDone: false, doodleDone: false };
+  if (pet.demoMode || !Array.isArray(pet._hatchActions) || pet._hatchActions.length === 0) {
+    const today = todayKey();
+    return {
+      nicknameDone: !!(pet.tasks && pet.tasks.nicknameDone),
+      cuddleDone: !!(pet.tasks && pet.tasks.cuddleDate === today),
+      wishDone: !!(pet.tasks && pet.tasks.wishDate === today),
+      lessonDone: !!(pet.tasks && pet.tasks.lessonDate === today),
+      doodleDone: !!(pet.tasks && pet.tasks.doodleDone)
+    };
+  }
+  const today = todayKey();
+  const done = {};
+  pet._hatchActions.forEach((a) => {
+    if (a.actionDate === today || a.actionType === 'NICKNAME' || a.actionType === 'DOODLE') {
+      done[a.actionType] = true;
+    }
+  });
+  return {
+    nicknameDone: !!done.NICKNAME,
+    cuddleDone: !!done.CUDDLE,
+    wishDone: !!done.WISH,
+    lessonDone: !!done.LESSON,
+    doodleDone: !!done.DOODLE
+  };
 }
 
 function getStage(pet, now) {
@@ -518,6 +585,7 @@ module.exports = {
   completeWish,
   completeLesson,
   saveDoodle,
+  getHatchActionState,
   getStage,
   getStagePresentation,
   getCountdown,

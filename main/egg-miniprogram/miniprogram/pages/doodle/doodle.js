@@ -11,9 +11,10 @@ Page({
   },
   onColor(e) { this.setData({ selectedColor: e.currentTarget.dataset.value, selectedColorName: e.currentTarget.dataset.name }); },
   onPattern(e) { this.setData({ selectedPattern: e.currentTarget.dataset.value }); },
-  onSave() {
-    const result = petStore.saveDoodle(this.data.selectedColor, this.data.selectedColorName, this.data.selectedPattern);
-    wx.showToast({ title: result.added ? '蛋壳变漂亮了 · +20%' : '蛋壳外观已更新', icon: 'none' });
+  async onSave() {
+    const result = await petStore.saveDoodle(this.data.selectedColor, this.data.selectedColorName, this.data.selectedPattern);
+    if (!result.ok) return wx.showToast({ title: result.message, icon: 'none' });
+    wx.showToast({ title: result.alreadyDone ? '蛋壳外观已更新' : '蛋壳变漂亮了', icon: 'none' });
     setTimeout(() => wx.navigateBack(), 700);
   }
 });

@@ -11,10 +11,10 @@ Page({
     const name = e.detail.value;
     this.setData({ name, count: Array.from(name).length, error: '' });
   },
-  onSave() {
-    const result = petStore.updateNickname(this.data.name);
+  async onSave() {
+    const result = await petStore.updateNickname(this.data.name);
     if (!result.ok) return this.setData({ error: result.message });
-    wx.showToast({ title: result.added ? '它记住了 · 进度 +20%' : '昵称已更新', icon: 'none' });
+    wx.showToast({ title: result.alreadyDone ? '昵称已更新' : '它记住了自己的名字', icon: 'none' });
     setTimeout(() => wx.navigateBack(), 700);
   }
 });

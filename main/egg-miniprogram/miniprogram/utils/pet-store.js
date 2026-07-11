@@ -505,7 +505,7 @@ function buildCollectionCard(vo) {
     gender: vo.gender || (simpleHash(vo.id) % 2 ? '♀' : '♂'),
     mbti: vo.mbti || '',
     bloodType: vo.bloodType || ['A', 'B', 'O', 'AB'][simpleHash(vo.id) % 4],
-    personality: vo.personality || '',
+    personality: vo.personalityBrief || vo.personality || '',
     personalityBrief: vo.personalityBrief || '',
     avatarUrl: vo.avatarUrl || '',
     collectible: '普通',

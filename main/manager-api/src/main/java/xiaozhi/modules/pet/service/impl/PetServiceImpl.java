@@ -96,7 +96,6 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
     private static final List<String> PERSONALITY_BRIEF_POOL = List.of(
             "自带锦鲤体质，靠近就有好运。",
-            "玉兔本兔，月宫里的倾听者。",
             "慢热但长情，认主就掏心掏肺。",
             "嘴上傲娇，行动诚实，偏爱被夸。",
             "记性好记仇少，温柔里藏着小倔强。",

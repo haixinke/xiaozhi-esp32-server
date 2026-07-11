@@ -20,12 +20,19 @@ public class WechatPhoneGate {
     }
 
     public boolean canAccess(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+
         List<WechatUserEntity> mappings = wechatUserDao.selectList(
                 new QueryWrapper<WechatUserEntity>()
                         .select("phone")
                         .eq("user_id", userId));
 
-        return mappings.isEmpty()
-                || mappings.stream().anyMatch(mapping -> StringUtils.isNotBlank(mapping.getPhone()));
+        return mappings == null
+                || mappings.isEmpty()
+                || mappings.stream()
+                        .filter(java.util.Objects::nonNull)
+                        .anyMatch(mapping -> StringUtils.isNotBlank(mapping.getPhone()));
     }
 }

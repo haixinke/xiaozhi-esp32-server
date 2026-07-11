@@ -137,5 +137,51 @@ function todayKey() {
   assert.strictEqual(errResult.message, '已破壳', 'error path surfaces userMessage');
   Module2._load = originalLoad2;
 
+  // === CUDDLE 非 demo：空 payload {}，type=CUDDLE ===
+  actionCalls = [];
+  actionResponses = [{
+    addedMinutes: 60, alreadyDone: false, readyToHatch: false,
+    pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 1500, prototype: '玉兔',
+           expectedHatchTime: new Date(Date.now() + 7 * DAY).toISOString() }
+  }];
+  const cuddleResult = await petStore.completeCuddle();
+  assert.strictEqual(cuddleResult.ok, true, 'cuddle ok');
+  assert.strictEqual(actionCalls.length, 1, 'cuddle calls pet-api once');
+  assert.strictEqual(actionCalls[0].type, 'CUDDLE', 'cuddle type CUDDLE');
+  assert.deepStrictEqual(actionCalls[0].payload, {}, 'cuddle payload empty object');
+
+  // === WISH 非 demo：{value} payload，type=WISH ===
+  actionCalls = [];
+  actionResponses = [{
+    addedMinutes: 60, alreadyDone: false, readyToHatch: false,
+    pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 1560, prototype: '玉兔',
+           expectedHatchTime: new Date(Date.now() + 7 * DAY).toISOString() }
+  }];
+  const wishResult = await petStore.completeWish('安静陪伴你');
+  assert.strictEqual(wishResult.ok, true, 'wish ok');
+  assert.strictEqual(actionCalls.length, 1, 'wish calls pet-api once');
+  assert.strictEqual(actionCalls[0].type, 'WISH', 'wish type WISH');
+  assert.deepStrictEqual(actionCalls[0].payload, { value: '安静陪伴你' }, 'wish payload {value}');
+
+  // === getHatchActionState 非 demo：one-time vs daily 派生 ===
+  const today = todayKey();
+  const yesterday = '2020-01-01';
+  const statePet = {
+    id: 'real-1', ownerId: 42, demoMode: false,
+    _hatchActions: [
+      { actionType: 'NICKNAME', actionDate: yesterday },
+      { actionType: 'DOODLE', actionDate: yesterday },
+      { actionType: 'CUDDLE', actionDate: today },
+      { actionType: 'LESSON', actionDate: yesterday },
+      { actionType: 'WISH', actionDate: today }
+    ]
+  };
+  const hatchState = petStore.getHatchActionState(statePet);
+  assert.strictEqual(hatchState.nicknameDone, true, 'nickname one-time ignores date');
+  assert.strictEqual(hatchState.doodleDone, true, 'doodle one-time ignores date');
+  assert.strictEqual(hatchState.cuddleDone, true, 'cuddle done today');
+  assert.strictEqual(hatchState.lessonDone, false, 'lesson not done today');
+  assert.strictEqual(hatchState.wishDone, true, 'wish done today');
+
   console.log('pet-store-actions.test.js: ALL PASS');
 })().finally(() => { Module._load = originalLoad; });

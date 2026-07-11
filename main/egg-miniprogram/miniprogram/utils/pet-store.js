@@ -271,8 +271,10 @@ async function completeDailyTask(task, value) {
     const payload = task === 'cuddle' ? {} : { value };
     const result = await petApi.submitHatchAction(pet.id, ACTION_TYPE[task], payload);
     const updated = savePetFromVO(result.pet);
-    if (task === 'wish') updated.preferences.wishes.push({ date: todayKey(), value });
-    if (task === 'lesson') updated.preferences.lessons.push({ date: todayKey(), value });
+    if (!result.alreadyDone) {
+      if (task === 'wish') updated.preferences.wishes.push({ date: todayKey(), value });
+      if (task === 'lesson') updated.preferences.lessons.push({ date: todayKey(), value });
+    }
     savePet(updated);
     return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
   } catch (error) {

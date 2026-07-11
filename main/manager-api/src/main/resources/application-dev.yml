@@ -63,11 +63,11 @@ wechat:
 # 阿里云OSS配置（未配置时回退到数据库BLOB存储）
 aliyun:
   oss:
-    endpoint: ${OSS_ENDPOINT:}
-    access-key-id: ${OSS_ACCESS_KEY_ID:}
-    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
-    bucket-name: ${OSS_BUCKET_NAME:}
-    region: ${OSS_REGION:}
+    endpoint: ${EGG_ENDPOINT:}
+    access-key-id: ${EGG_ACCESS_KEY_ID:}
+    access-key-secret: ${EGG_ACCESS_KEY_SECRET:}
+    bucket-name: ${EGG_BUCKET_NAME:}
+    region: ${EGG_REGION:}
 
 # AI宠物头像配置
 # pet.avatar.koi-defaults / rabbit-defaults: 默认头像池，分号分隔；未配置时走兜底图

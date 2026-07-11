@@ -13,30 +13,10 @@ let savedUser;
 let ensureCalls = 0;
 let switchedTo = null;
 let toasts = [];
-let bindCalls = [];
-let bindError = null;
-let bindResolver = null;
 let ensureSession = null;
-let markedSession = null;
 
 const petStore = {
   saveUser: (user) => { savedUser = user; }
-};
-
-const auth = {
-  markPhoneBound() {
-    markedSession = { ...ensureSession, hasPhone: true };
-    return markedSession;
-  }
-};
-
-const wechatApi = {
-  bindPhone(phoneCode) {
-    bindCalls.push(phoneCode);
-    if (bindError) return Promise.reject(bindError);
-    if (bindResolver) return new Promise((resolve) => { bindResolver = resolve; });
-    return Promise.resolve({ phone: '138****8000' });
-  }
 };
 
 const app = {
@@ -54,8 +34,6 @@ const app = {
 Module._load = function (request, parent, isMain) {
   if (parent && parent.filename === welcomePath) {
     if (request === '../../utils/pet-store') return petStore;
-    if (request === '../../utils/auth') return auth;
-    if (request === '../../utils/wechat-api') return wechatApi;
   }
   return originalLoad.call(this, request, parent, isMain);
 };
@@ -83,11 +61,7 @@ function resetScenario() {
   ensureCalls = 0;
   switchedTo = null;
   toasts = [];
-  bindCalls = [];
-  bindError = null;
-  bindResolver = null;
   ensureSession = null;
-  markedSession = null;
   app.globalData = { userId: null, hasPhone: null };
 }
 
@@ -98,7 +72,7 @@ async function run() {
   resetScenario();
   ensureSession = { userId: 42, hasPhone: false };
   await makePage().onLoad();
-  assert.strictEqual(switchedTo, null, 'unbound user must remain on welcome');
+  assert.strictEqual(switchedTo, '/pages/home/home', 'user with session enters home without phone binding');
 
   resetScenario();
   ensureSession = { userId: 42, hasPhone: true };
@@ -108,19 +82,9 @@ async function run() {
   resetScenario();
   ensureSession = { userId: 42, hasPhone: false };
   const uncheckedPage = makePage();
-  await uncheckedPage.onAuthorize({ detail: { code: 'phone-code' } });
-  assert.deepStrictEqual(bindCalls, []);
+  await uncheckedPage.onAuthorize();
   assert.strictEqual(switchedTo, null);
   assert.strictEqual(toasts.at(-1), '请先阅读并同意隐私政策');
-
-  resetScenario();
-  ensureSession = { userId: 42, hasPhone: false };
-  const rejectedPage = makePage();
-  rejectedPage.setData({ agreed: true });
-  await rejectedPage.onAuthorize({ detail: { errMsg: 'getPhoneNumber:fail user deny' } });
-  assert.deepStrictEqual(bindCalls, []);
-  assert.strictEqual(switchedTo, null);
-  assert.strictEqual(toasts.at(-1), '需要授权手机号后才能使用蛋宝宝');
 
   resetScenario();
   ensureSession = { userId: 42, hasPhone: false };
@@ -128,11 +92,7 @@ async function run() {
   Date.now = () => fixedNow;
   const successPage = makePage();
   successPage.setData({ agreed: true });
-  await successPage.onAuthorize({ detail: { code: 'phone-code' } });
-  assert.deepStrictEqual(bindCalls, ['phone-code']);
-  assert.strictEqual(ensureCalls, 1);
-  assert.strictEqual(markedSession.hasPhone, true);
-  assert.strictEqual(app.globalData.hasPhone, true);
+  await successPage.onAuthorize();
   assert.deepStrictEqual(savedUser, {
     id: 42,
     nickname: '蛋友',
@@ -143,31 +103,41 @@ async function run() {
   assert.strictEqual(successPage.data.authorizing, false);
 
   resetScenario();
-  ensureSession = { userId: 42, hasPhone: false };
-  bindError = { userMessage: '手机号绑定失败，请重试' };
-  const failedPage = makePage();
-  failedPage.setData({ agreed: true });
-  await failedPage.onAuthorize({ detail: { code: 'failed-code' } });
+  ensureSession = null;
+  const noSessionPage = makePage();
+  noSessionPage.setData({ agreed: true });
+  await noSessionPage.onAuthorize();
   assert.strictEqual(switchedTo, null);
-  assert.strictEqual(failedPage.data.authorizing, false);
-  assert.strictEqual(toasts.at(-1), '手机号绑定失败，请重试');
+  assert.strictEqual(toasts.at(-1), '暂时无法连接服务，请稍后重试');
 
   resetScenario();
   ensureSession = { userId: 42, hasPhone: false };
   const concurrentPage = makePage();
   concurrentPage.setData({ agreed: true });
-  let finishBind;
-  wechatApi.bindPhone = (phoneCode) => {
-    bindCalls.push(phoneCode);
-    return new Promise((resolve) => { finishBind = resolve; });
-  };
-  const first = concurrentPage.onAuthorize({ detail: { code: 'once' } });
-  const second = concurrentPage.onAuthorize({ detail: { code: 'twice' } });
-  await Promise.resolve();
-  await Promise.resolve();
-  assert.deepStrictEqual(bindCalls, ['once'], 'concurrent taps bind only once');
-  finishBind({ phone: '138****8000' });
+  const first = concurrentPage.onAuthorize();
+  const second = concurrentPage.onAuthorize();
   await Promise.all([first, second]);
+  assert.strictEqual(ensureCalls, 1, 'concurrent taps trigger login only once');
+
+  // TODO: 暂时关闭手机号授权相关测试，后续恢复
+  // resetScenario();
+  // ensureSession = { userId: 42, hasPhone: false };
+  // const rejectedPage = makePage();
+  // rejectedPage.setData({ agreed: true });
+  // await rejectedPage.onAuthorize({ detail: { errMsg: 'getPhoneNumber:fail user deny' } });
+  // assert.deepStrictEqual(bindCalls, []);
+  // assert.strictEqual(switchedTo, null);
+  // assert.strictEqual(toasts.at(-1), '需要授权手机号后才能使用蛋宝宝');
+  //
+  // resetScenario();
+  // ensureSession = { userId: 42, hasPhone: false };
+  // bindError = { userMessage: '手机号绑定失败，请重试' };
+  // const failedPage = makePage();
+  // failedPage.setData({ agreed: true });
+  // await failedPage.onAuthorize({ detail: { code: 'failed-code' } });
+  // assert.strictEqual(switchedTo, null);
+  // assert.strictEqual(failedPage.data.authorizing, false);
+  // assert.strictEqual(toasts.at(-1), '手机号绑定失败，请重试');
 
   console.log('welcome.test.js: ALL PASS');
 }

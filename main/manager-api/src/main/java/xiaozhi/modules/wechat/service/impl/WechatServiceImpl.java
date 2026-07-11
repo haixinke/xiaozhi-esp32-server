@@ -3,13 +3,16 @@ package xiaozhi.modules.wechat.service.impl;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.http.HttpRequest;
@@ -18,13 +21,16 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import xiaozhi.common.config.AliyunOssProperties;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
+import xiaozhi.common.oss.OssService;
 import xiaozhi.common.page.TokenDTO;
 import xiaozhi.common.redis.RedisKeys;
 import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.pet.util.PetBirthCalculator;
 import xiaozhi.modules.security.password.PasswordUtils;
 import xiaozhi.modules.security.service.SysUserTokenService;
 import xiaozhi.modules.sys.dao.SysUserDao;
@@ -33,8 +39,11 @@ import xiaozhi.modules.sys.enums.SuperAdminEnum;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
 import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
+import xiaozhi.modules.wechat.dto.WechatProfileUpdateDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
 import xiaozhi.modules.wechat.service.WechatService;
+import xiaozhi.modules.wechat.util.ProfileValidator;
+import xiaozhi.modules.wechat.vo.WechatProfileVO;
 import xiaozhi.modules.agent.service.AgentService;
 
 /**
@@ -54,6 +63,8 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private final AgentService agentService;
     private final xiaozhi.modules.invite.service.InviteService inviteService;
     private final RedisUtils redisUtils;
+    private final OssService ossService;
+    private final AliyunOssProperties ossProperties;
 
     @Value("${wechat.miniprogram.appid:}")
     private String appid;
@@ -205,6 +216,108 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         WechatBindPhoneRespDTO resp = new WechatBindPhoneRespDTO();
         resp.setPhone(masked);
         return resp;
+    }
+
+    @Override
+    public WechatProfileVO getProfile(Long userId) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        WechatUserEntity entity = baseDao.selectOne(
+                new QueryWrapper<WechatUserEntity>().eq("user_id", userId));
+        if (entity == null) {
+            throw new RenException("当前账号不是微信登录账号");
+        }
+        WechatProfileVO vo = new WechatProfileVO();
+        vo.setNickname(entity.getNickname());
+        vo.setAvatarUrl(entity.getAvatarUrl());
+        vo.setGender(entity.getGender());
+        vo.setBirthday(entity.getBirthday());
+        vo.setCity(entity.getCity());
+        vo.setMbti(entity.getMbti());
+        vo.setZodiac(PetBirthCalculator.zodiacOf(entity.getBirthday()));
+        vo.setPhone(maskPhone(entity.getPhone()));
+        return vo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateProfile(Long userId, WechatProfileUpdateDTO dto) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        ProfileValidator.validate(dto);
+
+        UpdateWrapper<WechatUserEntity> wrapper = new UpdateWrapper<>();
+        wrapper.eq("user_id", userId);
+        if (StringUtils.isNotBlank(dto.getNickname())) {
+            wrapper.set("nickname", dto.getNickname());
+        }
+        if (StringUtils.isNotBlank(dto.getAvatarUrl())) {
+            wrapper.set("avatar_url", dto.getAvatarUrl());
+        }
+        if (StringUtils.isNotBlank(dto.getGender())) {
+            wrapper.set("gender", dto.getGender());
+        }
+        if (dto.getBirthday() != null) {
+            wrapper.set("birthday", dto.getBirthday());
+        }
+        if (StringUtils.isNotBlank(dto.getCity())) {
+            wrapper.set("city", dto.getCity());
+        }
+        if (StringUtils.isNotBlank(dto.getMbti())) {
+            wrapper.set("mbti", dto.getMbti());
+        }
+        baseDao.update(null, wrapper);
+    }
+
+    private static final long MAX_AVATAR_SIZE = 2 * 1024 * 1024;
+    private static final Set<String> ALLOWED_AVATAR_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp");
+
+    @Override
+    public String uploadAvatar(Long userId, MultipartFile file) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        if (file == null || file.isEmpty()) {
+            throw new RenException(ErrorCode.UPLOAD_FILE_EMPTY);
+        }
+        if (!ALLOWED_AVATAR_TYPES.contains(file.getContentType())) {
+            throw new RenException(ErrorCode.AVATAR_FILE_TYPE_ERROR);
+        }
+        if (file.getSize() > MAX_AVATAR_SIZE) {
+            throw new RenException(ErrorCode.FILE_SIZE_OVER_LIMIT);
+        }
+        if (!ossService.isEnabled()) {
+            throw new RenException(ErrorCode.OSS_UPLOAD_FILE_ERROR);
+        }
+
+        String ext = extensionOf(file.getContentType());
+        String uuid = IdUtil.fastSimpleUUID();
+        String ossKey = "avatar/" + userId + "/" + uuid + "." + ext;
+        try {
+            ossService.upload(ossKey, file.getBytes());
+        } catch (Exception e) {
+            log.error("头像上传OSS失败 userId={}", userId, e);
+            throw new RenException(ErrorCode.OSS_UPLOAD_FILE_ERROR);
+        }
+        return publicUrl(ossKey);
+    }
+
+    private String publicUrl(String ossKey) {
+        String endpoint = ossProperties.getEndpoint();
+        String clean = endpoint.replaceFirst("^https?://", "");
+        return "https://" + ossProperties.getBucketName() + "." + clean + "/" + ossKey;
+    }
+
+    private static String extensionOf(String contentType) {
+        return switch (contentType) {
+            case "image/jpeg" -> "jpg";
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            default -> throw new RenException(ErrorCode.AVATAR_FILE_TYPE_ERROR);
+        };
     }
 
     /**

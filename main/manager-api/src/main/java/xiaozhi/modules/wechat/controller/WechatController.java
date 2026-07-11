@@ -1,14 +1,19 @@
 package xiaozhi.modules.wechat.controller;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.Result;
@@ -18,7 +23,9 @@ import xiaozhi.modules.wechat.dto.WechatBindPhoneReqDTO;
 import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
 import xiaozhi.modules.wechat.dto.WechatLoginReqDTO;
 import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
+import xiaozhi.modules.wechat.dto.WechatProfileUpdateDTO;
 import xiaozhi.modules.wechat.service.WechatService;
+import xiaozhi.modules.wechat.vo.WechatProfileVO;
 
 /**
  * 微信小程序登录控制器
@@ -58,5 +65,30 @@ public class WechatController {
         }
         WechatBindPhoneRespDTO resp = wechatService.bindPhone(userId, dto.getPhoneCode());
         return new Result<WechatBindPhoneRespDTO>().ok(resp);
+    }
+
+    @GetMapping("/profile")
+    @Operation(summary = "查询当前用户资料")
+    @RequiresPermissions("sys:role:normal")
+    public Result<WechatProfileVO> getProfile() {
+        Long userId = SecurityUser.getUserId();
+        return new Result<WechatProfileVO>().ok(wechatService.getProfile(userId));
+    }
+
+    @PutMapping("/profile")
+    @Operation(summary = "更新当前用户资料")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Void> updateProfile(@RequestBody @Valid WechatProfileUpdateDTO dto) {
+        Long userId = SecurityUser.getUserId();
+        wechatService.updateProfile(userId, dto);
+        return new Result<>();
+    }
+
+    @PostMapping("/avatar")
+    @Operation(summary = "上传头像到OSS")
+    @RequiresPermissions("sys:role:normal")
+    public Result<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        Long userId = SecurityUser.getUserId();
+        return new Result<String>().ok(wechatService.uploadAvatar(userId, file));
     }
 }

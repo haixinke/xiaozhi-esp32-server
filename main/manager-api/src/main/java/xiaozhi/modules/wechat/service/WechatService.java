@@ -3,7 +3,9 @@ package xiaozhi.modules.wechat.service;
 import xiaozhi.common.service.BaseService;
 import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
 import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
+import xiaozhi.modules.wechat.dto.WechatProfileUpdateDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
+import xiaozhi.modules.wechat.vo.WechatProfileVO;
 
 /**
  * 微信小程序登录服务
@@ -35,4 +37,29 @@ public interface WechatService extends BaseService<WechatUserEntity> {
      * @return 脱敏后的手机号
      */
     WechatBindPhoneRespDTO bindPhone(Long currentUserId, String phoneCode);
+
+    /**
+     * 查询当前用户资料
+     *
+     * @param userId 当前登录态对应的 sys_user.id
+     * @return 用户资料视图（含脱敏手机号、星座）
+     */
+    WechatProfileVO getProfile(Long userId);
+
+    /**
+     * 更新当前用户资料（字段全可选，部分更新）
+     *
+     * @param userId 当前登录态对应的 sys_user.id
+     * @param dto    更新请求
+     */
+    void updateProfile(Long userId, WechatProfileUpdateDTO dto);
+
+    /**
+     * 上传头像到 OSS，返回公开访问 URL
+     *
+     * @param userId 当前登录态对应的 sys_user.id
+     * @param file   头像文件
+     * @return 公开 URL
+     */
+    String uploadAvatar(Long userId, org.springframework.web.multipart.MultipartFile file);
 }

@@ -58,15 +58,27 @@ const api = require('./request');
   token = 'old-token';
   responses = [
     { statusCode: 401, data: { code: 10021, msg: 'expired' } },
-    { statusCode: 200, data: { code: 10201, msg: 'bad' } }
+    { statusCode: 200, data: { code: 10201, msg: '邀请码无效' } }
   ];
   await assert.rejects(
     api.get('/pet/list'),
     (error) => error.type === 'business' && error.code === 10201
+      && error.message === '邀请码无效' && error.userMessage === '邀请码无效'
   );
 
-  responses = [{ statusCode: 200, data: { code: 10201, msg: 'bad' } }];
-  await assert.rejects(api.get('/pet/list'), (error) => error.type === 'business' && error.code === 10201);
+  responses = [{ statusCode: 200, data: { code: 10201, msg: '邀请码已过期' } }];
+  await assert.rejects(
+    api.get('/pet/list'),
+    (error) => error.type === 'business' && error.code === 10201
+      && error.userMessage === '邀请码已过期'
+  );
+
+  responses = [{ statusCode: 200, data: { code: 10201 } }];
+  await assert.rejects(
+    api.get('/pet/list'),
+    (error) => error.type === 'business' && error.code === 10201
+      && error.message === '' && error.userMessage === '操作失败，请稍后重试'
+  );
 
   responses = [
     { statusCode: 401, data: {} },

@@ -1,4 +1,5 @@
 const petStore = require('../../utils/pet-store');
+const { get } = require('../../utils/request');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
 Page({
@@ -15,7 +16,28 @@ Page({
   },
 
   onShow() {
-    const pet = petStore.getPet();
+    const cached = petStore.getPet();
+    if (cached) {
+      this.renderPet(cached);
+      return;
+    }
+    // 冷启动:缓存空,从后端拉取已有蛋(领养后缓存已有,不会走到这里)
+    this.setData({ pet: null, stage: 'empty' });
+    this.loadPetFromServer();
+  },
+
+  async loadPetFromServer() {
+    try {
+      const list = await get('/pet/list');
+      if (Array.isArray(list) && list.length > 0) {
+        this.renderPet(petStore.savePetFromVO(list[0]));
+      }
+    } catch (error) {
+      // 拉取失败(未登录/网络异常)保持空态,不打扰用户
+    }
+  },
+
+  renderPet(pet) {
     if (!pet) {
       this.setData({ pet: null, stage: 'empty' });
       return;

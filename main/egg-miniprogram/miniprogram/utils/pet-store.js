@@ -2,8 +2,10 @@ const PET_KEY = 'eggbaby_mvp_pet_v1';
 const USER_KEY = 'eggbaby_mvp_user_v1';
 const IDENTITY_KEY = 'eggbaby_mvp_identity_v1';
 const EXHIBITION_BACKUP_KEY = 'eggbaby_exhibition_backup_v1';
+const ACTIVE_PET_KEY = 'eggbaby_active_pet_v1';
 
 const DAY = 24 * 60 * 60 * 1000;
+const HATCH_TOTAL_MINUTES = 7 * 24 * 60;
 
 const STATUS_LINES = {
   egg: {
@@ -52,7 +54,7 @@ function getIdentityId() {
   return read(IDENTITY_KEY);
 }
 
-const ACCOUNT_KEYS = [PET_KEY, USER_KEY, IDENTITY_KEY, EXHIBITION_BACKUP_KEY];
+const ACCOUNT_KEYS = [PET_KEY, USER_KEY, IDENTITY_KEY, EXHIBITION_BACKUP_KEY, ACTIVE_PET_KEY];
 
 function clearAccountData() {
   ACCOUNT_KEYS.forEach((key) => {
@@ -79,6 +81,61 @@ function isBound() {
   return !!getPet();
 }
 
+function toTimestamp(value) {
+  if (!value) return null;
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+// 把后端 PetVO 映射成本地 pet 形状并缓存。
+// 修炼相关字段(tasks/shell/preferences)保留 mock 默认值——修炼动作本次不接后端。
+// stage/进度/倒计时由 getStage/getCountdown 从 hatchStatus/hatchAt/acceleratedMinutes 派生。
+function savePetFromVO(vo) {
+  if (!vo || !vo.id) return null;
+  const user = getUser();
+  const accelerated = vo.acceleratedMinutes || 0;
+  const progress = Math.max(0, Math.min(100, Math.round((accelerated / HATCH_TOTAL_MINUTES) * 100)));
+  const hatchStartTime = toTimestamp(vo.hatchStartTime);
+  const hatchAt = toTimestamp(vo.expectedHatchTime)
+    || (hatchStartTime ? hatchStartTime + 7 * DAY : Date.now() + 7 * DAY);
+  const createdAt = toTimestamp(vo.createDate) || hatchStartTime || Date.now();
+  const isHatched = vo.hatchStatus === 'HATCHED';
+  const pet = {
+    id: vo.id,
+    ownerId: (user && user.id) || null,
+    prototype: vo.prototype || '玉兔',
+    name: vo.nickname || '',
+    createdAt,
+    hatchAt,
+    progress,
+    stage: 'waiting',
+    lastInteractionAt: createdAt,
+    tasks: { nicknameDone: false, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
+    preferences: { wishes: [], lessons: [] },
+    shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
+    dailyStatus: null,
+    collectionCard: isHatched ? { placeholder: true, prototype: vo.prototype } : null,
+    inviteCodes: [],
+    messages: [],
+    todayMood: vo.todayMood || '',
+    todayMoodSentence: vo.todayMoodSentence || '',
+    hatchStatus: vo.hatchStatus || 'EGG',
+    acceleratedMinutes: accelerated,
+    deviceId: vo.deviceId || null
+  };
+  savePet(pet);
+  setActivePetId(pet.id);
+  return pet;
+}
+
+function getActivePetId() {
+  return read(ACTIVE_PET_KEY);
+}
+
+function setActivePetId(id) {
+  return write(ACTIVE_PET_KEY, id);
+}
+
 function mockCodeError(code) {
   const value = code.toUpperCase();
   const errors = {
@@ -90,12 +147,19 @@ function mockCodeError(code) {
   return errors[value] || '';
 }
 
-function createInviteCodes(seed) {
+function createInviteCode(seed) {
+  // 与后端 ai_invite_code 单码配额模型对齐：个人仅 1 个邀请码，有总配额/已用/剩余。
+  // 此处为 mock 演示值（1 已用 / 5 配额），真实数据由 GET /invite/mine 返回。
   const suffix = String(seed).slice(-4);
-  return Array.from({ length: 5 }, (_, index) => ({
-    code: `EGG-${suffix}-${index + 1}`,
-    used: false
-  }));
+  const quota = 5;
+  const usedCount = 1;
+  return {
+    code: `EGG-${suffix}-X`,
+    quota,
+    usedCount,
+    remaining: quota - usedCount,
+    status: 1
+  };
 }
 
 function bindPet(code, now) {
@@ -132,7 +196,7 @@ function bindPet(code, now) {
     shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
     dailyStatus: null,
     collectionCard: null,
-    inviteCodes: createInviteCodes(createdAt),
+    inviteCode: createInviteCode(createdAt),
     messages: []
   };
   savePet(pet);
@@ -239,6 +303,11 @@ function simpleHash(value) {
 function getDailyStatus() {
   const pet = getPet();
   if (!pet) return null;
+  // 1. 优先用后端 PetVO 已懒生成的今日心情(adopt/list 返回)
+  if (pet.todayMood && pet.todayMoodSentence) {
+    return { date: todayKey(), mood: pet.todayMood, line: pet.todayMoodSentence, source: 'backend' };
+  }
+  // 2. 本地 fallback(无后端心情时)
   const date = todayKey();
   if (pet.dailyStatus && pet.dailyStatus.date === date) return pet.dailyStatus;
   const inactiveDays = Math.floor((Date.now() - (pet.lastInteractionAt || pet.createdAt)) / DAY);
@@ -367,7 +436,7 @@ function startExhibitionDemo() {
     shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
     dailyStatus: null,
     collectionCard: null,
-    inviteCodes: createInviteCodes(createdAt),
+    inviteCode: createInviteCode(createdAt),
     messages: []
   };
   savePet(pet);
@@ -397,6 +466,9 @@ module.exports = {
   getPet,
   savePet,
   isBound,
+  savePetFromVO,
+  getActivePetId,
+  setActivePetId,
   bindPet,
   updateNickname,
   completeCuddle,

@@ -3,7 +3,7 @@
 > 状态：adopt、hatch-action、破壳 `POST /pet/{id}/hatch`、`GET /pet/{id}` 已落地（据实记录见 §4.2、§6、§10）；§1–§9 其余契约描述仍为设计草案，未落地的部分见 §10.8。
 > 关联：[../CLAUDE.md](../CLAUDE.md) "设备/宠物身份模型"小节；PRD 5.2 孵化机制、5.4 破壳档案。
 
-> ⚠ **偏离说明（重要）**：本实现按**草案模型（任务减时）**落地——完成修炼任务会**减少孵化时长**（累加 `accelerated_minutes`，下推 `expectedHatchTime`）。这与 PRD §5.3 的"双轨孵化（进度不减时）"模型**不一致**，系产品明确确认选择按草案模型走。详见第 10 节。adopt 与 hatch 破壳接口均已落地（见 §4.2、§6）。
+> **说明**：本实现按**单轨任务减时模型**落地——完成修炼任务会**减少孵化时长**（累加 `accelerated_minutes`，下推 `expectedHatchTime`）。PRD §5.3 已于 2026-07-11 修订为同一单轨模型（删除"双轨孵化 / 进度不减时"及 `prepared` 中间态），实现与 PRD 一致。详见第 10 节。adopt 与 hatch 破壳接口均已落地（见 §4.2、§6）。
 
 > ✅ **已落地**：
 > - 孵化修炼任务（hatch-action）端点 + `ai_pet_hatch_action` 表已落地，详见第 10 节。
@@ -196,7 +196,7 @@ public PetVO hatch(Long userId, String petId) {
 2. **OTA 对虚拟设备的行为验证**：现有 `/ota/` 按 mac 查 `ai_device` 返回 `websocket`。破壳时建的虚拟设备（`agentId` 已绑、`userId` 已写、`macAddress=ai_device.id`）按设计应能直接返回 `websocket.url/token`，无需走 `/device/bind` 验证码流程。**待真机联调验证**：manager-api OTA 会返回 `websocket` + `token`，xiaozhi-server 侧对该虚拟设备的 WS 解析尚未真机验证，落地后需联调。
 3. **agent 默认配置**：`AgentCreateDTO` 需补齐该蛋的默认音色（TTS timbre）、LLM model、记忆开关等；落地时确认 `AgentService.createAgent` 的必填项。
 4. **AI 生图（avatarUrl）**：**本期未做**。破壳档案头像当前由配置池按 `prototype`（锦鲤/玉兔）随机选取（`application-dev.yml` 的 `pet.avatar.koi` / `pet.avatar.rabbit`，分号串；池空走内置默认），不调用 AI 生图。AI 生图后续再做。doodle 亦不做 AI 生图。
-5. **激活码与邀请码关系**：已确认 adopt 的 `inviteCode` 即 invite 模块的裂变邀请码（`InviteService.consume`），**不携带原型信息**——prototype 由后端随机。PRD 5.1 邀请码（用户 5 个、企业后台建）与此同一套核销。
+5. **激活码与邀请码关系**：已确认 adopt 的 `inviteCode` 即 invite 模块的裂变邀请码（`InviteService.consume`），**不携带原型信息**——prototype 由后端随机。PRD 5.1 邀请码（用户 1 个 + 配额 N 次、企业后台建）与此同一套核销。个人码模型：每用户 1 码、`quota/usedCount/remaining` 配额扣减（`GET /invite/mine` 返回单码 + 剩余次数），与旧 PRD §4.4「5 个码各 1 次」不同，已据产品确认改为单码配额模型。
 
 ## 8. 迁移与兼容
 
@@ -217,7 +217,7 @@ public PetVO hatch(Long userId, String petId) {
 
 > 状态：✅ 已落地（changeset `202607101600` + `PetController` 新增端点）。本节为**据实记录**，其余 §1–§9 仍为草案。
 
-> ⚠ **偏离 PRD §5.3**：本实现采用"任务减时"模型——每个修炼动作累加 `accelerated_minutes` 并下推 `expectedHatchTime`。与 PRD §5.3"双轨孵化（进度不减时）"不一致，系产品明确确认选择按草案模型走。
+> 注：本实现采用"任务减时"单轨模型——每个修炼动作累加 `accelerated_minutes` 并下推 `expectedHatchTime`，进度满即时间到，不保留 `prepared` 中间态。PRD §5.3 已于 2026-07-11 修订为同一单轨模型，实现与 PRD 一致。
 
 ### 10.1 表结构 `ai_pet_hatch_action`
 

@@ -1,3 +1,3 @@
-const API_BASE_URL = 'http://192.168.4.12:8002/xiaozhi';
+const API_BASE_URL = 'http://192.168.4.132:8002/xiaozhi';
 
 module.exports = { API_BASE_URL };

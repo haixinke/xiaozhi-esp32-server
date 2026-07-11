@@ -8,8 +8,16 @@ const MESSAGES = {
   invalidResponse: '服务响应异常，请稍后重试'
 };
 
-function createError(type, statusCode, code) {
-  return { type, statusCode, code, userMessage: MESSAGES[type] };
+function createError(type, statusCode, code, serverMessage) {
+  const fallback = MESSAGES[type];
+  const hasServerMessage = typeof serverMessage === 'string' && serverMessage.trim().length > 0;
+  return {
+    type,
+    statusCode,
+    code,
+    message: serverMessage || '',
+    userMessage: type === 'business' && hasServerMessage ? serverMessage : fallback
+  };
 }
 
 function performRequest(options, retried401) {
@@ -59,7 +67,7 @@ function performRequest(options, retried401) {
           return;
         }
         if (envelope.code !== 0) {
-          reject(createError('business', statusCode, envelope.code));
+          reject(createError('business', statusCode, envelope.code, envelope.msg));
           return;
         }
         resolve(envelope.data);

@@ -130,13 +130,14 @@ wx.login() → code
 
 #### 前后端孵化状态机映射（注意粒度差异）
 
-前端 `pet-store.getStage()` 有 6 态：`waiting / hatching / prepared / soon / ready / hatched`；后端 `hatchStatus` 目前仅 2 态 `EGG / HATCHED`。前端的多态需要由 `hatchStartTime`、`expectedHatchTime`、`acceleratedMinutes` 在客户端计算得出，或后端后续扩展枚举。接入时需对齐：
+前端 `pet-store.getStage()` 有 5 态：`waiting / hatching / soon / ready / hatched`；后端 `hatchStatus` 仅 2 态 `EGG / HATCHED`。前端多态由 `hatchStartTime`、`expectedHatchTime`、`acceleratedMinutes`、`hatchedAt` 在客户端派生（单轨 Model X，不保留 `prepared`——进度满即时间到，详见 `docs/蛋宝宝小程序MVP_PRD.md` §5.3）。接入时对齐：
 
 | 前端 stage | 触发条件 | 后端判定 |
 |---|---|---|
 | `empty` | 无 pet | `PetVO` 为空 |
-| `waiting`→`hatching`→`prepared` | 0 < progress < 100 | `hatchStatus=EGG` 且未到 `expectedHatchTime` |
-| `soon` | 距 `expectedHatchTime` ≤ 1 天 | `hatchStatus=EGG` |
+| `waiting` | 无加速动作，距 `expectedHatchTime` ≥ 24h | `hatchStatus=EGG` 且 `acceleratedMinutes=0` |
+| `hatching` | 有加速动作，距 `expectedHatchTime` ≥ 24h | `hatchStatus=EGG` 且 `acceleratedMinutes>0` |
+| `soon` | 距 `expectedHatchTime` < 24h | `hatchStatus=EGG` |
 | `ready` | 已到 `expectedHatchTime` 未破壳 | `hatchStatus=EGG` 且 `now ≥ expectedHatchTime` |
 | `hatched` | 已破壳 | `hatchStatus=HATCHED`（`hatchedAt` 已写） |
 
@@ -156,7 +157,7 @@ PRD 5.2：每个动作减少孵化时长。孵化修炼任务已落地：`ai_pet
 
 > 前端进度条由 `acceleratedMinutes / 10080`（7 天 = 10080 分）派生，后端不返 `progress%`。
 
-> ⚠ **偏离 PRD §5.3**：本实现按草案"任务减时"模型落地（任务累加 `acceleratedMinutes` 下推 `expectedHatchTime`），与 PRD §5.3"双轨孵化（进度不减时）"不一致，系产品明确确认选择。详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
+> 注：PRD §5.3 已修订为单轨任务减时模型（2026-07-11），与本实现一致——任务累加 `acceleratedMinutes` 下推 `expectedHatchTime`，进度满即时间到，不保留"进度满但时间未到"的 `prepared` 中间态。详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
 
 #### 破壳事件处理
 
@@ -259,7 +260,7 @@ find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 - 一个账号当前版本只能绑定 1 只蛋宝宝（`pet-store.bindPet` 的 `BOUND` 校验）；接入后端后由 `ai_pet` 的 `uk_ai_pet_device_id` 唯一索引保证一设备一宠物。
 - 昵称限制：最多 10 个字符（5 汉字），含敏感词拦截；后端 `PetUpdateDTO` 校验在后端侧补齐。
 - **不入库 / 不落日志**：AppSecret、token、openid、unionid、`wx.login` code、客服 ID、模板 ID、私有 API URL、真实用户数据。`project.private.config.json`、`.DS_Store`、生成产物保持本地。
-- 孵化时长规则产品方向已确认（Model X）：**adopt 时设基线**（`hatchStartTime=now`、`expectedHatchTime=now+7d`），修炼动作只累加 `acceleratedMinutes` 下推 `expectedHatchTime`（`=hatchStartTime+7d-acceleratedMinutes`，clamp ≥ 起点），无动作蛋到 `adopt+7d` 即可破壳。与 PRD §5.3 双轨孵化（进度不减时）不一致，系产品确认选择。详见"孵化修炼手册"小节与 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
+- 孵化时长规则产品方向已确认（单轨 Model X）：**adopt 时设基线**（`hatchStartTime=now`、`expectedHatchTime=now+7d`），修炼动作只累加 `acceleratedMinutes` 下推 `expectedHatchTime`（`=hatchStartTime+7d-acceleratedMinutes`，clamp ≥ 起点），无动作蛋到 `adopt+7d` 即可破壳。进度满（`acceleratedMinutes≥10080`）即 `expectedHatchTime=hatchStartTime` 即可破壳，不保留 `prepared` 中间态。PRD §5.3 已于 2026-07-11 修订为单轨模型，与本实现一致。详见"孵化修炼手册"小节与 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
 - 后端 schema 变更走 Liquibase：**新增 changeset + SQL 文件，不编辑已有 changeset**（见 `manager-api/CLAUDE.md`）。
 
 ## 相关文档

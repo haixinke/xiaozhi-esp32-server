@@ -101,6 +101,9 @@ wx.login() → code
 - `POST /wechat/login`：用 `wx.login` 的 `code` 换取 Bearer `token` + `openid` + `userId`；`isNewUser=true` 表示后端自动建了用户；`agentId` 为关联智能体。响应字段见 `WechatLoginRespDTO`。
 - `POST /wechat/bindPhone`（需认证）：欢迎页用 `button open-type="getPhoneNumber"` 回调 `e.detail.code` 绑定手机号，响应 `WechatBindPhoneRespDTO`。手机号是进入首页的强制门槛；拒绝授权或绑定失败时必须留在欢迎页。
 - `POST /wechat/bindAccount`（需认证）：将当前微信账号绑定到已有账号（用户名+密码）。
+- `GET /wechat/profile`：查询当前用户资料（昵称/头像/性别/生日/城市/MBTI/星座/脱敏手机号）
+- `PUT /wechat/profile`：更新当前用户资料（字段全可选，部分更新）
+- `POST /wechat/avatar`：上传头像到阿里云 OSS，返回公开 URL
 
 登录态管理参照 `main/miniprogram/utils/auth.js`：`token`、`openid`、签发时间、有效期存 Storage；提前 5 分钟视为过期触发静默刷新；`onShow` 检查并续期。**token / openid / wx.login code 严禁落日志、严禁入库**。
 

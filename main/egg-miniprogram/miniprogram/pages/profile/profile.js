@@ -1,69 +1,185 @@
 const petStore = require('../../utils/pet-store');
+const request = require('../../utils/request');
+const auth = require('../../utils/auth');
+const { API_BASE_URL } = require('../../config/api');
+
 const PROFILE_KEY = 'eggbaby_profile_v1';
 const MBTI_LIST = ['INFP','INFJ','INTJ','INTP','ENFP','ENFJ','ENTJ','ENTP','ISFP','ISFJ','ISTJ','ISTP','ESFP','ESFJ','ESTJ','ESTP'];
+const GENDER_LIST = ['男', '女', '其他'];
+const GENDER_MAP = { '男': 'MALE', '女': 'FEMALE', '其他': 'OTHER' };
+const GENDER_REVERSE = { MALE: '男', FEMALE: '女', OTHER: '其他' };
+const CITY_LIST = ['上海', '北京', '深圳', '杭州', '成都', '广州', '武汉', '西安', '其他'];
+
+function maskUserId(userId) {
+  const s = String(userId || '');
+  if (s.length <= 4) return s;
+  return s.slice(0, 2) + '****' + s.slice(-2);
+}
+
+function formatDisplay(profile) {
+  const user = petStore.getUser() || {};
+  return {
+    nickname: profile.nickname || user.nickname || '蛋友3024',
+    avatarUrl: profile.avatarUrl || user.avatarUrl || '',
+    userId: maskUserId(user.id || profile.userId || ''),
+    gender: profile.gender ? (GENDER_REVERSE[profile.gender] || '未设置') : '未设置',
+    birthday: profile.birthday || '未设置',
+    zodiac: profile.zodiac || '——',
+    city: profile.city || '未设置',
+    mbti: profile.mbti || '未设置'
+  };
+}
 
 Page({
   data: {
-    nickname: '蛋友3024', userId: '038291847562', gender: '未设置', birthday: '未设置',
-    zodiac: '——', city: '未设置', mbti: '未设置', genderLocked: false, birthdayLocked: false,
+    nickname: '蛋友3024',
+    userId: '',
+    gender: '未设置',
+    birthday: '未设置',
+    zodiac: '——',
+    city: '未设置',
+    mbti: '未设置',
     avatarUrl: ''
   },
 
   onLoad() {
-    const user = petStore.getUser() || {};
-    const profile = wx.getStorageSync(PROFILE_KEY) || {};
-    this.setData(Object.assign({}, profile, {
-      nickname: profile.nickname || user.nickname || '蛋友3024',
-      avatarUrl: profile.avatarUrl || user.avatarUrl || ''
-    }));
+    this.loadProfile();
   },
 
-  save(changes) {
-    const next = Object.assign({}, this.data, changes);
-    this.setData(changes);
-    wx.setStorageSync(PROFILE_KEY, next);
-    const user = petStore.getUser();
-    if (user && (changes.nickname || changes.avatarUrl)) petStore.saveUser(Object.assign({}, user, changes));
+  loadProfile() {
+    request.get('/wechat/profile')
+      .then((profile) => {
+        wx.setStorageSync(PROFILE_KEY, profile);
+        petStore.syncUserProfile(profile);
+        this.setData(formatDisplay(profile));
+      })
+      .catch(() => {
+        const cached = wx.getStorageSync(PROFILE_KEY) || {};
+        const user = petStore.getUser() || {};
+        this.setData(formatDisplay({ ...cached, userId: user.id }));
+      });
+  },
+
+  refreshProfile() {
+    return request.get('/wechat/profile')
+      .then((profile) => {
+        wx.setStorageSync(PROFILE_KEY, profile);
+        petStore.syncUserProfile(profile);
+        this.setData(formatDisplay(profile));
+        return profile;
+      });
+  },
+
+  saveProfile(partial) {
+    return request.put('/wechat/profile', partial)
+      .then(() => {
+        const cached = wx.getStorageSync(PROFILE_KEY) || {};
+        const next = { ...cached, ...partial };
+        wx.setStorageSync(PROFILE_KEY, next);
+        petStore.syncUserProfile(next);
+        this.setData(formatDisplay(next));
+        wx.showToast({ title: '保存成功', icon: 'success' });
+      })
+      .catch((error) => {
+        wx.showToast({ title: (error && error.userMessage) || '保存失败', icon: 'none' });
+        throw error;
+      });
   },
 
   onChooseAvatar(e) {
-    const avatarUrl = e.detail.avatarUrl;
-    if (!avatarUrl) return;
-    this.save({ avatarUrl });
-    wx.showToast({ title: '头像已更新', icon: 'success' });
+    const tempPath = e.detail.avatarUrl;
+    if (!tempPath) return;
+    const session = auth.getSession();
+    if (!session || !session.token) {
+      wx.showToast({ title: '登录状态已失效', icon: 'none' });
+      return;
+    }
+    wx.uploadFile({
+      url: `${API_BASE_URL}/wechat/avatar`,
+      filePath: tempPath,
+      name: 'file',
+      header: { Authorization: `Bearer ${session.token}` },
+      success: (res) => {
+        if (res.statusCode !== 200) {
+          wx.showToast({ title: '头像上传失败', icon: 'none' });
+          return;
+        }
+        try {
+          const envelope = JSON.parse(res.data);
+          if (envelope.code !== 0 || !envelope.data) {
+            wx.showToast({ title: envelope.msg || '头像上传失败', icon: 'none' });
+            return;
+          }
+          const avatarUrl = envelope.data;
+          this.saveProfile({ avatarUrl });
+        } catch (error) {
+          wx.showToast({ title: '头像上传失败', icon: 'none' });
+        }
+      },
+      fail: () => wx.showToast({ title: '头像上传失败', icon: 'none' })
+    });
   },
 
   onEditNickname() {
     wx.showModal({
-      title: '修改昵称', editable: true, placeholderText: '最多 16 个字', content: this.data.nickname,
-      success: (res) => { if (res.confirm && res.content.trim()) this.save({ nickname: res.content.trim().slice(0, 16) }); }
-    });
-  },
-
-  onEditGender() {
-    if (this.data.genderLocked) return wx.showToast({ title: '性别设置后不可修改', icon: 'none' });
-    wx.showModal({
-      title: '设置性别', content: '性别设置后不可修改，确认继续吗？',
+      title: '修改昵称',
+      editable: true,
+      placeholderText: '最多 16 个字',
+      content: this.data.nickname,
       success: (res) => {
         if (!res.confirm) return;
-        wx.showActionSheet({ itemList: ['男', '女'], success: (result) => this.save({ gender: result.tapIndex === 0 ? '男' : '女', genderLocked: true }) });
+        const value = String(res.content || '').trim().slice(0, 16);
+        if (!value) return;
+        this.saveProfile({ nickname: value });
       }
     });
   },
 
-  onEditBirthday() {
-    if (this.data.birthdayLocked) return wx.showToast({ title: '生日设置后不可修改', icon: 'none' });
-    wx.showModal({
-      title: '设置演示生日', content: '预览版将示例生日设为 2000-01-01，且设置后不可修改。',
-      success: (res) => { if (res.confirm) this.save({ birthday: '2000-01-01', zodiac: '摩羯座', birthdayLocked: true }); }
+  onEditGender() {
+    wx.showActionSheet({
+      itemList: GENDER_LIST,
+      success: (result) => {
+        const value = GENDER_MAP[GENDER_LIST[result.tapIndex]];
+        this.saveProfile({ gender: value });
+      }
     });
   },
 
+  onEditBirthday(e) {
+    const value = e.detail.value;
+    if (!value) return;
+    this.saveProfile({ birthday: value })
+      .then(() => this.refreshProfile());
+  },
+
   onEditCity() {
-    wx.showActionSheet({ itemList: ['上海', '北京', '深圳', '杭州'], success: (result) => this.save({ city: ['上海', '北京', '深圳', '杭州'][result.tapIndex] }) });
+    wx.showActionSheet({
+      itemList: CITY_LIST,
+      success: (result) => {
+        const selected = CITY_LIST[result.tapIndex];
+        if (selected === '其他') {
+          wx.showModal({
+            title: '输入城市',
+            editable: true,
+            placeholderText: '最多 32 个字',
+            success: (res) => {
+              if (!res.confirm) return;
+              const value = String(res.content || '').trim().slice(0, 32);
+              if (!value) return;
+              this.saveProfile({ city: value });
+            }
+          });
+        } else {
+          this.saveProfile({ city: selected });
+        }
+      }
+    });
   },
 
   onEditMbti() {
-    wx.showActionSheet({ itemList: MBTI_LIST, success: (result) => this.save({ mbti: MBTI_LIST[result.tapIndex] }) });
+    wx.showActionSheet({
+      itemList: MBTI_LIST,
+      success: (result) => this.saveProfile({ mbti: MBTI_LIST[result.tapIndex] })
+    });
   }
 });

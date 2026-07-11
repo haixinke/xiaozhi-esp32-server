@@ -26,11 +26,9 @@
         value="{{gender}}"
         bind:rowtap="onEditGender"
       ></list-row>
-      <list-row
-        label="生日"
-        value="{{birthday}}"
-        bind:rowtap="onEditBirthday"
-      ></list-row>
+      <picker mode="date" bindchange="onEditBirthday">
+        <list-row label="生日" value="{{birthday}}"></list-row>
+      </picker>
       <list-row label="星座" value="{{zodiac}}" show-chevron="{{false}}"></list-row>
       <list-row label="常驻城市" value="{{city}}" bind:rowtap="onEditCity"></list-row>
       <list-row
@@ -40,10 +38,6 @@
         bind:rowtap="onEditMbti"
       ></list-row>
     </view>
-
-    <card tint="tint-yellow" ext-class="hint-card">
-      <text class="hint-text">性别和生日设置后不可修改，请确认后再保存。</text>
-    </card>
 
   </scroll-view>
 </view>

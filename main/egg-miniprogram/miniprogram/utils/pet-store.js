@@ -51,6 +51,18 @@ function saveUser(user) {
   return write(USER_KEY, user);
 }
 
+/**
+ * 把后端用户资料的 nickname/avatarUrl 同步到本地 USER_KEY 缓存。
+ * @param {Object} profile GET /wechat/profile 响应
+ */
+function syncUserProfile(profile) {
+  if (!profile) return;
+  const user = getUser() || {};
+  if (profile.nickname !== undefined) user.nickname = profile.nickname;
+  if (profile.avatarUrl !== undefined) user.avatarUrl = profile.avatarUrl;
+  saveUser(user);
+}
+
 function getIdentityId() {
   return read(IDENTITY_KEY);
 }
@@ -602,6 +614,7 @@ function endExhibitionDemo() {
 module.exports = {
   getUser,
   saveUser,
+  syncUserProfile,
   clearUser,
   clearAccountData,
   getIdentityId,

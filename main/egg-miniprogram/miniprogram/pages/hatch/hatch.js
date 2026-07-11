@@ -31,13 +31,15 @@ Page({
   onReveal() {
     this.setData({ phase: 'reveal' });
     setTimeout(() => {
-      const result = petStore.createCollectionCard();
-      if (!result.ok) {
-        this.setData({ phase: 'confirm' });
-        wx.showToast({ title: result.message, icon: 'none' });
-        return;
-      }
-      wx.redirectTo({ url: '/pages/collection-card/collection-card?new=1' });
+      (async () => {
+        const result = await petStore.createCollectionCard();
+        if (!result.ok) {
+          this.setData({ phase: 'confirm' });
+          wx.showToast({ title: result.message, icon: 'none' });
+          return;
+        }
+        wx.redirectTo({ url: '/pages/collection-card/collection-card?new=1' });
+      })();
     }, 1450);
   }
 });

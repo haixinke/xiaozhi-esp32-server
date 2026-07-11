@@ -183,5 +183,39 @@ function todayKey() {
   assert.strictEqual(hatchState.lessonDone, false, 'lesson not done today');
   assert.strictEqual(hatchState.wishDone, true, 'wish done today');
 
+  // === createCollectionCard 双轨：非 demo 走 POST /pet/{id}/hatch ===
+  petStore.saveUser({ id: 42, nickname: '蛋友' });
+  const readyPet = {
+    id: 'real-2', ownerId: 42, prototype: '锦鲤', name: '小金', createdAt: Date.now(),
+    hatchAt: Date.now() - 1000, progress: 30, stage: 'ready',
+    lastInteractionAt: Date.now(),
+    tasks: { nicknameDone: true, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
+    preferences: { wishes: [], lessons: [] },
+    shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
+    dailyStatus: null, collectionCard: null, inviteCodes: [], messages: [],
+    hatchStatus: 'EGG', acceleratedMinutes: 3000, demoMode: false,
+    expectedHatchTime: Date.now() - 1000, hatchStartTime: Date.now() - 7 * DAY
+  };
+  petStore.savePet(readyPet);
+  hatchCalls = 0;
+  hatchResponse = {
+    id: 'real-2', hatchStatus: 'HATCHED', prototype: '锦鲤', nickname: '小金',
+    acceleratedMinutes: 3000, hatchedAt: new Date(Date.now()).toISOString(),
+    mbti: 'ENFP', personality: '热烈又好奇', gender: 'FEMALE', bloodType: 'A',
+    zodiac: '水瓶座', avatarUrl: 'https://img/koi.png'
+  };
+  const hatchResult = await petStore.createCollectionCard();
+  assert.strictEqual(hatchResult.ok, true, 'hatch ok');
+  assert.strictEqual(hatchResult.created, true, 'hatch created');
+  assert.strictEqual(hatchCalls, 1, 'called hatchPet once');
+  assert.strictEqual(hatchResult.card.prototype, '锦鲤', 'card prototype from vo');
+  assert.strictEqual(hatchResult.card.mbti, 'ENFP', 'card mbti from vo');
+  assert.strictEqual(hatchResult.card.gender, 'FEMALE', 'card gender from vo');
+  assert.ok(hatchResult.card.serial.startsWith('EGG-KOI-'), 'card serial from hatchedAt');
+  assert.strictEqual(hatchResult.card.hatchQuality, '轻量孵化', '3000/10080 ≈ 30% < 80% -> 轻量孵化');
+  const storedHatched = petStore.getPet();
+  assert.strictEqual(storedHatched.collectionCard && storedHatched.collectionCard.serial, hatchResult.card.serial, 'card cached on pet');
+  assert.strictEqual(storedHatched.hatchStatus, 'HATCHED', 'pet hatchStatus updated');
+
   console.log('pet-store-actions.test.js: ALL PASS');
 })().finally(() => { Module._load = originalLoad; });

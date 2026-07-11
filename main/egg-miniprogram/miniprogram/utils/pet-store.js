@@ -485,32 +485,45 @@ function buildCollectionCard(vo) {
   };
 }
 
-function createCollectionCard() {
+async function createCollectionCard() {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
-  if (Date.now() < pet.hatchAt) return { ok: false, message: '还没到预设破壳时间' };
+  if (Date.now() < pet.hatchAt) return { ok: false, message: '还没到破壳时间' };
   if (pet.collectionCard) return { ok: true, created: false, card: pet.collectionCard, pet };
-  const isKoi = pet.prototype === '锦鲤';
-  const personality = derivePersonality(pet);
-  pet.collectionCard = {
-    id: `card-${pet.id}`,
-    serial: cardSerial(pet),
-    prototype: pet.prototype,
-    style: isKoi ? '好运红白款' : '月白桂花款',
-    name: pet.name || pet.prototype,
-    birthday: todayKey(pet.hatchAt),
-    zodiac: getZodiac(pet.hatchAt),
-    gender: simpleHash(pet.id) % 2 ? '♀' : '♂',
-    mbti: personality.mbti,
-    bloodType: ['A', 'B', 'O', 'AB'][simpleHash(pet.id) % 4],
-    personality: personality.text,
-    collectible: '普通',
-    hatchQuality: pet.progress >= 80 ? '完整孵化' : '轻量孵化',
-    originalOwner: (getUser() && getUser().nickname) || '蛋友3024'
-  };
-  pet.stage = 'hatched';
-  savePet(pet);
-  return { ok: true, created: true, card: pet.collectionCard, pet };
+  if (pet.demoMode) {
+    const isKoi = pet.prototype === '锦鲤';
+    const personality = derivePersonality(pet);
+    pet.collectionCard = {
+      id: `card-${pet.id}`,
+      serial: cardSerial(pet),
+      prototype: pet.prototype,
+      style: isKoi ? '好运红白款' : '月白桂花款',
+      name: pet.name || pet.prototype,
+      birthday: todayKey(pet.hatchAt),
+      zodiac: getZodiac(pet.hatchAt),
+      gender: simpleHash(pet.id) % 2 ? '♀' : '♂',
+      mbti: personality.mbti,
+      bloodType: ['A', 'B', 'O', 'AB'][simpleHash(pet.id) % 4],
+      personality: personality.text,
+      collectible: '普通',
+      hatchQuality: pet.progress >= 80 ? '完整孵化' : '轻量孵化',
+      originalOwner: (getUser() && getUser().nickname) || '蛋友3024'
+    };
+    pet.stage = 'hatched';
+    savePet(pet);
+    return { ok: true, created: true, card: pet.collectionCard, pet };
+  }
+  try {
+    const vo = await petApi.hatchPet(pet.id);
+    const card = buildCollectionCard(vo);
+    const updated = savePetFromVO(vo);
+    updated.collectionCard = card;
+    updated.stage = 'hatched';
+    savePet(updated);
+    return { ok: true, created: true, card, pet: updated };
+  } catch (error) {
+    return { ok: false, message: (error && error.userMessage) || '破壳失败，请稍后重试' };
+  }
 }
 
 function saveMessage(message) {

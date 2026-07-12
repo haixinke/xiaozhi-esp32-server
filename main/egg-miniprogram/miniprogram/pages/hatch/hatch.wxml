@@ -6,7 +6,7 @@
     <view class="egg-pulse" style="background: linear-gradient(160deg, #FFFDF0, {{pet.shell.color}}, #F4B9AE);"></view>
     <text class="sub">物理装置已在预设时间打开</text>
     <text class="headline">它终于见到你了。</text>
-    <btn text="揭晓破壳收藏卡" bind:tap="onReveal"></btn>
+    <btn text="{{submitting ? '正在揭晓…' : '揭晓破壳收藏卡'}}" disabled="{{submitting}}" bind:tap="onReveal"></btn>
   </view>
 
   <!-- 阶段二：破壳 + 粒子迸发 + 收藏卡生成 -->

@@ -314,7 +314,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
 
-        PetEntity pet = petDao.selectById(petId);
+        PetEntity pet = petDao.selectByIdForUpdate(petId);
         if (pet == null) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }

@@ -106,7 +106,7 @@ class PetServiceImplHatchTest {
     @DisplayName("happy path - EGG且到点: 破壳成功, 建 agent+设备, 回填档案, 返回 HATCHED")
     void hatch_eggReached_success() {
         PetEntity pet = eggPetReady();
-        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        when(petDao.selectByIdForUpdate(PET_ID)).thenReturn(pet);
 
         PetVO result = petService.hatch(USER_ID, PET_ID);
 
@@ -163,7 +163,7 @@ class PetServiceImplHatchTest {
     void hatch_alreadyHatched_throws() {
         PetEntity pet = eggPetReady();
         pet.setHatchStatus("HATCHED");
-        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        when(petDao.selectByIdForUpdate(PET_ID)).thenReturn(pet);
 
         assertThatThrownBy(() -> petService.hatch(USER_ID, PET_ID))
                 .isInstanceOf(RenException.class)
@@ -179,7 +179,7 @@ class PetServiceImplHatchTest {
     void hatch_timeNotReached_throws() {
         PetEntity pet = eggPetReady();
         pet.setExpectedHatchTime(new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000));
-        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        when(petDao.selectByIdForUpdate(PET_ID)).thenReturn(pet);
 
         assertThatThrownBy(() -> petService.hatch(USER_ID, PET_ID))
                 .isInstanceOf(RenException.class)
@@ -195,7 +195,7 @@ class PetServiceImplHatchTest {
     void hatch_notOwner_throws() {
         PetEntity pet = eggPetReady();
         pet.setUserId(9999L);
-        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        when(petDao.selectByIdForUpdate(PET_ID)).thenReturn(pet);
 
         assertThatThrownBy(() -> petService.hatch(USER_ID, PET_ID))
                 .isInstanceOf(RenException.class)
@@ -209,7 +209,7 @@ class PetServiceImplHatchTest {
     @Test
     @DisplayName("pet不存在 - 抛 PET_NOT_FOUND, 不建agent不建设备")
     void hatch_notFound_throws() {
-        when(petDao.selectById(PET_ID)).thenReturn(null);
+        when(petDao.selectByIdForUpdate(PET_ID)).thenReturn(null);
 
         assertThatThrownBy(() -> petService.hatch(USER_ID, PET_ID))
                 .isInstanceOf(RenException.class)
@@ -230,5 +230,34 @@ class PetServiceImplHatchTest {
         verify(agentService, never()).createAgent(any());
         verify(deviceDao, never()).insert(any(DeviceEntity.class));
         verify(petDao, never()).updateById(any(PetEntity.class));
+    }
+
+    @Test
+    @DisplayName("并发重复破壳 - 第二次看到HATCHED时抛PET_ALREADY_HATCHED, 不再创建agent/device")
+    void hatch_concurrentDuplicateSecondCallSeesHatched_throws() {
+        PetEntity pet = eggPetReady();
+        when(petDao.selectByIdForUpdate(PET_ID))
+                .thenReturn(pet)
+                .thenReturn(hatchedPetFrom(pet));
+
+        // 第一次成功
+        petService.hatch(USER_ID, PET_ID);
+
+        // 第二次并发请求在锁释放后读到已破壳状态
+        assertThatThrownBy(() -> petService.hatch(USER_ID, PET_ID))
+                .isInstanceOf(RenException.class)
+                .satisfies(ex -> assertThat(((RenException) ex).getCode()).isEqualTo(ErrorCode.PET_ALREADY_HATCHED));
+
+        verify(agentService).createAgent(any());
+        verify(deviceDao).insert(any(DeviceEntity.class));
+    }
+
+    private PetEntity hatchedPetFrom(PetEntity eggPet) {
+        PetEntity hatched = eggPetReady();
+        hatched.setId(eggPet.getId());
+        hatched.setHatchStatus("HATCHED");
+        hatched.setDeviceId("existing-device-id");
+        hatched.setHatchedAt(new Date());
+        return hatched;
     }
 }

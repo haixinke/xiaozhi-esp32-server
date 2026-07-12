@@ -3,6 +3,7 @@ const petStore = require('../../utils/pet-store');
 Page({
   data: {
     phase: 'confirm',
+    submitting: false,
     pet: null,
     particles: [
       { tx: '-140rpx', ty: '-110rpx', color: '#EDE78E' },
@@ -29,12 +30,13 @@ Page({
   },
 
   onReveal() {
-    this.setData({ phase: 'reveal' });
+    if (this.data.submitting) return;
+    this.setData({ phase: 'reveal', submitting: true });
     setTimeout(() => {
       (async () => {
         const result = await petStore.createCollectionCard();
         if (!result.ok) {
-          this.setData({ phase: 'confirm' });
+          this.setData({ phase: 'confirm', submitting: false });
           wx.showToast({ title: result.message, icon: 'none' });
           return;
         }

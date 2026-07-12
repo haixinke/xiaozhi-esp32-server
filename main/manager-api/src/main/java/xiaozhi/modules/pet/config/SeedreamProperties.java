@@ -15,16 +15,20 @@ public class SeedreamProperties {
 
     private String key;
 
-    private String baseUrl = "https://ark.cn-beijing.volces.com/api/v3";
+    private String url;
 
-    private String model = "doubao-seedream-5-0-pro-260628";
+    private String model;
 
-    private String size = "1024x1536";
+    private String size;
+
+    private boolean stream;
+
+    private boolean watermark;
 
     /**
      * 判断 Seedream 是否已配置完整
      */
     public boolean isConfigured() {
-        return StringUtils.isNoneBlank(key, baseUrl, model);
+        return StringUtils.isNoneBlank(key, url, model);
     }
 }

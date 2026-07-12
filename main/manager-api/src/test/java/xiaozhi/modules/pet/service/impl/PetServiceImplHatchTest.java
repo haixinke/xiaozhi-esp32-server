@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
@@ -26,6 +27,7 @@ import xiaozhi.modules.pet.dao.MemoryDao;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
 import xiaozhi.modules.pet.entity.PetEntity;
+import xiaozhi.modules.pet.event.CollectionCardGenerationEvent;
 import xiaozhi.modules.pet.service.CollectionCardImageService;
 import xiaozhi.modules.pet.vo.PetVO;
 
@@ -71,13 +73,14 @@ class PetServiceImplHatchTest {
     @Mock private InviteService inviteService;
     @Mock private AgentService agentService;
     @Mock private CollectionCardImageService collectionCardImageService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private PetServiceImpl petService;
 
     @BeforeEach
     void setUp() {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, collectionCardImageService);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher);
         // LLM 不可用 → deriveMbti/derivePersonality 走兜底(INFP/DEFAULT_PERSONALITY)，不调 LLM
         when(llmService.isAvailable()).thenReturn(false);
         when(agentService.createAgent(any())).thenReturn(AGENT_ID);
@@ -147,6 +150,12 @@ class PetServiceImplHatchTest {
         assertThat(result.getHatchStatus()).isEqualTo("HATCHED");
         assertThat(result.getDeviceId()).isEqualTo(device.getId());
         assertThat(result.getMbti()).isEqualTo("INFP");
+
+        verify(collectionCardImageService, never()).generate(any(PetEntity.class));
+        ArgumentCaptor<CollectionCardGenerationEvent> eventCaptor =
+                ArgumentCaptor.forClass(CollectionCardGenerationEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().petId()).isEqualTo(PET_ID);
     }
 
     @Test

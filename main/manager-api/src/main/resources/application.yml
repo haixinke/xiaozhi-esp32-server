@@ -53,6 +53,13 @@ chat:
     # 免费用户每日聊天轮次上限
     free-daily-limit: 30
 
+seedream:
+  url: ${EGG_SEED_DREAM_URL:https://ark.cn-beijing.volces.com/api/v3/images/generations}
+  model: ${EGG_SEED_DREAM_MODEL:doubao-seedream-5-0-lite-260128}
+  size: ${EGG_SEED_DREAM_SIZE:2K}
+  stream: false
+  watermark: false
+
 renren:
   redis:
     open: true

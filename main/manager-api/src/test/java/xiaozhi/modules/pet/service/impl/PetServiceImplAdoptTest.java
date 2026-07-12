@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
@@ -25,7 +26,6 @@ import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
 import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.entity.PetEntity;
-import xiaozhi.modules.pet.service.CollectionCardImageService;
 import xiaozhi.modules.pet.vo.PetVO;
 
 import java.util.Locale;
@@ -67,14 +67,14 @@ class PetServiceImplAdoptTest {
     @Mock private UserProfileDao userProfileDao;
     @Mock private InviteService inviteService;
     @Mock private AgentService agentService;
-    @Mock private CollectionCardImageService collectionCardImageService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private PetServiceImpl petService;
 
     @BeforeEach
     void setUp() {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, collectionCardImageService);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher);
     }
 
     @Test

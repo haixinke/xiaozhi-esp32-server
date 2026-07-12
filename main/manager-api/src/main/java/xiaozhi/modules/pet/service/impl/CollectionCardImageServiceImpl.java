@@ -2,9 +2,9 @@ package xiaozhi.modules.pet.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -19,10 +19,10 @@ import xiaozhi.modules.pet.config.SeedreamProperties;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.service.CollectionCardImageService;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +32,6 @@ import java.util.Map;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class CollectionCardImageServiceImpl implements CollectionCardImageService {
 
     private static final DateTimeFormatter BIRTHDAY_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -79,9 +78,24 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
 
     private final SeedreamProperties seedreamProperties;
     private final RestTemplate restTemplate;
+    private final RestTemplate imageDownloadRestTemplate;
     private final OssService ossService;
     private final AliyunOssProperties ossProperties;
     private final ObjectMapper objectMapper;
+
+    public CollectionCardImageServiceImpl(SeedreamProperties seedreamProperties,
+                                          @Qualifier("seedreamRestTemplate") RestTemplate restTemplate,
+                                          @Qualifier("seedreamImageDownloadRestTemplate") RestTemplate imageDownloadRestTemplate,
+                                          OssService ossService,
+                                          AliyunOssProperties ossProperties,
+                                          ObjectMapper objectMapper) {
+        this.seedreamProperties = seedreamProperties;
+        this.restTemplate = restTemplate;
+        this.imageDownloadRestTemplate = imageDownloadRestTemplate;
+        this.ossService = ossService;
+        this.ossProperties = ossProperties;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public String generate(PetEntity pet) {
@@ -100,22 +114,25 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
 
         try {
             String prompt = buildPrompt(pet);
-            String base64Image = callSeedream(prompt);
-            if (StringUtils.isBlank(base64Image)) {
+            String generatedImageUrl = callSeedream(prompt);
+            if (StringUtils.isBlank(generatedImageUrl)) {
                 log.warn("Seedream 未返回图片，petId={}", pet.getId());
                 return null;
             }
+            log.info("Seedream 返回临时图片URL，petId={}, temporaryUrl={}", pet.getId(), generatedImageUrl);
 
-            byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+            byte[] imageBytes = downloadGeneratedImage(generatedImageUrl);
+            if (imageBytes == null || imageBytes.length == 0) {
+                log.warn("Seedream 图片下载为空，petId={}", pet.getId());
+                return null;
+            }
+
             String ossKey = "eggbabe/cards/" + pet.getId() + ".png";
             ossService.upload(ossKey, imageBytes);
 
             String imageUrl = buildOssUrl(ossKey);
             log.info("收藏卡图片生成成功，petId={}, url={}", pet.getId(), imageUrl);
             return imageUrl;
-        } catch (IllegalArgumentException e) {
-            log.error("Seedream 返回的 base64 图片解码失败，petId={}", pet.getId(), e);
-            return null;
         } catch (RestClientException e) {
             log.error("Seedream API 调用失败，petId={}", pet.getId(), e);
             return null;
@@ -156,19 +173,20 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
     }
 
     private String callSeedream(String prompt) throws Exception {
-        String apiUrl = buildApiUrl();
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", seedreamProperties.getModel());
-
-        List<Map<String, String>> messages = List.of(Map.of("role", "user", "content", prompt));
-        requestBody.put("messages", messages);
+        requestBody.put("prompt", prompt);
+        requestBody.put("response_format", "url");
+        requestBody.put("size", seedreamProperties.getSize());
+        requestBody.put("stream", seedreamProperties.isStream());
+        requestBody.put("watermark", seedreamProperties.isWatermark());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + seedreamProperties.getKey());
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, String.class);
+        ResponseEntity<String> response = restTemplate.exchange(seedreamProperties.getUrl(), HttpMethod.POST, entity, String.class);
 
         if (!response.getStatusCode().is2xxSuccessful()) {
             log.error("Seedream API 返回非成功状态码，status={}, body={}", response.getStatusCode(), response.getBody());
@@ -176,44 +194,31 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
         }
 
         JsonNode root = objectMapper.readTree(response.getBody());
-        JsonNode choices = root.path("choices");
-        if (!choices.isArray() || choices.isEmpty()) {
-            log.warn("Seedream 响应中 choices 为空，body={}", response.getBody());
+        JsonNode data = root.path("data");
+        if (!data.isArray() || data.isEmpty()) {
+            log.warn("Seedream 响应中 data 为空，body={}", response.getBody());
             return null;
         }
 
-        JsonNode content = choices.get(0).path("message").path("content");
-        if (content.isMissingNode() || !content.isTextual()) {
-            log.warn("Seedream 响应中 content 字段异常，body={}", response.getBody());
+        JsonNode url = data.get(0).path("url");
+        if (url.isMissingNode() || !url.isTextual()) {
+            log.warn("Seedream 响应中 url 字段异常，body={}", response.getBody());
             return null;
         }
 
-        String raw = content.asText();
-        return stripBase64Prefix(raw);
+        return url.asText();
     }
 
-    private String buildApiUrl() {
-        String baseUrl = seedreamProperties.getBaseUrl();
-        if (baseUrl.endsWith("/chat/completions")) {
-            return baseUrl;
-        }
-        return baseUrl.endsWith("/") ? baseUrl + "chat/completions" : baseUrl + "/chat/completions";
-    }
-
-    private String stripBase64Prefix(String raw) {
-        if (raw == null) {
+    private byte[] downloadGeneratedImage(String imageUrl) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(List.of(MediaType.IMAGE_JPEG, MediaType.IMAGE_PNG, MediaType.APPLICATION_OCTET_STREAM));
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<byte[]> response = imageDownloadRestTemplate.exchange(URI.create(imageUrl), HttpMethod.GET, entity, byte[].class);
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            log.error("Seedream 图片下载返回非成功状态码，status={}", response.getStatusCode());
             return null;
         }
-        String trimmed = raw.trim();
-        String prefix = "data:image/png;base64,";
-        if (trimmed.startsWith(prefix)) {
-            return trimmed.substring(prefix.length());
-        }
-        prefix = "data:image/jpeg;base64,";
-        if (trimmed.startsWith(prefix)) {
-            return trimmed.substring(prefix.length());
-        }
-        return trimmed;
+        return response.getBody();
     }
 
     private String buildOssUrl(String ossKey) {

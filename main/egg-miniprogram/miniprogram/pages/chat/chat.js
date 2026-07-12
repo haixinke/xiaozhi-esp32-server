@@ -1,4 +1,5 @@
 const petStore = require('../../utils/pet-store');
+const petApi = require('../../utils/pet-api');
 const ota = require('../../utils/ota');
 const WebSocketManager = require('../../utils/websocket');
 const AudioManager = require('../../utils/audio');
@@ -39,7 +40,6 @@ Page({
 
   onLoad() {
     const pet = petStore.getPet();
-    console.log('[chat onLoad] pet=', !!pet, 'collectionCard=', !!(pet && pet.collectionCard), 'deviceId=', !!(pet && pet.deviceId), 'messages=', pet && pet.messages ? JSON.stringify(pet.messages) : 'null');
     if (!pet || !pet.collectionCard || !pet.deviceId) {
       wx.showToast({ title: '破壳后才可以对话', icon: 'none' });
       setTimeout(() => wx.navigateBack(), 600);
@@ -167,7 +167,6 @@ Page({
       const navBarHeight = (res[2] && res[2].height) || 0;
       const scrollViewHeight = windowHeight - navBarHeight - moodBarHeight - composerHeight;
       const finalHeight = scrollViewHeight > 0 ? scrollViewHeight : windowHeight * 0.6;
-      console.log('[chat _calcScrollViewHeight] windowHeight=', windowHeight, 'navBarHeight=', navBarHeight, 'moodBarHeight=', moodBarHeight, 'composerHeight=', composerHeight, 'finalHeight=', finalHeight);
       this.setData({ scrollViewHeight: finalHeight });
     });
   },
@@ -221,44 +220,57 @@ Page({
       this._historyLoading = true;
       this.setData({ historyLoading: true });
 
-      const { list, hasMore } = petStore.getMessages({ page, pageSize: 4 });
-      console.log('[chat _loadHistoryMessages initial] page=', page, 'listLen=', list.length, 'hasMore=', hasMore, 'currentMessagesLen=', this.data.messages.length);
+      petApi.listChatHistory(this.data.pet.agentId, this.data.pet.deviceId, page, 4).then((pageData) => {
+        const list = (pageData && pageData.list) || [];
 
-      if (list.length === 0) {
-        this._historyNoMore = true;
+        if (list.length === 0) {
+          this._historyNoMore = true;
+          this._historyLoading = false;
+          this.setData({ historyNoMore: true, historyLoading: false });
+          return;
+        }
+
+        const historyMsgs = list.reverse().map((item, idx) => ({
+          id: `hist-${page}-${idx}`,
+          messageId: item.id,
+          role: item.chatType === 1 ? 'user' : 'assistant',
+          content: item.content || '',
+          audioId: item.audioId || '',
+          time: this._parseTime(item.createdAt),
+        }));
+
+        const messages = historyMsgs.concat(this.data.messages);
+        this._historyPage = page;
         this._historyLoading = false;
-        this.setData({ historyNoMore: true, historyLoading: false });
-        return;
-      }
 
-      const messages = list.concat(this.data.messages);
-      this._historyPage = page;
-      this._historyLoading = false;
+        const noMore = list.length < 4;
+        const nextData = {
+          messages,
+          historyLoading: false,
+          scrollAnchor: '',
+        };
+        if (noMore) {
+          this._historyNoMore = true;
+          nextData.historyNoMore = true;
+        }
 
-      const nextData = {
-        messages,
-        historyLoading: false,
-        scrollAnchor: '',
-      };
-      if (!hasMore) {
-        this._historyNoMore = true;
-        nextData.historyNoMore = true;
-      }
-
-      this.setData(nextData, () => {
-        console.log('[chat _loadHistoryMessages initial] setData done, messagesLen=', this.data.messages.length);
-        this._scrollToBottom();
-        setTimeout(() => {
-          const last = this.data.messages[this.data.messages.length - 1];
-          if (last && last.id) {
-            this._queryMessageOffset(last.id, (offset) => {
-              console.log('[chat fallback scroll] offset=', offset);
-              this.setData({ scrollWithAnimation: false, scrollTop: offset }, () => {
-                this.setData({ scrollWithAnimation: true });
+        this.setData(nextData, () => {
+          this._scrollToBottom();
+          setTimeout(() => {
+            const last = this.data.messages[this.data.messages.length - 1];
+            if (last && last.id) {
+              this._queryMessageOffset(last.id, (offset) => {
+                this.setData({ scrollWithAnimation: false, scrollTop: offset }, () => {
+                  this.setData({ scrollWithAnimation: true });
+                });
               });
-            });
-          }
-        }, 100);
+            }
+          }, 100);
+        });
+      }).catch(() => {
+        this._historyLoading = false;
+        this.setData({ historyLoading: false });
+        wx.showToast({ title: '加载失败', icon: 'none' });
       });
       return;
     }
@@ -271,40 +283,64 @@ Page({
       this._historyLoading = true;
       this.setData({ historyLoading: true });
 
-      const { list, hasMore } = petStore.getMessages({ page, pageSize: 4 });
+      petApi.listChatHistory(this.data.pet.agentId, this.data.pet.deviceId, page, 4).then((pageData) => {
+        const list = (pageData && pageData.list) || [];
 
-      if (list.length === 0) {
-        this._historyNoMore = true;
-        this._historyLoading = false;
-        this.setData({ historyNoMore: true, historyLoading: false });
-        return;
-      }
-
-      const messages = list.concat(this.data.messages);
-      this._historyPage = page;
-      this._historyLoading = false;
-
-      const nextData = {
-        messages,
-        historyLoading: false,
-        scrollAnchor: '',
-      };
-      if (!hasMore) {
-        this._historyNoMore = true;
-        nextData.historyNoMore = true;
-      }
-
-      this.setData(nextData, () => {
-        if (anchorId) {
-          this._queryMessageOffset(anchorId, (newOffset) => {
-            const newScrollTop = newOffset - anchorViewportOffset;
-            this.setData({ scrollWithAnimation: false, scrollTop: newScrollTop }, () => {
-              this.setData({ scrollWithAnimation: true });
-            });
-          });
+        if (list.length === 0) {
+          this._historyNoMore = true;
+          this._historyLoading = false;
+          this.setData({ historyNoMore: true, historyLoading: false });
+          return;
         }
+
+        const historyMsgs = list.reverse().map((item, idx) => ({
+          id: `hist-${page}-${idx}`,
+          messageId: item.id,
+          role: item.chatType === 1 ? 'user' : 'assistant',
+          content: item.content || '',
+          audioId: item.audioId || '',
+          time: this._parseTime(item.createdAt),
+        }));
+
+        const messages = historyMsgs.concat(this.data.messages);
+        this._historyPage = page;
+        this._historyLoading = false;
+
+        const noMore = list.length < 4;
+        const nextData = {
+          messages,
+          historyLoading: false,
+          scrollAnchor: '',
+        };
+        if (noMore) {
+          this._historyNoMore = true;
+          nextData.historyNoMore = true;
+        }
+
+        this.setData(nextData, () => {
+          if (anchorId) {
+            this._queryMessageOffset(anchorId, (newOffset) => {
+              const newScrollTop = newOffset - anchorViewportOffset;
+              this.setData({ scrollWithAnimation: false, scrollTop: newScrollTop }, () => {
+                this.setData({ scrollWithAnimation: true });
+              });
+            });
+          }
+        });
+      }).catch(() => {
+        this._historyLoading = false;
+        this.setData({ historyLoading: false });
+        wx.showToast({ title: '加载失败', icon: 'none' });
       });
     });
+  },
+
+  _parseTime(value) {
+    if (!value) return Date.now();
+    if (typeof value === 'number') return value;
+    const normalized = value.replace(' ', 'T');
+    const t = new Date(normalized).getTime();
+    return isNaN(t) ? Date.now() : t;
   },
 
   // -------------------------------------------------------------------------
@@ -460,10 +496,8 @@ Page({
   },
 
   _scrollToBottom() {
-    console.log('[chat _scrollToBottom] messagesLen=', this.data.messages.length);
     if (this.data.messages.length === 0) return;
     const last = this.data.messages[this.data.messages.length - 1];
-    console.log('[chat _scrollToBottom] last=', last);
     if (last && last.id) this.setData({ scrollAnchor: `msg-${last.id}` });
   },
 

@@ -34,6 +34,15 @@ function updateNickname(petId, nickname) {
   return put('/pet/update', { id: petId, nickname });
 }
 
+function listChatHistory(agentId, deviceId, page, limit) {
+  return get('/agent/chat-history/list', {
+    agentId,
+    macAddress: deviceId,
+    page: page || 1,
+    limit: limit || 4
+  });
+}
+
 module.exports = {
   adoptPet,
   submitHatchAction,
@@ -41,5 +50,6 @@ module.exports = {
   hatchPet,
   getPet,
   listPets,
-  updateNickname
+  updateNickname,
+  listChatHistory
 };

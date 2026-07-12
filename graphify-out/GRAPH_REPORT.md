@@ -1,64 +1,65 @@
-# Graph Report - main/egg-miniprogram  (2026-07-11)
+# Graph Report - /Users/minwang/codes/github/xiaozhi-esp32-server  (2026-07-13)
 
 ## Corpus Check
-- Corpus is ~11,760 words - fits in a single context window. You may not need a graph.
+- 684 files · ~153,593 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 9017 nodes · 16044 edges · 883 communities (379 shown, 504 thin omitted)
-- Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 2501 edges (avg confidence: 0.77)
+- 10039 nodes · 18502 edges · 946 communities (411 shown, 535 thin omitted)
+- Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 2668 edges (avg confidence: 0.77)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_manager-web minified JS bundle|manager-web minified JS bundle]]
-- [[_COMMUNITY_Liquibase DB migrations|Liquibase DB migrations]]
-- [[_COMMUNITY_Agent knowledge-base DAOs|Agent knowledge-base DAOs]]
-- [[_COMMUNITY_Agent chat controllers|Agent chat controllers]]
-- [[_COMMUNITY_AgentDevice DTOs|Agent/Device DTOs]]
-- [[_COMMUNITY_manager-web JS utils|manager-web JS utils]]
-- [[_COMMUNITY_manager-web JS components|manager-web JS components]]
-- [[_COMMUNITY_ASR providers|ASR providers]]
-- [[_COMMUNITY_miniprogram audio & chat|miniprogram audio & chat]]
-- [[_COMMUNITY_demo-web libopus codec|demo-web libopus codec]]
-- [[_COMMUNITY_System dict data|System dict data]]
-- [[_COMMUNITY_manager-web JS views|manager-web JS views]]
-- [[_COMMUNITY_Chat history download|Chat history download]]
-- [[_COMMUNITY_Aliyun ASRTTS providers|Aliyun ASR/TTS providers]]
-- [[_COMMUNITY_Auth & login controllers|Auth & login controllers]]
-- [[_COMMUNITY_Config & intimacy services|Config & intimacy services]]
-- [[_COMMUNITY_Date utils & correct-word mapping|Date utils & correct-word mapping]]
-- [[_COMMUNITY_Server mgmt & devices|Server mgmt & devices]]
-- [[_COMMUNITY_Agent chat services|Agent chat services]]
-- [[_COMMUNITY_manager-web codec JS|manager-web codec JS]]
-- [[_COMMUNITY_Aliyun OSS & logging|Aliyun OSS & logging]]
-- [[_COMMUNITY_manager-web API layer|manager-web API layer]]
-- [[_COMMUNITY_demo-web JS utils|demo-web JS utils]]
-- [[_COMMUNITY_Chat summary LLM|Chat summary LLM]]
-- [[_COMMUNITY_Config controller|Config controller]]
-- [[_COMMUNITY_demo-web UI controller|demo-web UI controller]]
-- [[_COMMUNITY_manager-mobile i18n|manager-mobile i18n]]
-- [[_COMMUNITY_manager-mobile stores & auth|manager-mobile stores & auth]]
-- [[_COMMUNITY_Knowledge-base RAG|Knowledge-base RAG]]
-- [[_COMMUNITY_MCP client|MCP client]]
-- [[_COMMUNITY_Community 30|Community 30]]
-- [[_COMMUNITY_Community 31|Community 31]]
-- [[_COMMUNITY_Community 32|Community 32]]
-- [[_COMMUNITY_Community 33|Community 33]]
-- [[_COMMUNITY_Community 34|Community 34]]
-- [[_COMMUNITY_Community 35|Community 35]]
-- [[_COMMUNITY_Community 36|Community 36]]
-- [[_COMMUNITY_Community 37|Community 37]]
-- [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 39|Community 39]]
-- [[_COMMUNITY_Community 40|Community 40]]
-- [[_COMMUNITY_Community 41|Community 41]]
-- [[_COMMUNITY_Community 42|Community 42]]
-- [[_COMMUNITY_Community 43|Community 43]]
-- [[_COMMUNITY_Community 44|Community 44]]
-- [[_COMMUNITY_Community 45|Community 45]]
-- [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 49|Community 49]]
+- [[_COMMUNITY_Ab() Ag() Ak() Al() Av()|Ab() Ag() Ak() Al() Av()]]
+- [[_COMMUNITY_Ac() Ar() B() Bi() Bo()|Ac() Ar() B() Bi() Bo()]]
+- [[_COMMUNITY_Agentchathistorycontroller Getchathistorylist() Recall() Uploadfile() Agentcontroller|Agentchathistorycontroller Getchathistorylist() Recall() Uploadfile() Agentcontroller]]
+- [[_COMMUNITY_Changelog Master Yaml (Liquibase Master Changelog) Changeset 202503141335 (John) Changeset 202503141346 (Czc)|Changelog Master Yaml (Liquibase Master Changelog) Changeset 202503141335 (John) Changeset 202503141346 (Czc)]]
+- [[_COMMUNITY_Assertutils Fieldmetaobjecthandler Httpcontextutils Aliyunossconfig Aliyunossproperties|Assertutils Fieldmetaobjecthandler Httpcontextutils Aliyunossconfig Aliyunossproperties]]
+- [[_COMMUNITY_Agentmemorydto Agenttagdto Deviceregisterdto Deviceupdatedto Knowledgebasedto|Agentmemorydto Agenttagdto Deviceregisterdto Deviceupdatedto Knowledgebasedto]]
+- [[_COMMUNITY_Aa() Ae() Au() Bc() Be()|Aa() Ae() Au() Bc() Be()]]
+- [[_COMMUNITY_In() Or() Deletebatch() Selectagentinfobyid() Agentchathistoryserviceimpl|In() Or() Deletebatch() Selectagentinfobyid() Agentchathistoryserviceimpl]]
+- [[_COMMUNITY_Devicedao Getalllastconnectedatbyagentid() Devicetest Testsaveuser() Testwritedeviceinfo()|Devicedao Getalllastconnectedatbyagentid() Devicetest Testsaveuser() Testwritedeviceinfo()]]
+- [[_COMMUNITY_Agenttemplateservice Agentdao Agenttemplatedao Agentcontextproviderserviceimpl Agentpluginmappingserviceimpl|Agenttemplateservice Agentdao Agenttemplatedao Agentcontextproviderserviceimpl Agentpluginmappingserviceimpl]]
+- [[_COMMUNITY_Initmessagesource() Captcha() Serveractionresponsedto Issuccess() Renexceptionhandler|Initmessagesource() Captcha() Serveractionresponsedto Issuccess() Renexceptionhandler]]
+- [[_COMMUNITY_Isvalid() Isinvalid() Nickname Createorder() Delete()|Isvalid() Isinvalid() Nickname Createorder() Delete()]]
+- [[_COMMUNITY_Getdownloadurl() Page() Downloadchathistory() Downloadcurrentsession() Downloadcurrentsessionwithprevious()|Getdownloadurl() Page() Downloadchathistory() Downloadcurrentsession() Downloadcurrentsessionwithprevious()]]
+- [[_COMMUNITY_Constructor() As() Addfile() Clear() Computechecksum()|Constructor() As() Addfile() Clear() Computechecksum()]]
+- [[_COMMUNITY_News From Fetch Iot Tools()|News From Fetch Iot Tools()]]
+- [[_COMMUNITY_Rollback() Companionservice Companioncontextcontroller Companioncontroller Itemcontroller|Rollback() Companionservice Companioncontextcontroller Companioncontroller Itemcontroller]]
+- [[_COMMUNITY_Agentvoiceprintcontroller Otacontroller Systeminitconfig Agentvoiceprintservice Captchaservice|Agentvoiceprintcontroller Otacontroller Systeminitconfig Agentvoiceprintservice Captchaservice]]
+- [[_COMMUNITY_Addmessage() Appendstreamingtext() Audiomanager Calcscrollviewheight() Finalizestreaming()|Addmessage() Appendstreamingtext() Audiomanager Calcscrollviewheight() Finalizestreaming()]]
+- [[_COMMUNITY_Gt() Aliyunossconfig Destroy() Ossclient() Info()|Gt() Aliyunossconfig Destroy() Ossclient() Info()]]
+- [[_COMMUNITY_Call Voicecallmanager Voice Manager Attached()|Call Voicecallmanager Voice Manager Attached()]]
+- [[_COMMUNITY_Generate Getdictdatabytype() Delete() Get() Getwrapper()|Generate Getdictdatabytype() Delete() Get() Getwrapper()]]
+- [[_COMMUNITY_Delete() Update() Get() Page() Save()|Delete() Update() Get() Page() Save()]]
+- [[_COMMUNITY_Ttsproviderbase Text Tts Aliyun Ttsprovider Speak|Ttsproviderbase Text Tts Aliyun Ttsprovider Speak]]
+- [[_COMMUNITY_Libopus A() Ab() Ai() Aj()|Libopus A() Ab() Ai() Aj()]]
+- [[_COMMUNITY_Agentchathistorybizserviceimpl Agentchataudioserviceimpl Agentchattitleserviceimpl Agentchathistorycontroller Agentchataudioservice|Agentchathistorybizserviceimpl Agentchataudioserviceimpl Agentchattitleserviceimpl Agentchathistorycontroller Agentchataudioservice]]
+- [[_COMMUNITY_Login() Register() Retrievepassword() Smsverification() Knowledgebasedao|Login() Register() Retrievepassword() Smsverification() Knowledgebasedao]]
+- [[_COMMUNITY_Initialize Handle Process Prompt() Chat|Initialize Handle Process Prompt() Chat]]
+- [[_COMMUNITY_Pet Store Account Keys Action|Pet Store Account Keys Action]]
+- [[_COMMUNITY_Changelanguage() Currentlang Getcurrentlanguage() Getdefaultlanguage() Getsupportedlanguages()|Changelanguage() Currentlang Getcurrentlanguage() Getdefaultlanguage() Getsupportedlanguages()]]
+- [[_COMMUNITY_Sessionid Swaggerconfig Agentapi() Botapi() Configapi()|Sessionid Swaggerconfig Agentapi() Botapi() Configapi()]]
+- [[_COMMUNITY_Audio Stream() Text() Process Init|Audio Stream() Text() Process Init]]
+- [[_COMMUNITY_App Audiomanager Calcscrollviewheight() Ensurerecordpermission() Flushstreaming()|App Audiomanager Calcscrollviewheight() Ensurerecordpermission() Flushstreaming()]]
+- [[_COMMUNITY_Init Text Speak() Ttsprovider Generate|Init Text Speak() Ttsprovider Generate]]
+- [[_COMMUNITY_Getserviceurl() Agent Model Addagent() Addagenttemplate()|Getserviceurl() Agent Model Addagent() Addagenttemplate()]]
+- [[_COMMUNITY_Islogined() Vue Index Goback() Handleconfirm()|Islogined() Vue Index Goback() Handleconfirm()]]
+- [[_COMMUNITY_Send Intent With Check Rate|Send Intent With Check Rate]]
+- [[_COMMUNITY_Prefillotaurl() Getwebsockethandler() Uicontroller Addchatmessage() Addmcptool()|Prefillotaurl() Getwebsockethandler() Uicontroller Addchatmessage() Addmcptool()]]
+- [[_COMMUNITY_Bytes() Init Session() Connection() Finish|Bytes() Init Session() Connection() Finish]]
+- [[_COMMUNITY_Message Type() Textmessagehandlerregistry Handler() Init|Message Type() Textmessagehandlerregistry Handler() Init]]
+- [[_COMMUNITY_Ah() Bh() Ch() D() Dh()|Ah() Bh() Ch() D() Dh()]]
+- [[_COMMUNITY_Init Token() Initialize 从接口异步获取差异化配置（异步版本，不阻塞主循环） Handle|Init Token() Initialize 从接口异步获取差异化配置（异步版本，不阻塞主循环） Handle]]
+- [[_COMMUNITY_Constructor() Tocbin() Balign4() Collect Data()|Constructor() Tocbin() Balign4() Collect Data()]]
+- [[_COMMUNITY_Fetchreplacementwordlist() Formattooltip() Get() Gettagname() Handlecancel()|Fetchreplacementwordlist() Formattooltip() Get() Gettagname() Handlecancel()]]
+- [[_COMMUNITY_Api Request Add Device Pet|Api Request Add Device Pet]]
+- [[_COMMUNITY_Knowledgefilescontroller Knowledgemanagerserviceimpl Abstractresource Delete() Deletesingle()|Knowledgefilescontroller Knowledgemanagerserviceimpl Abstractresource Delete() Deletesingle()]]
+- [[_COMMUNITY_Menstrualcycleutil Menstrualcycleutiltest Computephase Companionvo Wechatphonegatetest|Menstrualcycleutil Menstrualcycleutiltest Computephase Companionvo Wechatphonegatetest]]
+- [[_COMMUNITY_Createagent() Createvoiceprint() Deleteagent() Getagentdetail() Getagentlist()|Createagent() Createvoiceprint() Deleteagent() Getagentdetail() Getagentlist()]]
+- [[_COMMUNITY_Current Info() Fetch Weather Time|Current Info() Fetch Weather Time]]
+- [[_COMMUNITY_Settings Dosigncontract() Featurelabel() Formatdate() { Get }|Settings Dosigncontract() Featurelabel() Formatdate() { Get }]]
+- [[_COMMUNITY_Constructor() Pause() Resume() Run() Stop()|Constructor() Pause() Resume() Run() Stop()]]
 - [[_COMMUNITY_Community 50|Community 50]]
 - [[_COMMUNITY_Community 51|Community 51]]
 - [[_COMMUNITY_Community 52|Community 52]]
@@ -188,6 +189,7 @@
 - [[_COMMUNITY_Community 176|Community 176]]
 - [[_COMMUNITY_Community 177|Community 177]]
 - [[_COMMUNITY_Community 178|Community 178]]
+- [[_COMMUNITY_Community 179|Community 179]]
 - [[_COMMUNITY_Community 180|Community 180]]
 - [[_COMMUNITY_Community 181|Community 181]]
 - [[_COMMUNITY_Community 182|Community 182]]
@@ -196,13 +198,13 @@
 - [[_COMMUNITY_Community 185|Community 185]]
 - [[_COMMUNITY_Community 186|Community 186]]
 - [[_COMMUNITY_Community 187|Community 187]]
-- [[_COMMUNITY_Community 188|Community 188]]
 - [[_COMMUNITY_Community 189|Community 189]]
 - [[_COMMUNITY_Community 190|Community 190]]
 - [[_COMMUNITY_Community 191|Community 191]]
 - [[_COMMUNITY_Community 192|Community 192]]
 - [[_COMMUNITY_Community 193|Community 193]]
 - [[_COMMUNITY_Community 194|Community 194]]
+- [[_COMMUNITY_Community 195|Community 195]]
 - [[_COMMUNITY_Community 196|Community 196]]
 - [[_COMMUNITY_Community 197|Community 197]]
 - [[_COMMUNITY_Community 198|Community 198]]
@@ -261,6 +263,7 @@
 - [[_COMMUNITY_Community 251|Community 251]]
 - [[_COMMUNITY_Community 252|Community 252]]
 - [[_COMMUNITY_Community 253|Community 253]]
+- [[_COMMUNITY_Community 254|Community 254]]
 - [[_COMMUNITY_Community 255|Community 255]]
 - [[_COMMUNITY_Community 256|Community 256]]
 - [[_COMMUNITY_Community 257|Community 257]]
@@ -276,7 +279,6 @@
 - [[_COMMUNITY_Community 267|Community 267]]
 - [[_COMMUNITY_Community 268|Community 268]]
 - [[_COMMUNITY_Community 269|Community 269]]
-- [[_COMMUNITY_Community 270|Community 270]]
 - [[_COMMUNITY_Community 271|Community 271]]
 - [[_COMMUNITY_Community 272|Community 272]]
 - [[_COMMUNITY_Community 273|Community 273]]
@@ -289,6 +291,7 @@
 - [[_COMMUNITY_Community 280|Community 280]]
 - [[_COMMUNITY_Community 281|Community 281]]
 - [[_COMMUNITY_Community 282|Community 282]]
+- [[_COMMUNITY_Community 283|Community 283]]
 - [[_COMMUNITY_Community 284|Community 284]]
 - [[_COMMUNITY_Community 285|Community 285]]
 - [[_COMMUNITY_Community 286|Community 286]]
@@ -299,7 +302,6 @@
 - [[_COMMUNITY_Community 291|Community 291]]
 - [[_COMMUNITY_Community 292|Community 292]]
 - [[_COMMUNITY_Community 293|Community 293]]
-- [[_COMMUNITY_Community 294|Community 294]]
 - [[_COMMUNITY_Community 295|Community 295]]
 - [[_COMMUNITY_Community 296|Community 296]]
 - [[_COMMUNITY_Community 297|Community 297]]
@@ -346,7 +348,6 @@
 - [[_COMMUNITY_Community 338|Community 338]]
 - [[_COMMUNITY_Community 339|Community 339]]
 - [[_COMMUNITY_Community 340|Community 340]]
-- [[_COMMUNITY_Community 341|Community 341]]
 - [[_COMMUNITY_Community 342|Community 342]]
 - [[_COMMUNITY_Community 343|Community 343]]
 - [[_COMMUNITY_Community 344|Community 344]]
@@ -373,6 +374,7 @@
 - [[_COMMUNITY_Community 365|Community 365]]
 - [[_COMMUNITY_Community 366|Community 366]]
 - [[_COMMUNITY_Community 367|Community 367]]
+- [[_COMMUNITY_Community 368|Community 368]]
 - [[_COMMUNITY_Community 369|Community 369]]
 - [[_COMMUNITY_Community 370|Community 370]]
 - [[_COMMUNITY_Community 371|Community 371]]
@@ -381,6 +383,7 @@
 - [[_COMMUNITY_Community 374|Community 374]]
 - [[_COMMUNITY_Community 375|Community 375]]
 - [[_COMMUNITY_Community 376|Community 376]]
+- [[_COMMUNITY_Community 377|Community 377]]
 - [[_COMMUNITY_Community 378|Community 378]]
 - [[_COMMUNITY_Community 379|Community 379]]
 - [[_COMMUNITY_Community 380|Community 380]]
@@ -404,12 +407,12 @@
 - [[_COMMUNITY_Community 398|Community 398]]
 - [[_COMMUNITY_Community 399|Community 399]]
 - [[_COMMUNITY_Community 400|Community 400]]
-- [[_COMMUNITY_Community 401|Community 401]]
 - [[_COMMUNITY_Community 402|Community 402]]
 - [[_COMMUNITY_Community 403|Community 403]]
 - [[_COMMUNITY_Community 404|Community 404]]
 - [[_COMMUNITY_Community 405|Community 405]]
 - [[_COMMUNITY_Community 406|Community 406]]
+- [[_COMMUNITY_Community 407|Community 407]]
 - [[_COMMUNITY_Community 408|Community 408]]
 - [[_COMMUNITY_Community 409|Community 409]]
 - [[_COMMUNITY_Community 410|Community 410]]
@@ -420,13 +423,18 @@
 - [[_COMMUNITY_Community 415|Community 415]]
 - [[_COMMUNITY_Community 416|Community 416]]
 - [[_COMMUNITY_Community 417|Community 417]]
+- [[_COMMUNITY_Community 418|Community 418]]
 - [[_COMMUNITY_Community 419|Community 419]]
 - [[_COMMUNITY_Community 420|Community 420]]
 - [[_COMMUNITY_Community 421|Community 421]]
 - [[_COMMUNITY_Community 422|Community 422]]
 - [[_COMMUNITY_Community 423|Community 423]]
 - [[_COMMUNITY_Community 424|Community 424]]
+- [[_COMMUNITY_Community 425|Community 425]]
+- [[_COMMUNITY_Community 426|Community 426]]
+- [[_COMMUNITY_Community 427|Community 427]]
 - [[_COMMUNITY_Community 428|Community 428]]
+- [[_COMMUNITY_Community 429|Community 429]]
 - [[_COMMUNITY_Community 430|Community 430]]
 - [[_COMMUNITY_Community 431|Community 431]]
 - [[_COMMUNITY_Community 432|Community 432]]
@@ -445,7 +453,6 @@
 - [[_COMMUNITY_Community 445|Community 445]]
 - [[_COMMUNITY_Community 446|Community 446]]
 - [[_COMMUNITY_Community 447|Community 447]]
-- [[_COMMUNITY_Community 448|Community 448]]
 - [[_COMMUNITY_Community 449|Community 449]]
 - [[_COMMUNITY_Community 450|Community 450]]
 - [[_COMMUNITY_Community 451|Community 451]]
@@ -461,11 +468,7 @@
 - [[_COMMUNITY_Community 461|Community 461]]
 - [[_COMMUNITY_Community 462|Community 462]]
 - [[_COMMUNITY_Community 463|Community 463]]
-- [[_COMMUNITY_Community 464|Community 464]]
-- [[_COMMUNITY_Community 465|Community 465]]
-- [[_COMMUNITY_Community 466|Community 466]]
 - [[_COMMUNITY_Community 467|Community 467]]
-- [[_COMMUNITY_Community 468|Community 468]]
 - [[_COMMUNITY_Community 469|Community 469]]
 - [[_COMMUNITY_Community 470|Community 470]]
 - [[_COMMUNITY_Community 471|Community 471]]
@@ -478,6 +481,12 @@
 - [[_COMMUNITY_Community 478|Community 478]]
 - [[_COMMUNITY_Community 479|Community 479]]
 - [[_COMMUNITY_Community 480|Community 480]]
+- [[_COMMUNITY_Community 481|Community 481]]
+- [[_COMMUNITY_Community 482|Community 482]]
+- [[_COMMUNITY_Community 483|Community 483]]
+- [[_COMMUNITY_Community 484|Community 484]]
+- [[_COMMUNITY_Community 485|Community 485]]
+- [[_COMMUNITY_Community 486|Community 486]]
 - [[_COMMUNITY_Community 487|Community 487]]
 - [[_COMMUNITY_Community 488|Community 488]]
 - [[_COMMUNITY_Community 489|Community 489]]
@@ -600,7 +609,6 @@
 - [[_COMMUNITY_Community 606|Community 606]]
 - [[_COMMUNITY_Community 607|Community 607]]
 - [[_COMMUNITY_Community 608|Community 608]]
-- [[_COMMUNITY_Community 609|Community 609]]
 - [[_COMMUNITY_Community 610|Community 610]]
 - [[_COMMUNITY_Community 611|Community 611]]
 - [[_COMMUNITY_Community 612|Community 612]]
@@ -612,17 +620,32 @@
 - [[_COMMUNITY_Community 618|Community 618]]
 - [[_COMMUNITY_Community 619|Community 619]]
 - [[_COMMUNITY_Community 620|Community 620]]
-- [[_COMMUNITY_Community 621|Community 621]]
 - [[_COMMUNITY_Community 622|Community 622]]
-- [[_COMMUNITY_Community 623|Community 623]]
-- [[_COMMUNITY_Community 624|Community 624]]
-- [[_COMMUNITY_Community 625|Community 625]]
 - [[_COMMUNITY_Community 627|Community 627]]
 - [[_COMMUNITY_Community 628|Community 628]]
 - [[_COMMUNITY_Community 629|Community 629]]
 - [[_COMMUNITY_Community 630|Community 630]]
 - [[_COMMUNITY_Community 631|Community 631]]
+- [[_COMMUNITY_Community 632|Community 632]]
+- [[_COMMUNITY_Community 633|Community 633]]
+- [[_COMMUNITY_Community 634|Community 634]]
+- [[_COMMUNITY_Community 635|Community 635]]
 - [[_COMMUNITY_Community 636|Community 636]]
+- [[_COMMUNITY_Community 637|Community 637]]
+- [[_COMMUNITY_Community 638|Community 638]]
+- [[_COMMUNITY_Community 639|Community 639]]
+- [[_COMMUNITY_Community 640|Community 640]]
+- [[_COMMUNITY_Community 641|Community 641]]
+- [[_COMMUNITY_Community 642|Community 642]]
+- [[_COMMUNITY_Community 643|Community 643]]
+- [[_COMMUNITY_Community 644|Community 644]]
+- [[_COMMUNITY_Community 645|Community 645]]
+- [[_COMMUNITY_Community 646|Community 646]]
+- [[_COMMUNITY_Community 647|Community 647]]
+- [[_COMMUNITY_Community 648|Community 648]]
+- [[_COMMUNITY_Community 649|Community 649]]
+- [[_COMMUNITY_Community 650|Community 650]]
+- [[_COMMUNITY_Community 651|Community 651]]
 - [[_COMMUNITY_Community 652|Community 652]]
 - [[_COMMUNITY_Community 653|Community 653]]
 - [[_COMMUNITY_Community 654|Community 654]]
@@ -637,26 +660,7 @@
 - [[_COMMUNITY_Community 663|Community 663]]
 - [[_COMMUNITY_Community 664|Community 664]]
 - [[_COMMUNITY_Community 665|Community 665]]
-- [[_COMMUNITY_Community 666|Community 666]]
-- [[_COMMUNITY_Community 667|Community 667]]
-- [[_COMMUNITY_Community 668|Community 668]]
-- [[_COMMUNITY_Community 669|Community 669]]
 - [[_COMMUNITY_Community 670|Community 670]]
-- [[_COMMUNITY_Community 671|Community 671]]
-- [[_COMMUNITY_Community 672|Community 672]]
-- [[_COMMUNITY_Community 673|Community 673]]
-- [[_COMMUNITY_Community 674|Community 674]]
-- [[_COMMUNITY_Community 675|Community 675]]
-- [[_COMMUNITY_Community 676|Community 676]]
-- [[_COMMUNITY_Community 677|Community 677]]
-- [[_COMMUNITY_Community 678|Community 678]]
-- [[_COMMUNITY_Community 679|Community 679]]
-- [[_COMMUNITY_Community 680|Community 680]]
-- [[_COMMUNITY_Community 681|Community 681]]
-- [[_COMMUNITY_Community 682|Community 682]]
-- [[_COMMUNITY_Community 683|Community 683]]
-- [[_COMMUNITY_Community 684|Community 684]]
-- [[_COMMUNITY_Community 685|Community 685]]
 - [[_COMMUNITY_Community 686|Community 686]]
 - [[_COMMUNITY_Community 687|Community 687]]
 - [[_COMMUNITY_Community 688|Community 688]]
@@ -679,35 +683,40 @@
 - [[_COMMUNITY_Community 705|Community 705]]
 - [[_COMMUNITY_Community 706|Community 706]]
 - [[_COMMUNITY_Community 707|Community 707]]
-- [[_COMMUNITY_Community 727|Community 727]]
-- [[_COMMUNITY_Community 728|Community 728]]
-- [[_COMMUNITY_Community 730|Community 730]]
-- [[_COMMUNITY_Community 731|Community 731]]
-- [[_COMMUNITY_Community 732|Community 732]]
-- [[_COMMUNITY_Community 733|Community 733]]
-- [[_COMMUNITY_Community 735|Community 735]]
-- [[_COMMUNITY_Community 736|Community 736]]
-- [[_COMMUNITY_Community 737|Community 737]]
-- [[_COMMUNITY_Community 738|Community 738]]
-- [[_COMMUNITY_Community 739|Community 739]]
-- [[_COMMUNITY_Community 740|Community 740]]
+- [[_COMMUNITY_Community 708|Community 708]]
+- [[_COMMUNITY_Community 709|Community 709]]
+- [[_COMMUNITY_Community 710|Community 710]]
+- [[_COMMUNITY_Community 711|Community 711]]
+- [[_COMMUNITY_Community 712|Community 712]]
+- [[_COMMUNITY_Community 713|Community 713]]
+- [[_COMMUNITY_Community 714|Community 714]]
+- [[_COMMUNITY_Community 715|Community 715]]
+- [[_COMMUNITY_Community 716|Community 716]]
+- [[_COMMUNITY_Community 717|Community 717]]
+- [[_COMMUNITY_Community 718|Community 718]]
+- [[_COMMUNITY_Community 719|Community 719]]
+- [[_COMMUNITY_Community 720|Community 720]]
+- [[_COMMUNITY_Community 721|Community 721]]
+- [[_COMMUNITY_Community 722|Community 722]]
+- [[_COMMUNITY_Community 723|Community 723]]
+- [[_COMMUNITY_Community 724|Community 724]]
+- [[_COMMUNITY_Community 725|Community 725]]
+- [[_COMMUNITY_Community 726|Community 726]]
 - [[_COMMUNITY_Community 741|Community 741]]
 - [[_COMMUNITY_Community 742|Community 742]]
-- [[_COMMUNITY_Community 743|Community 743]]
-- [[_COMMUNITY_Community 763|Community 763]]
-- [[_COMMUNITY_Community 764|Community 764]]
-- [[_COMMUNITY_Community 765|Community 765]]
-- [[_COMMUNITY_Community 766|Community 766]]
-- [[_COMMUNITY_Community 767|Community 767]]
-- [[_COMMUNITY_Community 768|Community 768]]
-- [[_COMMUNITY_Community 769|Community 769]]
-- [[_COMMUNITY_Community 770|Community 770]]
-- [[_COMMUNITY_Community 771|Community 771]]
-- [[_COMMUNITY_Community 772|Community 772]]
-- [[_COMMUNITY_Community 773|Community 773]]
-- [[_COMMUNITY_Community 774|Community 774]]
-- [[_COMMUNITY_Community 775|Community 775]]
-- [[_COMMUNITY_Community 776|Community 776]]
+- [[_COMMUNITY_Community 744|Community 744]]
+- [[_COMMUNITY_Community 745|Community 745]]
+- [[_COMMUNITY_Community 746|Community 746]]
+- [[_COMMUNITY_Community 747|Community 747]]
+- [[_COMMUNITY_Community 749|Community 749]]
+- [[_COMMUNITY_Community 750|Community 750]]
+- [[_COMMUNITY_Community 751|Community 751]]
+- [[_COMMUNITY_Community 752|Community 752]]
+- [[_COMMUNITY_Community 753|Community 753]]
+- [[_COMMUNITY_Community 754|Community 754]]
+- [[_COMMUNITY_Community 755|Community 755]]
+- [[_COMMUNITY_Community 756|Community 756]]
+- [[_COMMUNITY_Community 757|Community 757]]
 - [[_COMMUNITY_Community 777|Community 777]]
 - [[_COMMUNITY_Community 778|Community 778]]
 - [[_COMMUNITY_Community 779|Community 779]]
@@ -807,1228 +816,1421 @@
 - [[_COMMUNITY_Community 873|Community 873]]
 - [[_COMMUNITY_Community 874|Community 874]]
 - [[_COMMUNITY_Community 875|Community 875]]
+- [[_COMMUNITY_Community 876|Community 876]]
+- [[_COMMUNITY_Community 877|Community 877]]
+- [[_COMMUNITY_Community 878|Community 878]]
+- [[_COMMUNITY_Community 879|Community 879]]
+- [[_COMMUNITY_Community 880|Community 880]]
+- [[_COMMUNITY_Community 881|Community 881]]
+- [[_COMMUNITY_Community 882|Community 882]]
+- [[_COMMUNITY_Community 883|Community 883]]
+- [[_COMMUNITY_Community 884|Community 884]]
+- [[_COMMUNITY_Community 885|Community 885]]
+- [[_COMMUNITY_Community 886|Community 886]]
+- [[_COMMUNITY_Community 887|Community 887]]
+- [[_COMMUNITY_Community 888|Community 888]]
+- [[_COMMUNITY_Community 889|Community 889]]
+- [[_COMMUNITY_Community 906|Community 906]]
+- [[_COMMUNITY_Community 907|Community 907]]
+- [[_COMMUNITY_Community 908|Community 908]]
+- [[_COMMUNITY_Community 909|Community 909]]
+- [[_COMMUNITY_Community 910|Community 910]]
+- [[_COMMUNITY_Community 911|Community 911]]
+- [[_COMMUNITY_Community 912|Community 912]]
+- [[_COMMUNITY_Community 913|Community 913]]
+- [[_COMMUNITY_Community 914|Community 914]]
+- [[_COMMUNITY_Community 915|Community 915]]
+- [[_COMMUNITY_Community 916|Community 916]]
+- [[_COMMUNITY_Community 917|Community 917]]
+- [[_COMMUNITY_Community 918|Community 918]]
+- [[_COMMUNITY_Community 919|Community 919]]
+- [[_COMMUNITY_Community 920|Community 920]]
+- [[_COMMUNITY_Community 921|Community 921]]
+- [[_COMMUNITY_Community 922|Community 922]]
+- [[_COMMUNITY_Community 923|Community 923]]
+- [[_COMMUNITY_Community 924|Community 924]]
+- [[_COMMUNITY_Community 925|Community 925]]
+- [[_COMMUNITY_Community 926|Community 926]]
+- [[_COMMUNITY_Community 927|Community 927]]
+- [[_COMMUNITY_Community 928|Community 928]]
+- [[_COMMUNITY_Community 929|Community 929]]
+- [[_COMMUNITY_Community 930|Community 930]]
+- [[_COMMUNITY_Community 931|Community 931]]
+- [[_COMMUNITY_Community 932|Community 932]]
+- [[_COMMUNITY_Community 933|Community 933]]
+- [[_COMMUNITY_Community 934|Community 934]]
+- [[_COMMUNITY_Community 935|Community 935]]
+- [[_COMMUNITY_Community 936|Community 936]]
+- [[_COMMUNITY_Community 937|Community 937]]
+- [[_COMMUNITY_Community 938|Community 938]]
+- [[_COMMUNITY_Community 939|Community 939]]
+- [[_COMMUNITY_Community 940|Community 940]]
+- [[_COMMUNITY_Community 941|Community 941]]
+- [[_COMMUNITY_Community 942|Community 942]]
+- [[_COMMUNITY_Community 943|Community 943]]
+- [[_COMMUNITY_Community 944|Community 944]]
+- [[_COMMUNITY_Community 945|Community 945]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `getServiceUrl()` - 137 edges
 2. `eQ` - 119 edges
 3. `db.changelog-master.yaml (Liquibase master changelog)` - 114 edges
-4. `ConnectionHandler` - 68 edges
-5. `TTSProviderBase` - 61 edges
-6. `of()` - 54 edges
-7. `Na()` - 47 edges
-8. `UIController` - 45 edges
-9. `Ia()` - 45 edges
-10. `kl()` - 42 edges
+4. `ErrorCode` - 79 edges
+5. `RenException` - 73 edges
+6. `ConnectionHandler` - 68 edges
+7. `of()` - 68 edges
+8. `TTSProviderBase` - 61 edges
+9. `PageData` - 59 edges
+10. `Result` - 49 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `ensureAgentExists()` --calls--> `post()`  [EXTRACTED]
-  main/miniprogram/app.js → miniprogram/utils/request.js
-- `del()` --calls--> `onRecall()`  [EXTRACTED]
-  miniprogram/utils/request.js → main/miniprogram/pages/index/index.js
-- `main()` --calls--> `shutdown_global_executor()`  [INFERRED]
-  main/xiaozhi-server/app.py → main/xiaozhi-server/core/connection.py
+  main/miniprogram/app.js → egg-miniprogram/miniprogram/utils/request.js
 - `AccessToken` --uses--> `TTSProviderBase`  [INFERRED]
   main/xiaozhi-server/core/providers/tts/aliyun.py → main/xiaozhi-server/core/providers/tts/base.py
 - `s()` --calls--> `a()`  [INFERRED]
-  main/manager-web/public/generator/workers/gif.js → main/demo-web/public/libopus.js
+  main/manager-web/public/generator/workers/gif.worker.js → main/demo-web/public/libopus.js
+- `showDanger()` --calls--> `if()`  [INFERRED]
+  main/manager-web/src/utils/index.js → main/manager-web/src/views/login.vue
+- `onLaunch()` --calls--> `applyGlobalTheme()`  [EXTRACTED]
+  egg-miniprogram/miniprogram/app.js → main/miniprogram/utils/theme.js
 
-## Communities (883 total, 504 thin omitted)
+## Hyperedges (group relationships)
+- **AI companion menstrual cycle feature** — 202606261800_ai_companion, companionentity_companionentity, companionvo_companionvo, menstrualcycleutil_menstrualcycleutil, menstrualphase_menstrualphase, companionserviceimpl_companionserviceimpl [INFERRED 0.85]
+- **Common Exception Handling Flow** — renexceptionhandler_handlerenexception, renexceptionhandler_handleduplicatekeyexception, renexceptionhandler_handleunauthorizedexception, renexceptionhandler_handleexception, renexceptionhandler_handlenoresourcefoundexception, renexceptionhandler_handlemethodargumentnotvalidexception, renexception, result, errorcode, messageutils [EXTRACTED 1.00]
+- **XSS Filter Pipeline** — xssconfig, xssfilter, xssproperties, xsshttpservletrequestwrapper, xssutils [EXTRACTED 1.00]
+- **MyBatis-Plus Security Interceptors** — mybatisplusconfig, datafilterinterceptor, datascope [EXTRACTED 1.00]
+- **Voice Chat Flow** — page_chat, util_websocket, util_audio, ws_server_xiaozhi [INFERRED 0.85]
+- **Hatch Ritual Flow** — page_hatch, util_petstore, page_collectioncard [INFERRED 0.85]
+- **Collection Card Flow** — page_collectioncard, util_petstore, component_petavatar [INFERRED 0.75]
+- **Home page UI composition** — page_home_js, page_home_wxml, page_home_wxss, component_nav_bar, component_pet_avatar [INFERRED 0.85]
+- **Profile page UI composition** — page_profile_js, page_profile_wxml, page_profile_wxss, component_nav_bar, component_egg_avatar, component_list_row, component_card [INFERRED 0.85]
+- **Welcome phone authorization flow** — page_welcome_js, page_welcome_wxml, utils_auth, utils_wechat_api, page_home [INFERRED 0.85]
+- **蛋宝宝语音聊天数据流** — util_ota, util_websocket, util_audio, backend_xiaozhi_server [INFERRED 0.85]
+- **孵化修炼动作后端调用链** — page_wish, util_pet_store, util_pet_api, util_request, backend_manager_api [EXTRACTED 1.00]
+- **许愿页面 UI 组成** — page_wish, component_nav_bar, rationale_daily_wish [EXTRACTED 1.00]
 
-### Community 0 - "manager-web minified JS bundle"
+## Communities (946 total, 535 thin omitted)
+
+### Community 0 - "Ab() Ag() Ak() Al() Av()"
 Cohesion: 0.01
-Nodes (211): _0, A0, Ab(), Ah, aI(), Am, Ao, Ap (+203 more)
+Nodes (256): _0, A0, Ab(), Ad, Af, Ag(), Ah, Ak() (+248 more)
 
-### Community 1 - "Liquibase DB migrations"
+### Community 1 - "Ac() Ar() B() Bi() Bo()"
+Cohesion: 0.04
+Nodes (109): AC(), Ar(), _B(), bI(), bo(), cA(), ce(), Cg() (+101 more)
+
+### Community 2 - "Agentchathistorycontroller Getchathistorylist() Recall() Uploadfile() Agentcontroller"
+Cohesion: 0.03
+Nodes (11): AgentChatHistoryController, AgentController, CorrectWordController, DeviceController, InviteController, KnowledgeBaseController, ModelController, ModelProviderController (+3 more)
+
+### Community 3 - "Changelog Master Yaml (Liquibase Master Changelog) Changeset 202503141335 (John) Changeset 202503141346 (Czc)"
 Cohesion: 0.02
 Nodes (115): db.changelog-master.yaml (Liquibase master changelog), changeset 202503141335 (John), changeset 202503141346 (czc), changeset 202504082211 (John), changeset 202504092335 (John), changeset 202504112044 (John), changeset 202504112058 (John), changeset 202504151206 (John) (+107 more)
 
-### Community 2 - "Agent knowledge-base DAOs"
-Cohesion: 0.03
-Nodes (9): AgentController, CorrectWordController, DeviceController, InviteController, KnowledgeBaseController, ModelController, PaymentController, PetController (+1 more)
+### Community 4 - "Assertutils Fieldmetaobjecthandler Httpcontextutils Aliyunossconfig Aliyunossproperties"
+Cohesion: 0.06
+Nodes (36): AliyunOssConfig, AliyunOssProperties, API Response Envelope Pattern, AssertUtils, Centralized Error Code Registry, Constant, ConvertUtils, DateUtils (+28 more)
 
-### Community 3 - "Agent chat controllers"
+### Community 5 - "Agentmemorydto Agenttagdto Deviceregisterdto Deviceupdatedto Knowledgebasedto"
 Cohesion: 0.04
-Nodes (11): eQ, or(), KnowledgeBaseDao, VoiceCloneDao, AgentChatHistoryServiceImpl, KnowledgeBaseServiceImpl, ModelProviderServiceImpl, TimbreServiceImpl (+3 more)
+Nodes (25): AgentMemoryDTO, AgentTagDTO, DeviceRegisterDTO, DeviceUpdateDTO, KnowledgeBaseDTO, LoginDTO, SysDictDataDTO, SysDictTypeDTO (+17 more)
 
-### Community 4 - "Agent/Device DTOs"
-Cohesion: 0.05
-Nodes (61): _A, bo(), BQ, ce(), Cg(), CI, dI, dn() (+53 more)
+### Community 6 - "Aa() Ae() Au() Bc() Be()"
+Cohesion: 0.06
+Nodes (74): aA(), ae(), Au(), Bc(), BE(), Bg(), Bs(), CB() (+66 more)
 
-### Community 5 - "manager-web JS utils"
+### Community 7 - "In() Or() Deletebatch() Selectagentinfobyid() Agentchathistoryserviceimpl"
 Cohesion: 0.04
-Nodes (11): AgentCorrectWordMappingDao, AgentPluginMappingMapper, ConfigServiceImpl, CorrectWordFileServiceImpl, OpenAIStyleLLMServiceImpl, PetServiceImplMemoryTest, CompanionLabels, isNotNull() (+3 more)
+Nodes (10): eQ, In(), or(), AgentChatHistoryServiceImpl, AgentServiceImpl, AgentVoicePrintServiceImpl, ModelProviderServiceImpl, OtaServiceImpl (+2 more)
 
-### Community 6 - "manager-web JS components"
+### Community 8 - "Devicedao Getalllastconnectedatbyagentid() Devicetest Testsaveuser() Testwritedeviceinfo()"
+Cohesion: 0.04
+Nodes (9): DeviceDao, DeviceTest, ConfigServiceImpl, DeviceServiceImpl, PetServiceImplMemoryTest, RAGFlowClient, DateUtils, isNotNull() (+1 more)
+
+### Community 9 - "Agenttemplateservice Agentdao Agenttemplatedao Agentcontextproviderserviceimpl Agentpluginmappingserviceimpl"
 Cohesion: 0.05
-Nodes (30): AddReq, ChunkDTO, InfoVO, ListReq, ListVO, RemoveReq, UpdateReq, AgentMemoryDTO (+22 more)
+Nodes (24): AgentContextProviderService, AgentEntity, AgentPluginMappingService, AgentTagService, AgentTemplateEntity, AgentTemplateService, ConfigService, CorrectWordFileService (+16 more)
 
-### Community 7 - "ASR providers"
+### Community 10 - "Initmessagesource() Captcha() Serveractionresponsedto Issuccess() Renexceptionhandler"
+Cohesion: 0.05
+Nodes (5): ServerActionResponseDTO, RenExceptionHandler, AgentChatSummaryServiceImpl, WechatServiceImpl, MessageUtils
+
+### Community 11 - "Isvalid() Isinvalid() Nickname Createorder() Delete()"
+Cohesion: 0.04
+Nodes (9): AgentCorrectWordMappingDao, WechatProfileUpdateDTOTest, CorrectWordFileServiceImpl, OpenAIStyleLLMServiceImpl, WechatPhoneGate, CompanionLabels, IpUtils, ToolUtil (+1 more)
+
+### Community 12 - "Getdownloadurl() Page() Downloadchathistory() Downloadcurrentsession() Downloadcurrentsessionwithprevious()"
+Cohesion: 0.04
+Nodes (6): OTAMagController, VoiceCloneController, SysUserServiceImpl, TokenGenerator, RedisKeys, HashEncryptionUtil
+
+### Community 13 - "Constructor() As() Addfile() Clear() Computechecksum()"
+Cohesion: 0.06
+Nodes (11): as(), Bu, dd, GB, hv(), kl(), Ls(), RB (+3 more)
+
+### Community 14 - "News From Fetch Iot Tools()"
+Cohesion: 0.04
+Nodes (33): ToolDefinition, DeviceIoTExecutor, DeviceMCPExecutor, call_device(), _failed_reply(), _is_answering(), 检查是否为接听模式（conn.incoming_call 不为空）, _request_api() (+25 more)
+
+### Community 15 - "Rollback() Companionservice Companioncontextcontroller Companioncontroller Itemcontroller"
+Cohesion: 0.04
+Nodes (15): CompanionCreateDTO, CompanionService, CompanionContextController, CompanionController, ItemController, CompanionSetupDTO, FulfillmentDispatcherImpl, ItemFulfillmentServiceImpl (+7 more)
+
+### Community 16 - "Agentvoiceprintcontroller Otacontroller Systeminitconfig Agentvoiceprintservice Captchaservice"
+Cohesion: 0.05
+Nodes (15): AgentVoicePrintService, CaptchaService, AgentVoicePrintController, OTAController, DeviceAddressBookService, DeviceService, ALiYunSmsService, CaptchaServiceImpl (+7 more)
+
+### Community 17 - "Addmessage() Appendstreamingtext() Audiomanager Calcscrollviewheight() Finalizestreaming()"
+Cohesion: 0.06
+Nodes (28): _addMessage(), _appendStreamingText(), AudioManager, _finalizeStreaming(), _flushStreaming(), _handleTtsState(), _handleWSMessage(), _initAudio() (+20 more)
+
+### Community 18 - "Gt() Aliyunossconfig Destroy() Ossclient() Info()"
+Cohesion: 0.06
+Nodes (9): gt(), AliyunOssConfig, attached(), compute(), size(), CollectionCardGenerationListener, KnowledgeFilesServiceImpl, KnowledgeBaseAdapterFactory (+1 more)
+
+### Community 19 - "Call Voicecallmanager Voice Manager Attached()"
+Cohesion: 0.05
+Nodes (32): attached(), formatDuration(), _sync(), VoiceCallManager, assert, mgr, VoiceCallManager, VoiceCallManager (+24 more)
+
+### Community 20 - "Generate Getdictdatabytype() Delete() Get() Getwrapper()"
+Cohesion: 0.05
+Nodes (9): SysDictDataDao, SuperAdminEnum(), value(), CollectionCardGenerationListenerTest, SysDictDataServiceImpl, SysDictTypeServiceImpl, MemoryControllerTest, ProfileControllerTest (+1 more)
+
+### Community 21 - "Delete() Update() Get() Page() Save()"
+Cohesion: 0.04
+Nodes (10): AdminController, ConfigController, LoginController, SysDictDataController, SysDictTypeController, SysParamsController, TimbreController, SysDictDataService (+2 more)
+
+### Community 22 - "Ttsproviderbase Text Tts Aliyun Ttsprovider Speak"
 Cohesion: 0.08
-Nodes (70): aA(), ae(), Au(), Bc(), BE(), Bg(), Bs(), CB() (+62 more)
+Nodes (61): Aliyun Bailian Stream TTSProvider, Aliyun AccessToken, Aliyun ASRProvider, AliyunStream AccessToken, AliyunStream ASRProvider, Aliyun Stream TTSProvider, Aliyun TTSProvider.text_to_speak, Aliyun TTSProvider (+53 more)
 
-### Community 8 - "miniprogram audio & chat"
-Cohesion: 0.05
-Nodes (14): MockPaymentNotifyController, PaymentNotifyController, PaymentOrderDao, ServerActionResponseDTO, FulfillmentDispatcher, FulfillmentDispatcherImpl, ItemFulfillmentServiceImpl, PaymentNotifyServiceImpl (+6 more)
-
-### Community 9 - "demo-web libopus codec"
+### Community 23 - "Libopus A() Ab() Ai() Aj()"
 Cohesion: 0.07
-Nodes (9): from(), CompanionServiceImpl, of(), MenstrualCycleUtil, MenstrualCycleUtilTest, PetBirthCalculatorTest, name, CompanionVO (+1 more)
+Nodes (56): a(), ab(), ai(), aj(), assert(), ba(), bb(), bi() (+48 more)
 
-### Community 10 - "System dict data"
-Cohesion: 0.06
-Nodes (64): AC(), Ag(), Ar(), _B(), Bn(), CQ(), Ct(), Dt() (+56 more)
-
-### Community 11 - "manager-web JS views"
-Cohesion: 0.05
-Nodes (6): AgentChatHistoryController, OTAMagController, VoiceCloneController, CaptchaServiceImpl, RedisKeys, MockWechatPayClient
-
-### Community 12 - "Chat history download"
-Cohesion: 0.12
-Nodes (66): $c(), ac(), _b(), bc(), cb(), cc(), cd(), db() (+58 more)
-
-### Community 13 - "Aliyun ASR/TTS providers"
-Cohesion: 0.06
-Nodes (8): AuthenticatingFilter, HttpServletRequestWrapper, AgentServiceImpl, Oauth2Filter, ServerSecretFilter, HttpContextUtils, IpUtils, XssHttpServletRequestWrapper
-
-### Community 14 - "Auth & login controllers"
-Cohesion: 0.06
-Nodes (17): CaptchaService, ConfigService, ServerSideManageController, DeviceTest, DeviceAddressBookService, DeviceService, ALiYunSmsService, OtaServiceImpl (+9 more)
-
-### Community 15 - "Config & intimacy services"
-Cohesion: 0.09
-Nodes (59): Aliyun Bailian Stream TTSProvider, Aliyun AccessToken, Aliyun ASRProvider, AliyunStream AccessToken, AliyunStream ASRProvider, Aliyun Stream TTSProvider, Aliyun TTSProvider.text_to_speak, Aliyun TTSProvider (+51 more)
-
-### Community 16 - "Date utils & correct-word mapping"
+### Community 24 - "Agentchathistorybizserviceimpl Agentchataudioserviceimpl Agentchattitleserviceimpl Agentchathistorycontroller Agentchataudioservice"
 Cohesion: 0.07
-Nodes (6): InviteCodeDao, RenException, RenExceptionHandler, InviteServiceImpl, InviteServiceImplTest, RuntimeException
+Nodes (14): AgentChatAudioService, AgentChatHistoryBizService, AgentChatHistoryService, AgentChatSummaryService, AgentChatTitleService, AgentService, AgentChatAudioServiceImpl, AgentChatHistoryBizServiceImpl (+6 more)
 
-### Community 17 - "Server mgmt & devices"
-Cohesion: 0.05
-Nodes (14): AgentContextProviderService, CompanionCreateDTO, CompanionService, CompanionContextController, CompanionController, ItemController, CompanionSetupDTO, AgentContextProviderServiceImpl (+6 more)
-
-### Community 18 - "Agent chat services"
-Cohesion: 0.05
-Nodes (8): AdminController, ConfigController, SysDictDataController, SysDictTypeController, SysParamsController, TimbreController, WebSocketValidator, ValidatorUtils
-
-### Community 19 - "manager-web codec JS"
-Cohesion: 0.07
-Nodes (14): AgentChatAudioService, AgentChatHistoryBizService, AgentChatHistoryService, AgentChatSummaryService, AgentChatTitleService, AgentService, AgentTagService, AgentChatAudioServiceImpl (+6 more)
-
-### Community 20 - "Aliyun OSS & logging"
-Cohesion: 0.08
-Nodes (52): aa(), af(), Ag(), Be(), bf(), Bg(), cf(), cg() (+44 more)
-
-### Community 21 - "manager-web API layer"
-Cohesion: 0.09
-Nodes (4): AgentChatSummaryServiceImpl, WechatServiceImpl, MessageUtils, SqlFilter
-
-### Community 22 - "demo-web JS utils"
+### Community 25 - "Login() Register() Retrievepassword() Smsverification() Knowledgebasedao"
 Cohesion: 0.06
-Nodes (8): SysParamsDao, SysParamsServiceImpl, TokenServiceImpl, TokenGenerator, TokenService, AESUtils, decode(), SM2Utils
+Nodes (5): KnowledgeBaseDao, VoiceCloneDao, KnowledgeBaseServiceImpl, TimbreServiceImpl, loginControllerTest
 
-### Community 23 - "Chat summary LLM"
-Cohesion: 0.09
-Nodes (6): gt(), In(), AliyunOssConfig, AgentChatHistoryBizServiceImpl, KnowledgeFilesServiceImpl, KnowledgeBaseAdapterFactory
-
-### Community 24 - "Config controller"
-Cohesion: 0.07
-Nodes (3): DeviceDao, DeviceServiceImpl, DateUtils
-
-### Community 25 - "demo-web UI controller"
+### Community 26 - "Initialize Handle Process Prompt() Chat"
 Cohesion: 0.06
-Nodes (18): 重写父类方法：使用独立的临时编码器处理音频文件，避免与TTS流式编码器并发冲突。         双流式TTS中，monitor任务在event loop线程接, 重写父类方法：使用独立的临时编码器处理音频文件，避免与TTS流式编码器并发冲突。         双流式TTS中，monitor任务在event loop线程接, 存储指定 sentence_id 对应的文本，用于流式TTS获取正确的字幕文本          Args:             sentence_id:, 获取指定 sentence_id 对应的文本          Args:             sentence_id: 会话ID          Ret, 清除指定 sentence_id 的文本          Args:             sentence_id: 会话ID, 处理音频文件并转换为指定格式          Args:             tts_file: 音频文件路径             callback:, 处理剩余的文本并生成语音          Returns:             bool: 是否成功处理了文本, 流式文本滑动窗口匹配，用于处理跨分片的替换词          Args:             text: 输入的文本片段          Returns (+10 more)
+Nodes (16): ConnectionHandler, _extract_direct_answer_response(), Chat with the user and then close the connection, Chat with the user and then close the connection, 合并工具调用列表          Args:             tool_calls_list: 已收集的工具调用列表             tool, 合并工具调用列表          Args:             tool_calls_list: 已收集的工具调用列表             tool, 处理来自MQTT网关的音频消息，解析16字节头部并提取音频数据          Args:             message: 包含头部的音频消息, 将音频数据放入ASR队列，队列满时丢弃最旧数据 (+8 more)
 
-### Community 26 - "manager-mobile i18n"
+### Community 27 - "Pet Store Account Keys Action"
+Cohesion: 0.13
+Nodes (50): ACCOUNT_KEYS, ACTION_TYPE, addProgress(), bindPet(), buildCollectionCard(), cardSerial(), clearAccountData(), clearUser() (+42 more)
+
+### Community 28 - "Changelanguage() Currentlang Getcurrentlanguage() Getdefaultlanguage() Getsupportedlanguages()"
+Cohesion: 0.05
+Nodes (26): changeLanguage(), currentLang, getCurrentLanguage(), getSupportedLanguages(), i18n, messages, areaCodeList, captchaImage (+18 more)
+
+### Community 29 - "Sessionid Swaggerconfig Agentapi() Botapi() Configapi()"
+Cohesion: 0.06
+Nodes (6): sessionId, SwaggerConfig, ServerSideManageController, XiaoZhiMcpJsonRpcJson, AgentMcpAccessPointServiceImpl, Builder
+
+### Community 30 - "Audio Stream() Text() Process Init"
+Cohesion: 0.06
+Nodes (20): TTSMessageDTO, speak_txt(), 存储指定 sentence_id 对应的文本，用于流式TTS获取正确的字幕文本          Args:             sentence_id:, 获取指定 sentence_id 对应的文本          Args:             sentence_id: 会话ID          Ret, 清除指定 sentence_id 的文本          Args:             sentence_id: 会话ID, 处理音频文件并转换为指定格式          Args:             tts_file: 音频文件路径             callback:, 处理剩余的文本并生成语音          Returns:             bool: 是否成功处理了文本, 流式文本滑动窗口匹配，用于处理跨分片的替换词          Args:             text: 输入的文本片段          Returns (+12 more)
+
+### Community 31 - "App Audiomanager Calcscrollviewheight() Ensurerecordpermission() Flushstreaming()"
+Cohesion: 0.05
+Nodes (28): app, AudioManager, _ensureRecordPermission(), _flushStreaming(), { get }, { get, del }, { getTheme, applyTheme }, _handleRecordSetting() (+20 more)
+
+### Community 32 - "Init Text Speak() Ttsprovider Generate"
+Cohesion: 0.05
+Nodes (13): TTSProvider, TTSProvider, DefaultTTS, TTSProvider, TTSProvider, TTSProvider, 将 PCM 数据转换为 WAV 文件并返回字节数据         :param pcm_data: PCM 数据（原始字节流）         :param, TTSProvider (+5 more)
+
+### Community 33 - "Getserviceurl() Agent Model Addagent() Addagenttemplate()"
 Cohesion: 0.08
 Nodes (45): getServiceUrl(), addAgent(), addAgentTemplate(), addAgentVoicePrint(), batchDeleteAgentTemplate(), deleteAgent(), deleteAgentTemplate(), deleteAgentVoicePrint() (+37 more)
 
-### Community 27 - "manager-mobile stores & auth"
-Cohesion: 0.11
-Nodes (41): ACCOUNT_KEYS, ACTION_TYPE, addProgress(), bindPet(), buildCollectionCard(), cardSerial(), completeCuddle(), completeDailyTask() (+33 more)
-
-### Community 28 - "Knowledge-base RAG"
-Cohesion: 0.09
-Nodes (7): CompanionServiceImplTest, clamp(), getLevel(), getPromptDescription(), next(), progressWithin(), IntimacyLevelTest
-
-### Community 29 - "MCP client"
+### Community 34 - "Islogined() Vue Index Goback() Handleconfirm()"
 Cohesion: 0.06
-Nodes (27): changeLanguage(), currentLang, getCurrentLanguage(), getSupportedLanguages(), initI18n(), messages, areaCodeList, captchaImage (+19 more)
+Nodes (31): goBack(), handleConfirm(), localSettings, speedPitchStore, isLogined(), TFile, TfileType, TImage (+23 more)
 
-### Community 30 - "Community 30"
-Cohesion: 0.07
-Nodes (5): es, F(), is(), RB, Ts()
-
-### Community 31 - "Community 31"
-Cohesion: 0.09
-Nodes (42): ab(), Ae(), aj(), bj(), Ca(), Ce(), cj(), _d() (+34 more)
-
-### Community 32 - "Community 32"
-Cohesion: 0.06
-Nodes (8): AgentTemplateEntity, AgentTemplateController, ModelProviderController, AgentTemplateDao, AgentTemplateServiceImpl, AgentTemplateService, ResultUtils, AgentTemplateVO
-
-### Community 34 - "Community 34"
-Cohesion: 0.07
-Nodes (28): reAjaxFun(), isLogined(), TFile, TfileType, TImage, TOptions, isLogined(), navigateToInterceptor (+20 more)
-
-### Community 35 - "Community 35"
+### Community 35 - "Send Intent With Check Rate"
 Cohesion: 0.08
-Nodes (32): onValidate(), petStore, { post }, _onPlayTap(), _playAudio(), _playLocalFile(), { post, getBaseUrl }, _stopAudio() (+24 more)
+Nodes (38): checkWakeupWords(), wakeupWordsResponse(), analyze_intent_with_llm(), check_direct_exit(), handle_user_intent(), process_intent_result(), check_bind_device(), handleAudioMessage() (+30 more)
 
-### Community 36 - "Community 36"
-Cohesion: 0.07
-Nodes (20): BaseHandler, 处理OPTIONS请求，添加CORS头信息, _is_higher_version(), OTAHandler, _parse_version(), 生成MQTT密码签名          Args:             content: 签名内容 (clientId + '|' + username), 获取websocket地址          Args:             local_ip: 本地IP地址             port: 端口号, 处理 OTA POST 请求          This handler will:         - read device id/client id (a (+12 more)
+### Community 37 - "Bytes() Init Session() Connection() Finish"
+Cohesion: 0.13
+Nodes (14): ContentType, InterfaceType, SentenceType, AccessToken, Header, Optional, 建立新的WebSocket连接，并启动监听任务（仅第一次）, 发送 FinishConnection 事件，等待服务端返回 EVENT_ConnectionFinished (+6 more)
 
-### Community 37 - "Community 37"
+### Community 38 - "Message Type() Textmessagehandlerregistry Handler() Init"
+Cohesion: 0.08
+Nodes (15): handleAbortMessage(), TextMessageHandler, TextMessageHandlerRegistry, TextMessageProcessor, TextMessageType, AbortTextMessageHandler, HelloTextMessageHandler, IotTextMessageHandler (+7 more)
+
+### Community 39 - "Ah() Bh() Ch() D() Dh()"
 Cohesion: 0.1
-Nodes (13): AgentEntity, AgentPluginMappingService, AgentTemplateService, CorrectWordFileService, AgentDao, LlmModelBasicInfoDTO, AgentPluginMappingServiceImpl, ModelBasicInfoDTO (+5 more)
+Nodes (42): ah(), bh(), ch(), _d(), dh(), eh(), fh(), gh() (+34 more)
 
-### Community 38 - "Community 38"
-Cohesion: 0.07
-Nodes (38): Ad, Af, Al(), Bd, Bf, Bu, cA(), Cd (+30 more)
-
-### Community 39 - "Community 39"
+### Community 40 - "Init Token() Initialize 从接口异步获取差异化配置（异步版本，不阻塞主循环） Handle"
 Cohesion: 0.06
-Nodes (18): app, AudioManager, _flushStreaming(), { get }, { get, del }, { getTheme, applyTheme }, _handleRecordSetting(), logger (+10 more)
+Nodes (23): AuthManager, 统一授权认证管理器     生成与验证 client_id device_id token（HMAC-SHA256）认证三元组     token 中不含明文, HMAC-SHA256签名并Base64编码, 生成 token         Args:             client_id: 设备连接ID             username: 设备用户名, 验证token有效性         Args:             token: 客户端传入的token             client_id: 连, 从接口异步获取差异化配置（异步版本，不阻塞主循环）, 从接口异步获取差异化配置（异步版本，不阻塞主循环）, 更新服务器配置并重新初始化组件          Returns:             bool: 更新是否成功 (+15 more)
 
-### Community 40 - "Community 40"
+### Community 41 - "Constructor() Tocbin() Balign4() Collect Data()"
+Cohesion: 0.08
+Nodes (3): es, is(), Ts()
+
+### Community 42 - "Fetchreplacementwordlist() Formattooltip() Get() Gettagname() Handlecancel()"
+Cohesion: 0.06
+Nodes (9): fetchReplacementWordList(), getTagName(), handleCancel(), handleClose(), handleSave(), visible(), AgentTagDao, AgentTagRelationDao (+1 more)
+
+### Community 43 - "Api Request Add Device Pet"
+Cohesion: 0.12
+Nodes (29): onCodeInput(), onValidate(), petStore, { post }, _onPlayTap(), _playAudio(), _playLocalFile(), { post, getBaseUrl } (+21 more)
+
+### Community 44 - "Knowledgefilescontroller Knowledgemanagerserviceimpl Abstractresource Delete() Deletesingle()"
+Cohesion: 0.1
+Nodes (9): AbstractResource, KnowledgeFilesController, KnowledgeManagerServiceImpl, MultipartFileResource, KnowledgeBaseAdapter, KnowledgeBaseService, KnowledgeFilesService, KnowledgeManagerService (+1 more)
+
+### Community 45 - "Menstrualcycleutil Menstrualcycleutiltest Computephase Companionvo Wechatphonegatetest"
+Cohesion: 0.09
+Nodes (6): WechatPhoneGateTest, of(), MenstrualCycleUtil, MenstrualCycleUtilTest, CompanionVO, MenstrualStatusVO
+
+### Community 46 - "Createagent() Createvoiceprint() Deleteagent() Getagentdetail() Getagentlist()"
 Cohesion: 0.07
 Nodes (17): createAgent(), deleteAgent(), getAgentList(), getMcpTools(), Agent, AgentCreateData, AgentDetail, AgentFunction (+9 more)
 
-### Community 41 - "Community 41"
-Cohesion: 0.09
-Nodes (9): ConnectionHandler, 处理来自MQTT网关的音频消息，解析16字节头部并提取音频数据          Args:             message: 包含头部的音频消息, 将音频数据放入ASR队列，队列满时丢弃最旧数据, 注入工具调用 few-shot 示例到对话历史（已禁用）。, 注入工具调用 few-shot 示例到对话历史（已禁用）。, 在后台初始化配置和组件（完全不阻塞主循环）, 在后台初始化配置和组件（完全不阻塞主循环）, handleTextMessage() (+1 more)
-
-### Community 42 - "Community 42"
+### Community 47 - "Current Info() Fetch Weather Time"
 Cohesion: 0.08
-Nodes (38): An(), BB, co(), Cr, dB, dQ, fk(), fQ() (+30 more)
+Nodes (22): logger(), setup_logging(), get_global_executor(), _get_thread_pool_size(), fetch_city_info(), fetch_weather_page(), get_weather(), parse_weather_info() (+14 more)
 
-### Community 43 - "Community 43"
-Cohesion: 0.08
-Nodes (3): DeviceAddressBookServiceImpl, ItemSkuVO, WechatPayV3Client
-
-### Community 44 - "Community 44"
-Cohesion: 0.08
-Nodes (4): sessionId, SwaggerConfig, XiaoZhiMcpJsonRpcJson, Builder
-
-### Community 45 - "Community 45"
-Cohesion: 0.09
-Nodes (13): handleAbortMessage(), TextMessageHandler, TextMessageHandlerRegistry, TextMessageType, AbortTextMessageHandler, HelloTextMessageHandler, IotTextMessageHandler, McpTextMessageHandler (+5 more)
-
-### Community 46 - "Community 46"
-Cohesion: 0.06
-Nodes (11): TTSProvider, TTSProvider, TTSProvider, TTSProvider, TTSProvider, TTSProvider, TTSProvider, TTSProvider (+3 more)
-
-### Community 47 - "Community 47"
+### Community 48 - "Settings Dosigncontract() Featurelabel() Formatdate() { Get }"
 Cohesion: 0.08
 Nodes (20): _doSignContract(), featureLabel(), formatDate(), { get }, { get, post }, getIdentityName(), { getTheme, applyTheme, toggleTheme }, loadCompanionAvatar() (+12 more)
 
-### Community 48 - "Community 48"
-Cohesion: 0.11
-Nodes (4): AgentVoicePrintServiceImpl, RAGFlowClient, debug(), ResourcesUtils
-
-### Community 49 - "Community 49"
-Cohesion: 0.12
-Nodes (36): ah(), bh(), ch(), dh(), eh(), fh(), gh(), hh() (+28 more)
+### Community 49 - "Constructor() Pause() Resume() Run() Stop()"
+Cohesion: 0.07
+Nodes (17): AQ(), BQ, CI, du(), En, fn(), Hg(), Ir() (+9 more)
 
 ### Community 50 - "Community 50"
 Cohesion: 0.08
-Nodes (9): 调用指定工具          Args:             name: 工具名称             arguments: 工具参数, 检查MCP客户端是否连接正常          Returns:             bool: 如果客户端已连接并正常工作，返回True，否则返回Fals, 服务端MCP客户端，用于连接和管理MCP服务, 初始化服务端MCP客户端          Args:             config: MCP服务配置字典, 检查是否包含指定工具          Args:             name: 工具名称          Returns:             b, 获取所有可用工具的定义          Returns:             List[Dict[str, Any]]: 工具定义列表, ServerMCPClient, ServerMCPExecutor (+1 more)
+Nodes (3): CollectionCardImageServiceImplTest, OssService, OssServiceTest
 
-### Community 52 - "Community 52"
+### Community 51 - "Community 51"
 Cohesion: 0.08
 Nodes (7): AbstractWebSocketHandler, Closeable, InternalHandler, newThread(), WebSocketClientManager, WebSocketTestHandler, WebSocketHandler
 
+### Community 52 - "Community 52"
+Cohesion: 0.1
+Nodes (34): accountKeys, assert, card, cardUrlPet, cardUrlVO, cardWithImage, coldHatched, coldHatchedVO (+26 more)
+
 ### Community 53 - "Community 53"
 Cohesion: 0.11
-Nodes (26): { applyGlobalTheme }, applySession(), auth, AUTH_FIELDS, checkDeviceStatus(), { checkOrRegisterDevice, completeDeviceBinding }, clearLoginState(), ensureAgentExists() (+18 more)
-
-### Community 54 - "Community 54"
-Cohesion: 0.08
-Nodes (12): addRunDependency(), alignUp(), createNamedFunction(), createWasm(), emscripten_realloc_buffer(), _emscripten_resize_heap(), _emscripten_run_script(), extendError() (+4 more)
+Nodes (27): { applyGlobalTheme }, applySession(), auth, AUTH_FIELDS, checkDeviceStatus(), { checkOrRegisterDevice, completeDeviceBinding }, clearLoginState(), enforcePhoneGate() (+19 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.16
-Nodes (19): checkOpusLoaded(), initOpusEncoder(), getAudioPlayer(), checkMicrophoneAvailability(), getAudioRecorder(), isHttpNonLocalhost(), createStreamingContext(), getConfig() (+11 more)
+Cohesion: 0.14
+Nodes (34): Ae(), Be(), Ce(), De(), Ee(), Fe(), ga(), Ge() (+26 more)
 
 ### Community 56 - "Community 56"
-Cohesion: 0.16
-Nodes (6): Header, Optional, 建立新的WebSocket连接，并启动监听任务（仅第一次）, 发送 FinishConnection 事件，等待服务端返回 EVENT_ConnectionFinished, 非流式生成音频数据，用于生成音频及测试场景         Args:             text: 要转换的文本         Returns:, TTSProvider
+Cohesion: 0.13
+Nodes (34): $c(), aa(), ad(), bd(), cb(), cd(), db(), ea() (+26 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.09
-Nodes (18): fetch_city_info(), fetch_weather_page(), get_weather(), parse_weather_info(), ContextDataProvider, 数据上下文填充，负责从配置的API获取数据, get_current_date(), get_current_lunar_date() (+10 more)
+Cohesion: 0.07
+Nodes (10): LLMProvider, LLMProvider, LLMProvider, LLMProviderBase, Default implementation for function calling (streaming)         This should be o, response(), LLMProviderBase.response_with_functions, LLMProviderBase (+2 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.06
-Nodes (28): accountKeys, assert, card, coldHatched, coldHatchedVO, daily, egg, eggVO (+20 more)
+Cohesion: 0.1
+Nodes (8): ToolExecutor, ToolType, CacheConfig, CacheType, GlobalCacheManager, CacheEntry, CacheStrategy, Enum
 
 ### Community 59 - "Community 59"
-Cohesion: 0.09
-Nodes (8): ToolExecutor, ToolDefinition, ToolType, DeviceIoTExecutor, DeviceMCPExecutor, MCPEndpointExecutor, Action, ToolExecutor
-
-### Community 60 - "Community 60"
 Cohesion: 0.08
 Nodes (9): MemoryProvider, MemoryProvider, MemoryProviderBase, MemoryProviderBase, MemoryProvider, MemoryProvider, 保存记忆到火山引擎 Mem0          Args:             msgs: 消息列表             session_id: 会话I, 从火山引擎 Mem0 查询记忆          Args:             query: 查询文本          Returns: (+1 more)
 
-### Community 61 - "Community 61"
+### Community 60 - "Community 60"
+Cohesion: 0.09
+Nodes (6): send_display_message(), auto_import_modules(), 自动导入指定包内的所有模块。      Args:         package_name (str): 包的名称，如 'functions'。, UnifiedToolHandler, 获取所有工具的函数描述（OpenAI格式）, ToolManager
+
+### Community 62 - "Community 62"
+Cohesion: 0.08
+Nodes (18): fly, httpHandlerError(), reAjaxFun(), checkUserLogin(), debounce(), generateSm2KeyPairHex(), goToPage(), isNull() (+10 more)
+
+### Community 63 - "Community 63"
+Cohesion: 0.08
+Nodes (10): addRunDependency(), createNamedFunction(), createWasm(), _environ_get(), _environ_sizes_get(), extendError(), getEnvStrings(), getExecutableName() (+2 more)
+
+### Community 65 - "Community 65"
+Cohesion: 0.12
+Nodes (11): getAudioPlayer(), getAudioRecorder(), getConfig(), loadConfig(), saveConfig(), saveConnectionUrls(), executeMcpTool(), sendOTA() (+3 more)
+
+### Community 66 - "Community 66"
 Cohesion: 0.1
 Nodes (31): appendOpusFrame, AudioManager, destroy, resetAudioContext, _scheduleQueued, startRecord, _cleanup, formatDuration (+23 more)
 
-### Community 62 - "Community 62"
-Cohesion: 0.1
-Nodes (23): baseUrlInput, cacheInfo, clearAllCacheAfterUrlChange(), configStore, getCacheInfo(), loadServerBaseUrl(), resetServerBaseUrl(), saveServerBaseUrl() (+15 more)
-
-### Community 63 - "Community 63"
+### Community 67 - "Community 67"
 Cohesion: 0.09
-Nodes (27): Ba(), bI(), dg(), gv(), Jv(), K(), Ko(), kv() (+19 more)
-
-### Community 65 - "Community 65"
-Cohesion: 0.07
-Nodes (8): fetchReplacementWordList(), getTagName(), handleCancel(), handleClose(), handleSave(), visible(), AgentTagDao, AgentTagRelationDao
+Nodes (23): { API_BASE_URL }, auth, formatDisplay(), GENDER_LIST, GENDER_MAP, GENDER_REVERSE, loadProfile(), maskUserId() (+15 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.11
-Nodes (25): RECONNECT_DELAYS, app, AudioManager, _cleanup(), _cleanupResources(), _computeStatusText(), formatDuration(), { getTheme, applyTheme } (+17 more)
-
-### Community 69 - "Community 69"
 Cohesion: 0.09
 Nodes (30): IotDescriptor, DeviceIoTExecutor, handleIotDescriptors, handleIotStatus, MCPClient, ServerMCPClient, MCPEndpointClient, MCPEndpointExecutor (+22 more)
 
 ### Community 70 - "Community 70"
-Cohesion: 0.1
-Nodes (19): codes, { get, post }, { getTheme, applyTheme }, _load(), _noVoucher(), onConfirmTap(), onLoad(), onReshape() (+11 more)
+Cohesion: 0.11
+Nodes (22): _applyFilter(), _decorate(), _formatTime(), { get }, { getTheme, applyTheme }, loadOrders(), onLoad(), onPullDownRefresh() (+14 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.09
-Nodes (10): LLMProvider, LLMProviderBase, Default implementation for function calling (streaming)         This should be o, response(), LLMProviderBase.response_with_functions, LLMProviderBase, LLMProvider, LLMProvider (+2 more)
+Nodes (8): 调用指定工具          Args:             name: 工具名称             arguments: 工具参数, 检查MCP客户端是否连接正常          Returns:             bool: 如果客户端已连接并正常工作，返回True，否则返回Fals, 服务端MCP客户端，用于连接和管理MCP服务, 初始化服务端MCP客户端          Args:             config: MCP服务配置字典, 检查是否包含指定工具          Args:             name: 工具名称          Returns:             b, 获取所有可用工具的定义          Returns:             List[Dict[str, Any]]: 工具定义列表, ServerMCPClient, ServerMCPManager
 
 ### Community 72 - "Community 72"
 Cohesion: 0.1
 Nodes (13): load_silero_vad(), __call__(), get_speech_timestamps(), init_jit_model(), make_visualization(), OnnxWrapper, This method is used for splitting long audios into speech chunks using silero VA, Class for stream imitation          Parameters         ----------         model: (+5 more)
 
-### Community 73 - "Community 73"
+### Community 75 - "Community 75"
 Cohesion: 0.07
 Nodes (8): assert, connectPage, hangupPage, innerAudioContextRecords, Module, originalWx, page, setInnerAudioOptionCalls
 
-### Community 74 - "Community 74"
+### Community 76 - "Community 76"
 Cohesion: 0.09
 Nodes (16): getAudioId(), getChatHistory(), agentId, currentAgent, expandedToolResults, getMessageContent(), getSpeakerName(), loading (+8 more)
 
-### Community 75 - "Community 75"
+### Community 77 - "Community 77"
+Cohesion: 0.08
+Nodes (11): ASRProvider, ASRProvider, _generate_header(), parse_response(), Construct the request payload., Send request to Volcano ASR service., protocol_version(4 bits), header_size(4 bits),     message_type(4 bits), message, slice_data() (+3 more)
+
+### Community 78 - "Community 78"
+Cohesion: 0.13
+Nodes (25): get_config_from_api_async(), get_private_config_from_api(), _async_request(), check_chat_quota(), DeviceBindException, DeviceNotFoundException, _ensure_async_client(), _execute_async_request() (+17 more)
+
+### Community 79 - "Community 79"
 Cohesion: 0.1
 Nodes (11): MCPEndpointClient, MCP接入点客户端，用于管理MCP接入点状态和工具, call_mcp_endpoint_tool(), connect_mcp_endpoint(), handle_mcp_endpoint_message(), _message_listener(), 发送带有cursor的MCP接入点工具列表请求, send_mcp_endpoint_initialize() (+3 more)
 
-### Community 76 - "Community 76"
-Cohesion: 0.14
-Nodes (24): get_config_from_api_async(), get_private_config_from_api(), _async_request(), check_chat_quota(), DeviceBindException, DeviceNotFoundException, _ensure_async_client(), _execute_async_request() (+16 more)
-
-### Community 77 - "Community 77"
-Cohesion: 0.1
-Nodes (13): AuthenticationError, AuthManager, 统一授权认证管理器     生成与验证 client_id device_id token（HMAC-SHA256）认证三元组     token 中不含明文, HMAC-SHA256签名并Base64编码, 生成 token         Args:             client_id: 设备连接ID             username: 设备用户名, 验证token有效性         Args:             token: 客户端传入的token             client_id: 连, 配置 websockets 相关的所有 logger，过滤无效握手错误, 过滤掉无效握手错误日志（如HTTPS访问WS端口） (+5 more)
-
-### Community 78 - "Community 78"
-Cohesion: 0.1
-Nodes (11): Chat with the user and then close the connection, Chat with the user and then close the connection, 合并工具调用列表          Args:             tool_calls_list: 已收集的工具调用列表             tool, 合并工具调用列表          Args:             tool_calls_list: 已收集的工具调用列表             tool, 检查聊天配额。超限时发送 WebSocket 事件并返回 True，放行返回 False。, Dialogue, Message, 确保所有 tool_calls 都有对应的 tool 响应         修复被打断导致的悬空 tool_calls，防止大模型 API 报 400 错误 (+3 more)
-
-### Community 79 - "Community 79"
-Cohesion: 0.09
-Nodes (8): fly, getAddressBookList(), updateAlias(), updatePermission(), deleteVoice(), getVoiceList(), saveVoice(), updateVoice()
+### Community 80 - "Community 80"
+Cohesion: 0.08
+Nodes (24): _A, Cc(), dw(), hB, ig(), ma(), mu(), PB() (+16 more)
 
 ### Community 81 - "Community 81"
-Cohesion: 0.08
-Nodes (11): languagesArray, meta, params, chatRef, currentAgentId, currentTab, deviceRef, refresherEnabled (+3 more)
+Cohesion: 0.12
+Nodes (7): ASRProviderBase, AudioArtifacts, decode_opus(), 构建包含说话人信息的文本（仅用于纯文本ASR）, speech_to_text(), ASRProvider, NamedTuple
 
 ### Community 82 - "Community 82"
-Cohesion: 0.14
-Nodes (11): main(), 测试火山引擎流式TTS首词延迟（测试多次取平均）, 测试阿里云流式TTS首词延迟（测试多次取平均）, 测试PaddleSpeech流式TTS首词延迟（测试多次取平均）, 测试IndexStream流式TTS首词延迟（测试多次取平均）, 测试Linkerai流式TTS首词延迟（测试多次取平均）, 测试讯飞流式TTS首词延迟（测试多次取平均）, 计算测试结果（正确处理None值，剔除失败测试） (+3 more)
-
-### Community 83 - "Community 83"
-Cohesion: 0.12
-Nodes (13): AudioSettings, DetectorSettings, ensure_directories(), get_project_dir(), load_config(), _load_wake_words_from_keywords_file(), LoggingSettings, merge_configs() (+5 more)
+Cohesion: 0.08
+Nodes (11): 根据子类定义的 TTS_PARAM_CONFIG 批量应用百分比参数, TTSProvider, TTSProvider, check_emoji(), get_string_no_punctuation_or_emoji(), is_emoji(), is_punctuation_or_emoji(), clean_markdown() (+3 more)
 
 ### Community 84 - "Community 84"
-Cohesion: 0.1
-Nodes (20): 从接口异步获取差异化配置（异步版本，不阻塞主循环）, 从接口异步获取差异化配置（异步版本，不阻塞主循环）, 更新服务器配置并重新初始化组件          Returns:             bool: 更新是否成功, check_asr_update(), check_ffmpeg_installed(), check_vad_update(), filter_sensitive_info(), get_ip_info() (+12 more)
+Cohesion: 0.15
+Nodes (3): After, ReshapeVoucherRule, ReshapeVoucherRuleTest
 
 ### Community 85 - "Community 85"
-Cohesion: 0.13
-Nodes (3): as(), ss(), un()
+Cohesion: 0.18
+Nodes (27): ac(), _b(), bc(), cc(), dc(), eb(), ec(), ed() (+19 more)
 
 ### Community 86 - "Community 86"
 Cohesion: 0.13
-Nodes (25): assert(), ba(), dj(), ej(), fj(), _g(), ga(), Ha() (+17 more)
+Nodes (3): CompanionServiceImpl, CharacterAge, name
 
 ### Community 87 - "Community 87"
+Cohesion: 0.13
+Nodes (3): BCrypt, BCryptPasswordEncoder, PasswordEncoder
+
+### Community 89 - "Community 89"
+Cohesion: 0.13
+Nodes (16): callBirthApi(), DEFAULT_PET, formatDate(), showBirthScene(), ZODIAC_NAMES, playCrackingAnimation(), clearCracks(), CRACK_PATHS (+8 more)
+
+### Community 90 - "Community 90"
+Cohesion: 0.14
+Nodes (26): Ag(), cf(), dd(), df(), ef(), ff(), gi(), oj() (+18 more)
+
+### Community 91 - "Community 91"
+Cohesion: 0.08
+Nodes (11): languagesArray, meta, params, chatRef, currentAgentId, currentTab, deviceRef, refresherEnabled (+3 more)
+
+### Community 92 - "Community 92"
+Cohesion: 0.14
+Nodes (11): main(), 测试火山引擎流式TTS首词延迟（测试多次取平均）, 测试阿里云流式TTS首词延迟（测试多次取平均）, 测试PaddleSpeech流式TTS首词延迟（测试多次取平均）, 测试IndexStream流式TTS首词延迟（测试多次取平均）, 测试Linkerai流式TTS首词延迟（测试多次取平均）, 测试讯飞流式TTS首词延迟（测试多次取平均）, 计算测试结果（正确处理None值，剔除失败测试） (+3 more)
+
+### Community 93 - "Community 93"
+Cohesion: 0.12
+Nodes (13): AudioSettings, DetectorSettings, ensure_directories(), get_project_dir(), load_config(), _load_wake_words_from_keywords_file(), LoggingSettings, merge_configs() (+5 more)
+
+### Community 94 - "Community 94"
+Cohesion: 0.12
+Nodes (25): Bn(), dQ, fQ(), fr(), hQ(), hR, iI(), JA() (+17 more)
+
+### Community 96 - "Community 96"
+Cohesion: 0.11
+Nodes (4): Plugin, AudioPlugin, Plugin, WakeWordPlugin
+
+### Community 97 - "Community 97"
+Cohesion: 0.13
+Nodes (18): baseUrlInput, cacheInfo, clearAllCacheAfterUrlChange(), configStore, getCacheInfo(), loadServerBaseUrl(), resetServerBaseUrl(), saveServerBaseUrl() (+10 more)
+
+### Community 98 - "Community 98"
 Cohesion: 0.11
 Nodes (17): alovaInstance, langMap, { onAuthRequired, onResponseRefreshToken }, ContentTypeEnum, ResultEnum, ShowMessage(), IResponse, PageParams (+9 more)
 
-### Community 88 - "Community 88"
+### Community 99 - "Community 99"
 Cohesion: 0.14
 Nodes (7): ASRPerformanceSuite, BaseASRTester, DoubaoStreamASRTester, main(), QwenASRFlashTester, 计算测试结果（修复：正确处理None值，剔除失败测试）, XunfeiStreamASRTester
 
-### Community 89 - "Community 89"
-Cohesion: 0.14
-Nodes (10): call_mcp_tool(), handle_mcp_message(), MCPClient, Helper to send MCP messages, encapsulating common logic., 处理MCP消息,包括初始化、工具列表和工具调用响应等, 设备端MCP客户端，用于管理MCP状态和工具, send_mcp_initialize_message(), send_mcp_message() (+2 more)
+### Community 100 - "Community 100"
+Cohesion: 0.13
+Nodes (7): ASRProvider, all(), findById(), assert, cat, hit, _clean_response_garbage()
 
-### Community 90 - "Community 90"
-Cohesion: 0.16
-Nodes (6): CacheConfig, CacheType, GlobalCacheManager, CacheEntry, CacheStrategy, Enum
-
-### Community 91 - "Community 91"
-Cohesion: 0.14
-Nodes (8): AbstractResource, KnowledgeManagerServiceImpl, MultipartFileResource, KnowledgeBaseAdapter, KnowledgeBaseService, KnowledgeFilesService, KnowledgeManagerService, DocumentStatusSyncTask
-
-### Community 92 - "Community 92"
-Cohesion: 0.17
-Nodes (3): After, ReshapeVoucherRule, ReshapeVoucherRuleTest
-
-### Community 93 - "Community 93"
+### Community 102 - "Community 102"
 Cohesion: 0.14
 Nodes (22): addMcpProperty(), closeMcpModal(), closePropertyModal(), deleteMcpProperty(), deleteMcpTool(), editMcpProperty(), editMcpTool(), getMcpTools() (+14 more)
 
-### Community 94 - "Community 94"
+### Community 103 - "Community 103"
+Cohesion: 0.13
+Nodes (24): af(), bf(), Bg(), cg(), dg(), _e(), eg(), _f() (+16 more)
+
+### Community 104 - "Community 104"
+Cohesion: 0.17
+Nodes (24): ei(), fi(), gj(), _h(), hi(), ii(), ij(), ji() (+16 more)
+
+### Community 105 - "Community 105"
+Cohesion: 0.1
+Nodes (12): codes, { get, post }, { getTheme, applyTheme }, _load(), _noVoucher(), onConfirmTap(), onLoad(), onReshape() (+4 more)
+
+### Community 106 - "Community 106"
+Cohesion: 0.13
+Nodes (4): DetectorAssets, DetectorAssetsBuilder, WakewordDetector, RuntimeError
+
+### Community 107 - "Community 107"
 Cohesion: 0.09
 Nodes (11): getMcpAddress(), agentId, allFunctions, currentSegmented, finalFunctions, functions, mcpAddress, mergeFunctions() (+3 more)
 
-### Community 95 - "Community 95"
-Cohesion: 0.15
-Nodes (3): BCrypt, BCryptPasswordEncoder, PasswordEncoder
-
-### Community 98 - "Community 98"
-Cohesion: 0.14
-Nodes (19): checkWakeupWords(), handleHelloMessage(), wakeupWordsResponse(), _do_send_audio(), _get_or_create_rate_controller(), 发送音频包，使用 AudioRateController 进行精确的流量控制      Args:         conn: 连接对象         aud, 获取或创建 RateController 和 flow_control      Args:         conn: 连接对象         frame_, 启动后台发送循环任务      Args:         conn: 连接对象         rate_controller: 速率控制器 (+11 more)
-
-### Community 99 - "Community 99"
-Cohesion: 0.12
-Nodes (10): call_device(), _failed_reply(), _is_answering(), 检查是否为接听模式（conn.incoming_call 不为空）, _request_api(), change_role(), handle_exit_intent(), search_from_ragflow() (+2 more)
-
-### Community 100 - "Community 100"
+### Community 108 - "Community 108"
 Cohesion: 0.11
-Nodes (22): Ak(), Do(), ek(), el(), GA(), gd, id, Mo() (+14 more)
+Nodes (10): IntentProvider, 默认的意图识别实现，始终返回继续聊天         Args:             dialogue_history: 对话历史记录列表, IntentProviderBase, IntentProvider, 根据配置的意图选项和可用函数动态生成系统提示词         Args:             functions: 可用的函数列表，JSON格式字符串, IntentProviderBase, IntentProvider, 默认的意图识别实现，始终返回继续聊天         Args:             dialogue_history: 对话历史记录列表 (+2 more)
 
-### Community 101 - "Community 101"
-Cohesion: 0.1
-Nodes (6): i18n, protectedRoutes, router, routes, token, register()
+### Community 109 - "Community 109"
+Cohesion: 0.09
+Nodes (5): protectedRoutes, router, routes, token, register()
 
-### Community 102 - "Community 102"
+### Community 112 - "Community 112"
+Cohesion: 0.17
+Nodes (21): actionCalls, actionResponses, assert, demoPet, demoState, getStorageSync(), hatchState, Module (+13 more)
+
+### Community 114 - "Community 114"
 Cohesion: 0.13
 Nodes (15): dialogVisible(), "form.configJson.type"(), getSensitiveFieldName(), handleInputBlur(), handleJsonChange(), isSensitiveField(), loadModelData(), loadProviderFields() (+7 more)
 
-### Community 103 - "Community 103"
+### Community 115 - "Community 115"
 Cohesion: 0.13
 Nodes (13): fetchVoiceCloneList(), goFirst(), goNext(), goPrev(), goToPage(), handleClone(), handleCloneSuccess(), handlePageSizeChange() (+5 more)
 
-### Community 105 - "Community 105"
-Cohesion: 0.09
-Nodes (17): actionCalls, actionResponses, assert, demoPet, demoState, hatchState, Module, Module2 (+9 more)
-
-### Community 106 - "Community 106"
-Cohesion: 0.16
-Nodes (19): _changeQty(), _decorate(), _emoji(), { get, post }, { getTheme, applyTheme }, loadAll(), logic, onBuyAgain() (+11 more)
-
-### Community 107 - "Community 107"
-Cohesion: 0.11
-Nodes (16): sendSmsCode(), areaCodeList, canSendMobileCaptcha, captchaImage, configStore, generateUUID(), handleResetPassword(), handleSendSmsCode() (+8 more)
-
-### Community 108 - "Community 108"
-Cohesion: 0.1
-Nodes (8): ASRProvider, ASRProvider, Convert speech data to text using FunASR.         :param opus_data: List of Opus, Initialize the ASRProvider with server configuration.         :param config: Dic, Asynchronous generator to receive messages from the WebSocket.         Yields ea, Internal method to handle WebSocket communication.         Reuses the persistent, ASRProvider, ASRProviderBase
-
-### Community 109 - "Community 109"
-Cohesion: 0.16
-Nodes (6): ASRProviderBase, AudioArtifacts, decode_opus(), 构建包含说话人信息的文本（仅用于纯文本ASR）, speech_to_text(), NamedTuple
-
-### Community 110 - "Community 110"
-Cohesion: 0.16
-Nodes (20): __embind_register_bool(), __embind_register_emval(), __embind_register_float(), __embind_register_integer(), __embind_register_memory_view(), __embind_register_std_string(), __embind_register_std_wstring(), __embind_register_void() (+12 more)
-
-### Community 112 - "Community 112"
-Cohesion: 0.14
-Nodes (21): ei(), gj(), _h(), ii(), ij(), ji(), ki(), li() (+13 more)
-
-### Community 113 - "Community 113"
-Cohesion: 0.1
-Nodes (7): OpusDecoder, OpusEncoder, assert, AudioManager, createdContexts, mgr, Module
-
-### Community 115 - "Community 115"
-Cohesion: 0.11
-Nodes (14): areaCodeList, captchaImage, configStore, enableMobileRegister, generateUUID(), handleRegister(), loading, refreshCaptcha() (+6 more)
-
 ### Community 116 - "Community 116"
-Cohesion: 0.1
-Nodes (5): DeviceTypeRegistry, FunctionItem, FunctionRegistry, 设备类型注册表，用于管理IOT设备类型及其函数, ToolType
+Cohesion: 0.11
+Nodes (3): UserItemDao, ItemCategory, ItemServiceImpl
 
 ### Community 117 - "Community 117"
-Cohesion: 0.13
-Nodes (8): IntentProvider, 默认的意图识别实现，始终返回继续聊天         Args:             dialogue_history: 对话历史记录列表, IntentProviderBase, IntentProvider, 根据配置的意图选项和可用函数动态生成系统提示词         Args:             functions: 可用的函数列表，JSON格式字符串, IntentProviderBase, IntentProvider, 默认的意图识别实现，始终返回继续聊天         Args:             dialogue_history: 对话历史记录列表
+Cohesion: 0.15
+Nodes (7): DataClient, checkOpusLoaded(), createStreamingContext(), error(), info(), log(), warn()
 
 ### Community 118 - "Community 118"
 Cohesion: 0.13
-Nodes (14): BaseModel, cdnResources, CompressionPlugin, { defineConfig }, dotenv, { InjectManifest }, path, TerserPlugin (+6 more)
+Nodes (3): RenException, InviteServiceImpl, RuntimeException
 
 ### Community 119 - "Community 119"
+Cohesion: 0.16
+Nodes (19): _changeQty(), _decorate(), _emoji(), { get, post }, { getTheme, applyTheme }, loadAll(), logic, onBuyAgain() (+11 more)
+
+### Community 120 - "Community 120"
 Cohesion: 0.13
-Nodes (14): logger(), setup_logging(), all(), findById(), assert, cat, hit, _clean_response_garbage() (+6 more)
+Nodes (5): WechatController, SysUserTokenServiceImpl, UserCreationResult, SysUserTokenService, WechatService
 
 ### Community 121 - "Community 121"
+Cohesion: 0.11
+Nodes (16): sendSmsCode(), areaCodeList, canSendMobileCaptcha, captchaImage, configStore, generateUUID(), handleResetPassword(), handleSendSmsCode() (+8 more)
+
+### Community 122 - "Community 122"
+Cohesion: 0.13
+Nodes (7): call_mcp_tool(), handle_mcp_message(), MCPClient, 处理MCP消息,包括初始化、工具列表和工具调用响应等, 设备端MCP客户端，用于管理MCP状态和工具, Sanitize tool names for OpenAI compatibility., sanitize_tool_name()
+
+### Community 125 - "Community 125"
+Cohesion: 0.21
+Nodes (17): clearSession(), expiresAt(), getSession(), hasValidSession(), isExpired(), isExpiringSoon(), KEYS, markPhoneBound() (+9 more)
+
+### Community 126 - "Community 126"
+Cohesion: 0.18
+Nodes (3): AudioManager, OpusDecoder, OpusEncoder
+
+### Community 127 - "Community 127"
+Cohesion: 0.13
+Nodes (5): ChatController, MemoryController, ProfileController, HatchActionService, PetService
+
+### Community 128 - "Community 128"
+Cohesion: 0.11
+Nodes (14): areaCodeList, captchaImage, configStore, enableMobileRegister, generateUUID(), handleRegister(), loading, refreshCaptcha() (+6 more)
+
+### Community 129 - "Community 129"
+Cohesion: 0.12
+Nodes (9): ASRProvider, CaptureOutput, ASRProvider, Convert speech data to text using FunASR.         :param opus_data: List of Opus, Initialize the ASRProvider with server configuration.         :param config: Dic, Asynchronous generator to receive messages from the WebSocket.         Yields ea, Internal method to handle WebSocket communication.         Reuses the persistent, lang_tag_filter() (+1 more)
+
+### Community 130 - "Community 130"
+Cohesion: 0.1
+Nodes (5): DeviceTypeRegistry, FunctionItem, FunctionRegistry, 设备类型注册表，用于管理IOT设备类型及其函数, ToolType
+
+### Community 131 - "Community 131"
+Cohesion: 0.15
+Nodes (13): _is_higher_version(), OTAHandler, _parse_version(), 生成MQTT密码签名          Args:             content: 签名内容 (clientId + '|' + username), 获取websocket地址          Args:             local_ip: 本地IP地址             port: 端口号, 处理 OTA POST 请求          This handler will:         - read device id/client id (a, # NOTE: use websocket_port here, Return True if version string a > b (semver-like numeric compare). (+5 more)
+
+### Community 132 - "Community 132"
+Cohesion: 0.17
+Nodes (20): __embind_register_bool(), __embind_register_emval(), __embind_register_float(), __embind_register_integer(), __embind_register_memory_view(), __embind_register_std_string(), __embind_register_std_wstring(), __embind_register_void() (+12 more)
+
+### Community 133 - "Community 133"
+Cohesion: 0.13
+Nodes (20): An(), BB, co(), Cr, dB, fk(), ft(), gn() (+12 more)
+
+### Community 135 - "Community 135"
 Cohesion: 0.12
 Nodes (5): handleResponse(), handleScroll(), loadData(), updateScrollbar(), updateThumbPosition()
 
-### Community 122 - "Community 122"
-Cohesion: 0.11
-Nodes (9): exhibitionScenes, onTapHotspot(), onTapPet(), petStore, showReaction(), exhibitionScenes, petStore, HOTSPOTS (+1 more)
+### Community 136 - "Community 136"
+Cohesion: 0.19
+Nodes (3): AuthenticatingFilter, Oauth2Filter, ServerSecretFilter
 
-### Community 123 - "Community 123"
+### Community 138 - "Community 138"
+Cohesion: 0.19
+Nodes (20): App, checkDeviceStatus, fetchCompanionData, fetchSubscription, App globalData, initInBackground, silentLogin, onReshape (+12 more)
+
+### Community 139 - "Community 139"
 Cohesion: 0.13
 Nodes (15): CaptchaResponse, ForgotPasswordData, getPublicConfig(), getUserInfo(), login(), LoginData, LoginResponse, PublicConfig (+7 more)
 
-### Community 124 - "Community 124"
-Cohesion: 0.19
-Nodes (3): ASRProvider, 非流式TTS处理，用于测试及保存音频文件的场景         Args:             text: 要转换的文本         Returns:, ByteArray()
+### Community 140 - "Community 140"
+Cohesion: 0.2
+Nodes (6): create_token(), _encode_dict(), _encode_text(), 重写父类方法：使用独立的临时编码器处理音频文件，避免与TTS流式编码器并发冲突。         双流式TTS中，monitor任务在event loop线程接, 非流式TTS处理，用于测试及保存音频文件的场景, TTSProvider
 
-### Community 125 - "Community 125"
-Cohesion: 0.11
-Nodes (17): AQ(), Cc(), En, hB, Hg(), ig(), Jg(), le() (+9 more)
-
-### Community 127 - "Community 127"
-Cohesion: 0.16
-Nodes (12): audioBufferToWav(), bufferToFile(), drawWaveform(), generateWaveform(), handleClose(), handleFileChange(), handleNext(), handleReset() (+4 more)
-
-### Community 128 - "Community 128"
-Cohesion: 0.13
-Nodes (8): deleteProvider(), deleteSelectedProviders(), fetchProviders(), goToPage(), handlePageSizeChange(), handleSearch(), handleSelectModelType(), selectedType
-
-### Community 129 - "Community 129"
-Cohesion: 0.18
-Nodes (4): SuperAdminEnum(), value(), MemoryControllerTest, ProfileControllerTest
-
-### Community 130 - "Community 130"
-Cohesion: 0.15
-Nodes (4): AgentMcpAccessPointService, AgentMcpAccessPointController, AgentMcpAccessPointServiceImpl, HashEncryptionUtil
-
-### Community 131 - "Community 131"
+### Community 141 - "Community 141"
 Cohesion: 0.14
-Nodes (5): WechatController, SysUserTokenServiceImpl, UserCreationResult, SysUserTokenService, WechatService
-
-### Community 132 - "Community 132"
-Cohesion: 0.22
-Nodes (19): App, checkDeviceStatus, fetchCompanionData, fetchSubscription, App globalData, initInBackground, silentLogin, onPay (+11 more)
-
-### Community 134 - "Community 134"
-Cohesion: 0.11
-Nodes (10): httpHandlerError(), showDanger(), validateMobile(), blob, if(), blob, if(), blob (+2 more)
-
-### Community 135 - "Community 135"
-Cohesion: 0.22
-Nodes (14): analyze_intent_with_llm(), check_direct_exit(), handle_user_intent(), process_intent_result(), check_bind_device(), handleAudioMessage(), max_out_size(), no_voice_close_connect() (+6 more)
-
-### Community 136 - "Community 136"
-Cohesion: 0.12
-Nodes (5): LLMProvider, LLMProvider, check_model_key(), VLLMProvider, VLLMProviderBase
-
-### Community 139 - "Community 139"
-Cohesion: 0.18
-Nodes (3): SubscriptionController, SubscriptionServiceImpl, SubscriptionService
+Nodes (13): BaseModel, cdnResources, CompressionPlugin, { defineConfig }, dotenv, { InjectManifest }, path, TerserPlugin (+5 more)
 
 ### Community 142 - "Community 142"
 Cohesion: 0.16
-Nodes (12): expiresAt(), getSession(), hasValidSession(), isExpired(), isExpiringSoon(), KEYS, REQUIRED, saveSession() (+4 more)
+Nodes (12): audioBufferToWav(), bufferToFile(), drawWaveform(), generateWaveform(), handleClose(), handleFileChange(), handleNext(), handleReset() (+4 more)
 
 ### Community 143 - "Community 143"
-Cohesion: 0.2
-Nodes (16): buildFeatureTable(), _createSubscriptionOrder(), _doSignContract(), featureLabel(), _finalizePurchase(), getActionInfo(), loadPageData(), normalizePlan() (+8 more)
+Cohesion: 0.13
+Nodes (8): deleteProvider(), deleteSelectedProviders(), fetchProviders(), goToPage(), handlePageSizeChange(), handleSearch(), handleSelectModelType(), selectedType
 
 ### Community 144 - "Community 144"
-Cohesion: 0.13
-Nodes (10): checkESP32Connection(), checkingConnection, isConnectedToESP32, networkDisplayText, password, scanning, scanWifi(), selectorExpanded (+2 more)
-
-### Community 145 - "Community 145"
-Cohesion: 0.15
-Nodes (4): send_display_message(), auto_import_modules(), 自动导入指定包内的所有模块。      Args:         package_name (str): 包的名称，如 'functions'。, UnifiedToolHandler
+Cohesion: 0.16
+Nodes (6): CompanionMood(), fromCode(), getLabel(), getWeight(), random(), CompanionMoodTest
 
 ### Community 146 - "Community 146"
-Cohesion: 0.12
-Nodes (4): MCPClient, 设备端MCP客户端，用于管理MCP状态和工具, Sanitize tool names for OpenAI compatibility., sanitize_tool_name()
+Cohesion: 0.29
+Nodes (15): BatchIdReq, BatchOperationVO, CreateReq, DatasetDTO, Edge, GraphVO, InfoVO, ListReq (+7 more)
 
 ### Community 147 - "Community 147"
-Cohesion: 0.2
-Nodes (5): AccessToken, ASRProvider, create_token(), _encode_dict(), _encode_text()
+Cohesion: 0.18
+Nodes (8): clamp(), getLabel(), getLevel(), getPromptDescription(), IntimacyLevel(), next(), progressWithin(), IntimacyLevelTest
 
 ### Community 148 - "Community 148"
 Cohesion: 0.24
-Nodes (5): create_token(), _encode_dict(), _encode_text(), 非流式TTS处理，用于测试及保存音频文件的场景, TTSProvider
+Nodes (16): { get }, loadPetFromServer(), onAddDevice(), onEggTap(), onExhibitionDemo(), onExitExhibition(), onOpenProfile(), onPrimaryAction() (+8 more)
 
 ### Community 149 - "Community 149"
 Cohesion: 0.2
-Nodes (11): ContentType, InterfaceType, SentenceType, TTSMessageDTO, speak_txt(), ListenTextMessageHandler, AccessToken, Response (+3 more)
+Nodes (16): buildFeatureTable(), _createSubscriptionOrder(), _doSignContract(), featureLabel(), _finalizePurchase(), getActionInfo(), loadPageData(), normalizePlan() (+8 more)
 
 ### Community 150 - "Community 150"
-Cohesion: 0.14
-Nodes (8): 根据子类定义的 TTS_PARAM_CONFIG 批量应用百分比参数, check_emoji(), get_string_no_punctuation_or_emoji(), is_emoji(), is_punctuation_or_emoji(), clean_markdown(), convert_percentage_to_range(), 将百分比(-100~100)转换为指定范围的值      Args:         percentage: 百分比值 (-100 到 100)
+Cohesion: 0.11
+Nodes (5): assert, AudioManager, createdContexts, mgr, Module
 
 ### Community 151 - "Community 151"
+Cohesion: 0.13
+Nodes (10): checkESP32Connection(), checkingConnection, isConnectedToESP32, networkDisplayText, password, scanning, scanWifi(), selectorExpanded (+2 more)
+
+### Community 152 - "Community 152"
 Cohesion: 0.14
 Nodes (14): addrBook, agentInList, agentPromises, device, hasPermission, input, isNowSelected, mac (+6 more)
 
-### Community 152 - "Community 152"
-Cohesion: 0.15
-Nodes (6): CompanionMood(), fromCode(), getLabel(), getWeight(), random(), CompanionMoodTest
+### Community 153 - "Community 153"
+Cohesion: 0.13
+Nodes (5): ABC, VADProviderBase, VLLMProviderBase, VLLMProvider, VLLMProviderBase
 
 ### Community 154 - "Community 154"
-Cohesion: 0.14
-Nodes (4): ChatController, MemoryController, ProfileController, PetService
+Cohesion: 0.2
+Nodes (5): AccessToken, ASRProvider, create_token(), _encode_dict(), _encode_text()
+
+### Community 155 - "Community 155"
+Cohesion: 0.15
+Nodes (7): 处理 MCP Vision POST 请求, VisionHandler, BaseHandler, 获取websocket地址          Args:             local_ip: 本地IP地址             port: 端口号, SimpleHttpServer, is_valid_image_file(), 检查文件数据是否为有效的图片格式      Args:         file_data: 文件的二进制数据      Returns:         bo
+
+### Community 156 - "Community 156"
+Cohesion: 0.15
+Nodes (3): ShiroConfig, Filter, XssFilter
 
 ### Community 157 - "Community 157"
-Cohesion: 0.22
-Nodes (15): BatchIdReq, BatchOperationVO, CreateReq, DatasetDTO, Edge, GraphVO, InfoVO, ListReq (+7 more)
+Cohesion: 0.21
+Nodes (7): NotifyResult, PrepayRequest, PrepayResult, QueryResult, RefundRequest, RefundResult, WechatPayClient
 
-### Community 158 - "Community 158"
-Cohesion: 0.13
-Nodes (3): UserItemDao, ItemCategory, ItemServiceImpl
-
-### Community 160 - "Community 160"
-Cohesion: 0.15
-Nodes (9): CHARACTERS, closeVoicePicker(), OCCUPATIONS, onPlayVoice(), onUnload(), onVoiceOverlayTap(), onVoiceTap(), _stopVoiceAudio() (+1 more)
+### Community 159 - "Community 159"
+Cohesion: 0.21
+Nodes (5): BaseEntity, SysDictDataEntity, SysDictTypeEntity, SysParamsEntity, SysUserEntity
 
 ### Community 161 - "Community 161"
 Cohesion: 0.16
-Nodes (17): main, monitor_stdin, wait_for_exit, ensure_directories, get_config_from_api_async, load_config, merge_configs, formatter (+9 more)
+Nodes (3): AESUtils, decode(), SM2Utils
+
+### Community 162 - "Community 162"
+Cohesion: 0.15
+Nodes (9): CHARACTERS, closeVoicePicker(), OCCUPATIONS, onPlayVoice(), onUnload(), onVoiceOverlayTap(), onVoiceTap(), _stopVoiceAudio() (+1 more)
 
 ### Community 163 - "Community 163"
+Cohesion: 0.16
+Nodes (17): main, monitor_stdin, wait_for_exit, ensure_directories, get_config_from_api_async, load_config, merge_configs, formatter (+9 more)
+
+### Community 164 - "Community 164"
 Cohesion: 0.17
 Nodes (12): catalog, { get, post }, { getTheme, applyTheme }, _load(), _noVoucher(), onConfirmTap(), onListen(), onLoad() (+4 more)
 
-### Community 164 - "Community 164"
-Cohesion: 0.15
-Nodes (8): { get }, loadPetFromServer(), onEggTap(), onShow(), petStore, renderPet(), showFeedback(), TOUCH_LINES
-
-### Community 165 - "Community 165"
+### Community 166 - "Community 166"
 Cohesion: 0.16
 Nodes (16): Coze LLMProvider.response, Coze LLMProvider.response_with_functions, Dify LLMProvider.response, Dify LLMProvider.response_with_functions, IntentLLM IntentProvider.detect_intent, IntentLLM IntentProvider.get_intent_system_prompt, IntentLLM IntentProvider.replyResult, LLMProviderBase.response_no_stream (+8 more)
 
-### Community 166 - "Community 166"
+### Community 167 - "Community 167"
 Cohesion: 0.16
 Nodes (6): 流式处理TTS音频，每句只推送一次音频列表, 音频文件转换为PCM编码，使用24kHz采样率, 音频文件转换为Opus编码，使用24kHz采样率和自己的编码器, 非流式TTS处理，用于测试及保存音频文件的场景         Args:             text: 要转换的文本         Returns:, 处理剩余的文本并生成语音         Returns:             bool: 是否成功处理了文本, TTSProvider
 
-### Community 167 - "Community 167"
+### Community 168 - "Community 168"
+Cohesion: 0.17
+Nodes (16): dg(), gv(), Jv(), K(), Ko(), kv(), Ll(), lv() (+8 more)
+
+### Community 169 - "Community 169"
 Cohesion: 0.15
 Nodes (6): handleDrag(), handleProgressClick(), handleVolumeMouseEnter(), seekToPercentage(), updateSliderPosition(), volumeIconPath
 
-### Community 168 - "Community 168"
-Cohesion: 0.17
-Nodes (7): NotifyResult, PrepayRequest, PrepayResult, QueryResult, RefundRequest, RefundResult, WechatPayClient
+### Community 170 - "Community 170"
+Cohesion: 0.23
+Nodes (14): app, componentBase, config, errors, file, fs, homeSource, miniprogram (+6 more)
 
-### Community 169 - "Community 169"
+### Community 174 - "Community 174"
 Cohesion: 0.18
-Nodes (7): OTAController, Activation, DeviceReportRespDTO, Firmware, MQTT, ServerTime, Websocket
+Nodes (3): checkMicrophoneAvailability(), isHttpNonLocalhost(), HatchApp
 
-### Community 171 - "Community 171"
-Cohesion: 0.2
-Nodes (16): ai(), bb(), bi(), ci(), di(), fb(), gb(), hb() (+8 more)
+### Community 175 - "Community 175"
+Cohesion: 0.17
+Nodes (16): _load, _load, _load, getLabel, companion-codes config, OCCUPATIONS, QUIRKS, ROLES (+8 more)
 
-### Community 172 - "Community 172"
+### Community 176 - "Community 176"
 Cohesion: 0.13
 Nodes (16): BaseHandler._add_cors_headers, BaseHandler.handle_options, SimpleHttpServer._get_websocket_url, SimpleHttpServer.start, _is_higher_version, OTAHandler._get_websocket_url, OTAHandler._refresh_bin_cache_if_needed, OTAHandler.generate_password_signature (+8 more)
 
-### Community 173 - "Community 173"
-Cohesion: 0.16
-Nodes (3): ShiroConfig, Filter, XssFilter
-
-### Community 174 - "Community 174"
+### Community 178 - "Community 178"
 Cohesion: 0.23
 Nodes (16): Aliyun OSS config (with DB BLOB fallback), application.yml (base Spring Boot config), application-dev.yml (dev profile), application-prod.yml (prod profile), application.yml (test resources), Chat quota (free-daily-limit), Knife4j/OpenAPI doc config, Spring Boot Actuator health/info endpoints (+8 more)
 
-### Community 175 - "Community 175"
-Cohesion: 0.12
-Nodes (14): app, componentBase, config, errors, file, fs, homeSource, miniprogram (+6 more)
-
-### Community 176 - "Community 176"
+### Community 179 - "Community 179"
 Cohesion: 0.17
 Nodes (11): codes, { get, post }, { getTheme, applyTheme }, _isChanged(), _load(), _noVoucher(), onConfirmTap(), onLoad() (+3 more)
 
-### Community 177 - "Community 177"
+### Community 180 - "Community 180"
+Cohesion: 0.24
+Nodes (14): accountPath, app, assert, callOrder, makePage(), modalResult, Module, navigateTo() (+6 more)
+
+### Community 181 - "Community 181"
+Cohesion: 0.23
+Nodes (13): app, assert, loginSession, makePage(), Module, navigateTo(), petStore, resetScenario() (+5 more)
+
+### Community 184 - "Community 184"
+Cohesion: 0.16
+Nodes (16): GET Chat History Endpoint, config/api 配置, OTA Device Registration Endpoint, manager-api 后端服务, xiaozhi-server 聊天服务, egg-avatar Component, mood-badge Component, Voice Chat Feature (+8 more)
+
+### Community 185 - "Community 185"
+Cohesion: 0.23
+Nodes (4): 重写父类方法：使用独立的临时编码器处理音频文件，避免与TTS流式编码器并发冲突。         双流式TTS中，monitor任务在event loop线程接, 非流式生成音频数据，用于生成音频及测试场景, 确保WebSocket连接可用，支持60秒内连接复用, TTSProvider
+
+### Community 186 - "Community 186"
+Cohesion: 0.27
+Nodes (4): create_auth_url(), 非流式TTS处理，用于测试及保存音频文件的场景, 重写父类方法：使用独立的临时编码器处理音频文件，避免与TTS流式编码器并发冲突。         双流式TTS中，monitor任务在event loop线程接, TTSProvider
+
+### Community 187 - "Community 187"
 Cohesion: 0.14
 Nodes (6): AudioRateController, 音频速率控制器 - 按照60ms帧时长精确控制音频发送     解决高并发下的时间累积误差问题, 启动异步发送任务          Args:             send_audio_callback: 发送音频的回调函数          Retu, Args:             frame_duration: 单个音频帧时长（毫秒），默认60ms, 添加消息到队列（立即发送，不占用播放时间）          Args:             message_callback: 消息发送回调函数 asyn, 检查队列并按时发送音频/消息          Args:             send_audio_callback: 发送音频的回调函数 async d
 
-### Community 180 - "Community 180"
+### Community 189 - "Community 189"
 Cohesion: 0.2
 Nodes (9): deleteSelectedVoiceClones(), deleteVoiceClone(), fetchVoiceCloneList(), goFirst(), goNext(), goPrev(), goToPage(), handlePageSizeChange() (+1 more)
 
-### Community 185 - "Community 185"
-Cohesion: 0.16
-Nodes (7): attached(), formatDuration(), _sync(), VoiceCallManager, assert, mgr, VoiceCallManager
+### Community 190 - "Community 190"
+Cohesion: 0.19
+Nodes (3): InnerInterceptor, DataFilterInterceptor, DataScope
 
-### Community 186 - "Community 186"
-Cohesion: 0.23
-Nodes (12): loadAll, cardView(), deriveChips(), effectivePriceFen(), groupByCategory(), hasPromo(), mergeInventory(), orderTerminal() (+4 more)
+### Community 191 - "Community 191"
+Cohesion: 0.18
+Nodes (5): Oauth2FilterPhoneGateTest, StubWechatPhoneGate, TestFilter, Oauth2Filter, WechatPhoneGate
 
-### Community 187 - "Community 187"
+### Community 192 - "Community 192"
+Cohesion: 0.19
+Nodes (3): AuthenticationToken, Oauth2Token, ServerSecretToken
+
+### Community 199 - "Community 199"
 Cohesion: 0.17
 Nodes (10): CHARACTERS, codes, { get, post }, { getTheme, applyTheme }, idxOf(), _load(), _noVoucher(), onConfirmTap() (+2 more)
 
-### Community 188 - "Community 188"
-Cohesion: 0.14
-Nodes (9): accountPath, app, assert, callOrder, makePage(), modalResult, Module, petStore (+1 more)
+### Community 200 - "Community 200"
+Cohesion: 0.16
+Nodes (4): { getOpusRuntime }, OpusDecoder, getOpusRuntime(), loadWasmRuntime()
 
-### Community 190 - "Community 190"
+### Community 203 - "Community 203"
 Cohesion: 0.19
 Nodes (13): _check_queue_capacity(), enqueue_asr_report(), enqueue_tool_report(), enqueue_tts_report(), opus_to_wav(), TTS上报功能已集成到ConnectionHandler类中。  上报功能包括： 1. 每个连接对象拥有自己的上报队列和处理线程 2. 上报线程的生命周期与连接, 将TTS数据加入上报队列      Args:         conn: 连接对象         text: 合成文本         opus_data:, 将工具调用数据加入上报队列      Args:         conn: 连接对象         tool_name: 工具名称         tool (+5 more)
 
-### Community 192 - "Community 192"
+### Community 204 - "Community 204"
 Cohesion: 0.21
 Nodes (3): FileLock, 生成音频文件路径，使用voice的哈希值作为文件名, WakeupWordsConfig
 
-### Community 193 - "Community 193"
-Cohesion: 0.16
-Nodes (5): DefaultTTS, initialize_asr(), initialize_modules(), initialize_tts(), 初始化所有模块组件      Args:         config: 配置字典      Returns:         Dict[str, Any]:
-
-### Community 194 - "Community 194"
+### Community 205 - "Community 205"
 Cohesion: 0.19
 Nodes (10): ff, kf, mf, nf, pf, Qf, vf, wf (+2 more)
 
-### Community 196 - "Community 196"
+### Community 206 - "Community 206"
 Cohesion: 0.27
 Nodes (13): createKnowledgeBase(), deleteDocument(), deleteKnowledgeBase(), deleteKnowledgeBases(), getAuthToken(), getDocumentList(), getKnowledgeBaseList(), listChunks() (+5 more)
 
-### Community 197 - "Community 197"
+### Community 207 - "Community 207"
 Cohesion: 0.19
 Nodes (5): addField(), forceTableRerender(), handleClose(), resetForm(), stopEditing()
 
-### Community 206 - "Community 206"
-Cohesion: 0.23
-Nodes (14): ad(), bd(), kc(), lc(), mc(), nc(), Ob(), oc() (+6 more)
-
-### Community 207 - "Community 207"
-Cohesion: 0.16
-Nodes (14): _load, _load, _load, getLabel, companion-codes config, OCCUPATIONS, QUIRKS, ROLES (+6 more)
-
 ### Community 208 - "Community 208"
+Cohesion: 0.21
+Nodes (4): AuthorizingRealm, ShiroServiceImpl, Oauth2Realm, ShiroService
+
+### Community 211 - "Community 211"
 Cohesion: 0.16
 Nodes (14): AudioManager, FloatingCallBall Component, _bootstrap, _connectToChat, _handleAppShow, _handleWSMessage, _initAudio, _initWebSocketManager (+6 more)
 
-### Community 209 - "Community 209"
-Cohesion: 0.15
-Nodes (9): app, assert, loginSession, makePage(), Module, petStore, run(), toasts (+1 more)
+### Community 212 - "Community 212"
+Cohesion: 0.19
+Nodes (14): POST /pet/adopt Endpoint, POST /pet/{id}/hatch Endpoint, button Component, nav-bar Component, pet-avatar Component, Collection Card Feature, Hatch Ritual Feature, Invite Code Adoption Feature (+6 more)
 
-### Community 210 - "Community 210"
-Cohesion: 0.15
-Nodes (3): Plugin, AudioPlugin, WakeWordPlugin
+### Community 213 - "Community 213"
+Cohesion: 0.14
+Nodes (14): card container component, egg-avatar component placeholder, list-row settings row component, nav-bar custom navigation component, pet-avatar component for hatched pets, switch-row toggle component, home page markup, privacy policy page controller (+6 more)
 
-### Community 211 - "Community 211"
+### Community 214 - "Community 214"
 Cohesion: 0.19
 Nodes (5): OpusEncoderUtils, Opus编码工具类 将PCM音频数据编码为Opus格式, 将字节数组转换为short数组 (16位PCM), 初始化Opus编码器          Args:             sample_rate: 采样率 (Hz)             channels, 将PCM数据编码为Opus格式，以流式方式进行处理          Args:             pcm_data: PCM字节数据
 
-### Community 214 - "Community 214"
+### Community 216 - "Community 216"
 Cohesion: 0.18
 Nodes (6): goBack(), handleConfirm(), providerStore, Providers, t(), useProvider
 
-### Community 215 - "Community 215"
+### Community 217 - "Community 217"
 Cohesion: 0.18
 Nodes (4): LLMProvider, LLMProvider, get_system_prompt_for_function(), 生成系统提示信息     :param functions: 可用的函数列表     :return: 系统提示信息
 
-### Community 217 - "Community 217"
-Cohesion: 0.33
-Nodes (3): create_auth_url(), 非流式TTS处理，用于测试及保存音频文件的场景, TTSProvider
-
-### Community 218 - "Community 218"
-Cohesion: 0.28
-Nodes (3): 非流式生成音频数据，用于生成音频及测试场景, 确保WebSocket连接可用，支持60秒内连接复用, TTSProvider
-
 ### Community 220 - "Community 220"
-Cohesion: 0.22
-Nodes (3): InnerInterceptor, DataFilterInterceptor, DataScope
-
-### Community 221 - "Community 221"
-Cohesion: 0.21
-Nodes (3): AuthenticationToken, Oauth2Token, ServerSecretToken
+Cohesion: 0.38
+Nodes (10): DeleteItem, DocAggVO, HitVO, MetaBatchReq, MetaSummaryVO, ResultVO, RetrievalDTO, Selector (+2 more)
 
 ### Community 222 - "Community 222"
-Cohesion: 0.26
-Nodes (5): BaseEntity, SysDictDataEntity, SysDictTypeEntity, SysParamsEntity, SysUserEntity
+Cohesion: 0.23
+Nodes (3): MockPaymentNotifyController, PaymentNotifyController, PaymentNotifyService
 
 ### Community 224 - "Community 224"
 Cohesion: 0.22
-Nodes (4): minutes(), oneTime(), HatchActionService, HatchActionServiceImpl
-
-### Community 225 - "Community 225"
-Cohesion: 0.19
-Nodes (13): _applyFeatures(), _bootstrap(), _connectToChat(), _formatLocalDateTime(), _handleAppShow(), _initAudio(), _initWebSocketManager(), _isReadyForAction() (+5 more)
-
-### Community 226 - "Community 226"
-Cohesion: 0.22
 Nodes (13): checkWakeupWords, handleHelloMessage, WAKEUP_CONFIG, wakeupWordsResponse, _do_send_audio, _get_or_create_rate_controller, _send_audio_with_rate_control, _send_to_mqtt_gateway (+5 more)
 
-### Community 227 - "Community 227"
+### Community 225 - "Community 225"
 Cohesion: 0.17
-Nodes (13): handleAbortMessage, ConnectionHandler._background_initialize, ConnectionHandler._check_timeout, ConnectionHandler._initialize_private_config_async, ConnectionHandler._save_and_close, ConnectionHandler.clear_queues, ConnectionHandler.clearSpeakStatus, ConnectionHandler.close (+5 more)
+Nodes (13): handleAbortMessage, AuthManager.verify_token, ConnectionHandler._check_timeout, ConnectionHandler._save_and_close, ConnectionHandler.clear_queues, ConnectionHandler.clearSpeakStatus, ConnectionHandler.close, ConnectionHandler.handle_connection (+5 more)
 
-### Community 228 - "Community 228"
+### Community 226 - "Community 226"
 Cohesion: 0.15
 Nodes (13): create_instance, create_instance, create_instance, create_instance, initialize_asr, initialize_modules, initialize_tts, performance_tester_asr ASRPerformanceTester (+5 more)
 
+### Community 228 - "Community 228"
+Cohesion: 0.15
+Nodes (7): { get }, assert, calls, inviteApi, mine, Module, responses
+
+### Community 229 - "Community 229"
+Cohesion: 0.19
+Nodes (13): _applyFeatures(), _bootstrap(), _connectToChat(), _formatLocalDateTime(), _handleAppShow(), _initAudio(), _initWebSocketManager(), _isReadyForAction() (+5 more)
+
 ### Community 230 - "Community 230"
-Cohesion: 0.24
-Nodes (11): _applyFilter(), _decorate(), _formatTime(), { get }, { getTheme, applyTheme }, loadOrders(), onLoad(), onPullDownRefresh() (+3 more)
+Cohesion: 0.15
+Nodes (3): assert, hatchResponse, wxCalls
+
+### Community 231 - "Community 231"
+Cohesion: 0.15
+Nodes (11): api, assert, auth, modalCalls, Module, page, petStore, profilePath (+3 more)
 
 ### Community 232 - "Community 232"
-Cohesion: 0.21
-Nodes (4): ApiResponse, ChatHistory, CreateSpeakerData, VoicePrint
-
-### Community 233 - "Community 233"
-Cohesion: 0.21
-Nodes (8): handle_hass_get_state(), hass_get_state(), append_devices_to_prompt(), initialize_hass_handler(), handle_hass_play_music(), hass_play_music(), handle_hass_set_state(), hass_set_state()
+Cohesion: 0.15
+Nodes (11): apiCalls, assert, code, copyPage, errorPage, inviteApi, inviteCodesPath, Module (+3 more)
 
 ### Community 234 - "Community 234"
-Cohesion: 0.2
-Nodes (3): ABC, VADProviderBase, VLLMProviderBase
+Cohesion: 0.21
+Nodes (4): ApiResponse, ChatHistory, CreateSpeakerData, VoicePrint
 
 ### Community 235 - "Community 235"
 Cohesion: 0.29
 Nodes (5): AccessToken, ASRProvider, create_token(), _encode_dict(), _encode_text()
 
 ### Community 236 - "Community 236"
-Cohesion: 0.24
-Nodes (7): ASRProvider, _generate_header(), parse_response(), Construct the request payload., Send request to Volcano ASR service., protocol_version(4 bits), header_size(4 bits),     message_type(4 bits), message, slice_data()
+Cohesion: 0.21
+Nodes (8): handle_hass_get_state(), hass_get_state(), append_devices_to_prompt(), initialize_hass_handler(), handle_hass_play_music(), hass_play_music(), handle_hass_set_state(), hass_set_state()
 
 ### Community 237 - "Community 237"
+Cohesion: 0.26
+Nodes (3): Dialogue, Message, 确保所有 tool_calls 都有对应的 tool 响应         修复被打断导致的悬空 tool_calls，防止大模型 API 报 400 错误
+
+### Community 239 - "Community 239"
 Cohesion: 0.17
 Nodes (10): addDictData(), addDictType(), deleteDictData(), deleteDictType(), getDictDataDetail(), getDictDataList(), getDictTypeDetail(), getDictTypeList() (+2 more)
 
-### Community 238 - "Community 238"
+### Community 240 - "Community 240"
 Cohesion: 0.18
 Nodes (3): deviceIds, handleOtaSwitchChange(), updateDeviceInfo()
 
-### Community 239 - "Community 239"
-Cohesion: 0.24
-Nodes (4): AuthorizingRealm, ShiroServiceImpl, Oauth2Realm, ShiroService
-
 ### Community 241 - "Community 241"
-Cohesion: 0.3
-Nodes (10): DeleteItem, DocAggVO, HitVO, MetaBatchReq, MetaSummaryVO, ResultVO, RetrievalDTO, Selector (+2 more)
+Cohesion: 0.41
+Nodes (9): ChatHistoryConfEnum(), Constant, DataOperation(), DictType(), getCode(), getValue(), SysBaseParam(), SysMSMParam() (+1 more)
+
+### Community 242 - "Community 242"
+Cohesion: 0.41
+Nodes (9): BatchIdReq, DocumentDTO, GraphRagConfig, InfoVO, ListReq, ParserConfig, RaptorConfig, UpdateReq (+1 more)
 
 ### Community 244 - "Community 244"
+Cohesion: 0.21
+Nodes (3): ApplicationRunner, WechatPayClientStartupGuard, AdminApplication
+
+### Community 246 - "Community 246"
+Cohesion: 0.26
+Nodes (3): CollectionCardImageService, CollectionCardImageServiceImpl, path
+
+### Community 249 - "Community 249"
+Cohesion: 0.2
+Nodes (3): ItemSkuVO, BonusItem, SubscriptionPlanVO
+
+### Community 250 - "Community 250"
+Cohesion: 0.36
+Nodes (4): FulfillmentDispatcher, PaymentOrderService, PaymentOrderMaintenanceTask, WechatPayClient
+
+### Community 254 - "Community 254"
+Cohesion: 0.32
+Nodes (10): loadAll, cardView(), deriveChips(), effectivePriceFen(), groupByCategory(), hasPromo(), mergeInventory(), orderTerminal() (+2 more)
+
+### Community 255 - "Community 255"
 Cohesion: 0.17
 Nodes (12): Backpack Page, ChangeOccupation Page, ChangeRole Page, ChangeSoul Page, ChangeVoice Page, Orders Page, Profile Page, Settings Page (+4 more)
 
-### Community 246 - "Community 246"
+### Community 257 - "Community 257"
+Cohesion: 0.3
+Nodes (10): onNavAccount(), onNavAlbum(), onNavCodes(), onNavHelp(), onNavPrivacy(), onNavSettings(), onPetAction(), onShow() (+2 more)
+
+### Community 258 - "Community 258"
+Cohesion: 0.23
+Nodes (7): auth, onAuthorize(), onLoad(), onPrivacy(), onToggleAgreement(), petStore, wechatApi
+
+### Community 259 - "Community 259"
+Cohesion: 0.27
+Nodes (8): exhibitionScenes, onExit(), onSelectScene(), onShow(), petStore, getScene(), HOTSPOTS, SCENES
+
+### Community 260 - "Community 260"
+Cohesion: 0.18
+Nodes (12): wechat avatar upload endpoint, api base URL config, Home Page, profile page controller, welcome page controller, welcome page markup, Profile avatar uses chooseAvatar open-type and uploads file to /wechat/avatar endpoint, Welcome page requires privacy agreement and getPhoneNumber authorization before entering home tab (+4 more)
+
+### Community 261 - "Community 261"
 Cohesion: 0.2
 Nodes (3): AudioListener, MicrophoneListener, Protocol
 
-### Community 247 - "Community 247"
+### Community 262 - "Community 262"
 Cohesion: 0.27
 Nodes (5): _build_tools(), LLMProvider, 分别测试 HTTP 和 HTTPS 代理是否可用，并设置环境变量。     如果 HTTPS 代理不可用但 HTTP 可用，会将 HTTPS_PROXY 也指向, setup_proxy_env(), test_proxy()
 
-### Community 248 - "Community 248"
+### Community 263 - "Community 263"
 Cohesion: 0.25
 Nodes (4): 处理剩余的文本并生成语音         Returns:             bool: 是否成功处理了文本, 流式处理TTS音频，每句只推送一次音频列表, 初始化音频通道,并根据conn.sample_rate更新配置, TTSProvider
 
-### Community 249 - "Community 249"
+### Community 264 - "Community 264"
 Cohesion: 0.24
 Nodes (5): get_gc_manager(), GlobalGCManager, 全局GC管理模块 定期执行垃圾回收，避免频繁触发GC导致的GIL锁问题, 获取全局GC管理器实例（单例模式）      Args:         interval_seconds: GC执行间隔（秒），默认300秒（5分钟）, 初始化GC管理器          Args:             interval_seconds: GC执行间隔（秒），默认300秒（5分钟）
 
-### Community 250 - "Community 250"
+### Community 265 - "Community 265"
+Cohesion: 0.25
+Nodes (6): Helper to send MCP messages, encapsulating common logic., send_mcp_initialize_message(), send_mcp_message(), send_mcp_tools_list_continue_request(), send_mcp_tools_list_request(), handleHelloMessage()
+
+### Community 266 - "Community 266"
 Cohesion: 0.31
 Nodes (3): ASRPerformanceTester, main(), 从 data 目录加载所有 .config.yaml 文件的配置
 
-### Community 252 - "Community 252"
+### Community 268 - "Community 268"
 Cohesion: 0.18
 Nodes (11): addOnPostRun(), addOnPreRun(), callRuntimeCallbacks(), getWasmTableEntry(), initRuntime(), invoke_iii(), invoke_iiii(), invoke_iiiii() (+3 more)
 
-### Community 253 - "Community 253"
+### Community 269 - "Community 269"
 Cohesion: 0.18
 Nodes (10): changePassword(), changeUserStatus(), getCaptcha(), getPubConfig(), getUserInfo(), login(), register(), retrievePassword() (+2 more)
 
-### Community 255 - "Community 255"
+### Community 271 - "Community 271"
 Cohesion: 0.24
 Nodes (4): createNewTemplate(), prepareConfigData(), saveConfig(), updateExistingTemplate()
 
-### Community 256 - "Community 256"
-Cohesion: 0.33
-Nodes (9): ChatHistoryConfEnum(), Constant, DataOperation(), DictType(), getCode(), getValue(), SysBaseParam(), SysMSMParam() (+1 more)
-
-### Community 262 - "Community 262"
-Cohesion: 0.33
-Nodes (9): BatchIdReq, DocumentDTO, GraphRagConfig, InfoVO, ListReq, ParserConfig, RaptorConfig, UpdateReq (+1 more)
-
-### Community 266 - "Community 266"
-Cohesion: 0.24
-Nodes (9): clearCracks(), CRACK_PATHS, playBounce(), resetEgg(), startBreathing(), stopBreathing(), updateCracks(), updateWobble() (+1 more)
-
-### Community 267 - "Community 267"
-Cohesion: 0.18
-Nodes (11): _ensureRecordPermission(), _hasVoiceCallFeature(), _loadHistoryMessages(), onMsgLongPress(), _onScrollToUpper(), onSummon(), onToggleInputMode(), onVoiceCallTap() (+3 more)
-
-### Community 269 - "Community 269"
-Cohesion: 0.2
-Nodes (5): MBTI_LIST, onChooseAvatar(), onLoad(), petStore, save()
-
-### Community 270 - "Community 270"
-Cohesion: 0.2
-Nodes (11): isTokenExpiredOrAboutToExpire, refreshLogin, setToken, _waitOrderFulfilled, loadOrders, get, request, loadMySubscription (+3 more)
-
-### Community 272 - "Community 272"
-Cohesion: 0.22
-Nodes (4): CHARACTERS, _checkCanProceed(), onQuirkTap(), onTraitTap()
-
-### Community 274 - "Community 274"
-Cohesion: 0.27
-Nodes (3): AuthToken, 验证token         :param token: JWT token字符串         :return: (是否有效, 设备ID), 生成JWT token         :param device_id: 设备ID         :return: JWT token字符串
-
-### Community 275 - "Community 275"
-Cohesion: 0.27
-Nodes (4): IotDescriptor, handleIotDescriptors(), handleIotStatus(), IoT设备支持模块，提供IoT设备描述符和状态处理
-
 ### Community 276 - "Community 276"
-Cohesion: 0.22
-Nodes (5): MemoryProvider, Save conversation messages to PowerMem.          Args:             msgs: List of, PowerMem memory provider implementation.      PowerMem is an open-source agent m, Query memories from PowerMem based on similarity search.          Args:, Get user profile from PowerMem (only available in UserMemory mode).          Use
+Cohesion: 0.33
+Nodes (5): Activation, DeviceOtaVO, Firmware, Mqtt, ServerTime
 
 ### Community 278 - "Community 278"
 Cohesion: 0.22
-Nodes (4): ASRProvider, CaptureOutput, lang_tag_filter(), 解析 FunASR 识别结果，按顺序提取标签和纯文本内容      Args:         text: ASR 识别的原始文本，可能包含多种标签
+Nodes (11): ConnectionHandler._discard_message_with_bind_prompt, ConnectionHandler._process_mqtt_audio_message, ConnectionHandler._process_websocket_audio, ConnectionHandler._put_asr_audio, ConnectionHandler._route_message, HelloTextMessageHandler.handle, IotTextMessageHandler.handle, McpTextMessageHandler.handle (+3 more)
 
 ### Community 279 - "Community 279"
+Cohesion: 0.29
+Nodes (4): HatchActionType(), minutes(), oneTime(), HatchActionServiceImpl
+
+### Community 280 - "Community 280"
+Cohesion: 0.31
+Nodes (8): appPath, assert, auth, login(), Module, request, run(), wxLoginResult
+
+### Community 281 - "Community 281"
+Cohesion: 0.36
+Nodes (9): exhibitionScenes, onBack(), onChangeScene(), onLoad(), onTapHotspot(), onTapPet(), onUnload(), petStore (+1 more)
+
+### Community 282 - "Community 282"
+Cohesion: 0.2
+Nodes (4): AESUtils, AgentMcpAccessPointService, AgentMcpAccessPointController, HashEncryptionUtil
+
+### Community 285 - "Community 285"
+Cohesion: 0.22
+Nodes (5): MemoryProvider, Save conversation messages to PowerMem.          Args:             msgs: List of, PowerMem memory provider implementation.      PowerMem is an open-source agent m, Query memories from PowerMem based on similarity search.          Args:, Get user profile from PowerMem (only available in UserMemory mode).          Use
+
+### Community 286 - "Community 286"
 Cohesion: 0.24
 Nodes (3): ASRProvider, CaptureOutput, Args:         wave_filename:             Path to a wave file. It should be singl
 
-### Community 280 - "Community 280"
+### Community 287 - "Community 287"
 Cohesion: 0.33
 Nodes (5): AccessToken, create_token(), _encode_dict(), _encode_text(), TTSProvider
 
-### Community 281 - "Community 281"
+### Community 288 - "Community 288"
+Cohesion: 0.27
+Nodes (4): IotDescriptor, handleIotDescriptors(), handleIotStatus(), IoT设备支持模块，提供IoT设备描述符和状态处理
+
+### Community 289 - "Community 289"
+Cohesion: 0.27
+Nodes (3): AuthToken, 验证token         :param token: JWT token字符串         :return: (是否有效, 设备ID), 生成JWT token         :param device_id: 设备ID         :return: JWT token字符串
+
+### Community 290 - "Community 290"
+Cohesion: 0.24
+Nodes (9): shutdown_global_executor(), check_ffmpeg_installed(), 检查当前环境中是否已正确安装并可执行 ffmpeg。      Returns:         bool: 如果 ffmpeg 正常可用，返回 True；否则, 校验MCP接入点格式      Args:         mcp_endpoint: MCP接入点字符串      Returns:         bool, validate_mcp_endpoint(), main(), monitor_stdin(), 阻塞直到收到 Ctrl‑C / SIGTERM。     - Unix: 使用 add_signal_handler     - Windows: 依赖 Key (+1 more)
+
+### Community 291 - "Community 291"
 Cohesion: 0.2
 Nodes (9): addParam(), deleteParam(), deleteUser(), getParamsList(), getUserList(), getWsServerList(), resetUserPassword(), sendWsServerAction() (+1 more)
 
-### Community 286 - "Community 286"
-Cohesion: 0.29
-Nodes (5): Activation, DeviceOtaVO, Firmware, Mqtt, ServerTime
+### Community 292 - "Community 292"
+Cohesion: 0.2
+Nodes (7): getAddressBookList(), updateAlias(), updatePermission(), deleteVoice(), getVoiceList(), saveVoice(), updateVoice()
 
-### Community 287 - "Community 287"
+### Community 296 - "Community 296"
+Cohesion: 0.47
+Nodes (7): AddReq, ChunkDTO, InfoVO, ListReq, ListVO, RemoveReq, UpdateReq
+
+### Community 302 - "Community 302"
 Cohesion: 0.22
 Nodes (10): ConnectionHandler._init_prompt_enhancement, ConnectionHandler._init_report_threads, ConnectionHandler._initialize_asr, ConnectionHandler._initialize_components, ConnectionHandler._initialize_intent, ConnectionHandler._initialize_memory, ConnectionHandler._initialize_tts, ConnectionHandler._initialize_voiceprint (+2 more)
 
-### Community 288 - "Community 288"
+### Community 303 - "Community 303"
 Cohesion: 0.24
-Nodes (10): AuthManager.verify_token, ConnectionHandler, _check_queue_capacity, enqueue_asr_report, enqueue_tool_report, enqueue_tts_report, TextMessageProcessor, TextMessageType (+2 more)
+Nodes (10): ConnectionHandler, ConnectionHandler._background_initialize, ConnectionHandler._initialize_private_config_async, get_global_executor, _check_queue_capacity, enqueue_asr_report, enqueue_tool_report, enqueue_tts_report (+2 more)
 
-### Community 291 - "Community 291"
+### Community 304 - "Community 304"
+Cohesion: 0.36
+Nodes (8): assert, assertUrl(), calls, enqueue(), Module, petApi, request(), responses
+
+### Community 305 - "Community 305"
+Cohesion: 0.31
+Nodes (8): inviteApi, isExhausted(), loadInviteCode(), MESSAGES, onCopy(), onRetry(), onShow(), petStore
+
+### Community 306 - "Community 306"
+Cohesion: 0.38
+Nodes (8): drawShareCard(), onAlbum(), onLoad(), onProfile(), onReady(), onSave(), onShareAppMessage(), petStore
+
+### Community 308 - "Community 308"
 Cohesion: 0.44
 Nodes (8): _extract_song_name(), _find_best_match(), get_music_files(), _get_random_play_prompt(), handle_music_command(), initialize_music_handler(), play_local_music(), play_music()
 
-### Community 297 - "Community 297"
-Cohesion: 0.36
-Nodes (9): _addMessage(), _appendStreamingText(), _finalizeStreaming(), _formatTimeLabel(), _handleTtsState(), _handleWSMessage(), _isSameDay(), _parseTime() (+1 more)
+### Community 309 - "Community 309"
+Cohesion: 0.22
+Nodes (5): MybatisPlusConfig, Data Scope SQL Filtering, DataFilterInterceptor, DataScope, MybatisPlusConfig
 
-### Community 299 - "Community 299"
-Cohesion: 0.25
-Nodes (3): drawShareCard(), onReady(), petStore
+### Community 310 - "Community 310"
+Cohesion: 0.5
+Nodes (6): Application, BoardInfo, ChipInfo, DeviceReportReqDTO, OtaInfo, Partition
 
-### Community 300 - "Community 300"
+### Community 317 - "Community 317"
 Cohesion: 0.33
 Nodes (9): analyze_intent_with_llm, check_direct_exit, handle_user_intent, process_intent_result, speak_txt, ListenTextMessageHandler.handle, check_bind_device, startToChat (+1 more)
 
-### Community 301 - "Community 301"
+### Community 318 - "Community 318"
 Cohesion: 0.22
 Nodes (9): Aliyun Bailian Stream TTSProvider._start_monitor_tts_response, Aliyun Stream TTSProvider._start_monitor_tts_response, TTSProviderBase.handle_opus, Huoshan Double Stream TTSProvider._start_monitor_tts_response, IndexStream TTSProvider.text_to_speak, IndexStream TTSProvider.tts_text_priority_thread, MiniMax HTTP Stream TTSProvider.text_to_speak, MiniMax HTTP Stream TTSProvider.tts_text_priority_thread (+1 more)
 
-### Community 302 - "Community 302"
+### Community 319 - "Community 319"
 Cohesion: 0.39
 Nodes (9): handle_hass_get_state, hass_get_state, append_devices_to_prompt, initialize_hass_handler, handle_hass_play_music, hass_play_music, handle_hass_set_state, hass_set_state (+1 more)
 
-### Community 303 - "Community 303"
+### Community 320 - "Community 320"
 Cohesion: 0.22
-Nodes (6): appPath, assert, auth, Module, request, wxLoginResult
+Nodes (5): { post }, assert, calls, requestPath, wechatApi
 
-### Community 304 - "Community 304"
-Cohesion: 0.22
-Nodes (5): assert, calls, Module, petApi, responses
+### Community 321 - "Community 321"
+Cohesion: 0.5
+Nodes (7): DEFAULTS, onLoad(), onToggleBday(), onToggleDaily(), onToggleGrowth(), onToggleHatch(), update()
 
-### Community 305 - "Community 305"
-Cohesion: 0.29
-Nodes (6): add_device_output(), check_device_output_limit(), get_device_output(), 重置所有设备的每日输出字数     每天0点调用此函数, 检查设备是否超过输出限制     :return: True 如果超过限制，False 如果未超过, reset_device_output()
+### Community 322 - "Community 322"
+Cohesion: 0.36
+Nodes (9): _addMessage(), _appendStreamingText(), _finalizeStreaming(), _formatTimeLabel(), _handleTtsState(), _handleWSMessage(), _isSameDay(), _parseTime() (+1 more)
 
-### Community 306 - "Community 306"
-Cohesion: 0.39
-Nodes (7): fetch_news_detail(), fetch_news_from_api(), get_news_from_newsnow(), get_news_sources_from_config(), _get_newsnow_config(), 获取新闻详情页内容并使用MarkItDown清理HTML, 获取新闻并随机选择一条进行播报，或获取上一条新闻的详细内容
+### Community 323 - "Community 323"
+Cohesion: 0.5
+Nodes (6): Activation, DeviceReportRespDTO, Firmware, MQTT, ServerTime, Websocket
 
-### Community 307 - "Community 307"
+### Community 325 - "Community 325"
+Cohesion: 0.25
+Nodes (3): 非流式TTS处理，用于测试及保存音频文件的场景         Args:             text: 要转换的文本         Returns:, ByteArray(), s()
+
+### Community 326 - "Community 326"
 Cohesion: 0.29
 Nodes (3): 释放连接的 VAD 资源（连接关闭时调用）, VADProvider, VADProviderBase
 
-### Community 308 - "Community 308"
+### Community 327 - "Community 327"
 Cohesion: 0.29
 Nodes (7): build_module_string(), create_connection_logger(), formatter(), get_module_abbreviation(), 为连接创建独立的日志器，绑定特定的模块字符串, 获取模块名称的缩写，如果为空则返回00     如果名称中包含下划线，则返回下划线后面的前两个字符, 为没有 tag 的日志添加默认值，并处理动态模块字符串
 
-### Community 310 - "Community 310"
+### Community 329 - "Community 329"
 Cohesion: 0.25
 Nodes (8): abort(), getBinary(), getBinaryPromise(), getValue(), intArrayFromBase64(), isDataURI(), isFileURI(), tryParseAsDataURI()
 
-### Community 311 - "Community 311"
+### Community 330 - "Community 330"
 Cohesion: 0.25
 Nodes (7): deleteOta(), getDownloadUrl(), getOtaInfo(), getOtaList(), saveOta(), updateOta(), uploadFirmware()
 
-### Community 312 - "Community 312"
+### Community 331 - "Community 331"
 Cohesion: 0.25
 Nodes (7): addFile(), batchDeleteFile(), deleteFile(), downloadFile(), getFileList(), selectAll(), updateFile()
 
-### Community 313 - "Community 313"
+### Community 332 - "Community 332"
 Cohesion: 0.46
 Nodes (6): formatAddDate(), formatDate(), formatDateTool(), isDate(), padLeftZero(), toDate()
 
-### Community 315 - "Community 315"
+### Community 334 - "Community 334"
 Cohesion: 0.25
 Nodes (5): languagesArray, LLMdata, meta, params, tagNames
 
-### Community 323 - "Community 323"
-Cohesion: 0.43
-Nodes (6): Application, BoardInfo, ChipInfo, DeviceReportReqDTO, OtaInfo, Partition
+### Community 342 - "Community 342"
+Cohesion: 0.36
+Nodes (8): Je(), Le(), Me(), Ne(), Oe(), Pe(), Qe(), Re()
 
-### Community 326 - "Community 326"
-Cohesion: 0.39
-Nodes (6): callBirthApi(), DEFAULT_PET, formatDate(), showBirthScene(), ZODIAC_NAMES, createRabbit()
-
-### Community 329 - "Community 329"
+### Community 343 - "Community 343"
 Cohesion: 0.29
 Nodes (8): CHANNEL_MAP, fetch_news_detail, fetch_news_from_api, get_news_from_newsnow, search_from_ragflow, _search_metaso, _search_tavily, web_search
 
-### Community 330 - "Community 330"
-Cohesion: 0.39
-Nodes (7): DEFAULTS, onLoad(), onToggleBday(), onToggleDaily(), onToggleGrowth(), onToggleHatch(), update()
-
-### Community 331 - "Community 331"
-Cohesion: 0.33
-Nodes (5): goBack(), handleConfirm(), localSettings, speedPitchStore, store
-
-### Community 332 - "Community 332"
+### Community 345 - "Community 345"
 Cohesion: 0.43
-Nodes (6): fetch_news_detail(), fetch_news_from_rss(), get_news_from_chinanews(), map_category(), 将用户输入的中文类别映射到配置文件中的类别键, 获取新闻并随机选择一条进行播报，或获取上一条新闻的详细内容
+Nodes (6): api, assert, Module, request(), requestCalls, responses
 
-### Community 335 - "Community 335"
-Cohesion: 0.29
-Nodes (6): deleteVoiceResource(), getTtsPlatformList(), getVoiceResourceByUserId(), getVoiceResourceInfo(), getVoiceResourceList(), saveVoiceResource()
-
-### Community 336 - "Community 336"
-Cohesion: 0.29
-Nodes (6): cloneAudio(), getAudioId(), getPlayVoiceUrl(), getVoiceCloneList(), updateName(), uploadVoice()
-
-### Community 337 - "Community 337"
-Cohesion: 0.29
-Nodes (6): bindDevice(), getAgentBindDevices(), getDeviceStatus(), manualAddDevice(), unbindDevice(), updateDeviceInfo()
-
-### Community 338 - "Community 338"
-Cohesion: 0.52
-Nodes (6): checkCdnCacheStatus(), clearAllCaches(), getCacheNames(), getCacheUrls(), isUrlCached(), logCacheStatus()
+### Community 346 - "Community 346"
+Cohesion: 0.25
+Nodes (8): AgentChatAudioServiceImplTest, OssService.buildAudioOssKey, OssService.delete, OssService.deleteBatch, OssService.download, OssService.isEnabled, OssService.upload, OssServiceTest
 
 ### Community 347 - "Community 347"
-Cohesion: 0.29
-Nodes (7): ConnectionHandler._clean_response_garbage, ConnectionHandler._extract_direct_answer_response, ConnectionHandler._handle_function_result, ConnectionHandler._merge_tool_calls, ConnectionHandler.chat, ConnectionHandler.chat_and_close, DIRECT_ANSWER_TOOL
-
-### Community 348 - "Community 348"
-Cohesion: 0.38
-Nodes (7): get_current_date, get_current_lunar_date, get_current_time, get_current_time_info, get_current_weekday, PromptManager._get_current_time_info, PromptManager.build_enhanced_prompt
+Cohesion: 0.25
+Nodes (8): add-device page, exhibition scenes list page, hatch guide tasks page, home page controller, pet detail page, Long-press egg gesture records CUDDLE hatch action with 3-second progress and haptic feedback, Home page exhibition demo mode allows temporary hatched state preview and quick access to six life scenes, Primary action button navigates to hatch-guide hatch ritual or chat based on current pet stage
 
 ### Community 349 - "Community 349"
 Cohesion: 0.33
-Nodes (5): NavigateToOptions, RedirectToOptions, ReLaunchOptions, SwitchTabOptions, Uni
+Nodes (4): aI(), F(), Gk(), nk()
 
 ### Community 350 - "Community 350"
+Cohesion: 0.29
+Nodes (6): cloneAudio(), getAudioId(), getPlayVoiceUrl(), getVoiceCloneList(), updateName(), uploadVoice()
+
+### Community 351 - "Community 351"
+Cohesion: 0.29
+Nodes (6): deleteVoiceResource(), getTtsPlatformList(), getVoiceResourceByUserId(), getVoiceResourceInfo(), getVoiceResourceList(), saveVoiceResource()
+
+### Community 352 - "Community 352"
+Cohesion: 0.29
+Nodes (6): bindDevice(), getAgentBindDevices(), getDeviceStatus(), manualAddDevice(), unbindDevice(), updateDeviceInfo()
+
+### Community 353 - "Community 353"
+Cohesion: 0.52
+Nodes (6): checkCdnCacheStatus(), clearAllCaches(), getCacheNames(), getCacheUrls(), isUrlCached(), logCacheStatus()
+
+### Community 365 - "Community 365"
+Cohesion: 0.29
+Nodes (7): ConnectionHandler._clean_response_garbage, ConnectionHandler._extract_direct_answer_response, ConnectionHandler._handle_function_result, ConnectionHandler._merge_tool_calls, ConnectionHandler.chat, ConnectionHandler.chat_and_close, DIRECT_ANSWER_TOOL
+
+### Community 366 - "Community 366"
+Cohesion: 0.38
+Nodes (7): get_current_date, get_current_lunar_date, get_current_time, get_current_time_info, get_current_weekday, PromptManager._get_current_time_info, PromptManager.build_enhanced_prompt
+
+### Community 367 - "Community 367"
+Cohesion: 0.62
+Nodes (4): fromValue(), getByValue(), getValue(), ServerActionResponseEnum()
+
+### Community 368 - "Community 368"
+Cohesion: 0.48
+Nodes (5): onColor(), onLoad(), onPattern(), onSave(), petStore
+
+### Community 369 - "Community 369"
+Cohesion: 0.48
+Nodes (5): onBackAccount(), onCancel(), onCancelDeregister(), onConfirmDeregister(), onShow()
+
+### Community 372 - "Community 372"
+Cohesion: 0.33
+Nodes (5): NavigateToOptions, RedirectToOptions, ReLaunchOptions, SwitchTabOptions, Uni
+
+### Community 373 - "Community 373"
 Cohesion: 0.4
 Nodes (4): FgTabBarItem, _tabbar, TABBAR_MAP, tabbarList
 
-### Community 352 - "Community 352"
+### Community 376 - "Community 376"
 Cohesion: 0.4
 Nodes (6): ccall(), cwrap(), getCFunc(), stringToUTF8(), stringToUTF8Array(), writeArrayToMemory()
 
-### Community 354 - "Community 354"
+### Community 378 - "Community 378"
 Cohesion: 0.33
 Nodes (4): items, lines, parsed, submitData
 
-### Community 364 - "Community 364"
-Cohesion: 0.6
-Nodes (4): fromValue(), getByValue(), getValue(), ServerActionResponseEnum()
-
-### Community 370 - "Community 370"
-Cohesion: 0.4
-Nodes (6): AuthManager, BaseHandler, SimpleHttpServer, OTAHandler, VisionHandler, WebSocketServer
-
-### Community 371 - "Community 371"
-Cohesion: 0.33
-Nodes (6): HelloTextMessageHandler.handle, IotTextMessageHandler.handle, McpTextMessageHandler.handle, handleTextMessage, TextMessageHandlerRegistry.get_handler, TextMessageProcessor.process_message
-
-### Community 372 - "Community 372"
-Cohesion: 0.53
-Nodes (6): HelloTextMessageHandler, IotTextMessageHandler, ListenTextMessageHandler, McpTextMessageHandler, TextMessageHandler, TextMessageHandlerRegistry
-
-### Community 373 - "Community 373"
-Cohesion: 0.33
-Nodes (6): ContextDataProvider.fetch_all, PromptManager._get_location_info, PromptManager._get_weather_info, PromptManager.update_context_info, get_ip_info, is_private_ip
-
-### Community 374 - "Community 374"
-Cohesion: 0.4
-Nodes (6): FileLock, WakeupWordsConfig._load_config, WakeupWordsConfig._save_config, WakeupWordsConfig.generate_file_path, WakeupWordsConfig.get_wakeup_response, WakeupWordsConfig.update_wakeup_response
-
-### Community 375 - "Community 375"
-Cohesion: 0.4
-Nodes (6): get_news_from_chinanews get_news_from_chinanews, loadplugins auto_import_modules, register all_function_registry, register FunctionItem, register FunctionRegistry, register register_function
-
-### Community 376 - "Community 376"
-Cohesion: 0.4
-Nodes (6): Cache Manager Usage Pattern, get_lunar, fetch_city_info, fetch_weather_page, get_weather, parse_weather_info
-
-### Community 381 - "Community 381"
-Cohesion: 0.4
-Nodes (4): decode_opus_from_bytes(), decode_opus_from_file(), 从p3二进制数据中解码 Opus 数据，并返回一个 Opus 数据包的列表以及总时长。, 从p3文件中解码 Opus 数据，并返回一个 Opus 数据包的列表以及总时长。
-
-### Community 382 - "Community 382"
-Cohesion: 0.4
-Nodes (5): _environ_get(), _environ_sizes_get(), getEnvStrings(), getExecutableName(), writeAsciiToMemory()
-
-### Community 383 - "Community 383"
-Cohesion: 0.4
-Nodes (4): CDN_CSS, CDN_JS, isCDNEnabled, url
-
-### Community 384 - "Community 384"
-Cohesion: 0.4
-Nodes (3): lines, parts, submitData
-
-### Community 386 - "Community 386"
-Cohesion: 0.4
-Nodes (3): document, existingDoc, formData
-
-### Community 387 - "Community 387"
-Cohesion: 0.4
-Nodes (3): link, newSet, url
-
-### Community 400 - "Community 400"
+### Community 392 - "Community 392"
 Cohesion: 0.6
 Nodes (3): fromValue(), getValue(), ServerActionEnum()
 
-### Community 401 - "Community 401"
+### Community 393 - "Community 393"
 Cohesion: 0.6
 Nodes (3): getLabel(), PetMood(), random()
 
+### Community 402 - "Community 402"
+Cohesion: 0.4
+Nodes (6): AuthManager, BaseHandler, SimpleHttpServer, OTAHandler, VisionHandler, WebSocketServer
+
+### Community 403 - "Community 403"
+Cohesion: 0.53
+Nodes (6): HelloTextMessageHandler, IotTextMessageHandler, ListenTextMessageHandler, McpTextMessageHandler, TextMessageHandler, TextMessageHandlerRegistry
+
+### Community 404 - "Community 404"
+Cohesion: 0.33
+Nodes (6): ContextDataProvider.fetch_all, PromptManager._get_location_info, PromptManager._get_weather_info, PromptManager.update_context_info, get_ip_info, is_private_ip
+
+### Community 405 - "Community 405"
+Cohesion: 0.4
+Nodes (6): FileLock, WakeupWordsConfig._load_config, WakeupWordsConfig._save_config, WakeupWordsConfig.generate_file_path, WakeupWordsConfig.get_wakeup_response, WakeupWordsConfig.update_wakeup_response
+
+### Community 406 - "Community 406"
+Cohesion: 0.4
+Nodes (6): get_news_from_chinanews get_news_from_chinanews, loadplugins auto_import_modules, register all_function_registry, register FunctionItem, register FunctionRegistry, register register_function
+
+### Community 407 - "Community 407"
+Cohesion: 0.4
+Nodes (6): Cache Manager Usage Pattern, get_lunar, fetch_city_info, fetch_weather_page, get_weather, parse_weather_info
+
 ### Community 409 - "Community 409"
-Cohesion: 0.5
-Nodes (3): loadInviteCode(), onShow(), petStore
+Cohesion: 0.53
+Nodes (4): onShow(), onTask(), petApi, petStore
+
+### Community 410 - "Community 410"
+Cohesion: 0.53
+Nodes (4): onInput(), onLoad(), onSave(), petStore
+
+### Community 411 - "Community 411"
+Cohesion: 0.53
+Nodes (4): onDeregister(), onLogout(), onResetDemo(), petStore
 
 ### Community 412 - "Community 412"
+Cohesion: 0.53
+Nodes (4): onCard(), onChat(), onShow(), petStore
+
+### Community 413 - "Community 413"
+Cohesion: 0.53
+Nodes (4): onContactCS(), onSearchTap(), onToggleCat(), onToggleFaq()
+
+### Community 415 - "Community 415"
+Cohesion: 0.4
+Nodes (4): decode_opus_from_bytes(), decode_opus_from_file(), 从p3二进制数据中解码 Opus 数据，并返回一个 Opus 数据包的列表以及总时长。, 从p3文件中解码 Opus 数据，并返回一个 Opus 数据包的列表以及总时长。
+
+### Community 416 - "Community 416"
+Cohesion: 0.4
+Nodes (4): CDN_CSS, CDN_JS, isCDNEnabled, url
+
+### Community 417 - "Community 417"
+Cohesion: 0.4
+Nodes (3): lines, parts, submitData
+
+### Community 419 - "Community 419"
+Cohesion: 0.4
+Nodes (3): document, existingDoc, formData
+
+### Community 420 - "Community 420"
+Cohesion: 0.4
+Nodes (3): link, newSet, url
+
+### Community 449 - "Community 449"
 Cohesion: 0.6
 Nodes (4): _load, all, DEFAULT_VOICES, findById
 
-### Community 413 - "Community 413"
-Cohesion: 0.6
-Nodes (5): ConnectionHandler._discard_message_with_bind_prompt, ConnectionHandler._process_mqtt_audio_message, ConnectionHandler._process_websocket_audio, ConnectionHandler._put_asr_audio, ConnectionHandler._route_message
-
-### Community 414 - "Community 414"
+### Community 450 - "Community 450"
 Cohesion: 0.4
 Nodes (5): config CacheConfig, gc_manager get_gc_manager, gc_manager GlobalGCManager, manager GlobalCacheManager, strategies CacheEntry
 
-### Community 415 - "Community 415"
+### Community 451 - "Community 451"
 Cohesion: 0.5
 Nodes (5): get_music_files, handle_music_command, MUSIC_CACHE, play_local_music, play_music
 
-### Community 420 - "Community 420"
+### Community 454 - "Community 454"
+Cohesion: 0.6
+Nodes (3): onLoad(), onReveal(), petStore
+
+### Community 455 - "Community 455"
+Cohesion: 0.6
+Nodes (3): onSelect(), onSubmit(), petStore
+
+### Community 456 - "Community 456"
+Cohesion: 0.6
+Nodes (3): onOpen(), onShow(), petStore
+
+### Community 457 - "Community 457"
+Cohesion: 0.6
+Nodes (3): onSelect(), onSubmit(), petStore
+
+### Community 458 - "Community 458"
+Cohesion: 0.5
+Nodes (5): XssConfig, XssFilter, XssHttpServletRequestWrapper, XssProperties, XssUtils
+
+### Community 460 - "Community 460"
 Cohesion: 0.5
 Nodes (3): IResData, IUniUploadFileOptions, IUserInfo
 
-### Community 422 - "Community 422"
+### Community 462 - "Community 462"
 Cohesion: 0.5
 Nodes (3): buffer, errorMsg, s
 
-### Community 423 - "Community 423"
-Cohesion: 0.83
-Nodes (3): _search_metaso(), _search_tavily(), web_search()
+### Community 463 - "Community 463"
+Cohesion: 0.5
+Nodes (4): alignUp(), emscripten_realloc_buffer(), _emscripten_resize_heap(), updateGlobalBufferAndViews()
 
-### Community 464 - "Community 464"
+### Community 595 - "Community 595"
+Cohesion: 0.5
+Nodes (4): isTokenExpiredOrAboutToExpire, refreshLogin, setToken, request
+
+### Community 596 - "Community 596"
+Cohesion: 0.67
+Nodes (4): onPay, _waitOrderFulfilled, _doSignContract, _waitOrderFulfilled
+
+### Community 597 - "Community 597"
 Cohesion: 0.5
 Nodes (4): _playAudio, _playLocalFile, _stopAudio, ChatBubble Component
 
-### Community 465 - "Community 465"
+### Community 598 - "Community 598"
 Cohesion: 0.83
 Nodes (4): OpenAI LLMProvider._apply_thinking_disabled, OpenAI LLMProvider.normalize_dialogue, OpenAI LLMProvider.response, OpenAI LLMProvider.response_with_functions
 
-### Community 466 - "Community 466"
+### Community 599 - "Community 599"
 Cohesion: 0.67
 Nodes (4): Mem0ai MemoryProvider.query_memory, PowerMem MemoryProvider.get_user_profile, PowerMem MemoryProvider.query_memory, VolMem0 MemoryProvider.query_memory
 
-### Community 467 - "Community 467"
+### Community 600 - "Community 600"
 Cohesion: 0.5
 Nodes (4): UnifiedToolHandler._initialize, UnifiedToolHandler._initialize_home_assistant, UnifiedToolHandler._initialize_mcp_endpoint, UnifiedToolHandler.current_support_functions
 
-### Community 468 - "Community 468"
+### Community 601 - "Community 601"
 Cohesion: 0.67
 Nodes (4): _device_daily_output, add_device_output, check_device_output_limit, get_device_output
 
-### Community 469 - "Community 469"
+### Community 602 - "Community 602"
 Cohesion: 0.5
 Nodes (4): get_string_no_punctuation_or_emoji, is_emoji, is_punctuation_or_emoji, remove_punctuation_and_length
 
-### Community 470 - "Community 470"
+### Community 603 - "Community 603"
 Cohesion: 0.5
 Nodes (4): OpusEncoderUtils._convert_bytes_to_shorts, OpusEncoderUtils._encode, OpusEncoderUtils._validate_pcm_data, OpusEncoderUtils.encode_pcm_to_opus_stream
 
-### Community 471 - "Community 471"
+### Community 604 - "Community 604"
 Cohesion: 0.5
 Nodes (4): Dialogue._ensure_tool_calls_complete, Dialogue.get_llm_dialogue, Dialogue.get_llm_dialogue_with_memory, Dialogue.getMessages
 
-### Community 472 - "Community 472"
+### Community 605 - "Community 605"
 Cohesion: 0.67
 Nodes (4): hubconf silero_vad, model load_silero_vad, utils_vad init_jit_model, utils_vad OnnxWrapper
 
-### Community 475 - "Community 475"
-Cohesion: 0.83
-Nodes (3): attached(), compute(), size()
+### Community 610 - "Community 610"
+Cohesion: 0.5
+Nodes (4): CompanionMood.fromCode, CompanionMood.getLabel, CompanionMood.random, CompanionMoodTest
 
-### Community 617 - "Community 617"
+### Community 611 - "Community 611"
 Cohesion: 0.67
-Nodes (3): ConnectionHandler._process_report, ConnectionHandler._report_worker, report
+Nodes (4): CompanionVO, MenstrualStatusVO, MenstrualCycleUtil, MenstrualPhase
 
-### Community 618 - "Community 618"
-Cohesion: 0.67
-Nodes (3): Gemini LLMProvider._generate, Gemini LLMProvider.response, Gemini LLMProvider.response_with_functions
+### Community 612 - "Community 612"
+Cohesion: 0.5
+Nodes (4): MenstrualCycleUtil.computePhase, MenstrualCycleUtil.cycleDay, MenstrualCycleUtil.daysUntilNextPeriod, MenstrualCycleUtilTest
 
-### Community 619 - "Community 619"
+### Community 615 - "Community 615"
 Cohesion: 0.67
-Nodes (3): ServeReferenceAudio, ServeTTSRequest, FishSpeech TTSProvider.text_to_speak
-
-### Community 620 - "Community 620"
-Cohesion: 0.67
-Nodes (3): TTSProviderBase._audio_play_priority_thread, enqueue_tts_report, sendAudioMessage
-
-### Community 621 - "Community 621"
-Cohesion: 0.67
-Nodes (3): VLLMProvider.__init__, check_model_key, filter_sensitive_info
+Nodes (4): pages/wish/wish 页面, 许愿动作推进孵化进度并影响性格偏好, pet-api 工具, pet-store 工具
 
 ### Community 622 - "Community 622"
 Cohesion: 0.67
+Nodes (3): _emscripten_run_script(), UTF8ArrayToString(), UTF8ToString()
+
+### Community 629 - "Community 629"
+Cohesion: 0.67
+Nodes (3): ConnectionHandler._process_report, ConnectionHandler._report_worker, report
+
+### Community 630 - "Community 630"
+Cohesion: 0.67
+Nodes (3): Gemini LLMProvider._generate, Gemini LLMProvider.response, Gemini LLMProvider.response_with_functions
+
+### Community 631 - "Community 631"
+Cohesion: 0.67
+Nodes (3): TTSProviderBase._audio_play_priority_thread, enqueue_tts_report, sendAudioMessage
+
+### Community 632 - "Community 632"
+Cohesion: 0.67
+Nodes (3): ServeReferenceAudio, ServeTTSRequest, FishSpeech TTSProvider.text_to_speak
+
+### Community 633 - "Community 633"
+Cohesion: 0.67
+Nodes (3): VLLMProvider.__init__, check_model_key, filter_sensitive_info
+
+### Community 634 - "Community 634"
+Cohesion: 0.67
 Nodes (3): audio_bytes_to_data_stream, audio_to_data_stream, pcm_to_data_stream
 
-### Community 623 - "Community 623"
+### Community 635 - "Community 635"
 Cohesion: 0.67
 Nodes (3): change_role, change_role prompts, Plugin Function Registry Pattern
 
-### Community 624 - "Community 624"
+### Community 636 - "Community 636"
 Cohesion: 0.67
 Nodes (3): _is_answering, _request_api, call_device
 
 ## Knowledge Gaps
-- **1280 isolated node(s):** `Test-side wakeword runtime package.`, `env`, `env`, `{ exec }`, `dependencies` (+1275 more)
+- **1284 isolated node(s):** `Test-side wakeword runtime package.`, `env`, `env`, `{ exec }`, `dependencies` (+1279 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **504 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **535 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `eQ` connect `Agent chat controllers` to `manager-web minified JS bundle`, `manager-web JS utils`, `miniprogram audio & chat`, `demo-web libopus codec`, `Community 138`, `manager-web JS views`, `Community 139`, `Aliyun ASR/TTS providers`, `Auth & login controllers`, `Server mgmt & devices`, `manager-web API layer`, `demo-web JS utils`, `Chat summary LLM`, `Config controller`, `Community 153`, `Community 158`, `Community 37`, `Community 43`, `Community 44`, `Community 48`, `Community 181`, `Community 64`, `Community 66`?**
-  _High betweenness centrality (0.111) - this node is a cross-community bridge._
-- **Why does `debug()` connect `Community 48` to `Community 66`, `Community 55`, `manager-web JS utils`, `Chat summary LLM`?**
-  _High betweenness centrality (0.108) - this node is a cross-community bridge._
-- **Why does `Header` connect `Community 56` to `manager-web JS views`, `Community 44`, `Community 43`, `Community 48`, `Community 149`, `Config controller`, `demo-web UI controller`?**
-  _High betweenness centrality (0.089) - this node is a cross-community bridge._
+- **Why does `eQ` connect `In() Or() Deletebatch() Selectagentinfobyid() Agentchathistoryserviceimpl` to `Ab() Ag() Ak() Al() Av()`, `Devicedao Getalllastconnectedatbyagentid() Devicetest Testsaveuser() Testwritedeviceinfo()`, `Agenttemplateservice Agentdao Agenttemplatedao Agentcontextproviderserviceimpl Agentpluginmappingserviceimpl`, `Initmessagesource() Captcha() Serveractionresponsedto Issuccess() Renexceptionhandler`, `Isvalid() Isinvalid() Nickname Createorder() Delete()`, `Getdownloadurl() Page() Downloadchathistory() Downloadcurrentsession() Downloadcurrentsessionwithprevious()`, `Rollback() Companionservice Companioncontextcontroller Companioncontroller Itemcontroller`, `Gt() Aliyunossconfig Destroy() Ossclient() Info()`, `Generate Getdictdatabytype() Delete() Get() Getwrapper()`, `Login() Register() Retrievepassword() Smsverification() Knowledgebasedao`, `Sessionid Swaggerconfig Agentapi() Botapi() Configapi()`, `Community 158`, `Fetchreplacementwordlist() Formattooltip() Get() Gettagname() Handlecancel()`, `Community 173`, `Community 50`, `Community 64`, `Community 74`, `Community 210`, `Community 86`, `Community 88`, `Community 111`, `Community 116`?**
+  _High betweenness centrality (0.099) - this node is a cross-community bridge._
+- **Why does `ContentType` connect `Bytes() Init Session() Connection() Finish` to `Agentchathistorycontroller Getchathistorylist() Recall() Uploadfile() Agentcontroller`, `Community 58`, `Message Type() Textmessagehandlerregistry Handler() Init`, `Community 167`, `Community 263`, `Community 186`, `Community 140`, `Getdownloadurl() Page() Downloadchathistory() Downloadcurrentsession() Downloadcurrentsessionwithprevious()`, `Community 78`, `Agentvoiceprintcontroller Otacontroller Systeminitconfig Agentvoiceprintservice Captchaservice`, `Community 185`, `Initialize Handle Process Prompt() Chat`, `Audio Stream() Text() Process Init`?**
+  _High betweenness centrality (0.087) - this node is a cross-community bridge._
+- **Why does `Header` connect `Bytes() Init Session() Connection() Finish` to `Devicedao Getalllastconnectedatbyagentid() Devicetest Testsaveuser() Testwritedeviceinfo()`, `Getdownloadurl() Page() Downloadchathistory() Downloadcurrentsession() Downloadcurrentsessionwithprevious()`, `Sessionid Swaggerconfig Agentapi() Botapi() Configapi()`, `Audio Stream() Text() Process Init`?**
+  _High betweenness centrality (0.080) - this node is a cross-community bridge._
 - **Are the 118 inferred relationships involving `eQ` (e.g. with `.upload_validData_returnsOssKey()` and `.saveAudio_ossEnabled_uploadsToOss()`) actually correct?**
   _`eQ` has 118 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 34 inferred relationships involving `ConnectionHandler` (e.g. with `AuthenticationError` and `SuppressInvalidHandshakeFilter`) actually correct?**
-  _`ConnectionHandler` has 34 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Test-side wakeword runtime package.`, `env`, `env` to the rest of the system?**
-  _1280 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `manager-web minified JS bundle` be split into smaller, more focused modules?**
+  _1284 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Ab() Ag() Ak() Al() Av()` be split into smaller, more focused modules?**
   _Cohesion score 0.01 - nodes in this community are weakly interconnected._
+- **Should `Ac() Ar() B() Bi() Bo()` be split into smaller, more focused modules?**
+  _Cohesion score 0.04 - nodes in this community are weakly interconnected._

@@ -144,6 +144,7 @@ function savePetFromVO(vo) {
     expectedHatchTime: toTimestamp(vo.expectedHatchTime),
     hatchedAt: toTimestamp(vo.hatchedAt),
     deviceId: vo.deviceId || null,
+    agentId: vo.agentId || null,
     bazi: vo.bazi || '',
     wuxing: vo.wuxing || '',
     zodiac: translateZodiac(vo.zodiac) || '',

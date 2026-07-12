@@ -490,6 +490,12 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setId(pet.getId());
         vo.setUserId(pet.getUserId());
         vo.setDeviceId(pet.getDeviceId());
+        if (StringUtils.isNotBlank(pet.getDeviceId())) {
+            DeviceEntity device = deviceDao.selectById(pet.getDeviceId());
+            if (device != null) {
+                vo.setAgentId(device.getAgentId());
+            }
+        }
         vo.setNickname(pet.getNickname());
         vo.setBirthDate(pet.getBirthDate());
         vo.setBazi(pet.getBazi());

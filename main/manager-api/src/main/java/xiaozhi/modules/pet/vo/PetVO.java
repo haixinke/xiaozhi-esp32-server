@@ -19,6 +19,9 @@ public class PetVO {
     @Schema(description = "关联设备ID")
     private String deviceId;
 
+    @Schema(description = "关联智能体ID")
+    private String agentId;
+
     @Schema(description = "昵称")
     private String nickname;
 

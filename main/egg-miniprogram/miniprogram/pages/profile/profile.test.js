@@ -47,7 +47,7 @@ global.wx = {
   showToast: () => {},
   showModal: (options) => {
     modalCalls.push(options);
-    if (options.success) options.success({ confirm: true, content: 'custom-city' });
+    if (options.success) options.success({ confirm: true, content: 'custom' });
   },
   uploadFile: () => {}
 };
@@ -64,10 +64,10 @@ function makePage() {
   require('./profile');
   assert.ok(pageConfig, 'profile page should be registered');
 
-  assert.deepStrictEqual(
+  assert.strictEqual(
     pageConfig.data.cityList,
-    ['上海', '北京', '深圳', '杭州', '成都', '广州', '武汉', '西安', '其他'],
-    'cityList should be exposed for picker range'
+    undefined,
+    'cityList should not be exposed after removing picker'
   );
   assert.deepStrictEqual(
     pageConfig.data.mbtiList,
@@ -81,20 +81,46 @@ function makePage() {
   assert.strictEqual(requestCalls[0].url, '/wechat/profile', 'page should load profile on mount');
 
   putCalls = [];
-  page.onCityChange({ detail: { value: 2 } });
-  await new Promise((resolve) => setTimeout(resolve, 10));
-  assert.strictEqual(putCalls.length, 1, 'city picker change should call PUT');
-  assert.strictEqual(putCalls[0].data.city, '深圳', 'city should match picker selection');
-
-  putCalls = [];
   modalCalls = [];
-  page.onCityChange({ detail: { value: 8 } });
+  page.onEditCity();
   await new Promise((resolve) => setTimeout(resolve, 10));
-  assert.strictEqual(modalCalls.length, 1, 'selecting "其他" should prompt custom city');
-  assert.strictEqual(putCalls.length, 1, 'custom city should be saved');
-  assert.strictEqual(putCalls[0].data.city, 'custom-city', 'custom city value should be saved');
+  assert.strictEqual(modalCalls.length, 1, 'onEditCity should prompt city input modal');
+  assert.strictEqual(modalCalls[0].editable, true, 'city modal should be editable');
+  assert.strictEqual(putCalls.length, 1, 'city modal confirm should call PUT');
+  assert.strictEqual(putCalls[0].data.city, 'custom', 'city value should be saved');
 
   putCalls = [];
+  global.wx.showModal = (options) => {
+    modalCalls.push(options);
+    if (options.success) options.success({ confirm: true, content: '  custom-city  ' });
+  };
+  page.onEditCity();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.strictEqual(putCalls[0].data.city, 'custom-cit', 'city value should be trimmed and truncated to 10 characters');
+
+  putCalls = [];
+  global.wx.showModal = (options) => {
+    modalCalls.push(options);
+    if (options.success) options.success({ confirm: true, content: '   ' });
+  };
+  page.onEditCity();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.strictEqual(putCalls.length, 0, 'empty city value after trim should not save');
+
+  putCalls = [];
+  global.wx.showModal = (options) => {
+    modalCalls.push(options);
+    if (options.success) options.success({ confirm: false, content: 'ignored' });
+  };
+  page.onEditCity();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.strictEqual(putCalls.length, 0, 'city modal cancel should not save');
+
+  putCalls = [];
+  global.wx.showModal = (options) => {
+    modalCalls.push(options);
+    if (options.success) options.success({ confirm: true, content: 'custom-city' });
+  };
   page.onMbtiChange({ detail: { value: 4 } });
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.strictEqual(putCalls.length, 1, 'MBTI picker change should call PUT');

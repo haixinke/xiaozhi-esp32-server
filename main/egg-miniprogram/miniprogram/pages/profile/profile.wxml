@@ -30,9 +30,11 @@
         <list-row label="生日" value="{{birthday}}"></list-row>
       </picker>
       <list-row label="星座" value="{{zodiac}}" show-chevron="{{false}}"></list-row>
-      <picker mode="selector" range="{{cityList}}" bindchange="onCityChange">
-        <list-row label="常驻城市" value="{{city}}"></list-row>
-      </picker>
+      <list-row
+        label="常驻城市"
+        value="{{city}}"
+        bind:rowtap="onEditCity"
+      ></list-row>
       <picker mode="selector" range="{{mbtiList}}" bindchange="onMbtiChange">
         <list-row label="MBTI" value="{{mbti}}" show-border="{{false}}"></list-row>
       </picker>

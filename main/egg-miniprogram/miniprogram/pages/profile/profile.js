@@ -8,7 +8,7 @@ const MBTI_LIST = ['INFP','INFJ','INTJ','INTP','ENFP','ENFJ','ENTJ','ENTP','ISFP
 const GENDER_LIST = ['男', '女', '其他'];
 const GENDER_MAP = { '男': 'MALE', '女': 'FEMALE', '其他': 'OTHER' };
 const GENDER_REVERSE = { MALE: '男', FEMALE: '女', OTHER: '其他' };
-const CITY_LIST = ['上海', '北京', '深圳', '杭州', '成都', '广州', '武汉', '西安', '其他'];
+const CITY_MAX_LENGTH = 10;
 
 function maskUserId(userId) {
   const s = String(userId || '');
@@ -37,9 +37,7 @@ Page({
     gender: '未设置',
     birthday: '未设置',
     zodiac: '——',
-    city: '未设置',
     mbti: '未设置',
-    cityList: CITY_LIST,
     mbtiList: MBTI_LIST,
     avatarUrl: ''
   },
@@ -154,23 +152,19 @@ Page({
       .then(() => this.refreshProfile());
   },
 
-  onCityChange(e) {
-    const selected = CITY_LIST[e.detail.value];
-    if (selected === '其他') {
-      wx.showModal({
-        title: '输入城市',
-        editable: true,
-        placeholderText: '最多 32 个字',
-        success: (res) => {
-          if (!res.confirm) return;
-          const value = String(res.content || '').trim().slice(0, 32);
-          if (!value) return;
-          this.saveProfile({ city: value });
-        }
-      });
-    } else {
-      this.saveProfile({ city: selected });
-    }
+  onEditCity() {
+    wx.showModal({
+      title: '修改常驻城市',
+      editable: true,
+      placeholderText: `最多 ${CITY_MAX_LENGTH} 个字`,
+      content: this.data.city === '未设置' ? '' : this.data.city,
+      success: (res) => {
+        if (!res.confirm) return;
+        const value = String(res.content || '').trim().slice(0, CITY_MAX_LENGTH);
+        if (!value) return;
+        this.saveProfile({ city: value });
+      }
+    });
   },
 
   onMbtiChange(e) {

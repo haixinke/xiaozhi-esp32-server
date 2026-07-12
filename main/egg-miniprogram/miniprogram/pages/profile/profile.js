@@ -39,6 +39,8 @@ Page({
     zodiac: '——',
     city: '未设置',
     mbti: '未设置',
+    cityList: CITY_LIST,
+    mbtiList: MBTI_LIST,
     avatarUrl: ''
   },
 
@@ -152,34 +154,26 @@ Page({
       .then(() => this.refreshProfile());
   },
 
-  onEditCity() {
-    wx.showActionSheet({
-      itemList: CITY_LIST,
-      success: (result) => {
-        const selected = CITY_LIST[result.tapIndex];
-        if (selected === '其他') {
-          wx.showModal({
-            title: '输入城市',
-            editable: true,
-            placeholderText: '最多 32 个字',
-            success: (res) => {
-              if (!res.confirm) return;
-              const value = String(res.content || '').trim().slice(0, 32);
-              if (!value) return;
-              this.saveProfile({ city: value });
-            }
-          });
-        } else {
-          this.saveProfile({ city: selected });
+  onCityChange(e) {
+    const selected = CITY_LIST[e.detail.value];
+    if (selected === '其他') {
+      wx.showModal({
+        title: '输入城市',
+        editable: true,
+        placeholderText: '最多 32 个字',
+        success: (res) => {
+          if (!res.confirm) return;
+          const value = String(res.content || '').trim().slice(0, 32);
+          if (!value) return;
+          this.saveProfile({ city: value });
         }
-      }
-    });
+      });
+    } else {
+      this.saveProfile({ city: selected });
+    }
   },
 
-  onEditMbti() {
-    wx.showActionSheet({
-      itemList: MBTI_LIST,
-      success: (result) => this.saveProfile({ mbti: MBTI_LIST[result.tapIndex] })
-    });
+  onMbtiChange(e) {
+    this.saveProfile({ mbti: MBTI_LIST[e.detail.value] });
   }
 });

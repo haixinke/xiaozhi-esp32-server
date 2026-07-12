@@ -24,7 +24,7 @@ Page({
     this.setData({
       pet,
       tasks: [
-        { key: 'nickname', title: '给蛋宝宝起昵称', desc: '让它知道自己是谁', reward: '提前 12 小时', done: state.nicknameDone, route: '/pages/nickname/nickname' },
+        { key: 'nickname', title: '给蛋宝宝起昵称', desc: '让它知道自己是谁', reward: '提前 7 天', done: state.nicknameDone, route: '/pages/nickname/nickname' },
         { key: 'cuddle', title: '贴贴蛋宝宝', desc: '回首页长按蛋壳 3 秒', reward: '提前 1 小时 / 日', done: state.cuddleDone, route: 'home' },
         { key: 'wish', title: '今日许愿', desc: '告诉它你期待怎样的陪伴', reward: '提前 1 小时 / 日', done: state.wishDone, route: '/pages/wish/wish' },
         { key: 'lesson', title: '蛋前教育', desc: '今天想教它一件什么事', reward: '提前 1 小时 / 日', done: state.lessonDone, route: '/pages/lesson/lesson' },

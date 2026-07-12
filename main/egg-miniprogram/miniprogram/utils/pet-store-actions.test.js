@@ -235,7 +235,7 @@ function todayKey() {
     id: 'real-2', hatchStatus: 'HATCHED', prototype: '锦鲤', nickname: '小金',
     acceleratedMinutes: 3000, hatchedAt: new Date(Date.now()).toISOString(),
     mbti: 'ENFP', personality: '热烈又好奇', gender: 'FEMALE', bloodType: 'A',
-    zodiac: '水瓶座', avatarUrl: 'https://img/koi.png'
+    zodiac: 'aquarius', avatarUrl: 'https://img/koi.png'
   };
   const hatchResult = await petStore.createCollectionCard();
   assert.strictEqual(hatchResult.ok, true, 'hatch ok');

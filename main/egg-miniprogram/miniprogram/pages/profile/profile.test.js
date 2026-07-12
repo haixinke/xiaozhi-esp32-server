@@ -15,7 +15,7 @@ let requestCalls = [];
 const request = {
   get: (url) => {
     requestCalls.push({ method: 'GET', url });
-    return Promise.resolve({ nickname: 'Test', city: '上海', mbti: 'INTJ' });
+    return Promise.resolve({ nickname: 'Test', city: '上海', mbti: 'INTJ', zodiac: 'aquarius' });
   },
   put: (url, data) => {
     putCalls.push({ url, data });
@@ -79,6 +79,7 @@ function makePage() {
   const page = makePage();
   await page.onLoad();
   assert.strictEqual(requestCalls[0].url, '/wechat/profile', 'page should load profile on mount');
+  assert.strictEqual(page.data.zodiac, '水瓶座', 'zodiac english code should translate to chinese');
 
   putCalls = [];
   modalCalls = [];

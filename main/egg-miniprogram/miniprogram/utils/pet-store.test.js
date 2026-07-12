@@ -105,7 +105,7 @@ const hatchedIdentityVO = {
   hatchStatus: 'HATCHED',
   expectedHatchTime: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
   hatchedAt: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
-  bazi: '庚子', wuxing: '金水', zodiac: '水瓶座',
+  bazi: '庚子', wuxing: '金水', zodiac: 'aquarius',
   mbti: 'ENFP', personality: '热烈又好奇', personalityBrief: '好运小福星',
   gender: 'FEMALE', bloodType: 'A', avatarUrl: 'https://img/koi.png',
   todayMoodDate: petStore.todayKey()
@@ -162,7 +162,7 @@ const coldHatchedVO = {
   hatchStatus: 'HATCHED',
   expectedHatchTime: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
   hatchedAt: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
-  bazi: '庚子', wuxing: '金水', zodiac: '水瓶座',
+  bazi: '庚子', wuxing: '金水', zodiac: 'aquarius',
   mbti: 'ENFP', personality: '热烈又好奇', personalityBrief: '好运小福星',
   gender: 'FEMALE', bloodType: 'A', avatarUrl: 'https://img/koi.png'
 };

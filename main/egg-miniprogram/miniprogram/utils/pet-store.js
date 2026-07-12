@@ -146,7 +146,7 @@ function savePetFromVO(vo) {
     deviceId: vo.deviceId || null,
     bazi: vo.bazi || '',
     wuxing: vo.wuxing || '',
-    zodiac: vo.zodiac || '',
+    zodiac: translateZodiac(vo.zodiac) || '',
     mbti: vo.mbti || '',
     personality: vo.personality || '',
     personalityBrief: vo.personalityBrief || '',
@@ -455,6 +455,19 @@ function cardSerial(pet) {
   return `EGG-${prefix}-${compact}-${number}`;
 }
 
+const ZODIAC_MAP = {
+  aries: '白羊座', taurus: '金牛座', gemini: '双子座',
+  cancer: '巨蟹座', leo: '狮子座', virgo: '处女座',
+  libra: '天秤座', scorpio: '天蝎座', sagittarius: '射手座',
+  capricorn: '摩羯座', aquarius: '水瓶座', pisces: '双鱼座'
+};
+
+function translateZodiac(zodiac) {
+  if (!zodiac) return '';
+  const code = String(zodiac).toLowerCase();
+  return ZODIAC_MAP[code] || zodiac;
+}
+
 function getZodiac(timestamp) {
   const date = new Date(timestamp);
   const key = (date.getMonth() + 1) * 100 + date.getDate();
@@ -503,7 +516,7 @@ function buildCollectionCard(vo) {
     style: vo.prototype === '锦鲤' ? '好运红白款' : '月白桂花款',
     name: vo.nickname || vo.prototype || '玉兔',
     birthday: todayKey(hatchTs),
-    zodiac: vo.zodiac || getZodiac(hatchTs),
+    zodiac: translateZodiac(vo.zodiac) || getZodiac(hatchTs),
     gender: vo.gender || (simpleHash(vo.id) % 2 ? '♀' : '♂'),
     mbti: vo.mbti || '',
     bloodType: vo.bloodType || ['A', 'B', 'O', 'AB'][simpleHash(vo.id) % 4],

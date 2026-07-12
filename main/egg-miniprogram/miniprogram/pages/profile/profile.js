@@ -10,6 +10,19 @@ const GENDER_MAP = { '男': 'MALE', '女': 'FEMALE', '其他': 'OTHER' };
 const GENDER_REVERSE = { MALE: '男', FEMALE: '女', OTHER: '其他' };
 const CITY_MAX_LENGTH = 10;
 
+const ZODIAC_MAP = {
+  aries: '白羊座', taurus: '金牛座', gemini: '双子座',
+  cancer: '巨蟹座', leo: '狮子座', virgo: '处女座',
+  libra: '天秤座', scorpio: '天蝎座', sagittarius: '射手座',
+  capricorn: '摩羯座', aquarius: '水瓶座', pisces: '双鱼座'
+};
+
+function translateZodiac(zodiac) {
+  if (!zodiac) return '';
+  const code = String(zodiac).toLowerCase();
+  return ZODIAC_MAP[code] || zodiac;
+}
+
 function maskUserId(userId) {
   const s = String(userId || '');
   if (s.length <= 4) return s;
@@ -24,7 +37,7 @@ function formatDisplay(profile) {
     userId: maskUserId(user.id || profile.userId || ''),
     gender: profile.gender ? (GENDER_REVERSE[profile.gender] || '未设置') : '未设置',
     birthday: profile.birthday || '未设置',
-    zodiac: profile.zodiac || '——',
+    zodiac: translateZodiac(profile.zodiac) || '——',
     city: profile.city || '未设置',
     mbti: profile.mbti || '未设置'
   };

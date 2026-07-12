@@ -14,10 +14,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
+import xiaozhi.modules.agent.entity.AgentEntity;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
@@ -33,6 +36,7 @@ import xiaozhi.modules.pet.vo.PetVO;
 
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -81,7 +85,7 @@ class PetServiceImplHatchTest {
     void setUp() {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, eventPublisher);
-        // LLM 不可用 → deriveMbti/derivePersonality 走兜底(INFP/DEFAULT_PERSONALITY)，不调 LLM
+        // LLM 不可用 → deriveMbti 走兜底(INFP)，不调 LLM
         when(llmService.isAvailable()).thenReturn(false);
         when(agentService.createAgent(any())).thenReturn(AGENT_ID);
     }
@@ -110,9 +114,16 @@ class PetServiceImplHatchTest {
 
         PetVO result = petService.hatch(USER_ID, PET_ID);
 
-        // agent: createAgent 被调, system_prompt 已注入
+        // agent: createAgent 被调, system_prompt 为模板渲染结果
+        ArgumentCaptor<UpdateWrapper<AgentEntity>> agentUpdateCaptor =
+                ArgumentCaptor.forClass(UpdateWrapper.class);
         verify(agentService).createAgent(any());
-        verify(agentService).update(eq(null), any());
+        verify(agentService).update(eq(null), agentUpdateCaptor.capture());
+        String injectedSystemPrompt = extractSystemPrompt(agentUpdateCaptor.getValue());
+        assertThat(injectedSystemPrompt)
+                .contains("你是小金鱼")
+                .contains("锦鲤")
+                .contains("INFP");
 
         // 设备: macAddress==id, agentId 非空, board, autoUpdate=0
         ArgumentCaptor<DeviceEntity> deviceCaptor = ArgumentCaptor.forClass(DeviceEntity.class);
@@ -127,7 +138,7 @@ class PetServiceImplHatchTest {
         assertThat(device.getAppVersion()).isEqualTo("1.0.0");
         assertThat(device.getCreator()).isEqualTo(USER_ID);
 
-        // pet 回填: hatchStatus=HATCHED, deviceId/档案已设
+        // pet 回填: hatchStatus=HATCHED, deviceId/档案已设, personality 不再赋值
         ArgumentCaptor<PetEntity> petCaptor = ArgumentCaptor.forClass(PetEntity.class);
         verify(petDao).updateById(petCaptor.capture());
         PetEntity updated = petCaptor.getValue();
@@ -139,7 +150,7 @@ class PetServiceImplHatchTest {
         assertThat(updated.getWuxing()).isNotNull();
         assertThat(updated.getZodiac()).isNotNull();
         assertThat(updated.getMbti()).isEqualTo("INFP");
-        assertThat(updated.getPersonality()).isNotNull();
+        assertThat(updated.getPersonality()).isNull();
         assertThat(updated.getPersonalityBrief()).isNotNull();
         assertThat(updated.getAvatarUrl()).isNotNull();
         assertThat(updated.getGender()).isIn("MALE", "FEMALE");
@@ -156,6 +167,14 @@ class PetServiceImplHatchTest {
                 ArgumentCaptor.forClass(CollectionCardGenerationEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().petId()).isEqualTo(PET_ID);
+    }
+
+    private String extractSystemPrompt(UpdateWrapper<AgentEntity> wrapper) {
+        Map<String, Object> pairs = wrapper.getParamNameValuePairs();
+        assertThat(pairs)
+                .as("UpdateWrapper 应只设置一个参数")
+                .hasSize(1);
+        return pairs.values().iterator().next().toString();
     }
 
     @Test

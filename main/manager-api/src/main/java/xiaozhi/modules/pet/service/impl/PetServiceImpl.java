@@ -44,6 +44,7 @@ import xiaozhi.modules.pet.util.MoodDecider;
 import xiaozhi.modules.pet.util.PetBirthCalculator;
 import xiaozhi.modules.pet.util.PetMood;
 import xiaozhi.modules.pet.util.PetNicknameGenerator;
+import xiaozhi.modules.pet.util.PetSystemPromptTemplate;
 import xiaozhi.modules.pet.vo.ChatHistoryVO;
 import xiaozhi.modules.pet.vo.MemoryVO;
 import xiaozhi.modules.pet.vo.PetVO;
@@ -119,25 +120,6 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
             请只回复四个字母的MBTI类型，不要其他内容。""";
 
-    private static final String PERSONALITY_PROMPT = """
-            你是一个AI陪伴宠物的性格设计师。根据以下MBTI人格类型，为这个AI陪伴宠物生成一段用于和LLM交互时系统提示词的性格描述。
-
-            MBTI类型：%s
-
-            要求：
-            1. 使用第三人称描述，以"你"作为开头
-            2. 包含宠物的核心特质（2-3个关键词展开）
-            3. 描述它和用户聊天时的风格和互动指南
-            4. 用中文撰写，字数控制在200字以内
-            5. 语气活泼有趣，让宠物形象更生动
-            6. 不要在描述中出现MBTI类型名称或结论
-            7. 不要在描述中定义是什么具体的宠物，例如你是机械犬、你是机灵猫等
-            8. 不要包含表情符号或emoji相关内容，宠物通过语音与用户交互
-
-            请直接输出性格描述，不要其他内容。""";
-
-    private static final String DEFAULT_PERSONALITY = "性格温和友善，喜欢陪伴主人聊天。虽然偶尔有点小迷糊，但总能用温暖的话语让人感到安心。";
-
     private static final String MOOD_SENTENCE_PROMPT = """
             你是一个AI陪伴宠物的内心独白写手。请根据以下信息，写一句它今天的状态文案。
 
@@ -191,6 +173,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public PetVO birth(String deviceId) {
         // 1. 校验设备存在且已绑定用户
         DeviceEntity device = deviceDao.selectById(deviceId);
@@ -207,27 +190,35 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         // 4. 调用 LLM 推算 MBTI
         String mbti = deriveMbti(calcResult);
 
-        // 5. 调用 LLM 生成性格描述
-        String personality = derivePersonality(mbti);
+        // 5. 随机分配性别和血型
+        String gender = ThreadLocalRandom.current().nextInt(2) == 0 ? "MALE" : "FEMALE";
+        String bloodType = new String[]{"A", "B", "O", "AB"}[ThreadLocalRandom.current().nextInt(4)];
 
         // 6. 查询该设备是否已有宠物
         QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
         existWrapper.eq("device_id", deviceId);
         PetEntity existingPet = petDao.selectOne(existWrapper);
 
+        Date birthDate = Date.from(birthTime.atZone(ZoneId.systemDefault()).toInstant());
+
         if (existingPet != null) {
             // TODO 演示逻辑：宠物已存在时，根据当前时间重新生成昵称、五行、八字、星座和MBTI并更新，后期去掉
             String nickname = PetNicknameGenerator.generate();
             existingPet.setNickname(nickname);
-            existingPet.setBirthDate(Date.from(birthTime.atZone(ZoneId.systemDefault()).toInstant()));
+            existingPet.setBirthDate(birthDate);
             existingPet.setBazi(calcResult.bazi());
             existingPet.setWuxing(calcResult.wuxing());
             existingPet.setZodiac(calcResult.zodiac());
             existingPet.setMbti(mbti);
-            existingPet.setPersonality(personality);
+            existingPet.setGender(gender);
+            existingPet.setBloodType(bloodType);
             existingPet.setTodayMood(PetMood.random().name());
             existingPet.setUpdater(device.getUserId());
             petDao.updateById(existingPet);
+
+            // 同步更新关联 agent 的角色设定
+            updateAgentSystemPrompt(device.getAgentId(), existingPet, birthDate, calcResult, mbti);
+
             log.info("宠物信息已更新（演示），deviceId={}, petId={}, nickname={}", deviceId, existingPet.getId(), nickname);
             return toVO(existingPet);
         }
@@ -240,16 +231,27 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setUserId(device.getUserId());
         pet.setDeviceId(deviceId);
         pet.setNickname(nickname);
-        pet.setBirthDate(Date.from(birthTime.atZone(ZoneId.systemDefault()).toInstant()));
+        pet.setBirthDate(birthDate);
         pet.setBazi(calcResult.bazi());
         pet.setWuxing(calcResult.wuxing());
         pet.setZodiac(calcResult.zodiac());
         pet.setMbti(mbti);
-        pet.setPersonality(personality);
+        pet.setGender(gender);
+        pet.setBloodType(bloodType);
         pet.setTodayMood(PetMood.random().name());
         pet.setCreator(device.getUserId());
 
         petDao.insert(pet);
+
+        // 9. 创建 agent 并注入角色设定
+        AgentCreateDTO agentDto = new AgentCreateDTO();
+        agentDto.setAgentName(nickname);
+        String agentId = agentService.createAgent(agentDto);
+        String systemPrompt = renderSystemPrompt(pet, birthDate, calcResult, mbti);
+        agentService.update(null, new UpdateWrapper<AgentEntity>()
+                .eq("id", agentId)
+                .set("system_prompt", systemPrompt));
+
         log.info("宠物出生成功，deviceId={}, petId={}, nickname={}", deviceId, pet.getId(), nickname);
 
         return toVO(pet);
@@ -335,23 +337,37 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             throw new RenException(ErrorCode.PET_HATCH_TIME_NOT_REACHED);
         }
 
-        // 命理 bazi 主导 → LLM 推 MBTI → LLM 生成性格(作 agent 系统提示词)
+        // 命理 bazi 主导 → LLM 推 MBTI → 模板渲染 agent 系统提示词
         LocalDateTime hatchTime = LocalDateTime.now();
         PetBirthCalculator.BirthResult calc = PetBirthCalculator.calculate(hatchTime);
         String mbti = deriveMbti(calc);
-        String personality = derivePersonality(mbti);
         String brief = randomBrief();
         String gender = ThreadLocalRandom.current().nextInt(2) == 0 ? "MALE" : "FEMALE";
         String bloodType = new String[]{"A", "B", "O", "AB"}[ThreadLocalRandom.current().nextInt(4)];
         String avatarUrl = randomAvatarUrl(pet.getPrototype());
 
-        // agent 个性注入：先拿默认模板，再单列 set system_prompt
+        // 回填宠物破壳档案（需在 agent 创建前写 gender/bloodType 以便模板渲染）
+        pet.setHatchStatus(HATCH_STATUS_HATCHED);
+        pet.setHatchedAt(now);
+        pet.setBirthDate(now);
+        pet.setBazi(calc.bazi());
+        pet.setWuxing(calc.wuxing());
+        pet.setZodiac(calc.zodiac());
+        pet.setMbti(mbti);
+        pet.setPersonalityBrief(brief);
+        pet.setGender(gender);
+        pet.setBloodType(bloodType);
+        pet.setAvatarUrl(avatarUrl);
+        pet.setUpdater(userId);
+
+        // agent 个性注入：使用模板渲染系统提示词
         AgentCreateDTO agentDto = new AgentCreateDTO();
         agentDto.setAgentName(StringUtils.isBlank(pet.getNickname()) ? pet.getPrototype() : pet.getNickname());
         String agentId = agentService.createAgent(agentDto);
+        String systemPrompt = renderSystemPrompt(pet, now, calc, mbti);
         agentService.update(null, new UpdateWrapper<AgentEntity>()
                 .eq("id", agentId)
-                .set("system_prompt", personality));
+                .set("system_prompt", systemPrompt));
 
         // 手动建蛋设备：macAddress 必须等于 id，否则 OTA 查不到
         DeviceEntity device = new DeviceEntity();
@@ -367,21 +383,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         device.setCreator(userId);
         deviceDao.insert(device);
 
-        // 回填宠物破壳档案
+        // 回填设备ID
         pet.setDeviceId(deviceId);
-        pet.setHatchStatus(HATCH_STATUS_HATCHED);
-        pet.setHatchedAt(now);
-        pet.setBirthDate(now);
-        pet.setBazi(calc.bazi());
-        pet.setWuxing(calc.wuxing());
-        pet.setZodiac(calc.zodiac());
-        pet.setMbti(mbti);
-        pet.setPersonality(personality);
-        pet.setPersonalityBrief(brief);
-        pet.setGender(gender);
-        pet.setBloodType(bloodType);
-        pet.setAvatarUrl(avatarUrl);
-        pet.setUpdater(userId);
         petDao.updateById(pet);
 
         eventPublisher.publishEvent(new CollectionCardGenerationEvent(pet.getId()));
@@ -454,28 +457,31 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
     }
 
-    private String derivePersonality(String mbti) {
-        try {
-            if (!llmService.isAvailable()) {
-                log.warn("LLM服务不可用，使用默认性格描述");
-                return DEFAULT_PERSONALITY;
-            }
+    private String renderSystemPrompt(PetEntity pet, Date birthDate, PetBirthCalculator.BirthResult calc, String mbti) {
+        String nickname = StringUtils.isBlank(pet.getNickname()) ? pet.getPrototype() : pet.getNickname();
+        return PetSystemPromptTemplate.render(
+                nickname,
+                birthDate,
+                calc.bazi(),
+                calc.wuxing(),
+                calc.zodiac(),
+                mbti,
+                pet.getPrototype(),
+                pet.getGender(),
+                pet.getBloodType()
+        );
+    }
 
-            String prompt = String.format(PERSONALITY_PROMPT, mbti);
-            String response = llmService.generateSummary("", prompt);
-
-            if (response != null && !response.isBlank()) {
-                String trimmed = response.trim();
-                if (trimmed.length() > 500) {
-                    return trimmed.substring(0, 500);
-                }
-                return trimmed;
-            }
-            return DEFAULT_PERSONALITY;
-        } catch (Exception e) {
-            log.error("LLM生成性格描述失败，使用默认值", e);
-            return DEFAULT_PERSONALITY;
+    private void updateAgentSystemPrompt(String agentId, PetEntity pet, Date birthDate,
+                                         PetBirthCalculator.BirthResult calc, String mbti) {
+        if (StringUtils.isBlank(agentId)) {
+            log.warn("宠物无关联 agent，跳过角色设定更新，petId={}", pet.getId());
+            return;
         }
+        String systemPrompt = renderSystemPrompt(pet, birthDate, calc, mbti);
+        agentService.update(null, new UpdateWrapper<AgentEntity>()
+                .eq("id", agentId)
+                .set("system_prompt", systemPrompt));
     }
 
     @Override

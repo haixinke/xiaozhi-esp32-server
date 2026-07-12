@@ -27,6 +27,12 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+# 蛋宝宝小程序配置（使用独立前缀，避免与 WECHAT_MINIPROGRAM_APPID 环境变量冲突）
+eggbaby:
+  miniprogram:
+    appid: ${EGG_MINIPROGRAM_APPID:}
+    secret: ${EGG_MINIPROGRAM_SECRET:}
+
 # 微信支付：dev 默认走 mock，生产环境必须显式设置为 false（通过 env: WECHAT_PAY_MOCK=false 或 prod profile 覆盖）
 wechat:
   pay:

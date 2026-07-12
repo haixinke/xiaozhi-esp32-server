@@ -52,13 +52,14 @@ spring:
 
 # 微信小程序配置
 wechat:
-  miniprogram:
-    appid: ${WECHAT_MINIPROGRAM_APPID}
-    secret: ${WECHAT_MINIPROGRAM_SECRET}
-#    appid: ${EGG_MINIPROGRAM_APPID}
-#    secret: ${EGG_MINIPROGRAM_SECRET}
   pay:
     mock: true
+
+# 蛋宝宝小程序配置（独立前缀，避免与 WECHAT_MINIPROGRAM_APPID 环境变量冲突）
+eggbaby:
+  miniprogram:
+    appid: ${EGG_MINIPROGRAM_APPID:}
+    secret: ${EGG_MINIPROGRAM_SECRET:}
 
 # 阿里云OSS配置（未配置时回退到数据库BLOB存储）
 aliyun:

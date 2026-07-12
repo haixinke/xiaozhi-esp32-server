@@ -66,10 +66,10 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private final OssService ossService;
     private final AliyunOssProperties ossProperties;
 
-    @Value("${wechat.miniprogram.appid:}")
+    @Value("${eggbaby.miniprogram.appid:${wechat.miniprogram.appid:}}")
     private String appid;
 
-    @Value("${wechat.miniprogram.secret:}")
+    @Value("${eggbaby.miniprogram.secret:${wechat.miniprogram.secret:}}")
     private String secret;
 
     @Override
@@ -81,6 +81,8 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         if (StringUtils.isBlank(appid) || StringUtils.isBlank(secret)) {
             throw new RenException("微信小程序未配置appid/secret");
         }
+
+        log.info("微信登录请求 appid={}, codePrefix={}", appid, StringUtils.left(code, 6));
 
         // 1. 调用微信 jscode2session 换取 openid + session_key
         JSONObject session = jscode2session(code);

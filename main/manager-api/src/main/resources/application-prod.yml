@@ -51,13 +51,14 @@ spring:
         shutdown-timeout: 100ms
 
 wechat:
-  miniprogram:
-    appid: ${WECHAT_MINIPROGRAM_APPID:}
-    secret: ${WECHAT_MINIPROGRAM_SECRET:}
-  #    appid: ${EGG_MINIPROGRAM_APPID:}
-  #    secret: ${EGG_MINIPROGRAM_SECRET:}
   pay:
     mock: false
+
+# 蛋宝宝小程序配置（独立前缀，避免与 WECHAT_MINIPROGRAM_APPID 环境变量冲突）
+eggbaby:
+  miniprogram:
+    appid: ${EGG_MINIPROGRAM_APPID:}
+    secret: ${EGG_MINIPROGRAM_SECRET:}
 
 # 阿里云OSS配置
 aliyun:

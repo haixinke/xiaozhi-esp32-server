@@ -37,14 +37,12 @@ App({
       : 'pages/welcome/welcome';
     this.globalData.authReady = this.ensureLogin()
       .then((session) => {
-        // TODO: 暂时关闭手机号授权门槛，后续恢复
-        // this.enforcePhoneGate(session);
+        this.enforcePhoneGate(session);
         return session;
       })
       .catch(() => {
         this.applySession(null);
-        // TODO: 暂时关闭手机号授权门槛，后续恢复
-        // this.enforcePhoneGate(null);
+        this.enforcePhoneGate(null);
         return null;
       });
   },
@@ -53,19 +51,15 @@ App({
     const session = auth.getSession();
     if (session && auth.isExpired()) {
       this.clearLoginState();
-      // TODO: 暂时关闭手机号授权门槛，后续恢复
-      // this.enforcePhoneGate(null);
+      this.enforcePhoneGate(null);
       return;
     }
-    // TODO: 暂时关闭手机号授权门槛，后续恢复
-    // this.enforcePhoneGate(session);
+    this.enforcePhoneGate(session);
     if (session && auth.isExpiringSoon()) {
       this.silentLogin().catch(() => null);
     }
   },
 
-  // TODO: 暂时关闭手机号授权门槛，后续恢复
-  // eslint-disable-next-line no-unused-vars
   enforcePhoneGate(session) {
     if (typeof getCurrentPages !== 'function') return;
     const pages = getCurrentPages();

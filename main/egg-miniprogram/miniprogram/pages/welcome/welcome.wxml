@@ -23,7 +23,7 @@
       <text class="agreement-text">我已阅读并同意</text>
       <text class="privacy-link" catchtap="onPrivacy">《蛋宝宝隐私政策》</text>
     </view>
-    <button class="auth-button" loading="{{authorizing}}" disabled="{{!agreed || authorizing}}" bindtap="onAuthorize">进入蛋宝宝</button>
-    <text class="auth-note">进入即表示同意隐私政策，不会强制获取手机号</text>
+    <button class="auth-button" open-type="getPhoneNumber" loading="{{authorizing}}" disabled="{{!agreed || authorizing}}" bind:getphonenumber="onAuthorize">授权手机号并进入</button>
+    <text class="auth-note">进入需授权手机号，仅用于账号安全与服务通知</text>
   </view>
 </view>

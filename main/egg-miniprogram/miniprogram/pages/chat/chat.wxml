@@ -11,8 +11,13 @@
   </view>
 
   <!-- 消息区 -->
-  <scroll-view class="messages" scroll-y scroll-into-view="{{scrollAnchor}}" scroll-with-animation>
-    <view class="tip">仅展示最近的对话 · 只保留最近几个月的记录</view>
+  <scroll-view class="messages" style="height: {{scrollViewHeight}}px;" scroll-y scroll-into-view="{{scrollAnchor}}" scroll-top="{{scrollTop}}" scroll-with-animation="{{scrollWithAnimation}}" upper-threshold="100" bindscroll="_onConversationScroll" bindscrolltoupper="_onScrollToUpper">
+    <view class="history-loader" wx:if="{{historyLoading}}">
+      <view class="history-loader-dot"></view>
+      <text class="history-loader-text">加载中...</text>
+    </view>
+
+    <view class="tip" wx:if="{{!historyLoading}}">{{historyNoMore ? '已显示全部对话' : '上滑查看更多 · 仅保留最近几个月的记录'}}</view>
 
     <view wx:for="{{messages}}" wx:key="id" id="msg-{{item.id}}">
       <!-- 用户气泡（右） -->

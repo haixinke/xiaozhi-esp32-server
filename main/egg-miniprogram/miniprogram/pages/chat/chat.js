@@ -18,6 +18,11 @@ Page({
     connectionState: 'disconnected',
     chatState: STATE_IDLE,
     scrollAnchor: '',
+    scrollTop: 0,
+    scrollWithAnimation: true,
+    historyLoading: false,
+    historyNoMore: false,
+    scrollViewHeight: 0,
   },
 
   _msgIdSeed: 1,
@@ -25,20 +30,25 @@ Page({
   _streamingBuffer: '',
   _flushTimer: null,
   _pendingText: '',
+  _historyPage: 1,
+  _historyLoading: false,
+  _historyNoMore: false,
+  _scrollTop: 0,
   wsManager: null,
   audioManager: null,
 
   onLoad() {
     const pet = petStore.getPet();
+    console.log('[chat onLoad] pet=', !!pet, 'collectionCard=', !!(pet && pet.collectionCard), 'deviceId=', !!(pet && pet.deviceId), 'messages=', pet && pet.messages ? JSON.stringify(pet.messages) : 'null');
     if (!pet || !pet.collectionCard || !pet.deviceId) {
       wx.showToast({ title: '破壳后才可以对话', icon: 'none' });
       setTimeout(() => wx.navigateBack(), 600);
       return;
     }
 
-    const messages = pet.messages || [];
-    if (!messages.length) {
-      messages.push({
+    const allMessages = pet.messages || [];
+    if (!allMessages.length) {
+      petStore.saveMessage({
         id: 'hello',
         role: 'assistant',
         content: '你来啦。我已经等你好一会儿了。',
@@ -50,13 +60,14 @@ Page({
       pet,
       card: pet.collectionCard,
       dailyStatus: petStore.getDailyStatus(),
-      messages,
-      scrollAnchor: `msg-${messages[messages.length - 1].id}`,
     });
 
+    this._loadHistoryMessages(1, true);
     this._initAudio();
     this._initWebSocketManager();
     this._otaAndConnect();
+
+    setTimeout(() => this._calcScrollViewHeight(), 100);
   },
 
   onShow() {
@@ -129,6 +140,171 @@ Page({
       const message = (error && error.userMessage) || '获取聊天配置失败';
       wx.showToast({ title: message, icon: 'none' });
     }
+  },
+
+  // -------------------------------------------------------------------------
+  // History pagination (local store; replace with HTTP when backend is ready)
+  // -------------------------------------------------------------------------
+
+  _onConversationScroll(e) {
+    this._scrollTop = (e && e.detail && e.detail.scrollTop) || 0;
+  },
+
+  _onScrollToUpper() {
+    if (this._historyLoading || this._historyNoMore) return;
+    this._loadHistoryMessages(this._historyPage + 1, false);
+  },
+
+  _calcScrollViewHeight() {
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.mood-bar').boundingClientRect();
+    query.select('.composer').boundingClientRect();
+    query.select('.navbar-root').boundingClientRect();
+    query.exec((res) => {
+      const windowHeight = wx.getWindowInfo().windowHeight;
+      const moodBarHeight = (res[0] && res[0].height) || 0;
+      const composerHeight = (res[1] && res[1].height) || 0;
+      const navBarHeight = (res[2] && res[2].height) || 0;
+      const scrollViewHeight = windowHeight - navBarHeight - moodBarHeight - composerHeight;
+      const finalHeight = scrollViewHeight > 0 ? scrollViewHeight : windowHeight * 0.6;
+      console.log('[chat _calcScrollViewHeight] windowHeight=', windowHeight, 'navBarHeight=', navBarHeight, 'moodBarHeight=', moodBarHeight, 'composerHeight=', composerHeight, 'finalHeight=', finalHeight);
+      this.setData({ scrollViewHeight: finalHeight });
+    });
+  },
+
+  _queryMessageAnchor(id, callback) {
+    if (!id) {
+      callback({ offsetTop: 0, viewportOffset: 0 });
+      return;
+    }
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.messages').boundingClientRect();
+    query.select('#msg-' + id).boundingClientRect();
+    query.exec((res) => {
+      const conversationRect = res[0];
+      const msgRect = res[1];
+      if (!conversationRect || !msgRect) {
+        callback({ offsetTop: 0, viewportOffset: 0 });
+        return;
+      }
+      const viewportOffset = msgRect.top - conversationRect.top;
+      callback({
+        offsetTop: viewportOffset + this._scrollTop,
+        viewportOffset,
+      });
+    });
+  },
+
+  _queryMessageOffset(id, callback) {
+    if (!id) {
+      callback(0);
+      return;
+    }
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.messages').boundingClientRect();
+    query.select('#msg-' + id).boundingClientRect();
+    query.exec((res) => {
+      const conversationRect = res[0];
+      const msgRect = res[1];
+      if (!conversationRect || !msgRect) {
+        callback(0);
+        return;
+      }
+      callback(msgRect.top - conversationRect.top + this._scrollTop);
+    });
+  },
+
+  _loadHistoryMessages(page, initial) {
+    if (this._historyLoading || this._historyNoMore) return;
+
+    if (initial) {
+      this._historyLoading = true;
+      this.setData({ historyLoading: true });
+
+      const { list, hasMore } = petStore.getMessages({ page, pageSize: 4 });
+      console.log('[chat _loadHistoryMessages initial] page=', page, 'listLen=', list.length, 'hasMore=', hasMore, 'currentMessagesLen=', this.data.messages.length);
+
+      if (list.length === 0) {
+        this._historyNoMore = true;
+        this._historyLoading = false;
+        this.setData({ historyNoMore: true, historyLoading: false });
+        return;
+      }
+
+      const messages = list.concat(this.data.messages);
+      this._historyPage = page;
+      this._historyLoading = false;
+
+      const nextData = {
+        messages,
+        historyLoading: false,
+        scrollAnchor: '',
+      };
+      if (!hasMore) {
+        this._historyNoMore = true;
+        nextData.historyNoMore = true;
+      }
+
+      this.setData(nextData, () => {
+        console.log('[chat _loadHistoryMessages initial] setData done, messagesLen=', this.data.messages.length);
+        this._scrollToBottom();
+        setTimeout(() => {
+          const last = this.data.messages[this.data.messages.length - 1];
+          if (last && last.id) {
+            this._queryMessageOffset(last.id, (offset) => {
+              console.log('[chat fallback scroll] offset=', offset);
+              this.setData({ scrollWithAnimation: false, scrollTop: offset }, () => {
+                this.setData({ scrollWithAnimation: true });
+              });
+            });
+          }
+        }, 100);
+      });
+      return;
+    }
+
+    const anchorId = (this.data.messages[0] && this.data.messages[0].id) || '';
+
+    this._queryMessageAnchor(anchorId, (anchor) => {
+      const anchorViewportOffset = anchor.viewportOffset;
+
+      this._historyLoading = true;
+      this.setData({ historyLoading: true });
+
+      const { list, hasMore } = petStore.getMessages({ page, pageSize: 4 });
+
+      if (list.length === 0) {
+        this._historyNoMore = true;
+        this._historyLoading = false;
+        this.setData({ historyNoMore: true, historyLoading: false });
+        return;
+      }
+
+      const messages = list.concat(this.data.messages);
+      this._historyPage = page;
+      this._historyLoading = false;
+
+      const nextData = {
+        messages,
+        historyLoading: false,
+        scrollAnchor: '',
+      };
+      if (!hasMore) {
+        this._historyNoMore = true;
+        nextData.historyNoMore = true;
+      }
+
+      this.setData(nextData, () => {
+        if (anchorId) {
+          this._queryMessageOffset(anchorId, (newOffset) => {
+            const newScrollTop = newOffset - anchorViewportOffset;
+            this.setData({ scrollWithAnimation: false, scrollTop: newScrollTop }, () => {
+              this.setData({ scrollWithAnimation: true });
+            });
+          });
+        }
+      });
+    });
   },
 
   // -------------------------------------------------------------------------
@@ -271,21 +447,23 @@ Page({
     }
 
     this._streamingIdx = -1;
-    this._persistAndSetMessages(messages, null, { chatState });
+    this._persistAndSetMessages(messages, null, { chatState }, { upsert: true });
   },
 
-  _persistAndSetMessages(messages, scrollAnchor, extraData) {
+  _persistAndSetMessages(messages, scrollAnchor, extraData, persistOptions) {
     this.setData({ messages, ...(extraData || {}) }, () => {
       if (scrollAnchor) this.setData({ scrollAnchor });
       else this._scrollToBottom();
     });
     const last = messages[messages.length - 1];
-    if (last) petStore.saveMessage(last);
+    if (last) petStore.saveMessage(last, persistOptions || {});
   },
 
   _scrollToBottom() {
+    console.log('[chat _scrollToBottom] messagesLen=', this.data.messages.length);
     if (this.data.messages.length === 0) return;
     const last = this.data.messages[this.data.messages.length - 1];
+    console.log('[chat _scrollToBottom] last=', last);
     if (last && last.id) this.setData({ scrollAnchor: `msg-${last.id}` });
   },
 

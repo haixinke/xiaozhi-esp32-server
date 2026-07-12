@@ -571,10 +571,37 @@ async function createCollectionCard() {
   }
 }
 
-function saveMessage(message) {
+function getMessages(options) {
+  const pet = getPet();
+  if (!pet) return { list: [], total: 0, hasMore: false };
+  const all = pet.messages || [];
+  const total = all.length;
+  const page = Math.max(1, options && options.page ? options.page : 1);
+  const pageSize = Math.max(1, options && options.pageSize ? options.pageSize : 4);
+  const end = Math.max(0, total - (page - 1) * pageSize);
+  const start = Math.max(0, end - pageSize);
+  const list = all.slice(start, end);
+  const hasMore = start > 0;
+  return { list, total, hasMore };
+}
+
+function saveMessage(message, options = {}) {
   const pet = getPet();
   if (!pet) return;
-  pet.messages = (pet.messages || []).concat(message).slice(-40);
+  const existing = pet.messages || [];
+  let messages;
+  if (options && options.upsert && message && message.id) {
+    const idx = existing.findIndex((m) => m && m.id === message.id);
+    if (idx >= 0) {
+      messages = existing.slice();
+      messages[idx] = message;
+    } else {
+      messages = existing.concat(message);
+    }
+  } else {
+    messages = existing.concat(message);
+  }
+  pet.messages = messages.slice(-40);
   savePet(pet);
 }
 
@@ -655,6 +682,7 @@ module.exports = {
   buildCollectionCard,
   createCollectionCard,
   saveMessage,
+  getMessages,
   resetDemo,
   startExhibitionDemo,
   endExhibitionDemo,

@@ -1,24 +1,50 @@
-const petStore = require('../../utils/pet-store');
+const inviteApi = require('../../utils/invite-api');
+
+const MESSAGES = {
+  load: '加载失败，请下拉重试',
+  empty: '暂无可用激活码'
+};
 
 Page({
   data: {
     inviteCode: null,
-    exhausted: false
+    exhausted: false,
+    loading: true,
+    error: ''
   },
+
   onShow() {
     this.loadInviteCode();
   },
-  loadInviteCode() {
-    // 当前从本地 mock 读取；接入后端后改为 GET /invite/mine（鉴权 normal），返回单个码 + quota/usedCount/remaining
-    const pet = petStore.getPet();
-    const code = pet && pet.inviteCode ? pet.inviteCode : null;
-    this.setData({
-      inviteCode: code,
-      exhausted: code ? code.remaining <= 0 || code.status !== 1 : true
-    });
+
+  async loadInviteCode() {
+    this.setData({ loading: true, error: '' });
+    try {
+      const code = await inviteApi.getMine();
+      const exhausted = this.isExhausted(code);
+      this.setData({ inviteCode: code, exhausted, loading: false, error: '' });
+    } catch (error) {
+      this.setData({
+        inviteCode: null,
+        exhausted: true,
+        loading: false,
+        error: (error && error.userMessage) || MESSAGES.load
+      });
+    }
   },
+
+  isExhausted(code) {
+    if (!code) return true;
+    return (code.remaining || 0) <= 0 || code.status !== 1;
+  },
+
+  onRetry() {
+    this.loadInviteCode();
+  },
+
   onCopy() {
-    if (!this.data.inviteCode || this.data.exhausted) return;
-    wx.setClipboardData({ data: this.data.inviteCode.code });
+    const { inviteCode, exhausted, loading } = this.data;
+    if (loading || !inviteCode || exhausted) return;
+    wx.setClipboardData({ data: inviteCode.code });
   }
 });

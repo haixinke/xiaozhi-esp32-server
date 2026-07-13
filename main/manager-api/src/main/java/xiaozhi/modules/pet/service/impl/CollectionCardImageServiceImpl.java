@@ -1,10 +1,11 @@
 package xiaozhi.modules.pet.service.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.volcengine.ark.runtime.model.images.generation.GenerateImagesRequest;
+import com.volcengine.ark.runtime.model.images.generation.ImagesResponse;
+import com.volcengine.ark.runtime.model.images.generation.ResponseFormat;
+import com.volcengine.ark.runtime.service.ArkService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,12 +24,10 @@ import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * 基于火山引擎 Seedream 的破壳收藏卡图片生成实现
+ * 基于火山引擎 Ark SDK 的破壳收藏卡图片生成实现
  */
 @Slf4j
 @Service
@@ -77,24 +76,21 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
             High resolution, 8K, studio lighting, centered composition.""";
 
     private final SeedreamProperties seedreamProperties;
+    private final ArkService arkService;
     private final RestTemplate restTemplate;
-    private final RestTemplate imageDownloadRestTemplate;
     private final OssService ossService;
     private final AliyunOssProperties ossProperties;
-    private final ObjectMapper objectMapper;
 
     public CollectionCardImageServiceImpl(SeedreamProperties seedreamProperties,
-                                          @Qualifier("seedreamRestTemplate") RestTemplate restTemplate,
-                                          @Qualifier("seedreamImageDownloadRestTemplate") RestTemplate imageDownloadRestTemplate,
+                                          ArkService arkService,
+                                          RestTemplate restTemplate,
                                           OssService ossService,
-                                          AliyunOssProperties ossProperties,
-                                          ObjectMapper objectMapper) {
+                                          AliyunOssProperties ossProperties) {
         this.seedreamProperties = seedreamProperties;
+        this.arkService = arkService;
         this.restTemplate = restTemplate;
-        this.imageDownloadRestTemplate = imageDownloadRestTemplate;
         this.ossService = ossService;
         this.ossProperties = ossProperties;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -134,7 +130,7 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
             log.info("收藏卡图片生成成功，petId={}, url={}", pet.getId(), imageUrl);
             return imageUrl;
         } catch (RestClientException e) {
-            log.error("Seedream API 调用失败，petId={}", pet.getId(), e);
+            log.error("Seedream 图片下载失败，petId={}", pet.getId(), e);
             return null;
         } catch (Exception e) {
             log.error("生成收藏卡图片时发生异常，petId={}", pet.getId(), e);
@@ -172,48 +168,28 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
         return hatchTime.format(BIRTHDAY_FORMATTER);
     }
 
-    private String callSeedream(String prompt) throws Exception {
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", seedreamProperties.getModel());
-        requestBody.put("prompt", prompt);
-        requestBody.put("response_format", "url");
-        requestBody.put("size", seedreamProperties.getSize());
-        requestBody.put("stream", seedreamProperties.isStream());
-        requestBody.put("watermark", seedreamProperties.isWatermark());
+    private String callSeedream(String prompt) {
+        GenerateImagesRequest request = GenerateImagesRequest.builder()
+                .model(seedreamProperties.getModel())
+                .prompt(prompt)
+                .responseFormat(ResponseFormat.Url)
+                .size(seedreamProperties.getSize())
+                .watermark(seedreamProperties.isWatermark())
+                .build();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + seedreamProperties.getKey());
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> response = restTemplate.exchange(seedreamProperties.getUrl(), HttpMethod.POST, entity, String.class);
-
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            log.error("Seedream API 返回非成功状态码，status={}, body={}", response.getStatusCode(), response.getBody());
+        ImagesResponse response = arkService.generateImages(request);
+        if (response == null || response.getData() == null || response.getData().isEmpty()) {
+            log.warn("Seedream 响应为空");
             return null;
         }
-
-        JsonNode root = objectMapper.readTree(response.getBody());
-        JsonNode data = root.path("data");
-        if (!data.isArray() || data.isEmpty()) {
-            log.warn("Seedream 响应中 data 为空，body={}", response.getBody());
-            return null;
-        }
-
-        JsonNode url = data.get(0).path("url");
-        if (url.isMissingNode() || !url.isTextual()) {
-            log.warn("Seedream 响应中 url 字段异常，body={}", response.getBody());
-            return null;
-        }
-
-        return url.asText();
+        return response.getData().get(0).getUrl();
     }
 
     private byte[] downloadGeneratedImage(String imageUrl) {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.IMAGE_JPEG, MediaType.IMAGE_PNG, MediaType.APPLICATION_OCTET_STREAM));
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        ResponseEntity<byte[]> response = imageDownloadRestTemplate.exchange(URI.create(imageUrl), HttpMethod.GET, entity, byte[].class);
+        ResponseEntity<byte[]> response = restTemplate.exchange(URI.create(imageUrl), HttpMethod.GET, entity, byte[].class);
         if (!response.getStatusCode().is2xxSuccessful()) {
             log.error("Seedream 图片下载返回非成功状态码，status={}", response.getStatusCode());
             return null;

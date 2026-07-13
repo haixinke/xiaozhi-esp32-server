@@ -20,18 +20,4 @@ public class RestTemplateConfig {
         factory.setReadTimeout(Duration.ofSeconds(30));
         return new RestTemplate(factory);
     }
-
-    @Bean("seedreamRestTemplate")
-    public RestTemplate seedreamRestTemplate() {
-        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
-        factory.setReadTimeout(Duration.ofSeconds(180));
-        return new RestTemplate(factory);
-    }
-
-    @Bean("seedreamImageDownloadRestTemplate")
-    public RestTemplate seedreamImageDownloadRestTemplate() {
-        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
-        factory.setReadTimeout(Duration.ofSeconds(60));
-        return new RestTemplate(factory);
-    }
 }

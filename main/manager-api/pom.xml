@@ -33,6 +33,7 @@
         <liquibase-core.version>4.20.0</liquibase-core.version>
         <aliyun-sms-version>4.1.0</aliyun-sms-version>
         <okio-version>3.4.0</okio-version>
+        <volcengine-ark-sdk.version>0.2.20</volcengine-ark-sdk.version>
     </properties>
 
     <dependencies>
@@ -260,6 +261,12 @@
             <groupId>com.aliyun.oss</groupId>
             <artifactId>aliyun-sdk-oss</artifactId>
             <version>3.17.4</version>
+        </dependency>
+        <!-- 火山引擎 Ark Java SDK：收藏卡图片生成 -->
+        <dependency>
+            <groupId>com.volcengine</groupId>
+            <artifactId>volcengine-java-sdk-ark-runtime</artifactId>
+            <version>${volcengine-ark-sdk.version}</version>
         </dependency>
         <!-- Java 9+ 需要 JAXB 依赖 -->
         <dependency>

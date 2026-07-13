@@ -29,6 +29,6 @@ public class SeedreamProperties {
      * 判断 Seedream 是否已配置完整
      */
     public boolean isConfigured() {
-        return StringUtils.isNoneBlank(key, url, model);
+        return StringUtils.isNoneBlank(key, model);
     }
 }

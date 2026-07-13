@@ -57,6 +57,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private static final String JSCODE2SESSION_URL = "https://api.weixin.qq.com/sns/jscode2session";
     private static final String STABLE_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/stable_token";
     private static final String GET_PHONE_URL = "https://api.weixin.qq.com/wxa/business/getuserphonenumber";
+    private static final String DEFAULT_USER_AVATAR_URL = "https://oss.eggbabe.com/default-avatar/user/user-avatar.png";
 
     private final SysUserDao sysUserDao;
     private final SysUserTokenService sysUserTokenService;
@@ -117,6 +118,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             wechatUser.setOpenid(openid);
             wechatUser.setUserId(userId);
             wechatUser.setSessionKey(sessionKey);
+            wechatUser.setAvatarUrl(DEFAULT_USER_AVATAR_URL);
             baseDao.insert(wechatUser);
             isNewUser = true;
         }
@@ -440,9 +442,10 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     }
 
     /**
-     * 调用微信 jscode2session 接口
+     * 调用微信 jscode2session 接口。
+     * 包级可见，便于单测以子类重写的方式注入桩响应。
      */
-    private JSONObject jscode2session(String code) {
+    JSONObject jscode2session(String code) {
         try (HttpResponse response = HttpRequest.get(JSCODE2SESSION_URL)
                 .form("appid", appid)
                 .form("secret", secret)

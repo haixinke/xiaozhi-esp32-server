@@ -4,6 +4,7 @@ import com.volcengine.ark.runtime.model.images.generation.GenerateImagesRequest;
 import com.volcengine.ark.runtime.model.images.generation.ImagesResponse;
 import com.volcengine.ark.runtime.model.images.generation.ResponseFormat;
 import com.volcengine.ark.runtime.service.ArkService;
+import com.aliyun.oss.model.CannedAccessControlList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
-import xiaozhi.common.config.AliyunOssProperties;
 import xiaozhi.common.oss.OssService;
 import xiaozhi.modules.pet.config.SeedreamProperties;
 import xiaozhi.modules.pet.entity.PetEntity;
@@ -58,16 +58,11 @@ class CollectionCardImageServiceImplTest {
         seedreamProperties.setSize("2K");
         seedreamProperties.setWatermark(true);
 
-        AliyunOssProperties ossProperties = new AliyunOssProperties();
-        ossProperties.setEndpoint("https://oss-cn.example.com");
-        ossProperties.setBucketName("egg-bucket");
-
         service = new CollectionCardImageServiceImpl(
                 seedreamProperties,
                 arkService,
                 restTemplate,
-                ossService,
-                ossProperties);
+                ossService);
 
         when(ossService.isEnabled()).thenReturn(true);
     }
@@ -90,7 +85,7 @@ class CollectionCardImageServiceImplTest {
         PetEntity pet = pet();
         String result = service.generate(pet);
 
-        assertThat(result).isEqualTo("https://egg-bucket.oss-cn.example.com/eggbabe/cards/pet-1.png");
+        assertThat(result).isEqualTo("https://oss.eggbabe.com/eggbabe/cards/pet-1.png");
 
         ArgumentCaptor<GenerateImagesRequest> requestCaptor = ArgumentCaptor.forClass(GenerateImagesRequest.class);
         verify(arkService).generateImages(requestCaptor.capture());
@@ -102,7 +97,7 @@ class CollectionCardImageServiceImplTest {
         assertThat(request.getWatermark()).isTrue();
         assertThat(request.getPrompt()).contains("昵称: 小蛋");
 
-        verify(ossService).upload("eggbabe/cards/pet-1.png", imageBytes);
+        verify(ossService).upload("eggbabe/cards/pet-1.png", imageBytes, CannedAccessControlList.PublicRead);
     }
 
     private PetEntity pet() {

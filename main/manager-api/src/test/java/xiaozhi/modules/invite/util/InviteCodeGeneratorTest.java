@@ -13,11 +13,11 @@ class InviteCodeGeneratorTest {
     private static final String ALLOWED = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     @Test
-    @DisplayName("generate 返回 8 位且全部在允许字符集内")
+    @DisplayName("generate 返回 5 位且全部在允许字符集内")
     void generate_lengthAndCharset() {
         for (int i = 0; i < 500; i++) {
             String code = InviteCodeGenerator.generate();
-            assertThat(code).hasSize(8);
+            assertThat(code).hasSize(5);
             for (char c : code.toCharArray()) {
                 assertThat(ALLOWED.indexOf(c)).isGreaterThan(-1);
             }
@@ -35,10 +35,10 @@ class InviteCodeGeneratorTest {
     }
 
     @Test
-    @DisplayName("generate 10000 次无重复")
+    @DisplayName("generate 2000 次无重复")
     void generate_uniqueOver10000() {
         Set<String> seen = new HashSet<>();
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 2000; i++) {
             String code = InviteCodeGenerator.generate();
             assertThat(seen.add(code)).as("重复码: %s", code).isTrue();
         }

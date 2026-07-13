@@ -90,11 +90,15 @@ mybatis-plus:
     boolValue: TRUE
 
 # AI宠物头像配置
-# pet.avatar.koi-defaults / rabbit-defaults: 默认头像池，分号分隔；未配置时走兜底图
-# pet.avatar.koi / rabbit: 扩展头像池，在默认池基础上追加，分号分隔
+# 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成头像 URL
 pet:
   avatar:
-    koi-defaults: ""
-    rabbit-defaults: ""
-    koi: ""
-    rabbit: ""
+    koi:
+      base-url: https://oss.eggbabe.com/default-avatar/fish/
+      prefix: fish
+      count: 22
+    rabbit:
+      base-url: https://oss.eggbabe.com/default-avatar/rabbit/
+      prefix: rabbit
+      count: 22
+    fallback-url: https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/eggbabe/fish.png

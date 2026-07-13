@@ -10,9 +10,9 @@ Page({
       setTimeout(() => wx.navigateBack(), 600);
       return;
     }
-    const card = pet.collectionCard;
+    const card = { ...pet.collectionCard, petType: pet.collectionCard.prototype };
     this.setData({
-      pet,
+      pet: { ...pet, petType: pet.prototype },
       card,
       dailyStatus: petStore.getDailyStatus()
     });

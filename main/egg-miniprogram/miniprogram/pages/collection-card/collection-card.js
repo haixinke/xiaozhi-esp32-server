@@ -10,7 +10,7 @@ Page({
       setTimeout(() => wx.navigateBack(), 600);
       return;
     }
-    this.setData({ pet, card: pet.collectionCard, isNew: query.new === '1' });
+    this.setData({ pet, card: { ...pet.collectionCard, petType: pet.collectionCard.prototype }, isNew: query.new === '1' });
   },
 
   onReady() {
@@ -27,7 +27,7 @@ Page({
       context.setFillStyle('#FFF9E4'); context.beginPath(); context.arc(300, 290, 106, 0, Math.PI * 2); context.fill();
       if (imagePath) {
         context.drawImage(imagePath, 194, 184, 212, 212);
-      } else if (card.prototype === '玉兔') {
+      } else if ((card.petType || card.prototype) === '玉兔') {
         context.setFillStyle('#FFF9E4'); context.fillRect(238, 135, 42, 110); context.fillRect(320, 135, 42, 110);
         context.setFillStyle('#002900'); context.beginPath(); context.arc(266, 282, 7, 0, Math.PI * 2); context.arc(334, 282, 7, 0, Math.PI * 2); context.fill();
         context.setFillStyle('#F4B9AE'); context.beginPath(); context.arc(300, 318, 6, 0, Math.PI * 2); context.fill();
@@ -36,7 +36,7 @@ Page({
         context.setFillStyle('#002900'); context.beginPath(); context.arc(252, 274, 7, 0, Math.PI * 2); context.fill();
       }
       context.setFillStyle('#002900'); context.setFontSize(38); context.fillText(card.name, 42, 500);
-      context.setFillStyle('#54632C'); context.setFontSize(24); context.fillText(`${card.prototype} · ${card.style}`, 42, 548);
+      context.setFillStyle('#54632C'); context.setFontSize(24); context.fillText(`${card.petType || card.prototype} · ${card.style}`, 42, 548);
       context.setFillStyle('#5C5C5C'); context.setFontSize(22); context.fillText(`${card.mbti} · ${card.gender} · ${card.bloodType} 型`, 42, 606);
       context.setFontSize(20); context.fillText(card.serial, 42, 730);
       context.setFillStyle('#002900'); context.fillRect(480, 700, 32, 32); context.fillRect(528, 700, 32, 32); context.fillRect(480, 748, 32, 32); context.fillRect(528, 748, 16, 16);
@@ -60,7 +60,6 @@ Page({
   },
 
   onAlbum() { wx.navigateTo({ url: '/pages/album/album' }); },
-  onProfile() { wx.navigateTo({ url: '/pages/pet-detail/pet-detail' }); },
 
   onSave() {
     wx.canvasToTempFilePath({

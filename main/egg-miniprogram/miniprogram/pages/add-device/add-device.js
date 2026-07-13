@@ -16,7 +16,7 @@ Page({
     try {
       const petVO = await post('/pet/adopt', { inviteCode });
       petStore.savePetFromVO(petVO);
-      this.setData({ success: { prototype: petVO.prototype } });
+      this.setData({ success: { prototype: petVO.prototype, petType: petVO.prototype } });
       setTimeout(() => wx.switchTab({ url: '/pages/home/home' }), 1150);
     } catch (error) {
       this.setData({ error: error.userMessage || '操作失败，请稍后重试', submitting: false });

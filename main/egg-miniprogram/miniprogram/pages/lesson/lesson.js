@@ -1,6 +1,13 @@
 const petStore = require('../../utils/pet-store');
 Page({
-  data: { selected: '', options: [{ icon: '♡', value: '学会撒娇' }, { icon: '✦', value: '学会勇敢' }, { icon: '☺', value: '学会讲冷笑话' }] },
+  data: { selected: '', options: [
+    { icon: '🐠', value: '去深海潜水' },
+    { icon: '☁️', value: '做个云朵棉花糖SPA' },
+    { icon: '🌙', value: '月光牛奶浴' },
+    { icon: '🎠', value: '坐星光旋转木马' },
+    { icon: '🍃', value: '听树洞收音机' },
+    { icon: '🍞', value: '在面包房打盹' }
+  ] },
   onSelect(e) { this.setData({ selected: e.currentTarget.dataset.value }); },
   async onSubmit() {
     if (!this.data.selected) return wx.showToast({ title: '先选一堂课吧', icon: 'none' });

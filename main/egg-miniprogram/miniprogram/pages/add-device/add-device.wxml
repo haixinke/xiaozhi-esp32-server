@@ -27,6 +27,6 @@
       <view class="success-glow"></view>
       <view class="success-egg"></view>
     </view>
-    <text class="success-text">你获得了一只{{success.prototype}}蛋宝宝</text>
+    <text class="success-text">你获得了一只{{success.petType || success.prototype}}蛋宝宝</text>
   </view>
 </view>

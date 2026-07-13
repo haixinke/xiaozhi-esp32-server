@@ -26,7 +26,8 @@
       </view>
       <!-- 蛋宝宝气泡（左） -->
       <view wx:else class="row row--egg">
-        <egg-avatar size="{{28}}" gradient-from="#EDE78E" gradient-to="#F4B9AE"></egg-avatar>
+        <image wx:if="{{avatarUrl}}" class="egg-avatar egg-avatar--chat" src="{{avatarUrl}}" mode="aspectFill"></image>
+        <egg-avatar wx:else size="{{28}}" gradient-from="#EDE78E" gradient-to="#F4B9AE"></egg-avatar>
         <view class="bubble bubble--egg {{item.typing ? 'bubble--typing' : ''}} {{chatState === 'speaking' && index === messages.length - 1 ? 'bubble--speaking' : ''}}">
           <text>{{item.content}}</text>
           <view wx:if="{{chatState === 'speaking' && index === messages.length - 1 && !item.typing}}" class="speaking-indicator">
@@ -40,7 +41,8 @@
 
     <!-- 正在输入 -->
     <view wx:if="{{chatState === 'thinking'}}" class="row row--egg">
-      <egg-avatar size="{{28}}" gradient-from="#EDE78E" gradient-to="#F4B9AE"></egg-avatar>
+      <image wx:if="{{avatarUrl}}" class="egg-avatar egg-avatar--chat" src="{{avatarUrl}}" mode="aspectFill"></image>
+      <egg-avatar wx:else size="{{28}}" gradient-from="#EDE78E" gradient-to="#F4B9AE"></egg-avatar>
       <view class="bubble bubble--egg typing">
         <view class="dot"></view><view class="dot"></view><view class="dot"></view>
       </view>

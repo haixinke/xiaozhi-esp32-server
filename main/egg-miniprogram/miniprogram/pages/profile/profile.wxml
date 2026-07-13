@@ -1,5 +1,5 @@
 <view class="page">
-  <nav-bar title="个人信息"></nav-bar>
+  <nav-bar title="我的信息"></nav-bar>
 
   <scroll-view scroll-y class="content">
 

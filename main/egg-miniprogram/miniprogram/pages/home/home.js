@@ -45,7 +45,7 @@ Page({
     const stage = petStore.getStage(pet);
     const presentation = petStore.getStagePresentation(stage);
     this.setData({
-      pet,
+      pet: { ...pet, petType: pet.prototype },
       stage,
       stageText: presentation.homeText,
       countdown: petStore.getCountdown(pet),

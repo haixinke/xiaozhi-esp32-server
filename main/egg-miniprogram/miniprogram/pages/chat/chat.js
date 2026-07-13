@@ -16,6 +16,7 @@ Page({
     messages: [],
     draft: '',
     booting: true,
+    avatarUrl: '',
     connectionState: 'disconnected',
     chatState: STATE_IDLE,
     scrollAnchor: '',
@@ -59,6 +60,7 @@ Page({
     this.setData({
       pet,
       card: pet.collectionCard,
+      avatarUrl: pet.avatarUrl || '',
       dailyStatus: petStore.getDailyStatus(),
     });
 

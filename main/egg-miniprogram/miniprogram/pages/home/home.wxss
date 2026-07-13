@@ -22,6 +22,7 @@
 .egg-aura { position: absolute; width: 390rpx; height: 390rpx; border-radius: 50%; background: radial-gradient(circle, rgba(237,231,142,.42), rgba(237,231,142,0) 68%); animation: aura 3s ease-in-out infinite; }
 .egg { position: relative; z-index: 2; width: 268rpx; height: 330rpx; border-radius: 52% 48% 47% 53% / 61% 58% 42% 39%; box-shadow: inset -20rpx -26rpx 36rpx rgba(105,105,40,.15), 0 34rpx 56rpx rgba(0,41,0,.15); animation: breathe 3.4s ease-in-out infinite; }
 .expo-home-scene { position: relative; z-index: 2; width: 430rpx; height: 450rpx; border-radius: 42rpx; box-shadow: 0 26rpx 50rpx rgba(0,41,0,.16); }
+.home-pet-image { position: relative; z-index: 2; width: 430rpx; height: 450rpx; border-radius: 42rpx; box-shadow: 0 26rpx 50rpx rgba(0,41,0,.16); background: #F8F7EF; }
 .egg-shine { position: absolute; width: 52rpx; height: 124rpx; border-radius: 50%; top: 64rpx; left: 54rpx; background: rgba(255,255,255,.56); transform: rotate(17deg); }
 .egg-pattern { position: absolute; border-radius: 50%; background: rgba(0,41,0,.10); }
 .egg-pattern--one { width: 16rpx; height: 16rpx; right: 62rpx; top: 112rpx; }
@@ -44,9 +45,9 @@
 .state-card, .daily-card { background: #FFF; border: 1rpx solid #E8E6E0; border-radius: 28rpx; padding: 28rpx 30rpx; margin-bottom: 22rpx; box-shadow: 0 8rpx 24rpx rgba(0,41,0,.04); }
 .state-card { display: flex; align-items: center; }
 .state-dot { width: 16rpx; height: 16rpx; border-radius: 50%; background: #9DB65B; box-shadow: 0 0 0 10rpx #F1F5E7; margin: 0 28rpx 0 8rpx; }
-.state-copy { flex: 1; }
+.state-copy { flex: 1; display: flex; align-items: center; }
 .state-title { display: block; font-size: 28rpx; font-weight: 600; color: #273020; }
-.state-time { display: block; margin-top: 8rpx; font-size: 23rpx; color: #8D8B84; }
+.state-time { display: none; }
 .daily-head { display: flex; justify-content: space-between; align-items: center; }
 .daily-label { font-size: 22rpx; color: #8D8B84; }
 .mood { padding: 6rpx 16rpx; border-radius: 999rpx; background: #F5F8ED; color: #54632C; font-size: 21rpx; }

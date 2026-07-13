@@ -2,9 +2,9 @@
   <nav-bar title="蛋宝宝档案"></nav-bar>
   <scroll-view class="content" scroll-y>
     <view class="hero">
-      <pet-avatar pet-type="{{card.prototype}}" size="{{210}}"></pet-avatar>
+      <pet-avatar pet-type="{{card.petType || card.prototype}}" size="{{210}}"></pet-avatar>
       <text class="name">{{card.name}} {{card.gender}}</text>
-      <text class="meta">{{card.prototype}} · {{card.style}}</text>
+      <text class="meta">{{card.petType || card.prototype}} · {{card.style}}</text>
     </view>
     <view class="daily-card">
       <view class="daily-head"><text>今日心情</text><text class="mood">{{dailyStatus.mood}}</text></view>

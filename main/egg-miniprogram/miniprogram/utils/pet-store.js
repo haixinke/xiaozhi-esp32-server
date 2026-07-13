@@ -96,7 +96,8 @@ function isBound() {
 
 function toTimestamp(value) {
   if (!value) return null;
-  const ms = new Date(value).getTime();
+  const normalized = typeof value === 'string' ? value.trim().replace(' ', 'T') : value;
+  const ms = new Date(normalized).getTime();
   return Number.isFinite(ms) ? ms : null;
 }
 
@@ -514,7 +515,7 @@ function buildCollectionCard(vo) {
     id: `card-${vo.id}`,
     serial,
     prototype: vo.prototype || '玉兔',
-    style: vo.prototype === '锦鲤' ? '好运红白款' : '月白桂花款',
+    style: '',
     name: vo.nickname || vo.prototype || '玉兔',
     birthday: todayKey(hatchTs),
     zodiac: translateZodiac(vo.zodiac) || getZodiac(hatchTs),
@@ -537,13 +538,12 @@ async function createCollectionCard() {
   if (Date.now() < pet.hatchAt) return { ok: false, message: '还没到破壳时间' };
   if (pet.collectionCard) return { ok: true, created: false, card: pet.collectionCard, pet };
   if (pet.demoMode) {
-    const isKoi = pet.prototype === '锦鲤';
     const personality = derivePersonality(pet);
     pet.collectionCard = {
       id: `card-${pet.id}`,
       serial: cardSerial(pet),
       prototype: pet.prototype,
-      style: isKoi ? '好运红白款' : '月白桂花款',
+      style: '',
       name: pet.name || pet.prototype,
       birthday: todayKey(pet.hatchAt),
       zodiac: getZodiac(pet.hatchAt),

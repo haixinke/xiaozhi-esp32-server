@@ -7,16 +7,16 @@
       <view class="portrait">
         <view class="portrait-aura"></view>
         <image wx:if="{{card.imageUrl}}" class="portrait-image" src="{{card.imageUrl}}" mode="aspectFill" show-menu-by-longpress />
-        <pet-avatar wx:else pet-type="{{card.prototype}}" size="{{250}}"></pet-avatar>
+        <pet-avatar wx:else pet-type="{{card.petType || card.prototype}}" size="{{250}}"></pet-avatar>
       </view>
       <text class="name">{{card.name}} <text class="gender">{{card.gender}}</text></text>
-      <text class="style">{{card.prototype}} · {{card.style}}</text>
+      <text wx:if="{{card.style}}" class="style">{{card.petType || card.prototype}} · {{card.style}}</text>
       <text class="personality">“{{card.personality}}”</text>
       <view class="stats"><view><text class="stat-label">生日</text><text class="stat-value">{{card.birthday}}</text></view><view><text class="stat-label">星座</text><text class="stat-value">{{card.zodiac}}</text></view><view><text class="stat-label">MBTI</text><text class="stat-value">{{card.mbti}}</text></view><view><text class="stat-label">血型</text><text class="stat-value">{{card.bloodType}}</text></view></view>
       <view class="record"><text>{{card.hatchQuality}}</text><text>初始主人 · {{card.originalOwner}}</text></view>
       <view class="serial-row"><text class="serial">{{card.serial}}</text><view class="mini-code"><view></view><view></view><view></view><view></view></view></view>
     </view>
-    <view class="actions"><button class="primary" bindtap="onProfile">查看它的档案</button><view class="action-row"><button class="secondary" bindtap="onSave">保存图片</button><button class="secondary" open-type="share">分享给好友</button></view><button class="text-button" bindtap="onAlbum">查看我的卡册</button></view>
+    <view class="actions"><view class="action-row"><button class="secondary" bindtap="onSave">保存图片</button><button class="secondary" open-type="share">分享给好友</button></view><button class="text-button" bindtap="onAlbum">查看我的卡册</button></view>
     <canvas canvas-id="shareCanvas" class="share-canvas"></canvas>
   </scroll-view>
 </view>

@@ -34,7 +34,7 @@ Page({
     const status = petStore.getDailyStatus();
     this.setData({
       eggCount: 1,
-      pet,
+      pet: { ...pet, petType: pet.prototype },
       stage,
       statusLine: stage === 'hatched' ? status.line : petStore.getCountdown(pet),
       actionLabel: stage === 'hatched' ? '去看看' : presentation.actionLabel,

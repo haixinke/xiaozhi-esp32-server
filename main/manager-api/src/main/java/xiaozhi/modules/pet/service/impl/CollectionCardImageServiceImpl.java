@@ -4,6 +4,7 @@ import com.volcengine.ark.runtime.model.images.generation.GenerateImagesRequest;
 import com.volcengine.ark.runtime.model.images.generation.ImagesResponse;
 import com.volcengine.ark.runtime.model.images.generation.ResponseFormat;
 import com.volcengine.ark.runtime.service.ArkService;
+import com.aliyun.oss.model.CannedAccessControlList;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpEntity;
@@ -14,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import xiaozhi.common.config.AliyunOssProperties;
 import xiaozhi.common.oss.OssService;
 import xiaozhi.modules.pet.config.SeedreamProperties;
 import xiaozhi.modules.pet.entity.PetEntity;
@@ -79,18 +79,15 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
     private final ArkService arkService;
     private final RestTemplate restTemplate;
     private final OssService ossService;
-    private final AliyunOssProperties ossProperties;
 
     public CollectionCardImageServiceImpl(SeedreamProperties seedreamProperties,
                                           ArkService arkService,
                                           RestTemplate restTemplate,
-                                          OssService ossService,
-                                          AliyunOssProperties ossProperties) {
+                                          OssService ossService) {
         this.seedreamProperties = seedreamProperties;
         this.arkService = arkService;
         this.restTemplate = restTemplate;
         this.ossService = ossService;
-        this.ossProperties = ossProperties;
     }
 
     @Override
@@ -124,7 +121,7 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
             }
 
             String ossKey = "eggbabe/cards/" + pet.getId() + ".png";
-            ossService.upload(ossKey, imageBytes);
+            ossService.upload(ossKey, imageBytes, CannedAccessControlList.PublicRead);
 
             String imageUrl = buildOssUrl(ossKey);
             log.info("收藏卡图片生成成功，petId={}, url={}", pet.getId(), imageUrl);
@@ -198,9 +195,6 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
     }
 
     private String buildOssUrl(String ossKey) {
-        return String.format("https://%s.%s/%s",
-                ossProperties.getBucketName(),
-                ossProperties.getEndpoint().replace("https://", "").replace("http://", ""),
-                ossKey);
+        return "https://oss.eggbabe.com/" + ossKey;
     }
 }

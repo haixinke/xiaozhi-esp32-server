@@ -9,8 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.model.CannedAccessControlList;
 import com.aliyun.oss.model.DeleteObjectsRequest;
+import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyun.oss.model.OSSObject;
+import com.aliyun.oss.model.PutObjectRequest;
 
 import cn.hutool.core.collection.ListUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -50,11 +53,29 @@ public class OssService {
      * @return ossKey
      */
     public String upload(String ossKey, byte[] data) {
+        return upload(ossKey, data, null);
+    }
+
+    /**
+     * 上传字节数组到OSS，可指定对象级 ACL
+     *
+     * @param ossKey 对象键
+     * @param data   字节数据
+     * @param acl    对象 ACL，为 null 时继承 bucket 权限
+     * @return ossKey
+     */
+    public String upload(String ossKey, byte[] data, CannedAccessControlList acl) {
         AssertUtils.isBlank(ossKey, ErrorCode.OSS_DELETE_FILE_ERROR, "ossKey");
         AssertUtils.isNull(data, ErrorCode.OSS_DELETE_FILE_ERROR, "data");
-        ossClient.putObject(ossProperties.getBucketName(), ossKey,
-                new ByteArrayInputStream(data));
-        log.debug("OSS上传成功, ossKey={}, size={}", ossKey, data.length);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(data.length);
+        if (acl != null) {
+            metadata.setObjectAcl(acl);
+        }
+        PutObjectRequest request = new PutObjectRequest(ossProperties.getBucketName(), ossKey,
+                new ByteArrayInputStream(data), metadata);
+        ossClient.putObject(request);
+        log.debug("OSS上传成功, ossKey={}, size={}, acl={}", ossKey, data.length, acl);
         return ossKey;
     }
 

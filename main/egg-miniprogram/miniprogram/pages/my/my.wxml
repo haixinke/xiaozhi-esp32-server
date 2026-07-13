@@ -4,7 +4,8 @@
   <view class="content">
 
     <view class="user-card" hover-class="user-card--pressed" bindtap="onTapUserCard">
-      <egg-avatar size="{{56}}" gradient-from="#9DB65B" gradient-to="#EDE78E"></egg-avatar>
+      <image wx:if="{{avatarUrl}}" class="user-avatar" src="{{avatarUrl}}" mode="aspectFill"></image>
+      <egg-avatar wx:else size="{{56}}" gradient-from="#9DB65B" gradient-to="#EDE78E"></egg-avatar>
       <view class="user-info">
         <text class="user-name">{{userName}}</text>
         <text class="user-sub">{{eggCount}} 只蛋宝宝</text>

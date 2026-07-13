@@ -1,20 +1,38 @@
 const petStore = require('../../utils/pet-store');
+const request = require('../../utils/request');
 
 Page({
-  data: { userName: '蛋友3024', eggCount: 0, pet: null, stage: '', statusLine: '', actionLabel: '' },
+  data: { userName: '蛋友3024', avatarUrl: '', eggCount: 0, pet: null, stage: '', statusLine: '', actionLabel: '' },
 
   onShow() {
-    const user = petStore.getUser();
+    this.loadUserProfile();
+    this.loadPetStatus();
+  },
+
+  loadUserProfile() {
+    request.get('/wechat/profile')
+      .then((profile) => {
+        petStore.syncUserProfile(profile);
+        this.applyUserData();
+      })
+      .catch(() => this.applyUserData());
+  },
+
+  applyUserData() {
+    const user = petStore.getUser() || {};
+    this.setData({ userName: user.nickname || '蛋友3024', avatarUrl: user.avatarUrl || '' });
+  },
+
+  loadPetStatus() {
     const pet = petStore.getPet();
     if (!pet) {
-      this.setData({ userName: (user && user.nickname) || '蛋友3024', eggCount: 0, pet: null });
+      this.setData({ eggCount: 0, pet: null });
       return;
     }
     const stage = petStore.getStage(pet);
     const presentation = petStore.getStagePresentation(stage);
     const status = petStore.getDailyStatus();
     this.setData({
-      userName: (user && user.nickname) || '蛋友3024',
       eggCount: 1,
       pet,
       stage,

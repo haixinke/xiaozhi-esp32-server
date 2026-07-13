@@ -20,6 +20,6 @@
 .check--on { background: #002900; border-color: #002900; }
 .agreement-text, .privacy-link { font-size: 22rpx; color: #85837C; }
 .privacy-link { color: #54632C; }
-.auth-button { height: 96rpx; line-height: 96rpx; border: none; border-radius: 999rpx; background: #002900; color: white; font-size: 30rpx; font-weight: 600; box-shadow: 0 14rpx 30rpx rgba(0,41,0,.18); }
+.auth-button { display: flex; align-items: center; justify-content: center; height: 96rpx; padding: 0; margin: 0; border: none; border-radius: 999rpx; background: #002900; color: white; font-size: 30rpx; font-weight: 600; box-shadow: 0 14rpx 30rpx rgba(0,41,0,.18); }
 .auth-button::after { border: none; }
 .auth-note { display: block; margin-top: 18rpx; text-align: center; font-size: 20rpx; color: #9B9992; }

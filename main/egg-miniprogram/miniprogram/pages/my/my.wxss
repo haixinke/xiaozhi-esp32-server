@@ -26,6 +26,8 @@
   box-sizing: border-box;
 }
 
+.user-avatar { width: 112rpx; height: 112rpx; border-radius: 50%; flex-shrink: 0; }
+
 .user-card--pressed {
   background: #F5F8ED;
 }

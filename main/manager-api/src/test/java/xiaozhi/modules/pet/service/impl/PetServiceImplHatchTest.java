@@ -26,6 +26,7 @@ import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
+import xiaozhi.modules.pet.config.PetAvatarProperties;
 import xiaozhi.modules.pet.dao.MemoryDao;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
@@ -83,11 +84,31 @@ class PetServiceImplHatchTest {
 
     @BeforeEach
     void setUp() {
+        PetAvatarProperties avatarProperties = buildAvatarProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, eventPublisher);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties);
         // LLM 不可用 → deriveMbti 走兜底(INFP)，不调 LLM
         when(llmService.isAvailable()).thenReturn(false);
         when(agentService.createAgent(any())).thenReturn(AGENT_ID);
+    }
+
+    private PetAvatarProperties buildAvatarProperties() {
+        PetAvatarProperties properties = new PetAvatarProperties();
+        properties.setFallbackUrl("https://oss.eggbabe.com/default-avatar/fish/fish-0.png");
+
+        PetAvatarProperties.Prototype koi = new PetAvatarProperties.Prototype();
+        koi.setBaseUrl("https://oss.eggbabe.com/default-avatar/fish/");
+        koi.setPrefix("fish");
+        koi.setCount(22);
+        properties.setKoi(koi);
+
+        PetAvatarProperties.Prototype rabbit = new PetAvatarProperties.Prototype();
+        rabbit.setBaseUrl("https://oss.eggbabe.com/default-avatar/rabbit/");
+        rabbit.setPrefix("rabbit");
+        rabbit.setCount(22);
+        properties.setRabbit(rabbit);
+
+        return properties;
     }
 
     private PetEntity eggPetReady() {
@@ -152,7 +173,9 @@ class PetServiceImplHatchTest {
         assertThat(updated.getMbti()).isEqualTo("INFP");
         assertThat(updated.getPersonality()).isNull();
         assertThat(updated.getPersonalityBrief()).isNotNull();
-        assertThat(updated.getAvatarUrl()).isNotNull();
+        assertThat(updated.getAvatarUrl())
+                .isNotNull()
+                .matches("^https://oss\\.eggbabe\\.com/default-avatar/(fish|rabbit)/(fish|rabbit)-\\d+\\.png$");
         assertThat(updated.getGender()).isIn("MALE", "FEMALE");
         assertThat(updated.getBloodType()).isIn("A", "B", "O", "AB");
         assertThat(updated.getUpdater()).isEqualTo(USER_ID);

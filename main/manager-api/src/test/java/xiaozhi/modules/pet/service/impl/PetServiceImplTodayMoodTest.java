@@ -20,6 +20,7 @@ import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
+import xiaozhi.modules.pet.config.PetAvatarProperties;
 import xiaozhi.modules.pet.constant.MoodLinePool;
 import xiaozhi.modules.pet.constant.TodayMood;
 import xiaozhi.modules.pet.dao.MemoryDao;
@@ -74,8 +75,28 @@ class PetServiceImplTodayMoodTest {
 
     @BeforeEach
     void setUp() {
+        PetAvatarProperties avatarProperties = buildAvatarProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, eventPublisher);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties);
+    }
+
+    private PetAvatarProperties buildAvatarProperties() {
+        PetAvatarProperties properties = new PetAvatarProperties();
+        properties.setFallbackUrl("https://oss.eggbabe.com/default-avatar/fish/fish-0.png");
+
+        PetAvatarProperties.Prototype koi = new PetAvatarProperties.Prototype();
+        koi.setBaseUrl("https://oss.eggbabe.com/default-avatar/fish/");
+        koi.setPrefix("fish");
+        koi.setCount(22);
+        properties.setKoi(koi);
+
+        PetAvatarProperties.Prototype rabbit = new PetAvatarProperties.Prototype();
+        rabbit.setBaseUrl("https://oss.eggbabe.com/default-avatar/rabbit/");
+        rabbit.setPrefix("rabbit");
+        rabbit.setCount(22);
+        properties.setRabbit(rabbit);
+
+        return properties;
     }
 
     private PetEntity hatchedPet() {

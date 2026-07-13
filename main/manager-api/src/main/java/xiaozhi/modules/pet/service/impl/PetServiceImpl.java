@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +36,7 @@ import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.entity.MemoryEntity;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.entity.UserProfileEntity;
+import xiaozhi.modules.pet.config.PetAvatarProperties;
 import xiaozhi.modules.pet.event.CollectionCardGenerationEvent;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.util.MbtiParser;
@@ -53,7 +53,6 @@ import xiaozhi.modules.pet.vo.UserProfileVO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -73,18 +72,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final InviteService inviteService;
     private final AgentService agentService;
     private final ApplicationEventPublisher eventPublisher;
-
-    @Value("${pet.avatar.koi-defaults:}")
-    private String koiDefaultsRaw;
-
-    @Value("${pet.avatar.rabbit-defaults:}")
-    private String rabbitDefaultsRaw;
-
-    @Value("${pet.avatar.koi:}")
-    private String koiAvatarRaw;
-
-    @Value("${pet.avatar.rabbit:}")
-    private String rabbitAvatarRaw;
+    private final PetAvatarProperties petAvatarProperties;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -256,8 +244,6 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             "社交牛杂症，独处也自洽。",
             "好奇星人，对一切新鲜事都想插嘴。"
     );
-
-    private static final String DEFAULT_AVATAR_URL = "https://example.com/egg-babe/avatar/default.png";
 
     private static final String MBTI_PROMPT = """
             根据以下八字和五行信息，推算这个AI宠物的MBTI人格类型。
@@ -541,30 +527,10 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     }
 
     /**
-     * 按原型取头像：合并默认池配置与扩展池配置（均为分号分隔），随机取一个；池空走兜底。
+     * 按原型从配置中随机取一张默认头像 URL。
      */
     private String randomAvatarUrl(String prototype) {
-        String defaultsRaw = PROTOTYPE_RABBIT.equals(prototype) ? rabbitDefaultsRaw : koiDefaultsRaw;
-        String extraRaw = PROTOTYPE_RABBIT.equals(prototype) ? rabbitAvatarRaw : koiAvatarRaw;
-
-        List<String> pool = new ArrayList<>();
-        splitAndAdd(pool, defaultsRaw);
-        splitAndAdd(pool, extraRaw);
-
-        if (pool.isEmpty()) {
-            return DEFAULT_AVATAR_URL;
-        }
-        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
-    }
-
-    private void splitAndAdd(List<String> pool, String raw) {
-        if (raw == null) return;
-        for (String part : raw.split(";")) {
-            String trimmed = part.trim();
-            if (!trimmed.isEmpty()) {
-                pool.add(trimmed);
-            }
-        }
+        return petAvatarProperties.randomAvatarUrl(prototype);
     }
 
     /**

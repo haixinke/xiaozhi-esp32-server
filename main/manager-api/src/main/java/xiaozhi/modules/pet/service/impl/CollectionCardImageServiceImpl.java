@@ -35,6 +35,12 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
 
     private static final DateTimeFormatter BIRTHDAY_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    private static final String PROTOTYPE_KOI = "锦鲤";
+    private static final String PROTOTYPE_RABBIT = "玉兔";
+
+    private static final String REFERENCE_IMAGE_RABBIT = "https://oss.eggbabe.com/cards-bg/card-rabbit.png";
+    private static final String REFERENCE_IMAGE_KOI = "https://oss.eggbabe.com/cards-bg/card-fish.png";
+
     private static final String PROMPT_TEMPLATE = """
             A cute IP character introduction card, 3D rendered in a fluffy felted wool texture style.
 
@@ -42,6 +48,7 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
             - Vertical card format with a wavy, cloud-like scalloped border (like frosting on a cake), with soft dimensional thickness and gentle drop shadows.
             - Creamy off-white background with dreamy translucent soap bubbles floating around, soft bokeh light spots, and subtle wave patterns at the bottom.
             - Centered large 3D IP character image in the upper-middle area, showing the full body of a cute plush toy-like creature.
+            - The IP character's appearance MUST closely match the reference image provided. Preserve the character's silhouette, colors, key features, and overall vibe from the reference, while rendering it as a 3D felted wool plush toy.
 
             **Top Section:**
             - Title in bold, rounded, bubbly Chinese characters: "我的电子宠物搭子✨" with a soft golden outline and slight 3D extrusion.
@@ -107,7 +114,8 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
 
         try {
             String prompt = buildPrompt(pet);
-            String generatedImageUrl = callSeedream(prompt);
+            String referenceImageUrl = resolveReferenceImageUrl(pet);
+            String generatedImageUrl = callSeedream(prompt, referenceImageUrl);
             if (StringUtils.isBlank(generatedImageUrl)) {
                 log.warn("Seedream 未返回图片，petId={}", pet.getId());
                 return null;
@@ -165,16 +173,33 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
         return hatchTime.format(BIRTHDAY_FORMATTER);
     }
 
-    private String callSeedream(String prompt) {
-        GenerateImagesRequest request = GenerateImagesRequest.builder()
+    private String resolveReferenceImageUrl(PetEntity pet) {
+        if (PROTOTYPE_RABBIT.equals(pet.getPrototype())) {
+            return REFERENCE_IMAGE_RABBIT;
+        }
+        if (PROTOTYPE_KOI.equals(pet.getPrototype())) {
+            return REFERENCE_IMAGE_KOI;
+        }
+        log.warn("未知的宠物原型，不使用参考图，prototype={}", pet.getPrototype());
+        return null;
+    }
+
+    private String callSeedream(String prompt, String referenceImageUrl) {
+        GenerateImagesRequest.Builder requestBuilder = GenerateImagesRequest.builder()
                 .model(seedreamProperties.getModel())
                 .prompt(prompt)
                 .responseFormat(ResponseFormat.Url)
                 .size(seedreamProperties.getSize())
-                .watermark(seedreamProperties.isWatermark())
-                .build();
+                .watermark(seedreamProperties.isWatermark());
 
-        ImagesResponse response = arkService.generateImages(request);
+        if (StringUtils.isNotBlank(referenceImageUrl)) {
+            requestBuilder.image(referenceImageUrl);
+            log.info("Seedream 使用参考图生成，model={}, image={}", seedreamProperties.getModel(), referenceImageUrl);
+        } else {
+            log.info("Seedream 使用纯文生图，model={}", seedreamProperties.getModel());
+        }
+
+        ImagesResponse response = arkService.generateImages(requestBuilder.build());
         if (response == null || response.getData() == null || response.getData().isEmpty()) {
             log.warn("Seedream 响应为空");
             return null;

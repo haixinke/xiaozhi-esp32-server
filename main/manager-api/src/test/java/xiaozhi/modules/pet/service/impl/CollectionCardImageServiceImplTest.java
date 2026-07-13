@@ -96,8 +96,35 @@ class CollectionCardImageServiceImplTest {
         assertThat(request.getSize()).isEqualTo("2K");
         assertThat(request.getWatermark()).isTrue();
         assertThat(request.getPrompt()).contains("昵称: 小蛋");
+        assertThat(request.getImage()).contains("https://oss.eggbabe.com/cards-bg/card-rabbit.png");
 
         verify(ossService).upload("eggbabe/cards/pet-1.png", imageBytes, CannedAccessControlList.PublicRead);
+    }
+
+    @Test
+    @DisplayName("generate - 锦鲤原型使用鱼类参考图")
+    void generate_koiPrototype_usesFishReferenceImage() {
+        byte[] imageBytes = new byte[] { 1, 2, 3 };
+
+        ImagesResponse response = new ImagesResponse();
+        ImagesResponse.Image image = new ImagesResponse.Image();
+        image.setUrl(GENERATED_IMAGE_URL);
+        response.setData(List.of(image));
+
+        when(arkService.generateImages(any(GenerateImagesRequest.class))).thenReturn(response);
+        when(restTemplate.exchange(eq(URI.create(GENERATED_IMAGE_URL)), eq(HttpMethod.GET),
+                any(HttpEntity.class), eq(byte[].class)))
+                .thenReturn(ResponseEntity.ok(imageBytes));
+
+        PetEntity pet = pet();
+        pet.setPrototype("锦鲤");
+        service.generate(pet);
+
+        ArgumentCaptor<GenerateImagesRequest> requestCaptor = ArgumentCaptor.forClass(GenerateImagesRequest.class);
+        verify(arkService).generateImages(requestCaptor.capture());
+
+        GenerateImagesRequest request = requestCaptor.getValue();
+        assertThat(request.getImage()).contains("https://oss.eggbabe.com/cards-bg/card-fish.png");
     }
 
     private PetEntity pet() {

@@ -1,7 +1,7 @@
 <view class="page">
   <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
 
-  <scroll-view class="content" scroll-y>
+  <scroll-view wx:if="{{authChecked}}" class="content" scroll-y>
     <view class="expo-row">
       <view class="expo-entry" bindtap="onExhibitionDemo" hover-class="pressable--pressed"><text class="expo-spark">✦</text><text>{{pet && pet.demoMode ? '查看六个场景' : '展会快速体验'}}</text></view>
       <view wx:if="{{pet && pet.demoMode}}" class="expo-exit" bindtap="onExitExhibition">退出体验</view>

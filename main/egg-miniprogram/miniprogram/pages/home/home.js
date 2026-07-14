@@ -13,18 +13,45 @@ Page({
     feedback: '',
     eggMotion: '',
     cuddleProgress: 0,
-    actionLabel: '孵化修炼手册'
+    actionLabel: '孵化修炼手册',
+    authChecked: false
   },
 
+  _navigating: false,
+  
   onLoad() {
-    // 同步检查登录态：未注册用户直接重定向到欢迎页，不渲染首页内容
+    // 同步检查登录态：未注册用户留在空白页(不渲染内容)，等 app 登录完成后再决定去向
     const cached = auth.getSession();
-    if (!cached || auth.isExpired() || !cached.hasPhone) {
+    if (cached && !auth.isExpired() && cached.hasPhone) {
+      // 本地有有效登录态，直接放行渲染
+      this.setData({ authChecked: true });
+      return;
+    }
+    // 本地无有效登录态，等待 app 层异步登录完成后再判断
+    const app = getApp();
+    if (app.globalData.authReady && typeof app.globalData.authReady.then === 'function') {
+      app.globalData.authReady.then((session) => {
+        if (session && session.hasPhone) {
+          this.setData({ authChecked: true });
+        } else if (!this._navigating) {
+          this._navigating = true;
+          wx.reLaunch({ url: '/pages/welcome/welcome' });
+        }
+      }).catch(() => {
+        if (!this._navigating) {
+          this._navigating = true;
+          wx.reLaunch({ url: '/pages/welcome/welcome' });
+        }
+      });
+    } else if (!this._navigating) {
+      // authReady 不存在时兜底跳转
+      this._navigating = true;
       wx.reLaunch({ url: '/pages/welcome/welcome' });
     }
   },
 
   onShow() {
+    if (!this.data.authChecked) return;
     const cached = petStore.getPet();
     if (cached) {
       this.renderPet(cached);

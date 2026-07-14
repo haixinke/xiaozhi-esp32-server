@@ -27,7 +27,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
-import xiaozhi.common.config.AliyunOssProperties;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.oss.OssService;
@@ -61,8 +60,6 @@ class WechatServiceImplProfileTest {
     private xiaozhi.common.redis.RedisUtils redisUtils;
     @Mock
     private OssService ossService;
-    @Mock
-    private AliyunOssProperties ossProperties;
 
     private WechatServiceImpl service;
 
@@ -79,7 +76,7 @@ class WechatServiceImplProfileTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, ossService, ossProperties);
+                inviteService, redisUtils, ossService);
         setField(BaseServiceImpl.class, service, "baseDao", wechatUserDao);
     }
 
@@ -152,14 +149,12 @@ class WechatServiceImplProfileTest {
     @DisplayName("uploadAvatar：OSS 可用时返回公开 URL")
     void uploadAvatar_success_returnsPublicUrl() throws Exception {
         when(ossService.isEnabled()).thenReturn(true);
-        when(ossService.upload(any(), any())).thenReturn("avatar/7/uuid.png");
-        when(ossProperties.getBucketName()).thenReturn("test-bucket");
-        when(ossProperties.getEndpoint()).thenReturn("https://oss-cn-shanghai.aliyuncs.com");
+        when(ossService.upload(any(), any(), any())).thenReturn("eggbabe/avatar/7/uuid.png");
 
         MultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "x".getBytes());
         String url = service.uploadAvatar(7L, file);
 
-        assertThat(url).startsWith("https://test-bucket.oss-cn-shanghai.aliyuncs.com/avatar/7/");
+        assertThat(url).startsWith("https://oss.eggbabe.com/eggbabe/avatar/7/");
         assertThat(url).endsWith(".png");
     }
 

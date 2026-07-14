@@ -89,7 +89,7 @@ class WechatServiceImplTest {
         phoneBody = PHONE_OK;
 
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, null, null) {
+                inviteService, redisUtils, null) {
             @Override
             String httpPost(String url, String jsonBody) {
                 postedUrls.add(url);

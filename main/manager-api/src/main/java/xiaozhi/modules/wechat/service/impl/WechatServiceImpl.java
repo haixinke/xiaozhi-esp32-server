@@ -21,7 +21,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import xiaozhi.common.config.AliyunOssProperties;
+import com.aliyun.oss.model.CannedAccessControlList;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.oss.OssService;
@@ -68,7 +68,6 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private final xiaozhi.modules.invite.service.InviteService inviteService;
     private final RedisUtils redisUtils;
     private final OssService ossService;
-    private final AliyunOssProperties ossProperties;
 
     @Value("${eggbaby.miniprogram.appid:${wechat.miniprogram.appid:}}")
     private String appid;
@@ -303,20 +302,14 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
 
         String ext = extensionOf(file.getContentType());
         String uuid = IdUtil.fastSimpleUUID();
-        String ossKey = "avatar/" + userId + "/" + uuid + "." + ext;
+        String ossKey = "eggbabe/avatar/" + userId + "/" + uuid + "." + ext;
         try {
-            ossService.upload(ossKey, file.getBytes());
+            ossService.upload(ossKey, file.getBytes(), CannedAccessControlList.PublicRead);
         } catch (Exception e) {
             log.error("头像上传OSS失败 userId={}", userId, e);
             throw new RenException(ErrorCode.OSS_UPLOAD_FILE_ERROR);
         }
-        return publicUrl(ossKey);
-    }
-
-    private String publicUrl(String ossKey) {
-        String endpoint = ossProperties.getEndpoint();
-        String clean = endpoint.replaceFirst("^https?://", "");
-        return "https://" + ossProperties.getBucketName() + "." + clean + "/" + ossKey;
+        return "https://oss.eggbabe.com/" + ossKey;
     }
 
     private static String extensionOf(String contentType) {

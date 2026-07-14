@@ -76,7 +76,7 @@ class WechatServiceImplLoginTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, null, null) {
+                inviteService, redisUtils, null) {
             @Override
             JSONObject jscode2session(String code) {
                 return JSONUtil.parseObj(JSCODE_OK);

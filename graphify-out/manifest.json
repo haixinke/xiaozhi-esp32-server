@@ -1,4 +1,1512 @@
 {
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/docs/images/__init__.py": {
+    "mtime": 1776309435.3983374,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/start.py": {
+    "mtime": 1779676929.6327853,
+    "hash": "aad608808f8131c9582678318381406a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/__init__.py": {
+    "mtime": 1779676929.6328874,
+    "hash": "6d76cacc6b6b4d939d1ff041722fa4c4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/core/detector.py": {
+    "mtime": 1779676929.6339238,
+    "hash": "18adeec88017749071d2c73f1e9e4962"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/core/__init__.py": {
+    "mtime": 1779676929.6338103,
+    "hash": "0823a2454511b4f659dc23a1c392481a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/core/detector_assets.py": {
+    "mtime": 1779676929.6339967,
+    "hash": "2e81c944bb0af096fc1033076afde645"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/core/microphone.py": {
+    "mtime": 1779676929.6340642,
+    "hash": "460ea0b15d1d1b29b41e125d9bb4aa84"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/config/config_loader.py": {
+    "mtime": 1779676929.6336179,
+    "hash": "616faa8fba40c7964512c6af8f7b761d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/config/__init__.py": {
+    "mtime": 1779676929.6332202,
+    "hash": "fbc32816aaee9b8ad3ffa21b6b065e71"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/config/logging_setup.py": {
+    "mtime": 1779676929.6337001,
+    "hash": "21e2b9a523a237e601cf9da413e28fac"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/plugins/wake_word.py": {
+    "mtime": 1779676929.634503,
+    "hash": "d23fa113b8dd259b260f9880d84febda"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/plugins/__init__.py": {
+    "mtime": 1779676929.6341567,
+    "hash": "420d30b2e0e89417676421af9999a278"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/plugins/audio.py": {
+    "mtime": 1779676929.6342213,
+    "hash": "8b681ebd4d68e44e3cec9b963c814d4f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/plugins/manager.py": {
+    "mtime": 1779676929.6343272,
+    "hash": "287b3ca1e919ac8ca632c683e0b7fe4c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/plugins/base.py": {
+    "mtime": 1779676929.6342747,
+    "hash": "aada74da92f9bbb65f579f18ea94c57a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/bridge/__init__.py": {
+    "mtime": 1779676929.6329806,
+    "hash": "2f94b894b9392d1b903c0ccd39f51173"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/bridge/event_bridge.py": {
+    "mtime": 1779676929.6330607,
+    "hash": "4c81d67b795daa24317b28f746482300"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/runtime/__init__.py": {
+    "mtime": 1779676929.6346288,
+    "hash": "af583a4b8cf2c75c3c13b761b5c49b1f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/runtime/http_server.py": {
+    "mtime": 1779676929.6348839,
+    "hash": "03df7cc2987be7a8c972129f5a5fdad0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/runtime/app.py": {
+    "mtime": 1779676929.634684,
+    "hash": "a331c69f9e451a6a312ed22305db52d0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/uno.config.ts": {
+    "mtime": 1776309435.5112638,
+    "hash": "fdf12add856240c3c18dd396e975afc3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/manifest.config.ts": {
+    "mtime": 1776309435.4921293,
+    "hash": "c62fd35ce70b2850b38373019c86b956"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/pages.config.ts": {
+    "mtime": 1776309435.4922752,
+    "hash": "7e6a8d914998af104d91b64711e27e2b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/vite.config.ts": {
+    "mtime": 1776309435.5135767,
+    "hash": "5408c93ffaebaa3970feed5dbef22269"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/eslint.config.mjs": {
+    "mtime": 1776309435.4912715,
+    "hash": "f4216962ae9c0125307a8160f70d7d6d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/scripts/postupgrade.js": {
+    "mtime": 1776309435.4939764,
+    "hash": "f3cfb3165e3956a68349863065eed523"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/App.vue": {
+    "mtime": 1776309435.494052,
+    "hash": "cdb55413854a00c0d3f3cdc4e9a4252f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/main.ts": {
+    "mtime": 1776309435.4966996,
+    "hash": "709a201180e111cf14cbc9108ed69122"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/env.d.ts": {
+    "mtime": 1776309435.4950328,
+    "hash": "79b0504f5ea3f19ca96bd4931680c814"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/typings.d.ts": {
+    "mtime": 1776309435.510724,
+    "hash": "e810717decfef8b0ee6d48320ac2e42e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/typings.ts": {
+    "mtime": 1776309435.510786,
+    "hash": "7b94c180008a285ed516ecf6887a7ad4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/types/uni-pages.d.ts": {
+    "mtime": 1777168900.8604538,
+    "hash": "97207a00fa45bfa6f1e0213372cb5086"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/types/async-component.d.ts": {
+    "mtime": 1777169874.2590852,
+    "hash": "e3c40a7eba9ffdf629779563e104dfc2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/types/auto-import.d.ts": {
+    "mtime": 1777169875.7359066,
+    "hash": "b8e69e7e4b4139d90e6d806dbb9ba8c5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/types/components.d.ts": {
+    "mtime": 1777168899.741716,
+    "hash": "f10bec43685e3a76aa76e7e5de5d994a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/types/async-import.d.ts": {
+    "mtime": 1777169874.2586205,
+    "hash": "33a1a5bcbec92108117a97cbb90685a8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/utils/toast.ts": {
+    "mtime": 1776309435.5110695,
+    "hash": "211c323b5ce6c2dd636d47a320944794"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/utils/platform.ts": {
+    "mtime": 1776309435.5110152,
+    "hash": "62df3f2c11297442dab2c1bfa8f75f8f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/utils/uploadFile.ts": {
+    "mtime": 1776309435.5111494,
+    "hash": "cb3c2db907070e858ed324ff1ef7c390"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/utils/index.ts": {
+    "mtime": 1781660547.616861,
+    "hash": "62498a1955aa8f798152f7a715a5610e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/components/custom-tabs/index.vue": {
+    "mtime": 1776309435.4949796,
+    "hash": "a9aa1a3ba32c945c8f549f8fdd0de461"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/layouts/default.vue": {
+    "mtime": 1776309435.4963439,
+    "hash": "773da08e5e7d267235f51e5fd0f06d6e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/layouts/tabbar.vue": {
+    "mtime": 1776309435.4966486,
+    "hash": "582891f674a7217c418e3310172e41b6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/layouts/fg-tabbar/tabbarList.ts": {
+    "mtime": 1776309435.4965994,
+    "hash": "bf3a4cf80dd8740f5ab4283a267796a5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/layouts/fg-tabbar/tabbar.ts": {
+    "mtime": 1776309435.496529,
+    "hash": "35c581d3e8723b924a2747f6728643a7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/layouts/fg-tabbar/fg-tabbar.vue": {
+    "mtime": 1776309435.4964266,
+    "hash": "625d8f2f297cb84ffbd52af360cd1064"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/http/request/enum.ts": {
+    "mtime": 1776309435.4955215,
+    "hash": "c4e45b23f33f5cb270bfc9c43483386c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/http/request/types.ts": {
+    "mtime": 1776309435.4955664,
+    "hash": "4f74977bfaa902cc2837c10b3ea794a0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/http/request/alova.ts": {
+    "mtime": 1776309435.4954658,
+    "hash": "e5e9610ad76d7a564331a079da53c1f9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/hooks/useUpload.ts": {
+    "mtime": 1776309435.4952784,
+    "hash": "6eea8b8947c6ea4696af6813470a0ede"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/hooks/usePageAuth.ts": {
+    "mtime": 1776309435.4951446,
+    "hash": "9fbfe52beba23bad026dc85e736e03bc"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/hooks/useRequest.ts": {
+    "mtime": 1776309435.4952002,
+    "hash": "c6ee4ee34ce2bc99b8e4eb04949fbce7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/auth.ts": {
+    "mtime": 1776309435.494284,
+    "hash": "07365b82ac111a9fee1a8d5048461c9f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/chat-history/chat-history.ts": {
+    "mtime": 1776309435.4943655,
+    "hash": "b399672fa159998f65d937703a29f073"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/chat-history/types.ts": {
+    "mtime": 1776309435.494477,
+    "hash": "6b197f1178b6d8ae300655752b7d7816"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/chat-history/index.ts": {
+    "mtime": 1776309435.4944167,
+    "hash": "396cd41294104dcec89b8650fbf6bc0d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/voiceprint/voiceprint.ts": {
+    "mtime": 1776309435.4948442,
+    "hash": "d0e0767edcf1495e6c2bb072fb2cd098"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/voiceprint/types.ts": {
+    "mtime": 1776309435.4947853,
+    "hash": "49cdc68ceb55da150d13a8926b5d5291"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/voiceprint/index.ts": {
+    "mtime": 1776309435.4947348,
+    "hash": "a72e7c6804c479d09c1e07226d0ba6e0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/agent/agent.ts": {
+    "mtime": 1776309435.4941757,
+    "hash": "3babf8949b486d371dd7259c3fd58499"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/agent/types.ts": {
+    "mtime": 1776309435.49423,
+    "hash": "d715717e85caa8b766038f58ba7fc799"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/device/types.ts": {
+    "mtime": 1776309435.4946585,
+    "hash": "a986185f368abc249ae71753622c0ffc"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/device/device.ts": {
+    "mtime": 1776309435.4945598,
+    "hash": "b939e88d25ee1271517d08226eb767ec"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/api/device/index.ts": {
+    "mtime": 1776309435.4946103,
+    "hash": "5ab53a3410f031c564e5ced19f57120f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/i18n/de.ts": {
+    "mtime": 1777367662.851557,
+    "hash": "7a8a03f53f6c79547788efb8b2547fad"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/i18n/zh_TW.ts": {
+    "mtime": 1777367662.8597486,
+    "hash": "1f6bb123e730bc5732e1f6e0e1a25700"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/i18n/pt_BR.ts": {
+    "mtime": 1777367662.8556113,
+    "hash": "ca5adeae23fb588ace2fe9ca71868ffd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/i18n/en.ts": {
+    "mtime": 1777367662.8526614,
+    "hash": "6fdbaf00613cfed3460c9e10f4eaaea1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/i18n/zh_CN.ts": {
+    "mtime": 1777367662.8587558,
+    "hash": "1f5d39d0207bec2311ba47622a6b1cbc"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/i18n/vi.ts": {
+    "mtime": 1777367662.8576317,
+    "hash": "51b6fdfa585988821bbe28e3f0e3a539"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/i18n/index.ts": {
+    "mtime": 1776309435.4958599,
+    "hash": "854f8037763c0997321cbb15a3075359"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/settings/index.vue": {
+    "mtime": 1781660902.424802,
+    "hash": "4dd7e7abde30e4e04fd925071248fa2b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/chat-history/index.vue": {
+    "mtime": 1776309435.4977252,
+    "hash": "1f708f9cb5a8bfe44fb66cf722af742d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/chat-history/detail.vue": {
+    "mtime": 1776309435.4976318,
+    "hash": "619d500f5e1d10564d038d5d3f1e0bf1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/voiceprint/index.vue": {
+    "mtime": 1776309435.4996052,
+    "hash": "06287a5503619af31d70c7818e0691b5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/agent/index.vue": {
+    "mtime": 1776309435.4971936,
+    "hash": "9d5c421f5ae2e178a3004b709f9690e9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/agent/speedPitch.vue": {
+    "mtime": 1776309435.4973826,
+    "hash": "bfc83bae0cacb9aaa5467032abb83999"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/agent/tools.vue": {
+    "mtime": 1776309435.4974532,
+    "hash": "c03e78366a76e640e537585d01e923c4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/agent/edit.vue": {
+    "mtime": 1776309435.497079,
+    "hash": "abdfedceee5fe1b35a73567a052c6649"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/agent/provider.vue": {
+    "mtime": 1776309435.4972925,
+    "hash": "5e8ba6ca3bac365c97bfacf11cd2f732"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/register/index.vue": {
+    "mtime": 1776309435.499282,
+    "hash": "8590d58a0590071edb20977884798a46"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/forgot-password/index.vue": {
+    "mtime": 1776309435.4983704,
+    "hash": "a127e9c5d3786627d68e2b7c60f48e19"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/index/index.vue": {
+    "mtime": 1776309435.4985664,
+    "hash": "e8f3c59f15489193d0ccb1c76ebc5a6e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/device-config/index.vue": {
+    "mtime": 1776309435.498159,
+    "hash": "101d2730ffbeba8606e4760ac7ef4063"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/device-config/components/wifi-selector.vue": {
+    "mtime": 1777367662.860542,
+    "hash": "f9659f07e1bb660e7b130b2768f7a8ee"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/device-config/components/wifi-config.vue": {
+    "mtime": 1777367662.8603406,
+    "hash": "7339c8b4639d907568ba94e8650590bf"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/device-config/components/ultrasonic-config.vue": {
+    "mtime": 1776309435.4978576,
+    "hash": "6b37064c713fa42c1165fbfe8c89455a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/device/index.vue": {
+    "mtime": 1776309435.498258,
+    "hash": "fb9a9ea38f46a4807cfbacac2ce349ae"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/login/index.vue": {
+    "mtime": 1776309435.4986854,
+    "hash": "4210a3ec7d6279873bab27c1bfcd5f4e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/login/user-agreement-zh.vue": {
+    "mtime": 1776309435.4991505,
+    "hash": "271573f7e166b35b11fb5b06042a37fc"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/login/user-agreement-en.vue": {
+    "mtime": 1776309435.4990158,
+    "hash": "89c1eba1d4c4c8e18ae17e3a5f6a71e6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/login/privacy-policy-en.vue": {
+    "mtime": 1776309435.4987829,
+    "hash": "a04468325259b64321a5a9c1fd73dfc9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages/login/privacy-policy-zh.vue": {
+    "mtime": 1776309435.4988983,
+    "hash": "a45690239b8ba3ea3e18868d16bec7e3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/pages-sub/demo/index.vue": {
+    "mtime": 1776309435.4968731,
+    "hash": "7a3bc9d90f7bd9746d9d9069c8e7e948"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/store/plugin.ts": {
+    "mtime": 1776309435.5103245,
+    "hash": "153eba61419ce3ee02b03eadeb885541"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/store/index.ts": {
+    "mtime": 1776309435.5102072,
+    "hash": "6bf799651c40155215634c75adcf8ecf"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/store/provider.ts": {
+    "mtime": 1776309435.510382,
+    "hash": "b1cadfd06d6c6ce1df5a9cd0793700c8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/store/speedPitch.ts": {
+    "mtime": 1776309435.5104437,
+    "hash": "d836c07a8f36febf511f46d431c1c3b1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/store/config.ts": {
+    "mtime": 1776309435.510142,
+    "hash": "4bc10eae2399b4b6ae1248e457433b18"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/store/user.ts": {
+    "mtime": 1776309435.510503,
+    "hash": "d989a8f6d58b142f82a503b0ec36bf67"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/store/lang.ts": {
+    "mtime": 1776309435.5102658,
+    "hash": "c83a0dc239b32a38753dc7906b20354a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/src/router/interceptor.ts": {
+    "mtime": 1776309435.4997318,
+    "hash": "4713199cfea08b9b4d093470807698ac"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/performance_tester.py": {
+    "mtime": 1776309435.964087,
+    "hash": "e26f11f470db7d032793779058a29e23"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/test_volmem0_api.py": {
+    "mtime": 1781660547.9177785,
+    "hash": "18be4f90990d87ba5c1dd4747f270468"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/verify_graph_tables.py": {
+    "mtime": 1781660547.9181592,
+    "hash": "076b7278cc75ff6c6748822eb1382022"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/app.py": {
+    "mtime": 1781660547.6925013,
+    "hash": "82ec22ec03224fde4daa96af457be28b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/check_tables.py": {
+    "mtime": 1781660547.693503,
+    "hash": "9aed290528b73c37ce7dfd5499179bee"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/auth.py": {
+    "mtime": 1776309435.8600438,
+    "hash": "c882855617c06f2dde869d25375c79f3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/websocket_server.py": {
+    "mtime": 1782708953.6059134,
+    "hash": "518634de9bdbe68088cc90f3645bdb61"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/http_server.py": {
+    "mtime": 1776309435.861704,
+    "hash": "f80289140a75fd24886fdd36e0150b4a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/connection.py": {
+    "mtime": 1784027609.4805813,
+    "hash": "22a4f6330cec7cc4e5f4c4cdaa8fb679"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/helloHandle.py": {
+    "mtime": 1776309435.8604877,
+    "hash": "b059449e82eebc0e6ff7dd2f644cae1c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/intentHandler.py": {
+    "mtime": 1777367662.8716018,
+    "hash": "a5f2c154acb2fcd24b8506fd1c279e52"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textMessageHandlerRegistry.py": {
+    "mtime": 1776309435.8615153,
+    "hash": "49223d631b8bee23b8d266cfb1dbc1ad"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/sendAudioHandle.py": {
+    "mtime": 1781660902.436805,
+    "hash": "c63121c771fa34d554d5551b6f82b6b5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/abortHandle.py": {
+    "mtime": 1777367662.8714774,
+    "hash": "67438a56a4bf680db445f7f29861346b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textMessageHandler.py": {
+    "mtime": 1776309435.8614402,
+    "hash": "48f60a31b6f0994a99160e5ba8085381"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textHandle.py": {
+    "mtime": 1776309435.8609097,
+    "hash": "aa4ed7f38f6ab3900f456c93081c03c0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/reportHandle.py": {
+    "mtime": 1781660547.7039242,
+    "hash": "c6f367f422658f0549e3dbe0bfebfd65"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/receiveAudioHandle.py": {
+    "mtime": 1780208159.3716438,
+    "hash": "bcff8b0416681878566661d18c4d0558"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textMessageType.py": {
+    "mtime": 1776309435.8616436,
+    "hash": "61163b8084849253525cdb134f3528de"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textMessageProcessor.py": {
+    "mtime": 1776309435.8615842,
+    "hash": "cb98b7b16df55d16d7aad3d3465e01c9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textHandler/mcpMessageHandler.py": {
+    "mtime": 1776309435.861276,
+    "hash": "74c81814e2b8ef18b94aca48d639574b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textHandler/listenMessageHandler.py": {
+    "mtime": 1781660902.4370334,
+    "hash": "31e19c39dfe61469db292df711bf7108"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textHandler/iotMessageHandler.py": {
+    "mtime": 1776309435.8611445,
+    "hash": "9aaa513a1920fe65a20fb2563d542f97"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textHandler/helloMessageHandler.py": {
+    "mtime": 1776309435.8610907,
+    "hash": "41c04355f58582e1e867c2682cf45ccb"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textHandler/pingMessageHandler.py": {
+    "mtime": 1776309435.8613327,
+    "hash": "2c8c5111af40b4f8dff48609d11d456d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textHandler/abortMessageHandler.py": {
+    "mtime": 1776309435.8610227,
+    "hash": "ac9f7899a5e0b2d8efd689a40140cbed"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/handle/textHandler/serverMessageHandler.py": {
+    "mtime": 1776309435.8613806,
+    "hash": "19af8b1d2f058f6878119e66d1813acf"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/unified_tool_handler.py": {
+    "mtime": 1776309435.8678706,
+    "hash": "edba97f598bda6e99e869362d0350ead"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/__init__.py": {
+    "mtime": 1776309435.8660681,
+    "hash": "7215ee9c7d9dc229d2921a40e899ec5f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/unified_tool_manager.py": {
+    "mtime": 1776309435.867966,
+    "hash": "cde96239b227a882af87ebcb1dde9f44"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/mcp_endpoint/mcp_endpoint_handler.py": {
+    "mtime": 1776309435.86729,
+    "hash": "9e495eebc502b98a3774cc69b5a0da22"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/mcp_endpoint/mcp_endpoint_client.py": {
+    "mtime": 1776309435.8670688,
+    "hash": "a3a454d9b3a04845fe71fe871b0b0db1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/mcp_endpoint/__init__.py": {
+    "mtime": 1776309435.8669746,
+    "hash": "7a404138d7f264e191da22d6b706b6f1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/mcp_endpoint/mcp_endpoint_executor.py": {
+    "mtime": 1776309435.8671381,
+    "hash": "e7a2648f108f0b7d84c882d41fcf1b42"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/device_iot/iot_handler.py": {
+    "mtime": 1776309435.8665266,
+    "hash": "6dd7bfce36e8fa8350966823c277427f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/device_iot/iot_executor.py": {
+    "mtime": 1776309435.8664708,
+    "hash": "75b8fbf3dd8ba970d5c9cce51b5e9038"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/device_iot/__init__.py": {
+    "mtime": 1776309435.866327,
+    "hash": "0c1a495a90f379623cd0567356de86f2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/device_iot/iot_descriptor.py": {
+    "mtime": 1776309435.8663776,
+    "hash": "0dd98dfb2d7da875bed4d4a76e1bdca6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/device_mcp/mcp_handler.py": {
+    "mtime": 1776309435.8668938,
+    "hash": "8b604422af3bec74d4b97d64563a7de9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/device_mcp/__init__.py": {
+    "mtime": 1776309435.8666065,
+    "hash": "7163ff42d282996590aa8c230b953fd3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/device_mcp/mcp_executor.py": {
+    "mtime": 1776309435.8667288,
+    "hash": "cb487338f10cdfdd03d090ee6fe6db3a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/device_mcp/mcp_client.py": {
+    "mtime": 1776309435.8666606,
+    "hash": "0e03bbda88813550a39ece668e00adb2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/server_mcp/__init__.py": {
+    "mtime": 1776309435.867365,
+    "hash": "eee0e0055894168e1ff23b05d9e743b2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/server_mcp/mcp_executor.py": {
+    "mtime": 1776309435.8675332,
+    "hash": "3b630c5f68ca89c43c3eaa1190508b12"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/server_mcp/mcp_client.py": {
+    "mtime": 1776309435.8674574,
+    "hash": "ae1a8c3936344f7e40bbd9ea13485025"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/server_mcp/mcp_manager.py": {
+    "mtime": 1776309435.8676248,
+    "hash": "1a867ca2d6e77bca85034430984728e6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/server_plugins/__init__.py": {
+    "mtime": 1776309435.8677025,
+    "hash": "32b0feb0d552161f9b4148692c17c1f2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/server_plugins/plugin_executor.py": {
+    "mtime": 1779676929.6367154,
+    "hash": "dc2d6fc15c7101869dda9a991ccb0a55"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/base/__init__.py": {
+    "mtime": 1776309435.8661416,
+    "hash": "c81149afc31c016c5ca75b3f96c11808"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/base/tool_types.py": {
+    "mtime": 1776309435.8662567,
+    "hash": "761aefa8dfe24e60d1631dd9adbcdf34"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/base/tool_executor.py": {
+    "mtime": 1776309435.8662062,
+    "hash": "0eaefe635d8a10a0fb823087db3bfdd1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/system_prompt.py": {
+    "mtime": 1776309435.8651466,
+    "hash": "eef20b95fd22db42b532c7f3c555da17"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/base.py": {
+    "mtime": 1776309435.8643498,
+    "hash": "597c8ad4f4a81ec38dcacc71ab12cf72"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/fastgpt/fastgpt.py": {
+    "mtime": 1776309435.8646314,
+    "hash": "c5c7fa9c67f58624e3c82b55fff4b538"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/gemini/gemini.py": {
+    "mtime": 1776309435.8647437,
+    "hash": "e33dc5c75837476379e8669586a98f08"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/homeassistant/homeassistant.py": {
+    "mtime": 1777367662.8728833,
+    "hash": "c296d870bd734d203808d12280c8eb19"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/xinference/xinference.py": {
+    "mtime": 1777367662.8733847,
+    "hash": "aaa38dad83e21458bea958beecb97983"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/AliBL/AliBL.py": {
+    "mtime": 1776309435.8642936,
+    "hash": "97aa7054ecdcdd7fd1c98a9acec96e94"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/coze/coze.py": {
+    "mtime": 1776309435.8644388,
+    "hash": "2e7225fa114bb996db5a90f6760f1c43"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/ollama/ollama.py": {
+    "mtime": 1777367662.8730264,
+    "hash": "9d7c7ed39527866025495a3ef990ea80"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/dify/dify.py": {
+    "mtime": 1776309435.8645463,
+    "hash": "e222342e0277c222ec655f23c5613384"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/llm/openai/openai.py": {
+    "mtime": 1777367662.8731685,
+    "hash": "62d909dbbee1874e3d19bf102eb3e212"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/memory/base.py": {
+    "mtime": 1776309435.865338,
+    "hash": "1f8b4c3e37fe8bf13b5edf605a700ac9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/memory/mem_local_short/mem_local_short.py": {
+    "mtime": 1776309435.8656087,
+    "hash": "c04b53b4fba59466908e35f5823b397b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/memory/powermem/powermem.py": {
+    "mtime": 1782292718.0243876,
+    "hash": "0743ab560bb67754123bea65922b20ab"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/memory/mem0ai/mem0ai.py": {
+    "mtime": 1777367662.873551,
+    "hash": "b6f11af48291caf45d7e405feb81936c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/memory/mem_report_only/mem_report_only.py": {
+    "mtime": 1776608936.5487216,
+    "hash": "c69aa4e48f92dd14b8a2415486be474f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/memory/volmem0/__init__.py": {
+    "mtime": 1781660547.7085986,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/memory/volmem0/volmem0.py": {
+    "mtime": 1781660547.7093403,
+    "hash": "d4c62f7a19fb74df863b50c9731c0a5c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/memory/nomem/nomem.py": {
+    "mtime": 1776309435.8658013,
+    "hash": "3f7f982982a19f999ca369e99f29739f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/vllm/openai.py": {
+    "mtime": 1776309435.870208,
+    "hash": "0fa5607852b773a2d77156705c85a1a6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/vllm/base.py": {
+    "mtime": 1776309435.8701437,
+    "hash": "f65611d744c3a20ce9aade966631c975"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/intent/base.py": {
+    "mtime": 1776309435.8637128,
+    "hash": "7d9b86cd195149702c87498010366c1d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/intent/function_call/function_call.py": {
+    "mtime": 1776309435.8638115,
+    "hash": "f37d93a66d4c342aeca58fe2b7ca3717"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/intent/nointent/nointent.py": {
+    "mtime": 1776309435.8641295,
+    "hash": "23188aaaa135eb3d94f93286e45ce071"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/intent/intent_llm/intent_llm.py": {
+    "mtime": 1780208159.3729877,
+    "hash": "815e1a4cedeaae36fe1e8c39d7cfcf8c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/sherpa_onnx_local.py": {
+    "mtime": 1776309435.8632302,
+    "hash": "802fd77dd950ff1c15483d4bf69f4b4a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/qwen3_asr_flash.py": {
+    "mtime": 1776309435.863144,
+    "hash": "4f304ecbdd43eb97da92f257e3a301f3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/fun_server.py": {
+    "mtime": 1776309435.8630002,
+    "hash": "0cbbbb808323648e3b17bf4858050844"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/doubao_stream.py": {
+    "mtime": 1777367662.8724532,
+    "hash": "ea4838752d1f09517d776e48546d2bd9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/aliyunbl_stream.py": {
+    "mtime": 1776309435.8622634,
+    "hash": "82640d80a83dbbc31faa1a43131674d2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/aliyun_stream.py": {
+    "mtime": 1776309435.8620887,
+    "hash": "85318d624d35f1aa9817222bd92f53b2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/doubao.py": {
+    "mtime": 1776309435.8626266,
+    "hash": "7a08bd0b3cc6d8beea08f33a2292c144"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/openai.py": {
+    "mtime": 1776309435.8630748,
+    "hash": "87a893e219640c793d4344e2337ce214"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/utils.py": {
+    "mtime": 1776309435.8633652,
+    "hash": "44d45eef8a9a0eaf380c486aa06c232d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/aliyun.py": {
+    "mtime": 1776309435.8618798,
+    "hash": "8d8856fc031d7c55a5349e9e8adf1c88"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/tencent.py": {
+    "mtime": 1776309435.863305,
+    "hash": "ec577495037d5a9ad8208123770259b5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/fun_local.py": {
+    "mtime": 1776309435.862912,
+    "hash": "ae06301bb76310902a9c115664e9c8e8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/xunfei_stream.py": {
+    "mtime": 1776309435.863619,
+    "hash": "5ec48db5f6d8ec97056fbc04d3d178c3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/baidu.py": {
+    "mtime": 1776309435.8623514,
+    "hash": "28e6027252285ddf39305fc4e528e7f1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/vosk.py": {
+    "mtime": 1776309435.8634338,
+    "hash": "43f255a44ca5491a49c8e8b6ff52538f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/base.py": {
+    "mtime": 1777367662.8722794,
+    "hash": "dd1b7bb56e44241c74a51c11a462bc10"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/asr/dto/dto.py": {
+    "mtime": 1776309435.8628147,
+    "hash": "5a51db6fb9222ad4c1e45092a3bac995"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/index_stream.py": {
+    "mtime": 1777367662.877577,
+    "hash": "38e7578802c9b596b3f5652a4928b21c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/gpt_sovits_v2.py": {
+    "mtime": 1776309435.868938,
+    "hash": "b8dd1e0156ca0a178eda4f196c3e314a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/huoshan_double_stream.py": {
+    "mtime": 1783510360.2912083,
+    "hash": "443e8b79bcc718a8bf2668da96d2f6b4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/cozecn.py": {
+    "mtime": 1776309435.868477,
+    "hash": "8e047dc1499cf5c9d4131dc0ff437b54"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/gpt_sovits_v3.py": {
+    "mtime": 1776309435.8689926,
+    "hash": "352e1f3eeb1354ab5080923e94dd2452"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/edge.py": {
+    "mtime": 1776309435.8687854,
+    "hash": "dbdb22f46aa27cc0af3e6ec3767e5e8e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/custom.py": {
+    "mtime": 1776309435.868531,
+    "hash": "c89c90e0666abfab4682a70544a42365"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/siliconflow.py": {
+    "mtime": 1776309435.8696663,
+    "hash": "6697c1dcd2b2e71afa9b4235bacb02a4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/aliyun_stream.py": {
+    "mtime": 1778142292.05415,
+    "hash": "33b17804bbe04e23273ea56f022fd165"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/doubao.py": {
+    "mtime": 1776309435.8686566,
+    "hash": "c8d104a4be94d209da5558b4e33d4a6f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/default.py": {
+    "mtime": 1776309435.868597,
+    "hash": "625af574c6db442f6a9f5b2bf1d851d5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/openai.py": {
+    "mtime": 1776309435.8695178,
+    "hash": "50bdfa9a03a741da317f85aa7414151f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/fishspeech.py": {
+    "mtime": 1776309435.868882,
+    "hash": "99193136bb5a8afdcb18c6acfd2ff53b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/aliyun.py": {
+    "mtime": 1776309435.8682044,
+    "hash": "03d6d8575898cf410a66942634175718"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/tencent.py": {
+    "mtime": 1781660547.7102408,
+    "hash": "c30366b8150e3b8d7a76308f2c9845c4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/minimax_httpstream.py": {
+    "mtime": 1777367662.8779373,
+    "hash": "cc1f16bd496665adc398847623abe3b7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/xunfei_stream.py": {
+    "mtime": 1778142292.0552375,
+    "hash": "429bb90715ece394ece83b500647737d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/alibl_stream.py": {
+    "mtime": 1778142292.0536904,
+    "hash": "e0ef4ace103e14f0470c6eadc9a41a72"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/base.py": {
+    "mtime": 1783510360.2909622,
+    "hash": "fef049d875ef650e80b9cb747f2cb65e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/paddle_speech.py": {
+    "mtime": 1776309435.8696096,
+    "hash": "db431dac72eff6797535eadc012297f0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tts/dto/dto.py": {
+    "mtime": 1776309435.8687325,
+    "hash": "ea7d53ac06b6b4110a8bdfe064d6e23c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/vad/silero.py": {
+    "mtime": 1776309435.870068,
+    "hash": "592d6f0c10cc202752c54bd900f8cdab"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/vad/base.py": {
+    "mtime": 1776309435.86999,
+    "hash": "541cc9882374daa4a82b30e7c174d550"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/intent.py": {
+    "mtime": 1776309435.8709903,
+    "hash": "c23ae78667dc498703fbf3d599e5c1d3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/output_counter.py": {
+    "mtime": 1776309435.8713331,
+    "hash": "4566bafa919d565828ad6216cc1f85a0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/current_time.py": {
+    "mtime": 1776309435.8708026,
+    "hash": "aa7a0dd1d59ceba86d6147882b46f23e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/auth.py": {
+    "mtime": 1776309435.8704474,
+    "hash": "7773dd5710ecd210d0f18173e5c96f0c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/vllm.py": {
+    "mtime": 1776309435.8718598,
+    "hash": "e9e7d1bf549037fd0d016077f33582a7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/memory.py": {
+    "mtime": 1776309435.871103,
+    "hash": "c2b043dad27760e1229cf6c62107317f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/util.py": {
+    "mtime": 1776309435.8717382,
+    "hash": "4c64ba9fa8fef5fc74d8d851fadf049f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/context_provider.py": {
+    "mtime": 1783510360.2914286,
+    "hash": "e5b606ead0dec0c94896fbeeb424d493"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/textUtils.py": {
+    "mtime": 1776309435.871537,
+    "hash": "c463b18f4c056ee20d87505965cd0139"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/prompt_manager.py": {
+    "mtime": 1783510360.2916307,
+    "hash": "980565ac6f6423610e89d2fc81a1f9da"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/tts.py": {
+    "mtime": 1776608936.5490813,
+    "hash": "313f7a2ce20661d3a36113857b5fa23a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/audioRateController.py": {
+    "mtime": 1776309435.8703647,
+    "hash": "b290b49c02d5ff7e043c34ab5e697723"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/llm.py": {
+    "mtime": 1776309435.8710537,
+    "hash": "e88b8274a8701f57408a68daff3becf6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/opus_encoder_utils.py": {
+    "mtime": 1776309435.8712678,
+    "hash": "1758ee324a3a0ee63387495008d6f406"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/asr.py": {
+    "mtime": 1776309435.8702834,
+    "hash": "c4a64cb650a8aa219bdd2c110a166e5b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/modules_initialize.py": {
+    "mtime": 1776309435.87119,
+    "hash": "a89d7190a61770818ee4b3c4f745aae4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/dialogue.py": {
+    "mtime": 1777367662.8793778,
+    "hash": "7136d434d93622ec0725c78837884996"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/wakeup_word.py": {
+    "mtime": 1781660547.7106879,
+    "hash": "7bf8a5e0cbac9df08e6687fb2be9d085"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/p3.py": {
+    "mtime": 1776309435.871382,
+    "hash": "2266be5feb13c75a5d4b6df4c50e6404"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/gc_manager.py": {
+    "mtime": 1776309435.8709447,
+    "hash": "e6b334d18809a57a7f50ce0d6050e472"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/vad.py": {
+    "mtime": 1776309435.8718052,
+    "hash": "84dc7a13f94c1070ab679d5a9379cb9e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/voiceprint_provider.py": {
+    "mtime": 1776309435.8719685,
+    "hash": "4c34db97a85c3e0c56db3ea5abd455b0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/cache/config.py": {
+    "mtime": 1776309435.8705378,
+    "hash": "9bb38c9f1b9aa9fdfc7d96b947f95bfa"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/cache/strategies.py": {
+    "mtime": 1776309435.8706808,
+    "hash": "b6d797db0da3f1e92b18fbde41a1d8c7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/utils/cache/manager.py": {
+    "mtime": 1776309435.8706238,
+    "hash": "338e3f366cafc66ba0ba8b01b1708f28"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/api/vision_handler.py": {
+    "mtime": 1776309435.859985,
+    "hash": "db31969949844ab552a84b27ec7d88a9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/api/ota_handler.py": {
+    "mtime": 1776309435.8598952,
+    "hash": "1b85344629a783610bfcb178e768be20"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/core/api/base_handler.py": {
+    "mtime": 1776309435.8598208,
+    "hash": "46d7e54aedaf27c98698c0e5fd2ba4da"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/config/config_loader.py": {
+    "mtime": 1781660902.4356983,
+    "hash": "24506549da5a235c2ce75e8148024f38"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/config/logger.py": {
+    "mtime": 1782037224.795046,
+    "hash": "993ac3a9fcf3820048ad2bacef3da2e6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/config/manage_api_client.py": {
+    "mtime": 1783510360.2903054,
+    "hash": "16ab892f52a14e74f90ce78a5a13e1cd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/config/settings.py": {
+    "mtime": 1776309435.8596237,
+    "hash": "92b1637e083417214e6e584dc5549e43"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/models/snakers4_silero-vad/hubconf.py": {
+    "mtime": 1776309435.8753338,
+    "hash": "7a84626ee870440bc1a9910889cbd5b8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/models/snakers4_silero-vad/src/silero_vad/utils_vad.py": {
+    "mtime": 1776309435.8947604,
+    "hash": "990997165e52a52c93a6d160a56bc77e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/models/snakers4_silero-vad/src/silero_vad/__init__.py": {
+    "mtime": 1776309435.8754578,
+    "hash": "59f89f73ddec5320155d35c41cf716a1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/models/snakers4_silero-vad/src/silero_vad/model.py": {
+    "mtime": 1776309435.8946855,
+    "hash": "5925b349f4262149ac77b460da55accb"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/models/snakers4_silero-vad/src/silero_vad/data/__init__.py": {
+    "mtime": 1776309435.8755054,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/models/SenseVoiceSmall/demo.py": {
+    "mtime": 1776309435.8737407,
+    "hash": "08bf354b02355c2cbafc152bcc094d60"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/performance_tester/performance_tester_asr.py": {
+    "mtime": 1777367662.8796494,
+    "hash": "62faef37c586915819fd0acf48f8017e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/performance_tester/performance_tester_tts.py": {
+    "mtime": 1777367662.8802366,
+    "hash": "51c67b8794b20ca49b28db001f81f914"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/performance_tester/performance_tester_llm.py": {
+    "mtime": 1776309435.9644084,
+    "hash": "7c3168a8b86ec685d312e46559144c64"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/performance_tester/performance_tester_stream_tts.py": {
+    "mtime": 1776309435.96461,
+    "hash": "9ddf193af4eeef2117b384d7b93aeb50"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/performance_tester/performance_tester_stream_asr.py": {
+    "mtime": 1777367662.8800397,
+    "hash": "138e0a41aca51aafb56ed084fb8eedef"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/performance_tester/performance_tester_vllm.py": {
+    "mtime": 1776309435.9648242,
+    "hash": "d5f04c623347019cd7d015a4af4f1dc5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/register.py": {
+    "mtime": 1777367662.8808892,
+    "hash": "e688e942fe8e0d939703281a16d485ec"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/loadplugins.py": {
+    "mtime": 1776309435.9659631,
+    "hash": "4d18137928cb54e18da978799fdba6cd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/get_news_from_chinanews.py": {
+    "mtime": 1778142292.0555224,
+    "hash": "8e6effc7d6ae1a3b0ba36d4859f6a18c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/change_role.py": {
+    "mtime": 1776309435.9649646,
+    "hash": "8c53dd505ca65637538ac67911c266ad"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/hass_set_state.py": {
+    "mtime": 1776309435.9657345,
+    "hash": "a6dc1c4032e4da14c86dbe20f26bc9d1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/play_music.py": {
+    "mtime": 1779676929.6373446,
+    "hash": "bb3ee40ab21cc51303868545d0236f09"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/call_device.py": {
+    "mtime": 1781660902.4373808,
+    "hash": "24e267ac7f2b95e17e13e72c4469a0c3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/hass_get_state.py": {
+    "mtime": 1776309435.965487,
+    "hash": "42b29018ee3b5a1a977ade21492e4b30"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/get_time.py": {
+    "mtime": 1776309435.9652534,
+    "hash": "0657a6d842ef367218a7cae08de51107"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/hass_init.py": {
+    "mtime": 1776309435.9655585,
+    "hash": "94e38716a4a0510da85e55708283ab2e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/hass_play_music.py": {
+    "mtime": 1776309435.9656534,
+    "hash": "d09a3ba43f74a181fa78ffab08ee5967"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/get_weather.py": {
+    "mtime": 1779676929.6372042,
+    "hash": "5dde3791b5aef70e5297a0fb3d579415"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/web_search.py": {
+    "mtime": 1779676929.637447,
+    "hash": "7f11e9453bbcd7cbcfe7201a91ce0ce5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/search_from_ragflow.py": {
+    "mtime": 1776309435.9659092,
+    "hash": "5a8251fe0b733f1f92d750ba212a4075"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/get_news_from_newsnow.py": {
+    "mtime": 1779676929.6370428,
+    "hash": "b7a6e282dbfe83f1c2e8bebb57dc4826"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/plugins_func/functions/handle_exit_intent.py": {
+    "mtime": 1777367662.880577,
+    "hash": "e74b6b7841fc4394db6ef22dced37716"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/babel.config.js": {
+    "mtime": 1776309435.5139103,
+    "hash": "d4e23efc5f4844dd66d34420a5dbfa20"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/vue.config.js": {
+    "mtime": 1781660902.435357,
+    "hash": "68b0705ceeac0c8255c3304bdbb87354"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/workers/gif.js": {
+    "mtime": 1776309435.8251526,
+    "hash": "ccdc5a81936c88144ba8a573979af8ed"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/workers/gif.worker.js": {
+    "mtime": 1776309435.8252733,
+    "hash": "1a0c81e49a8e7ccec0b18f5f92b9e6b9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/assets/ft_render-ByO_jG18.js": {
+    "mtime": 1776309435.5170617,
+    "hash": "f06ad969337543568a367e18020f9dcf"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/assets/index-Guo1hQ-y.js": {
+    "mtime": 1776821227.5202434,
+    "hash": "8e7ce5f1de01a5b33d24c9b11a3ba459"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/App.vue": {
+    "mtime": 1776309435.8261683,
+    "hash": "16a4f914e3c289abbbfe461ecd513d76"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/main.js": {
+    "mtime": 1781660902.4334917,
+    "hash": "58c54af4f613e8da6a62dbd651827344"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/registerServiceWorker.js": {
+    "mtime": 1776309435.841653,
+    "hash": "a0f5deb4c0beb5cc455af2d6bca52413"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/service-worker.js": {
+    "mtime": 1776309435.841851,
+    "hash": "ce8c5894ed1486877e6ffe24acfed1a4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/httpRequest.js": {
+    "mtime": 1776309435.8264024,
+    "hash": "5a74f40290066b57035fbbc3a818a39b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/api.js": {
+    "mtime": 1781660902.4250307,
+    "hash": "96c467c6346fb6caa1ed9ddda1c5311e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/device.js": {
+    "mtime": 1776309435.8267517,
+    "hash": "0c02b3130fae9652386edf29d12c9f68"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/correctWord.js": {
+    "mtime": 1777367662.8612673,
+    "hash": "c4c6f3df349dde39753aa9e585cb40b3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/user.js": {
+    "mtime": 1776309435.8272796,
+    "hash": "e0ecc59af05326df78f45a5305711af2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/addressBook.js": {
+    "mtime": 1781660902.4251041,
+    "hash": "b0a427f4d6d05f0e99cf9757c0b4e7c4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/dict.js": {
+    "mtime": 1776309435.826829,
+    "hash": "ca53ceeac97b745ee8de58f82290e726"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/ota.js": {
+    "mtime": 1776309435.827133,
+    "hash": "30f35ad884b21839cc1d58a4a9d0dd08"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/timbre.js": {
+    "mtime": 1776309435.82719,
+    "hash": "02f3786eba4351c1ebe0b3d991e25d55"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/admin.js": {
+    "mtime": 1781660902.4252365,
+    "hash": "afe8552c2d7a3bbfca78c5417426df04"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/voiceClone.js": {
+    "mtime": 1776309435.8273387,
+    "hash": "03cbac881b00267d8ae2ffa0e04586fd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/knowledgeBase.js": {
+    "mtime": 1776309435.826923,
+    "hash": "fc348cbd75df72a71bf0ec70fbf4ff78"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/model.js": {
+    "mtime": 1776309435.8270335,
+    "hash": "8159fc5d97582f36b1a5c56637dcafcd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/voiceResource.js": {
+    "mtime": 1776309435.8274112,
+    "hash": "7be6b0e1f40767191b40bd561e4d0a98"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/apis/module/agent.js": {
+    "mtime": 1776309435.8266683,
+    "hash": "b46257739825cd2f842203825c332352"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/utils/cacheViewer.js": {
+    "mtime": 1776309435.842124,
+    "hash": "d36219cdb1f239111bc8cc476d3eabe6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/utils/format.js": {
+    "mtime": 1776309435.8424747,
+    "hash": "254d1744e1d749d57fade24caab905cd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/utils/index.js": {
+    "mtime": 1776309435.8425574,
+    "hash": "2ad8450b5b6e16ec7095628c442fe66a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/utils/constant.js": {
+    "mtime": 1776309435.842179,
+    "hash": "bbeca850184c5836bc474894f51fffbe"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/utils/date.js": {
+    "mtime": 1776309435.8422325,
+    "hash": "6595c3f7c4f99c1830e68611195190f7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/utils/featureManager.js": {
+    "mtime": 1781660902.4338071,
+    "hash": "38285f345ad91f80c130e0777c6fd359"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/AddModelDialog.vue": {
+    "mtime": 1781660902.4295473,
+    "hash": "3a593df426b5410bc115bd9a4e1bbfc8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/AudioPlayer.vue": {
+    "mtime": 1776309435.836647,
+    "hash": "7f326e40f30db2bc6a07fb25c2876b2a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/MacAddressMask.vue": {
+    "mtime": 1781660902.4310951,
+    "hash": "d4a5d7cc0163a12d4f6939ad4a526420"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ContextProviderDialog.vue": {
+    "mtime": 1776309435.8370821,
+    "hash": "11612482d7084d45e9773f759e21b20a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/DictDataDialog.vue": {
+    "mtime": 1776309435.8372781,
+    "hash": "9d8bfa1ef92c67d8ca43ccbdbfa89706"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/AddressBookDialog.vue": {
+    "mtime": 1781660902.429655,
+    "hash": "56bb3029f31d7318813f7da59b5d24cf"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/EditVoiceDialog.vue": {
+    "mtime": 1776309435.837432,
+    "hash": "5c50be2a9f743961a6795de5e0ac0304"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ReplacementWordDialog.vue": {
+    "mtime": 1777367662.8622904,
+    "hash": "6723151715b25b21082f92e1492a91e5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/TtsAdvancedSettings.vue": {
+    "mtime": 1777367662.862418,
+    "hash": "a2f8ec04ccbc3cd51372ad91aca5ffd9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/CustomPagination.vue": {
+    "mtime": 1781660902.4300928,
+    "hash": "d4956f65bbaa92bb05b3d1824321a24e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ChatHistoryDialog.vue": {
+    "mtime": 1781660902.429819,
+    "hash": "dbb57ff980bbd3a2975973703025fc3d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/VersionFooter.vue": {
+    "mtime": 1776309435.8386655,
+    "hash": "e46fe3901f3c7c6164d0f61e6454c954"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ModelEditDialog.vue": {
+    "mtime": 1776309435.8380399,
+    "hash": "b75aa7b17d72b9deffffed20fb638416"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/DictTypeDialog.vue": {
+    "mtime": 1776309435.8373363,
+    "hash": "25dbc3e61448b5dc5a16f03ec78b3794"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/VoiceResourceDialog.vue": {
+    "mtime": 1776309435.8390262,
+    "hash": "59fd3de12b645b548f8c148041610723"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/CustomTable.vue": {
+    "mtime": 1781660902.4301882,
+    "hash": "01972367027371f63f3f0bb6a5f60e73"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/AddWisdomBodyDialog.vue": {
+    "mtime": 1776309435.8365564,
+    "hash": "2cedc665456620bbb7f827c0485dc2d0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ChangePasswordDialog.vue": {
+    "mtime": 1776309435.836852,
+    "hash": "66e3d45343cc36e7de328d2ea2ca5c53"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ParamDialog.vue": {
+    "mtime": 1781660902.4313471,
+    "hash": "1ad196e624a7e7802a5678762f84b78f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/FirmwareDialog.vue": {
+    "mtime": 1781660902.4303465,
+    "hash": "b60ec4b4885efb5f4dbfbe040f4a2dcb"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/CustomDialog.vue": {
+    "mtime": 1781660902.4300182,
+    "hash": "76ed7ca381b98cd7689f44ad56f55ccb"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ViewPasswordDialog.vue": {
+    "mtime": 1776309435.8387325,
+    "hash": "b203f56ba22eb6a3e7697f36a45768a5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/CacheViewer.vue": {
+    "mtime": 1776309435.8367455,
+    "hash": "758010bba60174ab625c5846380b0461"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/DeviceItem.vue": {
+    "mtime": 1776608936.5467374,
+    "hash": "db87eb861bd8198a4d9a57714642cf61"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ManualAddDeviceDialog.vue": {
+    "mtime": 1776309435.8379335,
+    "hash": "349ab6a32a9e5dd9a4eef28c5c45fcb0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/FunctionDialog.vue": {
+    "mtime": 1781660902.43051,
+    "hash": "a624334488c38c38fde26633021cdee7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/TtsModel.vue": {
+    "mtime": 1776309435.8385794,
+    "hash": "a843382685556f5bb1cb50d0f0c3f66a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/CustomButton.vue": {
+    "mtime": 1781660902.4299068,
+    "hash": "3cd0200508bbf266203568aba4059f7a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ManualIcon.vue": {
+    "mtime": 1781660902.4311757,
+    "hash": "211844ed8a5750d6eb25c3d4fd1b1a72"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/KnowledgeBaseDialog.vue": {
+    "mtime": 1781660902.431012,
+    "hash": "9c68733080a0754ec775949f64733ad3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/HeaderBar.vue": {
+    "mtime": 1781660902.4308481,
+    "hash": "9b0a450d2946441e40577d075de08a3d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/VoicePrintDialog.vue": {
+    "mtime": 1776309435.8389373,
+    "hash": "cf907171eaf16f23a09a0b65467c9620"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/ProviderDialog.vue": {
+    "mtime": 1781660902.4315233,
+    "hash": "4aff471bec978aa00336c488b2cc5dd5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/AddDeviceDialog.vue": {
+    "mtime": 1776309435.8362584,
+    "hash": "ff38b061d0a343ca9db4db57020d3ecc"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/components/VoiceCloneDialog.vue": {
+    "mtime": 1776309435.838815,
+    "hash": "d55bc044e9da57763bec8f2fec729b7e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/i18n/vi.js": {
+    "mtime": 1781660902.4329002,
+    "hash": "74034b256d442f7b1016e5bbd35df4bd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/i18n/index.js": {
+    "mtime": 1781660902.4323926,
+    "hash": "bd10a0ffcfb047b88484704700f50394"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/i18n/de.js": {
+    "mtime": 1781660902.431958,
+    "hash": "1b6fa9728cedb6cb1b156c7b2ba7fdfc"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/i18n/en.js": {
+    "mtime": 1781660902.432246,
+    "hash": "cbb75087496c4bba8ce8b015b484713a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/i18n/zh_CN.js": {
+    "mtime": 1781660902.4332285,
+    "hash": "51c9dd47f781f6fbe369fcba5f91f654"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/i18n/zh_TW.js": {
+    "mtime": 1781660902.43336,
+    "hash": "31f6187337b772326f6b1d1a582b573e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/i18n/pt_BR.js": {
+    "mtime": 1781660902.4326608,
+    "hash": "3c6272ebdc43ef175c1b4b9af09d7d73"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/KnowledgeBaseItem.vue": {
+    "mtime": 1781660902.434489,
+    "hash": "380561fd6108f35dcb1ea30027b4a8f3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/KnowledgeBaseManagement.vue": {
+    "mtime": 1781660902.434657,
+    "hash": "9fce6b06cb2d6792e916e9e240971993"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/VoicePrint.vue": {
+    "mtime": 1776309435.8448093,
+    "hash": "082da105b0e2a9ce3d7f0174d3946c59"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/VoiceResourceManagement.vue": {
+    "mtime": 1776309435.8449225,
+    "hash": "e4316397c56e007e41b13c827900f5ea"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/KnowledgeFileUpload.vue": {
+    "mtime": 1776309435.8437166,
+    "hash": "dc848eefa7f96fa940f5a8107d8e411b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/login.vue": {
+    "mtime": 1776309435.845252,
+    "hash": "6090fd603fc412fc9f079ed8b104496e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/home.vue": {
+    "mtime": 1776309435.8450918,
+    "hash": "f20ef57e6c11ad3b81425479d161e736"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/ServerSideManager.vue": {
+    "mtime": 1776309435.8442109,
+    "hash": "a0baf9e423631a9bb404644064a06435"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/UserManagement.vue": {
+    "mtime": 1781660902.435219,
+    "hash": "fd1ab9d5707505a5ff57c014c5f22dfd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/register.vue": {
+    "mtime": 1776309435.8454444,
+    "hash": "dbd332dce9f33118b5afd09eb9307b7c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/roleConfig.vue": {
+    "mtime": 1777367662.8683853,
+    "hash": "26b4914e102ab5b73b67512a5825de5c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/ReplacementWordManagement.vue": {
+    "mtime": 1777367662.8661497,
+    "hash": "082908ef8475960d1256cd0b5ed5187d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/DeviceManagement.vue": {
+    "mtime": 1781660902.4342535,
+    "hash": "405488aa5214abb7d33be2c6d26eed46"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/AddressBookManagement.vue": {
+    "mtime": 1781660902.4339416,
+    "hash": "d001f10ccad30ded8a2f2aff5997f3d3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/ParamsManagement.vue": {
+    "mtime": 1781660902.4349196,
+    "hash": "deb9358932bbc450407afa4212f49827"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/retrievePassword.vue": {
+    "mtime": 1776309435.8455522,
+    "hash": "14e71c4f1f936b5e29c96602792b5b9c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/ModelConfig.vue": {
+    "mtime": 1776309435.8438215,
+    "hash": "4a7ddc071f121cd580a3f2d5e21775c7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/DictManagement.vue": {
+    "mtime": 1776309435.8428807,
+    "hash": "7eada9fb2195d8c18d129148a9b8a6bf"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/FeatureManagement.vue": {
+    "mtime": 1781660902.4343958,
+    "hash": "40e5f7eab60a94c0fffa11bc93e56e00"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/TemplateQuickConfig.vue": {
+    "mtime": 1776309435.8444657,
+    "hash": "10fb9413a107b7d9a455a7003c6283de"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/OtaManagement.vue": {
+    "mtime": 1781660902.4347825,
+    "hash": "ea3bb9b1cd2dfb433afb16c0fd0b86e0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/VoiceCloneManagement.vue": {
+    "mtime": 1776309435.844641,
+    "hash": "04bcd44723094581ad7c6406e822581b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/ProviderManagement.vue": {
+    "mtime": 1781660902.435072,
+    "hash": "fa2c4d546cdd087e7b250c3bf22f6df5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/views/AgentTemplateManagement.vue": {
+    "mtime": 1781660902.4341133,
+    "hash": "d90a90fa336ff0df0b87151eca6e5ba8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/store/index.js": {
+    "mtime": 1776309435.8419306,
+    "hash": "bcc42fb331c1803068cfc69182fa4a95"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/src/router/index.js": {
+    "mtime": 1781660902.4336684,
+    "hash": "331fada5526e6b38eb2e9355757bc8da"
+  },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/common/utils/AESUtilsTest.java": {
     "mtime": 1776309435.4903286,
     "hash": "3ec8e01506805dc2102deea35ea1dc47"
@@ -28,20 +1536,24 @@
     "hash": "c6d9ad496ff3adcc78ae5c32dae3c5c7"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/wechat/service/impl/WechatServiceImplProfileTest.java": {
-    "mtime": 1783841047.9268808,
-    "hash": "e591f7ed40928adec21f3b69f9a185ba"
+    "mtime": 1784036158.9498663,
+    "hash": "910b9c88df4cbfc1242ff7d026ba83a5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/wechat/service/impl/WechatServiceImplLoginTest.java": {
+    "mtime": 1784036195.8242831,
+    "hash": "b1e6caa1bbf1e7b74a399531531b6605"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/wechat/service/impl/WechatServiceImplTest.java": {
-    "mtime": 1783841047.926936,
-    "hash": "c7a6a87b69c49cbd7b269a28cd2a8263"
+    "mtime": 1784036208.030542,
+    "hash": "e3d7148b329ce6a6175815bece1f5412"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/invite/InviteConsumeConcurrencyTest.java": {
     "mtime": 1783841047.9258037,
     "hash": "a42cf08323478ad0f475f41dc256371f"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/invite/util/InviteCodeGeneratorTest.java": {
-    "mtime": 1783841047.9260437,
-    "hash": "93ba3faf61ffb2b51bb4e583ccbc2da0"
+    "mtime": 1783956000.502847,
+    "hash": "fbfea21fe59191d5fc9ad537d5a3d3c0"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/invite/service/impl/InviteServiceImplTest.java": {
     "mtime": 1783841047.9259713,
@@ -67,6 +1579,10 @@
     "mtime": 1783852528.2111924,
     "hash": "d9e242a56e1bce16998129c6dd97a468"
   },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/config/PetAvatarPropertiesTest.java": {
+    "mtime": 1783948096.845256,
+    "hash": "f7d57a2536661f250082967078874a39"
+  },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplProfileTest.java": {
     "mtime": 1782456785.2597597,
     "hash": "85ef8edca929abcaad6b19a10257f47a"
@@ -76,24 +1592,24 @@
     "hash": "e7116780eb9f3f7335c7cb79733c58d8"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/CollectionCardImageServiceImplTest.java": {
-    "mtime": 1783852528.2109847,
-    "hash": "7df96d63f0fcb2f8413a8f70fe07ec47"
+    "mtime": 1783950898.9311955,
+    "hash": "f949cf051435281a4c31783ad12ef75c"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/CollectionCardGenerationListenerTest.java": {
     "mtime": 1783841047.9261227,
     "hash": "efc57550788825da0e64dbe12ace528c"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplAdoptTest.java": {
-    "mtime": 1783841047.926321,
-    "hash": "e2c3bd1aeac9d63b0a7b77b5b53d8dfb"
+    "mtime": 1783948096.8459606,
+    "hash": "0a98ed741b315d7238cc0b4970df4099"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplTodayMoodTest.java": {
-    "mtime": 1783841047.9264538,
-    "hash": "81ca19745dbfe1e69ebfca25d49934ed"
+    "mtime": 1783948096.8465734,
+    "hash": "152bc1016713c89e2f097acf8a1d8f3a"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplHatchTest.java": {
-    "mtime": 1783861189.8207493,
-    "hash": "4397a843415c6e1abe5b2da38cb2ee7e"
+    "mtime": 1783948096.846362,
+    "hash": "25d12f9e2eae018d2536d0a4e9f546b8"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplMemoryTest.java": {
     "mtime": 1781660547.6008987,
@@ -664,8 +2180,8 @@
     "hash": "94274e789f8e788a6a41723195f17830"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/common/config/RestTemplateConfig.java": {
-    "mtime": 1783841047.9192371,
-    "hash": "ffffa2a695a43baef48351e21cfaa5b9"
+    "mtime": 1783948096.8426087,
+    "hash": "9034fede2a343caeb91d5511754a2332"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/common/redis/RedisUtils.java": {
     "mtime": 1776309435.455615,
@@ -808,8 +2324,8 @@
     "hash": "6a211fb86e6c29af1b40cde2bfc4b8e7"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/common/oss/OssService.java": {
-    "mtime": 1782450811.8984976,
-    "hash": "42ec88430ece97a937f639bb8ca543cb"
+    "mtime": 1783948096.8428364,
+    "hash": "8185cb66cd88b0fbb9cf189f6c670c3c"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/common/aspect/RedisAspect.java": {
     "mtime": 1776309435.4540918,
@@ -900,8 +2416,8 @@
     "hash": "7458256149c70deb9f481fab863e7636"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/config/service/impl/ConfigServiceImpl.java": {
-    "mtime": 1783510360.2809367,
-    "hash": "25dfe348e7436abfea1c854eb7eaaf3a"
+    "mtime": 1784027609.4793165,
+    "hash": "016aa2d0a1a15e0845d095a9139fbdb4"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/security/dto/SmsVerificationDTO.java": {
     "mtime": 1776309435.4745188,
@@ -1548,8 +3064,8 @@
     "hash": "5afe8ea28e2c1beed8cc63bd1a2e9ee2"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/wechat/service/impl/WechatServiceImpl.java": {
-    "mtime": 1783841047.9243326,
-    "hash": "e91727096509758a2a587bd1d14920be"
+    "mtime": 1784036140.1731505,
+    "hash": "c461dc226952f8d311de216d211cc30c"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/invite/dto/InviteCodeCreateDTO.java": {
     "mtime": 1783841047.9205103,
@@ -1580,8 +3096,8 @@
     "hash": "feffc211ec647fe46b8ec50f9309c98c"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/invite/util/InviteCodeGenerator.java": {
-    "mtime": 1783841047.9210503,
-    "hash": "cc7b2a5488c8fc4e0f6563e92b7065bb"
+    "mtime": 1783955974.3601086,
+    "hash": "3ffeca34813b5c718b477043893153cc"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/invite/entity/InviteUsageEntity.java": {
     "mtime": 1783841047.920756,
@@ -1863,9 +3379,17 @@
     "mtime": 1783841047.9231606,
     "hash": "191cb7bbfe1c5319c54f1d5f145d3427"
   },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/config/PetAvatarProperties.java": {
+    "mtime": 1783948096.843169,
+    "hash": "5ff97e3f08f1d3941b8cdbfbff7461a3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/config/SeedreamArkConfig.java": {
+    "mtime": 1783948096.843403,
+    "hash": "abf664ed2cf69b189ddc9d441e2b485c"
+  },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/config/SeedreamProperties.java": {
-    "mtime": 1783841047.9216154,
-    "hash": "a283f6f6d1bc04ef86353bdbf9aaec58"
+    "mtime": 1783948096.843594,
+    "hash": "4506391cd2ece8dbce981effd9dc1e13"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/entity/MemoryEntity.java": {
     "mtime": 1781660547.5346673,
@@ -1940,20 +3464,20 @@
     "hash": "0beee21ef560610ce54b95abd5e651f8"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/HatchActionServiceImpl.java": {
-    "mtime": 1783841047.9228873,
-    "hash": "4371940bebd39648f7e190282c114588"
+    "mtime": 1784028805.3312333,
+    "hash": "02a7acb7d4c88e4348b963f404c0c934"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/CollectionCardImageServiceImpl.java": {
-    "mtime": 1783841047.9228146,
-    "hash": "363022b0d80a20a719fb4505a6970491"
+    "mtime": 1783950924.4222796,
+    "hash": "f9e514d945fd8d66b60704438a2bcdd4"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/PetServiceImpl.java": {
-    "mtime": 1783898176.029495,
-    "hash": "fe83133878e899a3961448d62f7a2b2f"
+    "mtime": 1784028791.7399032,
+    "hash": "5523a967df179ae5ba4fc57e3109567e"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/CollectionCardGenerationListener.java": {
-    "mtime": 1783841047.9227335,
-    "hash": "adfaeb8caddf7278af287a67679c43db"
+    "mtime": 1784027609.479635,
+    "hash": "f0e1de08ce0f376dbde07cd2a6b59ed6"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/event/CollectionCardGenerationEvent.java": {
     "mtime": 1783841047.9224432,
@@ -2472,32 +3996,32 @@
     "hash": "5efdcbbaa325c3e2fe19b1dc06eff6aa"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/scripts/verify-project.js": {
-    "mtime": 1783841047.9182034,
-    "hash": "3697b9a476db2995be1514659b1b0e21"
+    "mtime": 1784037314.2227044,
+    "hash": "554ba8e40fd00ce6b4e419b52b3c6703"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/app.test.js": {
-    "mtime": 1783841047.9000084,
-    "hash": "d7731f283509d822a0057edf680e89ac"
+    "mtime": 1784027609.4748898,
+    "hash": "0805e3c4dd308653743ff369b202e09e"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/app.js": {
-    "mtime": 1783841047.899852,
-    "hash": "01094bb3dcc5f7cd0c255930de4f3a4c"
+    "mtime": 1784027609.4740503,
+    "hash": "d38dc0a802e143f6c8eb0f882b5d1ff7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/config/wish-questions.js": {
+    "mtime": 1784027609.4755116,
+    "hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1783841047.907848,
-    "hash": "d30478d0dd9d70d2401cce6c78f19e60"
+    "mtime": 1784027868.432246,
+    "hash": "3302bd5c6ab8ece0c69e9840e64379ec"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
-    "mtime": 1783852657.3690922,
-    "hash": "a84a984a782cb12a85fd1cacb4182d9f"
+    "mtime": 1784037240.0990567,
+    "hash": "6d6f390436a97ef7f8be8bc97bb768f6"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/utils/request.js": {
     "mtime": 1783841047.917246,
     "hash": "9a2b2bc60aeccdc84c00556345dd5bd1"
-  },
-  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/utils/exhibition-scenes.js": {
-    "mtime": 1783841047.9167094,
-    "hash": "af86f250ef334e15d635913aa867d5c7"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/utils/auth.js": {
     "mtime": 1783841047.916567,
@@ -2508,12 +4032,12 @@
     "hash": "f93043828dd68c996c6888b9c9fde406"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/utils/pet-store.js": {
-    "mtime": 1783898182.415998,
-    "hash": "38122994e0d3fa94c95ee7235ac4eb0c"
+    "mtime": 1784037119.7192705,
+    "hash": "a5dfcfeee327b911815b0edfd9eff1a8"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/utils/pet-store-actions.test.js": {
-    "mtime": 1783852664.2685661,
-    "hash": "64324239466fb540faa2a758f88dea9e"
+    "mtime": 1784037404.9837198,
+    "hash": "1df06d18c384e2f61f1c8938dac52851"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/utils/auth.test.js": {
     "mtime": 1783841047.9166458,
@@ -2608,51 +4132,43 @@
     "hash": "6b420f51b109c3af164bcdd8821df1c0"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1783841047.9136362,
-    "hash": "1220c7e1bbd288f82a7f361f3dcec239"
+    "mtime": 1784041784.7033477,
+    "hash": "5fd2dd016888b8f8e1ee1f6116572e15"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
-    "mtime": 1783841047.9103057,
-    "hash": "37dca3364d66696a1f2a517652bd2547"
+    "mtime": 1783985458.1634269,
+    "hash": "7c3d58a67d4cf8072794a9b1a3471017"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/privacy/privacy.js": {
     "mtime": 1783841047.9152074,
     "hash": "cf4b6485d84001afc7bc951fe7303811"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/chat/chat.js": {
-    "mtime": 1783898195.5662782,
-    "hash": "263eb9eec0bd5308563c37a843c013be"
+    "mtime": 1783985239.3616662,
+    "hash": "12e9afb81bae0376285759dfee4a29d4"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/wish/wish.js": {
-    "mtime": 1783841047.9162254,
-    "hash": "24085b426128245463965ce38d33014b"
+    "mtime": 1784037132.3272038,
+    "hash": "be03a2df3784436eff0cc106b6ceb2ce"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/collection-card/collection-card.js": {
-    "mtime": 1783841047.9111989,
-    "hash": "3b8e9348a68ce2463a100812985baba0"
-  },
-  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/hatch/hatch.test.js": {
-    "mtime": 1783843782.9108171,
-    "hash": "969ae616da3c945a805b166324b2cd22"
-  },
-  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/hatch/hatch.js": {
-    "mtime": 1783843480.0768826,
-    "hash": "1de08059f58a2846ade7da555e3848b1"
+    "mtime": 1784027609.4759014,
+    "hash": "89c3cb32cfd7fcdd7f1bea218104603f"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/welcome/welcome.test.js": {
-    "mtime": 1783841047.9160411,
-    "hash": "391db816a76cde77404062335e58a456"
+    "mtime": 1784027609.4773798,
+    "hash": "e32df619e000888adfa8513b0b74dc30"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/welcome/welcome.js": {
-    "mtime": 1783841047.9159255,
-    "hash": "4b9b40e8f1ea948e19b770065eb4d47c"
+    "mtime": 1784027609.4771292,
+    "hash": "961c79a80c516171125cdbc00db84683"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/profile/profile.js": {
-    "mtime": 1783852617.3811486,
-    "hash": "22cb2d351d1cd2a3ac73e2688828e79c"
+    "mtime": 1784036368.8920524,
+    "hash": "a71ace5067d384f0b6bc775e1c858f1b"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/profile/profile.test.js": {
-    "mtime": 1783852685.389472,
+    "mtime": 1784035501.785139,
     "hash": "b3fd7394a800c477c324a4eb73add91f"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/nickname/nickname.js": {
@@ -2660,28 +4176,24 @@
     "hash": "bbdf2f124b0a49b1e3ad0f51c85415d7"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/my/my.js": {
-    "mtime": 1783841047.9143639,
-    "hash": "f221279cf0a7af1e04c7b7a9aaf4701c"
-  },
-  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/exhibition-scene/exhibition-scene.js": {
-    "mtime": 1783841047.9120483,
-    "hash": "8f975e9b18c2c38720f9b9b174ce2ff7"
+    "mtime": 1784036617.334008,
+    "hash": "f396a8c512621b866c1e2765304d8065"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/hatch-guide/hatch-guide.js": {
-    "mtime": 1783841047.9125743,
-    "hash": "703598cf1d7cbcd9e8f81d51717c56bd"
+    "mtime": 1784037140.733859,
+    "hash": "7cadb25b3accf0cb0b91c0cae600f30d"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/lesson/lesson.js": {
-    "mtime": 1783841047.9141452,
-    "hash": "5f9724fcb20744958208418a7b6e3fbc"
+    "mtime": 1783985373.7711916,
+    "hash": "cf283d8e827178b111ac2134c3fe98f6"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/account/account.test.js": {
-    "mtime": 1783841047.9100459,
-    "hash": "df2de70a6442eb35c909f89865f4ee5e"
+    "mtime": 1784037179.5292618,
+    "hash": "3af765f595017a14adaf09a879173e85"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/account/account.js": {
-    "mtime": 1783841047.9099078,
-    "hash": "c27a24be3d937dcd43c9fdfd408af6c4"
+    "mtime": 1784037149.706428,
+    "hash": "7a1ccdef2f9c93e5f21ff3753190fbc0"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/invite-codes/invite-codes.js": {
     "mtime": 1783847607.2511177,
@@ -2692,20 +4204,16 @@
     "hash": "533669c00c8f5abc46909dc39b041a61"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/album/album.js": {
-    "mtime": 1783841047.9106133,
-    "hash": "9ee5d3054f93984caf2e016acf48ce9c"
-  },
-  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/exhibition-scenes/exhibition-scenes.js": {
-    "mtime": 1783841047.912316,
-    "hash": "6327001b31aae796ae58561587411e98"
+    "mtime": 1783986165.2441816,
+    "hash": "43983e4ec1a847dc6e827c32d62c906f"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/deregister/deregister.js": {
     "mtime": 1783841047.9114766,
     "hash": "f66f715bb6171aa58994d5824832c949"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/pet-detail/pet-detail.js": {
-    "mtime": 1783841047.9149857,
-    "hash": "4b3f16446a9f45be6c2af945c67d4696"
+    "mtime": 1783986002.047849,
+    "hash": "1aa17b81e28927606dd71d37d3ce071b"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/doodle/doodle.js": {
     "mtime": 1783841047.9117613,
@@ -2715,21 +4223,301 @@
     "mtime": 1783841047.9133565,
     "hash": "9b4d03c2658017e3ed2b2fe7388f30bd"
   },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/app.js": {
+    "mtime": 1783510360.284919,
+    "hash": "615810d10e36bf21c97ae37920126d3a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/config/companion-codes.js": {
+    "mtime": 1782292718.0198798,
+    "hash": "5d89f84513e039074efec31f8bc3aaf5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/config/voice-catalog.js": {
+    "mtime": 1782376777.9114156,
+    "hash": "d5109c91a9e4ba3e5450d8b418da803e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/config/voice-catalog.test.js": {
+    "mtime": 1782376777.911533,
+    "hash": "d4f0bfd4cf74c00082fcba8767d4e7db"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/audio.test.js": {
+    "mtime": 1783510360.2892187,
+    "hash": "3b323b5361669dde2f3fb21b3f48a8ca"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/device.js": {
+    "mtime": 1781660893.5857165,
+    "hash": "fa93c632140c8b9f98658333a3a15dee"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/logger.js": {
+    "mtime": 1782179808.9092393,
+    "hash": "afe1ce5a403f896533f50df0999c820f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/request.js": {
+    "mtime": 1783841047.927254,
+    "hash": "6da67b6027f986484dd19a68550d78e3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/auth.js": {
+    "mtime": 1782698225.0500486,
+    "hash": "3791a73340b499fcc03d5cec2faeb14d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/theme.js": {
+    "mtime": 1781660893.5874982,
+    "hash": "4f1565bc625fcaa6a7d50fac25329fe0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/voice-call-manager.js": {
+    "mtime": 1782292718.0228786,
+    "hash": "acbc2660eed16fc80c71678b1814f42e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/voice-call-manager.test.js": {
+    "mtime": 1782292718.023092,
+    "hash": "41ff89e8e52ed5c498e898ce46b57498"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/audio.js": {
+    "mtime": 1783510360.289008,
+    "hash": "3cd5e1d611feb4d76c4f19fd988c89b2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/utils/websocket.js": {
+    "mtime": 1782720651.1032696,
+    "hash": "229861f996f3ec4f087e0bd875e2c8c9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/components/voice-button/voice-button.js": {
+    "mtime": 1781660893.5557022,
+    "hash": "a6c7d427ca39ae9479fc2bf4dac2ec73"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/components/floating-call-ball/floating-call-ball.js": {
+    "mtime": 1782179808.901312,
+    "hash": "4b40fa311c744d858a12a93016de28d0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/components/reshape-confirm/reshape-confirm.js": {
+    "mtime": 1781660893.5539331,
+    "hash": "3064acc7c08c7308704f12ef855cbc47"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/components/chat-bubble/chat-bubble.js": {
+    "mtime": 1783510360.285352,
+    "hash": "b15c38ef3539b12acafb8d33fb9d9004"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/settings/settings.js": {
+    "mtime": 1783510360.2873886,
+    "hash": "75ae21edb1d9ecc7e32fba1fce51028f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/memory-anchor/memory-anchor.js": {
+    "mtime": 1782464672.7212145,
+    "hash": "a5d484a9a1e047792312b33ad9447dde"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/welcome/welcome.js": {
+    "mtime": 1781660893.5827804,
+    "hash": "a697ca355c16eef132593b66d8958629"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/subscription/subscription.js": {
+    "mtime": 1783510360.2880914,
+    "hash": "760ee998a3f5d2de17bb77889229ee92"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/destiny/destiny.js": {
+    "mtime": 1783510360.2862282,
+    "hash": "744ea12a14849d25cb06dec6de8ad98f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/soul-resonance/soul-resonance.js": {
+    "mtime": 1781660893.5814133,
+    "hash": "bd7097bf990b56237d660eeb92d9eb16"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/index/index.js": {
+    "mtime": 1784034924.8971014,
+    "hash": "dde725a4f63d8bd9f5e744b6248c2717"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/index/index.test.js": {
+    "mtime": 1783510360.2866664,
+    "hash": "54d6713e8787978bc80cf1eed28718cd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/orders/orders.js": {
+    "mtime": 1782641472.2171905,
+    "hash": "1463f7230bca8573353e572ac21f4914"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/backpack/logic.js": {
+    "mtime": 1781660893.5686615,
+    "hash": "a57c81f8ae2f36e3b8f7641ddbfde238"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/backpack/logic.test.js": {
+    "mtime": 1781660893.5688953,
+    "hash": "1d12e1084c02717e6d51f06d300dfaf5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/backpack/backpack.js": {
+    "mtime": 1782378679.9325001,
+    "hash": "6b05a04a0645d21d8eedd74833fd48ff"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/companion/change-voice/change-voice.js": {
+    "mtime": 1781660893.5727398,
+    "hash": "d630f50b37618f57f3d386df3e612f51"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/companion/change-occupation/change-occupation.js": {
+    "mtime": 1781660893.5692053,
+    "hash": "b92288276371a2e3b0c28c2a5f4e1bd9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/companion/change-role/change-role.js": {
+    "mtime": 1781660893.57041,
+    "hash": "e516668fb85f647c24879d4757aa2ea7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/companion/change-soul/change-soul.js": {
+    "mtime": 1781660893.5715833,
+    "hash": "29517c073451279e96dd843ce6114ca1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/companion/profile/profile.js": {
+    "mtime": 1781660893.5736773,
+    "hash": "fe29358c4d63897082b458616c858461"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/voice-call/voice-call.js": {
+    "mtime": 1783510360.288781,
+    "hash": "26de62809608399d647d9a6917f748ed"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/miniprogram/pages/voice-call/voice-call.test.js": {
+    "mtime": 1782292718.0215552,
+    "hash": "8ac5697ad3412bfa3c85652dc818c31d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/docs/diagrams/payment-flow-current.html": {
+    "mtime": 1782641472.2109706,
+    "hash": "5e46b8daf1ed29bbd17840cff5648f6b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/docs/diagrams/payment-flow-improved.html": {
+    "mtime": 1782641472.2122288,
+    "hash": "44a0990106e1eb8e471161f49e38d65c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/docs/architecture/xiaozhi-esp32-server-architecture.html": {
+    "mtime": 1781660546.5867848,
+    "hash": "4c95039a54ae16971418d1db2a76d845"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/index.html": {
+    "mtime": 1781660547.4232092,
+    "hash": "23f281ac2651c835dfb4618c30a9c04d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/resources/natori_pro_zh/ReadMe.txt": {
+    "mtime": 1779676929.550186,
+    "hash": "599e7704541b6ad2388d958184ca4102"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/resources/hiyori_pro_zh/ReadMe.txt": {
+    "mtime": 1779676929.4193027,
+    "hash": "64588a6b138b0675a11535432ce76717"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/requirements.txt": {
+    "mtime": 1779676929.6345532,
+    "hash": "1af5b835a59e647828a223204bc6c98d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/models/keywords.txt": {
+    "mtime": 1782051729.5822284,
+    "hash": "f3fd5a406e7107d372a86c096cde81b8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01/keywords.txt": {
+    "mtime": 1710163000.0,
+    "hash": "04f32f05534ad9556abe334154591159"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01/keywords_raw.txt": {
+    "mtime": 1710163000.0,
+    "hash": "ea564bb4a082b0e592c704bae49a4398"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/digital-human/wakeword_runtime/sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01/test_wavs/test_keywords.txt": {
+    "mtime": 1710163000.0,
+    "hash": "4b9aef47cad93442b884cd7af091d114"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/index.html": {
+    "mtime": 1776309435.4920454,
+    "hash": "7adec07f3a0d180425181e7d3a69ef73"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-mobile/pnpm-workspace.yaml": {
+    "mtime": 1776309435.4938996,
+    "hash": "34d7725636976bffc30f602bed139e01"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/requirements.txt": {
+    "mtime": 1782378679.934911,
+    "hash": "0fc7c5d51ee2746f52328c95d10fe6cd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/config.yaml": {
+    "mtime": 1783510360.2900712,
+    "hash": "d55763b635e37fc6723e6235d3b126ec"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/agent-base-prompt.txt": {
+    "mtime": 1783862115.0228925,
+    "hash": "37c502a32da6e71e09c57495218a3616"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/config_from_api.yaml": {
+    "mtime": 1776309435.8597004,
+    "hash": "64c2325c7b7e7b7b19676392056b875f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/agent-base-prompt_backup.txt": {
+    "mtime": 1783861427.3176107,
+    "hash": "0d65b3649a256e47d1b0c3a301dde647"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/models/SenseVoiceSmall/config.yaml": {
+    "mtime": 1776309435.8736193,
+    "hash": "68eecda8f3e076d4fa93eea9b2cd94cb"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/xiaozhi-server/docs/architecture/memory_system_architecture.html": {
+    "mtime": 1781660547.7148223,
+    "hash": "1ee29912ef44eedb5f1615cc631cb129"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/offline.html": {
+    "mtime": 1776309435.8254354,
+    "hash": "734156932e44f77e0c83050bcd5e1021"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/index.html": {
+    "mtime": 1781660547.627086,
+    "hash": "6efcbee1b8d610cde132269d1a409149"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/user-agreement.html": {
+    "mtime": 1776309435.8260303,
+    "hash": "0adc30c42621b7fb8021c6275d71ee94"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/privacy-policy.html": {
+    "mtime": 1776309435.8257189,
+    "hash": "d54f992031f6d88be0c4684c68b274ca"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/privacy-policy-en.html": {
+    "mtime": 1776309435.8255165,
+    "hash": "3ab117cf4da56ec7e0121a3a1f9e236c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/user-agreement-en.html": {
+    "mtime": 1776309435.8258994,
+    "hash": "9c01d76149e3940676ba08f333c507fa"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/index.html": {
+    "mtime": 1776821227.520455,
+    "hash": "dbcdf44656367bfa9d7f1bcc472f9503"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/static/charsets/qwen18409.txt": {
+    "mtime": 1776309435.5213852,
+    "hash": "ee66afe19bba728e124ff14652fe600e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/static/charsets/gb2312.txt": {
+    "mtime": 1776309435.5210516,
+    "hash": "957b6db6744d9fab244edc4b704785a8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/static/charsets/deepseek.txt": {
+    "mtime": 1776309435.520891,
+    "hash": "5839a39ff76f98126fc1fa7a55d956ec"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/static/charsets/latin1.txt": {
+    "mtime": 1776309435.5211236,
+    "hash": "07f0c0ef4aa6af13ccd4b33f82edd528"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/static/multinet_model/fst/commands_en.txt": {
+    "mtime": 1776309435.6459289,
+    "hash": "748a8e9833bd9f9e3700dc2f1dd25a9c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/generator/static/multinet_model/fst/commands_cn.txt": {
+    "mtime": 1776309435.6458514,
+    "hash": "05cbb6391a103fc21f66d22808750b35"
+  },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/resources/application.yml": {
     "mtime": 1776309435.4905968,
     "hash": "c736c993769fa6eee6bd14839f5ff6bc"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/application-prod.yml": {
-    "mtime": 1783841047.924653,
-    "hash": "e3477b224f7a224d908028239e7dd3b2"
+    "mtime": 1783948096.844853,
+    "hash": "fd5e8aad69d7f3d74b5e208244d36630"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/application-dev.yml": {
-    "mtime": 1783841047.9245777,
-    "hash": "66c4f19bd88d63bc11da148ca3f82339"
+    "mtime": 1783948096.8446877,
+    "hash": "df3bbfbb354134df266c360dbc5f4b12"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/application.yml": {
-    "mtime": 1783841047.9248362,
-    "hash": "d1de92ae6c4b72504bac0cf56f1829da"
+    "mtime": 1783959294.6448584,
+    "hash": "7e2e2593af96556438b65d079a2ba3f6"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
     "mtime": 1783841047.9255388,

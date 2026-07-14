@@ -14,7 +14,10 @@
     </view>
 
     <view class="pet-status" bindtap="onPetAction" hover-class="user-card--pressed">
-      <view class="pet-visual {{pet ? '' : 'pet-visual--empty'}}"><text wx:if="{{pet}}">{{pet.petType === '锦鲤' ? '锦' : '兔'}}</text></view>
+      <view class="pet-visual {{pet ? '' : 'pet-visual--empty'}}">
+        <image wx:if="{{pet && pet.avatarUrl}}" class="my-pet-avatar" src="{{pet.avatarUrl}}" mode="aspectFill"></image>
+        <text wx:elif="{{pet}}">{{pet.petType === '锦鲤' ? '锦' : '兔'}}</text>
+      </view>
       <view class="pet-copy">
         <text class="pet-title">{{pet ? (pet.name || pet.petType) : '还没有蛋宝宝'}}</text>
         <text class="pet-stage">{{pet ? stageLabel : '输入激活码，领取你的第一只蛋宝宝'}}</text>

@@ -25,16 +25,17 @@ function translateZodiac(zodiac) {
 
 function maskUserId(userId) {
   const s = String(userId || '');
-  if (s.length <= 4) return s;
-  return s.slice(0, 2) + '****' + s.slice(-2);
+  return s.slice(0, 8);
 }
 
 function formatDisplay(profile) {
   const user = petStore.getUser() || {};
+  const session = auth.getSession() || {};
+  const userId = user.id || session.userId || profile.userId || '';
   return {
-    nickname: profile.nickname || user.nickname || '蛋友3024',
+    nickname: profile.nickname || user.nickname || '蛋友',
     avatarUrl: profile.avatarUrl || user.avatarUrl || '',
-    userId: maskUserId(user.id || profile.userId || ''),
+    userId: maskUserId(userId),
     gender: profile.gender ? (GENDER_REVERSE[profile.gender] || '未设置') : '未设置',
     birthday: profile.birthday || '未设置',
     zodiac: translateZodiac(profile.zodiac) || '——',
@@ -45,7 +46,7 @@ function formatDisplay(profile) {
 
 Page({
   data: {
-    nickname: '蛋友3024',
+    nickname: '蛋友',
     userId: '',
     gender: '未设置',
     birthday: '未设置',
@@ -69,7 +70,8 @@ Page({
       .catch(() => {
         const cached = wx.getStorageSync(PROFILE_KEY) || {};
         const user = petStore.getUser() || {};
-        this.setData(formatDisplay({ ...cached, userId: user.id }));
+        const session = auth.getSession() || {};
+        this.setData(formatDisplay({ ...cached, userId: user.id || session.userId }));
       });
   },
 

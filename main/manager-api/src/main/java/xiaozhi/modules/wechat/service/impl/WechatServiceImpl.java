@@ -58,6 +58,9 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private static final String STABLE_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/stable_token";
     private static final String GET_PHONE_URL = "https://api.weixin.qq.com/wxa/business/getuserphonenumber";
     private static final String DEFAULT_USER_AVATAR_URL = "https://oss.eggbabe.com/default-avatar/user/user-avatar.png";
+    private static final String DEFAULT_NICKNAME_PREFIX = "蛋友";
+    private static final int DEFAULT_NICKNAME_RANDOM_LENGTH = 5;
+    private static final java.util.random.RandomGenerator DEFAULT_NICKNAME_RANDOM = new java.util.Random();
 
     private final SysUserDao sysUserDao;
     private final SysUserTokenService sysUserTokenService;
@@ -118,6 +121,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             wechatUser.setOpenid(openid);
             wechatUser.setUserId(userId);
             wechatUser.setSessionKey(sessionKey);
+            wechatUser.setNickname(generateDefaultNickname());
             wechatUser.setAvatarUrl(DEFAULT_USER_AVATAR_URL);
             baseDao.insert(wechatUser);
             isNewUser = true;
@@ -509,6 +513,15 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             log.warn("查询用户智能体失败: userId={}, error={}", userId, e.getMessage());
         }
         return null;
+    }
+
+    private String generateDefaultNickname() {
+        StringBuilder sb = new StringBuilder(DEFAULT_NICKNAME_PREFIX.length() + DEFAULT_NICKNAME_RANDOM_LENGTH);
+        sb.append(DEFAULT_NICKNAME_PREFIX);
+        for (int i = 0; i < DEFAULT_NICKNAME_RANDOM_LENGTH; i++) {
+            sb.append(DEFAULT_NICKNAME_RANDOM.nextInt(10));
+        }
+        return sb.toString();
     }
 
     /**

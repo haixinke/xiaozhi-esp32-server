@@ -12,8 +12,9 @@ Page({
     }
     const card = { ...pet.collectionCard, petType: pet.collectionCard.prototype };
     this.setData({
-      pet: { ...pet, petType: pet.prototype },
+      pet: { ...pet, petType: pet.prototype, avatarUrl: pet.avatarUrl || '' },
       card,
+      avatarUrl: pet.avatarUrl || '',
       dailyStatus: petStore.getDailyStatus()
     });
   },

@@ -28,6 +28,9 @@
   width: 144rpx;
   height: 144rpx;
   overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .avatar-btn::after {
   border: none;
@@ -37,8 +40,8 @@
 
 .avatar-edit-badge {
   position: absolute;
-  bottom: -8rpx;
-  right: -8rpx;
+  bottom: 4rpx;
+  right: 12rpx;
   width: 48rpx;
   height: 48rpx;
   border-radius: 50%;

@@ -528,7 +528,7 @@ function buildCollectionCard(vo) {
     imageUrl: vo.collectionCardUrl || vo.avatarUrl || '',
     collectible: '普通',
     hatchQuality: ratio >= 0.8 ? '完整孵化' : '轻量孵化',
-    originalOwner: (user && user.nickname) || '蛋友3024'
+    originalOwner: (user && user.nickname) || '蛋友'
   };
 }
 
@@ -553,7 +553,7 @@ async function createCollectionCard() {
       personality: personality.text,
       collectible: '普通',
       hatchQuality: pet.progress >= 80 ? '完整孵化' : '轻量孵化',
-      originalOwner: (getUser() && getUser().nickname) || '蛋友3024'
+      originalOwner: (getUser() && getUser().nickname) || '蛋友'
     };
     pet.stage = 'hatched';
     savePet(pet);

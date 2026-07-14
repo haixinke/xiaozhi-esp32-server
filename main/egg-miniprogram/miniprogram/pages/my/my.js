@@ -2,7 +2,7 @@ const petStore = require('../../utils/pet-store');
 const request = require('../../utils/request');
 
 Page({
-  data: { userName: '蛋友3024', avatarUrl: '', eggCount: 0, pet: null, stage: '', statusLine: '', actionLabel: '' },
+  data: { userName: '蛋友', avatarUrl: '', eggCount: 0, pet: null, stage: '', statusLine: '', actionLabel: '' },
 
   onShow() {
     this.loadUserProfile();
@@ -20,7 +20,7 @@ Page({
 
   applyUserData() {
     const user = petStore.getUser() || {};
-    this.setData({ userName: user.nickname || '蛋友3024', avatarUrl: user.avatarUrl || '' });
+    this.setData({ userName: user.nickname || '蛋友', avatarUrl: user.avatarUrl || '' });
   },
 
   loadPetStatus() {
@@ -34,7 +34,7 @@ Page({
     const status = petStore.getDailyStatus();
     this.setData({
       eggCount: 1,
-      pet: { ...pet, petType: pet.prototype },
+      pet: { ...pet, petType: pet.prototype, avatarUrl: pet.avatarUrl || '' },
       stage,
       statusLine: stage === 'hatched' ? status.line : petStore.getCountdown(pet),
       actionLabel: stage === 'hatched' ? '去看看' : presentation.actionLabel,

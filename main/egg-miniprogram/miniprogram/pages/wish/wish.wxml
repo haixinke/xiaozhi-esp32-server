@@ -24,4 +24,3 @@
     </block>
   </view>
 </view>
-<view class="page"><nav-bar title="今日许愿"></nav-bar><view class="content"><text class="kicker">TODAY'S WISH</text><text class="title">今天你希望蛋宝宝更像哪一种朋友？</text><view class="options"><view wx:for="{{options}}" wx:key="*this" class="option {{selected === item ? 'option--selected' : ''}}" data-value="{{item}}" bindtap="onSelect"><view class="radio"><view wx:if="{{selected === item}}" class="radio-dot"></view></view><text>{{item}}</text></view></view><view class="spacer"></view><button class="primary {{!selected ? 'primary--disabled' : ''}}" bindtap="onSubmit">把愿望告诉它</button></view></view>

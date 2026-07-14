@@ -300,49 +300,24 @@ async function completeDailyTask(task, value) {
   }
 
   if (pet.demoMode) {
-    var date = todayKey();
-    var field = task + 'Date';
-    var isFirstToday = pet.tasks[field] !== date;
-
-    if (task === 'wish') {
-      // 许愿：允许多题/天，但同一道题当天不重复记录
-      var wishes = pet.preferences.wishes || [];
-      if (wishes.some(function (w) { return w.date === date && w.questionId === wishData.questionId; })) {
-        return { ok: true, alreadyDone: true, pet };
-      }
-      pet.preferences.wishes.push({ date: date, questionId: wishData.questionId, value: wishData.value });
-    } else {
-      // 摸一摸 / 早教班：每日一次
-      if (pet.tasks[field] === date) return { ok: true, alreadyDone: true, pet };
-      if (task === 'lesson') pet.preferences.lessons.push({ date: date, value: value });
-    }
-
-    // 仅当天首次动作加进度
-    if (isFirstToday) {
-      pet.tasks[field] = date;
-      addProgress(pet, 5);
-    }
+    const date = todayKey();
+    const field = `${task}Date`;
+    if (pet.tasks[field] === date) return { ok: true, alreadyDone: true, pet };
+    pet.tasks[field] = date;
+    if (task === 'wish') pet.preferences.wishes.push({ date, questionId: wishData.questionId, value: wishData.value });
+    if (task === 'lesson') pet.preferences.lessons.push({ date, value });
+    addProgress(pet, 5);
     pet.lastInteractionAt = Date.now();
     savePet(pet);
-    return { ok: true, alreadyDone: !isFirstToday, pet };
+    return { ok: true, alreadyDone: false, pet };
   }
-
   try {
-    var payload;
-    if (task === 'cuddle') {
-      payload = {};
-    } else if (task === 'wish') {
-      payload = { questionId: wishData.questionId, value: wishData.value };
-    } else {
-      payload = { value: value };
-    }
-    var result = await petApi.submitHatchAction(pet.id, ACTION_TYPE[task], payload);
-    var updated = savePetFromVO(result.pet);
-    if (task === 'wish') {
-      // 许愿：无论后端是否 alreadyDone，都本地记录 questionId（后端唯一索引仅存首条）
-      updated.preferences.wishes.push({ date: todayKey(), questionId: wishData.questionId, value: wishData.value });
-    } else if (task === 'lesson' && !result.alreadyDone) {
-      updated.preferences.lessons.push({ date: todayKey(), value: value });
+    const payload = task === 'cuddle' ? {} : (task === 'wish' ? { questionId: wishData.questionId, value: wishData.value } : { value });
+    const result = await petApi.submitHatchAction(pet.id, ACTION_TYPE[task], payload);
+    const updated = savePetFromVO(result.pet);
+    if (!result.alreadyDone) {
+      if (task === 'wish') updated.preferences.wishes.push({ date: todayKey(), questionId: wishData.questionId, value: wishData.value });
+      if (task === 'lesson') updated.preferences.lessons.push({ date: todayKey(), value });
     }
     savePet(updated);
     return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };

@@ -22,53 +22,45 @@ Page({
     }
     this.setData({ loading: true });
 
-    var answeredIds = await this._getAnsweredToday(pet);
-    var nextQuestion = null;
-    for (var i = 0; i < WISH_QUESTIONS.length; i++) {
-      if (answeredIds.indexOf(WISH_QUESTIONS[i].id) === -1) {
-        nextQuestion = WISH_QUESTIONS[i];
-        break;
-      }
+    var wishedToday = await this._hasWishedToday(pet);
+    if (wishedToday) {
+      this.setData({ question: null, selected: '', allDone: true, loading: false });
+      return;
     }
 
-    if (nextQuestion) {
-      this.setData({ question: nextQuestion, selected: '', allDone: false, loading: false });
-    } else {
-      this.setData({ question: null, selected: '', allDone: true, loading: false });
-    }
+    // 题目轮转：按历史许愿总次数取模 7，每天展示下一题
+    var totalWishes = this._countTotalWishes(pet);
+    var index = totalWishes % WISH_QUESTIONS.length;
+    this.setData({ question: WISH_QUESTIONS[index], selected: '', allDone: false, loading: false });
   },
 
-  async _getAnsweredToday(pet) {
+  async _hasWishedToday(pet) {
     var today = petStore.todayKey();
-    var ids = [];
 
-    // 1. 本地记录（demo 模式主源，非 demo 补充）
-    var wishes = (pet.preferences && pet.preferences.wishes) || [];
-    wishes.forEach(function (w) {
-      if (w.date === today && w.questionId) ids.push(w.questionId);
-    });
-
-    // 2. 后端记录（非 demo 模式，后端唯一索引仅存当日首条）
-    if (!pet.demoMode && pet.hatchStatus !== 'HATCHED') {
-      try {
-        var actions = await petApi.listHatchActions(pet.id);
-        if (Array.isArray(actions)) {
-          actions.forEach(function (a) {
-            if (a.actionType === 'WISH' && a.actionDate === today) {
-              try {
-                var payload = typeof a.payload === 'string' ? JSON.parse(a.payload) : a.payload;
-                if (payload && payload.questionId) ids.push(payload.questionId);
-              } catch (e) { /* payload 解析失败忽略 */ }
-            }
-          });
-        }
-      } catch (e) { /* 拉取失败沿用本地记录 */ }
+    // demo 模式：检查 pet.tasks.wishDate
+    if (pet.demoMode) {
+      return !!(pet.tasks && pet.tasks.wishDate === today);
     }
 
-    // 去重
-    var unique = [];
-    ids.forEach(function (id) { if (unique.indexOf(id) === -1) unique.push(id); });
-    return unique;
+    // 非 demo：检查后端 hatch-actions
+    if (pet.hatchStatus === 'HATCHED') return true;
+    try {
+      var actions = await petApi.listHatchActions(pet.id);
+      if (Array.isArray(actions)) {
+        return actions.some(function (a) {
+          return a.actionType === 'WISH' && a.actionDate === today;
+        });
+      }
+    } catch (e) { /* 拉取失败沿用本地 */ }
+
+    // fallback：检查本地记录
+    var wishes = (pet.preferences && pet.preferences.wishes) || [];
+    return wishes.some(function (w) { return w.date === today; });
+  },
+
+  _countTotalWishes(pet) {
+    var wishes = (pet.preferences && pet.preferences.wishes) || [];
+    return wishes.length;
   },
 
   onSelect(e) {
@@ -81,10 +73,9 @@ Page({
     var payload = { questionId: question.id, value: this.data.selected };
     var result = await petStore.completeWish(payload);
     if (!result.ok) return wx.showToast({ title: result.message, icon: 'none' });
-    wx.showToast({ title: result.alreadyDone ? '今天已经许过愿啦' : '它记住了', icon: 'none' });
-    // 刷新出下一题或进入 allDone 状态
-    var self = this;
-    setTimeout(function () { self._loadQuestion(); }, 800);
+    wx.showToast({ title: '它记住了', icon: 'none' });
+    // 许愿后跳回蛋宝宝主页面
+    setTimeout(function () { wx.navigateBack(); }, 800);
   },
 
   onBack() {

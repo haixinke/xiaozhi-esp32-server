@@ -76,6 +76,7 @@ public class ConfigServiceImpl implements ConfigService {
     private int freeDailyChatLimit;
 
     private static final String FEATURE_CHAT_NO_LIMIT = "chat_no_limit";
+    private static final String BOARD_WECHAT_EGG = "wechat-egg-miniprogram";
 
     @Override
     public Object getConfig(Boolean isCache) {
@@ -580,7 +581,14 @@ public class ConfigServiceImpl implements ConfigService {
         }
         Long userId = device.getUserId();
 
-        // 2. 检查用户是否有 chat_no_limit 权益
+        // 2. 蛋宝宝小程序设备豁免配额限制
+        if (BOARD_WECHAT_EGG.equals(device.getBoard())) {
+            result.setAllowed(true);
+            result.setRemaining(-1); // -1 表示无限
+            return result;
+        }
+
+        // 3. 检查用户是否有 chat_no_limit 权益
         if (subscriptionService.hasFeature(userId, FEATURE_CHAT_NO_LIMIT)) {
             result.setAllowed(true);
             result.setRemaining(-1); // -1 表示无限

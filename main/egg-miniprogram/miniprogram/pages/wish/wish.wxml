@@ -1,1 +1,27 @@
+<view class="page">
+  <nav-bar title="今日许愿"></nav-bar>
+  <view class="content">
+    <!-- 全部答完 -->
+    <view wx:if="{{allDone}}" class="all-done">
+      <text class="all-done-emoji">🌟</text>
+      <text class="all-done-text">今天已经许过愿啦</text>
+      <text class="all-done-desc">明天再来许新的愿望吧</text>
+      <button class="primary" bindtap="onBack">返回</button>
+    </view>
+    <!-- 答题中 -->
+    <block wx:else>
+      <text class="kicker">TODAY'S WISH</text>
+      <text class="title">{{question.title}}</text>
+      <view class="options">
+        <view wx:for="{{question.options}}" wx:key="text" class="option {{selected === item.text ? 'option--selected' : ''}}" data-value="{{item.text}}" bindtap="onSelect">
+          <view class="icon">{{item.emoji}}</view>
+          <text>{{item.text}}</text>
+          <text class="arrow">{{selected === item.text ? '✓' : '›'}}</text>
+        </view>
+      </view>
+      <view class="spacer"></view>
+      <button class="primary {{!selected ? 'primary--disabled' : ''}}" bindtap="onSubmit">把愿望告诉它</button>
+    </block>
+  </view>
+</view>
 <view class="page"><nav-bar title="今日许愿"></nav-bar><view class="content"><text class="kicker">TODAY'S WISH</text><text class="title">今天你希望蛋宝宝更像哪一种朋友？</text><view class="options"><view wx:for="{{options}}" wx:key="*this" class="option {{selected === item ? 'option--selected' : ''}}" data-value="{{item}}" bindtap="onSelect"><view class="radio"><view wx:if="{{selected === item}}" class="radio-dot"></view></view><text>{{item}}</text></view></view><view class="spacer"></view><button class="primary {{!selected ? 'primary--disabled' : ''}}" bindtap="onSubmit">把愿望告诉它</button></view></view>

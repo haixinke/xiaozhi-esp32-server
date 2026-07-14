@@ -32,12 +32,12 @@ main/egg-miniprogram/
 ├── scripts/verify-project.js    # 工程完整性校验（四件套/JSON/组件引用/禁止页面）
 └── miniprogram/                 # 小程序源码根
     ├── app.js                   # 入口（onLaunch 调 wx.login 取 code）
-    ├── app.json                 # 21 个页面 + tabBar（home/my）+ custom 导航
+    ├── app.json                 # 20 个页面 + tabBar（home/my）+ custom 导航
     ├── app.wxss                 # 全局样式与 token
     ├── sitemap.json
     ├── assets/                  # tab 图标
     ├── components/              # 自定义组件（见下表）
-    ├── pages/                   # 21 个页面（见下表）
+    ├── pages/                   # 20 个页面（见下表）
     └── utils/
         └── pet-store.js         # 当前 MVP 的本地存储 mock（孵化状态机、任务、收藏卡）
 ```
@@ -54,7 +54,6 @@ main/egg-miniprogram/
 | `pages/wish/wish` | 许愿池（每日 +5%） | 孵化任务 |
 | `pages/lesson/lesson` | 蛋蛋早教班（每日 +5%） | 孵化任务 |
 | `pages/doodle/doodle` | 彩蛋涂鸦（+20%） | 孵化任务 |
-| `pages/hatch/hatch` | 破壳仪式 | 破壳 |
 | `pages/collection-card/collection-card` | 破壳收藏卡（档案） | 破壳后 |
 | `pages/album/album` | 卡册 | 破壳后 |
 | `pages/pet-detail/pet-detail` | 宠物详情 | 破壳后 |

@@ -14,7 +14,8 @@ Page({
     eggMotion: '',
     cuddleProgress: 0,
     actionLabel: '孵化修炼手册',
-    authChecked: false
+    authChecked: false,
+    hatching: false
   },
 
   _navigating: false,
@@ -154,12 +155,59 @@ Page({
   onPrimaryAction() {
     const stage = this.data.stage;
     if (stage === 'ready') {
-      wx.navigateTo({ url: '/pages/hatch/hatch' });
+      this.doHatch();
     } else if (stage === 'hatched') {
       wx.navigateTo({ url: '/pages/chat/chat' });
     } else {
       wx.navigateTo({ url: '/pages/hatch-guide/hatch-guide' });
     }
+  },
+
+  doHatch() {
+    if (this.data.hatching) return;
+    this.setData({ hatching: true }, () => {
+      // 确保 video 组件已渲染后主动调 play
+      this.hatchVideoCtx = wx.createVideoContext('hatchVideo', this);
+      if (this.hatchVideoCtx) this.hatchVideoCtx.play();
+    });
+    // 同步发起破壳接口调用，视频播放结束后等待结果
+    this._hatchPromise = petStore.createCollectionCard();
+  },
+
+  onHatchVideoEnded() {
+    (async () => {
+      try {
+        const result = await this._hatchPromise;
+        if (!result.ok) {
+          this.setData({ hatching: false });
+          wx.showToast({ title: result.message || '破壳失败，请稍后重试', icon: 'none' });
+          return;
+        }
+        this.setData({ hatching: false });
+        this.onShow();
+      } catch (error) {
+        this.setData({ hatching: false });
+        wx.showToast({ title: '破壳失败，请稍后重试', icon: 'none' });
+      }
+    })();
+  },
+
+  onHatchVideoError() {
+    // 视频加载失败时，退回正常状态并等待接口结果
+    (async () => {
+      try {
+        const result = await this._hatchPromise;
+        this.setData({ hatching: false });
+        if (!result.ok) {
+          wx.showToast({ title: result.message || '破壳失败，请稍后重试', icon: 'none' });
+        } else {
+          this.onShow();
+        }
+      } catch (error) {
+        this.setData({ hatching: false });
+        wx.showToast({ title: '破壳失败，请稍后重试', icon: 'none' });
+      }
+    })();
   },
 
   onOpenProfile() {

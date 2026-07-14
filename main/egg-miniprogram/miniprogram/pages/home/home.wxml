@@ -48,4 +48,21 @@
       <button class="primary-button hatch-action" bindtap="onPrimaryAction">{{actionLabel}}</button>
     </view>
   </scroll-view>
+
+  <!-- 破壳视频遮罩 -->
+  <view wx:if="{{hatching}}" class="hatch-overlay">
+    <video
+      id="hatchVideo"
+      class="hatch-video"
+      src="https://oss.eggbabe.com/video/egg-out.mp4"
+      autoplay
+      controls="{{false}}"
+      show-center-play-btn="{{false}}"
+      show-fullscreen-btn="{{false}}"
+      show-play-btn="{{false}}"
+      object-fit="cover"
+      bindended="onHatchVideoEnded"
+      binderror="onHatchVideoError"
+    ></video>
+  </view>
 </view>

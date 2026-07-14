@@ -47,3 +47,5 @@
 .daily-label { font-size: 22rpx; color: #8D8B84; }
 .mood { padding: 6rpx 16rpx; border-radius: 999rpx; background: #F5F8ED; color: #54632C; font-size: 21rpx; }
 .daily-line { display: block; margin-top: 14rpx; font-size: 28rpx; line-height: 1.55; color: #35352F; }
+.hatch-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+.hatch-video { width: 100vw; height: 100vh; }

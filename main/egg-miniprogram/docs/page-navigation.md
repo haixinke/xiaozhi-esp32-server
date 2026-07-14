@@ -82,9 +82,8 @@ pages/home/home
 
 pages/home/home
   └── 点击主按钮（stage === 'ready'，可以破壳）
-        └── wx.navigateTo → pages/hatch/hatch（破壳仪式）
-              └── 破壳动画结束并成功后
-                    └── wx.redirectTo → pages/collection-card/collection-card?new=1
+        └── 全屏播放破壳视频（egg-out.mp4）同时调用破壳接口
+              └── 视频结束后刷新首页（stage === 'hatched'，按钮变为「和它说说话」）
 ```
 
 ### 破壳后流程
@@ -155,7 +154,6 @@ pages/my/my
 | --- | --- | --- |
 | `pages/home/home` | 当前是否有蛋 | 无蛋时显示空态，引导去 `add-device` |
 | `pages/hatch-guide/hatch-guide` | 当前是否有 pet | 无 pet 时 `switchTab` 回 `home` |
-| `pages/hatch/hatch` | 是否已有收藏卡 / 是否已 ready | 已有卡则 `redirectTo` 到 `collection-card`；未 ready 则 `navigateBack` |
 | `pages/chat/chat` | 是否已破壳 | 未破壳则 `navigateBack` |
 | `pages/pet-detail/pet-detail` | 是否已破壳 | 未破壳则 `navigateBack` |
 | `pages/collection-card/collection-card` | 是否有收藏卡 | 无收藏卡则 `navigateBack` |

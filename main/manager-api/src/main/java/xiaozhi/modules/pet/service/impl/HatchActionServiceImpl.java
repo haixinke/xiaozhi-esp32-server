@@ -113,6 +113,7 @@ public class HatchActionServiceImpl implements HatchActionService {
         boolean readyToHatch = pet.getExpectedHatchTime() != null
                 && !new Date().before(pet.getExpectedHatchTime());
 
+        petService.refreshTodayMood(pet);
         PetVO vo = petService.toVO(pet);
         HatchActionResultVO result = new HatchActionResultVO();
         result.setAddedMinutes(added);

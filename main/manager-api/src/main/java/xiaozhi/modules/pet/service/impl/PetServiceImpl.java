@@ -302,6 +302,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
 
         log.info("蛋领养成功 userId={}, petId={}, prototype={}", userId, pet.getId(), prototype);
+        refreshTodayMood(pet);
         return toVO(pet);
     }
 
@@ -353,6 +354,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             updateAgentSystemPrompt(device.getAgentId(), existingPet, birthDate, calcResult, mbti);
 
             log.info("宠物信息已更新（演示），deviceId={}, petId={}, nickname={}", deviceId, existingPet.getId(), nickname);
+            refreshTodayMood(existingPet);
             return toVO(existingPet);
         }
 
@@ -387,6 +389,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
         log.info("宠物出生成功，deviceId={}, petId={}, nickname={}", deviceId, pet.getId(), nickname);
 
+        refreshTodayMood(pet);
         return toVO(pet);
     }
 
@@ -398,6 +401,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         if (pet == null) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
+        refreshTodayMood(pet);
         return toVO(pet);
     }
 
@@ -524,6 +528,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         // eventPublisher.publishEvent(new CollectionCardGenerationEvent(pet.getId()));
 
         log.info("蛋破壳 userId={}, petId={}, deviceId={}, agentId={}", userId, petId, deviceId, agentId);
+        refreshTodayMood(pet);
         return toVO(pet);
     }
 

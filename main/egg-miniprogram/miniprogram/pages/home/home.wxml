@@ -30,24 +30,24 @@
         </view>
         <view class="egg-shadow"></view>
         <view wx:if="{{cuddleProgress > 0}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
-        <text class="touch-hint">{{stage === 'hatched' ? '轻触这里，看看它今天的档案' : '轻触听回应 · 长按 3 秒贴贴'}}</text>
       </view>
 
       <view class="state-card">
         <view class="state-dot"></view>
         <view class="state-copy">
           <text class="state-title">{{stageText}}</text>
+          <text class="state-time">{{countdown}}</text>
         </view>
       </view>
 
-      <view class="daily-card" wx:if="{{dailyStatus}}">
-        <view class="daily-head"><text class="daily-label">今日状态</text><text class="mood">{{dailyStatus.mood}}</text></view>
-        <text class="daily-line">{{dailyStatus.line}}</text>
+      <view wx:if="{{dailyStatus}}" class="status-daily">
+        <text class="status-meta">今日状态 · {{dailyStatus.mood}}</text>
+        <text class="status-line">{{dailyStatus.line}}</text>
       </view>
 
       <view class="home-actions">
-        <button class="primary-button home-actions__chat" bindtap="onPrimaryAction">{{actionLabel}}</button>
-        <button wx:if="{{stage === 'hatched'}}" class="primary-button home-actions__scene" bindtap="onChangeScene">更换场景</button>
+        <button class="primary-button home-actions__chat" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
+        <button wx:if="{{stage === 'hatched'}}" class="primary-button home-actions__scene" bindtap="onChangeScene"><text class="button-label">更换场景</text></button>
       </view>
     </view>
   </scroll-view>

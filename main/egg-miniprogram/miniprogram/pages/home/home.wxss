@@ -27,7 +27,6 @@
 .egg-pattern--two { width: 10rpx; height: 10rpx; left: 78rpx; bottom: 84rpx; }
 .egg-shadow { width: 250rpx; height: 42rpx; border-radius: 50%; background: rgba(0,41,0,.11); filter: blur(12rpx); margin-top: -2rpx; }
 .feedback-bubble { position: absolute; z-index: 5; top: 48rpx; max-width: 480rpx; padding: 18rpx 26rpx; border-radius: 28rpx 28rpx 28rpx 8rpx; background: #FFF; box-shadow: 0 12rpx 36rpx rgba(0,41,0,.10); font-size: 25rpx; color: #3D4930; animation: bubbleIn .25s ease-out; }
-.touch-hint { position: absolute; bottom: 24rpx; font-size: 22rpx; color: #99978F; }
 .cuddle-track { position: absolute; bottom: 62rpx; width: 280rpx; height: 8rpx; border-radius: 999rpx; overflow: hidden; background: #E8E6DF; }
 .cuddle-fill { height: 100%; border-radius: 999rpx; background: #9DB65B; transition: width .1s linear; }
 .egg--wobble { animation: wobble .55s ease-in-out; }
@@ -40,15 +39,13 @@
 @keyframes warm { 0%,100% { transform: scale(1); } 50% { transform: scale(1.025); } }
 @keyframes warmDone { 0% { transform: scale(1); } 45% { transform: scale(1.07); } 100% { transform: scale(1); } }
 @keyframes bubbleIn { from { transform: translateY(8rpx); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.state-card, .daily-card { background: #FFF; border: 1rpx solid #E8E6E0; border-radius: 28rpx; padding: 28rpx 30rpx; margin-bottom: 22rpx; box-shadow: 0 8rpx 24rpx rgba(0,41,0,.04); }
-.state-card { display: flex; align-items: center; }
-.state-dot { width: 16rpx; height: 16rpx; border-radius: 50%; background: #9DB65B; box-shadow: 0 0 0 10rpx #F1F5E7; margin: 0 28rpx 0 8rpx; }
-.state-copy { flex: 1; display: flex; align-items: center; }
+.state-card { display: flex; align-items: center; margin-bottom: 24rpx; padding: 28rpx 30rpx; border: 1rpx solid #E8E6E0; border-radius: 28rpx; background: #FFF; box-shadow: 0 8rpx 24rpx rgba(0,41,0,.04); }
+.state-dot { width: 16rpx; height: 16rpx; flex-shrink: 0; margin: 0 28rpx 0 8rpx; border-radius: 50%; background: #9DB65B; box-shadow: 0 0 0 10rpx #F1F5E7; }
+.state-copy { flex: 1; min-width: 0; }
 .state-title { display: block; font-size: 28rpx; font-weight: 600; color: #273020; }
-.state-time { display: none; }
-.daily-head { display: flex; justify-content: space-between; align-items: center; }
-.daily-label { font-size: 22rpx; color: #8D8B84; }
-.mood { padding: 6rpx 16rpx; border-radius: 999rpx; background: #F5F8ED; color: #54632C; font-size: 21rpx; }
-.daily-line { display: block; margin-top: 14rpx; font-size: 28rpx; line-height: 1.55; color: #35352F; }
+.state-time { display: block; margin-top: 8rpx; font-size: 23rpx; color: #8D8B84; }
+.status-daily { margin: 0 0 28rpx; padding: 0 30rpx; text-align: center; }
+.status-meta { display: block; font-size: 21rpx; line-height: 1.5; color: #718044; }
+.status-line { display: block; margin-top: 10rpx; font-size: 28rpx; line-height: 1.55; color: #35352F; }
 .hatch-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .hatch-video { width: 100vw; height: 100vh; }

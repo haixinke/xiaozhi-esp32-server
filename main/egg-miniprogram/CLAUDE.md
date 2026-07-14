@@ -32,15 +32,14 @@ main/egg-miniprogram/
 ├── scripts/verify-project.js    # 工程完整性校验（四件套/JSON/组件引用/禁止页面）
 └── miniprogram/                 # 小程序源码根
     ├── app.js                   # 入口（onLaunch 调 wx.login 取 code）
-    ├── app.json                 # 23 个页面 + tabBar（home/my）+ custom 导航
+    ├── app.json                 # 21 个页面 + tabBar（home/my）+ custom 导航
     ├── app.wxss                 # 全局样式与 token
     ├── sitemap.json
-    ├── assets/                  # tab 图标、场景图（assets/scenes/*_with_egg.jpg）
+    ├── assets/                  # tab 图标
     ├── components/              # 自定义组件（见下表）
-    ├── pages/                   # 23 个页面（见下表）
+    ├── pages/                   # 21 个页面（见下表）
     └── utils/
-        ├── pet-store.js         # 当前 MVP 的本地存储 mock（孵化状态机、任务、收藏卡）
-        └── exhibition-scenes.js # 展会六场景数据
+        └── pet-store.js         # 当前 MVP 的本地存储 mock（孵化状态机、任务、收藏卡）
 ```
 
 ### 页面（`miniprogram/pages/`，路径前缀 `pages/xxx/xxx`）
@@ -67,8 +66,6 @@ main/egg-miniprogram/
 | `pages/deregister/deregister` | 注销 | 账号 |
 | `pages/help/help` | 帮助 | 账号 |
 | `pages/invite-codes/invite-codes` | 邀请码（裂变） | 增长 |
-| `pages/exhibition-scenes/exhibition-scenes` | 展会场景列表 | 展会模式 |
-| `pages/exhibition-scene/exhibition-scene` | 单个展会场景 | 展会模式 |
 | `pages/privacy/privacy` | 隐私政策 | 合规 |
 
 页面流转详见 `README.md` 与首页 `home.js` 的 stage 分发。tabBar 仅 `home`（蛋宝宝）、`my`（我的）。

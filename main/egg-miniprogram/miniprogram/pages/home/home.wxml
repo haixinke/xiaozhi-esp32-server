@@ -2,10 +2,6 @@
   <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
 
   <scroll-view wx:if="{{authChecked}}" class="content" scroll-y>
-    <view class="expo-row">
-      <view class="expo-entry" bindtap="onExhibitionDemo" hover-class="pressable--pressed"><text class="expo-spark">✦</text><text>{{pet && pet.demoMode ? '查看六个场景' : '展会快速体验'}}</text></view>
-      <view wx:if="{{pet && pet.demoMode}}" class="expo-exit" bindtap="onExitExhibition">退出体验</view>
-    </view>
     <view wx:if="{{!pet}}" class="empty-state">
       <view class="empty-orbit"><view class="empty-egg"></view></view>
       <text class="empty-title">领取我的蛋宝宝</text>
@@ -27,7 +23,6 @@
         <view wx:if="{{feedback}}" class="feedback-bubble">{{feedback}}</view>
         <view class="egg-aura {{eggMotion}}"></view>
         <image wx:if="{{stage === 'hatched'}}" class="home-pet-image" src="{{pet.petType === '锦鲤' ? 'https://oss.eggbabe.com/cards-bg/card-fish.png' : 'https://oss.eggbabe.com/cards-bg/card-rabbit.png'}}" mode="aspectFit" catchtap="onOpenProfile"></image>
-        <image wx:elif="{{pet.demoMode}}" class="expo-home-scene" src="/assets/scenes/grass_with_egg.jpg" mode="aspectFill" catchtap="onExhibitionDemo"></image>
         <view wx:else class="egg {{eggMotion}}" style="background: linear-gradient(155deg, #FFFDF0 6%, {{pet.shell.color}} 58%, #F4B9AE 125%);" catchtap="onEggTap" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd">
           <view class="egg-pattern egg-pattern--one"></view>
           <view class="egg-pattern egg-pattern--two"></view>
@@ -35,7 +30,7 @@
         </view>
         <view class="egg-shadow"></view>
         <view wx:if="{{cuddleProgress > 0}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
-        <text class="touch-hint">{{pet.demoMode ? '点击玉兔，查看六个生活场景' : stage === 'hatched' ? '轻触这里，看看它今天的档案' : '轻触听回应 · 长按 3 秒贴贴'}}</text>
+        <text class="touch-hint">{{stage === 'hatched' ? '轻触这里，看看它今天的档案' : '轻触听回应 · 长按 3 秒贴贴'}}</text>
       </view>
 
       <view class="state-card">

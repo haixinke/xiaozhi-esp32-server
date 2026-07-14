@@ -7,13 +7,8 @@
       <list-row
         label="退出登录"
         show-chevron="{{false}}"
-        bind:rowtap="onLogout"
-      ></list-row>
-      <list-row
-        label="重置本地体验数据"
-        show-chevron="{{false}}"
         show-border="{{false}}"
-        bind:rowtap="onResetDemo"
+        bind:rowtap="onLogout"
       ></list-row>
     </view>
 

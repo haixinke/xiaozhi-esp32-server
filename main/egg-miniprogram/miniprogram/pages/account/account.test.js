@@ -14,8 +14,7 @@ let modalResult = { confirm: false };
 
 const petStore = {
   clearUser() { callOrder.push('clearUser'); },
-  clearAccountData() { callOrder.push('clearAccountData'); },
-  resetDemo() { callOrder.push('resetDemo'); }
+  clearAccountData() { callOrder.push('clearAccountData'); }
 };
 
 const app = {

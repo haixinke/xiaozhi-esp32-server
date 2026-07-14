@@ -41,9 +41,6 @@ for (const page of pages) {
 const homeSource = fs.readFileSync(path.join(miniprogram, 'pages/home/home.wxml'), 'utf8');
 if (/孵化场景|scene-picker|scene-live/.test(homeSource)) errors.push('首页仍包含旧版孵化场景入口');
 
-for (const image of ['grass_with_egg.jpg', 'snow_with_egg.jpg', 'room_with_egg.jpg', 'sea_with_egg.jpg', 'desk_with_egg.jpg', 'rooftop_with_egg.jpg']) {
-  if (!fs.existsSync(path.join(miniprogram, 'assets/scenes', image))) errors.push(`展会场景缺少图片：${image}`);
-}
 
 if (errors.length) {
   console.error(`项目校验失败（${errors.length} 项）：`);

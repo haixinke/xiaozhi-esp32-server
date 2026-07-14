@@ -37,12 +37,7 @@ Page({
   async _hasWishedToday(pet) {
     var today = petStore.todayKey();
 
-    // demo 模式：检查 pet.tasks.wishDate
-    if (pet.demoMode) {
-      return !!(pet.tasks && pet.tasks.wishDate === today);
-    }
-
-    // 非 demo：检查后端 hatch-actions
+    // 检查后端 hatch-actions
     if (pet.hatchStatus === 'HATCHED') return true;
     try {
       var actions = await petApi.listHatchActions(pet.id);

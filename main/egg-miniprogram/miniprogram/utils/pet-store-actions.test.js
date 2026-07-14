@@ -48,35 +48,17 @@ function todayKey() {
 (async () => {
   petStore.saveUser({ id: 42, nickname: '蛋友' });
 
-  // === demo 模式：走本地 mock，不调后端 ===
-  const demoPet = {
-    id: 'demo-1', ownerId: 42, prototype: '玉兔', name: '', createdAt: Date.now(),
+  // === completeLesson：走后端 ===
+  actionCalls = [];
+  const realPet = {
+    id: 'real-1', ownerId: 42, prototype: '玉兔', name: '', createdAt: Date.now(),
     hatchAt: Date.now() + 7 * DAY, progress: 0, stage: 'waiting',
     lastInteractionAt: Date.now(),
     tasks: { nicknameDone: false, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
     preferences: { wishes: [], lessons: [] },
     shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
     dailyStatus: null, collectionCard: null, inviteCodes: [], messages: [],
-    hatchStatus: 'EGG', acceleratedMinutes: 0, demoMode: true
-  };
-  petStore.savePet(demoPet);
-  actionCalls = [];
-  const demoResult = await petStore.completeLesson('学会勇敢');
-  assert.strictEqual(demoResult.ok, true, 'demo lesson ok');
-  assert.strictEqual(demoResult.alreadyDone, false, 'demo first lesson not alreadyDone');
-  assert.strictEqual(actionCalls.length, 0, 'demo path does not call pet-api');
-
-  // getHatchActionState：demo 从 pet.tasks 读（storage 同引用，completeLesson 已写回 lessonDate）
-  const demoState = petStore.getHatchActionState(petStore.getPet());
-  assert.strictEqual(demoState.lessonDone, true, 'demo lessonDone from tasks');
-
-  // === 非 demo 模式：走后端 ===
-  actionCalls = [];
-  const realPet = {
-    ...demoPet,
-    id: 'real-1', demoMode: false,
-    tasks: { nicknameDone: false, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
-    preferences: { wishes: [], lessons: [] }
+    hatchStatus: 'EGG', acceleratedMinutes: 0
   };
   petStore.savePet(realPet);
   actionResponses = [{
@@ -91,7 +73,7 @@ function todayKey() {
   assert.strictEqual(actionCalls[0].type, 'LESSON');
   assert.deepStrictEqual(actionCalls[0].payload, { value: '学会勇敢' });
 
-  // 非 demo 幂等：后端返回 alreadyDone=true
+  // 幂等：后端返回 alreadyDone=true
   actionResponses = [{
     addedMinutes: 0, alreadyDone: true, readyToHatch: false,
     pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 60, prototype: '玉兔',
@@ -102,7 +84,7 @@ function todayKey() {
   assert.strictEqual(dup.alreadyDone, true, 'real duplicate alreadyDone');
   assert.strictEqual(petStore.getPet().preferences.lessons.length, 1, 'alreadyDone retry does not double-push preferences');
 
-  // === NICKNAME 非 demo ===
+  // === NICKNAME ===
   actionResponses = [{
     addedMinutes: 720, alreadyDone: false, readyToHatch: false,
     pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 720, prototype: '玉兔',
@@ -115,7 +97,7 @@ function todayKey() {
   assert.deepStrictEqual(actionCalls.at(-1).payload, { nickname: '小金' });
   assert.strictEqual(petStore.getPet().name, '小金', 'nickname cached on pet');
 
-  // === NICKNAME 非 demo 二次编辑：后端 alreadyDone=true 时走 PUT /pet/update 兜底 ===
+  // === NICKNAME 二次编辑：后端 alreadyDone=true 时走 PUT /pet/update 兜底 ===
   updateNicknameCalls = [];
   actionCalls = [];
   actionResponses = [{
@@ -136,7 +118,7 @@ function todayKey() {
   assert.strictEqual(reeditResult.pet.name, '小金2', 're-edit pet.name is new value');
   assert.strictEqual(petStore.getPet().name, '小金2', 're-edit nickname cached on pet');
 
-  // === DOODLE 非 demo ===
+  // === DOODLE ===
   actionResponses = [{
     addedMinutes: 720, alreadyDone: false, readyToHatch: false,
     pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 1440, prototype: '玉兔',
@@ -170,7 +152,7 @@ function todayKey() {
   assert.strictEqual(errResult.message, '已破壳', 'error path surfaces userMessage');
   Module2._load = originalLoad2;
 
-  // === CUDDLE 非 demo：空 payload {}，type=CUDDLE ===
+  // === CUDDLE：空 payload {}，type=CUDDLE ===
   actionCalls = [];
   actionResponses = [{
     addedMinutes: 60, alreadyDone: false, readyToHatch: false,
@@ -183,7 +165,7 @@ function todayKey() {
   assert.strictEqual(actionCalls[0].type, 'CUDDLE', 'cuddle type CUDDLE');
   assert.deepStrictEqual(actionCalls[0].payload, {}, 'cuddle payload empty object');
 
-  // === WISH 非 demo：{value} payload，type=WISH ===
+  // === WISH：{value} payload，type=WISH ===
   actionCalls = [];
   actionResponses = [{
     addedMinutes: 60, alreadyDone: false, readyToHatch: false,
@@ -194,13 +176,13 @@ function todayKey() {
   assert.strictEqual(wishResult.ok, true, 'wish ok');
   assert.strictEqual(actionCalls.length, 1, 'wish calls pet-api once');
   assert.strictEqual(actionCalls[0].type, 'WISH', 'wish type WISH');
-  assert.deepStrictEqual(actionCalls[0].payload, { value: '安静陪伴你' }, 'wish payload {value}');
+  assert.deepStrictEqual(actionCalls[0].payload, { questionId: 'legacy', value: '安静陪伴你' }, 'wish payload {questionId, value}');
 
-  // === getHatchActionState 非 demo：one-time vs daily 派生 ===
+  // === getHatchActionState：one-time vs daily 派生 ===
   const today = todayKey();
   const yesterday = '2020-01-01';
   const statePet = {
-    id: 'real-1', ownerId: 42, demoMode: false,
+    id: 'real-1', ownerId: 42,
     _hatchActions: [
       { actionType: 'NICKNAME', actionDate: yesterday },
       { actionType: 'DOODLE', actionDate: yesterday },
@@ -216,7 +198,7 @@ function todayKey() {
   assert.strictEqual(hatchState.lessonDone, false, 'lesson not done today');
   assert.strictEqual(hatchState.wishDone, true, 'wish done today');
 
-  // === createCollectionCard 双轨：非 demo 走 POST /pet/{id}/hatch ===
+  // === createCollectionCard：走 POST /pet/{id}/hatch ===
   petStore.saveUser({ id: 42, nickname: '蛋友' });
   const readyPet = {
     id: 'real-2', ownerId: 42, prototype: '锦鲤', name: '小金', createdAt: Date.now(),
@@ -226,7 +208,7 @@ function todayKey() {
     preferences: { wishes: [], lessons: [] },
     shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
     dailyStatus: null, collectionCard: null, inviteCodes: [], messages: [],
-    hatchStatus: 'EGG', acceleratedMinutes: 3000, demoMode: false,
+    hatchStatus: 'EGG', acceleratedMinutes: 3000,
     expectedHatchTime: Date.now() - 1000, hatchStartTime: Date.now() - 7 * DAY
   };
   petStore.savePet(readyPet);

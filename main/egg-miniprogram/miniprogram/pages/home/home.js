@@ -94,38 +94,6 @@ Page({
     wx.navigateTo({ url: '/pages/add-device/add-device' });
   },
 
-  onExhibitionDemo() {
-    if (this.data.pet && this.data.pet.demoMode) {
-      wx.navigateTo({ url: '/pages/exhibition-scenes/exhibition-scenes' });
-      return;
-    }
-    wx.showModal({
-      title: '进入展会快速体验',
-      content: '将临时进入已破壳状态并体验六个生活场景。退出体验后，会恢复现在的孵化进度。',
-      confirmText: '立即体验',
-      confirmColor: '#002900',
-      success: (result) => {
-        if (!result.confirm) return;
-        petStore.startExhibitionDemo();
-        this.onShow();
-        wx.navigateTo({ url: '/pages/exhibition-scenes/exhibition-scenes' });
-      }
-    });
-  },
-
-  onExitExhibition() {
-    wx.showModal({
-      title: '退出展会体验',
-      content: '退出后将恢复进入体验前的蛋宝宝数据。',
-      confirmColor: '#002900',
-      success: (result) => {
-        if (!result.confirm) return;
-        petStore.endExhibitionDemo();
-        this.onShow();
-      }
-    });
-  },
-
   showFeedback(text) {
     this.setData({ feedback: text });
     clearTimeout(this.feedbackTimer);

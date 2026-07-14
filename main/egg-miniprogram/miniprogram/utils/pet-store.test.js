@@ -13,7 +13,6 @@ const accountKeys = [
   'eggbaby_mvp_pet_v1',
   'eggbaby_mvp_user_v1',
   'eggbaby_mvp_identity_v1',
-  'eggbaby_exhibition_backup_v1',
   'eggbaby_active_pet_v1'
 ];
 
@@ -185,7 +184,7 @@ petStore.savePet({
   shell: { color: '#FF0000', colorName: '正红', pattern: '波点' },
   dailyStatus: { date: tk, mood: '开心', line: 'x', source: 'local-fallback' },
   collectionCard: null, inviteCodes: ['EGG-1'], messages: [{ text: 'hi' }],
-  hatchStatus: 'EGG', acceleratedMinutes: 720, demoMode: false
+  hatchStatus: 'EGG', acceleratedMinutes: 720
 });
 const mergeVO = {
   id: 'pet-1', userId: 42, hatchStatus: 'EGG', prototype: '锦鲤',

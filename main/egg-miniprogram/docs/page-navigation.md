@@ -10,7 +10,6 @@
   - [领蛋流程](#领蛋流程)
   - [孵化流程](#孵化流程)
   - [破壳后流程](#破壳后流程)
-  - [展会快速体验分支](#展会快速体验分支)
 - [「我的」页面入口](#我的页面入口)
 - [页面安全兜底逻辑](#页面安全兜底逻辑)
 - [给新人的记忆口诀](#给新人的记忆口诀)
@@ -112,20 +111,6 @@ pages/collection-card/collection-card
 pages/album/album
   └── 点击某张卡片
         └── wx.navigateTo → pages/collection-card/collection-card
-```
-
-### 展会快速体验分支
-
-展会模式下提供快速场景体验：
-
-```
-pages/home/home
-  └── 点击展会入口
-        └── wx.navigateTo → pages/exhibition-scenes/exhibition-scenes
-              └── 选择某个场景
-                    └── wx.navigateTo → pages/exhibition-scene/exhibition-scene?scene=xxx
-                          └── 退出体验
-                                └── wx.switchTab → pages/home/home
 ```
 
 ---

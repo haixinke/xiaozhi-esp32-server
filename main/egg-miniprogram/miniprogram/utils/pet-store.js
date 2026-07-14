@@ -2,7 +2,6 @@ const petApi = require('./pet-api');
 const PET_KEY = 'eggbaby_mvp_pet_v1';
 const USER_KEY = 'eggbaby_mvp_user_v1';
 const IDENTITY_KEY = 'eggbaby_mvp_identity_v1';
-const EXHIBITION_BACKUP_KEY = 'eggbaby_exhibition_backup_v1';
 const ACTIVE_PET_KEY = 'eggbaby_active_pet_v1';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -67,7 +66,7 @@ function getIdentityId() {
   return read(IDENTITY_KEY);
 }
 
-const ACCOUNT_KEYS = [PET_KEY, USER_KEY, IDENTITY_KEY, EXHIBITION_BACKUP_KEY, ACTIVE_PET_KEY];
+const ACCOUNT_KEYS = [PET_KEY, USER_KEY, IDENTITY_KEY, ACTIVE_PET_KEY];
 
 function clearAccountData() {
   ACCOUNT_KEYS.forEach((key) => {
@@ -157,7 +156,6 @@ function savePetFromVO(vo) {
     avatarUrl: vo.avatarUrl || '',
     collectionCardUrl: vo.collectionCardUrl || ''
   };
-  if (existing && existing.demoMode) pet.demoMode = existing.demoMode;
   if (existing && Array.isArray(existing._hatchActions)) pet._hatchActions = existing._hatchActions;
   savePet(pet);
   setActivePetId(pet.id);
@@ -252,15 +250,6 @@ async function updateNickname(name) {
   if (!value) return { ok: false, message: '昵称不能为空' };
   if (Array.from(value).length > 10) return { ok: false, message: '昵称最多 10 个字符' };
   if (['违法', '诈骗', '赌博'].some(word => value.includes(word))) return { ok: false, message: '昵称含有不适合的内容，请换一个' };
-  if (pet.demoMode) {
-    const first = !pet.tasks.nicknameDone;
-    pet.name = value;
-    if (first) addProgress(pet, 20);
-    pet.tasks.nicknameDone = true;
-    pet.lastInteractionAt = Date.now();
-    savePet(pet);
-    return { ok: true, alreadyDone: !first, pet };
-  }
   try {
     const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
     let updated;
@@ -299,18 +288,6 @@ async function completeDailyTask(task, value) {
     }
   }
 
-  if (pet.demoMode) {
-    const date = todayKey();
-    const field = `${task}Date`;
-    if (pet.tasks[field] === date) return { ok: true, alreadyDone: true, pet };
-    pet.tasks[field] = date;
-    if (task === 'wish') pet.preferences.wishes.push({ date, questionId: wishData.questionId, value: wishData.value });
-    if (task === 'lesson') pet.preferences.lessons.push({ date, value });
-    addProgress(pet, 5);
-    pet.lastInteractionAt = Date.now();
-    savePet(pet);
-    return { ok: true, alreadyDone: false, pet };
-  }
   try {
     const payload = task === 'cuddle' ? {} : (task === 'wish' ? { questionId: wishData.questionId, value: wishData.value } : { value });
     const result = await petApi.submitHatchAction(pet.id, ACTION_TYPE[task], payload);
@@ -341,15 +318,6 @@ function completeLesson(value) {
 async function saveDoodle(color, colorName, pattern) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
-  if (pet.demoMode) {
-    const first = !pet.tasks.doodleDone;
-    pet.shell = { color, colorName, pattern };
-    pet.tasks.doodleDone = true;
-    if (first) addProgress(pet, 20);
-    pet.lastInteractionAt = Date.now();
-    savePet(pet);
-    return { ok: true, alreadyDone: !first, pet };
-  }
   try {
     const result = await petApi.submitHatchAction(pet.id, 'DOODLE', { color, colorName, pattern });
     const updated = savePetFromVO(result.pet);
@@ -361,10 +329,10 @@ async function saveDoodle(color, colorName, pattern) {
   }
 }
 
-// 修炼任务完成态：demo 从 pet.tasks 读；非 demo 从 pet._hatchActions（hatch-guide onShow 拉取缓存）派生当日完成。
+// 修炼任务完成态：无 _hatchActions 缓存时从 pet.tasks 读取；有缓存则按当日派生。
 function getHatchActionState(pet) {
   if (!pet) return { nicknameDone: false, cuddleDone: false, wishDone: false, lessonDone: false, doodleDone: false };
-  if (pet.demoMode || !Array.isArray(pet._hatchActions) || pet._hatchActions.length === 0) {
+  if (!Array.isArray(pet._hatchActions) || pet._hatchActions.length === 0) {
     const today = todayKey();
     return {
       nicknameDone: !!(pet.tasks && pet.tasks.nicknameDone),
@@ -548,28 +516,6 @@ async function createCollectionCard() {
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
   if (Date.now() < pet.hatchAt) return { ok: false, message: '还没到破壳时间' };
   if (pet.collectionCard) return { ok: true, created: false, card: pet.collectionCard, pet };
-  if (pet.demoMode) {
-    const personality = derivePersonality(pet);
-    pet.collectionCard = {
-      id: `card-${pet.id}`,
-      serial: cardSerial(pet),
-      prototype: pet.prototype,
-      style: '',
-      name: pet.name || pet.prototype,
-      birthday: todayKey(pet.hatchAt),
-      zodiac: getZodiac(pet.hatchAt),
-      gender: simpleHash(pet.id) % 2 ? '♀' : '♂',
-      mbti: personality.mbti,
-      bloodType: ['A', 'B', 'O', 'AB'][simpleHash(pet.id) % 4],
-      personality: personality.text,
-      collectible: '普通',
-      hatchQuality: pet.progress >= 80 ? '完整孵化' : '轻量孵化',
-      originalOwner: (getUser() && getUser().nickname) || '蛋友'
-    };
-    pet.stage = 'hatched';
-    savePet(pet);
-    return { ok: true, created: true, card: pet.collectionCard, pet };
-  }
   try {
     const vo = await petApi.hatchPet(pet.id);
     const card = buildCollectionCard(vo);
@@ -617,55 +563,6 @@ function saveMessage(message, options = {}) {
   savePet(pet);
 }
 
-function resetDemo() {
-  try { wx.removeStorageSync(PET_KEY); wx.removeStorageSync(EXHIBITION_BACKUP_KEY); } catch (error) {}
-}
-
-function startExhibitionDemo() {
-  const current = read(PET_KEY);
-  if (current && current.demoMode) return current;
-  write(EXHIBITION_BACKUP_KEY, { pet: current || null });
-  const createdAt = Date.now();
-  const pet = {
-    id: `expo-${createdAt}`,
-    ownerId: (getUser() && getUser().id) || '',
-    prototype: '玉兔',
-    name: '月团',
-    createdAt,
-    hatchAt: createdAt - 1000,
-    progress: 85,
-    stage: 'ready',
-    demoMode: true,
-    lastInteractionAt: createdAt,
-    tasks: { nicknameDone: true, cuddleDate: todayKey(), wishDate: todayKey(), lessonDate: todayKey(), doodleDone: true },
-    preferences: {
-      wishes: [{ date: todayKey(), value: '安静陪伴你' }],
-      lessons: [{ date: todayKey(), value: '学会撒娇' }]
-    },
-    shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
-    dailyStatus: null,
-    collectionCard: null,
-    inviteCode: createInviteCode(createdAt),
-    messages: []
-  };
-  savePet(pet);
-  createCollectionCard();
-  const hatchedPet = getPet();
-  hatchedPet.demoMode = true;
-  savePet(hatchedPet);
-  return hatchedPet;
-}
-
-function endExhibitionDemo() {
-  const backup = read(EXHIBITION_BACKUP_KEY);
-  try {
-    if (backup && backup.pet) wx.setStorageSync(PET_KEY, backup.pet);
-    else wx.removeStorageSync(PET_KEY);
-    wx.removeStorageSync(EXHIBITION_BACKUP_KEY);
-  } catch (error) {}
-  return getPet();
-}
-
 module.exports = {
   getUser,
   saveUser,
@@ -695,8 +592,5 @@ module.exports = {
   createCollectionCard,
   saveMessage,
   getMessages,
-  resetDemo,
-  startExhibitionDemo,
-  endExhibitionDemo,
   todayKey
 };

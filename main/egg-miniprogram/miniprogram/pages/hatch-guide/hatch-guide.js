@@ -10,8 +10,8 @@ Page({
       wx.switchTab({ url: '/pages/home/home' });
       return;
     }
-    // 非 demo：从后端拉修炼动作列表，缓存到 pet._hatchActions 供 getHatchActionState 派生
-    if (!pet.demoMode && pet.hatchStatus !== 'HATCHED') {
+    // 从后端拉修炼动作列表，缓存到 pet._hatchActions 供 getHatchActionState 派生
+    if (pet.hatchStatus !== 'HATCHED') {
       try {
         const actions = await petApi.listHatchActions(pet.id);
         pet._hatchActions = Array.isArray(actions) ? actions : [];

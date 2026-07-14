@@ -38,24 +38,6 @@
 
 .avatar-image { width: 144rpx; height: 144rpx; border-radius: 50%; display: block; }
 
-.avatar-edit-badge {
-  position: absolute;
-  bottom: 4rpx;
-  right: 12rpx;
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: 50%;
-  background: #002900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 4rpx solid #FFFFFF;
-}
-
-.camera-icon { position: relative; width: 25rpx; height: 19rpx; border: 3rpx solid #FFFFFF; border-radius: 5rpx; }
-.camera-icon::before { content: ''; position: absolute; left: 5rpx; top: -8rpx; width: 11rpx; height: 7rpx; border-radius: 3rpx 3rpx 0 0; background: #FFFFFF; }
-.camera-lens { position: absolute; width: 8rpx; height: 8rpx; left: 6rpx; top: 3rpx; border: 2rpx solid #FFFFFF; border-radius: 50%; }
-
 .nickname-row {
   display: flex;
   align-items: center;

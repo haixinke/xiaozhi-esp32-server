@@ -1,4 +1,4 @@
-.page { display: flex; flex-direction: column; height: 100vh; background: url('https://oss.eggbabe.com/eggbabe/chat-bg.png') no-repeat center center; background-size: cover; }
+.page { display: flex; flex-direction: column; height: 100vh; background: #f5f8ed; }
 
 /* 心情状态条 */
 .mood-bar {

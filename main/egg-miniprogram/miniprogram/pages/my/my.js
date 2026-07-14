@@ -2,7 +2,7 @@ const petStore = require('../../utils/pet-store');
 const request = require('../../utils/request');
 
 Page({
-  data: { userName: '蛋友', avatarUrl: '', eggCount: 0, pet: null, stage: '', statusLine: '', actionLabel: '' },
+  data: { userName: '蛋友', avatarUrl: '', eggCount: 0 },
 
   onShow() {
     this.loadUserProfile();
@@ -25,29 +25,10 @@ Page({
 
   loadPetStatus() {
     const pet = petStore.getPet();
-    if (!pet) {
-      this.setData({ eggCount: 0, pet: null });
-      return;
-    }
-    const stage = petStore.getStage(pet);
-    const presentation = petStore.getStagePresentation(stage);
-    const status = petStore.getDailyStatus();
-    this.setData({
-      eggCount: 1,
-      pet: { ...pet, petType: pet.prototype, avatarUrl: pet.avatarUrl || '' },
-      stage,
-      statusLine: stage === 'hatched' ? status.line : petStore.getCountdown(pet),
-      actionLabel: stage === 'hatched' ? '去看看' : presentation.actionLabel,
-      stageLabel: presentation.myStage
-    });
+    this.setData({ eggCount: pet ? 1 : 0 });
   },
 
   onTapUserCard() { wx.navigateTo({ url: '/pages/profile/profile' }); },
-  onPetAction() {
-    if (!this.data.pet) return wx.navigateTo({ url: '/pages/add-device/add-device' });
-    if (this.data.stage === 'ready') return wx.navigateTo({ url: '/pages/hatch/hatch' });
-    wx.switchTab({ url: '/pages/home/home' });
-  },
   onNavAlbum() { wx.navigateTo({ url: '/pages/album/album' }); },
   onNavCodes() { wx.navigateTo({ url: '/pages/invite-codes/invite-codes' }); },
   onNavSettings() { wx.navigateTo({ url: '/pages/settings/settings' }); },

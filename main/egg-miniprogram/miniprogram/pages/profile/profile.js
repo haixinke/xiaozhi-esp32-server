@@ -5,9 +5,9 @@ const { API_BASE_URL } = require('../../config/api');
 
 const PROFILE_KEY = 'eggbaby_profile_v1';
 const MBTI_LIST = ['INFP','INFJ','INTJ','INTP','ENFP','ENFJ','ENTJ','ENTP','ISFP','ISFJ','ISTJ','ISTP','ESFP','ESFJ','ESTJ','ESTP'];
-const GENDER_LIST = ['男', '女', '其他'];
-const GENDER_MAP = { '男': 'MALE', '女': 'FEMALE', '其他': 'OTHER' };
-const GENDER_REVERSE = { MALE: '男', FEMALE: '女', OTHER: '其他' };
+const GENDER_LIST = ['男', '女', '保密'];
+const GENDER_MAP = { '男': 'MALE', '女': 'FEMALE', '保密': 'OTHER' };
+const GENDER_REVERSE = { MALE: '男', FEMALE: '女', OTHER: '保密' };
 const CITY_MAX_LENGTH = 10;
 
 const ZODIAC_MAP = {

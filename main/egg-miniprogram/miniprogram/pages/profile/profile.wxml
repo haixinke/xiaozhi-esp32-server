@@ -4,13 +4,9 @@
   <scroll-view scroll-y class="content">
 
     <view class="avatar-section">
-      <!-- 微信原生头像选择能力：呼出系统「使用微信头像 / 从手机相册选择」面板 -->
       <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
         <image wx:if="{{avatarUrl}}" class="avatar-image" src="{{avatarUrl}}" mode="aspectFill"></image>
         <egg-avatar wx:else size="{{72}}"></egg-avatar>
-        <view class="avatar-edit-badge">
-          <view class="camera-icon"><view class="camera-lens"></view></view>
-        </view>
       </button>
 
       <view class="nickname-row" bindtap="onEditNickname">

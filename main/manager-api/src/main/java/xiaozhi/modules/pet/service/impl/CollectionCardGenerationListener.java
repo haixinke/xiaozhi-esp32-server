@@ -31,42 +31,49 @@ public class CollectionCardGenerationListener {
     @Async("taskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void generate(CollectionCardGenerationEvent event) {
+        // [暂时禁用] 破壳后异步调用豆包极梦(Seedream)生成动态收藏卡片并回写ai_pet表
+        // 触发点 PetServiceImpl.hatch() 中的 eventPublisher.publishEvent 也已注释
         if (event == null || StringUtils.isBlank(event.petId())) {
             return;
         }
+        log.info("收藏卡生成功能已暂时禁用，petId={}", event.petId());
 
-        PetEntity pet = petDao.selectById(event.petId());
-        if (pet == null) {
-            log.warn("收藏卡生成跳过，宠物不存在，petId={}", event.petId());
-            return;
-        }
-        if (!HATCH_STATUS_HATCHED.equals(pet.getHatchStatus())) {
-            log.warn("收藏卡生成跳过，宠物未破壳，petId={}", event.petId());
-            return;
-        }
-        if (StringUtils.isNotBlank(pet.getCollectionCardUrl())) {
-            log.info("收藏卡已存在，跳过生成，petId={}", event.petId());
-            return;
-        }
-
-        String collectionCardUrl = collectionCardImageService.generate(pet);
-        if (StringUtils.isBlank(collectionCardUrl)) {
-            log.warn("收藏卡生成未返回URL，petId={}", event.petId());
-            return;
-        }
-
-        UpdateWrapper<PetEntity> wrapper = new UpdateWrapper<>();
-        wrapper.eq("id", pet.getId())
-                .isNull("collection_card_url")
-                .set("collection_card_url", collectionCardUrl)
-                .set("updater", pet.getUserId())
-                .set("update_date", new Date());
-
-        int updated = petDao.update(null, wrapper);
-        if (updated == 0) {
-            log.info("收藏卡URL未写入，可能已被其他任务生成，petId={}", event.petId());
-            return;
-        }
-        log.info("收藏卡URL写入成功，petId={}", event.petId());
+        // if (event == null || StringUtils.isBlank(event.petId())) {
+        //     return;
+        // }
+        //
+        // PetEntity pet = petDao.selectById(event.petId());
+        // if (pet == null) {
+        //     log.warn("收藏卡生成跳过，宠物不存在，petId={}", event.petId());
+        //     return;
+        // }
+        // if (!HATCH_STATUS_HATCHED.equals(pet.getHatchStatus())) {
+        //     log.warn("收藏卡生成跳过，宠物未破壳，petId={}", event.petId());
+        //     return;
+        // }
+        // if (StringUtils.isNotBlank(pet.getCollectionCardUrl())) {
+        //     log.info("收藏卡已存在，跳过生成，petId={}", event.petId());
+        //     return;
+        // }
+        //
+        // String collectionCardUrl = collectionCardImageService.generate(pet);
+        // if (StringUtils.isBlank(collectionCardUrl)) {
+        //     log.warn("收藏卡生成未返回URL，petId={}", event.petId());
+        //     return;
+        // }
+        //
+        // UpdateWrapper<PetEntity> wrapper = new UpdateWrapper<>();
+        // wrapper.eq("id", pet.getId())
+        //         .isNull("collection_card_url")
+        //         .set("collection_card_url", collectionCardUrl)
+        //         .set("updater", pet.getUserId())
+        //         .set("update_date", new Date());
+        //
+        // int updated = petDao.update(null, wrapper);
+        // if (updated == 0) {
+        //     log.info("收藏卡URL未写入，可能已被其他任务生成，petId={}", event.petId());
+        //     return;
+        // }
+        // log.info("收藏卡URL写入成功，petId={}", event.petId());
     }
 }

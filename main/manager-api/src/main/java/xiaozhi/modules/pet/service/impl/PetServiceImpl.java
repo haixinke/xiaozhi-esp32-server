@@ -520,7 +520,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setDeviceId(deviceId);
         petDao.updateById(pet);
 
-        eventPublisher.publishEvent(new CollectionCardGenerationEvent(pet.getId()));
+        // [暂时禁用] 破壳后异步调用豆包极梦(Seedream)生成动态收藏卡片并回写ai_pet表
+        // eventPublisher.publishEvent(new CollectionCardGenerationEvent(pet.getId()));
 
         log.info("蛋破壳 userId={}, petId={}, deviceId={}, agentId={}", userId, petId, deviceId, agentId);
         return toVO(pet);

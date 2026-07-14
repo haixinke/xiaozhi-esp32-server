@@ -670,8 +670,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private String generateMoodSentence(PetEntity pet, TodayMood mood, LocalDate today) {
         boolean hatched = HATCH_STATUS_HATCHED.equals(pet.getHatchStatus());
         String stage = hatched ? "破壳后" : "孵化期";
-        String personality = StringUtils.isNotBlank(pet.getPersonality())
-                ? pet.getPersonality()
+        String personality = StringUtils.isNotBlank(pet.getPersonalityBrief())
+                ? pet.getPersonalityBrief()
                 : (StringUtils.isNotBlank(pet.getMbti()) ? pet.getMbti() : "未知");
         String identity = StringUtils.isNotBlank(pet.getNickname())
                 ? pet.getNickname()
@@ -681,7 +681,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             if (llmService.isAvailable()) {
                 String prompt = String.format(MOOD_SENTENCE_PROMPT, stage, mood.getLabel(), personality, identity);
                 String resp = llmService.generateSummary("", prompt);
-                if (resp != null && !resp.isBlank()) {
+                if (resp != null && !resp.isBlank() && !resp.contains("失败")) {
                     String s = resp.trim().replaceAll("[\"“”‘’]", "");
                     if (s.length() > 30) {
                         s = s.substring(0, 30);

@@ -165,6 +165,7 @@ Page({
 
   doHatch() {
     if (this.data.hatching) return;
+    wx.hideTabBar();
     this.setData({ hatching: true }, () => {
       // 确保 video 组件已渲染后主动调 play
       this.hatchVideoCtx = wx.createVideoContext('hatchVideo', this);
@@ -174,20 +175,23 @@ Page({
     this._hatchPromise = petStore.createCollectionCard();
   },
 
+  _finishHatch(result) {
+    wx.showTabBar();
+    this.setData({ hatching: false });
+    if (!result || !result.ok) {
+      wx.showToast({ title: (result && result.message) || '破壳失败，请稍后重试', icon: 'none' });
+      return;
+    }
+    this.onShow();
+  },
+
   onHatchVideoEnded() {
     (async () => {
       try {
         const result = await this._hatchPromise;
-        if (!result.ok) {
-          this.setData({ hatching: false });
-          wx.showToast({ title: result.message || '破壳失败，请稍后重试', icon: 'none' });
-          return;
-        }
-        this.setData({ hatching: false });
-        this.onShow();
+        this._finishHatch(result);
       } catch (error) {
-        this.setData({ hatching: false });
-        wx.showToast({ title: '破壳失败，请稍后重试', icon: 'none' });
+        this._finishHatch(null);
       }
     })();
   },
@@ -197,15 +201,9 @@ Page({
     (async () => {
       try {
         const result = await this._hatchPromise;
-        this.setData({ hatching: false });
-        if (!result.ok) {
-          wx.showToast({ title: result.message || '破壳失败，请稍后重试', icon: 'none' });
-        } else {
-          this.onShow();
-        }
+        this._finishHatch(result);
       } catch (error) {
-        this.setData({ hatching: false });
-        wx.showToast({ title: '破壳失败，请稍后重试', icon: 'none' });
+        this._finishHatch(null);
       }
     })();
   },

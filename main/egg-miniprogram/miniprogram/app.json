@@ -1,7 +1,7 @@
 {
   "pages": [
-    "pages/welcome/welcome",
     "pages/home/home",
+    "pages/welcome/welcome",
     "pages/add-device/add-device",
     "pages/hatch-guide/hatch-guide",
     "pages/nickname/nickname",

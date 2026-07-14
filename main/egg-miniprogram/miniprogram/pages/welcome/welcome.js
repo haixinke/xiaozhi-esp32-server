@@ -5,10 +5,19 @@ const wechatApi = require('../../utils/wechat-api');
 Page({
   data: {
     agreed: false,
-    authorizing: false
+    authorizing: false,
+    ready: false
   },
 
   async onLoad() {
+    // 同步检查本地登录态：已登录且已绑定手机号的用户直接跳转首页，不渲染欢迎页内容
+    const cached = auth.getSession();
+    if (cached && !auth.isExpired() && cached.hasPhone) {
+      wx.switchTab({ url: '/pages/home/home' });
+      return;
+    }
+    // 本地无有效登录态或未绑定手机号，渲染欢迎页内容
+    this.setData({ ready: true });
     const session = await getApp().ensureLogin().catch(() => null);
     if (session && session.userId && session.hasPhone) {
       wx.switchTab({ url: '/pages/home/home' });

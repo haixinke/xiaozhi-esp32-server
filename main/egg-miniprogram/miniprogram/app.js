@@ -28,13 +28,13 @@ App({
     isNewUser: null,
     hasPhone: null,
     agentId: null,
-    launchPath: 'pages/welcome/welcome'
+    launchPath: 'pages/home/home'
   },
 
   onLaunch(options) {
     this.globalData.launchPath = options && options.path
       ? options.path
-      : 'pages/welcome/welcome';
+      : 'pages/home/home';
     this.globalData.authReady = this.ensureLogin()
       .then((session) => {
         this.enforcePhoneGate(session);

@@ -16,7 +16,7 @@ let clearCalls = 0;
 let wxLoginCalls = 0;
 let postCalls = 0;
 let wxLoginResult = { code: 'first-code' };
-let currentRoute = 'pages/welcome/welcome';
+let currentRoute = 'pages/home/home';
 let relaunchedTo = null;
 
 const auth = {
@@ -95,7 +95,7 @@ async function run() {
   appConfig.enforcePhoneGate.call(appConfig, session);
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
     'cold direct entry must use launch path when the page stack is empty');
-  appConfig.globalData.launchPath = 'pages/welcome/welcome';
+  appConfig.globalData.launchPath = 'pages/home/home';
 
   wxLoginResult = { fail: new Error('denied') };
   await assert.rejects(appConfig.silentLogin.call(appConfig), /微信登录失败/);

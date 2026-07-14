@@ -1,4 +1,5 @@
 const petStore = require('../../utils/pet-store');
+const auth = require('../../utils/auth');
 const { get } = require('../../utils/request');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
@@ -13,6 +14,14 @@ Page({
     eggMotion: '',
     cuddleProgress: 0,
     actionLabel: '孵化修炼手册'
+  },
+
+  onLoad() {
+    // 同步检查登录态：未注册用户直接重定向到欢迎页，不渲染首页内容
+    const cached = auth.getSession();
+    if (!cached || auth.isExpired() || !cached.hasPhone) {
+      wx.reLaunch({ url: '/pages/welcome/welcome' });
+    }
   },
 
   onShow() {

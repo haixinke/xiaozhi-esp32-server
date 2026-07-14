@@ -1,4 +1,7 @@
 .page { position: relative; height: 100vh; overflow: hidden; background: #F8F7EF; }
+.loading { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.loading-spinner { width: 64rpx; height: 64rpx; border-radius: 50%; border: 5rpx solid rgba(0,41,0,.10); border-top-color: #002900; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .halo { position: absolute; border-radius: 50%; filter: blur(4rpx); }
 .halo--one { width: 540rpx; height: 540rpx; right: -220rpx; top: 120rpx; background: rgba(237,231,142,.35); }
 .halo--two { width: 420rpx; height: 420rpx; left: -210rpx; top: 430rpx; background: rgba(244,185,174,.22); }

@@ -1,29 +1,35 @@
 <view class="page">
-  <view class="halo halo--one"></view>
-  <view class="halo halo--two"></view>
-
-  <view class="brand">
-    <text class="brand-kicker">EGGBABY</text>
-    <text class="brand-name">蛋宝宝</text>
-    <text class="brand-slogan">一颗蛋，一段只属于你的陪伴。</text>
+  <view wx:if="{{!ready}}" class="loading">
+    <view class="loading-spinner"></view>
   </view>
 
-  <view class="egg-stage">
-    <view class="egg-shadow"></view>
-    <view class="egg">
-      <view class="egg-speck egg-speck--one"></view>
-      <view class="egg-speck egg-speck--two"></view>
-      <view class="egg-shine"></view>
+  <block wx:if="{{ready}}">
+    <view class="halo halo--one"></view>
+    <view class="halo halo--two"></view>
+
+    <view class="brand">
+      <text class="brand-kicker">EGGBABY</text>
+      <text class="brand-name">蛋宝宝</text>
+      <text class="brand-slogan">一颗蛋，一段只属于你的陪伴。</text>
     </view>
-  </view>
 
-  <view class="bottom-panel page-safe-bottom">
-    <view class="agreement" bindtap="onToggleAgreement">
-      <view class="check {{agreed ? 'check--on' : ''}}"><text wx:if="{{agreed}}">✓</text></view>
-      <text class="agreement-text">我已阅读并同意</text>
-      <text class="privacy-link" catchtap="onPrivacy">《蛋宝宝隐私政策》</text>
+    <view class="egg-stage">
+      <view class="egg-shadow"></view>
+      <view class="egg">
+        <view class="egg-speck egg-speck--one"></view>
+        <view class="egg-speck egg-speck--two"></view>
+        <view class="egg-shine"></view>
+      </view>
     </view>
-    <button class="auth-button" open-type="getPhoneNumber" loading="{{authorizing}}" disabled="{{!agreed || authorizing}}" bind:getphonenumber="onAuthorize">授权手机号并进入</button>
-    <text class="auth-note">进入需授权手机号，仅用于账号安全与服务通知</text>
-  </view>
+
+    <view class="bottom-panel page-safe-bottom">
+      <view class="agreement" bindtap="onToggleAgreement">
+        <view class="check {{agreed ? 'check--on' : ''}}"><text wx:if="{{agreed}}">✓</text></view>
+        <text class="agreement-text">我已阅读并同意</text>
+        <text class="privacy-link" catchtap="onPrivacy">《蛋宝宝隐私政策》</text>
+      </view>
+      <button class="auth-button" open-type="getPhoneNumber" loading="{{authorizing}}" disabled="{{!agreed || authorizing}}" bind:getphonenumber="onAuthorize">授权手机号并进入</button>
+      <text class="auth-note">进入需授权手机号，仅用于账号安全与服务通知</text>
+    </view>
+  </block>
 </view>

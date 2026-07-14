@@ -961,10 +961,10 @@ class ConnectionHandler:
             current_sentence_id = str(uuid.uuid4().hex)
             self.sentence_id = current_sentence_id  # 更新共享属性
 
-            # 配额检查：仅顶层调用、且连接来自 API 管理模式时检查
-            if self.read_config_from_api and not self.close_after_chat:
-                if self._check_chat_quota():
-                    return  # 超限，已发送 WebSocket 事件，跳过 LLM
+            # 配额检查：暂未启用，待蛋宝宝小程序订阅功能上线后再打开
+            # if self.read_config_from_api and not self.close_after_chat:
+            #     if self._check_chat_quota():
+            #         return  # 超限，已发送 WebSocket 事件，跳过 LLM
 
             self.dialogue.put(Message(role="user", content=query))
             self.tts.tts_text_queue.put(

@@ -45,7 +45,10 @@
         <text class="daily-line">{{dailyStatus.line}}</text>
       </view>
 
-      <button class="primary-button hatch-action" bindtap="onPrimaryAction">{{actionLabel}}</button>
+      <view class="home-actions">
+        <button class="primary-button home-actions__chat" bindtap="onPrimaryAction">{{actionLabel}}</button>
+        <button wx:if="{{stage === 'hatched'}}" class="primary-button home-actions__scene" bindtap="onChangeScene">更换场景</button>
+      </view>
     </view>
   </scroll-view>
 

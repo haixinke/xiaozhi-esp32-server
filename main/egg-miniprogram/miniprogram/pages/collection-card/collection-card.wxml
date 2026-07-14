@@ -16,7 +16,7 @@
       <view class="record"><text>{{card.hatchQuality}}</text><text>初始主人 · {{card.originalOwner}}</text></view>
       <view class="serial-row"><text class="serial">{{card.serial}}</text><view class="mini-code"><view></view><view></view><view></view><view></view></view></view>
     </view>
-    <view class="actions"><view class="action-row"><button class="secondary" bindtap="onSave">保存图片</button><button class="secondary" open-type="share">分享给好友</button></view><button class="text-button" bindtap="onAlbum">查看我的卡册</button></view>
+    <view class="actions"><view class="action-row"><button class="secondary" bindtap="onSave">保存图片</button><button class="secondary" open-type="share">分享给好友</button></view></view>
     <canvas canvas-id="shareCanvas" class="share-canvas"></canvas>
   </scroll-view>
 </view>

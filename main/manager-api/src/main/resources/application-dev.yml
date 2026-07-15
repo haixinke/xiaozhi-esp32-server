@@ -86,3 +86,16 @@ pet:
       prefix: rabbit
       count: 22
     fallback-url: https://636c-cloud1-9ghrcw8127746c64-1391989435.tcb.qcloud.la/eggbabe/fish.png
+
+# AI宠物收藏卡配置
+# 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成收藏卡 URL
+  collection-card:
+    koi:
+      base-url: https://oss.eggbabe.com/default-card/fish/
+      prefix: card-fish
+      count: 10
+    rabbit:
+      base-url: https://oss.eggbabe.com/default-card/rabbit/
+      prefix: card-rabbit
+      count: 10
+    fallback-url: https://oss.eggbabe.com/default-card/fish/card-fish-0.webp

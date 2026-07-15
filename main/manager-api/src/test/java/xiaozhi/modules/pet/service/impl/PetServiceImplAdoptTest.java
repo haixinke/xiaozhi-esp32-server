@@ -22,6 +22,7 @@ import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
 import xiaozhi.modules.pet.config.PetAvatarProperties;
+import xiaozhi.modules.pet.config.PetCollectionCardProperties;
 import xiaozhi.modules.pet.dao.MemoryDao;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
@@ -75,8 +76,9 @@ class PetServiceImplAdoptTest {
     @BeforeEach
     void setUp() {
         PetAvatarProperties avatarProperties = buildAvatarProperties();
+        PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties);
     }
 
     private PetAvatarProperties buildAvatarProperties() {
@@ -93,6 +95,25 @@ class PetServiceImplAdoptTest {
         rabbit.setBaseUrl("https://oss.eggbabe.com/default-avatar/rabbit/");
         rabbit.setPrefix("rabbit");
         rabbit.setCount(22);
+        properties.setRabbit(rabbit);
+
+        return properties;
+    }
+
+    private PetCollectionCardProperties buildCollectionCardProperties() {
+        PetCollectionCardProperties properties = new PetCollectionCardProperties();
+        properties.setFallbackUrl("https://oss.eggbabe.com/default-card/fish/card-fish-0.webp");
+
+        PetCollectionCardProperties.Prototype koi = new PetCollectionCardProperties.Prototype();
+        koi.setBaseUrl("https://oss.eggbabe.com/default-card/fish/");
+        koi.setPrefix("card-fish");
+        koi.setCount(10);
+        properties.setKoi(koi);
+
+        PetCollectionCardProperties.Prototype rabbit = new PetCollectionCardProperties.Prototype();
+        rabbit.setBaseUrl("https://oss.eggbabe.com/default-card/rabbit/");
+        rabbit.setPrefix("card-rabbit");
+        rabbit.setCount(10);
         properties.setRabbit(rabbit);
 
         return properties;

@@ -27,11 +27,11 @@ import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
 import xiaozhi.modules.pet.config.PetAvatarProperties;
+import xiaozhi.modules.pet.config.PetCollectionCardProperties;
 import xiaozhi.modules.pet.dao.MemoryDao;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.dao.UserProfileDao;
 import xiaozhi.modules.pet.entity.PetEntity;
-import xiaozhi.modules.pet.event.CollectionCardGenerationEvent;
 import xiaozhi.modules.pet.service.CollectionCardImageService;
 import xiaozhi.modules.pet.vo.PetVO;
 
@@ -85,8 +85,9 @@ class PetServiceImplHatchTest {
     @BeforeEach
     void setUp() {
         PetAvatarProperties avatarProperties = buildAvatarProperties();
+        PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties);
         // LLM 不可用 → deriveMbti 走兜底(INFP)，不调 LLM
         when(llmService.isAvailable()).thenReturn(false);
         when(agentService.createAgent(any())).thenReturn(AGENT_ID);
@@ -106,6 +107,25 @@ class PetServiceImplHatchTest {
         rabbit.setBaseUrl("https://oss.eggbabe.com/default-avatar/rabbit/");
         rabbit.setPrefix("rabbit");
         rabbit.setCount(22);
+        properties.setRabbit(rabbit);
+
+        return properties;
+    }
+
+    private PetCollectionCardProperties buildCollectionCardProperties() {
+        PetCollectionCardProperties properties = new PetCollectionCardProperties();
+        properties.setFallbackUrl("https://oss.eggbabe.com/default-card/fish/card-fish-0.webp");
+
+        PetCollectionCardProperties.Prototype koi = new PetCollectionCardProperties.Prototype();
+        koi.setBaseUrl("https://oss.eggbabe.com/default-card/fish/");
+        koi.setPrefix("card-fish");
+        koi.setCount(10);
+        properties.setKoi(koi);
+
+        PetCollectionCardProperties.Prototype rabbit = new PetCollectionCardProperties.Prototype();
+        rabbit.setBaseUrl("https://oss.eggbabe.com/default-card/rabbit/");
+        rabbit.setPrefix("card-rabbit");
+        rabbit.setCount(10);
         properties.setRabbit(rabbit);
 
         return properties;
@@ -176,6 +196,9 @@ class PetServiceImplHatchTest {
         assertThat(updated.getAvatarUrl())
                 .isNotNull()
                 .matches("^https://oss\\.eggbabe\\.com/default-avatar/(fish|rabbit)/(fish|rabbit)-\\d+\\.png$");
+        assertThat(updated.getCollectionCardUrl())
+                .isNotNull()
+                .matches("^https://oss\\.eggbabe\\.com/default-card/(fish|rabbit)/card-(fish|rabbit)-\\d+\\.webp$");
         assertThat(updated.getGender()).isIn("MALE", "FEMALE");
         assertThat(updated.getBloodType()).isIn("A", "B", "O", "AB");
         assertThat(updated.getUpdater()).isEqualTo(USER_ID);
@@ -186,10 +209,8 @@ class PetServiceImplHatchTest {
         assertThat(result.getMbti()).isEqualTo("INFP");
 
         verify(collectionCardImageService, never()).generate(any(PetEntity.class));
-        ArgumentCaptor<CollectionCardGenerationEvent> eventCaptor =
-                ArgumentCaptor.forClass(CollectionCardGenerationEvent.class);
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().petId()).isEqualTo(PET_ID);
+        // CollectionCardGenerationEvent 已暂时禁用，不再发布事件
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     private String extractSystemPrompt(UpdateWrapper<AgentEntity> wrapper) {

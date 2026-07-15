@@ -37,6 +37,7 @@ import xiaozhi.modules.pet.entity.MemoryEntity;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.entity.UserProfileEntity;
 import xiaozhi.modules.pet.config.PetAvatarProperties;
+import xiaozhi.modules.pet.config.PetCollectionCardProperties;
 import xiaozhi.modules.pet.event.CollectionCardGenerationEvent;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.util.MbtiParser;
@@ -73,6 +74,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final AgentService agentService;
     private final ApplicationEventPublisher eventPublisher;
     private final PetAvatarProperties petAvatarProperties;
+    private final PetCollectionCardProperties petCollectionCardProperties;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -482,6 +484,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         String gender = ThreadLocalRandom.current().nextInt(2) == 0 ? "MALE" : "FEMALE";
         String bloodType = new String[]{"A", "B", "O", "AB"}[ThreadLocalRandom.current().nextInt(4)];
         String avatarUrl = randomAvatarUrl(pet.getPrototype());
+        String collectionCardUrl = randomCollectionCardUrl(pet.getPrototype());
 
         // 回填宠物破壳档案（需在 agent 创建前写 gender/bloodType 以便模板渲染）
         pet.setHatchStatus(HATCH_STATUS_HATCHED);
@@ -495,6 +498,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setGender(gender);
         pet.setBloodType(bloodType);
         pet.setAvatarUrl(avatarUrl);
+        pet.setCollectionCardUrl(collectionCardUrl);
         pet.setUpdater(userId);
 
         // agent 个性注入：使用模板渲染系统提示词
@@ -537,6 +541,13 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
      */
     private String randomAvatarUrl(String prototype) {
         return petAvatarProperties.randomAvatarUrl(prototype);
+    }
+
+    /**
+     * 按原型从配置中随机取一张默认收藏卡 URL。
+     */
+    private String randomCollectionCardUrl(String prototype) {
+        return petCollectionCardProperties.randomCollectionCardUrl(prototype);
     }
 
     /**

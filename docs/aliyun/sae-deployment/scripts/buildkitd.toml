@@ -6,12 +6,12 @@ debug = false
 
 [registry."docker.io"]
   mirrors = [
-    "f48b3qz8.mirror.aliyuncs.com",
+    "docker.m.daocloud.io",
     "docker.1ms.run",
-    "docker.rainbond.cc",
+    "docker.1panel.live",
   ]
 
-[registry."f48b3qz8.mirror.aliyuncs.com"]
+[registry."docker.m.daocloud.io"]
   http = false
   insecure = false
 
@@ -19,6 +19,6 @@ debug = false
   http = false
   insecure = false
 
-[registry."docker.rainbond.cc"]
+[registry."docker.1panel.live"]
   http = false
   insecure = false

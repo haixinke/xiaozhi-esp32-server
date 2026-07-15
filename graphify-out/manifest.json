@@ -1111,6 +1111,262 @@
     "mtime": 1777367662.880577,
     "hash": "e74b6b7841fc4394db6ef22dced37716"
   },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/card-model.js": {
+    "mtime": 1784124865.7014647,
+    "hash": "5269a219eed02fdb9408d447a575f43e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/runtime-config.js": {
+    "mtime": 1784124865.7018526,
+    "hash": "f0bffcd126025112bd6d6d2fb6f09531"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/asset-config.js": {
+    "mtime": 1784068635.8077126,
+    "hash": "126b9c9f89d47f14371c49cf97f119ce"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/app.js": {
+    "mtime": 1784124865.6933606,
+    "hash": "ce9cf70c6cfb5e41ff907dd0a906fd02"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/poster-renderer.js": {
+    "mtime": 1784124865.7017534,
+    "hash": "effcf25068dcd1085dc38a7e27658a3a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/tests/bridge.test.js": {
+    "mtime": 1784124865.7023492,
+    "hash": "82443062efefb2768e0857b1387671c6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/tests/card-model.test.js": {
+    "mtime": 1784124865.7024686,
+    "hash": "4310fa81660b6bd8ecd5fc0e54919b7b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/scripts/verify-project.js": {
+    "mtime": 1784124865.7081618,
+    "hash": "143a6f1a7631882c4a0c181edfefbe3e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/scripts/verify-h5.js": {
+    "mtime": 1784124865.7079575,
+    "hash": "2485018eff63f6f262af1e7f4f6b5af3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/scripts/verify-v211.js": {
+    "mtime": 1784124865.7084491,
+    "hash": "d72ed026a429db1c0ad0cbbc185ec5f6"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/scripts/verify-v2.js": {
+    "mtime": 1784124865.708334,
+    "hash": "359fe80be786451c19cfcb5373d5896d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/app.js": {
+    "mtime": 1784124865.7025678,
+    "hash": "b9331255206e26dc504e08e9439b4af3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/config/item-catalog.js": {
+    "mtime": 1784068635.8344288,
+    "hash": "bfdfe641c001777d8b3dbc852a27d131"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/config/v2.js": {
+    "mtime": 1784124865.703793,
+    "hash": "b339fffb569214700748c3bc5ab3c29f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/utils/life-scenes.js": {
+    "mtime": 1784124865.7077346,
+    "hash": "a7dc286ad7a5fa80d92ab6209aec5a99"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/utils/pet-store.js": {
+    "mtime": 1784124865.7078457,
+    "hash": "c3d12556603fc28d87b7e4ed2652b389"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/signal-bars/signal-bars.js": {
+    "mtime": 1784068635.833984,
+    "hash": "c517a487952ae881f5ef2e4e651f73fa"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/card/card.js": {
+    "mtime": 1784068635.8321886,
+    "hash": "966dcbc72a71851717982559ba094f62"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/egg-avatar/egg-avatar.js": {
+    "mtime": 1784068635.8327005,
+    "hash": "84f5e57a2f5bc5a73202180eea988b1b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/collapse-item/collapse-item.js": {
+    "mtime": 1784068635.832443,
+    "hash": "78dbe0696068759cba5fbf7e0274ffad"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/nav-bar/nav-bar.js": {
+    "mtime": 1784068635.833374,
+    "hash": "af481e1d756fbd73f7ffefb2558bd8b1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/list-row/list-row.js": {
+    "mtime": 1784068635.8329208,
+    "hash": "bd25056cbeee254c9cd3be1baa9c177d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/mood-badge/mood-badge.js": {
+    "mtime": 1784068635.8331516,
+    "hash": "dda6001f83ab81615b32f986c2a6650a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/button/button.js": {
+    "mtime": 1784068635.8318007,
+    "hash": "49ebe21e36f0c91a36ea496f7323d5ec"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/switch-row/switch-row.js": {
+    "mtime": 1784068635.834205,
+    "hash": "9f72bfd68414e4e111167cd8e76c16c0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/components/pet-avatar/pet-avatar.js": {
+    "mtime": 1784068635.833722,
+    "hash": "7ce7a799deb41333d447e0c3e9747d4c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/settings/settings.js": {
+    "mtime": 1784068635.8407302,
+    "hash": "2e31a42dff5ea2d0d328f43ccb8c0038"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/home/home.js": {
+    "mtime": 1784124865.7052808,
+    "hash": "63ef1075b8280a52ef367c5b41191d7b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/add-device/add-device.js": {
+    "mtime": 1784124865.7038774,
+    "hash": "978cac3a320476a5d4cf3e11f9ae6246"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/privacy/privacy.js": {
+    "mtime": 1784068635.8399327,
+    "hash": "cf4b6485d84001afc7bc951fe7303811"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/chat/chat.js": {
+    "mtime": 1784124865.7044218,
+    "hash": "92f3e0f247306835f69ab2e045e84b2f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/wish/wish.js": {
+    "mtime": 1784068635.8414507,
+    "hash": "5c54c018b1b8c8867ebb4bfe4fbcd9a0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/shop/shop.js": {
+    "mtime": 1784068635.8409705,
+    "hash": "5ea373ed9452d70b729bb9c3bd042834"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/life-scene/life-scene.js": {
+    "mtime": 1784124865.705539,
+    "hash": "10cdc4bdf1756a861812e41d5a90a882"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/h5-card/h5-card.js": {
+    "mtime": 1784124865.7050002,
+    "hash": "78d868522d144f2c0d7ee0a7d26387d2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/collection-card/collection-card.js": {
+    "mtime": 1784124865.704511,
+    "hash": "0c8afef4ae6bc2889d5d8267ff8cca1e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/hatch/hatch.js": {
+    "mtime": 1784124865.7050843,
+    "hash": "3b8e55949b06e8ff8f2b7334b32ed561"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/welcome/welcome.js": {
+    "mtime": 1784068635.8412094,
+    "hash": "087a53ebee1eddbe557f5e5ae02c2ab5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/life-scenes/life-scenes.js": {
+    "mtime": 1784124865.7058196,
+    "hash": "46e2fa1cd315771ea0d917cee46d4500"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/profile/profile.js": {
+    "mtime": 1784124865.7066212,
+    "hash": "51a45832c4ae389337b5f481aeaf3220"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/nickname/nickname.js": {
+    "mtime": 1784124865.706405,
+    "hash": "bd660b0dce5e98ba9a508728316a4d2f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/my/my.js": {
+    "mtime": 1784124865.70621,
+    "hash": "07f764ab60acf66eeb78007156fcbc08"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/hatch-guide/hatch-guide.js": {
+    "mtime": 1784068635.8374405,
+    "hash": "faa2de236bd7c70cea9df67b1c307d8a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/lesson/lesson.js": {
+    "mtime": 1784068635.838868,
+    "hash": "c077db461d2a9587aaba67460189f9d9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/account/account.js": {
+    "mtime": 1784068635.8346112,
+    "hash": "4a882065ffcda9c3796bd78df744999f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/bag/bag.js": {
+    "mtime": 1784068635.835364,
+    "hash": "7cee16a062264b6bb429d020ffb81537"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/invite-codes/invite-codes.js": {
+    "mtime": 1784068635.8385139,
+    "hash": "696d521db8bb67dc4794e2d4cc2cf10b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/album/album.js": {
+    "mtime": 1784124865.7040517,
+    "hash": "cb550b83b29057abec2195daaa2ecadd"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/deregister/deregister.js": {
+    "mtime": 1784124865.7049015,
+    "hash": "0665d29d9539db33fae9b68ae27cffce"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/doodle/doodle.js": {
+    "mtime": 1784068635.8363948,
+    "hash": "2ec4c1504e241c438ee871f34660092a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/pages/help/help.js": {
+    "mtime": 1784124865.7051857,
+    "hash": "95960147ca1fb540247d10f32b4e8d9c"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/runtime-context.js": {
+    "mtime": 1784068635.8419695,
+    "hash": "10b5964f6a3f7ffb8f7e1c10340a17c2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/birth-card-h5.js": {
+    "mtime": 1784124865.706993,
+    "hash": "ed0c9f44c6ad6aa6f510b11bba5ff7d4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/storage-migration.js": {
+    "mtime": 1784068635.8422177,
+    "hash": "8b99b3ba01f2e08825d1719d97025809"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/safe-storage.js": {
+    "mtime": 1784068635.8420203,
+    "hash": "17a2b1f6267f1aaff81e1ed6ff4f7c21"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/scene-card-store.js": {
+    "mtime": 1784124865.7073839,
+    "hash": "445b210f08fe6920b2e75808fdc57f3a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/subscription-messages.js": {
+    "mtime": 1784124865.707439,
+    "hash": "fbd5c386e77984bc28745f406bf27701"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/sync-queue.js": {
+    "mtime": 1784124865.7075105,
+    "hash": "52d6a0f8ebe92f360f67406b28476bd7"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/chat-safety.js": {
+    "mtime": 1784124865.7070882,
+    "hash": "eb037b1e4c748ae3c10fddfe5313a0e0"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/analytics.js": {
+    "mtime": 1784124865.7068508,
+    "hash": "0ef5d76180c5e77b4931e55139c7fb95"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/currency-store.js": {
+    "mtime": 1784124865.707275,
+    "hash": "f0febd6f536d23f24163b0dbdf6574ee"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/cloud-api.js": {
+    "mtime": 1784124865.7071776,
+    "hash": "20df039cacd8430b92160c99401cec33"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/time-service.js": {
+    "mtime": 1784124865.707673,
+    "hash": "4333ff9dacaea270bbffd8d2107c32f3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/services/tests/cloud-api.test.js": {
+    "mtime": 1784124865.7075956,
+    "hash": "69c7d38809a960cf83163a734a89e96f"
+  },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/babel.config.js": {
     "mtime": 1776309435.5139103,
     "hash": "d4e23efc5f4844dd66d34420a5dbfa20"
@@ -1600,16 +1856,16 @@
     "hash": "efc57550788825da0e64dbe12ace528c"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplAdoptTest.java": {
-    "mtime": 1783948096.8459606,
-    "hash": "0a98ed741b315d7238cc0b4970df4099"
+    "mtime": 1784128201.3945575,
+    "hash": "299ced05986197c204536a27edf85958"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplTodayMoodTest.java": {
-    "mtime": 1783948096.8465734,
-    "hash": "152bc1016713c89e2f097acf8a1d8f3a"
+    "mtime": 1784128243.8093402,
+    "hash": "0c83c00979593eeb2561fc0c580e437a"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplHatchTest.java": {
-    "mtime": 1783948096.846362,
-    "hash": "25d12f9e2eae018d2536d0a4e9f546b8"
+    "mtime": 1784128326.7516181,
+    "hash": "70955b2d87e4e0ac648148be1ba74d06"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplMemoryTest.java": {
     "mtime": 1781660547.6008987,
@@ -2576,36 +2832,36 @@
     "hash": "2d79162241e3803ae6ad662470a5ae9d"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/controller/MockPaymentNotifyController.java": {
-    "mtime": 1781660893.5048842,
-    "hash": "557e954589ad63eb48ca8e621e13b19b"
+    "mtime": 1784119591.8973174,
+    "hash": "59553c8ba2ee321ac87c0ff4702ea392"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/controller/PaymentNotifyController.java": {
-    "mtime": 1781660893.5054111,
-    "hash": "bc1b76e5a7182745aa4d7530ad27bef1"
+    "mtime": 1784119591.8976178,
+    "hash": "331ed717040a70c1e86eb962540a18d2"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/controller/PaymentController.java": {
-    "mtime": 1782378679.9283385,
-    "hash": "ba2f232014d1f84fc582c5dd0a11cfc6"
+    "mtime": 1784119591.8974757,
+    "hash": "69c20e77f5fa6a8f27a1e5495cb4657e"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/wechat/WechatPayProperties.java": {
     "mtime": 1782037224.7893615,
     "hash": "6f09c5681a742452ad614a36c99e7d98"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/wechat/WechatPayV3Client.java": {
-    "mtime": 1782378679.931368,
-    "hash": "ecec6b0a385cc1433dfb500236c3c160"
+    "mtime": 1784119591.8990064,
+    "hash": "62f29b975ff4bd1492a95ab18fb509dd"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/wechat/WechatPayClient.java": {
     "mtime": 1782378679.9308324,
     "hash": "95fedc93a11413bd407cb932da2ec03e"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/wechat/MockWechatPayClient.java": {
-    "mtime": 1782378679.9304059,
-    "hash": "55b87b4a9d3d1e173aa2817241d441f0"
+    "mtime": 1784119591.8985288,
+    "hash": "347909e4a12d7d033af7184be1b975f5"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/wechat/WechatPayClientStartupGuard.java": {
-    "mtime": 1782037224.7890933,
-    "hash": "780efb56b0a9a6314789674d61afa0dd"
+    "mtime": 1784119591.898659,
+    "hash": "e6e8817638afd80fd099f1d560fe1eaf"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/task/PaymentOrderMaintenanceTask.java": {
     "mtime": 1783841047.9215162,
@@ -2624,16 +2880,16 @@
     "hash": "85e763e507b79fb3af314f78e4f10cf6"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/service/impl/PaymentNotifyServiceImpl.java": {
-    "mtime": 1781660893.5188744,
-    "hash": "037d8ec9f89b214130bcc3fecb9382f7"
+    "mtime": 1784119591.898013,
+    "hash": "1f07720dae63d3250d0c7aeab2663dd7"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/service/impl/FulfillmentDispatcherImpl.java": {
     "mtime": 1781660893.5181181,
     "hash": "4541136341080c5a26fcd910cd4d9d52"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/payment/service/impl/PaymentOrderServiceImpl.java": {
-    "mtime": 1783510360.2814298,
-    "hash": "3e19d8ea77d85eb01443f470e3fa6bf8"
+    "mtime": 1784119591.898291,
+    "hash": "6a2d0fff5824b5b1f77e9cbb082dcdce"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/agent/dto/AgentUpdateDTO.java": {
     "mtime": 1777367662.830698,
@@ -3387,6 +3643,10 @@
     "mtime": 1783948096.843403,
     "hash": "abf664ed2cf69b189ddc9d441e2b485c"
   },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/config/PetCollectionCardProperties.java": {
+    "mtime": 1784128063.2507524,
+    "hash": "d435c8689f839f13d5ea0bdb27563178"
+  },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/config/SeedreamProperties.java": {
     "mtime": 1783948096.843594,
     "hash": "4506391cd2ece8dbce981effd9dc1e13"
@@ -3472,8 +3732,8 @@
     "hash": "f9e514d945fd8d66b60704438a2bcdd4"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/PetServiceImpl.java": {
-    "mtime": 1784028791.7399032,
-    "hash": "5523a967df179ae5ba4fc57e3109567e"
+    "mtime": 1784131235.5989017,
+    "hash": "35d329d3ba5d76ac57f2a1341bc5c25f"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/CollectionCardGenerationListener.java": {
     "mtime": 1784027609.479635,
@@ -4012,8 +4272,8 @@
     "hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1784027868.432246,
-    "hash": "3302bd5c6ab8ece0c69e9840e64379ec"
+    "mtime": 1784130697.3892136,
+    "hash": "59ee683d87473312a9119a6793e605a9"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
     "mtime": 1784037240.0990567,
@@ -4152,8 +4412,8 @@
     "hash": "be03a2df3784436eff0cc106b6ceb2ce"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/collection-card/collection-card.js": {
-    "mtime": 1784027609.4759014,
-    "hash": "89c3cb32cfd7fcdd7f1bea218104603f"
+    "mtime": 1784157565.3776972,
+    "hash": "2592e40621c6e80b0afcf9a69e71f2f2"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/egg-miniprogram/miniprogram/pages/welcome/welcome.test.js": {
     "mtime": 1784027609.4773798,
@@ -4451,6 +4711,22 @@
     "mtime": 1781660547.7148223,
     "hash": "1ee29912ef44eedb5f1615cc631cb129"
   },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/index.html": {
+    "mtime": 1784124865.7016246,
+    "hash": "a32593b27a0b81f592d69888b86a7325"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/assets/fonts/google-sans/OFL.txt": {
+    "mtime": 1784124865.694924,
+    "hash": "009ea8164cbb44452990ad502cdb6914"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/assets/fonts/noto-sans-sc/OFL.txt": {
+    "mtime": 1784124865.699704,
+    "hash": "80d8d4bf382c9296e204142fd3fb27a3"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/h5/birth-card/assets/fonts/zcool-kuaile/OFL.txt": {
+    "mtime": 1784124865.7001176,
+    "hash": "bf6ea5643e0dc2b391f89a0c297081f8"
+  },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-web/public/offline.html": {
     "mtime": 1776309435.8254354,
     "hash": "734156932e44f77e0c83050bcd5e1021"
@@ -4508,19 +4784,99 @@
     "hash": "c736c993769fa6eee6bd14839f5ff6bc"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/application-prod.yml": {
-    "mtime": 1783948096.844853,
-    "hash": "fd5e8aad69d7f3d74b5e208244d36630"
+    "mtime": 1784128114.0103226,
+    "hash": "98cc7f89d81ebce0273806435bedcd8e"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/application-dev.yml": {
-    "mtime": 1783948096.8446877,
-    "hash": "df3bbfbb354134df266c360dbc5f4b12"
+    "mtime": 1784128114.01031,
+    "hash": "7fa759640914d6eb678d6693e2f6e34a"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/application.yml": {
-    "mtime": 1783959294.6448584,
-    "hash": "7e2e2593af96556438b65d079a2ba3f6"
+    "mtime": 1784128114.0102794,
+    "hash": "66ada77e3ad3b62ef41062cf2e09033a"
   },
   "/Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
     "mtime": 1783841047.9255388,
     "hash": "f1f2a2153b79dbaed5c948d9128c0cc5"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-001.webp": {
+    "mtime": 1784068635.8250303,
+    "hash": "84b5dea205600a078f48463fdd03cba8"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-007.webp": {
+    "mtime": 1784068635.825687,
+    "hash": "3ed485213d252f87d5c04c2f46ae4b8a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-010.webp": {
+    "mtime": 1784068635.8259418,
+    "hash": "d87c9bc6022e078d3926521b5067c2ac"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-006.webp": {
+    "mtime": 1784068635.825594,
+    "hash": "67e429b4e586a6aef3abcddafaac95b2"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-005.webp": {
+    "mtime": 1784068635.825501,
+    "hash": "bc347248618b400c9d6361a99db3d67e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-009.webp": {
+    "mtime": 1784068635.8258603,
+    "hash": "b4b78901a472e23f11bf91320f9b913e"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-008.webp": {
+    "mtime": 1784068635.8257778,
+    "hash": "a282e8e679c4e178a59255a281779e99"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-004.webp": {
+    "mtime": 1784068635.8253965,
+    "hash": "ad2c8a9068786b5c55f36049b67ed46b"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-003.webp": {
+    "mtime": 1784068635.8252013,
+    "hash": "05868573d90d269cc3b6b0efb8702f9a"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/YT-S01/yt-s01-002.webp": {
+    "mtime": 1784068635.8251295,
+    "hash": "abdeda4a0ba1fdafeab505a518036185"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-003.webp": {
+    "mtime": 1784124865.7029612,
+    "hash": "9d9392bc257d9c613d45628d51dd6fa4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-002.webp": {
+    "mtime": 1784124865.70288,
+    "hash": "fe68c54a582dafe49cf07638acb914c1"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-005.webp": {
+    "mtime": 1784124865.7031488,
+    "hash": "ac5f51c153b2514d8c00287c8364b6bf"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-009.webp": {
+    "mtime": 1784124865.7036366,
+    "hash": "cbd49656cba7c6e3181964065de9d72f"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-008.webp": {
+    "mtime": 1784124865.7035768,
+    "hash": "52af423f9be8e89fe3d0be8875c375ab"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-004.webp": {
+    "mtime": 1784124865.70307,
+    "hash": "d96149b92e2011da1bb88b2f2b8c2f18"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-007.webp": {
+    "mtime": 1784124865.7035081,
+    "hash": "4d3953df8f7bfc9bf1f17c008397aa0d"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-010.webp": {
+    "mtime": 1784124865.7036986,
+    "hash": "a4caa261aab2ef3094491b0678a8ead4"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-006.webp": {
+    "mtime": 1784124865.7032268,
+    "hash": "498bb2f6ba3e7100960939fcb75185c9"
+  },
+  "/Users/minwang/codes/github/xiaozhi-esp32-server/main/eggbabe-demo/miniprogram/assets/cards/KOI-S01/koi-s01-001.webp": {
+    "mtime": 1784124865.7027814,
+    "hash": "79f2d55d48ad4590a822f6f505241291"
   }
 }

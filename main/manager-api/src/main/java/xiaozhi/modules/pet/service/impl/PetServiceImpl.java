@@ -640,6 +640,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setHatchedAt(pet.getHatchedAt());
         vo.setAcceleratedMinutes(pet.getAcceleratedMinutes());
         vo.setAvatarUrl(pet.getAvatarUrl());
+        vo.setCollectionCardUrl(pet.getCollectionCardUrl());
         vo.setPrototype(pet.getPrototype());
         vo.setGender(pet.getGender());
         vo.setBloodType(pet.getBloodType());

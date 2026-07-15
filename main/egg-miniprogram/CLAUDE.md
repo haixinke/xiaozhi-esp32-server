@@ -263,6 +263,7 @@ find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 - **不入库 / 不落日志**：AppSecret、token、openid、unionid、`wx.login` code、客服 ID、模板 ID、私有 API URL、真实用户数据。`project.private.config.json`、`.DS_Store`、生成产物保持本地。
 - 孵化时长规则产品方向已确认（单轨 Model X）：**adopt 时设基线**（`hatchStartTime=now`、`expectedHatchTime=now+7d`），修炼动作只累加 `acceleratedMinutes` 下推 `expectedHatchTime`（`=hatchStartTime+7d-acceleratedMinutes`，clamp ≥ 起点），无动作蛋到 `adopt+7d` 即可破壳。进度满（`acceleratedMinutes≥10080`）即 `expectedHatchTime=hatchStartTime` 即可破壳，不保留 `prepared` 中间态。PRD §5.3 已于 2026-07-11 修订为单轨模型，与本实现一致。详见"孵化修炼手册"小节与 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
 - 后端 schema 变更走 Liquibase：**新增 changeset + SQL 文件，不编辑已有 changeset**（见 `manager-api/CLAUDE.md`）。
+- **WXML 数据绑定禁止使用 `prototype` 作为字段名**：`prototype` 是 JS 原型链保留属性，WXML 引擎解析 `{{obj.prototype}}` 时会沿原型链查找命中 `Object.prototype`（对象）而非自身属性（字符串），导致渲染为空白。应改用 `petType`、`prototypeName` 等别名（JS 层赋值 `obj.petType = obj.prototype`，WXML 绑定 `{{obj.petType}}`）。
 
 ## 相关文档
 

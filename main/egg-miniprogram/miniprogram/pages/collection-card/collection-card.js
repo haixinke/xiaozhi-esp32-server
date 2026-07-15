@@ -1,7 +1,27 @@
 const petStore = require('../../utils/pet-store');
 
+const ZODIAC_SYMBOLS = { 白羊座: '♈', 金牛座: '♉', 双子座: '♊', 巨蟹座: '♋', 狮子座: '♌', 处女座: '♍', 天秤座: '♎', 天蝎座: '♏', 射手座: '♐', 摩羯座: '♑', 水瓶座: '♒', 双鱼座: '♓' };
+
+function birthdayLabel(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+  return match ? `${Number(match[1])}年${Number(match[2])}月${Number(match[3])}日` : String(value || '');
+}
+
+function genderLabel(value) {
+  if (value === 'FEMALE') return '♀';
+  if (value === 'MALE') return '♂';
+  return value || '—';
+}
+
+function signatureClass(value) {
+  const length = Array.from(String(value || '')).length;
+  if (length > 60) return 'card-signature--dense';
+  if (length > 32) return 'card-signature--compact';
+  return '';
+}
+
 Page({
-  data: { card: null, pet: null, isNew: false },
+  data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', zodiacSymbol: '', signatureClass: '' },
 
   onLoad(query) {
     const pet = petStore.getPet();
@@ -10,7 +30,18 @@ Page({
       setTimeout(() => wx.navigateBack(), 600);
       return;
     }
-    this.setData({ pet, card: { ...pet.collectionCard, petType: pet.collectionCard.prototype }, isNew: query.new === '1' });
+    const proto = pet.collectionCard.prototype || pet.prototype || '玉兔';
+    const card = { ...pet.collectionCard, prototype: proto, petType: proto, imageUrl: pet.collectionCardUrl || '' };
+    this.setData({
+      pet,
+      card,
+      subtitle: card.style ? `${proto} · ${card.style}` : proto,
+      birthdayLabel: birthdayLabel(card.birthday),
+      genderLabel: genderLabel(card.gender),
+      zodiacSymbol: ZODIAC_SYMBOLS[card.zodiac] || '',
+      signatureClass: signatureClass(card.personality),
+      isNew: query.new === '1'
+    });
   },
 
   onReady() {
@@ -22,233 +53,133 @@ Page({
     const draw = (imagePath) => {
       const ctx = wx.createCanvasContext('shareCanvas', this);
 
-      // 画布与卡片尺寸（按 750rpx 设计稿 1:1 映射为 px）
+      // 画布与卡片尺寸（9:16 卡片比例）
       const C_W = 750;
-      const C_H = 1100;
+      const C_H = 1280;
       const CARD_X = 36;
       const CARD_Y = 28;
       const CARD_W = 678;
-      const CARD_H = 980;
-      const PADDING_X = 34;
-      const PADDING_Y = 36;
+      const CARD_H = 1205;
+      const PAD = 24;
       const CX = CARD_X + CARD_W / 2;
+      const CONTENT_X = CARD_X + PAD;
+      const CONTENT_W = CARD_W - PAD * 2;
 
       // 页面背景
       ctx.setFillStyle('#F3F1E8');
       ctx.fillRect(0, 0, C_W, C_H);
 
-      // 卡片阴影
+      // 卡片阴影 + 背景
       ctx.setShadow(0, 26, 60, 'rgba(0,41,0,0.16)');
-
-      // 卡片渐变背景
-      const gradient = ctx.createLinearGradient(CARD_X, CARD_Y, CARD_X + CARD_W, CARD_Y + CARD_H);
-      gradient.addColorStop(0, '#FFFDF2');
-      gradient.addColorStop(0.56, '#FAF7D8');
-      gradient.addColorStop(1, '#F9D8D1');
-      ctx.setFillStyle(gradient);
-      this._roundRect(ctx, CARD_X, CARD_Y, CARD_W, CARD_H, 38);
+      ctx.setFillStyle('#FFFDF7');
+      this._roundRect(ctx, CARD_X, CARD_Y, CARD_W, CARD_H, 40);
       ctx.fill();
-
-      // 重置阴影，避免影响后续绘制
       ctx.setShadow(0, 0, 0, 'rgba(0,0,0,0)');
-
-      // 白色边框
-      ctx.setStrokeStyle('#FFFFFF');
-      ctx.setLineWidth(4);
-      this._roundRect(ctx, CARD_X, CARD_Y, CARD_W, CARD_H, 38);
-      ctx.stroke();
-
-      // 装饰圆环（right: -140rpx; top: 120rpx; size: 300rpx）
-      ctx.beginPath();
-      ctx.arc(CARD_X + CARD_W + 140 - 150, CARD_Y + 120 + 150, 150, 0, Math.PI * 2);
-      ctx.setStrokeStyle('rgba(0,41,0,0.09)');
-      ctx.setLineWidth(2);
-      ctx.stroke();
 
       ctx.setTextBaseline('middle');
 
-      // 顶部标题与收藏标签
-      let y = CARD_Y + PADDING_Y;
-      ctx.setTextAlign('left');
-      ctx.setFillStyle('#56612E');
-      ctx.setFontSize(18);
-      ctx.fillText('EGGBABY · BIRTH CARD', CARD_X + PADDING_X, y + 9);
+      // === 标题区域 (约 9%) ===
+      const TITLE_H = Math.round(CARD_H * 0.09);
+      const titleY = CARD_Y + PAD;
+      const titleCY = titleY + TITLE_H / 2;
 
-      const tagText = card.collectible || '普通';
-      ctx.setFontSize(19);
-      const tagTextWidth = ctx.measureText(tagText).width;
-      const tagWidth = tagTextWidth + 32;
-      const tagHeight = 32;
-      const tagX = CARD_X + CARD_W - PADDING_X - tagWidth;
-      this._roundRect(ctx, tagX, y, tagWidth, tagHeight, 16);
-      ctx.setStrokeStyle('#78863D');
-      ctx.setLineWidth(1);
-      ctx.stroke();
-      ctx.setFillStyle('#56612E');
+      const titleBg = ctx.createLinearGradient(CONTENT_X, titleY, CONTENT_X, titleY + TITLE_H);
+      titleBg.addColorStop(0, '#FFFEFB');
+      titleBg.addColorStop(1, '#FFFAF0');
+      ctx.setFillStyle(titleBg);
+      ctx.fillRect(CONTENT_X, titleY, CONTENT_W, TITLE_H);
+
+      // 名字
       ctx.setTextAlign('center');
-      ctx.fillText(tagText, tagX + tagWidth / 2, y + tagHeight / 2);
+      ctx.setFillStyle('#3C2D24');
+      ctx.font = '600 46px sans-serif';
+      ctx.fillText(card.name || '', CX, titleCY - 12);
+      ctx.font = 'normal 16px sans-serif';
 
-      y += tagHeight + 32;
+      // 子标题
+      const subtitle = card.style ? `${card.petType} · ${card.style}` : card.petType;
+      ctx.setFillStyle('#6E756D');
+      ctx.setFontSize(17);
+      ctx.fillText(subtitle, CX, titleCY + 18);
 
-      // 头像区域
-      const P_SIZE = 270;
-      const P_X = CX - P_SIZE / 2;
-      const P_Y = y;
-      const P_CY = P_Y + P_SIZE / 2;
+      // === 插图区域 ===
+      const ILLUS_W = CONTENT_W - 60;
+      const ILLUS_H = Math.round(ILLUS_W * 5 / 4);
+      const ILLUS_X = CONTENT_X + 30;
+      const ILLUS_Y = titleY + TITLE_H + 16;
 
-      // 头像光晕（旧版 canvas 不支持 createRadialGradient，用同心圆模拟径向渐变）
-      const steps = 16;
-      const maxR = P_SIZE / 2;
-      for (let i = steps; i >= 0; i--) {
-        const ratio = i / steps;
-        const r = ratio * maxR;
-        const alpha = 0.1 + (1 - ratio) * 0.9;
-        ctx.setGlobalAlpha(alpha);
-        ctx.beginPath();
-        ctx.arc(CX, P_CY, r, 0, Math.PI * 2);
-        ctx.setFillStyle('#FFFFFF');
-        ctx.fill();
-      }
-      ctx.setGlobalAlpha(1);
+      const illusBg = ctx.createLinearGradient(ILLUS_X, ILLUS_Y, ILLUS_X + ILLUS_W, ILLUS_Y + ILLUS_H);
+      illusBg.addColorStop(0, '#EAF3F4');
+      illusBg.addColorStop(0.58, '#F5F0DD');
+      illusBg.addColorStop(1, '#ECE7F5');
 
-      // 头像图片 / 默认宠物头像
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(CX, P_CY, P_SIZE / 2, 0, Math.PI * 2);
+      this._roundRect(ctx, ILLUS_X, ILLUS_Y, ILLUS_W, ILLUS_H, 28);
+      ctx.setFillStyle(illusBg);
+      ctx.fill();
       ctx.clip();
       if (imagePath) {
-        ctx.drawImage(imagePath, P_X, P_Y, P_SIZE, P_SIZE);
+        ctx.drawImage(imagePath, ILLUS_X, ILLUS_Y, ILLUS_W, ILLUS_H);
       } else {
-        this._drawPetAvatar(ctx, card.petType || card.prototype, P_X, P_Y, P_SIZE);
+        const fbSize = 250;
+        this._drawPetAvatar(ctx, card.prototype, ILLUS_X + (ILLUS_W - fbSize) / 2, ILLUS_Y + (ILLUS_H - fbSize) / 2, fbSize);
       }
       ctx.restore();
 
-      y += P_SIZE + 24;
-
-      // 名字 + 性别
-      ctx.setTextAlign('center');
-      ctx.setFillStyle('#002900');
-      ctx.font = '600 46px sans-serif';
-      const nameText = card.name || '';
-      const genderText = card.gender || '';
-      const nameWidth = ctx.measureText(nameText).width;
-      const genderWidth = ctx.measureText(genderText).width;
-      const gap = 8;
-      const nameX = CX - (gap + genderWidth) / 2;
-      const genderX = CX + nameWidth / 2 + gap / 2;
-      ctx.fillText(nameText, nameX, y + 23);
-      ctx.setFillStyle('#7D8945');
-      ctx.font = 'normal 29px sans-serif';
-      ctx.fillText(genderText, genderX, y + 23);
-      ctx.font = 'normal 16px sans-serif';
-
-      y += 46 + 10;
-
-      // 风格（与 WXML 一致，为空时不显示）
-      if (card.style) {
-        ctx.setFillStyle('#737168');
-        ctx.setFontSize(24);
-        ctx.fillText(`${card.petType || card.prototype} · ${card.style}`, CX, y + 12);
-        y += 24 + 26;
-      } else {
-        y += 26;
-      }
-
-      // 个性签名（最多两行）
-      if (card.personality) {
-        ctx.setFillStyle('#48473F');
-        ctx.setFontSize(25);
-        const lines = this._wrapText(ctx, card.personality, 540, 2);
-        const lineHeight = 40;
-        lines.forEach((line, index) => {
-          ctx.fillText(line, CX, y + index * lineHeight + 12.5);
-        });
-        y += lines.length * lineHeight + 28;
-      } else {
-        y += 24;
-      }
-
-      // 信息四宫格
-      const GRID_W = CARD_W - PADDING_X * 2;
-      const CELL_H = 91;
-      const GAP = 2;
-      const GRID_H = CELL_H * 2 + GAP;
-      const CELL_W = (GRID_W - GAP) / 2;
-
-      ctx.save();
-      this._roundRect(ctx, CARD_X + PADDING_X, y, GRID_W, GRID_H, 24);
-      ctx.setFillStyle('rgba(255,255,255,0.65)');
-      ctx.fill();
-      ctx.clip();
+      // === 数据区域 ===
+      const dataY = ILLUS_Y + ILLUS_H + 16 + 18;
+      const GRID_GAP_V = 10;
+      const GRID_GAP_H = 14;
+      const CELL_W = (CONTENT_W - GRID_GAP_H) / 2;
+      const CELL_H = 50;
 
       const cells = [
-        { label: '生日', value: card.birthday || '' },
-        { label: '星座', value: card.zodiac || '' },
-        { label: 'MBTI', value: card.mbti || '' },
-        { label: '血型', value: card.bloodType ? `${card.bloodType} 型` : '' }
+        { label: '类型', value: card.prototype || '' },
+        { label: '生日', value: birthdayLabel(card.birthday) },
+        { label: '星座', value: `${card.zodiac || ''} ${ZODIAC_SYMBOLS[card.zodiac] || ''}`.trim() },
+        { label: '性别', value: genderLabel(card.gender) },
+        { label: '血型', value: card.bloodType ? `${card.bloodType} 型` : '' },
+        { label: 'MBTI', value: card.mbti || '' }
       ];
+
       cells.forEach((cell, index) => {
         const col = index % 2;
         const row = Math.floor(index / 2);
-        const cellX = CARD_X + PADDING_X + col * (CELL_W + GAP);
-        const cellY = y + row * (CELL_H + GAP);
-        ctx.setFillStyle('rgba(255,255,255,0.48)');
-        ctx.fillRect(cellX, cellY, CELL_W, CELL_H);
+        const cellX = CONTENT_X + col * (CELL_W + GRID_GAP_H);
+        const cellY = dataY + row * (CELL_H + GRID_GAP_V);
+
+        ctx.setFillStyle('#F6F6F0');
+        this._roundRect(ctx, cellX, cellY, CELL_W, CELL_H, 15);
+        ctx.fill();
 
         ctx.setTextAlign('left');
-        ctx.setFillStyle('#929087');
-        ctx.setFontSize(19);
-        ctx.fillText(cell.label, cellX + 24, cellY + 20 + 9.5);
+        ctx.setFillStyle('#7A807A');
+        ctx.setFontSize(22);
+        ctx.fillText(cell.label, cellX + 14, cellY + CELL_H / 2);
 
-        ctx.setFillStyle('#31362A');
-        ctx.setFontSize(25);
-        ctx.font = '600 25px sans-serif';
-        ctx.fillText(cell.value, cellX + 24, cellY + 20 + 19 + 7 + 12.5);
+        ctx.setTextAlign('right');
+        ctx.setFillStyle('#2D251F');
+        ctx.font = '600 24px sans-serif';
+        ctx.fillText(cell.value, cellX + CELL_W - 14, cellY + CELL_H / 2);
         ctx.font = 'normal 16px sans-serif';
       });
-      ctx.restore();
 
-      y += GRID_H + 24;
-
-      // 孵化记录
-      ctx.setTextAlign('left');
-      ctx.setFillStyle('#6B704E');
-      ctx.setFontSize(21);
-      const recordLeft = card.hatchQuality || '';
-      const recordRight = `初始主人 · ${card.originalOwner || '蛋友'}`;
-      ctx.fillText(recordLeft, CARD_X + PADDING_X, y + 10.5);
-      const rightWidth = ctx.measureText(recordRight).width;
-      ctx.fillText(recordRight, CARD_X + CARD_W - PADDING_X - rightWidth, y + 10.5);
-
-      y += 21 + 24;
-
-      // 编号行分隔线
-      ctx.beginPath();
-      ctx.moveTo(CARD_X + PADDING_X, y);
-      ctx.lineTo(CARD_X + CARD_W - PADDING_X, y);
-      ctx.setStrokeStyle('rgba(0,41,0,0.14)');
-      ctx.setLineWidth(1);
-      ctx.stroke();
-
-      // 编号
-      ctx.setFillStyle('#5D633F');
-      ctx.setFontSize(19);
-      ctx.fillText(card.serial || '', CARD_X + PADDING_X, y + 22 + 9.5);
-
-      // 小程序码占位
-      const CODE_SIZE = 48;
-      const codeX = CARD_X + CARD_W - PADDING_X - CODE_SIZE;
-      const codeY = y + 22 + (19 - CODE_SIZE) / 2;
-      ctx.setFillStyle('#FFFFFF');
-      ctx.fillRect(codeX, codeY, CODE_SIZE, CODE_SIZE);
-      ctx.setFillStyle('#002900');
-      ctx.fillRect(codeX + 5, codeY + 5, 17, 17);
-      ctx.fillRect(codeX + 26, codeY + 5, 17, 17);
-      ctx.fillRect(codeX + 5, codeY + 26, 17, 17);
-      ctx.beginPath();
-      ctx.arc(codeX + 26 + 8.5, codeY + 26 + 8.5, 8.5, 0, Math.PI * 2);
-      ctx.setFillStyle('#9DB65B');
-      ctx.fill();
+      // 签名
+      if (card.personality) {
+        const gridH = 3 * CELL_H + 2 * GRID_GAP_V;
+        const sigY = dataY + gridH + 14;
+        const sigText = `“${card.personality}”`;
+        const sigLen = Array.from(String(card.personality)).length;
+        const sigFontSize = sigLen > 60 ? 18 : sigLen > 32 ? 21 : 25;
+        ctx.setTextAlign('center');
+        ctx.setFillStyle('#536057');
+        ctx.setFontSize(sigFontSize);
+        const sigLines = this._wrapText(ctx, sigText, CONTENT_W - 28, 2);
+        const sigLineHeight = sigFontSize * 1.4;
+        sigLines.forEach((line, index) => {
+          ctx.fillText(line, CX, sigY + index * sigLineHeight + sigFontSize / 2);
+        });
+      }
 
       ctx.draw();
     };
@@ -436,9 +367,9 @@ Page({
     wx.canvasToTempFilePath({
       canvasId: 'shareCanvas',
       width: 750,
-      height: 1100,
+      height: 1280,
       destWidth: 1500,
-      destHeight: 2200,
+      destHeight: 2560,
       success: ({ tempFilePath }) => {
         wx.saveImageToPhotosAlbum({
           filePath: tempFilePath,

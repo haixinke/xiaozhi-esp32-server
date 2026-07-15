@@ -2,6 +2,9 @@ const petStore = require('../../utils/pet-store');
 
 const ZODIAC_SYMBOLS = { 白羊座: '♈', 金牛座: '♉', 双子座: '♊', 巨蟹座: '♋', 狮子座: '♌', 处女座: '♍', 天秤座: '♎', 天蝎座: '♏', 射手座: '♐', 摩羯座: '♑', 水瓶座: '♒', 双鱼座: '♓' };
 
+// 与 app.wxss 全局 font-family 保持一致，确保 Canvas 保存图片字体与页面渲染一致
+const FONT_FAMILY = "'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif";
+
 function birthdayLabel(value) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
   return match ? `${Number(match[1])}年${Number(match[2])}月${Number(match[3])}日` : String(value || '');
@@ -92,15 +95,15 @@ Page({
       // 名字
       ctx.setTextAlign('center');
       ctx.setFillStyle('#3C2D24');
-      ctx.font = '600 46px sans-serif';
-      ctx.fillText(card.name || '', CX, titleCY - 12);
-      ctx.font = 'normal 16px sans-serif';
+      ctx.font = `600 46px ${FONT_FAMILY}`;
+      ctx.fillText(card.name || '', CX, titleCY - 14);
+      ctx.font = `normal 16px ${FONT_FAMILY}`;
 
       // 子标题
       const subtitle = card.style ? `${card.petType} · ${card.style}` : card.petType;
       ctx.setFillStyle('#6E756D');
-      ctx.setFontSize(17);
-      ctx.fillText(subtitle, CX, titleCY + 18);
+      ctx.font = `normal 17px ${FONT_FAMILY}`;
+      ctx.fillText(subtitle, CX, titleCY + 28);
 
       // === 插图区域 ===
       const ILLUS_W = CONTENT_W - 60;
@@ -154,14 +157,14 @@ Page({
 
         ctx.setTextAlign('left');
         ctx.setFillStyle('#7A807A');
-        ctx.setFontSize(22);
+        ctx.font = `normal 22px ${FONT_FAMILY}`;
         ctx.fillText(cell.label, cellX + 14, cellY + CELL_H / 2);
 
         ctx.setTextAlign('right');
         ctx.setFillStyle('#2D251F');
-        ctx.font = '600 24px sans-serif';
+        ctx.font = `600 24px ${FONT_FAMILY}`;
         ctx.fillText(cell.value, cellX + CELL_W - 14, cellY + CELL_H / 2);
-        ctx.font = 'normal 16px sans-serif';
+        ctx.font = `normal 16px ${FONT_FAMILY}`;
       });
 
       // 签名
@@ -173,7 +176,7 @@ Page({
         const sigFontSize = sigLen > 60 ? 18 : sigLen > 32 ? 21 : 25;
         ctx.setTextAlign('center');
         ctx.setFillStyle('#536057');
-        ctx.setFontSize(sigFontSize);
+        ctx.font = `normal ${sigFontSize}px ${FONT_FAMILY}`;
         const sigLines = this._wrapText(ctx, sigText, CONTENT_W - 28, 2);
         const sigLineHeight = sigFontSize * 1.4;
         sigLines.forEach((line, index) => {

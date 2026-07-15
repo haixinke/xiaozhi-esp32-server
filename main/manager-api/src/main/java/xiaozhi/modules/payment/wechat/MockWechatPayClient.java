@@ -27,9 +27,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * 启动期 {@code WechatPayClientStartupGuard} 会在检测到 mock 客户端 + prod profile 同时生效时拒绝启动。</p>
  */
 @Slf4j
-@Component
-@ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "true")
-@ConditionalOnMissingBean(name = "wechatPayV3Client")
+// [暂时屏蔽微信支付功能] 取消注释以下三行注解即可恢复
+// @Component
+// @ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "true")
+// @ConditionalOnMissingBean(name = "wechatPayV3Client")
 @RequiredArgsConstructor
 public class MockWechatPayClient implements WechatPayClient {
 

@@ -40,7 +40,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@Service
+// [暂时屏蔽微信支付功能] 取消注释以下注解即可恢复
+// @Service
 @RequiredArgsConstructor
 public class PaymentOrderServiceImpl implements PaymentOrderService {
 

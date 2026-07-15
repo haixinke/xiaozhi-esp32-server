@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
  * Guard 跳过校验并输出提示日志。</p>
  */
 @Slf4j
-@Component
+// [暂时屏蔽微信支付功能] 取消注释以下注解即可恢复
+// @Component
 public class WechatPayClientStartupGuard implements ApplicationRunner {
 
     @Autowired(required = false)

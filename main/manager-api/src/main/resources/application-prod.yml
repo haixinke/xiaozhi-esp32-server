@@ -12,13 +12,13 @@ spring:
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: ${SPRING_DATASOURCE_DRUID_URL:jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true}
+      url: ${SPRING_DATASOURCE_DRUID_URL:jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false&connectTimeout=30000&socketTimeout=120000&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true}
       username: ${SPRING_DATASOURCE_DRUID_USERNAME:root}
       password: ${SPRING_DATASOURCE_DRUID_PASSWORD:}
-      initial-size: 10
-      max-active: 100
-      min-idle: 10
-      max-wait: 6000
+      initial-size: 8
+      max-active: 40
+      min-idle: 5
+      max-wait: 10000
       pool-prepared-statements: true
       max-pool-prepared-statement-per-connection-size: 20
       time-between-eviction-runs-millis: 60000

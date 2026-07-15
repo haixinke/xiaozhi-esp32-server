@@ -22,7 +22,8 @@ import java.util.Map;
  * 支付回调统一处理器：负责验签 → 解密 → 幂等 → 状态推进 → 履约调度。
  */
 @Slf4j
-@Service
+// [暂时屏蔽微信支付功能] 取消注释以下注解即可恢复
+// @Service
 @RequiredArgsConstructor
 public class PaymentNotifyServiceImpl implements PaymentNotifyService {
 

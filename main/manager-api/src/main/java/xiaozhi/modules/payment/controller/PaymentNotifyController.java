@@ -24,8 +24,9 @@ import java.util.Map;
  */
 @Slf4j
 @Tag(name = "支付回调")
-@RestController
-@RequestMapping("/payment/notify")
+// [暂时屏蔽微信支付功能] 取消注释以下两行注解即可恢复
+// @RestController
+// @RequestMapping("/payment/notify")
 @RequiredArgsConstructor
 public class PaymentNotifyController {
 

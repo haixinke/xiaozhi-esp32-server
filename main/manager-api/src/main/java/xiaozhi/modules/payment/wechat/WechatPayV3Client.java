@@ -44,9 +44,10 @@ import java.util.Map;
  * 这正是 {@link WechatPayClientStartupGuard} 期望的"配错不允许上线"语义。</p>
  */
 @Slf4j
-@Primary
-@Component("wechatPayV3Client")
-@ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "false")
+// [暂时屏蔽微信支付功能] 取消注释以下三行注解即可恢复
+// @Primary
+// @Component("wechatPayV3Client")
+// @ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "false")
 public class WechatPayV3Client implements WechatPayClient {
 
     private volatile WechatPayProperties props;

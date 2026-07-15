@@ -21,9 +21,10 @@ import java.util.Map;
  * 共享同一开关。生产环境必须保持 {@code wechat.pay.mock=false}，避免任意请求触发履约。</p>
  */
 @Tag(name = "支付回调-Mock")
-@RestController
-@RequestMapping("/payment/notify")
-@ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "true", matchIfMissing = true)
+// [暂时屏蔽微信支付功能] 取消注释以下三行注解即可恢复
+// @RestController
+// @RequestMapping("/payment/notify")
+// @ConditionalOnProperty(name = "wechat.pay.mock", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class MockPaymentNotifyController {
 

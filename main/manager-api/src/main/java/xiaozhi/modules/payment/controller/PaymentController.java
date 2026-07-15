@@ -25,8 +25,9 @@ import xiaozhi.modules.security.user.SecurityUser;
 import java.util.List;
 
 @Tag(name = "支付管理")
-@RestController
-@RequestMapping("/payment")
+// [暂时屏蔽微信支付功能] 取消注释以下两行注解即可恢复
+// @RestController
+// @RequestMapping("/payment")
 @RequiredArgsConstructor
 public class PaymentController {
 

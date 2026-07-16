@@ -34,7 +34,7 @@ public interface PetService extends BaseService<PetEntity> {
     PetVO getById(Long userId, String petId);
 
     /**
-     * 更换场景图：按宠物原型随机生成新场景图 URL 并持久化到 collection_card_url 字段。
+     * 更换场景图：按宠物原型随机生成新场景图 URL 并持久化到 scene_url 字段。
      * 校验宠物归属且已破壳(HATCHED)，未破壳抛业务异常。
      *
      * @param userId 当前用户 ID

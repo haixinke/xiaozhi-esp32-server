@@ -51,21 +51,21 @@ public class CollectionCardGenerationListener {
         //     log.warn("收藏卡生成跳过，宠物未破壳，petId={}", event.petId());
         //     return;
         // }
-        // if (StringUtils.isNotBlank(pet.getCollectionCardUrl())) {
+        // if (StringUtils.isNotBlank(pet.getSceneUrl())) {
         //     log.info("收藏卡已存在，跳过生成，petId={}", event.petId());
         //     return;
         // }
         //
-        // String collectionCardUrl = collectionCardImageService.generate(pet);
-        // if (StringUtils.isBlank(collectionCardUrl)) {
+        // String sceneUrl = collectionCardImageService.generate(pet);
+        // if (StringUtils.isBlank(sceneUrl)) {
         //     log.warn("收藏卡生成未返回URL，petId={}", event.petId());
         //     return;
         // }
         //
         // UpdateWrapper<PetEntity> wrapper = new UpdateWrapper<>();
         // wrapper.eq("id", pet.getId())
-        //         .isNull("collection_card_url")
-        //         .set("collection_card_url", collectionCardUrl)
+        //         .isNull("scene_url")
+        //         .set("scene_url", sceneUrl)
         //         .set("updater", pet.getUserId())
         //         .set("update_date", new Date());
         //

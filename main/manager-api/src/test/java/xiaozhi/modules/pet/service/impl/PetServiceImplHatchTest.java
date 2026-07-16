@@ -200,7 +200,7 @@ class PetServiceImplHatchTest {
         assertThat(updated.getAvatarUrl())
                 .isNotNull()
                 .matches("^https://oss\\.eggbabe\\.com/default-avatar/(fish|rabbit)/(fish|rabbit)-\\d+\\.png$");
-        assertThat(updated.getCollectionCardUrl())
+        assertThat(updated.getSceneUrl())
                 .isNotNull()
                 .startsWith("https://oss.eggbabe.com/default-scenes/");
         assertThat(updated.getGender()).isIn("MALE", "FEMALE");

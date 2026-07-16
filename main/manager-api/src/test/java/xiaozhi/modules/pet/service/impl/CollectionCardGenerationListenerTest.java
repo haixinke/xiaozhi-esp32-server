@@ -70,7 +70,7 @@ class CollectionCardGenerationListenerTest {
         CollectionCardGenerationListener listener = new CollectionCardGenerationListener(
                 petDao, collectionCardImageService);
         PetEntity pet = hatchedPet();
-        pet.setCollectionCardUrl("https://oss.example.com/existing.png");
+        pet.setSceneUrl("https://oss.example.com/existing.png");
         when(petDao.selectById("pet-1")).thenReturn(pet);
 
         listener.generate(new CollectionCardGenerationEvent("pet-1"));

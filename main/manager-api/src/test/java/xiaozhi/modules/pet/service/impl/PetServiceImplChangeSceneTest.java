@@ -96,13 +96,13 @@ class PetServiceImplChangeSceneTest {
         pet.setHatchStatus("HATCHED");
         pet.setPrototype("锦鲤");
         pet.setNickname("小金鱼");
-        pet.setCollectionCardUrl(OLD_SCENE_URL);
+        pet.setSceneUrl(OLD_SCENE_URL);
         pet.setHatchedAt(new Date(System.currentTimeMillis() - 8L * 24 * 60 * 60 * 1000));
         return pet;
     }
 
     @Test
-    @DisplayName("happy path - 已破壳宠物: 更换场景成功, collectionCardUrl 更新, VO.sceneUrl 映射正确")
+    @DisplayName("happy path - 已破壳宠物: 更换场景成功, sceneUrl 更新, VO.sceneUrl 映射正确")
     void changeScene_hatched_success() {
         PetEntity pet = hatchedPet();
         when(petDao.selectById(PET_ID)).thenReturn(pet);
@@ -113,7 +113,7 @@ class PetServiceImplChangeSceneTest {
         ArgumentCaptor<PetEntity> petCaptor = ArgumentCaptor.forClass(PetEntity.class);
         verify(petDao).updateById(petCaptor.capture());
         PetEntity updated = petCaptor.getValue();
-        assertThat(updated.getCollectionCardUrl()).isEqualTo(NEW_SCENE_URL);
+        assertThat(updated.getSceneUrl()).isEqualTo(NEW_SCENE_URL);
         assertThat(updated.getUpdater()).isEqualTo(USER_ID);
 
         assertThat(result.getSceneUrl()).isEqualTo(NEW_SCENE_URL);

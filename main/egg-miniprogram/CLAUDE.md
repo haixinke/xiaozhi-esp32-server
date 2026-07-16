@@ -88,7 +88,7 @@ main/egg-miniprogram/
 
 错误码：`PET_ALREADY_HATCHED=10209`、`PET_HATCH_TIME_NOT_REACHED=10214`。
 
-`PetVO` 关键字段：`id, userId, deviceId, nickname, birthDate` / `bazi, wuxing, zodiac, mbti, personality, personalityBrief` / `todayMood, todayMoodDate, todayMoodSentence` / `hatchStatus(EGG/HATCHED), hatchStartTime, expectedHatchTime, hatchedAt, acceleratedMinutes` / `avatarUrl, collectionCardUrl, prototype, gender, bloodType`。
+`PetVO` 关键字段：`id, userId, deviceId, nickname, birthDate` / `bazi, wuxing, zodiac, mbti, personality, personalityBrief` / `todayMood, todayMoodDate, todayMoodSentence` / `hatchStatus(EGG/HATCHED), hatchStartTime, expectedHatchTime, hatchedAt, acceleratedMinutes` / `avatarUrl, sceneUrl, prototype, gender, bloodType`。
 
 ### 孵化状态机映射
 

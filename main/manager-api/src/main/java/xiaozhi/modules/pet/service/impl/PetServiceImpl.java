@@ -471,10 +471,10 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
 
         // 按索引递增选择下一张场景图（0→1→2→...→5→0），避免随机重复
-        String currentUrl = pet.getCollectionCardUrl();
+        String currentUrl = pet.getSceneUrl();
         String newUrl = petSceneProperties.nextSceneUrl(pet.getPrototype(), currentUrl);
 
-        pet.setCollectionCardUrl(newUrl);
+        pet.setSceneUrl(newUrl);
         pet.setUpdater(userId);
         petDao.updateById(pet);
 
@@ -532,7 +532,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setGender(gender);
         pet.setBloodType(bloodType);
         pet.setAvatarUrl(avatarUrl);
-        pet.setCollectionCardUrl(petSceneProperties.randomSceneUrl(pet.getPrototype()));
+        pet.setSceneUrl(petSceneProperties.randomSceneUrl(pet.getPrototype()));
         pet.setUpdater(userId);
 
         // agent 个性注入：使用模板渲染系统提示词
@@ -671,7 +671,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setAcceleratedMinutes(pet.getAcceleratedMinutes());
         vo.setAvatarUrl(pet.getAvatarUrl());
         vo.setCollectionCards(petCollectionCardService.listByPetId(pet.getId()));
-        vo.setSceneUrl(pet.getCollectionCardUrl());
+        vo.setSceneUrl(pet.getSceneUrl());
         vo.setPrototype(pet.getPrototype());
         vo.setGender(pet.getGender());
         vo.setBloodType(pet.getBloodType());

@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 @DisplayName("收藏卡生成异步监听器测试")
 class CollectionCardGenerationListenerTest {
 
@@ -50,29 +51,17 @@ class CollectionCardGenerationListenerTest {
     }
 
     @Test
-    @DisplayName("generate - AI生成成功后只回写collection_card_url字段")
-    @SuppressWarnings("unchecked")
-    void generate_success_updatesOnlyCollectionCardUrl() {
+    @DisplayName("generate - 功能已禁用，不调用任何服务")
+    void generate_disabled_doesNotCallAnyService() {
         CollectionCardGenerationListener listener = new CollectionCardGenerationListener(
                 petDao, collectionCardImageService);
-        PetEntity pet = hatchedPet();
-        when(petDao.selectById("pet-1")).thenReturn(pet);
-        when(collectionCardImageService.generate(pet)).thenReturn("https://oss.example.com/card.png");
-        when(petDao.update(eq(null), org.mockito.ArgumentMatchers.any(UpdateWrapper.class))).thenReturn(1);
 
         listener.generate(new CollectionCardGenerationEvent("pet-1"));
 
-        verify(collectionCardImageService).generate(pet);
-        ArgumentCaptor<UpdateWrapper<PetEntity>> wrapperCaptor = ArgumentCaptor.forClass(UpdateWrapper.class);
-        verify(petDao).update(eq(null), wrapperCaptor.capture());
-
-        String sqlSet = wrapperCaptor.getValue().getSqlSet();
-        assertThat(sqlSet).contains("collection_card_url=");
-        assertThat(sqlSet).contains("updater=");
-        assertThat(sqlSet).contains("update_date=");
-        assertThat(sqlSet).doesNotContain("hatch_status=");
-        assertThat(sqlSet).doesNotContain("device_id=");
-        verify(petDao, never()).updateById(pet);
+        // 监听器已禁用，不应调用任何 DAO 或服务
+        verify(petDao, never()).selectById(org.mockito.ArgumentMatchers.anyString());
+        verify(collectionCardImageService, never()).generate(org.mockito.ArgumentMatchers.any(PetEntity.class));
+        verify(petDao, never()).update(eq(null), org.mockito.ArgumentMatchers.any(UpdateWrapper.class));
     }
 
     @Test

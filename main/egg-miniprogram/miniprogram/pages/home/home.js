@@ -212,6 +212,19 @@ Page({
     if (this.data.stage === 'hatched') wx.navigateTo({ url: '/pages/collection-card/collection-card?index=0' });
   },
 
+  async onChangeScene() {
+    if (this._changingScene) return;
+    this._changingScene = true;
+    const result = await petStore.changeScene();
+    this._changingScene = false;
+    if (!result.ok) {
+      this.showFeedback(result.message || '更换场景失败，请稍后重试');
+      return;
+    }
+    this.setData({ 'pet.sceneUrl': result.sceneUrl });
+    this.showFeedback('场景已更换');
+  },
+
   onUnload() {
     clearTimeout(this.cuddleTimer);
     clearTimeout(this.feedbackTimer);

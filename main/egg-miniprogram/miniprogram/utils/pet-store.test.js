@@ -195,4 +195,45 @@ assert.strictEqual(merged.dailyStatus.mood, '开心', 'merge preserves existing 
 assert.strictEqual(merged.acceleratedMinutes, 780, 'merge takes acceleratedMinutes from vo');
 assert.strictEqual(merged.name, '小金', 'merge keeps name when backend nickname present');
 
-console.log('pet-store.test.js: ALL PASS');
+// --- changeScene: 调用后端更换场景并更新本地缓存 ---
+const petApi = require('./pet-api');
+const originalChangeScene = petApi.changeScene;
+
+petStore.clearAccountData();
+petStore.saveUser({ id: 42, nickname: '蛋友' });
+const changeSceneVO = {
+  ...hatchedIdentityVO,
+  sceneUrl: 'https://oss.eggbabe.com/default-scenes/fish/scenes-fish-5.jpg'
+};
+petStore.savePetFromVO(hatchedIdentityVO);
+
+// mock: 后端返回新场景 URL
+petApi.changeScene = async (petId) => {
+  assert.strictEqual(petId, 'pet-1', 'changeScene passes correct petId');
+  return changeSceneVO;
+};
+
+(async () => {
+  const result = await petStore.changeScene();
+  assert.strictEqual(result.ok, true, 'changeScene returns ok');
+  assert.strictEqual(result.sceneUrl, 'https://oss.eggbabe.com/default-scenes/fish/scenes-fish-5.jpg', 'changeScene returns new sceneUrl');
+  const cached = petStore.getPet();
+  assert.strictEqual(cached.sceneUrl, 'https://oss.eggbabe.com/default-scenes/fish/scenes-fish-5.jpg', 'changeScene updates local cache');
+
+  // mock: 后端报错
+  petApi.changeScene = async () => { throw { userMessage: '服务异常' }; };
+  const failResult = await petStore.changeScene();
+  assert.strictEqual(failResult.ok, false, 'changeScene returns not ok on error');
+  assert.strictEqual(failResult.message, '服务异常', 'changeScene propagates error message');
+
+  // 无宠物
+  petStore.clearAccountData();
+  petStore.saveUser({ id: 42, nickname: '蛋友' });
+  const noPetResult = await petStore.changeScene();
+  assert.strictEqual(noPetResult.ok, false, 'changeScene fails without pet');
+
+  // 恢复
+  petApi.changeScene = originalChangeScene;
+
+  console.log('pet-store.test.js: ALL PASS');
+})();

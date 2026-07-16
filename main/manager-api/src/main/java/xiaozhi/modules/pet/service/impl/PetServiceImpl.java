@@ -455,6 +455,41 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public PetVO changeScene(Long userId, String petId) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        PetEntity pet = petDao.selectById(petId);
+        if (pet == null) {
+            throw new RenException(ErrorCode.PET_NOT_FOUND);
+        }
+        if (!userId.equals(pet.getUserId())) {
+            throw new RenException(ErrorCode.PET_NO_PERMISSION);
+        }
+        if (!HATCH_STATUS_HATCHED.equals(pet.getHatchStatus())) {
+            throw new RenException("宠物尚未破壳，无法更换场景");
+        }
+
+        // 随机生成新场景图 URL，最多重试 3 次以避免与当前 URL 相同
+        String currentUrl = pet.getCollectionCardUrl();
+        String newUrl = petSceneProperties.randomSceneUrl(pet.getPrototype());
+        int retry = 0;
+        while (newUrl != null && newUrl.equals(currentUrl) && retry < 3) {
+            newUrl = petSceneProperties.randomSceneUrl(pet.getPrototype());
+            retry++;
+        }
+
+        pet.setCollectionCardUrl(newUrl);
+        pet.setUpdater(userId);
+        petDao.updateById(pet);
+
+        log.info("场景图更换成功 userId={}, petId={}, prototype={}, newSceneUrl={}",
+                userId, petId, pet.getPrototype(), newUrl);
+        return toVO(pet);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public PetVO hatch(Long userId, String petId) {
         if (userId == null) {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);

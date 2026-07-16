@@ -34,6 +34,16 @@ public interface PetService extends BaseService<PetEntity> {
     PetVO getById(Long userId, String petId);
 
     /**
+     * 更换场景图：按宠物原型随机生成新场景图 URL 并持久化到 collection_card_url 字段。
+     * 校验宠物归属且已破壳(HATCHED)，未破壳抛业务异常。
+     *
+     * @param userId 当前用户 ID
+     * @param petId  宠物 ID
+     * @return 更新后的宠物 VO（sceneUrl 已映射）
+     */
+    PetVO changeScene(Long userId, String petId);
+
+    /**
      * 按需刷新今日心情：today_mood_date != 今日(Asia/Shanghai) 则重新生成(LLM 失败兜底静态池)
      * 并幂等写回，本地反射。已今日则不重生。
      */

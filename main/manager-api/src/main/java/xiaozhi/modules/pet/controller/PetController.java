@@ -60,6 +60,14 @@ public class PetController {
         return new Result<PetVO>().ok(petService.getById(userId, id));
     }
 
+    @PutMapping("/{id}/scene")
+    @Operation(summary = "更换场景图")
+    @RequiresPermissions("sys:role:normal")
+    public Result<PetVO> changeScene(@PathVariable String id) {
+        Long userId = SecurityUser.getUserId();
+        return new Result<PetVO>().ok(petService.changeScene(userId, id));
+    }
+
     @PostMapping("/{id}/hatch")
     @Operation(summary = "破壳")
     @RequiresPermissions("sys:role:normal")

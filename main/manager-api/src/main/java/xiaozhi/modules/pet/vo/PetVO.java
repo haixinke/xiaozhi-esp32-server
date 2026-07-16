@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
 
 @Data
 @Schema(description = "宠物视图对象")
@@ -64,8 +65,8 @@ public class PetVO {
     @Schema(description = "IP形象照片/头像URL")
     private String avatarUrl;
 
-    @Schema(description = "AI生成的破壳收藏卡图片URL")
-    private String collectionCardUrl;
+    @Schema(description = "收藏卡列表")
+    private List<CollectionCardVO> collectionCards;
 
     @Schema(description = "IP形象原型(锦鲤/玉兔等)")
     private String prototype;

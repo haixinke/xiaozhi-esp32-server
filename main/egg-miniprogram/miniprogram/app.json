@@ -18,7 +18,8 @@
     "pages/account/account",
     "pages/help/help",
     "pages/deregister/deregister",
-    "pages/privacy/privacy"
+    "pages/privacy/privacy",
+    "pages/life-scene/life-scene"
   ],
   "tabBar": {
     "color": "#8C8C88",

@@ -1,6 +1,7 @@
 const petStore = require('../../utils/pet-store');
 const auth = require('../../utils/auth');
 const { get } = require('../../utils/request');
+const sceneConfig = require('../../utils/life-scenes');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
 Page({
@@ -210,6 +211,14 @@ Page({
 
   onOpenProfile() {
     if (this.data.stage === 'hatched') wx.navigateTo({ url: '/pages/collection-card/collection-card?index=0' });
+  },
+
+  onOpenLifeScene() {
+    if (this.data.stage !== 'hatched') return;
+    var sceneUrl = this.data.pet && this.data.pet.sceneUrl;
+    if (!sceneUrl) return;
+    var sceneKey = sceneConfig.getSceneKeyFromUrl(sceneUrl);
+    wx.navigateTo({ url: '/pages/life-scene/life-scene?scene=' + sceneKey });
   },
 
   async onChangeScene() {

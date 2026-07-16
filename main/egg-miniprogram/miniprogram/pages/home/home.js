@@ -209,7 +209,7 @@ Page({
   },
 
   onOpenProfile() {
-    if (this.data.stage === 'hatched') wx.navigateTo({ url: '/pages/pet-detail/pet-detail' });
+    if (this.data.stage === 'hatched') wx.navigateTo({ url: '/pages/collection-card/collection-card?index=0' });
   },
 
   onUnload() {

@@ -116,7 +116,6 @@ function savePetFromVO(vo) {
     || (hatchStartTime ? hatchStartTime + 7 * DAY : Date.now() + 7 * DAY);
   const createdAt = toTimestamp(vo.createDate) || hatchStartTime || Date.now();
   const isHatched = vo.hatchStatus === 'HATCHED';
-  const hasFullCard = !!(existing && existing.collectionCard && existing.collectionCard.serial);
   const pet = {
     id: vo.id,
     ownerId: (user && user.id) || null,
@@ -131,8 +130,6 @@ function savePetFromVO(vo) {
     preferences: existing && existing.preferences !== undefined ? existing.preferences : { wishes: [], lessons: [] },
     shell: existing && existing.shell !== undefined ? existing.shell : { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
     dailyStatus: existing && existing.dailyStatus !== undefined ? existing.dailyStatus : null,
-    collectionCard: isHatched ? (hasFullCard ? existing.collectionCard : buildCollectionCard(vo)) : null,
-    collectionCardUrl: vo.collectionCardUrl || '',
     inviteCodes: existing && existing.inviteCodes !== undefined ? existing.inviteCodes : [],
     messages: existing && existing.messages !== undefined ? existing.messages : [],
     todayMood: vo.todayMood || '',
@@ -154,7 +151,7 @@ function savePetFromVO(vo) {
     gender: vo.gender || '',
     bloodType: vo.bloodType || '',
     avatarUrl: vo.avatarUrl || '',
-    collectionCardUrl: vo.collectionCardUrl || ''
+    collectionCards: vo.collectionCards || []
   };
   if (existing && Array.isArray(existing._hatchActions)) pet._hatchActions = existing._hatchActions;
   savePet(pet);
@@ -229,7 +226,7 @@ function bindPet(code, now) {
     preferences: { wishes: [], lessons: [] },
     shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
     dailyStatus: null,
-    collectionCard: null,
+    collectionCards: [],
     inviteCode: createInviteCode(createdAt),
     messages: []
   };
@@ -360,7 +357,7 @@ function getHatchActionState(pet) {
 
 function getStage(pet, now) {
   if (!pet) return 'empty';
-  if (pet.collectionCard) return 'hatched';
+  if (pet.hatchStatus === 'HATCHED') return 'hatched';
   const current = now || Date.now();
   if (current >= pet.hatchAt) return 'ready';
   if (pet.hatchAt - current <= DAY) return 'soon';
@@ -413,7 +410,7 @@ function getDailyStatus() {
   else if (pet.preferences.wishes.some(item => item.value === '活泼逗你开心')) mood = '兴奋';
   else if (pet.preferences.wishes.some(item => item.value === '安静陪伴你')) mood = '平静';
   else mood = ['开心', '平静'][simpleHash(`${pet.id}-${date}`) % 2];
-  const stagePool = pet.collectionCard ? STATUS_LINES.pet : STATUS_LINES.egg;
+  const stagePool = pet.hatchStatus === 'HATCHED' ? STATUS_LINES.pet : STATUS_LINES.egg;
   const lines = stagePool[mood];
   const line = lines[simpleHash(date) % lines.length];
   pet.dailyStatus = { date, mood, line, source: 'local-fallback' };
@@ -479,51 +476,15 @@ function derivePersonality(pet) {
     : { mbti: 'INFP', text: '温柔、细腻，擅长安静地陪伴。' };
 }
 
-// 从后端 PetVO（破壳后含身份字段）拼装收藏卡：身份字段取自 vo，装饰字段前端生成。
-function buildCollectionCard(vo) {
-  if (!vo || !vo.id) return null;
-  const hatchTs = toTimestamp(vo.hatchedAt) || toTimestamp(vo.expectedHatchTime) || Date.now();
-  const accelerated = vo.acceleratedMinutes || 0;
-  const ratio = accelerated / HATCH_TOTAL_MINUTES;
-  const prefix = vo.prototype === '锦鲤' ? 'KOI' : 'RABBIT';
-  const date = new Date(hatchTs);
-  const compact = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
-  const serial = `EGG-${prefix}-${compact}-${String(simpleHash(vo.id) % 999999).padStart(6, '0')}`;
-  const user = getUser();
-  return {
-    id: `card-${vo.id}`,
-    serial,
-    prototype: vo.prototype || '玉兔',
-    style: '',
-    name: vo.nickname || vo.prototype || '玉兔',
-    birthday: todayKey(hatchTs),
-    zodiac: translateZodiac(vo.zodiac) || getZodiac(hatchTs),
-    gender: vo.gender || (simpleHash(vo.id) % 2 ? '♀' : '♂'),
-    mbti: vo.mbti || '',
-    bloodType: vo.bloodType || ['A', 'B', 'O', 'AB'][simpleHash(vo.id) % 4],
-    personality: vo.personalityBrief || vo.personality || '',
-    personalityBrief: vo.personalityBrief || '',
-    avatarUrl: vo.avatarUrl || '',
-    imageUrl: vo.collectionCardUrl || vo.avatarUrl || '',
-    collectible: '普通',
-    hatchQuality: ratio >= 0.8 ? '完整孵化' : '轻量孵化',
-    originalOwner: (user && user.nickname) || '蛋友'
-  };
-}
-
 async function createCollectionCard() {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
   if (Date.now() < pet.hatchAt) return { ok: false, message: '还没到破壳时间' };
-  if (pet.collectionCard) return { ok: true, created: false, card: pet.collectionCard, pet };
+  if (pet.hatchStatus === 'HATCHED') return { ok: true, created: false, pet };
   try {
     const vo = await petApi.hatchPet(pet.id);
-    const card = buildCollectionCard(vo);
     const updated = savePetFromVO(vo);
-    updated.collectionCard = card;
-    updated.stage = 'hatched';
-    savePet(updated);
-    return { ok: true, created: true, card, pet: updated };
+    return { ok: true, created: true, pet: updated };
   } catch (error) {
     return { ok: false, message: (error && error.userMessage) || '破壳失败，请稍后重试' };
   }
@@ -588,7 +549,7 @@ module.exports = {
   getCountdown,
   getDailyStatus,
   recordTouch,
-  buildCollectionCard,
+  cardSerial,
   createCollectionCard,
   saveMessage,
   getMessages,

@@ -28,16 +28,32 @@ Page({
 
   onLoad(query) {
     const pet = petStore.getPet();
-    if (!pet || !pet.collectionCard) {
+    if (!pet || !pet.collectionCards || pet.collectionCards.length === 0) {
       wx.showToast({ title: '还没有破壳收藏卡', icon: 'none' });
       setTimeout(() => wx.navigateBack(), 600);
       return;
     }
-    const proto = pet.collectionCard.prototype || pet.prototype || '玉兔';
-    const card = { ...pet.collectionCard, prototype: proto, petType: proto, imageUrl: pet.collectionCardUrl || '' };
+    const index = Math.min(parseInt(query.index || '0', 10), pet.collectionCards.length - 1);
+    const cardData = pet.collectionCards[index] || pet.collectionCards[0];
+    const proto = pet.prototype || '玉兔';
+    const card = {
+      ...cardData,
+      prototype: proto,
+      petType: proto,
+      name: pet.name || proto,
+      birthday: petStore.todayKey(pet.hatchedAt),
+      zodiac: pet.zodiac || '',
+      gender: pet.gender || '',
+      mbti: pet.mbti || '',
+      bloodType: pet.bloodType || '',
+      personality: cardData.brief || pet.personalityBrief || '',
+      serial: petStore.cardSerial ? petStore.cardSerial(pet) : ''
+    };
     this.setData({
       pet,
       card,
+      cardIndex: index,
+      cardTotal: pet.collectionCards.length,
       subtitle: card.style ? `${proto} · ${card.style}` : proto,
       birthdayLabel: birthdayLabel(card.birthday),
       genderLabel: genderLabel(card.gender),

@@ -53,7 +53,7 @@ assert.strictEqual(egg.name, '', 'savePetFromVO maps empty nickname');
 assert.strictEqual(egg.progress, 0, 'no accelerated minutes -> 0% progress');
 assert.strictEqual(egg.hatchStatus, 'EGG', 'savePetFromVO maps hatchStatus');
 assert.strictEqual(egg.hatchAt, now + sevenDays, 'hatchAt derived from expectedHatchTime');
-assert.strictEqual(egg.collectionCard, null, 'EGG has no collectionCard');
+assert.strictEqual(egg.collectionCards.length, 0, 'EGG has empty collectionCards');
 assert.strictEqual(egg.todayMood, '开心', 'savePetFromVO maps todayMood');
 assert.strictEqual(petStore.getActivePetId(), 'pet-1', 'activePetId set on save');
 
@@ -118,15 +118,14 @@ assert.strictEqual(hatchedIdentity.bloodType, 'A', 'maps bloodType');
 assert.strictEqual(hatchedIdentity.avatarUrl, 'https://img/koi.png', 'maps avatarUrl');
 assert.strictEqual(hatchedIdentity.zodiac, '水瓶座', 'maps zodiac');
 
-// collectionCardUrl 映射
-const cardUrlVO = {
+// collectionCards 映射
+const cardsVO = {
   ...hatchedIdentityVO,
-  collectionCardUrl: 'https://img/card.png'
+  collectionCards: [{ id: 'card-1', imageUrl: 'https://img/card.png', brief: 'test', source: 'HATCH', sortOrder: 0 }]
 };
-const cardUrlPet = petStore.savePetFromVO(cardUrlVO);
-assert.strictEqual(cardUrlPet.collectionCardUrl, 'https://img/card.png', 'maps collectionCardUrl');
-const cardWithImage = petStore.buildCollectionCard(cardUrlVO);
-assert.strictEqual(cardWithImage.imageUrl, 'https://img/card.png', 'card imageUrl prefers collectionCardUrl');
+const cardsPet = petStore.savePetFromVO(cardsVO);
+assert.strictEqual(cardsPet.collectionCards.length, 1, 'maps collectionCards array');
+assert.strictEqual(cardsPet.collectionCards[0].imageUrl, 'https://img/card.png', 'collectionCards[0].imageUrl');
 
 // --- getStage 不再有 prepared 分支 ---
 // 构造一个 progress=100 但未到破壳时间的 pet（单轨下应落到 ready 或 soon 而非 prepared）
@@ -142,17 +141,6 @@ assert.strictEqual(fullProgressPet.progress, 100, '100% progress');
 // 真实场景由后端重算 expectedHatchTime 返回。此处只校验无 prepared 返回。
 assert.notStrictEqual(petStore.getStage(fullProgressPet), 'prepared', 'no prepared stage');
 
-// --- buildCollectionCard: 后端身份 + 前端装饰 ---
-petStore.saveUser({ id: 42, nickname: '蛋友' });
-const card = petStore.buildCollectionCard(hatchedIdentityVO);
-assert.strictEqual(card.prototype, '锦鲤', 'card prototype from vo');
-assert.strictEqual(card.mbti, 'ENFP', 'card mbti from vo');
-assert.strictEqual(card.gender, 'FEMALE', 'card gender from vo');
-assert.strictEqual(card.bloodType, 'A', 'card bloodType from vo');
-assert.strictEqual(card.imageUrl, 'https://img/koi.png', 'card imageUrl falls back to avatarUrl');
-assert.ok(card.serial.startsWith('EGG-KOI-'), 'card serial prefix');
-assert.ok(card.hatchQuality === '完整孵化' || card.hatchQuality === '轻量孵化', 'card hatchQuality');
-
 // --- savePetFromVO: 冷启动破壳宠物生成完整收藏卡(非 placeholder) ---
 petStore.clearAccountData();
 petStore.saveUser({ id: 42, nickname: '蛋友' });
@@ -166,10 +154,8 @@ const coldHatchedVO = {
   gender: 'FEMALE', bloodType: 'A', avatarUrl: 'https://img/koi.png'
 };
 const coldHatched = petStore.savePetFromVO(coldHatchedVO);
-assert.ok(coldHatched.collectionCard, 'cold-start hatched pet has collectionCard');
-assert.ok(coldHatched.collectionCard.serial, 'cold-start card has serial (not placeholder)');
-assert.strictEqual(coldHatched.collectionCard.mbti, 'ENFP', 'cold-start card mbti from vo');
-assert.strictEqual(coldHatched.collectionCard.placeholder, undefined, 'cold-start card is not a placeholder');
+assert.ok(coldHatched.collectionCards, 'cold-start hatched pet has collectionCards array');
+assert.strictEqual(coldHatched.collectionCards.length, 0, 'cold-start without backend cards has empty array');
 
 // --- savePetFromVO: 合并前端独占字段(shell/preferences)，不被后端 VO 清空 ---
 petStore.clearAccountData();
@@ -183,7 +169,7 @@ petStore.savePet({
   preferences: { wishes: [{ date: tk, value: '安静陪伴你' }], lessons: [{ date: tk, value: '学会勇敢' }] },
   shell: { color: '#FF0000', colorName: '正红', pattern: '波点' },
   dailyStatus: { date: tk, mood: '开心', line: 'x', source: 'local-fallback' },
-  collectionCard: null, inviteCodes: ['EGG-1'], messages: [{ text: 'hi' }],
+  collectionCards: [], inviteCodes: ['EGG-1'], messages: [{ text: 'hi' }],
   hatchStatus: 'EGG', acceleratedMinutes: 720
 });
 const mergeVO = {

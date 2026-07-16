@@ -115,3 +115,15 @@ pet:
       prefix: card-rabbit
       count: 10
     fallback-url: https://oss.eggbabe.com/default-card/fish/card-fish-0.webp
+
+# AI宠物场景图配置
+# 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成场景图 URL
+  scene:
+    koi:
+      base-url: https://oss.eggbabe.com/default-scenes/fish/
+      prefix: scenes-fish
+      count: 6
+    rabbit:
+      base-url: https://oss.eggbabe.com/default-scenes/rabbit/
+      prefix: scenes-rabbit
+      count: 6

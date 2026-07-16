@@ -151,7 +151,8 @@ function savePetFromVO(vo) {
     gender: vo.gender || '',
     bloodType: vo.bloodType || '',
     avatarUrl: vo.avatarUrl || '',
-    collectionCards: vo.collectionCards || []
+    collectionCards: vo.collectionCards || [],
+    sceneUrl: vo.sceneUrl || ''
   };
   if (existing && Array.isArray(existing._hatchActions)) pet._hatchActions = existing._hatchActions;
   savePet(pet);

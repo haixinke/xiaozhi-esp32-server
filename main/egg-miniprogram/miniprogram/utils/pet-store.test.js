@@ -107,6 +107,7 @@ const hatchedIdentityVO = {
   bazi: '庚子', wuxing: '金水', zodiac: 'aquarius',
   mbti: 'ENFP', personality: '热烈又好奇', personalityBrief: '好运小福星',
   gender: 'FEMALE', bloodType: 'A', avatarUrl: 'https://img/koi.png',
+  sceneUrl: 'https://oss.eggbabe.com/default-scenes/fish/scenes-fish-3.jpg',
   todayMoodDate: petStore.todayKey()
 };
 const hatchedIdentity = petStore.savePetFromVO(hatchedIdentityVO);
@@ -116,6 +117,7 @@ assert.strictEqual(hatchedIdentity.personality, '热烈又好奇', 'maps persona
 assert.strictEqual(hatchedIdentity.gender, 'FEMALE', 'maps gender');
 assert.strictEqual(hatchedIdentity.bloodType, 'A', 'maps bloodType');
 assert.strictEqual(hatchedIdentity.avatarUrl, 'https://img/koi.png', 'maps avatarUrl');
+assert.strictEqual(hatchedIdentity.sceneUrl, 'https://oss.eggbabe.com/default-scenes/fish/scenes-fish-3.jpg', 'maps sceneUrl');
 assert.strictEqual(hatchedIdentity.zodiac, '水瓶座', 'maps zodiac');
 
 // collectionCards 映射

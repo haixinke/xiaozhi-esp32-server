@@ -79,6 +79,7 @@ class PetServiceImplHatchTest {
     @Mock private AgentService agentService;
     @Mock private CollectionCardImageService collectionCardImageService;
     @Mock private xiaozhi.modules.pet.service.PetCollectionCardService petCollectionCardService;
+    @Mock private xiaozhi.modules.pet.config.PetSceneProperties petSceneProperties;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     private PetServiceImpl petService;
@@ -88,8 +89,9 @@ class PetServiceImplHatchTest {
         PetAvatarProperties avatarProperties = buildAvatarProperties();
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
+        when(petSceneProperties.randomSceneUrl(anyString())).thenReturn("https://oss.eggbabe.com/default-scenes/fish/scenes-fish-0.jpg");
         // LLM 不可用 → deriveMbti 走兜底(INFP)，不调 LLM
         when(llmService.isAvailable()).thenReturn(false);
         when(agentService.createAgent(any())).thenReturn(AGENT_ID);
@@ -198,6 +200,9 @@ class PetServiceImplHatchTest {
         assertThat(updated.getAvatarUrl())
                 .isNotNull()
                 .matches("^https://oss\\.eggbabe\\.com/default-avatar/(fish|rabbit)/(fish|rabbit)-\\d+\\.png$");
+        assertThat(updated.getCollectionCardUrl())
+                .isNotNull()
+                .startsWith("https://oss.eggbabe.com/default-scenes/");
         assertThat(updated.getGender()).isIn("MALE", "FEMALE");
         assertThat(updated.getBloodType()).isIn("A", "B", "O", "AB");
         assertThat(updated.getUpdater()).isEqualTo(USER_ID);

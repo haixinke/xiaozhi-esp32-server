@@ -71,6 +71,7 @@ class PetServiceImplAdoptTest {
     @Mock private AgentService agentService;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private xiaozhi.modules.pet.service.PetCollectionCardService petCollectionCardService;
+    @Mock private xiaozhi.modules.pet.config.PetSceneProperties petSceneProperties;
 
     private PetServiceImpl petService;
 
@@ -79,7 +80,7 @@ class PetServiceImplAdoptTest {
         PetAvatarProperties avatarProperties = buildAvatarProperties();
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 

@@ -68,6 +68,9 @@ public class PetVO {
     @Schema(description = "收藏卡列表")
     private List<CollectionCardVO> collectionCards;
 
+    @Schema(description = "场景图URL")
+    private String sceneUrl;
+
     @Schema(description = "IP形象原型(锦鲤/玉兔等)")
     private String prototype;
 

@@ -38,6 +38,7 @@ import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.entity.UserProfileEntity;
 import xiaozhi.modules.pet.config.PetAvatarProperties;
 import xiaozhi.modules.pet.config.PetCollectionCardProperties;
+import xiaozhi.modules.pet.config.PetSceneProperties;
 import xiaozhi.modules.pet.event.CollectionCardGenerationEvent;
 import xiaozhi.modules.pet.service.PetCollectionCardService;
 import xiaozhi.modules.pet.service.PetService;
@@ -78,6 +79,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final PetAvatarProperties petAvatarProperties;
     private final PetCollectionCardProperties petCollectionCardProperties;
     private final PetCollectionCardService petCollectionCardService;
+    private final PetSceneProperties petSceneProperties;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -500,6 +502,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setGender(gender);
         pet.setBloodType(bloodType);
         pet.setAvatarUrl(avatarUrl);
+        pet.setCollectionCardUrl(petSceneProperties.randomSceneUrl(pet.getPrototype()));
         pet.setUpdater(userId);
 
         // agent 个性注入：使用模板渲染系统提示词
@@ -638,6 +641,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setAcceleratedMinutes(pet.getAcceleratedMinutes());
         vo.setAvatarUrl(pet.getAvatarUrl());
         vo.setCollectionCards(petCollectionCardService.listByPetId(pet.getId()));
+        vo.setSceneUrl(pet.getCollectionCardUrl());
         vo.setPrototype(pet.getPrototype());
         vo.setGender(pet.getGender());
         vo.setBloodType(pet.getBloodType());

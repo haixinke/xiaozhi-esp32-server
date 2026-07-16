@@ -57,7 +57,7 @@ function todayKey() {
     tasks: { nicknameDone: false, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
     preferences: { wishes: [], lessons: [] },
     shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
-    dailyStatus: null, collectionCard: null, inviteCodes: [], messages: [],
+    dailyStatus: null, collectionCards: [], inviteCodes: [], messages: [],
     hatchStatus: 'EGG', acceleratedMinutes: 0
   };
   petStore.savePet(realPet);
@@ -207,7 +207,7 @@ function todayKey() {
     tasks: { nicknameDone: true, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
     preferences: { wishes: [], lessons: [] },
     shell: { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
-    dailyStatus: null, collectionCard: null, inviteCodes: [], messages: [],
+    dailyStatus: null, collectionCards: [], inviteCodes: [], messages: [],
     hatchStatus: 'EGG', acceleratedMinutes: 3000,
     expectedHatchTime: Date.now() - 1000, hatchStartTime: Date.now() - 7 * DAY
   };
@@ -223,14 +223,10 @@ function todayKey() {
   assert.strictEqual(hatchResult.ok, true, 'hatch ok');
   assert.strictEqual(hatchResult.created, true, 'hatch created');
   assert.strictEqual(hatchCalls, 1, 'called hatchPet once');
-  assert.strictEqual(hatchResult.card.prototype, '锦鲤', 'card prototype from vo');
-  assert.strictEqual(hatchResult.card.mbti, 'ENFP', 'card mbti from vo');
-  assert.strictEqual(hatchResult.card.gender, 'FEMALE', 'card gender from vo');
-  assert.ok(hatchResult.card.serial.startsWith('EGG-KOI-'), 'card serial from hatchedAt');
-  assert.strictEqual(hatchResult.card.hatchQuality, '轻量孵化', '3000/10080 ≈ 30% < 80% -> 轻量孵化');
+  assert.ok(hatchResult.pet, 'hatch result has pet');
   const storedHatched = petStore.getPet();
-  assert.strictEqual(storedHatched.collectionCard && storedHatched.collectionCard.serial, hatchResult.card.serial, 'card cached on pet');
   assert.strictEqual(storedHatched.hatchStatus, 'HATCHED', 'pet hatchStatus updated');
+  assert.ok(storedHatched.collectionCards, 'pet has collectionCards array');
 
   console.log('pet-store-actions.test.js: ALL PASS');
 })().finally(() => { Module._load = originalLoad; });

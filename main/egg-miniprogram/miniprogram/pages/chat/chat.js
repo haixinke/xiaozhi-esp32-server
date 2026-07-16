@@ -41,7 +41,7 @@ Page({
 
   onLoad() {
     const pet = petStore.getPet();
-    if (!pet || !pet.collectionCard || !pet.deviceId) {
+    if (!pet || pet.hatchStatus !== 'HATCHED' || !pet.deviceId) {
       wx.showToast({ title: '破壳后才可以对话', icon: 'none' });
       setTimeout(() => wx.navigateBack(), 600);
       return;
@@ -59,7 +59,7 @@ Page({
 
     this.setData({
       pet,
-      card: pet.collectionCard,
+      card: (pet.collectionCards && pet.collectionCards[0]) || null,
       avatarUrl: pet.avatarUrl || '',
       dailyStatus: petStore.getDailyStatus(),
     });

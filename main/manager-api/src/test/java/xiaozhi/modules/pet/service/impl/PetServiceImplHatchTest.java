@@ -78,6 +78,7 @@ class PetServiceImplHatchTest {
     @Mock private InviteService inviteService;
     @Mock private AgentService agentService;
     @Mock private CollectionCardImageService collectionCardImageService;
+    @Mock private xiaozhi.modules.pet.service.PetCollectionCardService petCollectionCardService;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     private PetServiceImpl petService;
@@ -87,7 +88,8 @@ class PetServiceImplHatchTest {
         PetAvatarProperties avatarProperties = buildAvatarProperties();
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties);
+                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService);
+        when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
         // LLM 不可用 → deriveMbti 走兜底(INFP)，不调 LLM
         when(llmService.isAvailable()).thenReturn(false);
         when(agentService.createAgent(any())).thenReturn(AGENT_ID);
@@ -196,12 +198,12 @@ class PetServiceImplHatchTest {
         assertThat(updated.getAvatarUrl())
                 .isNotNull()
                 .matches("^https://oss\\.eggbabe\\.com/default-avatar/(fish|rabbit)/(fish|rabbit)-\\d+\\.png$");
-        assertThat(updated.getCollectionCardUrl())
-                .isNotNull()
-                .matches("^https://oss\\.eggbabe\\.com/default-card/(fish|rabbit)/card-(fish|rabbit)-\\d+\\.webp$");
         assertThat(updated.getGender()).isIn("MALE", "FEMALE");
         assertThat(updated.getBloodType()).isIn("A", "B", "O", "AB");
         assertThat(updated.getUpdater()).isEqualTo(USER_ID);
+
+        // 创建破壳首卡
+        verify(petCollectionCardService).createCard(eq(PET_ID), anyString(), anyString(), eq("HATCH"));
 
         // 返回 VO
         assertThat(result.getHatchStatus()).isEqualTo("HATCHED");

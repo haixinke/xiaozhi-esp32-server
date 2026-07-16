@@ -39,6 +39,7 @@ import xiaozhi.modules.pet.entity.UserProfileEntity;
 import xiaozhi.modules.pet.config.PetAvatarProperties;
 import xiaozhi.modules.pet.config.PetCollectionCardProperties;
 import xiaozhi.modules.pet.event.CollectionCardGenerationEvent;
+import xiaozhi.modules.pet.service.PetCollectionCardService;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.util.MbtiParser;
 import xiaozhi.modules.pet.util.MoodDecider;
@@ -46,6 +47,7 @@ import xiaozhi.modules.pet.util.PetBirthCalculator;
 import xiaozhi.modules.pet.util.PetMood;
 import xiaozhi.modules.pet.util.PetNicknameGenerator;
 import xiaozhi.modules.pet.util.PetSystemPromptTemplate;
+import xiaozhi.modules.pet.vo.CollectionCardVO;
 import xiaozhi.modules.pet.vo.ChatHistoryVO;
 import xiaozhi.modules.pet.vo.MemoryVO;
 import xiaozhi.modules.pet.vo.PetVO;
@@ -75,6 +77,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final ApplicationEventPublisher eventPublisher;
     private final PetAvatarProperties petAvatarProperties;
     private final PetCollectionCardProperties petCollectionCardProperties;
+    private final PetCollectionCardService petCollectionCardService;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -484,7 +487,6 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         String gender = ThreadLocalRandom.current().nextInt(2) == 0 ? "MALE" : "FEMALE";
         String bloodType = new String[]{"A", "B", "O", "AB"}[ThreadLocalRandom.current().nextInt(4)];
         String avatarUrl = randomAvatarUrl(pet.getPrototype());
-        String collectionCardUrl = randomCollectionCardUrl(pet.getPrototype());
 
         // 回填宠物破壳档案（需在 agent 创建前写 gender/bloodType 以便模板渲染）
         pet.setHatchStatus(HATCH_STATUS_HATCHED);
@@ -498,7 +500,6 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setGender(gender);
         pet.setBloodType(bloodType);
         pet.setAvatarUrl(avatarUrl);
-        pet.setCollectionCardUrl(collectionCardUrl);
         pet.setUpdater(userId);
 
         // agent 个性注入：使用模板渲染系统提示词
@@ -528,6 +529,9 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setDeviceId(deviceId);
         petDao.updateById(pet);
 
+        // 创建破壳首卡：简介使用 personalityBrief
+        petCollectionCardService.createCard(pet.getId(), pet.getPrototype(), brief, "HATCH");
+
         // [暂时禁用] 破壳后异步调用豆包极梦(Seedream)生成动态收藏卡片并回写ai_pet表
         // eventPublisher.publishEvent(new CollectionCardGenerationEvent(pet.getId()));
 
@@ -541,13 +545,6 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
      */
     private String randomAvatarUrl(String prototype) {
         return petAvatarProperties.randomAvatarUrl(prototype);
-    }
-
-    /**
-     * 按原型从配置中随机取一张默认收藏卡 URL。
-     */
-    private String randomCollectionCardUrl(String prototype) {
-        return petCollectionCardProperties.randomCollectionCardUrl(prototype);
     }
 
     /**
@@ -640,6 +637,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setHatchedAt(pet.getHatchedAt());
         vo.setAcceleratedMinutes(pet.getAcceleratedMinutes());
         vo.setAvatarUrl(pet.getAvatarUrl());
+        vo.setCollectionCards(petCollectionCardService.listByPetId(pet.getId()));
         vo.setPrototype(pet.getPrototype());
         vo.setGender(pet.getGender());
         vo.setBloodType(pet.getBloodType());

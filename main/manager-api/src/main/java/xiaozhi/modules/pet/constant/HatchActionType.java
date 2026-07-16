@@ -10,7 +10,7 @@ import java.util.Optional;
  */
 public enum HatchActionType {
 
-    NICKNAME(10080, true),
+    NICKNAME(720, true),
     CUDDLE(60, false),
     WISH(60, false),
     LESSON(60, false),

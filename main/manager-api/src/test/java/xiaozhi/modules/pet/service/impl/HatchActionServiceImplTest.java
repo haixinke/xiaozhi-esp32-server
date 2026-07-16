@@ -90,7 +90,7 @@ class HatchActionServiceImplTest {
     }
 
     @Test
-    @DisplayName("NICKNAME - 基于 adopt 已设的 hatchStartTime 重算 expectedHatchTime(更早), 不写 hatchStartTime, acceleratedMinutes=10080")
+    @DisplayName("NICKNAME - 基于 adopt 已设的 hatchStartTime 重算 expectedHatchTime(更早), 不写 hatchStartTime, acceleratedMinutes=720")
     void firstNickname_recomputesExpectedWithoutWritingStart() {
         PetEntity pet = eggPet();
         // 模拟 adopt 已设的时间基线
@@ -106,7 +106,7 @@ class HatchActionServiceImplTest {
         long originalExpected = pet.getExpectedHatchTime().getTime();
         HatchActionResultVO result = service.recordHatchAction(USER_ID, PET_ID, dto);
 
-        assertThat(result.getAddedMinutes()).isEqualTo(10080);
+        assertThat(result.getAddedMinutes()).isEqualTo(720);
         assertThat(result.isAlreadyDone()).isFalse();
 
         ArgumentCaptor<PetEntity> petCaptor = ArgumentCaptor.forClass(PetEntity.class);
@@ -116,9 +116,9 @@ class HatchActionServiceImplTest {
         assertThat(updated.getHatchStartTime()).isEqualTo(hatchStart);
         assertThat(updated.getExpectedHatchTime()).isNotNull();
         long span = updated.getExpectedHatchTime().getTime() - updated.getHatchStartTime().getTime();
-        // expected = start + 7d - 10080min => clamp 到 start
-        assertThat(span).isEqualTo(0);
-        assertThat(updated.getAcceleratedMinutes()).isEqualTo(10080);
+        // expected = start + 7d - 720min => 提前 12h
+        assertThat(span).isEqualTo(SEVEN_DAYS_MS - 720 * ONE_MINUTE_MS);
+        assertThat(updated.getAcceleratedMinutes()).isEqualTo(720);
         assertThat(updated.getNickname()).isEqualTo("小金鱼");
         assertThat(updated.getUpdater()).isEqualTo(USER_ID);
         // 比动作前更早(加速使其提前)
@@ -128,7 +128,7 @@ class HatchActionServiceImplTest {
         verify(hatchActionDao).insert(actCaptor.capture());
         HatchActionEntity act = actCaptor.getValue();
         assertThat(act.getActionType()).isEqualTo("NICKNAME");
-        assertThat(act.getAcceleratedMinutes()).isEqualTo(10080);
+        assertThat(act.getAcceleratedMinutes()).isEqualTo(720);
         assertThat(act.getCreator()).isEqualTo(USER_ID);
     }
 

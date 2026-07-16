@@ -30,6 +30,7 @@ import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.vo.PetVO;
 
+import java.lang.reflect.Field;
 import java.util.Locale;
 import java.util.Set;
 
@@ -49,6 +50,8 @@ import static org.mockito.Mockito.when;
 class PetServiceImplAdoptTest {
 
     private static final Set<String> PROTOTYPES = Set.of("锦鲤", "玉兔");
+    private static final String DEMO_QUICK_HATCH_CODE = "EGG-DEMO-HATCH";
+    private static final int SEVEN_DAYS_MINUTES = 7 * 24 * 60;
 
     @BeforeAll
     static void initMessageSource() {
@@ -81,6 +84,7 @@ class PetServiceImplAdoptTest {
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties);
+        setQuickHatchCode(DEMO_QUICK_HATCH_CODE);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 
@@ -220,5 +224,82 @@ class PetServiceImplAdoptTest {
 
         verify(petDao, never()).insert(any(PetEntity.class));
         verify(inviteService, never()).consume(any(), any());
+    }
+
+    @Test
+    @DisplayName("演示快速破壳码 - 孵化进度100%且跳过邀请码核销")
+    void adopt_demoQuickHatchCode_setsProgress100AndSkipsConsume() {
+        Long userId = 2001L;
+        PetAdoptDTO dto = new PetAdoptDTO();
+        dto.setInviteCode(DEMO_QUICK_HATCH_CODE);
+
+        long before = System.currentTimeMillis();
+        PetVO result = petService.adopt(userId, dto);
+        long after = System.currentTimeMillis();
+
+        // 蛋已插入并更新
+        verify(petDao).insert(any(PetEntity.class));
+        verify(petDao).updateById(any(PetEntity.class));
+
+        // 邀请码核销从未被调用
+        verify(inviteService, never()).consume(any(), any());
+
+        // 从返回 VO 验证进度满
+        assertThat(result.getHatchStatus()).isEqualTo("EGG");
+        assertThat(result.getAcceleratedMinutes()).isEqualTo(SEVEN_DAYS_MINUTES);
+        assertThat(result.getNickname()).isEqualTo("蛋宝宝");
+        assertThat(result.getExpectedHatchTime()).isNotNull();
+        // expectedHatchTime 应在 [before, after] 区间内，表示设为当前时间
+        long expectedTs = result.getExpectedHatchTime().getTime();
+        assertThat(expectedTs).isBetween(before, after);
+
+        // hatchStartTime 不变（仍为领养时刻）
+        assertThat(result.getHatchStartTime()).isNotNull();
+        // expectedHatchTime 不应晚于 hatchStartTime
+        assertThat(result.getExpectedHatchTime().getTime())
+                .isLessThanOrEqualTo(result.getHatchStartTime().getTime() + 1000);
+    }
+
+    @Test
+    @DisplayName("演示快速破壳码 - 大小写不敏感")
+    void adopt_demoCodeCaseInsensitive_works() {
+        Long userId = 2002L;
+        PetAdoptDTO dto = new PetAdoptDTO();
+        dto.setInviteCode("egg-demo-hatch");
+
+        petService.adopt(userId, dto);
+
+        // 邀请码核销从未被调用
+        verify(inviteService, never()).consume(any(), any());
+        // 蛋已更新（快速破壳分支调用了 updateById）
+        verify(petDao).updateById(any(PetEntity.class));
+    }
+
+    @Test
+    @DisplayName("正常邀请码在演示码功能存在时仍正常核销")
+    void adopt_normalCodeStillWorks_afterDemoFeature() {
+        Long userId = 2003L;
+        PetAdoptDTO dto = new PetAdoptDTO();
+        dto.setInviteCode("NORMAL-CODE-1");
+
+        petService.adopt(userId, dto);
+
+        // 正常核销被调用
+        verify(inviteService).consume(eq("NORMAL-CODE-1"), eq(userId));
+        // 不应调用 updateById（仅快速破壳分支才调用）
+        verify(petDao, never()).updateById(any(PetEntity.class));
+    }
+
+    /**
+     * 通过反射设置 PetServiceImpl 的 quickHatchCode 字段（@Value 注入在单元测试中不生效）。
+     */
+    private void setQuickHatchCode(String code) {
+        try {
+            Field field = PetServiceImpl.class.getDeclaredField("quickHatchCode");
+            field.setAccessible(true);
+            field.set(petService, code);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new IllegalStateException("无法设置 quickHatchCode 字段", e);
+        }
     }
 }

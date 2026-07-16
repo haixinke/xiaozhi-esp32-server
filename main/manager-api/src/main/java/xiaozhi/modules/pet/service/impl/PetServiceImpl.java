@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,9 +82,13 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final PetCollectionCardService petCollectionCardService;
     private final PetSceneProperties petSceneProperties;
 
+    @Value("${pet.quick-hatch.code:}")
+    private String quickHatchCode;
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final long SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000;
+    private static final int SEVEN_DAYS_MINUTES = 7 * 24 * 60; // 10080
 
     private static final String HATCH_STATUS_EGG = "EGG";
     private static final String HATCH_STATUS_HATCHED = "HATCHED";
@@ -303,8 +308,16 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         // 2. 核销邀请码(REQUIRES_NEW)。
         //    无效/过期/无剩余码会抛异常 → 外层事务回滚 → 蛋回滚，不会产生孤儿蛋。
         //    幂等：同一被邀请人对同一码重复消耗不重复扣减。
+        //    演示快速破壳码：跳过核销，直接将孵化进度设为100%。
         String inviteCode = dto.getInviteCode() == null ? null : dto.getInviteCode().trim();
-        if (inviteCode != null && !inviteCode.isBlank()) {
+        if (inviteCode != null && inviteCode.equalsIgnoreCase(quickHatchCode)) {
+            pet.setNickname("蛋宝宝");
+            pet.setExpectedHatchTime(now);
+            pet.setAcceleratedMinutes(SEVEN_DAYS_MINUTES);
+            pet.setUpdater(userId);
+            petDao.updateById(pet);
+            log.info("演示快速破壳领养 userId={}, petId={}", userId, pet.getId());
+        } else if (inviteCode != null && !inviteCode.isBlank()) {
             inviteService.consume(inviteCode, userId);
         }
 

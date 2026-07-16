@@ -89,9 +89,15 @@ mybatis-plus:
     blobType: BLOB
     boolValue: TRUE
 
+# 快速破壳演示配置
+# 演示用特殊邀请码，输入此码领养后孵化进度直接100%，可立即破壳
+# 生产环境可通过环境变量 PET_QUICK_HATCH_CODE 修改或留空禁用
+pet:
+  quick-hatch:
+    code: ${PET_QUICK_HATCH_CODE:}
+
 # AI宠物头像配置
 # 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成头像 URL
-pet:
   avatar:
     koi:
       base-url: https://oss.eggbabe.com/default-avatar/fish/

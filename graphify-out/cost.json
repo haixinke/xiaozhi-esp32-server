@@ -93,8 +93,15 @@
       "input_tokens": 0,
       "output_tokens": 1117511,
       "files": 1220
+    },
+    {
+      "date": "2026-07-16T07:30:38.231656+00:00",
+      "input_tokens": 269920,
+      "output_tokens": 6681,
+      "files": 24,
+      "note": "semantic extraction for changed files"
     }
   ],
-  "total_input_tokens": 147313,
-  "total_output_tokens": 1125947
+  "total_input_tokens": 417233,
+  "total_output_tokens": 1132628
 }

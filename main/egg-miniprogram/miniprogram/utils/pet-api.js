@@ -44,7 +44,7 @@ function listChatHistory(agentId, deviceId, page, limit) {
     agentId,
     macAddress: deviceId,
     page: page || 1,
-    limit: limit || 4
+    limit: limit || 20
   });
 }
 

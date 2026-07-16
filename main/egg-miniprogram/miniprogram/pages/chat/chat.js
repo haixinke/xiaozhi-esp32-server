@@ -222,7 +222,7 @@ Page({
       this._historyLoading = true;
       this.setData({ historyLoading: true });
 
-      petApi.listChatHistory(this.data.pet.agentId, this.data.pet.deviceId, page, 4).then((pageData) => {
+      petApi.listChatHistory(this.data.pet.agentId, this.data.pet.deviceId, page, 20).then((pageData) => {
         const list = (pageData && pageData.list) || [];
 
         if (list.length === 0) {
@@ -245,7 +245,7 @@ Page({
         this._historyPage = page;
         this._historyLoading = false;
 
-        const noMore = list.length < 4;
+        const noMore = list.length < 20;
         const nextData = {
           messages,
           historyLoading: false,
@@ -285,7 +285,7 @@ Page({
       this._historyLoading = true;
       this.setData({ historyLoading: true });
 
-      petApi.listChatHistory(this.data.pet.agentId, this.data.pet.deviceId, page, 4).then((pageData) => {
+      petApi.listChatHistory(this.data.pet.agentId, this.data.pet.deviceId, page, 20).then((pageData) => {
         const list = (pageData && pageData.list) || [];
 
         if (list.length === 0) {
@@ -308,7 +308,7 @@ Page({
         this._historyPage = page;
         this._historyLoading = false;
 
-        const noMore = list.length < 4;
+        const noMore = list.length < 20;
         const nextData = {
           messages,
           historyLoading: false,

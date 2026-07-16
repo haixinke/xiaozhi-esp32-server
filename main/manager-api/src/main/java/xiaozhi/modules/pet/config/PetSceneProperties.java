@@ -46,6 +46,43 @@ public class PetSceneProperties {
         return config.getBaseUrl() + config.getPrefix() + "-" + index + ".jpg";
     }
 
+    /**
+     * 按原型递增选择下一张场景图 URL。
+     * <p>从当前 URL 中提取索引，计算 (index + 1) % count 作为下一张。
+     * 若当前 URL 为空、格式异常或 count <= 1，降级为随机选择。
+     *
+     * @param prototype  宠物原型，当前支持 "锦鲤" / "玉兔"
+     * @param currentUrl 当前场景图 URL
+     * @return 下一张场景图 URL
+     */
+    public String nextSceneUrl(String prototype, String currentUrl) {
+        Prototype config = selectConfig(prototype);
+        if (config == null || !config.hasImage() || config.getCount() <= 1) {
+            return randomSceneUrl(prototype);
+        }
+        if (currentUrl == null || currentUrl.isBlank()) {
+            return randomSceneUrl(prototype);
+        }
+        // 用 prefix 提取当前索引，如 scenes-fish-3.jpg → 3
+        String marker = config.getPrefix() + "-";
+        int markerPos = currentUrl.lastIndexOf(marker);
+        if (markerPos < 0) {
+            return randomSceneUrl(prototype);
+        }
+        int startIndex = markerPos + marker.length();
+        int dotPos = currentUrl.indexOf('.', startIndex);
+        if (dotPos < 0) {
+            return randomSceneUrl(prototype);
+        }
+        try {
+            int currentIndex = Integer.parseInt(currentUrl.substring(startIndex, dotPos));
+            int nextIndex = (currentIndex + 1) % config.getCount();
+            return config.getBaseUrl() + config.getPrefix() + "-" + nextIndex + ".jpg";
+        } catch (NumberFormatException e) {
+            return randomSceneUrl(prototype);
+        }
+    }
+
     private Prototype selectConfig(String prototype) {
         if ("锦鲤".equals(prototype)) {
             return koi;

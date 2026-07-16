@@ -470,14 +470,9 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             throw new RenException("宠物尚未破壳，无法更换场景");
         }
 
-        // 随机生成新场景图 URL，最多重试 3 次以避免与当前 URL 相同
+        // 按索引递增选择下一张场景图（0→1→2→...→5→0），避免随机重复
         String currentUrl = pet.getCollectionCardUrl();
-        String newUrl = petSceneProperties.randomSceneUrl(pet.getPrototype());
-        int retry = 0;
-        while (newUrl != null && newUrl.equals(currentUrl) && retry < 3) {
-            newUrl = petSceneProperties.randomSceneUrl(pet.getPrototype());
-            retry++;
-        }
+        String newUrl = petSceneProperties.nextSceneUrl(pet.getPrototype(), currentUrl);
 
         pet.setCollectionCardUrl(newUrl);
         pet.setUpdater(userId);

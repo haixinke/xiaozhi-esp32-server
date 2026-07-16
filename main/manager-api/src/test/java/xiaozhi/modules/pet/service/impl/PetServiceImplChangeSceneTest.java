@@ -106,7 +106,7 @@ class PetServiceImplChangeSceneTest {
     void changeScene_hatched_success() {
         PetEntity pet = hatchedPet();
         when(petDao.selectById(PET_ID)).thenReturn(pet);
-        when(petSceneProperties.randomSceneUrl("锦鲤")).thenReturn(NEW_SCENE_URL);
+        when(petSceneProperties.nextSceneUrl("锦鲤", OLD_SCENE_URL)).thenReturn(NEW_SCENE_URL);
 
         PetVO result = petService.changeScene(USER_ID, PET_ID);
 
@@ -118,24 +118,19 @@ class PetServiceImplChangeSceneTest {
 
         assertThat(result.getSceneUrl()).isEqualTo(NEW_SCENE_URL);
         assertThat(result.getHatchStatus()).isEqualTo("HATCHED");
+        verify(petSceneProperties).nextSceneUrl("锦鲤", OLD_SCENE_URL);
     }
 
     @Test
-    @DisplayName("去重 - 新URL与当前URL相同时重试, 最终取到不同URL")
-    void changeScene_sameUrlRetries() {
+    @DisplayName("递增 - nextSceneUrl 传入正确的 prototype 和 currentUrl")
+    void changeScene_callsNextSceneUrlWithCorrectArgs() {
         PetEntity pet = hatchedPet();
         when(petDao.selectById(PET_ID)).thenReturn(pet);
-        // 第一次返回旧URL(与当前相同), 第二次返回新URL
-        when(petSceneProperties.randomSceneUrl("锦鲤"))
-                .thenReturn(OLD_SCENE_URL)
-                .thenReturn(NEW_SCENE_URL);
+        when(petSceneProperties.nextSceneUrl("锦鲤", OLD_SCENE_URL)).thenReturn(NEW_SCENE_URL);
 
-        PetVO result = petService.changeScene(USER_ID, PET_ID);
+        petService.changeScene(USER_ID, PET_ID);
 
-        ArgumentCaptor<PetEntity> petCaptor = ArgumentCaptor.forClass(PetEntity.class);
-        verify(petDao).updateById(petCaptor.capture());
-        assertThat(petCaptor.getValue().getCollectionCardUrl()).isEqualTo(NEW_SCENE_URL);
-        assertThat(result.getSceneUrl()).isEqualTo(NEW_SCENE_URL);
+        verify(petSceneProperties).nextSceneUrl("锦鲤", OLD_SCENE_URL);
     }
 
     @Test

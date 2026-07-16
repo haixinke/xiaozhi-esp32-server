@@ -20,7 +20,7 @@
       </view>
 
       <view class="egg-zone" bindtap="onOpenProfile">
-        <view wx:if="{{feedback}}" class="feedback-bubble">{{feedback}}</view>
+        <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
         <view class="egg-aura {{eggMotion}}"></view>
         <image wx:if="{{stage === 'hatched' && pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
         <pet-avatar wx:elif="{{stage === 'hatched'}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>

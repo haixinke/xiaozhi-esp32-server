@@ -102,6 +102,8 @@ Page({
     this.feedbackTimer = setTimeout(() => this.setData({ feedback: '' }), 2200);
   },
 
+  noop() {},
+
   onEggTap() {
     if (this.completedLongPress) {
       this.completedLongPress = false;

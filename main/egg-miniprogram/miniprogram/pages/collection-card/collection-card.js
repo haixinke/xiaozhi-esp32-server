@@ -16,6 +16,12 @@ function genderLabel(value) {
   return value || '—';
 }
 
+function genderKind(value) {
+  if (value === 'FEMALE') return 'female';
+  if (value === 'MALE') return 'male';
+  return '';
+}
+
 function signatureClass(value) {
   const length = Array.from(String(value || '')).length;
   if (length > 60) return 'card-signature--dense';
@@ -24,7 +30,7 @@ function signatureClass(value) {
 }
 
 Page({
-  data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', zodiacSymbol: '', signatureClass: '' },
+  data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', genderKind: '', zodiacSymbol: '', signatureClass: '' },
 
   onLoad(query) {
     const pet = petStore.getPet();
@@ -57,6 +63,7 @@ Page({
       subtitle: card.style ? `${proto} · ${card.style}` : proto,
       birthdayLabel: birthdayLabel(card.birthday),
       genderLabel: genderLabel(card.gender),
+      genderKind: genderKind(card.gender),
       zodiacSymbol: ZODIAC_SYMBOLS[card.zodiac] || '',
       signatureClass: signatureClass(card.personality),
       isNew: query.new === '1'

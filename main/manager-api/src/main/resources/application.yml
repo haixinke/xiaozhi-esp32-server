@@ -59,6 +59,16 @@ seedream:
   size: ${EGG_SEED_DREAM_SIZE:2K}
   stream: false
   watermark: false
+  key: ${EGG_SEED_DREAM_KEY:}
+
+# 阿里云OSS配置（未配置时回退到数据库BLOB存储）
+aliyun:
+  oss:
+    endpoint: ${EGG_ENDPOINT:}
+    access-key-id: ${EGG_ACCESS_KEY_ID:}
+    access-key-secret: ${EGG_ACCESS_KEY_SECRET:}
+    bucket-name: ${EGG_BUCKET_NAME:}
+    region: ${EGG_REGION:}
 
 renren:
   redis:

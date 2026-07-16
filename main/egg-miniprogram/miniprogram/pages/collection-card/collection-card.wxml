@@ -1,5 +1,5 @@
 <view class="page">
-  <nav-bar title="破壳收藏卡"></nav-bar>
+  <nav-bar title="收藏卡"></nav-bar>
   <scroll-view class="content" scroll-y>
     <view wx:if="{{isNew}}" class="new-banner">获得第一张破壳收藏卡 · 已自动收入卡册</view>
     <view class="card">

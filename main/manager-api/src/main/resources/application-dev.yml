@@ -1,12 +1,10 @@
+# dev 环境差异配置（公共配置见 application.yml）
 knife4j:
   production: false
-  enable: true
   basic:
-    enable: false
     username: renren
     password: 2ZABCDEUgF
-  setting:
-    enableFooter: false
+
 spring:
   datasource:
     druid:
@@ -49,53 +47,3 @@ spring:
           max-idle: 8        # 连接池中的最大空闲连接
           min-idle: 0        # 连接池中的最小空闲连接
         shutdown-timeout: 100ms  # 客户端优雅关闭的等待时间
-
-# 微信小程序配置
-wechat:
-  pay:
-    mock: true
-
-# 蛋宝宝小程序配置（独立前缀，避免与 WECHAT_MINIPROGRAM_APPID 环境变量冲突）
-eggbaby:
-  miniprogram:
-    appid: ${EGG_MINIPROGRAM_APPID:}
-    secret: ${EGG_MINIPROGRAM_SECRET:}
-
-# 阿里云OSS配置（未配置时回退到数据库BLOB存储）
-aliyun:
-  oss:
-    endpoint: ${EGG_ENDPOINT:}
-    access-key-id: ${EGG_ACCESS_KEY_ID:}
-    access-key-secret: ${EGG_ACCESS_KEY_SECRET:}
-    bucket-name: ${EGG_BUCKET_NAME:}
-    region: ${EGG_REGION:}
-
-seedream:
-  key: ${EGG_SEED_DREAM_KEY:}
-
-# AI宠物头像配置
-# 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成头像 URL
-pet:
-  avatar:
-    koi:
-      base-url: https://oss.eggbabe.com/default-avatar/fish/
-      prefix: fish
-      count: 22
-    rabbit:
-      base-url: https://oss.eggbabe.com/default-avatar/rabbit/
-      prefix: rabbit
-      count: 22
-    fallback-url: https://oss.eggbabe.com/default-avatar/fish/fish-0.png
-
-# AI宠物收藏卡配置
-# 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成收藏卡 URL
-  collection-card:
-    koi:
-      base-url: https://oss.eggbabe.com/default-card/fish/
-      prefix: card-fish
-      count: 10
-    rabbit:
-      base-url: https://oss.eggbabe.com/default-card/rabbit/
-      prefix: card-rabbit
-      count: 10
-    fallback-url: https://oss.eggbabe.com/default-card/fish/card-fish-0.webp

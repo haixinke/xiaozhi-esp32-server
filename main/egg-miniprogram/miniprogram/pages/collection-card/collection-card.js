@@ -401,6 +401,8 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: `我孵化了${this.data.card.name}，编号 ${this.data.card.serial}`, path: '/pages/welcome/welcome' };
+    const card = this.data.card;
+    if (!card) return false;
+    return { title: `我孵化了${card.name}，编号 ${card.serial}`, path: '/pages/welcome/welcome' };
   }
 });

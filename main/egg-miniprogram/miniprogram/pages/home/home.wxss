@@ -20,7 +20,7 @@
 .egg-zone { position: relative; height: 600rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .egg-aura { position: absolute; width: 390rpx; height: 390rpx; border-radius: 50%; background: radial-gradient(circle, rgba(237,231,142,.42), rgba(237,231,142,0) 68%); animation: aura 3s ease-in-out infinite; }
 .egg { position: relative; z-index: 2; width: 268rpx; height: 330rpx; border-radius: 52% 48% 47% 53% / 61% 58% 42% 39%; box-shadow: inset -20rpx -26rpx 36rpx rgba(105,105,40,.15), 0 34rpx 56rpx rgba(0,41,0,.15); animation: breathe 3.4s ease-in-out infinite; }
-.home-pet-image { position: relative; z-index: 2; width: 520rpx; height: 520rpx; border-radius: 42rpx; box-shadow: 0 26rpx 50rpx rgba(0,41,0,.16); background: #F8F7EF; padding: 24rpx; box-sizing: border-box; }
+.life-home-scene { position: relative; z-index: 2; width: 430rpx; height: 450rpx; border-radius: 42rpx; box-shadow: 0 26rpx 50rpx rgba(0,41,0,.16); }
 .egg-shine { position: absolute; width: 52rpx; height: 124rpx; border-radius: 50%; top: 64rpx; left: 54rpx; background: rgba(255,255,255,.56); transform: rotate(17deg); }
 .egg-pattern { position: absolute; border-radius: 50%; background: rgba(0,41,0,.10); }
 .egg-pattern--one { width: 16rpx; height: 16rpx; right: 62rpx; top: 112rpx; }

@@ -22,7 +22,8 @@
       <view class="egg-zone" bindtap="onOpenProfile">
         <view wx:if="{{feedback}}" class="feedback-bubble">{{feedback}}</view>
         <view class="egg-aura {{eggMotion}}"></view>
-        <image wx:if="{{stage === 'hatched' && pet.sceneUrl}}" class="home-pet-image" src="{{pet.sceneUrl}}" mode="aspectFit" catchtap="onOpenProfile"></image>
+        <image wx:if="{{stage === 'hatched' && pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenProfile"></image>
+        <pet-avatar wx:elif="{{stage === 'hatched'}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
         <view wx:else class="egg {{eggMotion}}" style="background: linear-gradient(155deg, #FFFDF0 6%, {{pet.shell.color}} 58%, #F4B9AE 125%);" catchtap="onEggTap" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd">
           <view class="egg-pattern egg-pattern--one"></view>
           <view class="egg-pattern egg-pattern--two"></view>

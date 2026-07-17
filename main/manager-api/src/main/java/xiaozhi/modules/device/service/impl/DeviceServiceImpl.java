@@ -85,15 +85,20 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
     private final DeviceAddressBookService deviceAddressBookService;
 
     @Async
-    public void updateDeviceConnectionInfo(String agentId, String deviceId, String appVersion) {
+    public void updateDeviceConnectionInfo(String agentId, String deviceId, String appVersion, Long updaterId) {
         try {
-            DeviceEntity device = new DeviceEntity();
-            device.setId(deviceId);
-            device.setLastConnectedAt(new Date());
-            if (StringUtils.isNotBlank(appVersion)) {
-                device.setAppVersion(appVersion);
+            Date now = new Date();
+            UpdateWrapper<DeviceEntity> updateWrapper = new UpdateWrapper<DeviceEntity>()
+                    .eq("id", deviceId)
+                    .set("last_connected_at", now)
+                    .set("update_date", now);
+            if (updaterId != null) {
+                updateWrapper.set("updater", updaterId);
             }
-            deviceDao.updateById(device);
+            if (StringUtils.isNotBlank(appVersion)) {
+                updateWrapper.set("app_version", appVersion);
+            }
+            deviceDao.update(null, updateWrapper);
             if (StringUtils.isNotBlank(agentId)) {
                 redisUtils.set(RedisKeys.getAgentDeviceLastConnectedAtById(agentId), new Date());
             }
@@ -283,7 +288,7 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
                     : null;
             // 通过Spring代理调用异步方法
             ((DeviceServiceImpl) AopContext.currentProxy()).updateDeviceConnectionInfo(deviceById.getAgentId(),
-                    deviceById.getId(), appVersion);
+                    deviceById.getId(), appVersion, deviceById.getUserId());
         } else {
             // 如果设备不存在，则生成激活码
             DeviceReportRespDTO.Activation code = buildActivation(macAddress, deviceReport);

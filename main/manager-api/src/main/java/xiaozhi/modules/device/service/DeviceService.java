@@ -107,7 +107,7 @@ public interface DeviceService extends BaseService<DeviceEntity> {
     /**
      * 更新设备连接信息
      */
-    void updateDeviceConnectionInfo(String agentId, String deviceId, String appVersion);
+    void updateDeviceConnectionInfo(String agentId, String deviceId, String appVersion, Long updaterId);
 
     /**
      * 生成WebSocket认证token

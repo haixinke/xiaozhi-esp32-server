@@ -1,8 +1,16 @@
 const { post } = require('../../utils/request');
 const petStore = require('../../utils/pet-store');
+const auth = require('../../utils/auth');
 
 Page({
   data: { code: '', error: '', canSubmit: false, success: null, submitting: false },
+
+  onLoad() {
+    const session = auth.getSession();
+    if (!session || auth.isExpired() || session.hasPhone !== true) {
+      wx.reLaunch({ url: '/pages/home/home' });
+    }
+  },
 
   onCodeInput(e) {
     const code = e.detail.value;

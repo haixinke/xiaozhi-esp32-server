@@ -73,7 +73,7 @@ main/egg-miniprogram/
 - `POST /wechat/bindPhone`（需认证）：`button open-type="getPhoneNumber"` 回调 `code` 绑定手机号
 - `GET/PUT /wechat/profile`：查询/更新用户资料；`POST /wechat/avatar`：上传头像到 OSS
 
-**token / openid / wx.login code 严禁落日志、严禁入库**。未绑定手机号可以进入首页；点击“添加蛋宝宝”后必须完成手机号授权，才能继续进入邀请码/激活码页面领取蛋宝宝。
+**token / openid / wx.login code 严禁落日志、严禁入库**。未绑定手机号可以进入并浏览首页；点击“添加蛋宝宝”后必须完成手机号授权，才能继续进入邀请码/激活码页面领取蛋宝宝。
 
 ### 宠物 API
 

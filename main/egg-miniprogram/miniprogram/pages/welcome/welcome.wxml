@@ -23,13 +23,8 @@
     </view>
 
     <view class="bottom-panel page-safe-bottom">
-      <view class="agreement" bindtap="onToggleAgreement">
-        <view class="check {{agreed ? 'check--on' : ''}}"><text wx:if="{{agreed}}">✓</text></view>
-        <text class="agreement-text">我已阅读并同意</text>
-        <text class="privacy-link" catchtap="onPrivacy">《蛋宝宝隐私政策》</text>
-      </view>
-      <button class="auth-button" open-type="getPhoneNumber" loading="{{authorizing}}" disabled="{{!agreed || authorizing}}" bind:getphonenumber="onAuthorize">授权手机号并进入</button>
-      <text class="auth-note">进入需授权手机号，仅用于账号安全与服务通知</text>
+      <button class="auth-button" bindtap="onEnterIsland">进入快乐仙岛</button>
+      <text class="auth-note">开启一段只属于你的陪伴</text>
     </view>
   </block>
 </view>

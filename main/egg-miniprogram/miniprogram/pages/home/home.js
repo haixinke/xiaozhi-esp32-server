@@ -1,6 +1,7 @@
 const petStore = require('../../utils/pet-store');
 const auth = require('../../utils/auth');
 const { get } = require('../../utils/request');
+const wechatApi = require('../../utils/wechat-api');
 const sceneConfig = require('../../utils/life-scenes');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
@@ -16,7 +17,9 @@ Page({
     cuddleProgress: 0,
     actionLabel: '孵化修炼手册',
     authChecked: false,
-    hatching: false
+    hatching: false,
+    showPhoneAuthorization: false,
+    authorizingPhone: false
   },
 
   _navigating: false,
@@ -24,7 +27,7 @@ Page({
   onLoad() {
     // 同步检查登录态：未注册用户留在空白页(不渲染内容)，等 app 登录完成后再决定去向
     const cached = auth.getSession();
-    if (cached && !auth.isExpired() && cached.hasPhone) {
+    if (cached && !auth.isExpired()) {
       // 本地有有效登录态，直接放行渲染
       this.setData({ authChecked: true });
       return;
@@ -33,7 +36,7 @@ Page({
     const app = getApp();
     if (app.globalData.authReady && typeof app.globalData.authReady.then === 'function') {
       app.globalData.authReady.then((session) => {
-        if (session && session.hasPhone) {
+        if (session) {
           this.setData({ authChecked: true });
         } else if (!this._navigating) {
           this._navigating = true;
@@ -93,7 +96,40 @@ Page({
   },
 
   onAddDevice() {
-    wx.navigateTo({ url: '/pages/add-device/add-device' });
+    const session = auth.getSession();
+    if (session && !auth.isExpired() && session.hasPhone === true) {
+      wx.navigateTo({ url: '/pages/add-device/add-device' });
+      return;
+    }
+    this.setData({ showPhoneAuthorization: true });
+  },
+
+  onClosePhoneAuthorization() {
+    if (!this.data.authorizingPhone) this.setData({ showPhoneAuthorization: false });
+  },
+
+  async onAuthorizePhone(event) {
+    const phoneCode = event && event.detail && event.detail.code;
+    if (!phoneCode) {
+      wx.showToast({ title: '需要授权手机号后才能领取蛋宝宝', icon: 'none' });
+      return;
+    }
+    if (this.data.authorizingPhone) return;
+    this.setData({ authorizingPhone: true });
+    try {
+      const session = await getApp().ensureLogin();
+      if (!session || !session.userId) throw new Error('invalid login session');
+      await wechatApi.bindPhone(phoneCode);
+      const boundSession = auth.markPhoneBound();
+      if (!boundSession) throw new Error('invalid login session');
+      getApp().applySession(boundSession);
+      this.setData({ showPhoneAuthorization: false });
+      wx.navigateTo({ url: '/pages/add-device/add-device' });
+    } catch (error) {
+      wx.showToast({ title: error.userMessage || '暂时无法连接服务，请稍后重试', icon: 'none' });
+    } finally {
+      this.setData({ authorizingPhone: false });
+    }
   },
 
   showFeedback(text) {

@@ -53,6 +53,15 @@
     </view>
   </scroll-view>
 
+  <view wx:if="{{showPhoneAuthorization}}" class="phone-auth-mask" catchtap="onClosePhoneAuthorization">
+    <view class="phone-auth-dialog" catchtap="noop">
+      <text class="phone-auth-title">领取前需要授权手机号</text>
+      <text class="phone-auth-copy">用于保障你的蛋宝宝账号安全。</text>
+      <button class="primary-button" open-type="getPhoneNumber" loading="{{authorizingPhone}}" disabled="{{authorizingPhone}}" bindgetphonenumber="onAuthorizePhone">授权手机号并继续</button>
+      <button class="phone-auth-cancel" disabled="{{authorizingPhone}}" bindtap="onClosePhoneAuthorization">暂不领取</button>
+    </view>
+  </view>
+
   <!-- 破壳视频遮罩 -->
   <view wx:if="{{hatching}}" class="hatch-overlay">
     <video

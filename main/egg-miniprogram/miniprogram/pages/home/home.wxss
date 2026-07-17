@@ -47,5 +47,11 @@
 .status-daily { margin: 0 0 28rpx; padding: 0 30rpx; text-align: center; }
 .status-meta { display: block; font-size: 21rpx; line-height: 1.5; color: #718044; }
 .status-line { display: block; margin-top: 10rpx; font-size: 28rpx; line-height: 1.55; color: #35352F; }
+.phone-auth-mask { position: fixed; z-index: 9998; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; padding: 48rpx; box-sizing: border-box; background: rgba(0,41,0,.42); }
+.phone-auth-dialog { width: 100%; padding: 52rpx 44rpx 34rpx; border-radius: 36rpx; box-sizing: border-box; background: #FFF; box-shadow: 0 24rpx 64rpx rgba(0,41,0,.18); text-align: center; }
+.phone-auth-title { display: block; font-size: 34rpx; font-weight: 600; color: #002900; }
+.phone-auth-copy { display: block; margin: 20rpx 0 42rpx; font-size: 26rpx; color: #6D6B65; }
+.phone-auth-cancel { margin-top: 20rpx; padding: 0; border: none; background: transparent; color: #7B796F; font-size: 26rpx; }
+.phone-auth-cancel::after { border: none; }
 .hatch-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .hatch-video { width: 100vw; height: 100vh; }

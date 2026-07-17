@@ -28,6 +28,7 @@ App({
     isNewUser: null,
     hasPhone: null,
     agentId: null,
+    welcomeCompleted: false,
     launchPath: 'pages/home/home'
   },
 
@@ -36,7 +37,10 @@ App({
       ? options.path
       : 'pages/home/home';
     this.globalData.authReady = this.ensureLogin()
-      .then((session) => session)
+      .then((session) => {
+        this.redirectUnboundToWelcome(this.globalData.launchPath);
+        return session;
+      })
       .catch(() => {
         this.applySession(null);
         return null;
@@ -51,6 +55,18 @@ App({
     }
     if (session && auth.isExpiringSoon()) {
       this.silentLogin().catch(() => null);
+    }
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
+    const currentRoute = pages.length ? pages[pages.length - 1].route : this.globalData.launchPath;
+    this.redirectUnboundToWelcome(currentRoute);
+  },
+
+  redirectUnboundToWelcome(route) {
+    if (route === 'pages/welcome/welcome' || route === '/pages/welcome/welcome') return;
+    if (this.globalData.welcomeCompleted === true) return;
+    if (!auth.getSession()) return;
+    if (this.globalData.hasPhone !== true) {
+      wx.reLaunch({ url: '/pages/welcome/welcome' });
     }
   },
 

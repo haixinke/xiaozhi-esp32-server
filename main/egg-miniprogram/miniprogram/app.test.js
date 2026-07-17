@@ -16,6 +16,7 @@ let wxLoginCalls = 0;
 let postCalls = 0;
 let wxLoginResult = { code: 'first-code' };
 let relaunchedTo = null;
+let currentRoute = 'pages/home/home';
 
 const auth = {
   getSession: () => storedSession,
@@ -57,6 +58,7 @@ global.wx = {
   },
   reLaunch({ url }) { relaunchedTo = url; }
 };
+global.getCurrentPages = () => (currentRoute ? [{ route: currentRoute }] : []);
 
 async function run() {
   require('./app');
@@ -91,15 +93,29 @@ async function run() {
 
   storedSession = { ...restored, hasPhone: false };
   relaunchedTo = null;
-  appConfig.onLaunch.call(appConfig);
+  currentRoute = 'pages/home/home';
+  appConfig.onLaunch.call(appConfig, { path: 'pages/home/home' });
   await appConfig.globalData.authReady;
-  assert.strictEqual(relaunchedTo, null,
-    'unbound session may enter home during launch before claiming a pet');
+  assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
+    'unbound session should launch into welcome before claiming a pet');
 
   relaunchedTo = null;
   appConfig.onShow.call(appConfig);
+  assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
+    'unbound session on a non-welcome route should return to welcome');
+
+  relaunchedTo = null;
+  currentRoute = 'pages/welcome/welcome';
+  appConfig.globalData.welcomeCompleted = false;
+  appConfig.onShow.call(appConfig);
   assert.strictEqual(relaunchedTo, null,
-    'unbound session may continue to home before claiming a pet');
+    'welcome route should not redirect itself');
+
+  appConfig.globalData.welcomeCompleted = true;
+  currentRoute = 'pages/home/home';
+  appConfig.onShow.call(appConfig);
+  assert.strictEqual(relaunchedTo, null,
+    'completed welcome should not redirect after entering home');
 
   expiringSoon = true;
   wxLoginResult = { code: 'expiring-ensure-code' };

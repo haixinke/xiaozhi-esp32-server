@@ -36,13 +36,9 @@ App({
       ? options.path
       : 'pages/home/home';
     this.globalData.authReady = this.ensureLogin()
-      .then((session) => {
-        this.enforcePhoneGate(session);
-        return session;
-      })
+      .then((session) => session)
       .catch(() => {
         this.applySession(null);
-        this.enforcePhoneGate(null);
         return null;
       });
   },
@@ -51,24 +47,10 @@ App({
     const session = auth.getSession();
     if (session && auth.isExpired()) {
       this.clearLoginState();
-      this.enforcePhoneGate(null);
       return;
     }
-    this.enforcePhoneGate(session);
     if (session && auth.isExpiringSoon()) {
       this.silentLogin().catch(() => null);
-    }
-  },
-
-  enforcePhoneGate(session) {
-    if (typeof getCurrentPages !== 'function') return;
-    const pages = getCurrentPages();
-    const current = pages && pages.length ? pages[pages.length - 1] : null;
-    const route = current ? current.route : this.globalData.launchPath;
-    if (!route || route === 'pages/welcome/welcome') return;
-    if (!session || session.hasPhone !== true) {
-      this.globalData.launchPath = 'pages/welcome/welcome';
-      wx.reLaunch({ url: '/pages/welcome/welcome' });
     }
   },
 

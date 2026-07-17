@@ -62,11 +62,18 @@ App({
   },
 
   redirectUnboundToWelcome(route) {
-    if (route === 'pages/welcome/welcome' || route === '/pages/welcome/welcome') return;
+    if (route === 'pages/welcome/welcome' || route === '/pages/welcome/welcome') {
+      this._welcomeRedirecting = false;
+      return;
+    }
     if (this.globalData.welcomeCompleted === true) return;
+    if (this._welcomeRedirecting === true) return;
     if (!auth.getSession()) return;
     if (this.globalData.hasPhone !== true) {
-      wx.reLaunch({ url: '/pages/welcome/welcome' });
+      this._welcomeRedirecting = true;
+      const redirect = () => wx.reLaunch({ url: '/pages/welcome/welcome' });
+      if (typeof wx.nextTick === 'function') wx.nextTick(redirect);
+      else setTimeout(redirect, 0);
     }
   },
 

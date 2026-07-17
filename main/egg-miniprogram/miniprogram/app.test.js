@@ -16,6 +16,7 @@ let wxLoginCalls = 0;
 let postCalls = 0;
 let wxLoginResult = { code: 'first-code' };
 let relaunchedTo = null;
+let relaunchCalls = 0;
 let currentRoute = 'pages/home/home';
 
 const auth = {
@@ -56,7 +57,8 @@ global.wx = {
     if (wxLoginResult.fail) options.fail(wxLoginResult.fail);
     else options.success(wxLoginResult);
   },
-  reLaunch({ url }) { relaunchedTo = url; }
+  reLaunch({ url }) { relaunchedTo = url; relaunchCalls += 1; },
+  nextTick(callback) { callback(); }
 };
 global.getCurrentPages = () => (currentRoute ? [{ route: currentRoute }] : []);
 
@@ -93,16 +95,20 @@ async function run() {
 
   storedSession = { ...restored, hasPhone: false };
   relaunchedTo = null;
+  relaunchCalls = 0;
   currentRoute = 'pages/home/home';
   appConfig.onLaunch.call(appConfig, { path: 'pages/home/home' });
   await appConfig.globalData.authReady;
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
     'unbound session should launch into welcome before claiming a pet');
+  assert.strictEqual(relaunchCalls, 1,
+    'launch should schedule only one welcome redirect');
 
-  relaunchedTo = null;
   appConfig.onShow.call(appConfig);
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
-    'unbound session on a non-welcome route should return to welcome');
+    'in-flight launch redirect remains the welcome destination');
+  assert.strictEqual(relaunchCalls, 1,
+    'onShow should not duplicate an in-flight welcome redirect');
 
   relaunchedTo = null;
   currentRoute = 'pages/welcome/welcome';
@@ -110,6 +116,8 @@ async function run() {
   appConfig.onShow.call(appConfig);
   assert.strictEqual(relaunchedTo, null,
     'welcome route should not redirect itself');
+  assert.strictEqual(appConfig._welcomeRedirecting, false,
+    'welcome route should release the redirect lock');
 
   appConfig.globalData.welcomeCompleted = true;
   currentRoute = 'pages/home/home';

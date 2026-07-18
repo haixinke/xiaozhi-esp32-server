@@ -17,6 +17,7 @@ let postCalls = 0;
 let wxLoginResult = { code: 'first-code' };
 let relaunchedTo = null;
 let relaunchCalls = 0;
+let hideTabBarCalls = 0;
 let currentRoute = 'pages/home/home';
 
 const auth = {
@@ -57,6 +58,7 @@ global.wx = {
     if (wxLoginResult.fail) options.fail(wxLoginResult.fail);
     else options.success(wxLoginResult);
   },
+  hideTabBar() { hideTabBarCalls += 1; },
   reLaunch({ url }) { relaunchedTo = url; relaunchCalls += 1; },
   nextTick(callback) { callback(); }
 };
@@ -99,6 +101,8 @@ async function run() {
   currentRoute = 'pages/home/home';
   appConfig.onLaunch.call(appConfig, { path: 'pages/home/home' });
   await appConfig.globalData.authReady;
+  assert.strictEqual(hideTabBarCalls, 1,
+    'home launch hides the native tab bar before the pet state is restored');
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
     'unbound session should launch into welcome before claiming a pet');
   assert.strictEqual(relaunchCalls, 1,

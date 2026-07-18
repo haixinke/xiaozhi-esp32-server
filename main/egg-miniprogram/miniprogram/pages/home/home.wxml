@@ -1,56 +1,58 @@
 <view class="page">
-  <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
+  <block wx:if="{{authChecked && !petRestoreLoading}}">
+    <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
 
-  <scroll-view wx:if="{{authChecked}}" class="content" scroll-y>
-    <view wx:if="{{!pet}}" class="empty-state">
-      <view class="empty-orbit"><view class="empty-egg"></view></view>
-      <text class="empty-title">领取我的蛋宝宝</text>
-      <text class="empty-desc">输入购买或好友送给你的激活码，开始一段只属于你们的孵化旅程。</text>
-      <button class="primary-button" bindtap="onAddDevice">添加蛋宝宝</button>
-      <text class="empty-note">当前版本每个账号只能绑定 1 只</text>
-    </view>
+    <scroll-view class="content" scroll-y>
+      <view wx:if="{{!pet}}" class="empty-state">
+        <view class="empty-orbit"><view class="empty-egg"></view></view>
+        <text class="empty-title">领取我的蛋宝宝</text>
+        <text class="empty-desc">输入购买或好友送给你的激活码，开始一段只属于你们的孵化旅程。</text>
+        <button class="primary-button" bindtap="onAddDevice">添加蛋宝宝</button>
+        <text class="empty-note">当前版本每个账号只能绑定 1 只</text>
+      </view>
 
-    <view wx:else class="pet-view">
-      <view class="top-row">
-        <view>
-          <text class="eyebrow">{{pet.petType}} · {{stage === 'hatched' ? '已破壳' : '孵化记录'}}</text>
-          <text class="pet-name">{{pet.name || '还没有名字'}}</text>
+      <view wx:else class="pet-view">
+        <view class="top-row">
+          <view>
+            <text class="eyebrow">{{pet.petType}} · {{stage === 'hatched' ? '已破壳' : '孵化记录'}}</text>
+            <text class="pet-name">{{pet.name || '还没有名字'}}</text>
+          </view>
+          <view class="progress-ring"><text>{{pet.progress}}%</text></view>
         </view>
-        <view class="progress-ring"><text>{{pet.progress}}%</text></view>
-      </view>
 
-      <view class="egg-zone" bindtap="onOpenProfile">
-        <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
-        <view class="egg-aura {{eggMotion}}"></view>
-        <image wx:if="{{stage === 'hatched' && pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
-        <pet-avatar wx:elif="{{stage === 'hatched'}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
-        <view wx:else class="egg {{eggMotion}}" style="background: linear-gradient(155deg, #FFFDF0 6%, {{pet.shell.color}} 58%, #F4B9AE 125%);" catchtap="onEggTap" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd">
-          <view class="egg-pattern egg-pattern--one"></view>
-          <view class="egg-pattern egg-pattern--two"></view>
-          <view class="egg-shine"></view>
+        <view class="egg-zone" bindtap="onOpenProfile">
+          <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
+          <view class="egg-aura {{eggMotion}}"></view>
+          <image wx:if="{{stage === 'hatched' && pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
+          <pet-avatar wx:elif="{{stage === 'hatched'}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
+          <view wx:else class="egg {{eggMotion}}" style="background: linear-gradient(155deg, #FFFDF0 6%, {{pet.shell.color}} 58%, #F4B9AE 125%);" catchtap="onEggTap" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd">
+            <view class="egg-pattern egg-pattern--one"></view>
+            <view class="egg-pattern egg-pattern--two"></view>
+            <view class="egg-shine"></view>
+          </view>
+          <view class="egg-shadow"></view>
+          <view wx:if="{{cuddleProgress > 0}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
         </view>
-        <view class="egg-shadow"></view>
-        <view wx:if="{{cuddleProgress > 0}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
-      </view>
 
-      <view class="state-card">
-        <view class="state-dot"></view>
-        <view class="state-copy">
-          <text class="state-title">{{stageText}}</text>
+        <view class="state-card">
+          <view class="state-dot"></view>
+          <view class="state-copy">
+            <text class="state-title">{{stageText}}</text>
+          </view>
+        </view>
+
+        <view wx:if="{{dailyStatus}}" class="status-daily">
+          <text class="status-meta">今日状态 · {{dailyStatus.mood}}</text>
+          <text class="status-line">{{dailyStatus.line}}</text>
+        </view>
+
+        <view class="home-actions">
+          <button class="primary-button home-actions__chat" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
+          <button wx:if="{{stage === 'hatched'}}" class="primary-button home-actions__scene" bindtap="onChangeScene"><text class="button-label">更换场景</text></button>
         </view>
       </view>
-
-      <view wx:if="{{dailyStatus}}" class="status-daily">
-        <text class="status-meta">今日状态 · {{dailyStatus.mood}}</text>
-        <text class="status-line">{{dailyStatus.line}}</text>
-      </view>
-
-      <view class="home-actions">
-        <button class="primary-button home-actions__chat" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
-        <button wx:if="{{stage === 'hatched'}}" class="primary-button home-actions__scene" bindtap="onChangeScene"><text class="button-label">更换场景</text></button>
-      </view>
-    </view>
-  </scroll-view>
+    </scroll-view>
+  </block>
 
   <view wx:if="{{showPhoneAuthorization}}" class="phone-auth-mask" catchtap="onClosePhoneAuthorization">
     <view class="phone-auth-dialog" catchtap="noop">

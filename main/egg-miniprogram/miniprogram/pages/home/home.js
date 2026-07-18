@@ -17,6 +17,7 @@ Page({
     cuddleProgress: 0,
     actionLabel: '孵化修炼手册',
     authChecked: false,
+    petRestoreLoading: true,
     hatching: false,
     showPhoneAuthorization: false,
     authorizingPhone: false
@@ -38,6 +39,7 @@ Page({
       app.globalData.authReady.then((session) => {
         if (session) {
           this.setData({ authChecked: true });
+          this.onShow();
         } else if (!this._navigating) {
           this._navigating = true;
           wx.reLaunch({ url: '/pages/welcome/welcome' });
@@ -63,7 +65,8 @@ Page({
       return;
     }
     // 冷启动:缓存空,从后端拉取已有蛋(领养后缓存已有,不会走到这里)
-    this.setData({ pet: null, stage: 'empty' });
+    this._petRestoreFinished = false;
+    this.setData({ pet: null, stage: 'empty', petRestoreLoading: true });
     this.loadPetFromServer();
   },
 
@@ -75,17 +78,26 @@ Page({
       }
     } catch (error) {
       // 拉取失败(未登录/网络异常)保持空态,不打扰用户
+    } finally {
+      if (!this._petRestoreFinished) this.finishPetRestore();
     }
+  },
+
+  finishPetRestore(data) {
+    this._petRestoreFinished = true;
+    this.setData({ ...(data || {}), petRestoreLoading: false }, () => {
+      if (wx.showTabBar) wx.showTabBar({ animation: false });
+    });
   },
 
   renderPet(pet) {
     if (!pet) {
-      this.setData({ pet: null, stage: 'empty' });
+      this.finishPetRestore({ pet: null, stage: 'empty' });
       return;
     }
     const stage = petStore.getStage(pet);
     const presentation = petStore.getStagePresentation(stage);
-    this.setData({
+    this.finishPetRestore({
       pet: { ...pet, petType: pet.prototype },
       stage,
       stageText: presentation.homeText,

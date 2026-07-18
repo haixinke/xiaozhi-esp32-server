@@ -22,14 +22,35 @@ let relaunchedTo = null;
 let toastTitle = null;
 let applySessionArgument = null;
 let bindPhonePromise = null;
+let requestGetCalls = 0;
+let requestGetResult = [];
+let requestGetPromise = null;
+let savedPetVO = null;
+let showTabBarCalls = 0;
 
 const authMock = {
   getSession: () => cachedSession,
   isExpired: () => cachedExpired,
   markPhoneBound: () => markPhoneResult
 };
-const petStoreMock = {};
-const requestMock = { get: async () => [] };
+const petStoreMock = {
+  getPet: () => null,
+  savePetFromVO: (pet) => {
+    savedPetVO = pet;
+    return pet;
+  },
+  getStage: (pet) => (pet.hatchStatus === 'HATCHED' ? 'hatched' : 'waiting'),
+  getStagePresentation: () => ({ homeText: '', actionLabel: '' }),
+  getCountdown: () => '',
+  getDailyStatus: () => null
+};
+const requestMock = {
+  get: async () => {
+    requestGetCalls += 1;
+    if (requestGetPromise) return requestGetPromise;
+    return requestGetResult;
+  }
+};
 const wechatApiMock = {
   bindPhone: async (phoneCode) => {
     bindPhoneCalls += 1;
@@ -64,6 +85,7 @@ global.getApp = () => app;
 global.wx = {
   navigateTo({ url }) { navigatedTo = url; },
   reLaunch({ url }) { relaunchedTo = url; },
+  showTabBar() { showTabBarCalls += 1; },
   showToast({ title }) { toastTitle = title; }
 };
 
@@ -71,8 +93,9 @@ function makePage() {
   return {
     ...pageConfig,
     data: { ...pageConfig.data },
-    setData(changes) {
+    setData(changes, callback) {
       this.data = { ...this.data, ...changes };
+      if (callback) callback();
     }
   };
 }
@@ -90,6 +113,11 @@ function resetScenario() {
   toastTitle = null;
   applySessionArgument = null;
   bindPhonePromise = null;
+  requestGetCalls = 0;
+  requestGetResult = [];
+  requestGetPromise = null;
+  savedPetVO = null;
+  showTabBarCalls = 0;
   app.globalData = { authReady: null };
 }
 
@@ -97,6 +125,10 @@ async function run() {
   const homeTemplate = fs.readFileSync(path.join(__dirname, 'home.wxml'), 'utf8');
   assert.ok(!homeTemplate.includes('<text class="state-time">{{countdown}}</text>'),
     'home must not reveal the hatching countdown');
+  assert.ok(homeTemplate.includes('<view wx:if="{{!pet}}" class="empty-state">'),
+    'home must preserve the empty state after restoration completes');
+  assert.ok(homeTemplate.includes('<block wx:if="{{authChecked && !petRestoreLoading}}">'),
+    'home must keep all page content hidden while restoring the pet');
 
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
@@ -122,6 +154,26 @@ async function run() {
   await Promise.resolve();
   assert.strictEqual(browsingPage.data.authChecked, true, 'valid unbound users can browse home');
   assert.strictEqual(relaunchedTo, null, 'valid unbound users are not redirected to welcome');
+
+  resetScenario();
+  const hatchedPet = { id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' };
+  let resolvePetList;
+  app.globalData.authReady = Promise.resolve({ userId: 42, hasPhone: true });
+  requestGetPromise = new Promise((resolve) => { resolvePetList = resolve; });
+  const coldStartPage = makePage();
+  coldStartPage.onLoad();
+  await Promise.resolve();
+  assert.strictEqual(requestGetCalls, 1, 'cold start restores the server pet after login');
+  assert.strictEqual(coldStartPage.data.petRestoreLoading, true,
+    'empty state remains hidden while the server pet is restoring');
+  resolvePetList([hatchedPet]);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepStrictEqual(savedPetVO, hatchedPet, 'server pet is saved to local cache');
+  assert.strictEqual(coldStartPage.data.petRestoreLoading, false,
+    'restoration completes after the server pet is returned');
+  assert.strictEqual(coldStartPage.data.stage, 'hatched', 'hatched server pet renders the success state');
+  assert.strictEqual(showTabBarCalls, 1,
+    'native tab bar appears only after the server pet state is restored');
 
   resetScenario();
   ensureSession = { userId: 42, hasPhone: false };

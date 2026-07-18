@@ -37,7 +37,6 @@
         <view class="state-dot"></view>
         <view class="state-copy">
           <text class="state-title">{{stageText}}</text>
-          <text class="state-time">{{countdown}}</text>
         </view>
       </view>
 

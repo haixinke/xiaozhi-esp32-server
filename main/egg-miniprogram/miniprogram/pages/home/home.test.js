@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const Module = require('module');
 
 const homePath = require.resolve('./home');
@@ -92,6 +94,10 @@ function resetScenario() {
 }
 
 async function run() {
+  const homeTemplate = fs.readFileSync(path.join(__dirname, 'home.wxml'), 'utf8');
+  assert.ok(!homeTemplate.includes('<text class="state-time">{{countdown}}</text>'),
+    'home must not reveal the hatching countdown');
+
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
 

@@ -20,12 +20,7 @@
           <view class="stat-cell"><text class="stat-label">星座</text><text class="stat-value">{{card.zodiac}} {{zodiacSymbol}}</text></view>
           <view class="stat-cell">
             <text class="stat-label">性别</text>
-            <view wx:if="{{genderKind}}" class="gender-symbol gender-symbol--{{genderKind}}">
-              <view class="gender-symbol__ring"></view>
-              <view class="gender-symbol__stem"></view>
-              <view class="gender-symbol__bar"></view>
-            </view>
-            <text wx:else class="stat-value">{{genderLabel}}</text>
+            <text class="stat-value">{{genderLabel}}</text>
           </view>
           <view class="stat-cell"><text class="stat-label">血型</text><text class="stat-value">{{card.bloodType}} 型</text></view>
           <view class="stat-cell"><text class="stat-label">MBTI</text><text class="stat-value">{{card.mbti}}</text></view>

@@ -9,17 +9,17 @@ const script = fs.readFileSync(path.join(pageDir, 'collection-card.js'), 'utf8')
 
 assert.match(
   template,
-  /wx:if="{{genderKind}}" class="gender-symbol gender-symbol--{{genderKind}}"/,
-  '性别必须使用独立图标，不可依赖系统字体中的 Unicode 性别符号'
+  /<text class="stat-value">{{genderLabel}}<\/text>/,
+  '性别必须以普通文字显示'
 );
 assert.doesNotMatch(
   template,
-  /<text class="stat-value">{{genderLabel}}<\/text>/,
-  '性别图标不得复用会裁剪字形的 stat-value 文本样式'
+  /gender-symbol/,
+  '性别不应再使用符号图标'
 );
-assert.match(script, /function genderKind\(value\)/, '页面必须提供可供模板渲染的性别图标类型');
-['.gender-symbol', '.gender-symbol--female', '.gender-symbol--male'].forEach((selector) => {
-  assert.ok(styles.includes(selector), `缺少跨字体渲染的 ${selector} 样式`);
-});
+assert.match(script, /if \(value === 'FEMALE'\) return '女';/, '女性必须显示为“女”');
+assert.match(script, /if \(value === 'MALE'\) return '男';/, '男性必须显示为“男”');
+assert.doesNotMatch(script, /function genderKind\(value\)/, '页面不应保留性别图标类型');
+assert.doesNotMatch(styles, /\.gender-symbol/, '页面不应保留性别符号样式');
 
 console.log('collection-card.test.js: ALL PASS');

@@ -13,15 +13,6 @@
 .stat-cell { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10rpx; padding: 8rpx 14rpx; border-radius: 15rpx; background: #F6F6F0; }
 .stat-label { flex: 0 0 auto; color: #7A807A; font-size: 25.2rpx; line-height: 1.2; }
 .stat-value { overflow: hidden; color: #2D251F; font-size: 27.6rpx; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.gender-symbol { position: relative; flex: 0 0 32rpx; width: 32rpx; height: 32rpx; }
-.gender-symbol__ring, .gender-symbol__stem, .gender-symbol__bar { position: absolute; background: #2D251F; }
-.gender-symbol__ring { box-sizing: border-box; border: 3rpx solid #2D251F; border-radius: 50%; background: transparent; }
-.gender-symbol--female .gender-symbol__ring { top: 0; left: 7rpx; width: 18rpx; height: 18rpx; }
-.gender-symbol--female .gender-symbol__stem { top: 16rpx; left: 14.5rpx; width: 3rpx; height: 16rpx; }
-.gender-symbol--female .gender-symbol__bar { top: 26rpx; left: 9rpx; width: 14rpx; height: 3rpx; }
-.gender-symbol--male .gender-symbol__ring { top: 14rpx; left: 0; width: 18rpx; height: 18rpx; }
-.gender-symbol--male .gender-symbol__stem { top: 14rpx; left: 14rpx; width: 19rpx; height: 3rpx; transform: rotate(-45deg); transform-origin: left center; }
-.gender-symbol--male .gender-symbol__bar { top: 0; left: 24rpx; width: 8rpx; height: 8rpx; border-top: 3rpx solid #2D251F; border-right: 3rpx solid #2D251F; background: transparent; }
 .card-signature { margin-top: 4rpx; padding: 0 14rpx; color: #536057; font-size: 25.2rpx; line-height: 1.4; overflow-wrap: break-word; text-align: center; white-space: normal; }
 .card-signature--compact { font-size: 21.6rpx; }
 .card-signature--dense { font-size: 18rpx; line-height: 1.3; }

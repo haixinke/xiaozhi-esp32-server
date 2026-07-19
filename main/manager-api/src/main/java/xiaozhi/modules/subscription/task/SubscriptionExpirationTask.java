@@ -43,7 +43,7 @@ public class SubscriptionExpirationTask {
      * 订阅为天级周期，到期无需秒级精度；扫描间隔即"到期后仍可能拉到旧 premium 配置"的窗口上限（≤1 小时），
      * 对伴侣产品可接受，且 agent 配置在用户下次召唤重连时才生效，空闲会话另有不活动超时兜底。
      */
-    @Scheduled(fixedDelay = 60 * 60 * 1000, initialDelay = 60 * 1000)
+    // @Scheduled(fixedDelay = 60 * 60 * 1000, initialDelay = 60 * 1000)
     public void expireSubscriptions() {
         List<UserSubscriptionEntity> expired = subscriptionDao.selectList(
                 new QueryWrapper<UserSubscriptionEntity>()

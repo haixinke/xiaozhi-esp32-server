@@ -17,7 +17,7 @@ public class CompanionMoodRefreshTask {
 
     private final CompanionService companionService;
 
-    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Shanghai")
+    // @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Shanghai")
     public void refreshMoods() {
         log.info("定时任务：开始刷新 AI 伴侣今日心情");
         companionService.refreshAllMoods();

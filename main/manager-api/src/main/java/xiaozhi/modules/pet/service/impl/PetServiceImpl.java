@@ -438,7 +438,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     }
 
     @Override
-    public void updatePet(Long userId, String petId, String nickname) {
+    public PetVO updatePet(Long userId, String petId, String nickname) {
         PetEntity pet = petDao.selectById(petId);
         if (pet == null) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
@@ -451,6 +451,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             pet.setUpdater(userId);
             petDao.updateById(pet);
         }
+        refreshTodayMood(pet);
+        return toVO(pet);
     }
 
     @Override

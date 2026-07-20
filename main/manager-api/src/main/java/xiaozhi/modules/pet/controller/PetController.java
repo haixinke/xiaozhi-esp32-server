@@ -88,10 +88,10 @@ public class PetController {
     @PutMapping("/update")
     @Operation(summary = "编辑宠物信息")
     @RequiresPermissions("sys:role:normal")
-    public Result<Void> update(@Valid @RequestBody PetUpdateDTO dto) {
+    public Result<PetVO> update(@Valid @RequestBody PetUpdateDTO dto) {
         Long userId = SecurityUser.getUserId();
-        petService.updatePet(userId, dto.getId(), dto.getNickname());
-        return new Result<>();
+        PetVO vo = petService.updatePet(userId, dto.getId(), dto.getNickname());
+        return new Result<PetVO>().ok(vo);
     }
 
     @PostMapping("/{id}/hatch-action")

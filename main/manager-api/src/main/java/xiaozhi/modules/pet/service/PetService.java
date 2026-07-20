@@ -55,7 +55,10 @@ public interface PetService extends BaseService<PetEntity> {
 
     List<PetVO> listByUserId(Long userId);
 
-    void updatePet(Long userId, String petId, String nickname);
+    /**
+     * 编辑宠物昵称，返回更新后的最新 PetVO。
+     */
+    PetVO updatePet(Long userId, String petId, String nickname);
 
     /**
      * 将宠物实体转为视图对象。

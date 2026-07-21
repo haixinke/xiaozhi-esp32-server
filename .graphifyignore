@@ -33,6 +33,7 @@ main/xiaozhi-server/oceanbase/
 *.mp3
 *.wav
 *.p3
+*.log
 
 # === Lock 文件 ===
 package-lock.json

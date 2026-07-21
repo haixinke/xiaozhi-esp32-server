@@ -1,5 +1,16 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /build
+
+# 注入 CCR MITM 代理的 CA 证书（Docker Desktop VM 网络可能仍经过 CCR）
+RUN --mount=type=secret,id=ccr-ca,dst=/tmp/ccr-ca.pem \
+    if [ -s /tmp/ccr-ca.pem ]; then \
+      cp /tmp/ccr-ca.pem /usr/local/share/ca-certificates/ccr-ca.crt && \
+      update-ca-certificates && \
+      keytool -importcert -alias ccr-ca -file /tmp/ccr-ca.pem \
+        -keystore "$JAVA_HOME/lib/security/cacerts" \
+        -storepass changeit -noprompt; \
+    fi
+
 COPY pom.xml .
 RUN --mount=type=cache,target=/root/.m2/repository \
     mvn dependency:go-offline -B

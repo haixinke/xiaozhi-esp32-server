@@ -272,25 +272,31 @@ async function testRecorderStopBarrier() {
   assert.strictEqual(userStopRecorder.startCalls, 1, 'user stop must not restart after file error');
   mgrUserStop.destroy();
 
-  const staleRecorder = makeRecorderStub();
-  const replacementRecorder = makeRecorderStub();
-  const recorderPool = [staleRecorder, replacementRecorder];
-  global.wx.getRecorderManager = () => recorderPool.shift();
-  const mgrStaleStop = new AudioManager({ recordStopTimeoutMs: 10, onError: () => {} });
-  await mgrStaleStop.ready();
-  mgrStaleStop.startRecord();
-  staleRecorder._onStart();
-  await assert.rejects(mgrStaleStop.stopRecord({ reason: 'timeout-a' }), /recorder onStop timeout/);
-  assert.strictEqual(mgrStaleStop.getRecordState(), 'idle');
-  assert.strictEqual(mgrStaleStop.startRecord(), true);
-  assert.strictEqual(replacementRecorder.startCalls, 1, 'timeout retires the old RecorderManager');
-  replacementRecorder._onStart();
-  staleRecorder._onStop({});
-  assert.strictEqual(mgrStaleStop.getRecordState(), 'recording', 'stale onStop cannot reset attempt B');
-  const replacementStop = mgrStaleStop.stopRecord({ reason: 'finish-b' });
-  replacementRecorder._onStop({});
-  await replacementStop;
-  mgrStaleStop.destroy();
+  const timeoutSingleton = makeRecorderStub();
+  global.wx.getRecorderManager = () => timeoutSingleton;
+  let lateStopCallbacks = 0;
+  const timeoutFrames = [];
+  const mgrTimeoutFault = new AudioManager({
+    recordStopTimeoutMs: 10,
+    onAudioFrame: (frame) => timeoutFrames.push(frame),
+    onRecordStop: () => { lateStopCallbacks++; },
+    onError: () => {},
+  });
+  await mgrTimeoutFault.ready();
+  mgrTimeoutFault.startRecord();
+  timeoutSingleton._onStart();
+  timeoutSingleton._onFrameRecorded({ frameBuffer: new Int16Array(200).buffer });
+  await assert.rejects(mgrTimeoutFault.stopRecord({ reason: 'timeout-a' }), /recorder onStop timeout/);
+  assert.strictEqual(mgrTimeoutFault.getRecordState(), 'idle');
+  assert.strictEqual(mgrTimeoutFault.isUsable(), false, 'timeout faults this manager recorder path');
+  const timedOutStartCalls = timeoutSingleton.startCalls;
+  assert.strictEqual(mgrTimeoutFault.startRecord(), false, 'faulted recorder cannot start another attempt');
+  assert.strictEqual(timeoutSingleton.startCalls, timedOutStartCalls, 'faulted attempt does not call native start');
+  timeoutSingleton._onStop({});
+  assert.strictEqual(mgrTimeoutFault.getRecordState(), 'idle');
+  assert.strictEqual(lateStopCallbacks, 0, 'late timeout onStop must not publish a stop callback');
+  assert.strictEqual(timeoutFrames.length, 0, 'late timeout onStop must not flush backlog');
+  mgrTimeoutFault.destroy();
 
   const flushErrorRecorder = makeRecorderStub();
   global.wx.getRecorderManager = () => flushErrorRecorder;

@@ -97,6 +97,7 @@ class AudioManager {
     this._stopDeferred = null;
     this._recordStopTimer = null;
     this._recordStopTimeoutMs = this.options.recordStopTimeoutMs || RECORD_STOP_TIMEOUT_MS;
+    this._recordFaulted = false;
 
     // Playback state
     this._audioCtx = null;
@@ -124,7 +125,7 @@ class AudioManager {
   }
 
   isUsable() {
-    return this.isReady() && this._codecMode === 'wasm' && !this._destroyed;
+    return this.isReady() && this._codecMode === 'wasm' && !this._destroyed && !this._recordFaulted;
   }
 
   getRecordState() {
@@ -151,7 +152,7 @@ class AudioManager {
       const recorder = wx.getRecorderManager();
       this._recorder = recorder;
       recorder.onStart(() => {
-        if (this._destroyed || this._recorder !== recorder) return;
+        if (this._destroyed || this._recordFaulted) return;
         this._isRecording = true;
         this._recordRetried = false;
         if (this._recordRetryTimer) {
@@ -173,7 +174,7 @@ class AudioManager {
         if (this.options.onRecordStart) this.options.onRecordStart();
       });
       recorder.onStop((res) => {
-        if (this._destroyed || this._recorder !== recorder) return;
+        if (this._destroyed || this._recordFaulted) return;
         this._isRecording = false;
         const stopOptions = this._stopRequested;
         if (!stopOptions && this._recordState === 'idle') return;
@@ -214,7 +215,7 @@ class AudioManager {
         }
       });
       recorder.onError((err) => {
-        if (this._destroyed || this._recorder !== recorder) return;
+        if (this._destroyed || this._recordFaulted) return;
         this._isRecording = false;
         const errMsg = (err && err.errMsg) || '';
         // iOS 音频会话偶发被占用会报 "file error"，自动重试一次自愈：
@@ -238,7 +239,7 @@ class AudioManager {
         this._emitError(new Error('recorder error: ' + errMsg), 'record');
       });
       recorder.onFrameRecorded((res) => {
-        if (this._recorder !== recorder || !this._isRecording || !res || !res.frameBuffer) return;
+        if (this._recordFaulted || !this._isRecording || !res || !res.frameBuffer) return;
         try {
           this._handleRecordedFrame(res.frameBuffer);
         } catch (e) {
@@ -319,7 +320,7 @@ class AudioManager {
     return Boolean(this._stopDeferred && this._stopRequested && this._stopRequested.reason !== 'internal-retry');
   }
 
-  _failRecordStop(err, retireRecorder) {
+  _failRecordStop(err, faultRecorder) {
     this._clearRecordStopTimer();
     this._pcmBacklog = new Int16Array(0);
     this._isRecording = false;
@@ -327,7 +328,10 @@ class AudioManager {
     this._stopRequested = null;
     const deferred = this._stopDeferred;
     this._stopDeferred = null;
-    if (retireRecorder) this._recorder = null;
+    if (faultRecorder) {
+      this._recordFaulted = true;
+      this._retryAfterStop = false;
+    }
     if (deferred) deferred.reject(err);
     this._emitError(err, 'record');
   }

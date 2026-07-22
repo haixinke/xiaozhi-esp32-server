@@ -60,8 +60,8 @@ idle -> starting -> recording -> stopping -> waiting -> idle
 - `starting`：手指已按下，正在等待原生录音成功；尚未发送 `listen.start`。
 - `recording`：原生 `onStart` 已到达、编码器可用、`listen.start` 已成功排入发送队列。
 - `stopping`：手指正常松开，等待原生 `onStop` 刷出尾帧。
-- `waiting`：尾帧和 `listen.stop` 已按顺序发送，等待服务端终态或聊天响应。
-- `cancelling`：取消、错误、断线或隐藏正在收口；尾部 PCM 必须丢弃。
+- `waiting`：尾帧和 `listen.stop` 已按顺序发送，等待服务端确认或聊天响应；页面既有 `chatState` 仍负责 thinking/speaking。
+- `cancelling`：只是在幂等取消动作执行期间使用的瞬时状态；尾部 PCM 必须丢弃，动作完成后回到 idle。
 
 每次按下分配单调递增的本地 `turnId`。所有异步回调先比较 `turnId`，陈旧回调不得修改当前轮次。
 
@@ -83,27 +83,38 @@ idle | starting | recording | retrying | stopping | destroyed
 - 内部重试产生的 `onStop` 不得向页面发布用户轮次终态。
 - `destroy()` 与尚未完成的 `ready()` 幂等，不能在异步初始化完成后访问已销毁的 encoder。
 
-保留现有 `startRecord()` / `stopRecord()` 调用方式，避免破坏语音通话页面；新增选项和状态查询保持向后兼容。
+保留现有 `startRecord()` / `stopRecord()` 调用方式，避免破坏语音通话页面；新增选项和状态查询保持向后兼容，旧调用方可以继续忽略 `stopRecord()` 的 Promise 返回值。
+
+聊天页使用的新停止合约为 `stopRecord({ flush, reason }) -> Promise<StopResult>`。Promise 只允许在对应原生 `onStop` 已到达、PCM backlog 已按 `flush` 策略处理完后 resolve。内部 file-error 重试必须先等待本 attempt 的 `onStop`；该次停止不 flush、不发布用户轮次终态，确认停止后才允许同一 turn 重试一次。若原生 `onStop` 在 2 秒内未到达，则本轮直接 error，禁止再启动新 attempt。
 
 ### 3.3 WebSocketManager 职责
 
-WebSocketManager 为语音帧和控制消息提供同一条串行发送链：
+WebSocketManager 为每个语音轮次提供绑定到确切 `SocketTask + connectionGeneration` 的串行 Promise 发送链：
 
-- `sendAudioFrame(frame, callbacks)` 与 `sendListenStart/Stop(turnId, callbacks)` 使用 `SocketTask.send` 的 `success/fail` 回调。
+- `sendAudioFrame(frame)` 与 `sendListenStart/Stop(turnId)` 使用 `SocketTask.send` 的 `success/fail` 回调并返回 Promise。
 - 同一轮次的调用顺序必须是 `listen.start -> audio... -> listen.stop`。
-- 同步返回值只表示能否尝试发送；异步 `fail` 必须通知控制器取消轮次。
-- 收到服务端 `listen` 终态时，解析为 `{type:'listen', state, turnId, reason}`。
+- 任一异步 `fail` 都使该轮发送链进入粘性失败状态；后续 Audio/End 不再发送，只允许 best-effort Abort 和本地收口。
+- 旧轮发送队列不能跨 generation 向重连后的新 Socket 补发，音频帧禁止自动重试。
+- 收到服务端 `listen` 反馈消息时，解析为 `{type:'listen', state, turnId, reason}`。
 - Socket 断开时增加连接 generation；控制器绑定的旧 generation 立即失效。
 
-发送 success 不是服务端确认，因此服务端在消费到 End 后回传 `stopped` ack。
+发送 success 不是服务端确认。正常结束必须先等待 `stopRecord({flush:true})`，再等待截至尾帧的发送 Promise 链成功，最后发送 End；服务端消费到 End 后回传 `stopped` ack。
 
 ### 3.4 服务端职责
 
-手动拾音模式使用统一语音输入事件：
+手动拾音模式使用不可变的统一语音输入事件：
 
 ```text
 VoiceInputEvent(kind='start'|'audio'|'end'|'abort', turn_id, payload)
 ```
+
+新增单连接 `VoiceTurnCoordinator`，由它独占 `TurnContext`：
+
+```text
+TurnContext(turn_id, state, frames, cancelled, frame_count, connection_generation)
+```
+
+`TurnContext` 的集合字段只通过 Coordinator 创建新快照更新。`conn.asr_audio`、`client_voice_stop` 和 provider 的 `text/is_processing` 不再作为轮次身份来源；旧 provider 的 finally 只能清理自己持有的匹配 turn，不能无条件重置新 turn。
 
 兼容规则：
 
@@ -112,6 +123,7 @@ VoiceInputEvent(kind='start'|'audio'|'end'|'abort', turn_id, payload)
 - 自动拾音模式继续使用现有音频处理，不改变 ESP32 自动 VAD 行为。
 - manual 模式下，WebSocket 路由按收到消息的顺序将 Start、Audio、End 放入现有 ASR 输入 FIFO。Audio 在入队时绑定当前接收轮次。
 - stop handler 不再直接检查 `asr_audio`，也不使用 `queue.empty()` 或 pending 布尔值。
+- 控制 sentinel 永不丢弃。队列为控制事件预留容量；音频入队溢出时将整轮标记为 error，拒绝后续 Audio，并确保 Abort/Error 控制事件仍能入队。禁止“丢最旧帧后继续识别”。
 
 消费者规则：
 
@@ -120,7 +132,9 @@ VoiceInputEvent(kind='start'|'audio'|'end'|'abort', turn_id, payload)
 3. End：因为它与音频共用 FIFO，到达时可证明之前的帧已处理完成；此时才设置 `client_voice_stop`。
 4. Abort：使轮次立即失效；后续同 turnId 的帧和 ASR 结果全部丢弃，并清理流式 provider。
 
-非流式 ASR 在 End 时快照该轮音频并创建独立最终化任务，不阻塞 WebSocket 接收循环。流式 ASR 在 End 时才调用 `_send_stop_request()`。所有 ASR 结果在发送 STT 或进入 LLM 前再次验证 turnId 仍有效。
+非流式 ASR 在 End 时从 TurnContext 取得完整不可变快照并创建独立最终化任务，不阻塞 WebSocket 接收循环。流式 ASR 统一实现 `end_turn(turn) -> VoiceTurnOutcome`：End 消费者 await 到 provider 停止请求已写入云端连接后才发送 stopped ack；provider 后续以 recognized/no_speech/error outcome 恰好完成一次。1013、task-finished 无文本、空最终结果、超时和异常都必须收敛为明确 outcome。
+
+在 `enqueue_asr_report`、STT 下发、`startToChat`/LLM 启动前都必须再次验证 turn 仍有效。清理函数也必须携带 turnId，只能清理匹配轮次。
 
 ## 4. 协议
 
@@ -132,7 +146,7 @@ VoiceInputEvent(kind='start'|'audio'|'end'|'abort', turn_id, payload)
 {"type":"abort","turn_id":"m-17"}
 ```
 
-服务端终态消息：
+服务端反馈消息：
 
 ```json
 {"type":"listen","state":"stopped","turn_id":"m-17"}
@@ -141,7 +155,7 @@ VoiceInputEvent(kind='start'|'audio'|'end'|'abort', turn_id, payload)
 {"type":"listen","state":"cancelled","turn_id":"m-17"}
 ```
 
-`stopped` 只确认 End 已越过服务端 FIFO 屏障，客户端继续等待 STT/TTS。`no_speech`、`error`、`cancelled` 是终态，客户端恢复 idle。未知客户端会忽略这些新增消息，因此协议向后兼容。
+`stopped` 不是终态，只确认 End 已越过服务端 FIFO 屏障，客户端继续等待 STT/TTS。真正终态是 recognized（由既有 STT/TTS 表示）、`no_speech`、`error` 或 `cancelled`。未知客户端会忽略这些新增消息，因此协议向后兼容。
 
 收到匹配 turnId 的 STT 或 TTS start 也视为语音输入轮次成功完成：控制器清理 ack/响应计时器并回到自身 idle；页面原有 `chatState` 继续负责 thinking/speaking，不与语音输入状态混用。
 
@@ -197,6 +211,7 @@ touchend
 - 日志只记录 turnId、状态和帧数，不记录音频内容、token、URL 鉴权参数或用户识别文本。
 - 队列满时不得静默丢弃当前轮次的旧帧后继续识别；应取消该轮并返回 error。
 - 每个连接最多一个活动 manual turn，新的 Start 必须先终止旧轮次。
+- Start 冲突返回 error；turnId 不匹配的 Stop/Abort 被拒绝并返回 error；manual 模式下 Audio-before-Start 直接丢弃并记录计数，不启动 ASR。
 
 ## 8. 测试与验收
 

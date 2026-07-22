@@ -257,6 +257,62 @@ async function testRecorderStopBarrier() {
   assert.strictEqual(retryTimerRecorder.startCalls, 1, 'public stop during retry timer cancels retry');
   mgrRetryTimer.destroy();
 
+  const userStopRecorder = makeRecorderStub();
+  global.wx.getRecorderManager = () => userStopRecorder;
+  const mgrUserStop = new AudioManager({ onError: () => {} });
+  await mgrUserStop.ready();
+  mgrUserStop.startRecord();
+  userStopRecorder._onStart();
+  const userStop = mgrUserStop.stopRecord({ reason: 'release' });
+  userStopRecorder._onError({ errMsg: 'record: file error' });
+  assert.strictEqual(mgrUserStop.getRecordState(), 'stopping', 'file error cannot replace a user stop');
+  userStopRecorder._onStop({});
+  await userStop;
+  await wait(320);
+  assert.strictEqual(userStopRecorder.startCalls, 1, 'user stop must not restart after file error');
+  mgrUserStop.destroy();
+
+  const staleRecorder = makeRecorderStub();
+  const replacementRecorder = makeRecorderStub();
+  const recorderPool = [staleRecorder, replacementRecorder];
+  global.wx.getRecorderManager = () => recorderPool.shift();
+  const mgrStaleStop = new AudioManager({ recordStopTimeoutMs: 10, onError: () => {} });
+  await mgrStaleStop.ready();
+  mgrStaleStop.startRecord();
+  staleRecorder._onStart();
+  await assert.rejects(mgrStaleStop.stopRecord({ reason: 'timeout-a' }), /recorder onStop timeout/);
+  assert.strictEqual(mgrStaleStop.getRecordState(), 'idle');
+  assert.strictEqual(mgrStaleStop.startRecord(), true);
+  assert.strictEqual(replacementRecorder.startCalls, 1, 'timeout retires the old RecorderManager');
+  replacementRecorder._onStart();
+  staleRecorder._onStop({});
+  assert.strictEqual(mgrStaleStop.getRecordState(), 'recording', 'stale onStop cannot reset attempt B');
+  const replacementStop = mgrStaleStop.stopRecord({ reason: 'finish-b' });
+  replacementRecorder._onStop({});
+  await replacementStop;
+  mgrStaleStop.destroy();
+
+  const flushErrorRecorder = makeRecorderStub();
+  global.wx.getRecorderManager = () => flushErrorRecorder;
+  const flushErrors = [];
+  const mgrFlushError = new AudioManager({
+    recordStopTimeoutMs: 1000,
+    onAudioFrame: () => { throw new Error('tail encode failed'); },
+    onError: (err, scope) => flushErrors.push({ err, scope }),
+  });
+  await mgrFlushError.ready();
+  mgrFlushError.startRecord();
+  flushErrorRecorder._onStart();
+  flushErrorRecorder._onFrameRecorded({ frameBuffer: new Int16Array(200).buffer });
+  const flushErrorStop = mgrFlushError.stopRecord({ flush: true, reason: 'release' });
+  assert.doesNotThrow(() => flushErrorRecorder._onStop({}), 'tail flush errors stay inside onStop cleanup');
+  await assert.rejects(flushErrorStop, /tail encode failed/);
+  assert.strictEqual(mgrFlushError.getRecordState(), 'idle');
+  assert.strictEqual(mgrFlushError._pcmBacklog.length, 0);
+  assert.strictEqual(mgrFlushError._recordStopTimer, null, 'tail error must not wait for stop timeout');
+  assert.strictEqual(flushErrors.filter(({ scope }) => scope === 'encode').length, 1);
+  mgrFlushError.destroy();
+
   console.log('audio.test.js: recorder stop barrier suite ALL PASS');
 }
 

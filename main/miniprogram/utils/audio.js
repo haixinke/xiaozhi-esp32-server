@@ -148,9 +148,10 @@ class AudioManager {
     }
 
     if (!this._recorder) {
-      this._recorder = wx.getRecorderManager();
-      this._recorder.onStart(() => {
-        if (this._destroyed) return;
+      const recorder = wx.getRecorderManager();
+      this._recorder = recorder;
+      recorder.onStart(() => {
+        if (this._destroyed || this._recorder !== recorder) return;
         this._isRecording = true;
         this._recordRetried = false;
         if (this._recordRetryTimer) {
@@ -160,53 +161,65 @@ class AudioManager {
         this._pcmBacklog = new Int16Array(0);
         if (this._stopRequested) {
           this._recordState = 'stopping';
-          try { this._recorder.stop(); } catch (err) { this._failRecordStop(err); }
+          try { recorder.stop(); } catch (err) { this._failRecordStop(err, true); }
           return;
         }
         if (this._recordState !== 'starting') {
           this._isRecording = false;
-          try { this._recorder.stop(); } catch (err) { this._emitError(err, 'record'); }
+          try { recorder.stop(); } catch (err) { this._emitError(err, 'record'); }
           return;
         }
         this._recordState = 'recording';
         if (this.options.onRecordStart) this.options.onRecordStart();
       });
-      this._recorder.onStop((res) => {
-        if (this._destroyed) return;
+      recorder.onStop((res) => {
+        if (this._destroyed || this._recorder !== recorder) return;
         this._isRecording = false;
         const stopOptions = this._stopRequested;
         if (!stopOptions && this._recordState === 'idle') return;
         let flushedFrames = 0;
-        // Flush any remaining samples by zero-padding to a full frame only when requested.
-        if (stopOptions && stopOptions.flush && this._pcmBacklog.length > 0) {
-          const padded = new Int16Array(FRAME_SAMPLES);
-          padded.set(this._pcmBacklog.subarray(0, Math.min(this._pcmBacklog.length, FRAME_SAMPLES)));
-          this._encodeAndEmit(padded);
-          flushedFrames = 1;
-        }
-        this._pcmBacklog = new Int16Array(0);
-        this._clearRecordStopTimer();
-        this._recordState = 'idle';
-        this._stopRequested = null;
-        const deferred = this._stopDeferred;
-        this._stopDeferred = null;
-        if (deferred) {
-          deferred.resolve({
-            reason: stopOptions.reason,
-            flushedFrames,
-            timedOut: false,
-          });
+        let flushError = null;
+        try {
+          // Flush any remaining samples by zero-padding to a full frame only when requested.
+          if (stopOptions && stopOptions.flush && this._pcmBacklog.length > 0) {
+            const padded = new Int16Array(FRAME_SAMPLES);
+            padded.set(this._pcmBacklog.subarray(0, Math.min(this._pcmBacklog.length, FRAME_SAMPLES)));
+            this._encodeAndEmit(padded);
+            flushedFrames = 1;
+          }
+        } catch (err) {
+          flushError = err;
+          this._emitError(err, 'encode');
+        } finally {
+          this._pcmBacklog = new Int16Array(0);
+          this._clearRecordStopTimer();
+          this._recordState = 'idle';
+          this._stopRequested = null;
+          const deferred = this._stopDeferred;
+          this._stopDeferred = null;
+          if (deferred) {
+            if (flushError) {
+              deferred.reject(flushError);
+            } else {
+              deferred.resolve({
+                reason: stopOptions.reason,
+                flushedFrames,
+                timedOut: false,
+              });
+            }
+          }
         }
         if ((!stopOptions || stopOptions.reason !== 'internal-retry') && this.options.onRecordStop) {
           this.options.onRecordStop(res && res.tempFilePath);
         }
       });
-      this._recorder.onError((err) => {
-        if (this._destroyed) return;
+      recorder.onError((err) => {
+        if (this._destroyed || this._recorder !== recorder) return;
         this._isRecording = false;
         const errMsg = (err && err.errMsg) || '';
         // iOS 音频会话偶发被占用会报 "file error"，自动重试一次自愈：
         // 先停掉旧会话、短延时后重新拉起录音；仍失败才向上抛错。
+        if (/file error/i.test(errMsg) && this._hasExternalStopRequest()) return;
         if (!this._recordRetried && /file error/i.test(errMsg)) {
           this._recordRetried = true;
           this._recordState = 'retrying';
@@ -224,8 +237,8 @@ class AudioManager {
         }
         this._emitError(new Error('recorder error: ' + errMsg), 'record');
       });
-      this._recorder.onFrameRecorded((res) => {
-        if (!this._isRecording || !res || !res.frameBuffer) return;
+      recorder.onFrameRecorded((res) => {
+        if (this._recorder !== recorder || !this._isRecording || !res || !res.frameBuffer) return;
         try {
           this._handleRecordedFrame(res.frameBuffer);
         } catch (e) {
@@ -282,11 +295,14 @@ class AudioManager {
 
     if (this._recordState === 'recording' || this._recordState === 'retrying') {
       this._recordState = 'stopping';
-      try { this._recorder.stop(); } catch (err) { this._failRecordStop(err); }
+      try { this._recorder.stop(); } catch (err) { this._failRecordStop(err, true); }
     }
     if (this._stopDeferred) {
+      const deferred = this._stopDeferred;
       this._recordStopTimer = setTimeout(() => {
-        this._failRecordStop(new Error('recorder onStop timeout'));
+        if (this._stopDeferred === deferred) {
+          this._failRecordStop(new Error('recorder onStop timeout'), true);
+        }
       }, this._recordStopTimeoutMs);
     }
     return promise;
@@ -299,7 +315,11 @@ class AudioManager {
     }
   }
 
-  _failRecordStop(err) {
+  _hasExternalStopRequest() {
+    return Boolean(this._stopDeferred && this._stopRequested && this._stopRequested.reason !== 'internal-retry');
+  }
+
+  _failRecordStop(err, retireRecorder) {
     this._clearRecordStopTimer();
     this._pcmBacklog = new Int16Array(0);
     this._isRecording = false;
@@ -307,6 +327,7 @@ class AudioManager {
     this._stopRequested = null;
     const deferred = this._stopDeferred;
     this._stopDeferred = null;
+    if (retireRecorder) this._recorder = null;
     if (deferred) deferred.reject(err);
     this._emitError(err, 'record');
   }

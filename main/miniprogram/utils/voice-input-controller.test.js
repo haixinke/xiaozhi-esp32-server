@@ -233,7 +233,48 @@ test('native stop rejection and begin, frame, finish send failures converge to i
   finishFailure.socket.finish.reject(new Error('finish'));
   await failedRelease;
   assert.strictEqual(finishFailure.controller.getState(), 'idle');
-  assert.strictEqual(finishFailure.socket.calls.filter((call) => call[0] === 'abort').length, 0);
+  assert.strictEqual(finishFailure.socket.calls.filter((call) => call[0] === 'abort').length, 1);
+});
+
+test('a queued Finish failure aborts once even when concurrent failure and Abort rejection follow', async () => {
+  const ctx = create();
+  ctx.socket.finish = deferred();
+  ctx.socket.abort = deferred();
+  await startRecording(ctx);
+  ctx.controller.handleAudioFrame(new ArrayBuffer(1));
+  const release = ctx.controller.release();
+  ctx.audio.resolveStop({});
+  await flush();
+  assert.deepStrictEqual(ctx.socket.calls.map((call) => call[0]), ['begin', 'frame', 'finish']);
+
+  await ctx.controller.handleAudioFailure('encode');
+  ctx.socket.finish.reject(new Error('queued finish failed'));
+  ctx.socket.abort.reject(new Error('end already in flight'));
+  await release;
+  await flush();
+
+  assert.strictEqual(ctx.socket.calls.filter((call) => call[0] === 'abort').length, 1);
+  assert.strictEqual(ctx.controller.getState(), 'idle');
+});
+
+test('cancellation while Finish is pending aborts once and consumes terminal rejections', async () => {
+  const ctx = create();
+  ctx.socket.finish = deferred();
+  ctx.socket.abort = deferred();
+  await startRecording(ctx);
+  ctx.controller.handleAudioFrame(new ArrayBuffer(1));
+  const release = ctx.controller.release();
+  ctx.audio.resolveStop({});
+  await flush();
+  const cancel = ctx.controller.cancel('hide');
+  await flush();
+  assert.strictEqual(ctx.socket.calls.filter((call) => call[0] === 'abort').length, 1);
+  ctx.socket.finish.reject(new Error('finish queued behind audio'));
+  ctx.socket.abort.reject(new Error('abort rejected after End'));
+  await Promise.all([release, cancel]);
+  await flush();
+  assert.strictEqual(ctx.socket.calls.filter((call) => call[0] === 'abort').length, 1);
+  assert.strictEqual(ctx.controller.getState(), 'idle');
 });
 
 test('a delayed send failure during release cannot add a second terminal action', async () => {
@@ -282,6 +323,24 @@ test('early stopped starts the response timer after finish, never the ack timer'
   await release;
   await new Promise((resolve) => setTimeout(resolve, 8));
   assert.strictEqual(ctx.controller.getState(), 'idle');
+  assert.deepStrictEqual(ctx.outcomes, ['response_timeout']);
+});
+
+test('duplicate stopped acknowledgements do not extend the response deadline', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const ctx = create({ ackTimeoutMs: 50, responseTimeoutMs: 30 });
+  await startRecording(ctx);
+  ctx.controller.handleAudioFrame(new ArrayBuffer(1));
+  const release = ctx.controller.release();
+  ctx.audio.resolveStop({});
+  await release;
+
+  ctx.controller.handleMessage({ type: 'listen', state: 'stopped', turnId: 'm-1' });
+  t.mock.timers.tick(10);
+  ctx.controller.handleMessage({ type: 'listen', state: 'stopped', turnId: 'm-1' });
+  t.mock.timers.tick(19);
+  assert.deepStrictEqual(ctx.outcomes, []);
+  t.mock.timers.tick(1);
   assert.deepStrictEqual(ctx.outcomes, ['response_timeout']);
 });
 

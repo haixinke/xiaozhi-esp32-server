@@ -114,7 +114,7 @@ class VoiceInputController {
       return;
     }
 
-    this._patchTurn({ terminalAction: 'finish' });
+    this._patchTurn({ terminalAction: 'finish-pending' });
     try {
       await this.socket.finishVoiceTurn(id);
     } catch (_) {
@@ -122,7 +122,7 @@ class VoiceInputController {
       return;
     }
     if (!this._isCurrent(id)) return;
-    const finished = this.turn;
+    const finished = this._patchTurn({ terminalAction: 'finish-confirmed' });
     if (finished.pendingTerminal) {
       this._finishLocal(finished.pendingTerminal, 'server_terminal');
       return;
@@ -177,6 +177,7 @@ class VoiceInputController {
     if (type === 'listen') {
       if (!matchingTurn) return;
       if (state === 'stopped') {
+        if (turn.ackReceived) return;
         this._patchTurn({ ackReceived: true });
         if (this.state === STATE_WAITING) this._startResponseTimer(turn.id);
         return;
@@ -213,7 +214,9 @@ class VoiceInputController {
       const result = this.audio.stopRecord({ flush: false, reason: 'destroy' });
       Promise.resolve(result).catch(() => {});
     } catch (_) {}
-    if (turn.serverStarted && !turn.terminalAction) this._sendAbort(turn.id);
+    if (turn.serverStarted && turn.terminalAction !== 'finish-confirmed' && turn.terminalAction !== 'abort') {
+      this._sendAbort(turn.id);
+    }
     this.turn = null;
     this._setState(STATE_IDLE);
   }
@@ -232,7 +235,7 @@ class VoiceInputController {
   _abortCurrent(id, outcome) {
     if (!this._isCurrent(id)) return;
     const turn = this.turn;
-    if (turn.terminalAction) {
+    if (turn.terminalAction === 'finish-confirmed' || turn.terminalAction === 'abort') {
       this._finishLocal(outcome, 'terminal_already_sent');
       return;
     }
@@ -258,7 +261,7 @@ class VoiceInputController {
         Promise.resolve(stop).catch(() => {});
       } catch (_) {}
     }
-    if (turn.serverStarted && !turn.terminalAction) {
+    if (turn.serverStarted && turn.terminalAction !== 'finish-confirmed' && turn.terminalAction !== 'abort') {
       this._patchTurn({ terminalAction: 'abort' });
       this._sendAbort(id);
     }

@@ -39,6 +39,7 @@ const FRAME_SAMPLES = SAMPLE_RATE * FRAME_DURATION_MS / 1000; // 1440
 // 60 ms of int16 PCM is 2880 bytes. Tell the recorder to emit ~3 KB chunks
 // and we'll re-frame precisely in JS.
 const RECORDER_FRAME_KB = 3;
+const RECORD_STOP_TIMEOUT_MS = 2000;
 
 class AudioManager {
   /**
@@ -54,6 +55,10 @@ class AudioManager {
   constructor(options) {
     this.options = options || {};
 
+    this._destroyed = false;
+    this._readySettled = false;
+    this._readyError = null;
+
     this.encoder = new OpusEncoder({
       sampleRate: SAMPLE_RATE,
       channels: CHANNELS,
@@ -67,19 +72,31 @@ class AudioManager {
 
     this._readyPromise = Promise.all([this.encoder.ready(), this.decoder.ready()])
       .then(() => {
+        if (this._destroyed || !this.encoder) return this;
         // Opus WASM 加载失败时会回退到 stub，stub 产出的假帧服务端无法识别。
         // 记录 codec 模式，供录音链路拦截并告警，避免静默失效（Android 尤易触发）。
         this._codecMode = this.encoder.mode;
+        this._readySettled = true;
         if (this._codecMode === 'stub') {
           this._emitError(new Error('Opus 编码器回退到 stub，真 Opus 不可用'), 'codec');
         }
         return this;
+      })
+      .catch((err) => {
+        this._readySettled = true;
+        this._readyError = err;
+        throw err;
       });
 
     // Recording state
     this._recorder = null;
     this._isRecording = false;
     this._pcmBacklog = new Int16Array(0);
+    this._recordState = 'idle';
+    this._stopRequested = null;
+    this._stopDeferred = null;
+    this._recordStopTimer = null;
+    this._recordStopTimeoutMs = this.options.recordStopTimeoutMs || RECORD_STOP_TIMEOUT_MS;
 
     // Playback state
     this._audioCtx = null;
@@ -88,11 +105,11 @@ class AudioManager {
     this._nextStartTime = 0;       // AudioContext currentTime cursor
     this._activeSources = new Set();
 
-    this._destroyed = false;
     // 录音 file error 自愈：标记本轮是否已重试过，避免无限重试。
     this._recordRetried = false;
     // 自愈重试定时器句柄：destroy/stopRecord 时需清除，避免对已销毁实例触发 startRecord。
     this._recordRetryTimer = null;
+    this._retryAfterStop = false;
     // Opus 编解码运行模式：'wasm'（真 Opus）| 'stub'（假帧，服务端无法识别）| null（未就绪）。
     this._codecMode = null;
   }
@@ -102,13 +119,24 @@ class AudioManager {
     return this._readyPromise;
   }
 
+  isReady() {
+    return this._readySettled && !this._readyError;
+  }
+
+  isUsable() {
+    return this.isReady() && this._codecMode === 'wasm' && !this._destroyed;
+  }
+
+  getRecordState() {
+    return this._recordState;
+  }
+
   // -------------------------------------------------------------------------
   // Recording
   // -------------------------------------------------------------------------
 
   startRecord() {
-    if (this._destroyed) throw new Error('AudioManager destroyed');
-    if (this._isRecording) return;
+    if (this._destroyed || this._recordState !== 'idle' || !this.isUsable()) return false;
 
     // 录音前先停止播放并释放播放资源：iOS 全局只有一套音频会话，
     // 播放（WebAudioContext / InnerAudio）占用会话时启动录音会触发 file error。
@@ -116,12 +144,13 @@ class AudioManager {
 
     if (typeof wx === 'undefined' || !wx.getRecorderManager) {
       this._emitError(new Error('wx.getRecorderManager unavailable'), 'record');
-      return;
+      return false;
     }
 
     if (!this._recorder) {
       this._recorder = wx.getRecorderManager();
       this._recorder.onStart(() => {
+        if (this._destroyed) return;
         this._isRecording = true;
         this._recordRetried = false;
         if (this._recordRetryTimer) {
@@ -129,32 +158,68 @@ class AudioManager {
           this._recordRetryTimer = null;
         }
         this._pcmBacklog = new Int16Array(0);
+        if (this._stopRequested) {
+          this._recordState = 'stopping';
+          try { this._recorder.stop(); } catch (err) { this._failRecordStop(err); }
+          return;
+        }
+        if (this._recordState !== 'starting') {
+          this._isRecording = false;
+          try { this._recorder.stop(); } catch (err) { this._emitError(err, 'record'); }
+          return;
+        }
+        this._recordState = 'recording';
         if (this.options.onRecordStart) this.options.onRecordStart();
       });
       this._recorder.onStop((res) => {
+        if (this._destroyed) return;
         this._isRecording = false;
-        // Flush any remaining samples by zero-padding to a full frame.
-        if (this._pcmBacklog.length > 0) {
+        const stopOptions = this._stopRequested;
+        if (!stopOptions && this._recordState === 'idle') return;
+        let flushedFrames = 0;
+        // Flush any remaining samples by zero-padding to a full frame only when requested.
+        if (stopOptions && stopOptions.flush && this._pcmBacklog.length > 0) {
           const padded = new Int16Array(FRAME_SAMPLES);
           padded.set(this._pcmBacklog.subarray(0, Math.min(this._pcmBacklog.length, FRAME_SAMPLES)));
           this._encodeAndEmit(padded);
-          this._pcmBacklog = new Int16Array(0);
+          flushedFrames = 1;
         }
-        if (this.options.onRecordStop) this.options.onRecordStop(res && res.tempFilePath);
+        this._pcmBacklog = new Int16Array(0);
+        this._clearRecordStopTimer();
+        this._recordState = 'idle';
+        this._stopRequested = null;
+        const deferred = this._stopDeferred;
+        this._stopDeferred = null;
+        if (deferred) {
+          deferred.resolve({
+            reason: stopOptions.reason,
+            flushedFrames,
+            timedOut: false,
+          });
+        }
+        if ((!stopOptions || stopOptions.reason !== 'internal-retry') && this.options.onRecordStop) {
+          this.options.onRecordStop(res && res.tempFilePath);
+        }
       });
       this._recorder.onError((err) => {
+        if (this._destroyed) return;
         this._isRecording = false;
         const errMsg = (err && err.errMsg) || '';
         // iOS 音频会话偶发被占用会报 "file error"，自动重试一次自愈：
         // 先停掉旧会话、短延时后重新拉起录音；仍失败才向上抛错。
         if (!this._recordRetried && /file error/i.test(errMsg)) {
           this._recordRetried = true;
-          try { this._recorder.stop(); } catch (_) {}
-          this._recordRetryTimer = setTimeout(() => {
-            this._recordRetryTimer = null;
-            if (this._destroyed || this._isRecording) return;
-            this.startRecord();
-          }, 300);
+          this._recordState = 'retrying';
+          this._retryAfterStop = true;
+          this._requestRecordStop({ flush: false, reason: 'internal-retry' })
+            .then(() => {
+              if (!this._retryAfterStop || this._destroyed) return;
+              this._recordRetryTimer = setTimeout(() => {
+                this._recordRetryTimer = null;
+                if (this._retryAfterStop && !this._destroyed) this.startRecord();
+              }, 300);
+            })
+            .catch(() => {});
           return;
         }
         this._emitError(new Error('recorder error: ' + errMsg), 'record');
@@ -169,29 +234,81 @@ class AudioManager {
       });
     }
 
-    this._recorder.start({
-      duration: 600000,                 // 10 min cap (RecorderManager max)
-      sampleRate: SAMPLE_RATE,
-      numberOfChannels: CHANNELS,
-      encodeBitRate: 48000,             // ignored for PCM, but required field
-      format: 'PCM',
-      frameSize: RECORDER_FRAME_KB,
-    });
+    this._recordState = 'starting';
+    try {
+      this._recorder.start({
+        duration: 600000,                 // 10 min cap (RecorderManager max)
+        sampleRate: SAMPLE_RATE,
+        numberOfChannels: CHANNELS,
+        encodeBitRate: 48000,             // ignored for PCM, but required field
+        format: 'PCM',
+        frameSize: RECORDER_FRAME_KB,
+      });
+      return true;
+    } catch (err) {
+      this._recordState = 'idle';
+      this._emitError(err, 'record');
+      return false;
+    }
   }
 
-  stopRecord() {
+  stopRecord(options) {
     // 即使正在自愈重试窗口内（_isRecording 已被 onError 置 false），也要清掉重试定时器，
     // 否则用户停止后仍会被定时器拉起一次录音。
     if (this._recordRetryTimer) {
       clearTimeout(this._recordRetryTimer);
       this._recordRetryTimer = null;
     }
-    if (!this._recorder || !this._isRecording) return;
-    try {
-      this._recorder.stop();
-    } catch (e) {
-      this._emitError(e, 'record');
+    this._retryAfterStop = false;
+    return this._requestRecordStop(Object.assign({ flush: true, reason: 'stop' }, options || {}));
+  }
+
+  _requestRecordStop(options) {
+    if (this._recordState === 'idle') {
+      return Promise.resolve({ reason: options.reason, flushedFrames: 0, timedOut: false });
     }
+    if (this._stopDeferred) return this._stopDeferred.promise;
+
+    let resolveStop;
+    let rejectStop;
+    const promise = new Promise((resolve, reject) => {
+      resolveStop = resolve;
+      rejectStop = reject;
+    });
+    this._stopRequested = options;
+    this._stopDeferred = { promise, resolve: resolveStop, reject: rejectStop };
+    // Existing voice-call callers intentionally ignore this Promise.
+    promise.catch(() => {});
+
+    if (this._recordState === 'recording' || this._recordState === 'retrying') {
+      this._recordState = 'stopping';
+      try { this._recorder.stop(); } catch (err) { this._failRecordStop(err); }
+    }
+    if (this._stopDeferred) {
+      this._recordStopTimer = setTimeout(() => {
+        this._failRecordStop(new Error('recorder onStop timeout'));
+      }, this._recordStopTimeoutMs);
+    }
+    return promise;
+  }
+
+  _clearRecordStopTimer() {
+    if (this._recordStopTimer) {
+      clearTimeout(this._recordStopTimer);
+      this._recordStopTimer = null;
+    }
+  }
+
+  _failRecordStop(err) {
+    this._clearRecordStopTimer();
+    this._pcmBacklog = new Int16Array(0);
+    this._isRecording = false;
+    this._recordState = 'idle';
+    this._stopRequested = null;
+    const deferred = this._stopDeferred;
+    this._stopDeferred = null;
+    if (deferred) deferred.reject(err);
+    this._emitError(err, 'record');
   }
 
   /**
@@ -368,7 +485,19 @@ class AudioManager {
       clearTimeout(this._recordRetryTimer);
       this._recordRetryTimer = null;
     }
-    try { this.stopRecord(); } catch (_) {}
+    this._retryAfterStop = false;
+    this._clearRecordStopTimer();
+    if (this._recorder && this._recordState !== 'idle') {
+      try { this._recorder.stop(); } catch (_) {}
+    }
+    this._recordState = 'idle';
+    this._isRecording = false;
+    this._pcmBacklog = new Int16Array(0);
+    this._stopRequested = null;
+    if (this._stopDeferred) {
+      this._stopDeferred.reject(new Error('AudioManager destroyed'));
+      this._stopDeferred = null;
+    }
     try { this.stopPlayback(); } catch (_) {}
     if (this._audioCtx && typeof this._audioCtx.close === 'function') {
       try { this._audioCtx.close(); } catch (_) {}

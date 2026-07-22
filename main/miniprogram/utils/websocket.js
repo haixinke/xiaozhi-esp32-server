@@ -45,6 +45,8 @@ class WebSocketManager {
     this._destroyed = false;
     this._manualClose = false;   // disconnect() 主动断开时为 true
     this._helloSent = false;
+    this._connectionGeneration = 0;
+    this._voiceTurns = new Map();
 
     this._stateListeners = new Set();
   }
@@ -108,11 +110,12 @@ class WebSocketManager {
     }
 
     this.socket = task;
-    this._bindSocketHandlers(task);
+    const generation = ++this._connectionGeneration;
+    this._bindSocketHandlers(task, generation);
 
     // 握手超时保护：若 10s 内服务端无响应，强制重连。
     this._handshakeTimer = setTimeout(() => {
-      if (this.state !== 'connected') {
+      if (this._isCurrentSocket(task, generation) && this.state !== 'connected') {
         this._emitError(new Error('handshake timeout'), 'connect');
         this._teardownSocket(false);
         this._scheduleReconnect();
@@ -143,6 +146,10 @@ class WebSocketManager {
   /** 是否已连接并完成握手。 */
   isConnected() {
     return this.state === 'connected';
+  }
+
+  getConnectionGeneration() {
+    return this._connectionGeneration;
   }
 
   // -------------------------------------------------------------------------
@@ -199,6 +206,53 @@ class WebSocketManager {
     }
   }
 
+  beginVoiceTurn(turnId) {
+    try {
+      const session = this._createVoiceSession(turnId);
+      return this._sendOnSession(session, JSON.stringify({
+        type: 'listen', mode: 'manual', state: 'start', turn_id: turnId,
+      }));
+    } catch (err) {
+      return this._rejectVoicePromise(err);
+    }
+  }
+
+  sendVoiceFrame(turnId, frame) {
+    const session = this._voiceTurns.get(turnId);
+    if (!session || !frame) return this._rejectVoicePromise(new Error('voice turn unavailable'));
+    return this._sendOnSession(session, frame);
+  }
+
+  finishVoiceTurn(turnId) {
+    const session = this._voiceTurns.get(turnId);
+    if (!session) return this._rejectVoicePromise(new Error('voice turn unavailable'));
+    const done = this._sendOnSession(session, JSON.stringify({
+      type: 'listen', mode: 'manual', state: 'stop', turn_id: turnId,
+    }));
+    const result = done.finally(() => {
+      session.closed = true;
+      this._voiceTurns.delete(turnId);
+    });
+    result.catch(() => {});
+    return result;
+  }
+
+  abortVoiceTurn(turnId) {
+    const session = this._voiceTurns.get(turnId);
+    if (!session) return this._rejectVoicePromise(new Error('voice turn unavailable'));
+
+    this._voiceTurns.delete(turnId);
+    session.closed = true;
+    if (!this._isCurrentSocket(session.task, session.generation) || this.state !== 'connected') {
+      return this._rejectVoicePromise(new Error('stale voice socket generation'));
+    }
+    const result = this._sendOnTaskAsync(session.task, JSON.stringify({
+      type: 'abort', turn_id: turnId,
+    }));
+    result.catch(() => {});
+    return result;
+  }
+
   /**
    * 发送 JSON 或字符串。对象会自动序列化。
    */
@@ -229,8 +283,9 @@ class WebSocketManager {
     return url;
   }
 
-  _bindSocketHandlers(task) {
+  _bindSocketHandlers(task, generation) {
     task.onOpen(() => {
+      if (!this._isCurrentSocket(task, generation)) return;
       // onOpen 后 state 仍为 connecting，等 hello 回来才升级为 connected。
       this._reconnectAttempts = 0;
       this._manualClose = false;
@@ -255,15 +310,19 @@ class WebSocketManager {
     });
 
     task.onMessage((res) => {
+      if (!this._isCurrentSocket(task, generation)) return;
       this._handleMessage(res);
     });
 
     task.onError((err) => {
+      if (!this._isCurrentSocket(task, generation)) return;
       this._emitError(new Error('socket error: ' + (err && err.errMsg)), 'connect');
     });
 
     task.onClose((res) => {
+      if (!this._isCurrentSocket(task, generation)) return;
       this._clearTimers();
+      this._failVoiceSessions(task, generation, new Error('stale voice socket generation'));
       this.socket = null;
       this._setState('disconnected');
       if (!this._manualClose && !this._destroyed) {
@@ -307,6 +366,16 @@ class WebSocketManager {
 
       case 'pong':
         this._clearPongTimeout();
+        break;
+
+      case 'listen':
+        this._dispatch({
+          type: 'listen',
+          state: msg.state || '',
+          turnId: msg.turn_id === undefined ? null : String(msg.turn_id),
+          reason: msg.reason || '',
+          raw: msg,
+        });
         break;
 
       case 'stt':
@@ -436,10 +505,87 @@ class WebSocketManager {
     this._clearTimers();
     if (!this.socket) return;
     const task = this.socket;
+    const generation = this._connectionGeneration;
     this.socket = null;
+    this._failVoiceSessions(task, generation, new Error('stale voice socket generation'));
     try {
       task.close({ code: 1000, reason: silent ? 'client close' : 'reconnect' });
     } catch (_) {}
+  }
+
+  _isCurrentSocket(task, generation) {
+    return this.socket === task && this._connectionGeneration === generation;
+  }
+
+  _createVoiceSession(turnId) {
+    if (!turnId || this.state !== 'connected' || !this.socket) {
+      throw new Error('voice socket unavailable');
+    }
+    if (this._voiceTurns.has(turnId)) throw new Error('duplicate voice turn');
+    const session = {
+      turnId,
+      task: this.socket,
+      generation: this._connectionGeneration,
+      tail: Promise.resolve(),
+      failure: null,
+      closed: false,
+      hasQueuedSend: false,
+    };
+    this._voiceTurns.set(turnId, session);
+    return session;
+  }
+
+  _sendOnSession(session, data) {
+    const send = () => {
+      if (session.failure) throw session.failure;
+      if (session.closed || !this._isCurrentSocket(session.task, session.generation) ||
+          this.state !== 'connected') {
+        throw new Error('stale voice socket generation');
+      }
+      return this._sendOnTaskAsync(session.task, data);
+    };
+    let operation;
+    if (session.hasQueuedSend) {
+      operation = session.tail.then(send);
+    } else {
+      try {
+        operation = Promise.resolve(send());
+      } catch (err) {
+        operation = Promise.reject(err);
+      }
+    }
+    session.hasQueuedSend = true;
+    session.tail = operation.catch((err) => {
+      if (!session.failure) session.failure = err;
+      throw session.failure;
+    });
+    session.tail.catch(() => {});
+    return session.tail;
+  }
+
+  _sendOnTaskAsync(task, data) {
+    return new Promise((resolve, reject) => {
+      task.send({
+        data,
+        success: resolve,
+        fail: (err) => reject(new Error('voice send fail: ' + ((err && err.errMsg) || 'unknown'))),
+      });
+    });
+  }
+
+  _failVoiceSessions(task, generation, error) {
+    this._voiceTurns.forEach((session, turnId) => {
+      if (session.task !== task || session.generation !== generation) return;
+      session.closed = true;
+      if (!session.failure) session.failure = error;
+      this._voiceTurns.delete(turnId);
+    });
+  }
+
+  _rejectVoicePromise(error) {
+    const result = Promise.reject(error);
+    result.catch(() => {});
+    return result;
   }
 
   _emitError(err, scope) {

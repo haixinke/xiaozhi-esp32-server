@@ -38,6 +38,20 @@ async function rejects(promise, pattern) {
   await assert.rejects(promise, pattern);
 }
 
+async function rejectsPromptly(promise, pattern) {
+  let timeout;
+  try {
+    await Promise.race([
+      assert.rejects(promise, pattern),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error('expected prompt rejection')), 30);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function testSerialVoiceSends() {
   const task = makeSocketTask();
   const frame = new ArrayBuffer(3);
@@ -97,6 +111,7 @@ async function testTeardownRejectsQueuedWorkWithoutReplay() {
   const start = ws.beginVoiceTurn('m-3');
   const audio = ws.sendVoiceFrame('m-3', new ArrayBuffer(2));
   const end = ws.finishVoiceTurn('m-3');
+  start.catch(() => {});
   audio.catch(() => {});
   end.catch(() => {});
 
@@ -106,16 +121,97 @@ async function testTeardownRejectsQueuedWorkWithoutReplay() {
   ws._connectionGeneration += 1;
   ws._bindSocketHandlers(newTask, ws.getConnectionGeneration());
 
-  oldTask.succeed(0);
-  await start;
-  await rejects(audio, /stale voice socket generation/);
-  await rejects(end, /stale voice socket generation/);
+  await rejectsPromptly(start, /stale voice socket generation/);
+  await rejectsPromptly(audio, /stale voice socket generation/);
+  await rejectsPromptly(end, /stale voice socket generation/);
   assert.strictEqual(oldTask.sent.length, 1, 'queued packets stay off the old task');
   assert.strictEqual(newTask.sent.length, 0, 'queued packets must not replay on a new task');
+
+  oldTask.succeed(0);
 
   oldTask.triggerClose();
   assert.strictEqual(ws.socket, newTask, 'stale close must not clear the replacement task');
   assert.strictEqual(ws.state, 'connected', 'stale close must not change replacement state');
+}
+
+async function testInvalidationRejectsInflightAndQueuedWorkPromptly() {
+  const oldTask = makeSocketTask();
+  const replacementTask = makeSocketTask();
+  const ws = connectedManager(oldTask);
+  const start = ws.beginVoiceTurn('m-inflight');
+  const frame = ws.sendVoiceFrame('m-inflight', new ArrayBuffer(1));
+
+  ws._teardownSocket(false);
+  ws.socket = replacementTask;
+  ws.state = 'connected';
+  ws._connectionGeneration += 1;
+
+  await rejectsPromptly(start, /stale voice socket generation/);
+  await rejectsPromptly(frame, /stale voice socket generation/);
+  assert.strictEqual(replacementTask.sent.length, 0, 'invalidated work must not replay');
+
+  oldTask.succeed(0);
+  oldTask.fail(0, { errMsg: 'late failure' });
+  assert.strictEqual(replacementTask.sent.length, 0, 'late callbacks must be inert');
+}
+
+async function testCurrentCloseRejectsInflightAndQueuedWorkPromptly() {
+  const task = makeSocketTask();
+  const ws = connectedManager(task);
+  ws._bindSocketHandlers(task, ws.getConnectionGeneration());
+  const start = ws.beginVoiceTurn('m-close');
+  const frame = ws.sendVoiceFrame('m-close', new ArrayBuffer(1));
+
+  task.triggerClose();
+  await rejectsPromptly(start, /stale voice socket generation/);
+  await rejectsPromptly(frame, /stale voice socket generation/);
+  assert.strictEqual(ws.socket, null);
+  task.succeed(0);
+  task.fail(0, { errMsg: 'late failure' });
+}
+
+async function testAbortDoesNotFollowAnInflightEnd() {
+  const task = makeSocketTask();
+  const ws = connectedManager(task);
+  const start = ws.beginVoiceTurn('m-end-inflight');
+  task.succeed(0);
+  await start;
+
+  const end = ws.finishVoiceTurn('m-end-inflight');
+  await Promise.resolve();
+  assert.strictEqual(task.sent.length, 2, 'End must be in flight');
+  await rejects(ws.abortVoiceTurn('m-end-inflight'), /voice turn end already in flight/);
+  assert.strictEqual(task.sent.length, 2, 'Abort must not follow an in-flight End');
+
+  task.succeed(1);
+  await end;
+  assert.deepStrictEqual(task.payloads().slice(-1), [
+    { type: 'listen', mode: 'manual', state: 'stop', turn_id: 'm-end-inflight' },
+  ]);
+}
+
+async function testAbortCancelsAnEndQueuedBehindAudio() {
+  const task = makeSocketTask();
+  const ws = connectedManager(task);
+  const start = ws.beginVoiceTurn('m-end-queued');
+  task.succeed(0);
+  await start;
+
+  const audio = ws.sendVoiceFrame('m-end-queued', new ArrayBuffer(1));
+  const end = ws.finishVoiceTurn('m-end-queued');
+  end.catch(() => {});
+  await Promise.resolve();
+  assert.strictEqual(task.sent.length, 2, 'Audio is the only in-flight send before Abort');
+
+  const abort = ws.abortVoiceTurn('m-end-queued');
+  assert.strictEqual(task.sent.length, 3, 'Abort replaces queued End as the sole terminal packet');
+  assert.deepStrictEqual(task.payloads()[2], { type: 'abort', turn_id: 'm-end-queued' });
+  task.succeed(1);
+  task.succeed(2);
+  await audio;
+  await rejects(end, /voice turn terminal cancelled/);
+  await abort;
+  assert.strictEqual(task.sent.length, 3, 'cancelled End must never be invoked');
 }
 
 async function testListenFeedbackAndLegacyImmediateSends() {
@@ -255,6 +351,10 @@ async function runTests() {
   await testSerialVoiceSends();
   await testFailureIsStickyAndAbortIsDirect();
   await testTeardownRejectsQueuedWorkWithoutReplay();
+  await testInvalidationRejectsInflightAndQueuedWorkPromptly();
+  await testCurrentCloseRejectsInflightAndQueuedWorkPromptly();
+  await testAbortDoesNotFollowAnInflightEnd();
+  await testAbortCancelsAnEndQueuedBehindAudio();
   await testListenFeedbackAndLegacyImmediateSends();
   await testConnectionGenerationsIgnoreStaleHandlers();
   await testProtocolDispatchAndFailurePaths();

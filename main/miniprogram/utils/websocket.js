@@ -211,7 +211,7 @@ class WebSocketManager {
       const session = this._createVoiceSession(turnId);
       return this._sendOnSession(session, JSON.stringify({
         type: 'listen', mode: 'manual', state: 'start', turn_id: turnId,
-      }));
+      }), 'start');
     } catch (err) {
       return this._rejectVoicePromise(err);
     }
@@ -220,15 +220,19 @@ class WebSocketManager {
   sendVoiceFrame(turnId, frame) {
     const session = this._voiceTurns.get(turnId);
     if (!session || !frame) return this._rejectVoicePromise(new Error('voice turn unavailable'));
-    return this._sendOnSession(session, frame);
+    if (session.terminal) return this._rejectVoicePromise(new Error('voice turn ending'));
+    return this._sendOnSession(session, frame, 'frame');
   }
 
   finishVoiceTurn(turnId) {
     const session = this._voiceTurns.get(turnId);
     if (!session) return this._rejectVoicePromise(new Error('voice turn unavailable'));
+    if (session.terminal) return this._rejectVoicePromise(new Error('voice turn ending'));
+    session.terminal = 'end';
+    session.phase = 'end-queued';
     const done = this._sendOnSession(session, JSON.stringify({
       type: 'listen', mode: 'manual', state: 'stop', turn_id: turnId,
-    }));
+    }), 'end');
     const result = done.finally(() => {
       session.closed = true;
       this._voiceTurns.delete(turnId);
@@ -240,8 +244,16 @@ class WebSocketManager {
   abortVoiceTurn(turnId) {
     const session = this._voiceTurns.get(turnId);
     if (!session) return this._rejectVoicePromise(new Error('voice turn unavailable'));
+    if (session.terminal === 'end' && session.phase === 'end-inflight') {
+      return this._rejectVoicePromise(new Error('voice turn end already in flight'));
+    }
+    if (session.terminal === 'abort') {
+      return this._rejectVoicePromise(new Error('voice turn unavailable'));
+    }
 
     this._voiceTurns.delete(turnId);
+    session.terminal = 'abort';
+    session.phase = 'abort-inflight';
     session.closed = true;
     if (!this._isCurrentSocket(session.task, session.generation) || this.state !== 'connected') {
       return this._rejectVoicePromise(new Error('stale voice socket generation'));
@@ -522,6 +534,11 @@ class WebSocketManager {
       throw new Error('voice socket unavailable');
     }
     if (this._voiceTurns.has(turnId)) throw new Error('duplicate voice turn');
+    let rejectInvalidation;
+    const invalidation = new Promise((_, reject) => {
+      rejectInvalidation = reject;
+    });
+    invalidation.catch(() => {});
     const session = {
       turnId,
       task: this.socket,
@@ -530,19 +547,28 @@ class WebSocketManager {
       failure: null,
       closed: false,
       hasQueuedSend: false,
+      terminal: null,
+      phase: 'active',
+      invalidation,
+      rejectInvalidation,
     };
     this._voiceTurns.set(turnId, session);
     return session;
   }
 
-  _sendOnSession(session, data) {
+  _sendOnSession(session, data, operationType) {
     const send = () => {
+      if (operationType === 'end' && session.terminal !== 'end') {
+        if (session.failure) throw session.failure;
+        throw new Error('voice turn terminal cancelled');
+      }
       if (session.failure) throw session.failure;
       if (session.closed || !this._isCurrentSocket(session.task, session.generation) ||
           this.state !== 'connected') {
         throw new Error('stale voice socket generation');
       }
-      return this._sendOnTaskAsync(session.task, data);
+      session.phase = operationType + '-inflight';
+      return Promise.race([this._sendOnTaskAsync(session.task, data), session.invalidation]);
     };
     let operation;
     if (session.hasQueuedSend) {
@@ -578,6 +604,7 @@ class WebSocketManager {
       if (session.task !== task || session.generation !== generation) return;
       session.closed = true;
       if (!session.failure) session.failure = error;
+      session.rejectInvalidation(session.failure);
       this._voiceTurns.delete(turnId);
     });
   }

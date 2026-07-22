@@ -68,9 +68,11 @@ class ASRProvider(ASRProviderBase):
     async def open_audio_channels(self, conn):
         await super().open_audio_channels(conn)
 
-    async def receive_audio(self, conn: "ConnectionHandler", audio, audio_have_voice):
+    async def receive_audio(
+        self, conn: "ConnectionHandler", audio, audio_have_voice, turn_id=None
+    ):
         # 先调用父类方法处理基础逻辑
-        await super().receive_audio(conn, audio, audio_have_voice)
+        await super().receive_audio(conn, audio, audio_have_voice, turn_id=turn_id)
         
         # 如果本次有声音，且之前没有建立连接
         if audio_have_voice and self.asr_ws is None and not self.is_processing:
@@ -119,7 +121,9 @@ class ASRProvider(ASRProviderBase):
                     raise e
 
                 # 启动接收ASR结果的异步任务
-                self.forward_task = asyncio.create_task(self._forward_asr_results(conn))
+                self.forward_task = asyncio.create_task(
+                    self._forward_asr_results(conn, turn_id=turn_id)
+                )
 
                 # 发送缓存的音频数据
                 if conn.asr_audio and len(conn.asr_audio) > 0:
@@ -160,7 +164,7 @@ class ASRProvider(ASRProviderBase):
             except Exception as e:
                 logger.bind(tag=TAG).info(f"发送音频数据时发生错误: {e}")
 
-    async def _forward_asr_results(self, conn: "ConnectionHandler"):
+    async def _forward_asr_results(self, conn: "ConnectionHandler", turn_id=None):
         try:
             while self.asr_ws and not conn.stop_event.is_set():
                 # 获取当前连接的音频数据
@@ -175,6 +179,11 @@ class ASRProvider(ASRProviderBase):
                         # 检查是否是错误码1013（无有效语音）
                         if "code" in payload and payload["code"] == 1013:
                             # 静默处理，不记录错误日志
+                            if turn_id is not None and conn.client_voice_stop:
+                                await self.handle_voice_stop(
+                                    conn, audio_data, turn_id=turn_id
+                                )
+                                break
                             continue
 
                         if "result" in payload:
@@ -191,7 +200,9 @@ class ASRProvider(ASRProviderBase):
                                 logger.bind(tag=TAG).error(f"识别文本：空")
                                 self.text = ""
                                 if len(audio_data) > 15:  # 确保有足够音频数据
-                                    await self.handle_voice_stop(conn, audio_data)
+                                    await self.handle_voice_stop(
+                                        conn, audio_data, turn_id=turn_id
+                                    )
                                 break
 
                             # 专门处理没有文本的识别结果（手动模式下可能已经识别完成但是没松按键）
@@ -202,7 +213,9 @@ class ASRProvider(ASRProviderBase):
 
                                 if conn.client_listen_mode == "manual" and conn.client_voice_stop and len(audio_data) > 15:
                                     logger.bind(tag=TAG).debug("消息结束收到停止信号，触发处理")
-                                    await self.handle_voice_stop(conn, audio_data)
+                                    await self.handle_voice_stop(
+                                        conn, audio_data, turn_id=turn_id
+                                    )
                                     break
 
                             for utterance in utterances:
@@ -222,14 +235,16 @@ class ASRProvider(ASRProviderBase):
                                         # 在接收消息中途时收到停止信号
                                         if conn.client_voice_stop and len(audio_data) > 0:
                                             logger.bind(tag=TAG).debug("消息中途收到停止信号，触发处理")
-                                            await self.handle_voice_stop(conn, audio_data)
+                                            await self.handle_voice_stop(
+                                                conn, audio_data, turn_id=turn_id
+                                            )
                                         break
                                     else:
                                         # 自动模式下直接覆盖
                                         self.text = current_text
                                         if len(audio_data) > 15:  # 确保有足够音频数据
                                             await self.handle_voice_stop(
-                                                conn, audio_data
+                                                conn, audio_data, turn_id=turn_id
                                             )
                                     break
                         elif "error" in payload:
@@ -271,19 +286,22 @@ class ASRProvider(ASRProviderBase):
     async def _send_stop_request(self):
         """发送最后一个音频帧以通知服务器结束"""
         self._is_stopping = True  # 先标记为停止状态，阻止后续音频发送
-        if self.asr_ws:
-            try:
-                # 发送结束标记的音频帧（gzip压缩的空数据）
-                empty_payload = gzip.compress(b"")
-                last_audio_request = bytearray(
-                    self.generate_last_audio_default_header()
-                )
-                last_audio_request.extend(len(empty_payload).to_bytes(4, "big"))
-                last_audio_request.extend(empty_payload)
-                await self.asr_ws.send(last_audio_request)
-                logger.bind(tag=TAG).debug("已发送结束音频帧")
-            except Exception as e:
-                logger.bind(tag=TAG).debug(f"发送结束音频帧时出错: {e}")
+        if not self.asr_ws:
+            return False
+        try:
+            # 发送结束标记的音频帧（gzip压缩的空数据）
+            empty_payload = gzip.compress(b"")
+            last_audio_request = bytearray(
+                self.generate_last_audio_default_header()
+            )
+            last_audio_request.extend(len(empty_payload).to_bytes(4, "big"))
+            last_audio_request.extend(empty_payload)
+            await self.asr_ws.send(last_audio_request)
+            logger.bind(tag=TAG).debug("已发送结束音频帧")
+            return True
+        except Exception as e:
+            logger.bind(tag=TAG).debug(f"发送结束音频帧时出错: {e}")
+            return False
 
     def construct_request(self, reqid):
         req = {

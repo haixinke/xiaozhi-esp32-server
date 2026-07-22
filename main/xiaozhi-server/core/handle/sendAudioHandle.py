@@ -309,8 +309,12 @@ async def send_tts_message(conn: "ConnectionHandler", state, text=None):
     await conn.websocket.send(json.dumps(message))
 
 
-async def send_stt_message(conn: "ConnectionHandler", text):
+async def send_stt_message(conn: "ConnectionHandler", text, turn_id=None):
     """发送 STT 状态消息"""
+    if turn_id is not None:
+        from core.handle.voiceTurnHandle import is_voice_turn_active
+        if not is_voice_turn_active(conn, turn_id):
+            return
     end_prompt_str = conn.config.get("end_prompt", {}).get("prompt")
     if end_prompt_str and end_prompt_str == text:
         await send_tts_message(conn, "start")
@@ -332,9 +336,10 @@ async def send_stt_message(conn: "ConnectionHandler", text):
         # 如果不是JSON格式，直接使用原始文本
         display_text = text
     stt_text = textUtils.get_string_no_punctuation_or_emoji(display_text)
-    await conn.websocket.send(
-        json.dumps({"type": "stt", "text": stt_text, "session_id": conn.session_id})
-    )
+    message = {"type": "stt", "text": stt_text, "session_id": conn.session_id}
+    if turn_id is not None:
+        message["turn_id"] = turn_id
+    await conn.websocket.send(json.dumps(message))
     await send_tts_message(conn, "start")
     # 发送start消息后客户端状态会处于说话中状态，同步服务端状态
     conn.client_is_speaking = True

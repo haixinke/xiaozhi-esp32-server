@@ -39,6 +39,11 @@ Page({
   _isAiSpeaking: false,
   _aiSpeakingTimer: null,
   _restartingRecord: false,
+  _mediaFailureHandled: false,
+  _isLeaving: false,
+  _helloWaitTimer: null,
+  _helloWaitHandler: null,
+  _helloWaitSocket: null,
   _destroyed: false,
 
   audioManager: null,
@@ -46,6 +51,9 @@ Page({
   _innerAudioContext: null,
 
   onLoad() {
+    this._mediaFailureHandled = false;
+    this._isLeaving = false;
+    this._destroyed = false;
     this._mgr = VoiceCallManager();
     this._unsubscribe = (state) => this._syncState(state);
     this._mgr.onStateChange(this._unsubscribe);
@@ -199,16 +207,17 @@ Page({
         logger.warn('[VoiceCall Audio:' + scope + ']', err);
         if (scope === 'codec') {
           wx.showToast({ title: '语音引擎加载失败，请重启微信后重试', icon: 'none' });
+        } else if (scope === 'record') {
+          this._failActiveCall('录音异常，请重新发起通话');
         }
       },
     });
 
     this.wsManager = new WebSocketManager({
       onStateChange: (wsState) => {
-        if (wsState === 'disconnected' && this._mgr.getState().state === 'connected') {
+        if (!this._isLeaving && wsState === 'disconnected' && this._mgr.getState().state === 'connected') {
           wx.showToast({ title: '通话已断开', icon: 'none' });
-          this._mgr.hangup();
-          wx.navigateBack();
+          this._hangupAndNavigateBack();
         }
       },
       onMessage: (msg) => this._handleWSMessage(msg),
@@ -225,6 +234,7 @@ Page({
 
   _waitForHelloAndStart() {
     if (!this.wsManager) return;
+    this._clearHelloWait();
     if (this.wsManager.isConnected()) {
       this._startRecordingAfterReady();
       return;
@@ -239,39 +249,60 @@ Page({
         clearTimeout(timeoutTimer);
         timeoutTimer = null;
       }
-      if (handler && this.wsManager) {
-        this.wsManager.offStateChange(handler);
+      if (handler && waitSocket) {
+        waitSocket.offStateChange(handler);
       }
+      if (this._helloWaitTimer) this._helloWaitTimer = null;
+      if (this._helloWaitHandler === handler) this._helloWaitHandler = null;
+      if (this._helloWaitSocket === waitSocket) this._helloWaitSocket = null;
       handler = null;
     };
+    const waitSocket = this.wsManager;
 
     handler = (state) => {
       if (state !== 'connected') return;
       cleanup();
+      if (this._destroyed || this._isLeaving) return;
       this._startRecordingAfterReady();
     };
 
     timeoutTimer = setTimeout(() => {
       cleanup();
+      if (this._destroyed || this._isLeaving) return;
       wx.showToast({ title: '通话连接超时', icon: 'none' });
-      this._mgr.hangup();
-      wx.navigateBack();
+      this._hangupAndNavigateBack();
     }, TIMEOUT_MS);
 
-    this.wsManager.onStateChange(handler);
+    this._helloWaitTimer = timeoutTimer;
+    this._helloWaitHandler = handler;
+    this._helloWaitSocket = waitSocket;
+    waitSocket.onStateChange(handler);
+  },
+
+  _clearHelloWait() {
+    if (this._helloWaitTimer) clearTimeout(this._helloWaitTimer);
+    if (this._helloWaitHandler && this._helloWaitSocket) {
+      this._helloWaitSocket.offStateChange(this._helloWaitHandler);
+    }
+    this._helloWaitTimer = null;
+    this._helloWaitHandler = null;
+    this._helloWaitSocket = null;
   },
 
   _startRecordingAfterReady() {
     if (!this.audioManager || !this.wsManager) return;
     this.audioManager.ready().then(() => {
-      if (!this.audioManager || !this.wsManager) return;
-      this.audioManager.startRecord();
+      if (this._destroyed || this._isLeaving || !this.audioManager || !this.wsManager) return;
+      if (this.audioManager.startRecord() === false) {
+        this._failActiveCall('无法启动录音，请重新发起通话');
+        return;
+      }
       this.wsManager.sendListenStart('auto');
     }).catch((err) => {
+      if (this._destroyed || this._isLeaving) return;
       logger.error('AudioManager not ready:', err);
       wx.showToast({ title: '音频引擎未就绪', icon: 'none' });
-      this._mgr.hangup();
-      wx.navigateBack();
+      this._hangupAndNavigateBack();
     });
   },
 
@@ -293,8 +324,7 @@ Page({
         }
         break;
       case 'goodbye':
-        this._mgr.hangup();
-        wx.navigateBack();
+        this._hangupAndNavigateBack();
         break;
       default:
         break;
@@ -303,15 +333,42 @@ Page({
 
   _restartRecord() {
     if (!this.audioManager || !this.wsManager) return;
+    const audioManager = this.audioManager;
+    const wsManager = this.wsManager;
     this._restartingRecord = true;
-    this.audioManager.stopRecord();
-    this.wsManager.sendListenStop();
-    setTimeout(() => {
-      this._restartingRecord = false;
-      if (!this.audioManager || !this.wsManager) return;
-      this.audioManager.startRecord();
-      this.wsManager.sendListenStart('auto');
-    }, 100);
+    wsManager.sendListenStop();
+    Promise.resolve()
+      .then(() => audioManager.stopRecord({ flush: false, reason: 'voice-call-restart' }))
+      .then(() => {
+        this._restartingRecord = false;
+        if (this._destroyed || this._isLeaving ||
+            this.audioManager !== audioManager || this.wsManager !== wsManager) return;
+        if (!audioManager.startRecord()) {
+          throw new Error('recorder unavailable after stop');
+        }
+        wsManager.sendListenStart('auto');
+      })
+      .catch((err) => {
+        this._restartingRecord = false;
+        if (this._destroyed || this._isLeaving) return;
+        logger.warn('[VoiceCall] restart recorder failed:', err);
+        this._failActiveCall('录音异常，请重新发起通话');
+      });
+  },
+
+  _failActiveCall(message) {
+    if (this._destroyed || this._isLeaving || this._mediaFailureHandled) return;
+    this._mediaFailureHandled = true;
+    wx.showToast({ title: message, icon: 'none' });
+    this._hangupAndNavigateBack();
+  },
+
+  _hangupAndNavigateBack() {
+    if (this._destroyed || this._isLeaving) return;
+    this._isLeaving = true;
+    this._clearHelloWait();
+    if (this._mgr) this._mgr.hangup();
+    wx.navigateBack();
   },
 
   onCancelCall() {
@@ -320,14 +377,12 @@ Page({
       this._callTimer = null;
     }
     this._stopRingback();
-    this._mgr.hangup();
-    wx.navigateBack();
+    this._hangupAndNavigateBack();
   },
 
   onHangup() {
     this._stopRingback();
-    this._mgr.hangup();
-    wx.navigateBack();
+    this._hangupAndNavigateBack();
   },
 
   onToggleMute() {
@@ -336,6 +391,7 @@ Page({
 
   _cleanup() {
     this._destroyed = true;
+    this._clearHelloWait();
     this._stopRingback();
     if (this._callTimer) {
       clearTimeout(this._callTimer);

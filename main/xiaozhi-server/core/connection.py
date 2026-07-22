@@ -44,6 +44,7 @@ from core.utils.prompt_manager import PromptManager
 from core.utils.voiceprint_provider import VoiceprintProvider
 from core.utils.util import get_system_error_response
 from core.utils import textUtils
+from core.handle.voiceTurnHandle import enqueue_voice_audio, shutdown_voice_turn
 
 
 TAG = __name__
@@ -205,6 +206,21 @@ class ConnectionHandler:
         # 所以涉及到ASR的变量，需要在这里定义，属于connection的私有变量
         self.asr_audio = []
         self.asr_audio_queue = queue.Queue(maxsize=100)  # 限制音频队列大小，约100帧PCM数据
+        # manual v2 uses a separate ordered queue so legacy/auto queue behavior is unchanged.
+        self.voice_turn_queue = queue.Queue(maxsize=100)
+        self.voice_turn_v2_enabled = False
+        self.voice_turn_id = None
+        self.voice_turn_ingress_state = "idle"
+        self.voice_turn_consumer_id = None
+        self.voice_turn_frames = []
+        self.voice_turn_received_frames = 0
+        self.voice_turn_received_bytes = 0
+        self.voice_turn_finalize_task = None
+        self.voice_turn_priority_thread = None
+        self.voice_turn_event_future = None
+        self.voice_turn_event_task = None
+        self.voice_turn_done = asyncio.Event()
+        self.voice_turn_done.set()
         self.current_speaker = None  # 存储当前说话人
 
         # llm相关变量
@@ -483,6 +499,8 @@ class ConnectionHandler:
 
     def _put_asr_audio(self, audio_data):
         """将音频数据放入ASR队列，队列满时丢弃最旧数据"""
+        if enqueue_voice_audio(self, audio_data):
+            return
         if self.asr_audio_queue.full():
             try:
                 self.asr_audio_queue.get_nowait()
@@ -1494,6 +1512,8 @@ Session ID: {self.session_id}
             if self.stop_event:
                 self.stop_event.set()
 
+            await shutdown_voice_turn(self)
+
             # 清空任务队列
             self.clear_queues()
 
@@ -1549,6 +1569,12 @@ Session ID: {self.session_id}
 
     def clear_queues(self):
         """清空所有任务队列"""
+        while True:
+            try:
+                self.voice_turn_queue.get_nowait()
+            except queue.Empty:
+                break
+
         if self.tts:
             self.logger.bind(tag=TAG).debug(
                 f"开始清理: TTS队列大小={self.tts.tts_text_queue.qsize()}, 音频队列大小={self.tts.tts_audio_queue.qsize()}"

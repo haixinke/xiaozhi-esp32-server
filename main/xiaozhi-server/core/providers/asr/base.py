@@ -19,6 +19,14 @@ from core.handle.receiveAudioHandle import startToChat
 from core.handle.reportHandle import enqueue_asr_report
 from core.utils.util import remove_punctuation_and_length
 from core.handle.receiveAudioHandle import handleAudioMessage
+from core.handle.voiceTurnHandle import (
+    complete_voice_turn,
+    fail_voice_turn_event,
+    handle_voice_turn_event,
+    is_voice_turn_active,
+    run_voice_turn_event,
+    send_voice_turn_ack,
+)
 from typing import Optional, Tuple, List, NamedTuple, TYPE_CHECKING
 
 
@@ -39,7 +47,6 @@ class ASRProviderBase(ABC):
             target=self.asr_text_priority_thread, args=(conn,), daemon=True
         )
         conn.asr_priority_thread.start()
-
     # 有序处理ASR音频
     def asr_text_priority_thread(self, conn: "ConnectionHandler"):
         while not conn.stop_event.is_set():
@@ -58,8 +65,41 @@ class ASRProviderBase(ABC):
                 )
                 continue
 
+    def voice_turn_priority_thread(self, conn: "ConnectionHandler"):
+        while not conn.stop_event.is_set():
+            try:
+                event = conn.voice_turn_queue.get(timeout=1)
+                future = asyncio.run_coroutine_threadsafe(
+                    run_voice_turn_event(conn, event),
+                    conn.loop,
+                )
+                conn.voice_turn_event_future = future
+                try:
+                    future.result()
+                finally:
+                    if conn.voice_turn_event_future is future:
+                        conn.voice_turn_event_future = None
+            except queue.Empty:
+                continue
+            except Exception as e:
+                logger.bind(tag=TAG).error(
+                    f"处理语音轮次失败: {type(e).__name__}, 堆栈: {traceback.format_exc()}"
+                )
+                if "event" in locals():
+                    try:
+                        failure = asyncio.run_coroutine_threadsafe(
+                            fail_voice_turn_event(conn, event.turn_id),
+                            conn.loop,
+                        )
+                        failure.result(timeout=2)
+                    except Exception:
+                        logger.bind(tag=TAG).error("语音轮次失败收口未完成")
+                continue
+
     # 接收音频
-    async def receive_audio(self, conn: "ConnectionHandler", audio, audio_have_voice):
+    async def receive_audio(
+        self, conn: "ConnectionHandler", audio, audio_have_voice, turn_id=None
+    ):
         if conn.client_listen_mode == "manual":
             # 手动模式：缓存音频用于ASR识别
             conn.asr_audio.append(audio)
@@ -81,8 +121,15 @@ class ASRProviderBase(ABC):
                     await self.handle_voice_stop(conn, asr_audio_task)
 
     # 处理语音停止
-    async def handle_voice_stop(self, conn: "ConnectionHandler", asr_audio_task: List[bytes]):
+    async def handle_voice_stop(
+        self,
+        conn: "ConnectionHandler",
+        asr_audio_task: List[bytes],
+        turn_id: str | None = None,
+    ):
         """并行处理ASR和声纹识别"""
+        if turn_id is not None and not is_voice_turn_active(conn, turn_id):
+            return "cancelled"
         try:
             total_start_time = time.monotonic()
 
@@ -165,18 +212,35 @@ class ASRProviderBase(ABC):
 
             # 检查文本长度
             text_len, _ = remove_punctuation_and_length(content_for_length_check)
+            if turn_id is not None and not is_voice_turn_active(conn, turn_id):
+                return "cancelled"
             self.stop_ws_connection()
 
             if text_len > 0:
+                if turn_id is not None and not is_voice_turn_active(conn, turn_id):
+                    return "cancelled"
                 audio_snapshot = asr_audio_task.copy()
-                enqueue_asr_report(conn, enhanced_text, audio_snapshot)
+                enqueue_asr_report(
+                    conn, enhanced_text, audio_snapshot, turn_id=turn_id
+                )
                 # 使用自定义模块进行上报
-                await startToChat(conn, enhanced_text)
+                await startToChat(conn, enhanced_text, turn_id=turn_id)
+                if turn_id is not None and is_voice_turn_active(conn, turn_id):
+                    complete_voice_turn(conn, turn_id)
+                return "recognized"
+            if turn_id is not None and is_voice_turn_active(conn, turn_id):
+                await send_voice_turn_ack(conn, turn_id, "no_speech")
+                complete_voice_turn(conn, turn_id)
+            return "no_speech"
         except Exception as e:
             logger.bind(tag=TAG).error(f"处理语音停止失败: {e}")
             import traceback
 
             logger.bind(tag=TAG).debug(f"异常详情: {traceback.format_exc()}")
+            if turn_id is not None and is_voice_turn_active(conn, turn_id):
+                await send_voice_turn_ack(conn, turn_id, "error")
+                complete_voice_turn(conn, turn_id)
+            return "error"
 
     def _build_enhanced_text(self, text: str, speaker_name: Optional[str]) -> str:
         """构建包含说话人信息的文本（仅用于纯文本ASR）"""

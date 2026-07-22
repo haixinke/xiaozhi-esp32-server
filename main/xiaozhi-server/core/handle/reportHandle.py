@@ -207,7 +207,12 @@ def enqueue_tool_report(conn: "ConnectionHandler", tool_name: str, tool_input: d
         conn.logger.bind(tag=TAG).error(f"加入工具上报队列失败: {e}")
 
 
-def enqueue_asr_report(conn: "ConnectionHandler", text: str, opus_data: bytes | None):
+def enqueue_asr_report(
+    conn: "ConnectionHandler",
+    text: str,
+    opus_data: bytes | None,
+    turn_id=None,
+):
     """将ASR数据加入上报队列
 
     Args:
@@ -215,6 +220,10 @@ def enqueue_asr_report(conn: "ConnectionHandler", text: str, opus_data: bytes | 
         text: 合成文本
         opus_data: opus音频数据
     """
+    if turn_id is not None:
+        from core.handle.voiceTurnHandle import is_voice_turn_active
+        if not is_voice_turn_active(conn, turn_id):
+            return
     if not conn.read_config_from_api or conn.need_bind or not conn.report_asr_enable:
         return
     if conn.chat_history_conf == 0:

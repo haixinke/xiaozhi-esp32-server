@@ -11,6 +11,7 @@
 
 const AudioManager = require('../../utils/audio');
 const WebSocketManager = require('../../utils/websocket');
+const VoiceInputController = require('../../utils/voice-input-controller');
 const logger = require('../../utils/logger');
 const { get, del } = require('../../utils/request');
 const { getTheme, applyTheme } = require('../../utils/theme');
@@ -90,6 +91,7 @@ Page({
   // 非响应式资源，挂在 this 上以避免 setData 开销
   audioManager: null,
   wsManager: null,
+  voiceInputController: null,
   _bootTimer: null,
   _idleTimer: null,
   _pendingText: '',
@@ -251,7 +253,7 @@ Page({
   },
 
   onHide() {
-    // 切后台时保持连接，交给系统调度
+    if (this.voiceInputController) this.voiceInputController.cancel('hide');
   },
 
   // -------------------------------------------------------------------------
@@ -318,6 +320,7 @@ Page({
 
     this._initAudio();
     this._initWebSocketManager();
+    this._initVoiceInputController();
     // 进入页面即自动连接，呈现「在场」；空闲超时会自动断开以控成本
     this._connectToChat();
 
@@ -349,27 +352,22 @@ Page({
   _initAudio() {
     this.audioManager = new AudioManager({
       onAudioFrame: (frame) => {
-        // 录音产生的 Opus 帧 → 通过 WebSocket 发送
-        if (this.wsManager) {
-          this.wsManager.sendAudioFrame(frame);
-        }
+        if (this.voiceInputController) this.voiceInputController.handleAudioFrame(frame);
       },
       onRecordStart: () => {
-        this.setData({ recording: true });
+        if (this.voiceInputController) this.voiceInputController.handleRecordStart();
       },
-      onRecordStop: () => {
-        this.setData({ recording: false, recordCancelled: false });
-      },
+      onRecordStop: () => {},
       onPlayEnd: () => {
         // 播放队列清空：若还在 speaking 状态则可视为补完
       },
       onError: (err, scope) => {
         logger.warn('[Audio:' + scope + ']', err);
         if (scope === 'record') {
-          // 录音启动失败（常见于麦克风权限未授予，RecorderManager 报 file error）：
-          // 复位录音状态并明确提示，避免用户面对“按住无反应”无法定位。
-          this.setData({ recording: false, recordCancelled: false });
-          wx.showToast({ title: '录音失败，请在设置中开启麦克风权限', icon: 'none' });
+          this._handleRecordError(err);
+          if (this.voiceInputController) this.voiceInputController.handleAudioFailure(scope);
+        } else if (scope === 'encode') {
+          if (this.voiceInputController) this.voiceInputController.handleAudioFailure(scope);
         } else if (scope === 'codec') {
           // 语音编码引擎回退到 stub（多见于部分 Android 机型 WASM 不可用），
           // 此时语音无法被服务端识别，明确提示用户。
@@ -387,6 +385,12 @@ Page({
   _initWebSocketManager() {
     this.wsManager = new WebSocketManager({
       onStateChange: (state) => {
+        if (this.voiceInputController) {
+          this.voiceInputController.handleSocketState(
+            state,
+            this.wsManager.getConnectionGeneration(),
+          );
+        }
         this.setData({ connectionState: state });
         if (state === 'connected') {
           // 连接建立后开始空闲计时
@@ -414,10 +418,35 @@ Page({
           }
         }
       },
-      onMessage: (msg) => this._handleWSMessage(msg),
+      onMessage: (msg) => {
+        if (this.voiceInputController) this.voiceInputController.handleMessage(msg);
+        this._handleWSMessage(msg);
+      },
       onError: (err, scope) => {
         logger.warn('[WS:' + scope + ']', err && err.message ? err.message : err);
       },
+    });
+  },
+
+  _initVoiceInputController() {
+    if (!this.audioManager || !this.wsManager || this.voiceInputController) return;
+    this.voiceInputController = new VoiceInputController({
+      audio: this.audioManager,
+      socket: this.wsManager,
+      onStateChange: (state) => this.setData({
+        recording: state === 'starting' || state === 'recording' || state === 'stopping',
+        recordCancelled: state === 'cancelling' ? true : this.data.recordCancelled,
+      }),
+      onWaiting: () => this.setData({
+        recording: false,
+        recordCancelled: false,
+        chatState: STATE_THINKING,
+      }),
+      onTerminal: (outcome) => {
+        if (outcome !== 'recognized') this.setData({ chatState: STATE_IDLE });
+        this.setData({ recording: false, recordCancelled: false });
+      },
+      onUserError: (title) => wx.showToast({ title, icon: 'none' }),
     });
   },
 
@@ -812,18 +841,12 @@ Page({
     });
   },
 
-  async onToggleInputMode() {
+  onToggleInputMode() {
     if (!this.data.hasVoiceInput) {
       this._showContractPopup('签订契约后即可使用语音输入与女友聊天');
       return;
     }
     const next = this.data.inputMode === 'text' ? 'voice' : 'text';
-    // 切到语音模式前先确保麦克风权限，否则清缓存后授权丢失会导致
-    // RecorderManager.start 报 file error，录不出任何音频。
-    if (next === 'voice') {
-      const permitted = await this._ensureRecordPermission();
-      if (!permitted) return;
-    }
     this.setData({ inputMode: next });
   },
 
@@ -990,6 +1013,22 @@ Page({
     return features.indexOf('voice_call') !== -1;
   },
 
+  _handleRecordError(err) {
+    this.setData({ recording: false, recordCancelled: false });
+    wx.getSetting({
+      success: (res) => {
+        const auth = res.authSetting && res.authSetting['scope.record'];
+        if (auth === false) {
+          this._openRecordSettings(() => {});
+          return;
+        }
+        logger.warn('录音启动失败:', err && err.message);
+        wx.showToast({ title: '录音启动失败，请重试', icon: 'none' });
+      },
+      fail: () => wx.showToast({ title: '录音启动失败，请重试', icon: 'none' }),
+    });
+  },
+
   _ensureRecordPermission() {
     return new Promise((resolve) => {
       wx.getSetting({
@@ -1063,58 +1102,32 @@ Page({
 
     const touch = (e.touches && e.touches[0]) || {};
     this._voiceStartY = touch.clientY || 0;
-    this.setData({ recording: true, recordCancelled: false });
     this._resetIdleTimer();
-
-    // 开始录音并通知服务端开始监听
-    if (this.audioManager) this.audioManager.startRecord();
-    if (this.wsManager) this.wsManager.sendListenStart();
+    if (this.voiceInputController) this.voiceInputController.press();
   },
 
   onVoiceTouchMove(e) {
-    if (!this.data.recording) return;
+    if (!this.voiceInputController) return;
     const touch = (e.touches && e.touches[0]) || {};
     const dy = this._voiceStartY - (touch.clientY || 0);
     const cancelled = dy > 80;
     if (cancelled !== this.data.recordCancelled) {
       this.setData({ recordCancelled: cancelled });
     }
+    this.voiceInputController.setCancelled(cancelled);
   },
 
   onVoiceTouchEnd() {
-    if (!this.data.recording) return;
-    const cancelled = this.data.recordCancelled;
-
-    // 停止录音
-    if (this.audioManager) this.audioManager.stopRecord();
-
-    if (cancelled) {
-      // 取消：中断服务端处理
-      if (this.wsManager) this.wsManager.sendAbort();
-      this.setData({ recording: false, recordCancelled: false });
-    } else {
-      // 正常发送：通知服务端停止监听
-      if (this.wsManager) this.wsManager.sendListenStop();
-      // 必须复位 recording，否则后续 touchcancel 会通过其守卫误发 abort，
-      // 中断刚由 listen stop 启动的 ASR，导致用户说话无回应。
-      this.setData({ recording: false, recordCancelled: false, chatState: STATE_THINKING });
-    }
+    if (this.voiceInputController) return this.voiceInputController.release();
   },
 
   onVoiceTouchCancel() {
-    if (!this.data.recording) return;
-    if (this.audioManager) this.audioManager.stopRecord();
-    if (this.wsManager) this.wsManager.sendAbort();
-    this.setData({ recording: false, recordCancelled: false });
+    if (this.voiceInputController) return this.voiceInputController.cancel('touchcancel');
   },
 
   // -------------------------------------------------------------------------
   // 工具
   // -------------------------------------------------------------------------
-
-  _sendAbort() {
-    try { this.wsManager && this.wsManager.sendAbort(); } catch (_) {}
-  },
 
   // 语音模式专用就绪校验：语音不做音频缓冲补发，未连接时触发重连并提示用户重按
   _isReadyForAction() {
@@ -1163,6 +1176,7 @@ Page({
   },
 
   _handleAppHide() {
+    if (this.voiceInputController) this.voiceInputController.cancel('app-hide');
     // 切后台时自动挂断语音通话
     const VoiceCallManager = require('../../utils/voice-call-manager');
     const mgr = VoiceCallManager();
@@ -1211,6 +1225,10 @@ Page({
     if (this._appHideHandler && wx.offAppHide) {
       try { wx.offAppHide(this._appHideHandler); } catch (_) {}
       this._appHideHandler = null;
+    }
+    if (this.voiceInputController) {
+      try { this.voiceInputController.destroy(); } catch (_) {}
+      this.voiceInputController = null;
     }
     if (this.wsManager) {
       try { this.wsManager.destroy(); } catch (_) {}

@@ -15,9 +15,17 @@ from core.handle.textMessageHandler import TextMessageHandler
 from core.handle.textMessageType import TextMessageType
 from core.utils.util import remove_punctuation_and_length
 from core.providers.tts.dto.dto import ContentType, TTSMessageDTO, SentenceType
+from core.voice_turn import normalize_turn_id
+from core.handle.voiceTurnHandle import (
+    begin_voice_turn,
+    disable_voice_turn_v2,
+    finish_voice_turn,
+)
 
 
 TAG = __name__
+VALID_LISTEN_MODES = {"auto", "manual", "realtime"}
+VALID_LISTEN_STATES = {"start", "stop", "detect"}
 
 class ListenTextMessageHandler(TextMessageHandler):
     """Listen消息处理器"""
@@ -27,15 +35,52 @@ class ListenTextMessageHandler(TextMessageHandler):
         return TextMessageType.LISTEN
 
     async def handle(self, conn: "ConnectionHandler", msg_json: Dict[str, Any]) -> None:
+        mode = msg_json.get("mode", conn.client_listen_mode)
+        state = msg_json.get("state")
+        turn_id = normalize_turn_id(msg_json.get("turn_id"))
+        if mode not in VALID_LISTEN_MODES or state not in VALID_LISTEN_STATES:
+            conn.logger.bind(tag=TAG).warning("拒绝非法拾音控制消息")
+            return
+        is_v2_start = (
+            mode == "manual"
+            and state == "start"
+            and "turn_id" in msg_json
+        )
+
+        # Drain the old v2 FIFO before changing the shared listen mode. Otherwise
+        # its queued audio could be consumed as auto/legacy input.
+        if (
+            conn.voice_turn_v2_enabled
+            and not is_v2_start
+            and (state == "start" or mode != "manual")
+        ):
+            await disable_voice_turn_v2(conn)
+
         if "mode" in msg_json:
-            conn.client_listen_mode = msg_json["mode"]
+            conn.client_listen_mode = mode
             conn.logger.bind(tag=TAG).debug(
                 f"客户端拾音模式：{conn.client_listen_mode}"
             )
-        if msg_json["state"] == "start":
+
+        if is_v2_start:
+            if turn_id is None:
+                conn.logger.bind(tag=TAG).warning("拒绝非法语音轮次标识")
+                return
+            await begin_voice_turn(conn, turn_id)
+            return
+
+        if conn.voice_turn_v2_enabled:
+            if mode == "manual" and state == "stop":
+                if turn_id is not None:
+                    await finish_voice_turn(conn, turn_id)
+                elif conn.voice_turn_id:
+                    from core.handle.voiceTurnHandle import send_voice_turn_ack
+                    await send_voice_turn_ack(conn, conn.voice_turn_id, "error")
+                return
+        if state == "start":
             # 设备从播放模式切回录音模式,清除所有音频状态和缓冲区
             conn.reset_audio_states()
-        elif msg_json["state"] == "stop":
+        elif state == "stop":
             conn.client_voice_stop = True
             if conn.asr.interface_type == InterfaceType.STREAM:
                 # 流式模式下，发送结束请求
@@ -48,7 +93,7 @@ class ListenTextMessageHandler(TextMessageHandler):
 
                     if len(asr_audio_task) > 0:
                         await conn.asr.handle_voice_stop(conn, asr_audio_task)
-        elif msg_json["state"] == "detect":
+        elif state == "detect":
             conn.client_have_voice = False
             conn.reset_audio_states()
             if "text" in msg_json:

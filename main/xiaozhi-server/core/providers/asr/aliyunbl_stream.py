@@ -55,14 +55,14 @@ class ASRProvider(ASRProviderBase):
     async def open_audio_channels(self, conn):
         await super().open_audio_channels(conn)
 
-    async def receive_audio(self, conn, audio, audio_have_voice):
+    async def receive_audio(self, conn, audio, audio_have_voice, turn_id=None):
         # 先调用父类方法处理基础逻辑
-        await super().receive_audio(conn, audio, audio_have_voice)
+        await super().receive_audio(conn, audio, audio_have_voice, turn_id=turn_id)
 
         # 只在有声音且没有连接时建立连接
         if audio_have_voice and not self.is_processing and not self.asr_ws:
             try:
-                await self._start_recognition(conn)
+                await self._start_recognition(conn, turn_id=turn_id)
             except Exception as e:
                 logger.bind(tag=TAG).error(f"开始识别失败: {str(e)}")
                 await self._cleanup()
@@ -78,7 +78,7 @@ class ASRProvider(ASRProviderBase):
                 logger.bind(tag=TAG).warning(f"发送音频失败: {str(e)}")
                 await self._cleanup()
 
-    async def _start_recognition(self, conn: "ConnectionHandler"):
+    async def _start_recognition(self, conn: "ConnectionHandler", turn_id=None):
         """开始识别会话"""
         try:
             # 如果为手动模式,设置超时时长为最大值
@@ -107,7 +107,9 @@ class ASRProvider(ASRProviderBase):
             logger.bind(tag=TAG).debug("WebSocket连接建立成功")
 
             self.server_ready = False
-            self.forward_task = asyncio.create_task(self._forward_results(conn))
+            self.forward_task = asyncio.create_task(
+                self._forward_results(conn, turn_id=turn_id)
+            )
 
             # 发送run-task指令
             run_task_msg = self._build_run_task_message()
@@ -158,7 +160,7 @@ class ASRProvider(ASRProviderBase):
 
         return message
 
-    async def _forward_results(self, conn: "ConnectionHandler"):
+    async def _forward_results(self, conn: "ConnectionHandler", turn_id=None):
         """转发识别结果"""
         try:
             while not conn.stop_event.is_set():
@@ -213,17 +215,25 @@ class ASRProvider(ASRProviderBase):
                                 # 手动模式下,只有在收到stop信号后才触发处理
                                 if conn.client_voice_stop:
                                     logger.bind(tag=TAG).debug("收到最终识别结果，触发处理")
-                                    await self.handle_voice_stop(conn, audio_data)
+                                    await self.handle_voice_stop(
+                                        conn, audio_data, turn_id=turn_id
+                                    )
                                     break
                             else:
                                 # 自动模式下直接覆盖
                                 self.text = text
-                                await self.handle_voice_stop(conn, audio_data)
+                                await self.handle_voice_stop(
+                                    conn, audio_data, turn_id=turn_id
+                                )
                                 break
 
                     # 处理task-finished事件
                     elif event == "task-finished":
                         logger.bind(tag=TAG).debug("任务已完成")
+                        if turn_id is not None:
+                            await self.handle_voice_stop(
+                                conn, audio_data, turn_id=turn_id
+                            )
                         break
 
                     # 处理task-failed事件
@@ -231,6 +241,9 @@ class ASRProvider(ASRProviderBase):
                         error_code = header.get("error_code", "UNKNOWN")
                         error_message = header.get("error_message", "未知错误")
                         logger.bind(tag=TAG).error(f"任务失败: {error_code} - {error_message}")
+                        if turn_id is not None:
+                            from core.handle.voiceTurnHandle import fail_voice_turn_event
+                            await fail_voice_turn_event(conn, turn_id)
                         break
 
                 except asyncio.TimeoutError:
@@ -252,34 +265,39 @@ class ASRProvider(ASRProviderBase):
 
     async def _send_stop_request(self):
         """发送停止请求(用于手动模式停止录音)"""
-        if self.asr_ws:
-            try:
-                # 先停止音频发送
-                self.is_processing = False
+        if not self.asr_ws:
+            return False
+        try:
+            # 先停止音频发送
+            self.is_processing = False
 
-                logger.bind(tag=TAG).debug("收到停止请求，发送finish-task指令")
-                await self._send_finish_task()
-            except Exception as e:
-                logger.bind(tag=TAG).error(f"发送停止请求失败: {e}")
+            logger.bind(tag=TAG).debug("收到停止请求，发送finish-task指令")
+            return await self._send_finish_task()
+        except Exception as e:
+            logger.bind(tag=TAG).error(f"发送停止请求失败: {e}")
+            return False
 
     async def _send_finish_task(self):
         """发送finish-task指令"""
-        if self.asr_ws and self.task_id:
-            try:
-                finish_msg = {
-                    "header": {
-                        "action": "finish-task",
-                        "task_id": self.task_id,
-                        "streaming": "duplex"
-                    },
-                    "payload": {
-                        "input": {}
-                    }
+        if not self.asr_ws or not self.task_id:
+            return False
+        try:
+            finish_msg = {
+                "header": {
+                    "action": "finish-task",
+                    "task_id": self.task_id,
+                    "streaming": "duplex"
+                },
+                "payload": {
+                    "input": {}
                 }
-                await self.asr_ws.send(json.dumps(finish_msg, ensure_ascii=False))
-                logger.bind(tag=TAG).debug("已发送finish-task指令")
-            except Exception as e:
-                logger.bind(tag=TAG).error(f"发送finish-task指令失败: {e}")
+            }
+            await self.asr_ws.send(json.dumps(finish_msg, ensure_ascii=False))
+            logger.bind(tag=TAG).debug("已发送finish-task指令")
+            return True
+        except Exception as e:
+            logger.bind(tag=TAG).error(f"发送finish-task指令失败: {e}")
+            return False
 
     async def _cleanup(self):
         """清理资源"""

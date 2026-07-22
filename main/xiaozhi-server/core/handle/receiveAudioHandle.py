@@ -14,7 +14,7 @@ from core.handle.sendAudioHandle import send_stt_message, SentenceType
 TAG = __name__
 
 
-async def handleAudioMessage(conn: "ConnectionHandler", audio):
+async def handleAudioMessage(conn: "ConnectionHandler", audio, turn_id=None):
     # 当前片段是否有人说话
     have_voice = conn.vad.is_vad(conn, audio)
     # 如果设备刚刚被唤醒，短暂忽略VAD检测
@@ -27,7 +27,10 @@ async def handleAudioMessage(conn: "ConnectionHandler", audio):
     # 设备长时间空闲检测，用于say goodbye
     await no_voice_close_connect(conn, have_voice)
     # 接收音频
-    await conn.asr.receive_audio(conn, audio, have_voice)
+    if turn_id is None:
+        await conn.asr.receive_audio(conn, audio, have_voice)
+    else:
+        await conn.asr.receive_audio(conn, audio, have_voice, turn_id=turn_id)
 
 
 async def resume_vad_detection(conn: "ConnectionHandler"):
@@ -36,7 +39,11 @@ async def resume_vad_detection(conn: "ConnectionHandler"):
     conn.just_woken_up = False
 
 
-async def startToChat(conn: "ConnectionHandler", text):
+async def startToChat(conn: "ConnectionHandler", text, turn_id=None):
+    if turn_id is not None:
+        from core.handle.voiceTurnHandle import is_voice_turn_active
+        if not is_voice_turn_active(conn, turn_id):
+            return
     # 检查输入是否是JSON格式（包含说话人信息）
     speaker_name = None
     language_tag = None
@@ -83,12 +90,22 @@ async def startToChat(conn: "ConnectionHandler", text):
     # 首先进行意图分析，使用实际文本内容
     intent_handled = await handle_user_intent(conn, actual_text)
 
+    if turn_id is not None:
+        from core.handle.voiceTurnHandle import is_voice_turn_active
+        if not is_voice_turn_active(conn, turn_id):
+            return
+
     if intent_handled:
         # 如果意图已被处理，不再进行聊天
         return
 
     # 意图未被处理，继续常规聊天流程，使用实际文本内容
-    await send_stt_message(conn, actual_text)
+    await send_stt_message(conn, actual_text, turn_id=turn_id)
+
+    if turn_id is not None:
+        from core.handle.voiceTurnHandle import is_voice_turn_active
+        if not is_voice_turn_active(conn, turn_id):
+            return
 
     # 准备开始新会话
     conn.client_abort = False

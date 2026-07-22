@@ -235,7 +235,7 @@ class WebSocketManager {
     }), 'end');
     const result = done.finally(() => {
       session.closed = true;
-      this._voiceTurns.delete(turnId);
+      this._cleanupVoiceSession(session);
     });
     result.catch(() => {});
     return result;
@@ -251,16 +251,19 @@ class WebSocketManager {
       return this._rejectVoicePromise(new Error('voice turn unavailable'));
     }
 
-    this._voiceTurns.delete(turnId);
     session.terminal = 'abort';
     session.phase = 'abort-inflight';
     session.closed = true;
     if (!this._isCurrentSocket(session.task, session.generation) || this.state !== 'connected') {
+      this._cleanupVoiceSession(session);
       return this._rejectVoicePromise(new Error('stale voice socket generation'));
     }
-    const result = this._sendOnTaskAsync(session.task, JSON.stringify({
-      type: 'abort', turn_id: turnId,
-    }));
+    const result = this._trackSessionOperation(session, Promise.race([
+      this._sendOnTaskAsync(session.task, JSON.stringify({
+        type: 'abort', turn_id: turnId,
+      })),
+      session.invalidation,
+    ]));
     result.catch(() => {});
     return result;
   }
@@ -551,6 +554,7 @@ class WebSocketManager {
       phase: 'active',
       invalidation,
       rejectInvalidation,
+      pendingOperations: 0,
     };
     this._voiceTurns.set(turnId, session);
     return session;
@@ -568,7 +572,10 @@ class WebSocketManager {
         throw new Error('stale voice socket generation');
       }
       session.phase = operationType + '-inflight';
-      return Promise.race([this._sendOnTaskAsync(session.task, data), session.invalidation]);
+      return this._trackSessionOperation(session, Promise.race([
+        this._sendOnTaskAsync(session.task, data),
+        session.invalidation,
+      ]));
     };
     let operation;
     if (session.hasQueuedSend) {
@@ -605,8 +612,25 @@ class WebSocketManager {
       session.closed = true;
       if (!session.failure) session.failure = error;
       session.rejectInvalidation(session.failure);
-      this._voiceTurns.delete(turnId);
+      this._cleanupVoiceSession(session);
     });
+  }
+
+  _trackSessionOperation(session, operation) {
+    session.pendingOperations += 1;
+    const result = operation.finally(() => {
+      session.pendingOperations -= 1;
+      this._cleanupVoiceSession(session);
+    });
+    result.catch(() => {});
+    return result;
+  }
+
+  _cleanupVoiceSession(session) {
+    if (session.pendingOperations !== 0 || (!session.closed && !session.failure)) return;
+    if (this._voiceTurns.get(session.turnId) === session) {
+      this._voiceTurns.delete(session.turnId);
+    }
   }
 
   _rejectVoicePromise(error) {

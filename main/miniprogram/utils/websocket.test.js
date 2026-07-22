@@ -214,6 +214,27 @@ async function testAbortCancelsAnEndQueuedBehindAudio() {
   assert.strictEqual(task.sent.length, 3, 'cancelled End must never be invoked');
 }
 
+async function testAbortRemainsInvalidatableUntilInflightSendsSettle() {
+  const task = makeSocketTask();
+  const ws = connectedManager(task);
+  ws._bindSocketHandlers(task, ws.getConnectionGeneration());
+  const start = ws.beginVoiceTurn('m-abort-close');
+  const abort = ws.abortVoiceTurn('m-abort-close');
+  assert.strictEqual(task.sent.length, 2, 'Start and direct Abort are both in flight');
+  assert.strictEqual(ws._voiceTurns.has('m-abort-close'), true, 'Abort keeps invalidation record');
+
+  task.triggerClose();
+  await rejectsPromptly(start, /stale voice socket generation/);
+  await rejectsPromptly(abort, /stale voice socket generation/);
+  assert.strictEqual(ws._voiceTurns.has('m-abort-close'), false, 'record clears after invalidation settles');
+
+  task.succeed(0);
+  task.succeed(1);
+  task.fail(0, { errMsg: 'late start failure' });
+  task.fail(1, { errMsg: 'late abort failure' });
+  assert.strictEqual(task.sent.length, 2, 'late callbacks cannot replay or double-settle');
+}
+
 async function testListenFeedbackAndLegacyImmediateSends() {
   const messages = [];
   const task = makeSocketTask();
@@ -355,6 +376,7 @@ async function runTests() {
   await testCurrentCloseRejectsInflightAndQueuedWorkPromptly();
   await testAbortDoesNotFollowAnInflightEnd();
   await testAbortCancelsAnEndQueuedBehindAudio();
+  await testAbortRemainsInvalidatableUntilInflightSendsSettle();
   await testListenFeedbackAndLegacyImmediateSends();
   await testConnectionGenerationsIgnoreStaleHandlers();
   await testProtocolDispatchAndFailurePaths();

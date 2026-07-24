@@ -28,7 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.repository.CrudRepository;
 
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.oss.OssService;
@@ -80,7 +80,7 @@ class AgentChatHistoryServiceImplTest {
     void setUp() throws Exception {
         historyService = new AgentChatHistoryServiceImpl(agentChatTitleService, ossService,
                 aiAgentChatAudioDao, agentService, agentChatAudioService);
-        Field baseMapperField = ServiceImpl.class.getDeclaredField("baseMapper");
+        Field baseMapperField = CrudRepository.class.getDeclaredField("baseMapper");
         baseMapperField.setAccessible(true);
         baseMapperField.set(historyService, baseMapper);
     }

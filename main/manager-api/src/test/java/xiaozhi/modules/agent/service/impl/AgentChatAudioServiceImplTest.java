@@ -26,7 +26,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.repository.CrudRepository;
 
 import com.aliyun.oss.ClientException;
 
@@ -67,7 +67,7 @@ class AgentChatAudioServiceImplTest {
     @BeforeEach
     void setUp() throws Exception {
         audioService = new AgentChatAudioServiceImpl(ossService);
-        Field baseMapperField = ServiceImpl.class.getDeclaredField("baseMapper");
+        Field baseMapperField = CrudRepository.class.getDeclaredField("baseMapper");
         baseMapperField.setAccessible(true);
         baseMapperField.set(audioService, baseMapper);
 

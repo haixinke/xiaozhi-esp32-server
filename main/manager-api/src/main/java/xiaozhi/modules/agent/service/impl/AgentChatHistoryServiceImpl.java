@@ -16,7 +16,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.repository.CrudRepository;
 
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.ErrorCode;
@@ -48,7 +48,7 @@ import xiaozhi.modules.agent.vo.AgentChatHistoryUserVO;
  */
 @Slf4j
 @Service
-public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryDao, AgentChatHistoryEntity>
+public class AgentChatHistoryServiceImpl extends CrudRepository<AiAgentChatHistoryDao, AgentChatHistoryEntity>
         implements AgentChatHistoryService {
 
     private final AgentChatTitleService agentChatTitleService;
@@ -211,6 +211,32 @@ public class AgentChatHistoryServiceImpl extends ServiceImpl<AiAgentChatHistoryD
                         .select(AgentChatHistoryEntity::getContent)
                         .eq(AgentChatHistoryEntity::getAudioId, audioId));
         return agentChatHistoryEntity == null ? null : agentChatHistoryEntity.getContent();
+    }
+
+    @Override
+    public String getAgentIdBySessionId(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return null;
+        }
+        AgentChatHistoryEntity entity = baseMapper.selectOne(
+                new LambdaQueryWrapper<AgentChatHistoryEntity>()
+                        .select(AgentChatHistoryEntity::getAgentId)
+                        .eq(AgentChatHistoryEntity::getSessionId, sessionId)
+                        .last("LIMIT 1"));
+        return entity == null ? null : entity.getAgentId();
+    }
+
+    @Override
+    public String getAgentIdByAudioId(String audioId) {
+        if (audioId == null || audioId.isBlank()) {
+            return null;
+        }
+        AgentChatHistoryEntity entity = baseMapper.selectOne(
+                new LambdaQueryWrapper<AgentChatHistoryEntity>()
+                        .select(AgentChatHistoryEntity::getAgentId)
+                        .eq(AgentChatHistoryEntity::getAudioId, audioId)
+                        .last("LIMIT 1"));
+        return entity == null ? null : entity.getAgentId();
     }
 
     @Override

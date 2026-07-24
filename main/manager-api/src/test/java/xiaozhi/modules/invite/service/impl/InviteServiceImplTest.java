@@ -34,6 +34,7 @@ import xiaozhi.modules.invite.constant.InviteCodeType;
 import xiaozhi.modules.invite.dao.InviteCodeDao;
 import xiaozhi.modules.invite.dao.InviteUsageDao;
 import xiaozhi.modules.invite.entity.InviteCodeEntity;
+import xiaozhi.modules.invite.entity.InviteUsageEntity;
 import xiaozhi.modules.invite.vo.InviteCodeVO;
 import xiaozhi.modules.invite.vo.InviteConsumeVO;
 
@@ -149,7 +150,7 @@ class InviteServiceImplTest {
         assertThat(vo.getMessage()).isEqualTo("success");
         assertThat(vo.getRemaining()).isEqualTo(4);
         verify(inviteCodeDao).decrementRemaining(1L);
-        verify(inviteUsageDao).insert(any());
+        verify(inviteUsageDao).insert(any(InviteUsageEntity.class));
     }
 
     @Test
@@ -231,7 +232,7 @@ class InviteServiceImplTest {
         assertThat(vo.getMessage()).contains("已使用");
         assertThat(vo.getRemaining()).isEqualTo(4);
         verify(inviteCodeDao, never()).decrementRemaining(any());
-        verify(inviteUsageDao, never()).insert(any());
+        verify(inviteUsageDao, never()).insert(any(InviteUsageEntity.class));
     }
 
     @Test
@@ -314,7 +315,7 @@ class InviteServiceImplTest {
         } catch (RenException e) {
             assertThat(e.getMsg()).contains("调增");
         }
-        verify(inviteCodeDao, never()).updateById(any());
+        verify(inviteCodeDao, never()).updateById(any(InviteCodeEntity.class));
     }
 
     @Test
@@ -333,7 +334,7 @@ class InviteServiceImplTest {
         } catch (RenException e) {
             assertThat(e.getMsg()).contains("调增");
         }
-        verify(inviteCodeDao, never()).updateById(any());
+        verify(inviteCodeDao, never()).updateById(any(InviteCodeEntity.class));
     }
 
     @Test

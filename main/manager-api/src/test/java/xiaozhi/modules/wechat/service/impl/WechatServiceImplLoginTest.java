@@ -87,12 +87,12 @@ class WechatServiceImplLoginTest {
         setField(WechatServiceImpl.class, service, "secret", "wxsecret");
 
         when(sysUserDao.selectCount(any())).thenReturn(0L);
-        when(sysUserDao.insert(any())).thenAnswer(invocation -> {
+        when(sysUserDao.insert(any(SysUserEntity.class))).thenAnswer(invocation -> {
             SysUserEntity user = invocation.getArgument(0);
             user.setId(42L);
             return 1;
         });
-        when(wechatUserDao.insert(any())).thenReturn(1);
+        when(wechatUserDao.insert(any(WechatUserEntity.class))).thenReturn(1);
         when(agentService.getUserAgents(anyLong(), any(), any())).thenReturn(null);
         TokenDTO tokenDTO = new TokenDTO();
         tokenDTO.setToken("token-42");
@@ -109,7 +109,7 @@ class WechatServiceImplLoginTest {
 
         assertThat(resp.getUserId()).isEqualTo(42L);
         assertThat(resp.getIsNewUser()).isTrue();
-        verify(wechatUserDao).insert(any());
+        verify(wechatUserDao).insert(any(WechatUserEntity.class));
         WechatUserEntity saved = captureInsertedEntity();
         assertThat(saved.getAvatarUrl())
                 .isEqualTo("https://oss.eggbabe.com/default-avatar/user/user-avatar.png");
@@ -123,13 +123,13 @@ class WechatServiceImplLoginTest {
         existing.setUserId(7L);
         existing.setAvatarUrl("https://example.com/old.png");
         when(wechatUserDao.selectOne(any())).thenReturn(existing);
-        when(wechatUserDao.updateById(any())).thenReturn(1);
+        when(wechatUserDao.updateById(any(WechatUserEntity.class))).thenReturn(1);
 
         WechatLoginRespDTO resp = service.login("wx-code");
 
         assertThat(resp.getUserId()).isEqualTo(7L);
         assertThat(resp.getIsNewUser()).isFalse();
-        verify(wechatUserDao, never()).insert(any());
+        verify(wechatUserDao, never()).insert(any(WechatUserEntity.class));
         assertThat(existing.getAvatarUrl()).isEqualTo("https://example.com/old.png");
     }
 

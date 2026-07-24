@@ -28,6 +28,7 @@ import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.model.service.ModelConfigService;
 import xiaozhi.modules.sys.dto.SysParamsDTO;
 import xiaozhi.modules.sys.service.SysParamsService;
+import xiaozhi.modules.subscription.service.SubscriptionService;
 import xiaozhi.modules.timbre.service.TimbreService;
 import xiaozhi.modules.voiceclone.service.VoiceCloneService;
 
@@ -91,6 +92,7 @@ class ConfigServiceImplTest {
                 mock(AgentContextProviderService.class),
                 mock(VoiceCloneService.class),
                 mock(AgentVoicePrintDao.class),
-                mock(CorrectWordFileService.class));
+                mock(CorrectWordFileService.class),
+                mock(SubscriptionService.class));
     }
 }

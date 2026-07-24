@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSSException;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.repository.CrudRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import xiaozhi.modules.agent.service.AgentChatAudioService;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AgentChatAudioServiceImpl extends ServiceImpl<AiAgentChatAudioDao, AgentChatAudioEntity>
+public class AgentChatAudioServiceImpl extends CrudRepository<AiAgentChatAudioDao, AgentChatAudioEntity>
         implements AgentChatAudioService {
 
     private final OssService ossService;

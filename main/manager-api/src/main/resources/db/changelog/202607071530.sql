@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `ai_agent_snapshot` (
     `agent_id` VARCHAR(32) NOT NULL COMMENT '智能体ID',
     `user_id` BIGINT DEFAULT NULL COMMENT '所属用户ID',
     `version_no` INT UNSIGNED NOT NULL COMMENT '版本号',
-    `snapshot_data` JSON NOT NULL DEFAULT (JSON_OBJECT()) COMMENT '快照数据',
+    `snapshot_data` JSON NOT NULL COMMENT '快照数据',
     `changed_fields` JSON DEFAULT NULL COMMENT '变更字段',
     `source` VARCHAR(32) DEFAULT 'config' COMMENT '快照来源',
     `restore_from_snapshot_id` VARCHAR(32) DEFAULT NULL COMMENT '恢复来源快照ID',

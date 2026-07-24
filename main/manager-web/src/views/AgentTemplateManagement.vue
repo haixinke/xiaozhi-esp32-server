@@ -54,7 +54,7 @@
                   <CustomButton :icon="isAllSelected ? 'el-icon-circle-close' : 'el-icon-circle-check'" size="small" @click="handleSelectAll">
                     {{ isAllSelected ? $t("agentTemplateManagement.deselectAll") : $t("agentTemplateManagement.selectAll") }}
                   </CustomButton>
-                  <CustomButton icon="el-icon-plus" size="small" @click="showAddTemplateDialog">
+                  <CustomButton type="add" icon="el-icon-plus" size="small" @click="showAddTemplateDialog">
                     {{ $t("agentTemplateManagement.createTemplate") }}
                   </CustomButton>
                   <CustomButton size="small" type="delete" icon="el-icon-delete" @click="batchDeleteTemplate">
@@ -78,7 +78,7 @@
       @confirm="handleDialogConfirm"
       @cancel="dialogVisible = false"
     >
-      <el-form ref="dialogForm" :model="form" label-width="100px">
+      <el-form ref="dialogForm" :model="form" :rules="formRules" label-width="100px">
         <el-form-item :label="$t('templateQuickConfig.agentSettings.agentName')" prop="agentName">
           <el-input
             v-model="form.agentName"
@@ -154,6 +154,14 @@ export default {
         systemPrompt: "",
         sort: 0,
         model: { ...DEFAULT_MODEL_CONFIG }
+      },
+      formRules: {
+        agentName: [
+          { required: true, message: "请输入助手昵称", trigger: "blur" }
+        ],
+        systemPrompt: [
+          { required: true, message: "请输入角色介绍", trigger: "blur" }
+        ]
       },
       originalForm: null
     };
@@ -263,20 +271,23 @@ export default {
       });
     },
     handleDialogConfirm() {
-      const configData = {
-        id: this.form.id || "",
-        agentCode: this.form.agentCode,
-        agentName: this.form.agentName,
-        systemPrompt: this.form.systemPrompt,
-        sort: this.form.sort,
-        functions: [],
-        ...this.form.model
-      };
+      this.$refs.dialogForm.validate((valid) => {
+        if (!valid) return;
 
-      this.confirmLoading = true;
-      const apiCall = this.form.id
-        ? agentApi.updateAgentTemplate
-        : agentApi.addAgentTemplate;
+        const configData = {
+          id: this.form.id || "",
+          agentCode: this.form.agentCode,
+          agentName: this.form.agentName,
+          systemPrompt: this.form.systemPrompt,
+          sort: this.form.sort,
+          functions: [],
+          ...this.form.model
+        };
+
+        this.confirmLoading = true;
+        const apiCall = this.form.id
+          ? agentApi.updateAgentTemplate
+          : agentApi.addAgentTemplate;
 
       apiCall(configData, (res) => {
         this.confirmLoading = false;
@@ -296,6 +307,7 @@ export default {
       }, (error) => {
         this.confirmLoading = false;
         this.$message.error(this.$t("common.networkError"));
+      });
       });
     },
     deleteTemplate(row) {
@@ -389,7 +401,7 @@ export default {
   display: flex;
   position: relative;
   flex-direction: column;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: #eff4ff;
   background-size: cover;
   overflow: hidden;
 }

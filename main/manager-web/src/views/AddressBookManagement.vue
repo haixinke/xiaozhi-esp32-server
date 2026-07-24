@@ -120,7 +120,7 @@
                 <i class="el-icon-time"></i>
                 <div class="stat-content">
                   <div class="stat-label">{{ $t('addressBookManagement.addTime') }}</div>
-                  <div class="stat-value">{{ selectedDevice.createDate || '-' }}</div>
+                  <div class="stat-value">{{ formatDeviceCreateDate(selectedDevice) }}</div>
                 </div>
               </div>
               <div class="stat-item">
@@ -141,11 +141,9 @@
                 <p class="section-desc">{{ $t('addressBookManagement.setPermissionDesc', { count: selectedPermissions.length }) }}</p>
               </div>
               <div class="section-actions">
-                <el-button size="small" @click="handleCancel">{{ $t('common.cancel') }}</el-button>
-                <el-button size="small" @click="handleToggleSelectAll">
-                  {{ isAllSelected ? $t('addressBookManagement.deselectAll') : $t('addressBookManagement.selectAll') }}
-                </el-button>
-                <el-button type="primary" size="small" @click="handleSavePermissions">{{ $t('addressBookManagement.save') }}</el-button>
+                <CustomButton size="small" @click="handleCancel">{{ $t('common.cancel') }}</CustomButton>
+                <CustomButton size="small" @click="handleToggleSelectAll">{{ isAllSelected ? $t('addressBookManagement.deselectAll') : $t('addressBookManagement.selectAll') }}</CustomButton>
+                <CustomButton type="confirm" size="small" @click="handleSavePermissions">{{ $t('addressBookManagement.save') }}</CustomButton>
               </div>
             </div>
 
@@ -208,10 +206,12 @@ import VersionFooter from "@/components/VersionFooter.vue";
 import Api from "@/apis/api.js";
 import AddressBookApi from "@/apis/module/addressBook.js";
 import MacAddressMask from "@/components/MacAddressMask.vue";
+import CustomButton from "@/components/CustomButton.vue";
+import { formatCreateDate, parseTimestamp } from '@/utils/deviceTime.mjs';
 
 export default {
   name: "AddressBookManagement",
-  components: { HeaderBar, VersionFooter, MacAddressMask },
+  components: { HeaderBar, VersionFooter, MacAddressMask, CustomButton },
   data() {
     return {
       searchKeyword: "",
@@ -282,7 +282,8 @@ export default {
                   remarks: device.alias || '',
                   online: false,
                   createDate: device.createDate,
-                  lastConnectedAt: device.lastConnectedAt,
+                  createDateTimestamp: device.createDateTimestamp,
+                  lastConnectedAt: device.lastConnectedAtTimestamp,
                   deviceStatus: 'offline'
                 }));
                 resolve();
@@ -527,9 +528,10 @@ export default {
       this.isEditingAgentName = false;
     },
     getTimeAgo(timestamp) {
-      if (!timestamp) return '-';
+      const ts = parseTimestamp(timestamp);
+      if (ts === null) return '-';
       const now = new Date();
-      const date = new Date(timestamp);
+      const date = new Date(ts);
       const diff = now - date;
 
       const seconds = Math.floor(diff / 1000);
@@ -545,6 +547,10 @@ export default {
       if (days < 30) return this.$t('addressBookManagement.daysAgo', { days });
       if (months < 12) return this.$t('addressBookManagement.monthsAgo', { months });
       return this.$t('addressBookManagement.yearsAgo', { years });
+    },
+    formatDeviceCreateDate(device) {
+      if (!device) return '-';
+      return formatCreateDate(device.createDateTimestamp, device.createDate);
     },
     getDeviceAvatar(deviceId) {
       // 根据 deviceId 计算 MD5，选择对应的头像
@@ -587,7 +593,7 @@ export default {
   display: flex;
   flex-direction: column;
   background-size: cover;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: #eff4ff;
   -webkit-background-size: cover;
   -o-background-size: cover;
   overflow: hidden;
@@ -946,8 +952,8 @@ export default {
     }
 
     .section-actions {
+      margin-top: 4px;
       display: flex;
-      gap: 8px;
     }
   }
 }

@@ -13,10 +13,12 @@
     @open="handleOpen"
   >
     <template slot="title">
-      <div class="dialog-title">
-        <img src="@/assets/knowledge-base/level.png" class="title-icon" />
-        <span>{{ title }}</span>
-      </div>
+      <slot name="title">
+        <div class="dialog-title">
+          <img src="@/assets/knowledge-base/level.png" class="title-icon" />
+          <span>{{ title }}</span>
+        </div>
+      </slot>
     </template>
     <slot></slot>
     <template slot="footer">
@@ -127,7 +129,6 @@ export default {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 15vh !important;
   }
 
   ::v-deep .el-dialog__header {

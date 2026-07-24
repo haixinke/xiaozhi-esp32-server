@@ -14,9 +14,9 @@
           prefix-icon="el-icon-search"
           clearable
         />
-        <el-button size="small" @click="handleSearch">{{ $t('knowledgeBaseManagement.search') }}</el-button>
-        <el-button size="small" @click="handleUpload">{{ $t('knowledgeBaseManagement.add') }}</el-button>
-        <el-button size="small" @click="handleRetrievalTest">{{ $t('knowledgeFileUpload.retrievalTest') }}</el-button>
+        <CustomButton size="small" @click="handleSearch">{{ $t('knowledgeBaseManagement.search') }}</CustomButton>
+        <CustomButton type="add" size="small" @click="handleUpload">{{ $t('knowledgeBaseManagement.add') }}</CustomButton>
+        <CustomButton type="confirm" size="small" @click="handleRetrievalTest">{{ $t('knowledgeFileUpload.retrievalTest') }}</CustomButton>
       </div>
     </div>
     <div class="doc-grid" v-loading="docLoading" :element-loading-text="$t('knowledgeBaseManagement.loading')">
@@ -85,6 +85,7 @@
 
 <script>
 import Api from "@/apis/api";
+import CustomButton from "@/components/CustomButton.vue";
 import CustomPagination from "@/components/CustomPagination.vue";
 
 const iconMap = {
@@ -101,7 +102,7 @@ const iconMap = {
 
 export default {
   name: 'LibraryItem',
-  components: { CustomPagination },
+  components: { CustomPagination, CustomButton },
   props: {
     kb: {
       type: Object,
@@ -382,8 +383,6 @@ export default {
   background: #fff;
   border-radius: 10px;
   padding: 16px 20px;
-  box-shadow: 0 4px 16px rgba(31, 42, 68, 0.06);
-  border: 1px solid #f0f3f9;
   flex: 1;
   display: flex;
   flex-direction: column;

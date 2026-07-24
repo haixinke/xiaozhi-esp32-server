@@ -52,7 +52,7 @@
                                         size="small" @click="handleSelectAll">
                                         {{ isAllSelected ? $t('otaManagement.deselectAll') : $t('otaManagement.selectAll') }}
                                     </CustomButton>
-                                    <CustomButton icon="el-icon-plus" size="small" @click="showAddDialog">
+                                    <CustomButton type="add" icon="el-icon-plus" size="small" @click="showAddDialog">
                                         {{ $t('otaManagement.addNew') }}
                                     </CustomButton>
                                     <CustomButton size="small" type="delete" icon="el-icon-delete"
@@ -348,7 +348,7 @@ export default {
     position: relative;
     flex-direction: column;
     background-size: cover;
-    background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+    background: #eff4ff;
     -webkit-background-size: cover;
     -o-background-size: cover;
     overflow: hidden;

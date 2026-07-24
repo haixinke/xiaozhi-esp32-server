@@ -43,17 +43,8 @@ class MemoryProvider(MemoryProviderBase):
         self.memory_client = None
         self.enable_user_profile = False
         self.last_profile_content = ""  # Cache for user profile from UserMemory
-
         try:
-            # Check if user profile mode is enabled
-            # Handle both boolean and string representations (from JSON config)
-            enable_user_profile_config = config.get("enable_user_profile", False)
-            if isinstance(enable_user_profile_config, str):
-                # Convert string "false"/"true" to boolean
-                self.enable_user_profile = enable_user_profile_config.lower() in ("true", "1", "yes", "on")
-            else:
-                self.enable_user_profile = bool(enable_user_profile_config)
-
+            self.enable_user_profile = str(config.get("enable_user_profile", False)).lower() == 'true'
             # Get configuration parameters
             database_provider = config.get("database_provider", "sqlite")
             llm_provider = config.get("llm_provider", "qwen")
@@ -234,15 +225,24 @@ UserMemory Mode: {self.enable_user_profile}
                 # Add memory using PowerMem SDK
                 add_start = time.time()
                 logger.bind(tag=TAG).debug(f"Calling PowerMem add(), user_id={self.role_id}, messages_count={len(messages)}, messages_sample={messages if messages else 'empty'}")
-                result = self.memory_client.add(
-                    messages=messages,
-                    user_id=self.role_id,
-                    native_language="zh",  # Force profile extraction in Chinese
-                    # profile_type="topics",  # Extract structured topics (JSON) instead of plain text content
-                    profile_type="content",
-                    include_roles=["user"],  # Only extract profile from user messages, not AI assistant responses
-                    infer=True
-                )
+                if self.enable_user_profile:
+                    # UserMemory uses sync add, wrap in thread
+                    result = await asyncio.to_thread(
+                        self.memory_client.add,
+                        messages=messages,
+                        user_id=self.role_id,
+                        native_language="zh",  # Force profile extraction in Chinese
+                        profile_type="content",
+                        include_roles=["user"],  # Only extract profile from user messages
+                        infer=True
+                    )
+                else:
+                    # AsyncMemory uses async add
+                    result = await self.memory_client.add(
+                        messages=messages,
+                        user_id=self.role_id,
+                        infer=True
+                    )
                 # Handle both sync and async returns
                 if asyncio.iscoroutine(result):
                     await_start = time.time()

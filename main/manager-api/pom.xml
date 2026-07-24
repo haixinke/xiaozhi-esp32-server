@@ -20,7 +20,7 @@
         <java.version>21</java.version>
         <junit.version>5.10.1</junit.version>
         <druid.version>1.2.20</druid.version>
-        <mybatisplus.version>3.5.5</mybatisplus.version>
+        <mybatisplus.version>3.5.17</mybatisplus.version>
         <hutool.version>5.8.24</hutool.version>
         <jsoup.version>1.19.1</jsoup.version>
         <knife4j.version>4.6.0</knife4j.version>
@@ -34,6 +34,7 @@
         <aliyun-sms-version>4.1.0</aliyun-sms-version>
         <okio-version>3.4.0</okio-version>
         <volcengine-ark-sdk.version>2.0.18</volcengine-ark-sdk.version>
+        <argLine></argLine>
     </properties>
 
     <dependencies>
@@ -181,13 +182,13 @@
         </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>${mybatisplus.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis-spring</artifactId>
-            <version>3.0.3</version>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser-4.9</artifactId>
+            <version>${mybatisplus.version}</version>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -319,9 +320,20 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <proc>full</proc>
+                    <compilerArgs>
+                        <arg>-Xlint:deprecation,unchecked</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skipTests>${skipTests}</skipTests>
+                    <argLine>@{argLine} -Xshare:off -javaagent:"${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar"</argLine>
                 </configuration>
             </plugin>
             <plugin>

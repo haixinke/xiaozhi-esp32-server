@@ -41,8 +41,6 @@ server:
   mqtt_signature_key: null
   # UDP网关配置
   udp_gateway: null
-  # 线程池大小（用于LLM对话、TTS等I/O密集型任务），默认: min(32, CPU核心数*8)
-  thread_pool_size: 16
   # WebSocket最大连接数，超过后拒绝新连接，配合SAE弹性伸缩使用
   max_connections: 80
   # 连接数告警阈值比例（0.0-1.0），达到该比例时输出警告日志

@@ -50,55 +50,6 @@ from core.utils import textUtils
 
 TAG = __name__
 
-# 全局共享线程池，避免每连接创建独立线程池导致线程爆炸
-# 延迟初始化：首次调用时从配置读取线程池大小
-_GLOBAL_EXECUTOR = None
-_EXECUTOR_LOCK = threading.Lock()
-
-
-def _get_thread_pool_size() -> int:
-    """获取线程池大小，优先从配置读取"""
-    try:
-        from config.config_loader import load_config
-        config = load_config()
-        size = config.get("server", {}).get("thread_pool_size", None)
-        if size is not None:
-            size = int(size)
-            if 1 <= size <= 128:
-                return size
-    except Exception as e:
-        setup_logging().bind(tag=TAG).warning(
-            f"读取线程池配置失败，使用默认值: {e}"
-        )
-    # 默认: I/O 密集型公式，上限32
-    return min(32, (os.cpu_count() or 4) * 8)
-
-
-def get_global_executor() -> ThreadPoolExecutor:
-    """获取全局线程池实例（线程安全的懒初始化）"""
-    global _GLOBAL_EXECUTOR
-    if _GLOBAL_EXECUTOR is None:
-        with _EXECUTOR_LOCK:
-            if _GLOBAL_EXECUTOR is None:
-                max_workers = _get_thread_pool_size()
-                _GLOBAL_EXECUTOR = ThreadPoolExecutor(
-                    max_workers=max_workers,
-                    thread_name_prefix="xiaozhi-worker"
-                )
-                setup_logging().bind(tag=TAG).info(
-                    f"全局线程池已初始化: max_workers={max_workers}"
-                )
-    return _GLOBAL_EXECUTOR
-
-
-def shutdown_global_executor():
-    """服务器关闭时调用，清理全局线程池"""
-    global _GLOBAL_EXECUTOR
-    if _GLOBAL_EXECUTOR is not None:
-        _GLOBAL_EXECUTOR.shutdown(wait=True, cancel_futures=True)
-        _GLOBAL_EXECUTOR = None
-
-
 auto_import_modules("plugins_func.functions")
 
 
@@ -171,7 +122,7 @@ class ConnectionHandler:
         # 线程任务相关
         self.loop = None  # 在 handle_connection 中获取运行中的事件循环
         self.stop_event = threading.Event()
-        self.executor = get_global_executor()
+        self.executor = ThreadPoolExecutor(max_workers=5)
 
         # 添加上报线程池
         self.report_queue = queue.Queue(maxsize=100)  # 限制上报队列大小，防止内存溢出（优化：1000→100）
@@ -1693,7 +1644,15 @@ class ConnectionHandler:
             if self.asr:
                 await self.asr.close()
 
-            # 全局线程池不随连接关闭而销毁，仅在服务器退出时统一清理
+            # 最后关闭线程池（避免阻塞）
+            if self.executor:
+                try:
+                    self.executor.shutdown(wait=False)
+                except Exception as executor_error:
+                    self.logger.bind(tag=TAG).error(
+                        f"关闭线程池时出错: {executor_error}"
+                    )
+                self.executor = None
             self.logger.bind(tag=TAG).info("连接资源已释放")
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"关闭连接时出错: {e}")

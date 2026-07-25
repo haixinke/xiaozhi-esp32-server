@@ -39,7 +39,7 @@ class TTSProviderBase(ABC):
         self.output_file = config.get("output_dir", "tmp/")
         self.tts_timeout = int(config.get("tts_timeout", 15))
         self.tts_text_queue = queue.Queue(maxsize=100)  # 限制文本队列大小，防止大量文本堆积
-        self.tts_audio_queue = queue.Queue(maxsize=100)  # 限制音频队列大小，约100帧音频数据
+        self.tts_audio_queue = queue.Queue(maxsize=1000)  # 限制音频队列大小，约60秒音频，防止病态连接无限堆积
         self.tts_audio_first_sentence = True
         self.before_stop_play_files = []
         self.report_on_last = False
@@ -115,7 +115,12 @@ class TTSProviderBase(ABC):
 
     def handle_opus(self, opus_data: bytes):
         # logger.bind(tag=TAG).debug(f"推送数据到队列里面帧数～～ {len(opus_data)}")
-        self.tts_audio_queue.put((SentenceType.MIDDLE, opus_data, None, getattr(self, 'current_sentence_id', None)))
+        # 非阻塞入队，队满时丢帧：该方法可能在事件循环线程中被调用（如双流TTS监听协程），
+        # 阻塞put会卡死整个事件循环导致全服冻结
+        try:
+            self.tts_audio_queue.put_nowait((SentenceType.MIDDLE, opus_data, None, getattr(self, 'current_sentence_id', None)))
+        except queue.Full:
+            logger.bind(tag=TAG).warning("tts_audio_queue已满，丢弃音频帧")
 
     def handle_audio_file(self, file_audio: bytes, text):
         self.before_stop_play_files.append((file_audio, text))
@@ -473,12 +478,21 @@ class TTSProviderBase(ABC):
                 if isinstance(audio_datas, bytes):
                     enqueue_audio.append(audio_datas)
 
-                # 发送音频
+                # 发送音频（带超时：客户端弱网/切后台时websocket.send可能被反压挂起，
+                # 无超时等待会永久卡死本消费线程，进而导致音频队列堆积）
+                # LAST帧内部会等待流控器放完剩余音频（最长30s），需给更宽的超时
+                send_timeout = 10 if sentence_type == SentenceType.MIDDLE else 60
                 future = asyncio.run_coroutine_threadsafe(
                     sendAudioMessage(self.conn, sentence_type, audio_datas, text, sentence_id),
                     self.conn.loop,
                 )
-                future.result()
+                try:
+                    future.result(timeout=send_timeout)
+                except concurrent.futures.TimeoutError:
+                    future.cancel()
+                    logger.bind(tag=TAG).warning(
+                        f"发送音频超时({send_timeout}s)，丢弃该帧并继续: {text}"
+                    )
 
                 # 记录输出和报告
                 if self.conn.max_output_size > 0 and text:
@@ -563,10 +577,18 @@ class TTSProviderBase(ABC):
             os.remove(tts_file)
 
     def _process_before_stop_play_files(self):
+        # 该方法在事件循环协程中被调用（_start_monitor_tts_response），
+        # 必须使用非阻塞入队，否则队列满时会卡死事件循环
         for audio_datas, text in self.before_stop_play_files:
-            self.tts_audio_queue.put((SentenceType.MIDDLE, audio_datas, text, getattr(self, 'current_sentence_id', None)))
+            try:
+                self.tts_audio_queue.put_nowait((SentenceType.MIDDLE, audio_datas, text, getattr(self, 'current_sentence_id', None)))
+            except queue.Full:
+                logger.bind(tag=TAG).warning("tts_audio_queue已满，丢弃结束前音频帧")
         self.before_stop_play_files.clear()
-        self.tts_audio_queue.put((SentenceType.LAST, [], None, getattr(self, 'current_sentence_id', None)))
+        try:
+            self.tts_audio_queue.put_nowait((SentenceType.LAST, [], None, getattr(self, 'current_sentence_id', None)))
+        except queue.Full:
+            logger.bind(tag=TAG).warning("tts_audio_queue已满，丢弃LAST帧")
 
     def _process_remaining_text_stream(
         self, opus_handler: Callable[[bytes], None] = None

@@ -517,7 +517,11 @@ class TTSProvider(TTSProviderBase):
                         logger.bind(tag=TAG).debug(f"句子语音生成开始: {self.tts_text}")
                         # 将TTS服务返回的替换后文本还原为原始文本，用于字幕显示
                         display_text = self._restore_original_text(self.tts_text)
-                        self.tts_audio_queue.put((SentenceType.FIRST, [], display_text))
+                        # 非阻塞入队：本协程跑在事件循环上，阻塞put会卡死全服
+                        try:
+                            self.tts_audio_queue.put_nowait((SentenceType.FIRST, [], display_text))
+                        except queue.Full:
+                            logger.bind(tag=TAG).warning("tts_audio_queue已满，丢弃句子开始消息")
                     elif (
                         res.optional.event == EVENT_TTSResponse
                         and res.header.message_type == AUDIO_ONLY_RESPONSE
@@ -529,9 +533,13 @@ class TTSProvider(TTSProviderBase):
                                 logger.bind(tag=TAG).debug(
                                     f"句子语音生成成功： {tts_text}"
                                 )
-                                self.tts_audio_queue.put(
-                                    (SentenceType.FIRST, [], tts_text)
-                                )
+                                # 非阻塞入队：本协程跑在事件循环上，阻塞put会卡死全服
+                                try:
+                                    self.tts_audio_queue.put_nowait(
+                                        (SentenceType.FIRST, [], tts_text)
+                                    )
+                                except queue.Full:
+                                    logger.bind(tag=TAG).warning("tts_audio_queue已满，丢弃句子开始消息")
                                 self.clear_tts_text(self.conn.sentence_id)
                         self.wav_to_opus_data_audio_raw_stream(res.payload, callback=self.handle_opus)
                     elif not self.resource_type and res.optional.event == EVENT_TTSSentenceEnd:

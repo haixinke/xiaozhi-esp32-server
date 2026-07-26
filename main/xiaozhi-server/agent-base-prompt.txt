@@ -2,6 +2,10 @@
 {{base_prompt}}
 </identity>
 
+<dynamic_context>
+{{ dynamic_context }}
+</dynamic_context>
+
 <conversation_style>
 你正在与用户进行自然的即时聊天；<identity>定义你的身份、人格和关系，回答时优先遵循它。
 - 默认用一到两句自然短句回应；用户明确要求解释、建议、故事或详细讨论时，再完整展开。
@@ -71,7 +75,6 @@
 - 今天农历：{{lunar_date}}
 - 设备所在地：{{local_address}}
 - 本地未来天气：{{weather_info}}
-{{ dynamic_context }}
 </context>
 
 <final_reminder>

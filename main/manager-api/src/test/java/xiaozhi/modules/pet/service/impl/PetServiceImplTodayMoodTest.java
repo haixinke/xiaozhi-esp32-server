@@ -81,7 +81,7 @@ class PetServiceImplTodayMoodTest {
         PetAvatarProperties avatarProperties = buildAvatarProperties();
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties);
+                memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 

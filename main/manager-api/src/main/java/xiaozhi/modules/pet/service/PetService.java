@@ -49,6 +49,13 @@ public interface PetService extends BaseService<PetEntity> {
      */
     void refreshTodayMood(PetEntity pet);
 
+    /**
+     * 构建实时上下文（供 xiaozhi-server 动态上下文注入）。
+     * 按 device_id 找到蛋宝宝，懒刷新今日心情后返回 {今日心情: ...}；
+     * 无设备/无宠物时返回空 Map。
+     */
+    Map<String, String> buildRealtimeContext(String deviceId);
+
     PetVO birth(String deviceId);
 
     PetVO getByDeviceId(String deviceId);

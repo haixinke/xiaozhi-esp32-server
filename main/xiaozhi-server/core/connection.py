@@ -793,7 +793,7 @@ class ConnectionHandler:
                 self.headers.get("client-id", self.headers.get("device-id")),
             )
             private_config["delete_audio"] = bool(self.config.get("delete_audio", True))
-            self.logger.bind(tag=TAG).info(
+            self.logger.bind(tag=TAG).debug(
                 f"{time.time() - begin_time} 秒，异步获取差异化配置成功: {json.dumps(filter_sensitive_info(private_config), ensure_ascii=False)}"
             )
             self.need_bind = False

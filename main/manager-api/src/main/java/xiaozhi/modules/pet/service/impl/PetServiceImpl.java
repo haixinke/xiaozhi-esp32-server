@@ -21,13 +21,17 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
 import xiaozhi.modules.agent.dto.AgentCreateDTO;
+import xiaozhi.modules.agent.dto.ContextProviderDTO;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
+import xiaozhi.modules.agent.entity.AgentContextProviderEntity;
 import xiaozhi.modules.agent.entity.AgentEntity;
+import xiaozhi.modules.agent.service.AgentContextProviderService;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
+import xiaozhi.modules.pet.constant.MoodActingGuide;
 import xiaozhi.modules.pet.constant.MoodLinePool;
 import xiaozhi.modules.pet.constant.TodayMood;
 import xiaozhi.modules.pet.dao.MemoryDao;
@@ -58,7 +62,10 @@ import xiaozhi.modules.pet.vo.UserProfileVO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -76,6 +83,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final UserProfileDao userProfileDao;
     private final InviteService inviteService;
     private final AgentService agentService;
+    private final AgentContextProviderService agentContextProviderService;
     private final ApplicationEventPublisher eventPublisher;
     private final PetAvatarProperties petAvatarProperties;
     private final PetCollectionCardProperties petCollectionCardProperties;
@@ -97,6 +105,9 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private static final List<String> PROTOTYPES = List.of(PROTOTYPE_KOI, PROTOTYPE_RABBIT);
 
     private static final String BOARD_WECHAT_EGG = "wechat-egg-miniprogram";
+
+    /** 蛋宝宝实时上下文端点的相对路径，由 xiaozhi-server 用 manager-api 基址与密钥补全后调用 */
+    private static final String PET_CONTEXT_URL = "/config/pet-context";
 
     private static final List<String> PERSONALITY_BRIEF_POOL = List.of(
             "对零食很讲究，吃饱了才愿意思考人生。",
@@ -577,6 +588,9 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setDeviceId(deviceId);
         petDao.updateById(pet);
 
+        // 登记实时上下文源（今日心情），幂等，失败不影响破壳
+        ensurePetContextProvider(agentId);
+
         // 创建破壳首卡：简介使用 personalityBrief
         petCollectionCardService.createCard(pet.getId(), pet.getPrototype(), brief, "HATCH");
 
@@ -725,6 +739,62 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setTodayMood(mood.getLabel());
         pet.setTodayMoodDate(today);
         pet.setTodayMoodSentence(sentence);
+    }
+
+    @Override
+    public Map<String, String> buildRealtimeContext(String deviceId) {
+        Map<String, String> ctx = new LinkedHashMap<>();
+        if (StringUtils.isBlank(deviceId)) {
+            return ctx;
+        }
+        try {
+            PetEntity pet = petDao.selectOne(
+                    new QueryWrapper<PetEntity>().eq("device_id", deviceId).last("limit 1"));
+            if (pet == null) {
+                return ctx;
+            }
+            // 懒刷新今日心情（今日已生成则直接返回）
+            refreshTodayMood(pet);
+            if (StringUtils.isNotBlank(pet.getTodayMood())) {
+                // 注入带表演指引的文案，让 LLM 按心情调整语气，而非干巴巴的 label
+                ctx.put("今日心情", MoodActingGuide.of(pet.getTodayMood()));
+            }
+        } catch (Exception e) {
+            log.warn("构建蛋宝宝实时上下文失败, deviceId={}: {}", deviceId, e.getMessage());
+        }
+        return ctx;
+    }
+
+    /**
+     * 为蛋宝宝智能体登记一条实时上下文源（幂等）。已存在则跳过，不覆盖其他 provider。
+     */
+    private void ensurePetContextProvider(String agentId) {
+        try {
+            if (StringUtils.isBlank(agentId)) {
+                return;
+            }
+            AgentContextProviderEntity entity = agentContextProviderService.getByAgentId(agentId);
+            List<ContextProviderDTO> providers = (entity != null && entity.getContextProviders() != null)
+                    ? new ArrayList<>(entity.getContextProviders())
+                    : new ArrayList<>();
+            boolean exists = providers.stream().anyMatch(p -> PET_CONTEXT_URL.equals(p.getUrl()));
+            if (exists) {
+                return;
+            }
+            ContextProviderDTO provider = new ContextProviderDTO();
+            provider.setUrl(PET_CONTEXT_URL);
+            provider.setHeaders(Collections.emptyMap());
+            providers.add(provider);
+            if (entity == null) {
+                entity = new AgentContextProviderEntity();
+                entity.setAgentId(agentId);
+            }
+            entity.setContextProviders(providers);
+            agentContextProviderService.saveOrUpdateByAgentId(entity);
+            log.info("已为蛋宝宝智能体登记实时上下文源, agentId={}", agentId);
+        } catch (Exception e) {
+            log.warn("登记蛋宝宝实时上下文源失败, agentId={}: {}", agentId, e.getMessage());
+        }
     }
 
     /**

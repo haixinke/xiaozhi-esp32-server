@@ -451,8 +451,9 @@ Page({
     const idx = this._streamingIdx;
     const messages = this.data.messages.slice();
     messages[idx] = { ...messages[idx], content: this._streamingBuffer };
-    this.setData({ messages });
-    this._scrollToBottom();
+    this.setData({ messages }, () => {
+      this._scrollToBottom();
+    });
   },
 
   _finalizeStreaming(chatState) {
@@ -490,17 +491,24 @@ Page({
 
   _persistAndSetMessages(messages, scrollAnchor, extraData, persistOptions) {
     this.setData({ messages, ...(extraData || {}) }, () => {
-      if (scrollAnchor) this.setData({ scrollAnchor });
-      else this._scrollToBottom();
+      this._scrollToBottom();
     });
     const last = messages[messages.length - 1];
     if (last) petStore.saveMessage(last, persistOptions || {});
   },
 
   _scrollToBottom() {
-    if (this.data.messages.length === 0) return;
-    const last = this.data.messages[this.data.messages.length - 1];
-    if (last && last.id) this.setData({ scrollAnchor: `msg-${last.id}` });
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.messages').scrollOffset();
+    query.exec((res) => {
+      if (!res || !res[0]) return;
+      // 清空 scrollAnchor 避免与 scroll-top 冲突；
+      // 用 scroll-top 设置到内容底部，确保流式刷新（相同目标 id）时也能触发滚动。
+      this.setData({
+        scrollAnchor: '',
+        scrollTop: res[0].scrollHeight,
+      });
+    });
   },
 
   // -------------------------------------------------------------------------
@@ -517,7 +525,9 @@ Page({
 
     if (this.data.connectionState !== 'connected') {
       this._pendingText = text;
-      this.setData({ draft: '', chatState: STATE_THINKING });
+      this.setData({ draft: '', chatState: STATE_THINKING }, () => {
+        this._scrollToBottom();
+      });
       if (this.data.connectionState === 'disconnected') {
         this._otaAndConnect();
         wx.showToast({ title: '它正在赶来…', icon: 'none' });
@@ -532,7 +542,9 @@ Page({
       return;
     }
 
-    this.setData({ draft: '', chatState: STATE_THINKING });
+    this.setData({ draft: '', chatState: STATE_THINKING }, () => {
+      this._scrollToBottom();
+    });
   },
 
   noop() {},

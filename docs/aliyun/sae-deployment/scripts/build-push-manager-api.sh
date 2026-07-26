@@ -18,7 +18,7 @@ echo "🔧 Building manager-api:${VERSION} for ${PLATFORM} ..."
 docker buildx build --platform "${PLATFORM}" \
   -t "${REGISTRY}/manager-api:${VERSION}" \
   -f "${PROJECT_ROOT}/main/manager-api/Dockerfile" "${PROJECT_ROOT}/main/manager-api/" \
-  "${BUILD_SECRET_ARGS[@]}" \
+  ${BUILD_SECRET_ARGS[@]+"${BUILD_SECRET_ARGS[@]}"} \
   --push
 
 echo "✅ manager-api:${VERSION} pushed"

@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: manager_api/payment_subscription
+title: 支付与订阅管理模块
+scope:
+    - main/manager-api/src/main/java/xiaozhi/modules/payment/
+    - main/manager-api/src/main/java/xiaozhi/modules/subscription/
+source_files: []
+depends_on: []
+related_to: []

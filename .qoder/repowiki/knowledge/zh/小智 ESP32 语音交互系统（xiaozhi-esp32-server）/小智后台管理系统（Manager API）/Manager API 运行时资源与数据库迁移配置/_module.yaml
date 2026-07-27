@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: manager_api/resources_config
+title: Manager API 运行时资源与数据库迁移配置
+scope:
+    - main/manager-api/src/main/resources/
+source_files: []
+depends_on: []
+related_to: []

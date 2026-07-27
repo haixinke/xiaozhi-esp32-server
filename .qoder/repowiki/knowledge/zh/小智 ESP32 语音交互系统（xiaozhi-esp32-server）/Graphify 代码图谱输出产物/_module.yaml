@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: graphify_out
+title: Graphify 代码图谱输出产物
+scope:
+    - graphify-out/
+source_files: []
+depends_on: []
+related_to:
+    - path: xiaozhi_server

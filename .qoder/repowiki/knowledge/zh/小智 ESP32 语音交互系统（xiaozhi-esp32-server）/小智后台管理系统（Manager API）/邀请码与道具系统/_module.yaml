@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: manager_api/invite_item
+title: 邀请码与道具系统
+scope:
+    - main/manager-api/src/main/java/xiaozhi/modules/invite/
+    - main/manager-api/src/main/java/xiaozhi/modules/item/
+source_files: []
+depends_on: []
+related_to: []

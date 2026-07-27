@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: egg_miniprogram
+title: 蛋宝宝微信小程序前端（Egg Baby Miniprogram）
+scope:
+    - main/egg-miniprogram/
+source_files: []
+depends_on: []
+related_to:
+    - path: xiaozhi_server/http_api
+    - path: xiaozhi_server/websocket_connection

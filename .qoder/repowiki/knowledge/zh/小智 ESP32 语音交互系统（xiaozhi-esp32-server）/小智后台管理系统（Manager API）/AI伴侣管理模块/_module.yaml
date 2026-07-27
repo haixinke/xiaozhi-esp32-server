@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: manager_api/companion_module
+title: AI伴侣管理模块
+scope:
+    - main/manager-api/src/main/java/xiaozhi/modules/companion/
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: xiaozhi_server/providers/asr
+title: 语音识别（ASR）提供商适配层
+scope:
+    - main/xiaozhi-server/core/providers/asr/
+source_files: []
+depends_on: []
+related_to:
+    - path: xiaozhi_server/models_and_resources
+    - path: xiaozhi_server/providers/tts

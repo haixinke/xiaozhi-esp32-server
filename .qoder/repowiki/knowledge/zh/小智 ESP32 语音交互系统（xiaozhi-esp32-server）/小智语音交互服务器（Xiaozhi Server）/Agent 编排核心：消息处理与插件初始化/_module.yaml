@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: xiaozhi_server/agent_orchestration
+title: Agent 编排核心：消息处理与插件初始化
+scope:
+    - main/xiaozhi-server/core/handle/
+    - main/xiaozhi-server/core/utils/
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: manager_api/security_auth
+title: 安全认证与授权模块
+scope:
+    - main/manager-api/src/main/java/xiaozhi/modules/security/
+source_files: []
+depends_on: []
+related_to: []

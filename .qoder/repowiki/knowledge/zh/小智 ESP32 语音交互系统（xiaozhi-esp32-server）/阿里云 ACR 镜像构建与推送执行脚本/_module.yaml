@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: scripts
+title: 阿里云 ACR 镜像构建与推送执行脚本
+scope:
+    - scripts/
+source_files: []
+depends_on: []
+related_to:
+    - path: docs

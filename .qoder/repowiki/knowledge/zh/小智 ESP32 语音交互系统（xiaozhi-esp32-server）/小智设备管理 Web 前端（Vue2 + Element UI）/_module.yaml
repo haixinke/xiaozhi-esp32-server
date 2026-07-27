@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: manager_web
+title: 小智设备管理 Web 前端（Vue2 + Element UI）
+scope:
+    - main/manager-web/
+source_files: []
+depends_on: []
+related_to:
+    - path: manager_api

@@ -1,0 +1,13 @@
+schema_version: 1
+module_path: xiaozhi_server/websocket_connection
+title: WebSocket 连接服务与认证管理
+scope:
+    - main/xiaozhi-server/core/websocket_server.py
+    - main/xiaozhi-server/core/connection.py
+    - main/xiaozhi-server/core/auth.py
+source_files: []
+depends_on: []
+related_to:
+    - path: digital_human
+    - path: egg_miniprogram
+    - path: miniprogram

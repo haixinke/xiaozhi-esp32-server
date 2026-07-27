@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: xiaozhi_server/providers/tts
+title: TTS语音合成服务提供者集合
+scope:
+    - main/xiaozhi-server/core/providers/tts/
+source_files: []
+depends_on: []
+related_to:
+    - path: xiaozhi_server/providers/asr

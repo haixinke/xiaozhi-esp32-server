@@ -186,6 +186,7 @@ class ConnectionHandler:
                 int(self.config.get("close_connection_no_voice_time", 120)) + 60
         )  # 在原来第一道关闭的基础上加60秒，进行二道关闭
         self.timeout_task = None
+        self._background_init_task = None
 
         # {"mcp":true} 表示启用MCP功能
         self.features = None
@@ -248,7 +249,7 @@ class ConnectionHandler:
             self.logger.bind(tag=TAG).info(f"配置输出音频采样率为: {self.sample_rate}")
 
             # 在后台初始化配置和组件（完全不阻塞主循环）
-            asyncio.create_task(self._background_initialize())
+            self._background_init_task = asyncio.create_task(self._background_initialize())
 
             try:
                 async for message in self.websocket:
@@ -774,8 +775,12 @@ class ConnectionHandler:
         try:
             # 异步获取差异化配置
             await self._initialize_private_config_async()
-            # 在线程池中初始化组件
-            self.executor.submit(self._initialize_components)
+            # 在线程池中初始化组件（防御性检查：连接可能已关闭导致 executor 被置空）
+            if self.executor is not None:
+                self.executor.submit(self._initialize_components)
+            else:
+                self.logger.bind(tag=TAG).info("连接已关闭，跳过组件初始化")
+                return
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"后台初始化失败: {e}")
 
@@ -1581,6 +1586,15 @@ class ConnectionHandler:
                 except asyncio.CancelledError:
                     pass
                 self._aec_cache_cleanup_task = None
+
+            # 取消后台初始化任务（避免连接关闭后仍尝试访问已释放的 executor 等资源）
+            if hasattr(self, "_background_init_task") and self._background_init_task and not self._background_init_task.done():
+                self._background_init_task.cancel()
+                try:
+                    await self._background_init_task
+                except asyncio.CancelledError:
+                    pass
+                self._background_init_task = None
 
             # 清理AEC缓存
             if hasattr(self, "aec_audio_cache"):

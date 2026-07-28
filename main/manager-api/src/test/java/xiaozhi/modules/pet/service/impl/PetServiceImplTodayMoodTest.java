@@ -16,8 +16,10 @@ import org.springframework.context.MessageSource;
 
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
+import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
+import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
 import xiaozhi.modules.pet.config.PetAvatarProperties;
@@ -31,6 +33,7 @@ import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.util.MoodDecider;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
@@ -231,6 +234,78 @@ class PetServiceImplTodayMoodTest {
         String expectedEggLine = MoodLinePool.pick(false, TodayMood.HAPPY,
                 LocalDate.now(ZoneId.of(MOOD_ZONE)).toString());
         assertThat(pet.getTodayMoodSentence()).isEqualTo(expectedEggLine);
+    }
+
+    /** 破壳 10 天、绑定设备的宠物（旧逻辑下必为低落） */
+    private PetEntity staleHatchedPetWithDevice() {
+        PetEntity pet = hatchedPet();
+        pet.setHatchedAt(new Date(System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000));
+        pet.setDeviceId("device-1");
+        return pet;
+    }
+
+    private void mockDeviceWithMac() {
+        DeviceEntity device = new DeviceEntity();
+        device.setId("device-1");
+        device.setMacAddress("AA:BB:CC:DD:EE:FF");
+        when(deviceDao.selectById("device-1")).thenReturn(device);
+    }
+
+    @Test
+    @DisplayName("破壳10天前但1小时前有用户聊天 → 开心(基线接入真实互动，不再低落)")
+    void refresh_recentChat_overridesStaleHatchedAt() {
+        PetEntity pet = staleHatchedPetWithDevice();
+        mockDeviceWithMac();
+        AgentChatHistoryEntity lastChat = new AgentChatHistoryEntity();
+        lastChat.setCreatedAt(LocalDateTime.now(ZoneId.of(MOOD_ZONE)).minusHours(1).toString());
+        when(chatHistoryDao.selectOne(any())).thenReturn(lastChat);
+        when(llmService.isAvailable()).thenReturn(false);
+
+        petService.refreshTodayMood(pet);
+
+        assertThat(pet.getTodayMood()).isEqualTo("开心");
+        verify(petDao).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("无聊天记录 → 回退静态基线(破壳10天 → 低落)")
+    void refresh_noChatHistory_fallsBackStaticBaseline() {
+        PetEntity pet = staleHatchedPetWithDevice();
+        mockDeviceWithMac();
+        when(chatHistoryDao.selectOne(any())).thenReturn(null);
+        when(llmService.isAvailable()).thenReturn(false);
+
+        petService.refreshTodayMood(pet);
+
+        assertThat(pet.getTodayMood()).isEqualTo("低落");
+    }
+
+    @Test
+    @DisplayName("created_at 解析失败 → 回退静态基线且不抛异常")
+    void refresh_unparsableCreatedAt_fallsBackNoThrow() {
+        PetEntity pet = staleHatchedPetWithDevice();
+        mockDeviceWithMac();
+        AgentChatHistoryEntity lastChat = new AgentChatHistoryEntity();
+        lastChat.setCreatedAt("not-a-date");
+        when(chatHistoryDao.selectOne(any())).thenReturn(lastChat);
+        when(llmService.isAvailable()).thenReturn(false);
+
+        petService.refreshTodayMood(pet);
+
+        assertThat(pet.getTodayMood()).isEqualTo("低落");
+        assertThat(pet.getTodayMoodSentence()).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("无设备的蛋 → 不查聊天记录，直接走静态基线")
+    void refresh_noDevice_skipsChatQuery() {
+        PetEntity pet = hatchedPet(); // deviceId=null
+        when(llmService.isAvailable()).thenReturn(false);
+
+        petService.refreshTodayMood(pet);
+
+        verify(chatHistoryDao, never()).selectOne(any());
+        assertThat(pet.getTodayMood()).isNotBlank();
     }
 
     @Test

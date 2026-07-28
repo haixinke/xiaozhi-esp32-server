@@ -61,7 +61,9 @@ import xiaozhi.modules.pet.vo.UserProfileVO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -722,8 +724,10 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
 
         long now = System.currentTimeMillis();
-        long baselineMs = MoodDecider.baseline(pet, now);
-        TodayMood mood = MoodDecider.decide(pet, baselineMs, now);
+        // 活跃度基线：最近一条用户聊天消息时间优先，无聊天记录回退破壳/孵化时间戳
+        Long lastInteractionMs = resolveLastInteractionMs(pet);
+        long baselineMs = lastInteractionMs != null ? lastInteractionMs : MoodDecider.baseline(pet, now);
+        TodayMood mood = MoodDecider.decide(pet, baselineMs, now, today);
         String sentence = generateMoodSentence(pet, mood, today);
 
         // 幂等写回：仅当今日未生成时更新，防并发双写
@@ -739,6 +743,55 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setTodayMood(mood.getLabel());
         pet.setTodayMoodDate(today);
         pet.setTodayMoodSentence(sentence);
+    }
+
+    /**
+     * 查询宠物最近一次真实互动时间（最近一条用户聊天消息的 created_at，单位 ms）。
+     * 无设备/无 mac/无聊天记录/解析失败均返回 null，由调用方回退静态基线。
+     */
+    private Long resolveLastInteractionMs(PetEntity pet) {
+        if (StringUtils.isBlank(pet.getDeviceId())) {
+            return null;
+        }
+        try {
+            DeviceEntity device = deviceDao.selectById(pet.getDeviceId());
+            if (device == null || StringUtils.isBlank(device.getMacAddress())) {
+                return null;
+            }
+            AgentChatHistoryEntity last = chatHistoryDao.selectOne(new QueryWrapper<AgentChatHistoryEntity>()
+                    .select("created_at")
+                    .eq("mac_address", device.getMacAddress())
+                    .eq("chat_type", 1)
+                    .orderByDesc("id")
+                    .last("LIMIT 1"));
+            if (last == null || StringUtils.isBlank(last.getCreatedAt())) {
+                return null;
+            }
+            return parseChatCreatedAtMs(last.getCreatedAt());
+        } catch (Exception e) {
+            log.warn("查询宠物最近互动时间失败，回退静态基线，petId={}", pet.getId(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 容错解析聊天记录 created_at（ISO 8601 字符串）：带时区直接取 Instant；
+     * 无时区（含空格分隔变体）按 Asia/Shanghai 解释；解析失败返回 null。
+     */
+    private Long parseChatCreatedAtMs(String createdAt) {
+        String text = createdAt.trim();
+        try {
+            return OffsetDateTime.parse(text).toInstant().toEpochMilli();
+        } catch (DateTimeParseException ignored) {
+            // 继续尝试无时区格式
+        }
+        try {
+            String normalized = text.contains("T") ? text : text.replace(' ', 'T');
+            return LocalDateTime.parse(normalized).atZone(ZoneId.of(MOOD_ZONE_ID)).toInstant().toEpochMilli();
+        } catch (DateTimeParseException e) {
+            log.warn("聊天记录 created_at 解析失败，回退静态基线：{}", createdAt);
+            return null;
+        }
     }
 
     @Override

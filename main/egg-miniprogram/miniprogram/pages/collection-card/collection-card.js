@@ -10,9 +10,10 @@ function birthdayLabel(value) {
   return match ? `${Number(match[1])}年${Number(match[2])}月${Number(match[3])}日` : String(value || '');
 }
 
+// 性别用 emoji 展示；页面与 Canvas 分享卡共用同一映射，保持两处一致
 function genderLabel(value) {
-  if (value === 'FEMALE') return '女';
-  if (value === 'MALE') return '男';
+  if (value === 'FEMALE') return '♀️';
+  if (value === 'MALE') return '♂️';
   return value || '—';
 }
 

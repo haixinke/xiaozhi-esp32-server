@@ -14,10 +14,10 @@
       <view wx:else class="pet-view">
         <view class="top-row">
           <view>
-            <text class="eyebrow">{{pet.petType}} · {{stage === 'hatched' ? '已破壳' : '孵化记录'}}</text>
+            <text class="eyebrow">{{stage === 'hatched' ? pet.petType + ' · 已破壳' : '孵化记录'}}</text>
             <text class="pet-name">{{pet.name || '还没有名字'}}</text>
           </view>
-          <view class="progress-ring"><text>{{pet.progress}}%</text></view>
+          <view wx:if="{{stage !== 'hatched'}}" class="progress-ring"><text>{{pet.progress}}%</text></view>
         </view>
 
         <view class="egg-zone" bindtap="onOpenProfile">

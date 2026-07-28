@@ -78,6 +78,9 @@ class WebSocketManager {
     this._url = wsUrl;
     this._deviceId = deviceId;
     this._token = token || null;
+    // 显式调用 connect 即表达连接意图，复位手动关闭标志；
+    // 否则 disconnect 后重连若首次尝试失败，_scheduleReconnect 会被 _manualClose 拦截。
+    this._manualClose = false;
 
     // 已有连接：先优雅关闭再重连。
     if (this.socket) {

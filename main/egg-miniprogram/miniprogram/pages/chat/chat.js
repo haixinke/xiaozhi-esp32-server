@@ -36,6 +36,7 @@ Page({
   _historyLoading: false,
   _historyNoMore: false,
   _scrollTop: 0,
+  _suspendedByHide: false,
   wsManager: null,
   audioManager: null,
 
@@ -75,6 +76,23 @@ Page({
   onShow() {
     if (this.audioManager && this.data.connectionState === 'connected') {
       this.audioManager.resetAudioContext();
+    }
+    // onHide 主动断开后回到页面时重连（首次进入由 onLoad 负责连接，不走这里）
+    if (this._suspendedByHide) {
+      this._suspendedByHide = false;
+      if (this.wsManager && !this.wsManager.isConnected()) {
+        this._otaAndConnect();
+      }
+    }
+  },
+
+  onHide() {
+    // 页面不可见（切后台或跳转其他页面）时主动断开，
+    // 避免僵尸连接占用服务端连接名额（否则要等服务端约3分钟超时回收）。
+    // chatState 重置与停止播放由 onStateChange('disconnected') 回调统一处理。
+    this._suspendedByHide = true;
+    if (this.wsManager) {
+      this.wsManager.disconnect();
     }
   },
 

@@ -309,4 +309,27 @@ public interface ErrorCode {
     int INVALID_BIRTHDAY = 10219; // 生日格式错误
     int AVATAR_FILE_TYPE_ERROR = 10220; // 头像文件类型错误，仅支持jpg/png/webp
     int CITY_TOO_LONG = 10221; // 城市最多32个字符
+
+    // PDC NFC 实物生产域错误码
+    int PDC_NFC_FEATURE_DISABLED = 10500; // NFC 功能未开启
+    int PDC_NFC_MODEL_ID_NOT_CONFIGURED = 10501; // NFC 模型ID未配置
+    int PDC_NFC_RELEASE_NOT_READY = 10502; // NFC 尚未发布就绪
+    int PDC_NFC_CRYPTO_NOT_CONFIGURED = 10503; // NFC 密钥未配置
+    int PDC_NFC_INVALID_STATE = 10504; // NFC 状态转换不合法
+    int PDC_NFC_ASSET_NOT_FOUND = 10505; // NFC 资产不存在
+    int PDC_NFC_ASSET_UNAVAILABLE = 10506; // NFC 资产不可用
+    int PDC_NFC_ASSET_ALREADY_CLAIMED = 10507; // NFC 资产已被领取
+    int PDC_NFC_IDEMPOTENCY_CONFLICT = 10508; // NFC 幂等冲突
+    int PDC_NFC_BATCH_NOT_FOUND = 10509; // NFC 批次不存在
+    int PDC_NFC_JOB_NOT_FOUND = 10510; // NFC 任务不存在
+    int PDC_NFC_JOB_CONFLICT = 10511; // NFC 任务冲突
+    int PDC_NFC_WECHAT_NFC_ERROR = 10512; // 微信 NFC 接口错误
+    int PDC_NFC_CSV_FORMAT_ERROR = 10513; // CSV 格式错误
+    int PDC_NFC_CSV_CONTENT_MISMATCH = 10514; // CSV 内容不匹配
+    int PDC_NFC_BULK_LIMIT_EXCEEDED = 10515; // 批量操作超限
+    int PDC_NFC_PHONE_REQUIRED = 10516; // 需要手机号
+    int PDC_NFC_RATE_LIMITED = 10517; // 操作频率受限
+    int PDC_NFC_INVALID_PROTOTYPE = 10518; // 无效的原型编码
+    int PDC_NFC_INVALID_MODEL_ID = 10519; // 无效的模型ID
+    int PDC_NFC_WRITE_RESULT_CONFLICT = 10520; // 写卡结果冲突
 }

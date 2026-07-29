@@ -1,4 +1,5 @@
 const auth = require('../../utils/auth');
+const { getPendingNfcClaimIntent } = require('../../utils/nfc-claim-intent');
 
 Page({
   data: {
@@ -10,6 +11,7 @@ Page({
     const cached = auth.getSession();
     if (cached && !auth.isExpired()) {
       if (cached.hasPhone === true) {
+        if (this.navigateNfcClaim()) return;
         wx.switchTab({ url: '/pages/home/home' });
         return;
       }
@@ -20,8 +22,19 @@ Page({
     this.setData({ ready: true });
     const session = await getApp().ensureLogin().catch(() => null);
     if (session && session.userId && session.hasPhone === true) {
+      if (this.navigateNfcClaim()) return;
       wx.switchTab({ url: '/pages/home/home' });
     }
+  },
+
+  navigateNfcClaim() {
+    const intent = getPendingNfcClaimIntent();
+    if (intent && intent.claimRef) {
+      getApp().globalData.welcomeCompleted = true;
+      wx.redirectTo({ url: '/pages/nfc-claim/nfc-claim' });
+      return true;
+    }
+    return false;
   },
 
   onEnterIsland() {

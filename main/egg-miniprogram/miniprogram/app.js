@@ -1,5 +1,6 @@
 const auth = require('./utils/auth');
 const { post } = require('./utils/request');
+const { captureNfcClaimIntent } = require('./utils/nfc-claim-intent');
 
 const AUTH_FIELDS = ['token', 'userId', 'openid', 'isNewUser', 'hasPhone', 'agentId'];
 
@@ -33,6 +34,7 @@ App({
   },
 
   onLaunch(options) {
+    captureNfcClaimIntent(options);
     this.globalData.launchPath = options && options.path
       ? options.path
       : 'pages/home/home';
@@ -50,7 +52,8 @@ App({
       });
   },
 
-  onShow() {
+  onShow(options) {
+    captureNfcClaimIntent(options);
     const session = auth.getSession();
     if (session && auth.isExpired()) {
       this.clearLoginState();

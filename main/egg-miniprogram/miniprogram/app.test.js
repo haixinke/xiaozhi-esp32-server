@@ -19,6 +19,7 @@ let relaunchedTo = null;
 let relaunchCalls = 0;
 let hideTabBarCalls = 0;
 let currentRoute = 'pages/home/home';
+let captureCalls = [];
 
 const auth = {
   getSession: () => storedSession,
@@ -45,9 +46,17 @@ const request = {
   }
 };
 
+const nfcClaimIntent = {
+  captureNfcClaimIntent(options) {
+    captureCalls.push(options);
+    return null;
+  }
+};
+
 Module._load = function (requestPath, parent, isMain) {
   if (parent && parent.filename === appPath && requestPath === './utils/auth') return auth;
   if (parent && parent.filename === appPath && requestPath === './utils/request') return request;
+  if (parent && parent.filename === appPath && requestPath === './utils/nfc-claim-intent') return nfcClaimIntent;
   return originalLoad.call(this, requestPath, parent, isMain);
 };
 
@@ -99,8 +108,12 @@ async function run() {
   relaunchedTo = null;
   relaunchCalls = 0;
   currentRoute = 'pages/home/home';
-  appConfig.onLaunch.call(appConfig, { path: 'pages/home/home' });
+  captureCalls = [];
+  const launchOptions = { path: 'pages/home/home' };
+  appConfig.onLaunch.call(appConfig, launchOptions);
   await appConfig.globalData.authReady;
+  assert.strictEqual(captureCalls.length, 1, 'onLaunch must capture NFC intent');
+  assert.strictEqual(captureCalls[0], launchOptions, 'onLaunch must pass launch options to capture');
   assert.strictEqual(hideTabBarCalls, 1,
     'home launch hides the native tab bar before the pet state is restored');
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
@@ -108,7 +121,11 @@ async function run() {
   assert.strictEqual(relaunchCalls, 1,
     'launch should schedule only one welcome redirect');
 
-  appConfig.onShow.call(appConfig);
+  captureCalls = [];
+  const showOptions = { path: 'pages/nfc-claim/nfc-claim', query: { v: '1', ref: 'ABCDEFGHIJ1234567890_-' } };
+  appConfig.onShow.call(appConfig, showOptions);
+  assert.strictEqual(captureCalls.length, 1, 'onShow must capture NFC intent');
+  assert.strictEqual(captureCalls[0], showOptions, 'onShow must pass show options to capture');
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
     'in-flight launch redirect remains the welcome destination');
   assert.strictEqual(relaunchCalls, 1,

@@ -11,17 +11,23 @@ const originalNow = Date.now;
 let pageConfig;
 let ensureCalls = 0;
 let switchedTo = null;
+let redirectTo = null;
 let ensureSession = null;
 let cachedSession = null;
 let cachedExpired = false;
+let pendingIntent = null;
 
 const authMock = {
   getSession: () => cachedSession,
   isExpired: () => cachedExpired
 };
 
+const nfcIntentMock = {
+  getPendingNfcClaimIntent: () => pendingIntent
+};
+
 const app = {
-  globalData: { userId: null, hasPhone: null },
+  globalData: { userId: null, hasPhone: null, welcomeCompleted: false },
   async ensureLogin() {
     ensureCalls += 1;
     return ensureSession;
@@ -35,6 +41,7 @@ const app = {
 Module._load = function (request, parent, isMain) {
   if (parent && parent.filename === welcomePath) {
     if (request === '../../utils/auth') return authMock;
+    if (request === '../../utils/nfc-claim-intent') return nfcIntentMock;
   }
   return originalLoad.call(this, request, parent, isMain);
 };
@@ -42,7 +49,8 @@ Module._load = function (request, parent, isMain) {
 global.Page = (config) => { pageConfig = config; };
 global.getApp = () => app;
 global.wx = {
-  switchTab({ url }) { switchedTo = url; }
+  switchTab({ url }) { switchedTo = url; },
+  redirectTo({ url }) { redirectTo = url; }
 };
 
 function makePage() {
@@ -58,9 +66,11 @@ function makePage() {
 function resetScenario() {
   ensureCalls = 0;
   switchedTo = null;
+  redirectTo = null;
   ensureSession = null;
   cachedSession = null;
   cachedExpired = false;
+  pendingIntent = null;
   app.globalData = { userId: null, hasPhone: null, welcomeCompleted: false };
 }
 
@@ -100,6 +110,46 @@ async function run() {
   entered.onEnterIsland();
   assert.strictEqual(switchedTo, '/pages/home/home', 'entry button enters home');
   assert.strictEqual(app.globalData.welcomeCompleted, true, 'entry button marks welcome as completed');
+
+  // NFC意图 + 已绑定手机号（同步路径）→ 跳转领取页
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  cachedExpired = false;
+  pendingIntent = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
+  const nfcSyncPage = makePage();
+  await nfcSyncPage.onLoad();
+  assert.strictEqual(redirectTo, '/pages/nfc-claim/nfc-claim', 'NFC intent + phone bound navigates to claim page');
+  assert.strictEqual(switchedTo, null, 'NFC intent should not switchTab to home');
+  assert.strictEqual(app.globalData.welcomeCompleted, true, 'NFC navigation marks welcome completed');
+
+  // NFC意图 + 异步登录后已绑定手机号 → 跳转领取页
+  resetScenario();
+  ensureSession = { userId: 42, hasPhone: true };
+  pendingIntent = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
+  const nfcAsyncPage = makePage();
+  await nfcAsyncPage.onLoad();
+  assert.strictEqual(redirectTo, '/pages/nfc-claim/nfc-claim', 'NFC intent after async login navigates to claim page');
+  assert.strictEqual(switchedTo, null, 'NFC intent should not switchTab to home');
+
+  // NFC意图但无手机号 → 停留欢迎页
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: false };
+  cachedExpired = false;
+  pendingIntent = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
+  const nfcNoPhonePage = makePage();
+  await nfcNoPhonePage.onLoad();
+  assert.strictEqual(redirectTo, null, 'NFC intent without phone stays on welcome');
+  assert.strictEqual(switchedTo, null, 'NFC intent without phone stays on welcome');
+
+  // 无NFC意图 + 已绑定手机号 → 正常跳转首页
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  cachedExpired = false;
+  pendingIntent = null;
+  const noNfcPage = makePage();
+  await noNfcPage.onLoad();
+  assert.strictEqual(switchedTo, '/pages/home/home', 'no NFC intent navigates to home');
+  assert.strictEqual(redirectTo, null, 'no NFC intent does not redirectTo');
 
   console.log('welcome.test.js: ALL PASS');
 }

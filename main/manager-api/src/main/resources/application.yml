@@ -143,3 +143,21 @@ pet:
       base-url: https://oss.eggbabe.com/default-scenes/rabbit/
       prefix: scenes-rabbit
       count: 6
+
+# PDC NFC 实物生产域配置（fail-closed：所有功能默认关闭）
+pdc:
+  nfc:
+    enabled: ${PDC_NFC_ENABLED:false}
+    model-id: ${PDC_NFC_MODEL_ID:}
+    release-ready: ${PDC_NFC_RELEASE_READY:false}
+    scheme-generation-enabled: ${PDC_NFC_SCHEME_GENERATION_ENABLED:false}
+    activation-enabled: ${PDC_NFC_ACTIVATION_ENABLED:false}
+    claim-enabled: ${PDC_NFC_CLAIM_ENABLED:false}
+    max-batch-quantity: ${PDC_NFC_MAX_BATCH_QUANTITY:10000}
+    claim-ref:
+      active-version: ${PDC_NFC_CLAIM_ACTIVE_VERSION:}
+      active-hmac-key-base64: ${PDC_NFC_ACTIVE_HMAC_KEY_BASE64:}
+      active-aes-key-base64: ${PDC_NFC_ACTIVE_AES_KEY_BASE64:}
+      previous-version: ${PDC_NFC_CLAIM_PREVIOUS_VERSION:}
+      previous-hmac-key-base64: ${PDC_NFC_PREVIOUS_HMAC_KEY_BASE64:}
+      previous-aes-key-base64: ${PDC_NFC_PREVIOUS_AES_KEY_BASE64:}

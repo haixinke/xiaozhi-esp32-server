@@ -1,12 +1,11 @@
 # NFC 模块测试专用配置 - 禁用外部依赖和所有功能开关
 # 测试密钥仅存在于 src/test/resources，不得用于生产
 
-# 禁用 Redis 外部连接
-renren:
-  redis:
-    open: false
-
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   data:
     redis:
       host: 127.0.0.1
@@ -31,8 +30,8 @@ pdc:
     max-batch-quantity: 10000
     claim-ref:
       active-version: v1
-      active-hmac-key-base64: AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI=
-      active-aes-key-base64: AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+      active-hmac-key-base64: AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI=
+      active-aes-key-base64: AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
       previous-version: v0
-      previous-hmac-key-base64: BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=
-      previous-aes-key-base64: AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=
+      previous-hmac-key-base64: BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=
+      previous-aes-key-base64: AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=

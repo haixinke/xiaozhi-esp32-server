@@ -212,4 +212,31 @@ public class RedisKeys {
         return "wechat:miniprogram:access_token";
     }
 
+
+    // ----- NFC Claim Rate Limiting Keys -----
+
+    public static String getNfcClaimPreviewUserKey(Long userId, long epochMinute) {
+        return "pdc:nfc:claim:preview:user:" + userId + ":" + epochMinute;
+    }
+
+    public static String getNfcClaimPreviewAssetKey(Long assetId, long epochMinute) {
+        return "pdc:nfc:claim:preview:asset:" + assetId + ":" + epochMinute;
+    }
+
+    public static String getNfcClaimConfirmUserKey(Long userId, long epochMinute) {
+        return "pdc:nfc:claim:confirm:user:" + userId + ":" + epochMinute;
+    }
+
+    public static String getNfcClaimConfirmAssetKey(Long assetId, long epochMinute) {
+        return "pdc:nfc:claim:confirm:asset:" + assetId + ":" + epochMinute;
+    }
+
+    public static String getNfcClaimInvalidRefKey(Long userId, long epochTenMinute) {
+        return "pdc:nfc:claim:invalid:user:" + userId + ":" + epochTenMinute;
+    }
+
+    public static String getNfcClaimContentionKey(Long assetId, long epochTenMinute) {
+        return "pdc:nfc:claim:contention:asset:" + assetId + ":" + epochTenMinute;
+    }
+
 }

@@ -34,9 +34,13 @@ public class PdcNfcWriteJobItemEntity {
 
     private String schemeSha256;
 
+    private String uriSha256;
+
     private String uriTnf;
 
     private String uriType;
+
+    private String uriPayload;
 
     private String aarTnf;
 

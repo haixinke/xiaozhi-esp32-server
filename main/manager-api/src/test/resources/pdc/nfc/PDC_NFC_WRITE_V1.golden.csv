@@ -1,0 +1,3 @@
+﻿format_version,job_no,batch_no,item_no,asset_no,wechat_sn,sku_code,prototype,uri_tnf,uri_type,uri_payload,aar_tnf,aar_type,aar_payload
+"V1","WRT-100-1","B20260729001","1","B20260729001-000001","EB00000000000000000000000001","SKU-KOI","锦鲤","01","55","weixin://wxpay/test-scheme-1","04","android.com:pkg","com.tencent.mm"
+"V1","WRT-100-1","B20260729001","2","B20260729001-000002","EB00000000000000000000000002","SKU-KOI","玉兔","01","55","weixin://wxpay/test-scheme-2","04","android.com:pkg","com.tencent.mm"

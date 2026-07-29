@@ -62,6 +62,23 @@ public class ClaimRefProtection {
         return hashes;
     }
 
+    /**
+     * 加密 Scheme URL（AES-256-GCM，assetId 作为 AAD），并计算 SHA-256 摘要。
+     * 与 claimRef 加密复用同一密钥版本，但产出独立的 nonce/ciphertext/sha256。
+     */
+    public SchemeEncryption encryptScheme(Long assetId, String scheme) {
+        validateCryptoConfig();
+        byte[] nonce = new byte[NONCE_BYTES];
+        new java.security.SecureRandom().nextBytes(nonce);
+        byte[] aad = Long.toUnsignedString(assetId).getBytes(StandardCharsets.UTF_8);
+        byte[] aesKey = activeAesKeyBytes();
+        byte[] ciphertext = aesGcmEncrypt(aesKey, nonce, aad, scheme.getBytes(StandardCharsets.UTF_8));
+        return new SchemeEncryption(
+                sha256Hex(scheme),
+                new EncryptedField(properties.getClaimRef().getActiveVersion(), nonce, ciphertext)
+        );
+    }
+
     // --- internal ---
 
     private void validateCryptoConfig() {
@@ -162,5 +179,15 @@ public class ClaimRefProtection {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    private static String sha256Hex(String value) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(value.getBytes(StandardCharsets.UTF_8));
+            return bytesToHex(hash);
+        } catch (Exception e) {
+            throw new RenException(ErrorCode.PDC_NFC_CRYPTO_NOT_CONFIGURED, e);
+        }
     }
 }

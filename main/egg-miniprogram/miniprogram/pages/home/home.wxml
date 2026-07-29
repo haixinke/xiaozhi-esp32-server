@@ -14,7 +14,7 @@
       <view wx:else class="pet-view">
         <view class="top-row">
           <view>
-            <text class="eyebrow">{{stage === 'hatched' ? pet.petType + ' · 已破壳' : '孵化记录'}}</text>
+            <text class="eyebrow">{{stage === 'hatched' ? pet.petType + ' · 已破壳' : '孵化记录'}}{{petCount > 1 ? ' · 共' + petCount + '只' : ''}}</text>
             <text class="pet-name">{{pet.name || '还没有名字'}}</text>
           </view>
           <view wx:if="{{stage !== 'hatched'}}" class="progress-ring"><text>{{pet.progress}}%</text></view>

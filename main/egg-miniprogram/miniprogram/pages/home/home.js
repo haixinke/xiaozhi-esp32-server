@@ -18,6 +18,7 @@ Page({
     actionLabel: '孵化修炼手册',
     authChecked: false,
     petRestoreLoading: true,
+    petCount: 0,
     hatching: false,
     showPhoneAuthorization: false,
     authorizingPhone: false
@@ -76,6 +77,7 @@ Page({
     try {
       const list = await get('/pet/list');
       if (Array.isArray(list) && list.length > 0) {
+        this.setData({ petCount: list.length });
         this.renderPet(petStore.savePetFromVO(list[0]));
       }
     } catch (error) {

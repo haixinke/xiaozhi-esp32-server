@@ -99,3 +99,68 @@ export function formatDate(dateStr) {
   if (Number.isNaN(d.getTime())) return '-'
   return d.toLocaleString('zh-CN')
 }
+
+// ==================== 扫码状态管理 ====================
+
+/**
+ * 创建一个空的扫码状态对象
+ * @returns {{ codes: string[], maxCodes: number }}
+ */
+export function emptyScannerState() {
+  return { codes: [], maxCodes: 500 }
+}
+
+/**
+ * 接受一次扫码输入，自动去空格、去重、封顶
+ * @param {{ codes: string[], maxCodes: number }} state
+ * @param {string} rawInput
+ * @returns {{ codes: string[], maxCodes: number }}
+ */
+export function acceptScan(state, rawInput) {
+  const code = (rawInput || '').trim()
+  if (!code) return state
+  if (state.codes.includes(code)) return state  // 去重
+  if (state.codes.length >= state.maxCodes) return state  // 封顶 500
+  return { ...state, codes: [...state.codes, code] }
+}
+
+/**
+ * 从扫码列表中移除一个编码
+ * @param {{ codes: string[], maxCodes: number }} state
+ * @param {string} code
+ * @returns {{ codes: string[], maxCodes: number }}
+ */
+export function removeScan(state, code) {
+  return { ...state, codes: state.codes.filter(c => c !== code) }
+}
+
+/**
+ * 清空扫码列表
+ * @param {{ codes: string[], maxCodes: number }} state
+ * @returns {{ codes: string[], maxCodes: number }}
+ */
+export function clearScanner(state) {
+  return { ...state, codes: [] }
+}
+
+// ==================== 安全资产展示 ====================
+
+/**
+ * 将资产对象转换为安全展示视图（不含任何敏感字段）
+ * 敏感字段 claimRef、claimHash、schemeCiphertext、scheme URL、tagUid 等永远不会出现。
+ * @param {object|null|undefined} asset
+ * @returns {object|null}
+ */
+export function presentAsset(asset) {
+  if (!asset) return null
+  const allowed = ['id', 'assetNo', 'batchNo', 'itemNo', 'skuCode', 'prototype',
+    'wechatSn', 'status', 'schemeSha256', 'stockBusinessNo',
+    'activationBusinessNo', 'claimedAt', 'stockedAt', 'activatedAt']
+  const result = {}
+  for (const key of allowed) {
+    if (asset[key] !== undefined) result[key] = asset[key]
+  }
+  // 状态时间线（非敏感）
+  if (asset.statusTimeline) result.statusTimeline = asset.statusTimeline
+  return result
+}

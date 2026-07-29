@@ -262,7 +262,7 @@ const routes = [
     path: '/pdc-nfc/assets',
     name: 'NfcAssets',
     component: function () {
-      return import('../views/NfcPlaceholder.vue')
+      return import('../views/nfc/NfcAssetManagement.vue')
     },
     meta: {
       requiresAuth: true,
@@ -271,10 +271,22 @@ const routes = [
     }
   },
   {
+    path: '/pdc-nfc/activation',
+    name: 'NfcActivation',
+    component: function () {
+      return import('../views/nfc/NfcActivationManagement.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: 'NFC 扫码激活'
+    }
+  },
+  {
     path: '/pdc-nfc/audit',
     name: 'NfcAudit',
     component: function () {
-      return import('../views/NfcPlaceholder.vue')
+      return import('../views/nfc/NfcOperationLogManagement.vue')
     },
     meta: {
       requiresAuth: true,
@@ -323,6 +335,18 @@ router.beforeEach((to, from, next) => {
     const token = localStorage.getItem('token')
     // 优先使用 Vuex 中的 userInfo，刷新竞态时回退到 localStorage
     const vuexUserInfo = router.app && router.app.$store ? router.app.$store.state.userInfo : null
+    const userInfo = vuexUserInfo || readStoredUserInfo()
+    const result = canAccessRoute(to, token, userInfo)
+    if (!result.allowed) {
+      next({ path: result.redirect, query: result.redirect === '/login' ? { redirect: to.fullPath } : {} })
+      return
+    }
+  }
+
+  next()
+})
+
+export default router
     const userInfo = vuexUserInfo || readStoredUserInfo()
     const result = canAccessRoute(to, token, userInfo)
     if (!result.allowed) {

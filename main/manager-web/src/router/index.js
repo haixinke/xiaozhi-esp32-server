@@ -214,7 +214,7 @@ const routes = [
     path: '/pdc-nfc/product-types',
     name: 'NfcProductTypes',
     component: function () {
-      return import('../views/NfcPlaceholder.vue')
+      return import('../views/nfc/NfcProductTypeManagement.vue')
     },
     meta: {
       requiresAuth: true,
@@ -226,7 +226,7 @@ const routes = [
     path: '/pdc-nfc/batches',
     name: 'NfcBatches',
     component: function () {
-      return import('../views/NfcPlaceholder.vue')
+      return import('../views/nfc/NfcBatchManagement.vue')
     },
     meta: {
       requiresAuth: true,

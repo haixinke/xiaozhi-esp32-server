@@ -7,11 +7,20 @@ const pdcNfcSource = await readFile(
   new URL('../src/apis/module/pdcNfc.js', import.meta.url),
   'utf8'
 )
+const apiSource = await readFile(
+  new URL('../src/apis/api.js', import.meta.url),
+  'utf8'
+)
+const routerSource = await readFile(
+  new URL('../src/router/index.js', import.meta.url),
+  'utf8'
+)
 
 // Expected method names and their corresponding URL patterns
 const expectedMethods = [
   { name: 'listProductTypes', url: '/pdc/nfc/admin/product-types', method: 'GET' },
   { name: 'createProductType', url: '/pdc/nfc/admin/product-types', method: 'POST' },
+  { name: 'registerProductTypeEvidence', url: '/pdc/nfc/admin/product-types/', method: 'POST' },
   { name: 'listBatches', url: '/pdc/nfc/admin/batches', method: 'GET' },
   { name: 'createBatch', url: '/pdc/nfc/admin/batches', method: 'POST' },
   { name: 'startSchemeJob', url: '/pdc/nfc/admin/scheme/batches/', method: 'POST' },
@@ -21,6 +30,7 @@ const expectedMethods = [
   { name: 'createWriteJob', url: '/pdc/nfc/admin/write/batches/', method: 'POST' },
   { name: 'downloadWriteJob', url: '/pdc/nfc/admin/write/jobs/', method: 'GET' },
   { name: 'importWriteResult', url: '/pdc/nfc/admin/write/jobs/', method: 'POST' },
+  { name: 'getWriteJob', url: '/pdc/nfc/admin/write/jobs/', method: 'GET' },
   { name: 'cancelWriteJob', url: '/pdc/nfc/admin/write/jobs/', method: 'POST' },
   { name: 'listAssets', url: '/pdc/nfc/admin/assets', method: 'GET' },
   { name: 'assetDetail', url: '/pdc/nfc/admin/assets/', method: 'GET' },
@@ -34,12 +44,8 @@ const expectedMethods = [
 
 describe('pdcNfc API module', () => {
   it('exports the expected number of methods', () => {
-    // Count method definitions: lines like `  methodName(params, callback) {`
-    const methodMatches = pdcNfcSource.match(/^\s{2}\w+\s*\(/gm) || []
-    // Filter out non-method matches (like function calls inside methods)
-    // Method definitions are at 2-space indentation inside the object literal
     const methodCount = expectedMethods.length
-    assert.equal(methodCount, 20, 'expected 20 API methods')
+    assert.equal(methodCount, 22, 'expected 22 API methods')
   })
 
   it('each expected method name is defined in the module', () => {
@@ -55,7 +61,6 @@ describe('pdcNfc API module', () => {
 
   it('each method uses the correct URL pattern', () => {
     for (const { name, url } of expectedMethods) {
-      // Check that the URL appears in the method's section
       assert.ok(
         pdcNfcSource.includes(url),
         `URL "${url}" for method "${name}" not found in pdcNfc.js`
@@ -85,20 +90,14 @@ describe('pdcNfc API module', () => {
   })
 
   it('all methods include network failure retry', () => {
-    // Every method should have a networkFail handler with reAjaxFun
     const networkFailCount = (pdcNfcSource.match(/\.networkFail\(/g) || []).length
     const reAjaxCount = (pdcNfcSource.match(/RequestService\.reAjaxFun/g) || []).length
-    assert.equal(networkFailCount, 20, 'expected 20 networkFail handlers')
-    assert.equal(reAjaxCount, 20, 'expected 20 reAjaxFun calls')
+    assert.equal(networkFailCount, 22, 'expected 22 networkFail handlers')
+    assert.equal(reAjaxCount, 22, 'expected 22 reAjaxFun calls')
   })
 })
 
 describe('api.js aggregates pdcNfc', () => {
-  const apiSource = await readFile(
-    new URL('../src/apis/api.js', import.meta.url),
-    'utf8'
-  )
-
   it('imports pdcNfc module', () => {
     assert.match(apiSource, /import pdcNfc from '\.\/module\/pdcNfc\.js'/)
   })
@@ -109,11 +108,6 @@ describe('api.js aggregates pdcNfc', () => {
 })
 
 describe('router includes NFC routes', () => {
-  const routerSource = await readFile(
-    new URL('../src/router/index.js', import.meta.url),
-    'utf8'
-  )
-
   it('imports access guard functions', () => {
     assert.match(routerSource, /import.*canAccessRoute.*readStoredUserInfo.*from.*'\.\/access\.mjs'/)
   })

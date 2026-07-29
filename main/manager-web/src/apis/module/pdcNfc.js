@@ -44,6 +44,26 @@ export default {
       }).send();
   },
 
+  /**
+   * 登记发布证据（商品类型）
+   */
+  registerProductTypeEvidence(productTypeId, data, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/pdc/nfc/admin/product-types/${productTypeId}/evidence`)
+      .method('POST')
+      .data(data)
+      .success((res) => {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail((err) => {
+        console.error('登记发布证据失败:', err);
+        RequestService.reAjaxFun(() => {
+          this.registerProductTypeEvidence(productTypeId, data, callback);
+        });
+      }).send();
+  },
+
   // ==================== 批次 ====================
 
   /**
@@ -244,6 +264,25 @@ export default {
         console.error('取消写卡任务失败:', err);
         RequestService.reAjaxFun(() => {
           this.cancelWriteJob(jobId, callback);
+        });
+      }).send();
+  },
+
+  /**
+   * 查询写卡任务详情
+   */
+  getWriteJob(jobId, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/pdc/nfc/admin/write/jobs/${jobId}`)
+      .method('GET')
+      .success((res) => {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail((err) => {
+        console.error('获取写卡任务详情失败:', err);
+        RequestService.reAjaxFun(() => {
+          this.getWriteJob(jobId, callback);
         });
       }).send();
   },

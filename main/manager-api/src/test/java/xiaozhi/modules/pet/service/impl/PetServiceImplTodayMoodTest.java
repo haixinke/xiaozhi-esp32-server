@@ -245,9 +245,14 @@ class PetServiceImplTodayMoodTest {
     }
 
     private void mockDeviceWithMac() {
+        mockDeviceWithMac(null);
+    }
+
+    private void mockDeviceWithMac(Date lastConnectedAt) {
         DeviceEntity device = new DeviceEntity();
         device.setId("device-1");
         device.setMacAddress("AA:BB:CC:DD:EE:FF");
+        device.setLastConnectedAt(lastConnectedAt);
         when(deviceDao.selectById("device-1")).thenReturn(device);
     }
 
@@ -278,6 +283,19 @@ class PetServiceImplTodayMoodTest {
         petService.refreshTodayMood(pet);
 
         assertThat(pet.getTodayMood()).isEqualTo("低落");
+    }
+
+    @Test
+    @DisplayName("无聊天记录(chat_history_conf=0不入库)但1小时前有连接 → 回退last_connected_at → 开心")
+    void refresh_noChatHistoryButRecentConnection_fallsBackLastConnectedAt() {
+        PetEntity pet = staleHatchedPetWithDevice();
+        mockDeviceWithMac(new Date(System.currentTimeMillis() - 60 * 60 * 1000));
+        when(chatHistoryDao.selectOne(any())).thenReturn(null);
+        when(llmService.isAvailable()).thenReturn(false);
+
+        petService.refreshTodayMood(pet);
+
+        assertThat(pet.getTodayMood()).isEqualTo("开心");
     }
 
     @Test

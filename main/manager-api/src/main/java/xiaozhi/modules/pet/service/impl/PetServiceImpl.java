@@ -746,8 +746,11 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     }
 
     /**
-     * 查询宠物最近一次真实互动时间（最近一条用户聊天消息的 created_at，单位 ms）。
-     * 无设备/无 mac/无聊天记录/解析失败均返回 null，由调用方回退静态基线。
+     * 查询宠物最近一次真实互动时间（单位 ms）。
+     * 优先级：最近一条用户聊天消息 created_at > 设备最后连接时间 last_connected_at。
+     * 后者兜底原因：agent 的 chat_history_conf=0（无记忆模型默认/订阅到期重置）时聊天不入库，
+     * 但聊天上报仍会无条件刷新设备最后连接时间，可作为互动信号。
+     * 全部缺失/解析失败返回 null，由调用方回退静态基线。
      */
     private Long resolveLastInteractionMs(PetEntity pet) {
         if (StringUtils.isBlank(pet.getDeviceId())) {
@@ -755,23 +758,37 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
         try {
             DeviceEntity device = deviceDao.selectById(pet.getDeviceId());
-            if (device == null || StringUtils.isBlank(device.getMacAddress())) {
+            if (device == null) {
                 return null;
             }
-            AgentChatHistoryEntity last = chatHistoryDao.selectOne(new QueryWrapper<AgentChatHistoryEntity>()
-                    .select("created_at")
-                    .eq("mac_address", device.getMacAddress())
-                    .eq("chat_type", 1)
-                    .orderByDesc("id")
-                    .last("LIMIT 1"));
-            if (last == null || StringUtils.isBlank(last.getCreatedAt())) {
-                return null;
+            Long chatMs = queryLastUserChatMs(device.getMacAddress());
+            if (chatMs != null) {
+                return chatMs;
             }
-            return parseChatCreatedAtMs(last.getCreatedAt());
+            return device.getLastConnectedAt() != null ? device.getLastConnectedAt().getTime() : null;
         } catch (Exception e) {
             log.warn("查询宠物最近互动时间失败，回退静态基线，petId={}", pet.getId(), e);
             return null;
         }
+    }
+
+    /**
+     * 查询指定设备最近一条用户聊天消息时间（ms），无 mac/无记录/解析失败返回 null。
+     */
+    private Long queryLastUserChatMs(String macAddress) {
+        if (StringUtils.isBlank(macAddress)) {
+            return null;
+        }
+        AgentChatHistoryEntity last = chatHistoryDao.selectOne(new QueryWrapper<AgentChatHistoryEntity>()
+                .select("created_at")
+                .eq("mac_address", macAddress)
+                .eq("chat_type", 1)
+                .orderByDesc("id")
+                .last("LIMIT 1"));
+        if (last == null || StringUtils.isBlank(last.getCreatedAt())) {
+            return null;
+        }
+        return parseChatCreatedAtMs(last.getCreatedAt());
     }
 
     /**

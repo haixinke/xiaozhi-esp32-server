@@ -66,7 +66,13 @@ function getIdentityId() {
   return read(IDENTITY_KEY);
 }
 
-const ACCOUNT_KEYS = [PET_KEY, USER_KEY, IDENTITY_KEY, ACTIVE_PET_KEY];
+// 账号级缓存 key，登出/换账号时必须全部清除，防止上一个账号的数据泄漏给下一个账号。
+// 后两个 key 分别由 pages/profile 与 pages/deregister 写入，这里统一纳入清理。
+const ACCOUNT_KEYS = [
+  PET_KEY, USER_KEY, IDENTITY_KEY, ACTIVE_PET_KEY,
+  'eggbaby_profile_v1',
+  'eggbaby_deregister_request_v1'
+];
 
 function clearAccountData() {
   ACCOUNT_KEYS.forEach((key) => {
@@ -125,7 +131,9 @@ function savePetFromVO(vo) {
     hatchAt,
     progress,
     stage: 'waiting',
-    lastInteractionAt: createdAt,
+    // 保留本地 recordTouch 记录的互动时间，避免每次后端刷新都重置回 createdAt，
+    // 否则老宠物走本地 fallback 心情时 inactiveDays 恒为巨大值 → 永远"低落"
+    lastInteractionAt: Math.max((existing && existing.lastInteractionAt) || 0, createdAt),
     tasks: existing && existing.tasks !== undefined ? existing.tasks : { nicknameDone: false, cuddleDate: '', wishDate: '', lessonDate: '', doodleDone: false },
     preferences: existing && existing.preferences !== undefined ? existing.preferences : { wishes: [], lessons: [] },
     shell: existing && existing.shell !== undefined ? existing.shell : { color: '#EDE78E', colorName: '奶油白', pattern: '星星' },
@@ -394,9 +402,10 @@ function simpleHash(value) {
 function getDailyStatus() {
   const pet = getPet();
   if (!pet) return null;
-  // 1. 优先用后端 PetVO 已懒生成的今日心情(adopt/list 返回)
-  if (pet.todayMood && pet.todayMoodSentence) {
-    return { date: todayKey(), mood: pet.todayMood, line: pet.todayMoodSentence, source: 'backend' };
+  // 1. 优先用后端 PetVO 已懒生成的今日心情(adopt/list 返回)，
+  //    必须校验 todayMoodDate 是今天，防止跨天后的旧缓存心情被当作今日状态展示
+  if (pet.todayMood && pet.todayMoodSentence && pet.todayMoodDate === todayKey()) {
+    return { date: pet.todayMoodDate, mood: pet.todayMood, line: pet.todayMoodSentence, source: 'backend' };
   }
   // 2. 本地 fallback(无后端心情时)
   const date = todayKey();

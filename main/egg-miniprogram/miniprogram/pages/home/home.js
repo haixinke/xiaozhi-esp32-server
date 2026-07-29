@@ -62,9 +62,11 @@ Page({
     const cached = petStore.getPet();
     if (cached) {
       this.renderPet(cached);
+      // 后台静默刷新后端派生字段(今日心情等)，避免缓存跨天后一直展示旧状态
+      this.loadPetFromServer();
       return;
     }
-    // 冷启动:缓存空,从后端拉取已有蛋(领养后缓存已有,不会走到这里)
+    // 冷启动:缓存空,从后端拉取已有蛋
     this._petRestoreFinished = false;
     this.setData({ pet: null, stage: 'empty', petRestoreLoading: true });
     this.loadPetFromServer();

@@ -13,7 +13,9 @@ const accountKeys = [
   'eggbaby_mvp_pet_v1',
   'eggbaby_mvp_user_v1',
   'eggbaby_mvp_identity_v1',
-  'eggbaby_active_pet_v1'
+  'eggbaby_active_pet_v1',
+  'eggbaby_profile_v1',
+  'eggbaby_deregister_request_v1'
 ];
 
 accountKeys.forEach((key) => storage.set(key, { value: key }));
@@ -32,6 +34,12 @@ petStore.saveUser({ id: 42, nickname: '蛋友' });
 const now = Date.now();
 const sevenDays = 7 * 24 * 60 * 60 * 1000;
 const HATCH_TOTAL_MINUTES = 7 * 24 * 60;
+const pad2 = (n) => String(n).padStart(2, '0');
+const dateKey = (ms) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
+const todayStr = dateKey(now);
 const eggVO = {
   id: 'pet-1',
   userId: 42,
@@ -44,7 +52,8 @@ const eggVO = {
   prototype: '锦鲤',
   createDate: new Date(now).toISOString(),
   todayMood: '开心',
-  todayMoodSentence: '蛋壳里传来轻轻的回应。'
+  todayMoodSentence: '蛋壳里传来轻轻的回应。',
+  todayMoodDate: todayStr
 };
 const egg = petStore.savePetFromVO(eggVO);
 assert.strictEqual(egg.id, 'pet-1', 'savePetFromVO maps id');
@@ -78,12 +87,18 @@ const partialPet = petStore.savePetFromVO(partialVO);
 assert.strictEqual(partialPet.progress, 7, 'progress derived from acceleratedMinutes');
 assert.strictEqual(petStore.getStage(partialPet), 'hatching', 'progress>0 -> hatching');
 
-// getDailyStatus 优先用后端 mood
+// getDailyStatus 优先用后端 mood(todayMoodDate 为今天)
 petStore.savePetFromVO(eggVO);
 const daily = petStore.getDailyStatus();
 assert.strictEqual(daily.mood, '开心', 'getDailyStatus prefers backend todayMood');
 assert.strictEqual(daily.line, '蛋壳里传来轻轻的回应。', 'getDailyStatus uses backend sentence');
 assert.strictEqual(daily.source, 'backend', 'getDailyStatus marked backend source');
+
+// 跨天旧缓存：todayMoodDate 是昨天 → 不能再用后端旧心情，防止“今日状态三天不变”
+const staleMoodVO = { ...eggVO, todayMood: '低落', todayMoodSentence: '它今天有一点点没精神。', todayMoodDate: dateKey(now - 24 * 60 * 60 * 1000) };
+petStore.savePetFromVO(staleMoodVO);
+const staleDaily = petStore.getDailyStatus();
+assert.notStrictEqual(staleDaily.source, 'backend', 'stale todayMoodDate must not be served as backend mood');
 
 // getCountdown 用 expectedHatchTime
 assert.ok(petStore.getCountdown(egg).includes('还剩'), 'getCountdown returns remaining text');
@@ -94,6 +109,18 @@ petStore.savePetFromVO(noMoodVO);
 const fallbackDaily = petStore.getDailyStatus();
 assert.ok(fallbackDaily, 'getDailyStatus local fallback returns a status');
 assert.notStrictEqual(fallbackDaily.source, 'backend', 'fallback not marked backend');
+
+// savePetFromVO 不得把 recordTouch 写入的互动时间重置回 createdAt，
+// 否则老宠物本地 fallback 心情 inactiveDays 恒大 → 永远"低落"
+const oldPetVO = {
+  ...eggVO,
+  createDate: new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  hatchStartTime: new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString()
+};
+petStore.savePetFromVO(oldPetVO);
+petStore.recordTouch();
+const refreshed = petStore.savePetFromVO(oldPetVO);
+assert.ok(refreshed.lastInteractionAt >= now, 'savePetFromVO preserves recordTouch lastInteractionAt');
 
 petStore.clearAccountData();
 assert.strictEqual(petStore.getActivePetId(), null, 'activePetId cleared on account clear');

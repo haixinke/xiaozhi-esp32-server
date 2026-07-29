@@ -10,11 +10,20 @@ function birthdayLabel(value) {
   return match ? `${Number(match[1])}年${Number(match[2])}月${Number(match[3])}日` : String(value || '');
 }
 
-// 性别用 emoji 展示；页面与 Canvas 分享卡共用同一映射，保持两处一致
+// 性别符号映射：Canvas 分享卡与未知性别的文本回退使用，页面正常情况走 SVG 图标（见 genderClass）。
+// 页面不能直接用字符渲染：iOS 真机对 ♀/♂ 强制回退到 Apple 符号/emoji 字体，
+// 字形在行框内基线偏低，CSS 无法修正垂直居中。
 function genderLabel(value) {
-  if (value === 'FEMALE') return '♀️';
-  if (value === 'MALE') return '♂️';
+  if (value === 'FEMALE') return '♀';
+  if (value === 'MALE') return '♂';
   return value || '—';
+}
+
+// 返回性别 SVG 图标的修饰类；未知性别返回空，页面回退到文本 genderLabel
+function genderClass(value) {
+  if (value === 'FEMALE') return 'gender-icon--female';
+  if (value === 'MALE') return 'gender-icon--male';
+  return '';
 }
 
 function signatureClass(value) {
@@ -25,7 +34,7 @@ function signatureClass(value) {
 }
 
 Page({
-  data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', zodiacSymbol: '', signatureClass: '' },
+  data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', genderClass: '', zodiacSymbol: '', signatureClass: '' },
 
   onLoad(query) {
     const pet = petStore.getPet();
@@ -58,6 +67,7 @@ Page({
       subtitle: card.style ? `${proto} · ${card.style}` : proto,
       birthdayLabel: birthdayLabel(card.birthday),
       genderLabel: genderLabel(card.gender),
+      genderClass: genderClass(card.gender),
       zodiacSymbol: ZODIAC_SYMBOLS[card.zodiac] || '',
       signatureClass: signatureClass(card.personality),
       isNew: query.new === '1'

@@ -17,10 +17,11 @@
         <view class="stat-grid">
           <view class="stat-cell"><text class="stat-label">类型</text><text class="stat-value">{{card.petType}}</text></view>
           <view class="stat-cell"><text class="stat-label">生日</text><text class="stat-value">{{birthdayLabel}}</text></view>
-          <view class="stat-cell"><text class="stat-label">星座</text><text class="stat-value">{{card.zodiac}} {{zodiacSymbol}}</text></view>
+          <view class="stat-cell"><text class="stat-label">星座</text><text class="stat-value stat-value--symbol">{{card.zodiac}} {{zodiacSymbol}}</text></view>
           <view class="stat-cell">
             <text class="stat-label">性别</text>
-            <text class="stat-value">{{genderLabel}}</text>
+            <view wx:if="{{genderClass}}" class="gender-icon {{genderClass}}" aria-label="{{genderLabel}}"></view>
+            <text wx:else class="stat-value">{{genderLabel}}</text>
           </view>
           <view class="stat-cell"><text class="stat-label">血型</text><text class="stat-value">{{card.bloodType}} 型</text></view>
           <view class="stat-cell"><text class="stat-label">MBTI</text><text class="stat-value">{{card.mbti}}</text></view>

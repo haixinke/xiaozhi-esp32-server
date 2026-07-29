@@ -13,6 +13,14 @@
 .stat-cell { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10rpx; padding: 8rpx 14rpx; border-radius: 15rpx; background: #F6F6F0; }
 .stat-label { flex: 0 0 auto; color: #7A807A; font-size: 25.2rpx; line-height: 1.2; }
 .stat-value { overflow: hidden; color: #2D251F; font-size: 27.6rpx; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+/* 星座符号（♈ 等）在 iOS 真机会回退到 Apple 符号/emoji 字体，字形超出 1.2 行框，
+   被 overflow:hidden 裁掉下半截；符号无需省略号，放开裁切并用自然行高兜住字形 */
+.stat-value--symbol { overflow: visible; line-height: normal; }
+/* 性别改用 SVG 图标：iOS 对 ♀/♂ 强制走符号字体且基线偏低，字体方案无法垂直居中；
+   图标由 .stat-cell 的 align-items:center 居中，各平台表现一致 */
+.gender-icon { width: 32rpx; height: 32rpx; flex: 0 0 auto; background-position: center; background-repeat: no-repeat; background-size: contain; }
+.gender-icon--female { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232D251F' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='8.5' r='5.5'/%3E%3Cpath d='M12 14v8M8.5 18.5h7'/%3E%3C/svg%3E"); }
+.gender-icon--male { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232D251F' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10' cy='14' r='5.5'/%3E%3Cpath d='M14 10l6.5-6.5M14.5 3.5h6v6'/%3E%3C/svg%3E"); }
 .card-signature { margin-top: 4rpx; padding: 0 14rpx; color: #536057; font-size: 25.2rpx; line-height: 1.4; overflow-wrap: break-word; text-align: center; white-space: normal; }
 .card-signature--compact { font-size: 21.6rpx; }
 .card-signature--dense { font-size: 18rpx; line-height: 1.3; }

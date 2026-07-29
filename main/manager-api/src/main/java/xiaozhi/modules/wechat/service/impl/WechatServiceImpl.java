@@ -26,7 +26,6 @@ import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.oss.OssService;
 import xiaozhi.common.page.TokenDTO;
-import xiaozhi.common.redis.RedisKeys;
 import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.utils.Result;
@@ -55,7 +54,6 @@ import xiaozhi.modules.agent.service.AgentService;
 public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUserEntity> implements WechatService {
 
     private static final String JSCODE2SESSION_URL = "https://api.weixin.qq.com/sns/jscode2session";
-    private static final String STABLE_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/stable_token";
     private static final String GET_PHONE_URL = "https://api.weixin.qq.com/wxa/business/getuserphonenumber";
     private static final String DEFAULT_USER_AVATAR_URL = "https://oss.eggbabe.com/default-avatar/user/user-avatar.png";
     private static final String DEFAULT_NICKNAME_PREFIX = "蛋友";
@@ -68,6 +66,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private final xiaozhi.modules.invite.service.InviteService inviteService;
     private final RedisUtils redisUtils;
     private final OssService ossService;
+    private final xiaozhi.modules.wechat.service.WechatAccessTokenProvider wechatAccessTokenProvider;
 
     @Value("${eggbaby.miniprogram.appid:${wechat.miniprogram.appid:}}")
     private String appid;
@@ -207,7 +206,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         }
 
         // 2. 用 getPhoneNumber code 换取明文手机号
-        String accessToken = getAccessToken();
+        String accessToken = wechatAccessTokenProvider.getAccessToken();
         String phone = getPhoneNumber(accessToken, phoneCode);
 
         // 3. 写入 ai_wechat_user（按 openid 更新单条，避免误改其他账号）
@@ -319,58 +318,6 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             case "image/webp" -> "webp";
             default -> throw new RenException(ErrorCode.AVATAR_FILE_TYPE_ERROR);
         };
-    }
-
-    /**
-     * 获取微信小程序普通 access_token（带 Redis 缓存）。
-     * getuserphonenumber 等服务端接口需要该 token，有效期 7200s。
-     */
-    private String getAccessToken() {
-        String key = RedisKeys.getWechatAccessTokenKey();
-        Object cached = redisUtils.get(key);
-        if (cached instanceof String s && !s.isBlank()) {
-            return s;
-        }
-
-        JSONObject body = new JSONObject();
-        body.set("grant_type", "client_credential");
-        body.set("appid", appid);
-        body.set("secret", secret);
-        body.set("force_refresh", false);
-
-        String respBody;
-        try {
-            respBody = httpPost(STABLE_TOKEN_URL, body.toString());
-        } catch (Exception e) {
-            log.error("调用微信stable_token失败", e);
-            throw new RenException("调用微信access_token接口失败: " + e.getMessage());
-        }
-
-        try {
-            if (StringUtils.isBlank(respBody)) {
-                throw new RenException("微信access_token接口返回为空");
-            }
-            JSONObject json = JSONUtil.parseObj(respBody);
-            Integer errcode = json.getInt("errcode");
-            if (errcode != null && errcode != 0) {
-                log.warn("获取微信access_token失败 errcode={}, errmsg={}", errcode, json.getStr("errmsg"));
-                throw new RenException("获取微信access_token失败");
-            }
-            String accessToken = json.getStr("access_token");
-            Integer expiresIn = json.getInt("expires_in");
-            if (StringUtils.isBlank(accessToken)) {
-                throw new RenException("微信access_token为空");
-            }
-            // 提前 300s 失效，留安全余量
-            long ttl = (expiresIn == null ? 7200 : expiresIn) - 300L;
-            redisUtils.set(key, accessToken, Math.max(ttl, 60L));
-            return accessToken;
-        } catch (RenException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("解析微信access_token响应失败", e);
-            throw new RenException("解析微信access_token响应失败");
-        }
     }
 
     /**

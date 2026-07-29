@@ -3,7 +3,6 @@ package xiaozhi.modules.wechat.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,7 +27,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
 import xiaozhi.common.exception.RenException;
-import xiaozhi.common.redis.RedisKeys;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.agent.service.AgentService;
@@ -38,20 +36,17 @@ import xiaozhi.modules.sys.dao.SysUserDao;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
+import xiaozhi.modules.wechat.service.WechatAccessTokenProvider;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("WechatServiceImpl - bindPhone")
 class WechatServiceImplTest {
 
-    private static final String STABLE_TOKEN_OK =
-            "{\"access_token\":\"token123\",\"expires_in\":7200,\"errcode\":0}";
     private static final String PHONE_OK =
             "{\"errcode\":0,\"phone_info\":{\"phoneNumber\":\"13800138000\"}}";
     private static final String PHONE_ERRCODE =
             "{\"errcode\":40029,\"errmsg\":\"invalid code\"}";
-    private static final String TOKEN_ERRCODE =
-            "{\"errcode\":40013,\"errmsg\":\"invalid appid\"}";
 
     @Mock
     private WechatUserDao wechatUserDao;
@@ -65,9 +60,10 @@ class WechatServiceImplTest {
     private InviteService inviteService;
     @Mock
     private xiaozhi.common.redis.RedisUtils redisUtils;
+    @Mock
+    private WechatAccessTokenProvider wechatAccessTokenProvider;
 
     private List<String> postedUrls;
-    private String stableTokenBody;
     private String phoneBody;
 
     private WechatServiceImpl service;
@@ -85,17 +81,13 @@ class WechatServiceImplTest {
     @BeforeEach
     void setUp() throws Exception {
         postedUrls = new ArrayList<>();
-        stableTokenBody = STABLE_TOKEN_OK;
         phoneBody = PHONE_OK;
 
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, null) {
+                inviteService, redisUtils, null, wechatAccessTokenProvider) {
             @Override
             String httpPost(String url, String jsonBody) {
                 postedUrls.add(url);
-                if (url.contains("stable_token")) {
-                    return stableTokenBody;
-                }
                 if (url.contains("getuserphonenumber")) {
                     return phoneBody;
                 }
@@ -108,34 +100,19 @@ class WechatServiceImplTest {
 
         when(wechatUserDao.selectOne(any())).thenReturn(wechatUser(7L, "openid-xyz"));
         when(wechatUserDao.update(any(), any())).thenReturn(1);
-        // 默认 access_token 缓存未命中
-        when(redisUtils.get(eq(RedisKeys.getWechatAccessTokenKey()))).thenReturn(null);
+        when(wechatAccessTokenProvider.getAccessToken()).thenReturn("test-token");
     }
 
     @Test
-    @DisplayName("成功：缓存未命中→取 token→取手机号→按 openid 更新→返回脱敏号")
+    @DisplayName("成功：取 token→取手机号→按 openid 更新→返回脱敏号")
     void bindPhone_success() {
-        WechatBindPhoneRespDTO resp = service.bindPhone(7L, "phone-code");
-
-        assertThat(resp.getPhone()).isEqualTo("138****8000");
-        assertThat(postedUrls).hasSize(2);
-        assertThat(postedUrls.get(0)).contains("stable_token");
-        assertThat(postedUrls.get(1)).contains("getuserphonenumber");
-        verify(redisUtils).set(eq(RedisKeys.getWechatAccessTokenKey()), eq("token123"), anyLong());
-        verify(wechatUserDao).update(any(), any());
-    }
-
-    @Test
-    @DisplayName("access_token 缓存命中：不再调 stable_token，仅调手机号接口")
-    void bindPhone_tokenCacheHit() {
-        when(redisUtils.get(eq(RedisKeys.getWechatAccessTokenKey()))).thenReturn("cached-token");
-
         WechatBindPhoneRespDTO resp = service.bindPhone(7L, "phone-code");
 
         assertThat(resp.getPhone()).isEqualTo("138****8000");
         assertThat(postedUrls).hasSize(1);
         assertThat(postedUrls.get(0)).contains("getuserphonenumber");
-        verify(redisUtils, never()).set(any(), any(), anyLong());
+        verify(wechatAccessTokenProvider).getAccessToken();
+        verify(wechatUserDao).update(any(), any());
     }
 
     @Test
@@ -178,24 +155,11 @@ class WechatServiceImplTest {
     @Test
     @DisplayName("微信手机号接口 errcode!=0：抛 获取微信手机号失败")
     void bindPhone_phoneErrcode() {
-        when(redisUtils.get(eq(RedisKeys.getWechatAccessTokenKey()))).thenReturn("cached-token");
         phoneBody = PHONE_ERRCODE;
 
         assertThatThrownBy(() -> service.bindPhone(7L, "phone-code"))
                 .isInstanceOf(RenException.class)
                 .hasMessageContaining("获取微信手机号失败");
-        verify(wechatUserDao, never()).update(any(), any());
-    }
-
-    @Test
-    @DisplayName("微信 access_token 接口 errcode!=0：抛 获取微信access_token失败 且不写缓存")
-    void bindPhone_tokenErrcode() {
-        stableTokenBody = TOKEN_ERRCODE;
-
-        assertThatThrownBy(() -> service.bindPhone(7L, "phone-code"))
-                .isInstanceOf(RenException.class)
-                .hasMessageContaining("获取微信access_token失败");
-        verify(redisUtils, never()).set(any(), any(), anyLong());
         verify(wechatUserDao, never()).update(any(), any());
     }
 

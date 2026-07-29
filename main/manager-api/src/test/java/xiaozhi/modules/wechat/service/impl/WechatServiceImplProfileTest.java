@@ -60,6 +60,8 @@ class WechatServiceImplProfileTest {
     private xiaozhi.common.redis.RedisUtils redisUtils;
     @Mock
     private OssService ossService;
+    @Mock
+    private xiaozhi.modules.wechat.service.WechatAccessTokenProvider wechatAccessTokenProvider;
 
     private WechatServiceImpl service;
 
@@ -76,7 +78,7 @@ class WechatServiceImplProfileTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, ossService);
+                inviteService, redisUtils, ossService, wechatAccessTokenProvider);
         setField(BaseServiceImpl.class, service, "baseDao", wechatUserDao);
     }
 

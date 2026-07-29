@@ -60,6 +60,8 @@ class WechatServiceImplLoginTest {
     private InviteService inviteService;
     @Mock
     private xiaozhi.common.redis.RedisUtils redisUtils;
+    @Mock
+    private xiaozhi.modules.wechat.service.WechatAccessTokenProvider wechatAccessTokenProvider;
 
     private WechatServiceImpl service;
 
@@ -76,7 +78,7 @@ class WechatServiceImplLoginTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, null) {
+                inviteService, redisUtils, null, wechatAccessTokenProvider) {
             @Override
             JSONObject jscode2session(String code) {
                 return JSONUtil.parseObj(JSCODE_OK);

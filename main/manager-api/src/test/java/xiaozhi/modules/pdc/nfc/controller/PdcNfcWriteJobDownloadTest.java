@@ -19,7 +19,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletResponse;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcAdminIdempotencyService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteJobService;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImporter;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteFile;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteJobVO;
 
@@ -53,12 +55,16 @@ class PdcNfcWriteJobDownloadTest {
 
     @Mock
     private PdcNfcWriteJobService writeJobService;
+    @Mock
+    private PdcNfcWriteResultImporter writeResultImporter;
+    @Mock
+    private PdcNfcAdminIdempotencyService idempotencyService;
 
     private PdcNfcWriteJobAdminController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new PdcNfcWriteJobAdminController(writeJobService);
+        controller = new PdcNfcWriteJobAdminController(writeJobService, writeResultImporter, idempotencyService);
     }
 
     // --- helpers ---

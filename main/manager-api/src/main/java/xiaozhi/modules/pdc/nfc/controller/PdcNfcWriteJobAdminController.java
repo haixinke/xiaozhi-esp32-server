@@ -8,15 +8,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.pdc.nfc.constant.PdcNfcAdminOperationType;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcAdminIdempotencyService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteJobService;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImporter;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteFile;
+import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteImportVO;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteJobVO;
 import xiaozhi.modules.security.user.SecurityUser;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 /**
  * NFC 写卡任务管理后台接口。
@@ -33,6 +39,8 @@ import java.nio.charset.StandardCharsets;
 public class PdcNfcWriteJobAdminController {
 
     private final PdcNfcWriteJobService writeJobService;
+    private final PdcNfcWriteResultImporter writeResultImporter;
+    private final PdcNfcAdminIdempotencyService idempotencyService;
 
     @PostMapping("/create/{batchId}")
     @Operation(summary = "创建写卡任务")
@@ -78,5 +86,24 @@ public class PdcNfcWriteJobAdminController {
     public Result<PdcNfcWriteJobVO> progress(@PathVariable Long jobId) {
         PdcNfcWriteJobVO vo = writeJobService.getProgress(jobId);
         return new Result<PdcNfcWriteJobVO>().ok(vo);
+    }
+
+    @PostMapping("/{jobId}/import")
+    @Operation(summary = "导入工厂写卡结果 CSV")
+    public Result<PdcNfcWriteImportVO> importResult(
+            @PathVariable Long jobId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("requestId") UUID requestId
+    ) {
+        Long operatorId = SecurityUser.getUserId();
+        String canonicalRequest = jobId + ":" + requestId;
+        PdcNfcWriteImportVO vo = idempotencyService.execute(
+                PdcNfcAdminOperationType.WRITE_RESULT_IMPORT,
+                requestId,
+                canonicalRequest,
+                PdcNfcWriteImportVO.class,
+                () -> writeResultImporter.importResult(jobId, requestId, file, operatorId)
+        );
+        return new Result<PdcNfcWriteImportVO>().ok(vo);
     }
 }

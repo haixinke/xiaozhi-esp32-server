@@ -75,7 +75,7 @@ class PdcNfcClaimPreviewServiceTest {
     void setUp() {
         claimService = new PdcNfcClaimServiceImpl(
                 properties, wechatPhoneGate, claimRefProtection,
-                assetDao, batchDao, productTypeDao, rateLimiter, petService);
+                assetDao, batchDao, productTypeDao, rateLimiter, petService, claimRecordDao);
     }
 
     @Test

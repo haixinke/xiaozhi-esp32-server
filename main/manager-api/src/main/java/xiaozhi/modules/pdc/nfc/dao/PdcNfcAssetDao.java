@@ -33,9 +33,6 @@ public interface PdcNfcAssetDao extends BaseMapper<PdcNfcAssetEntity> {
     List<PdcNfcAssetEntity> selectByIdsForUpdate(
             @Param("ids") List<Long> sortedIds);
 
-    /**
-     * 游标分页查询批次内 CREATED 资产（id 大于 cursor），按 id 升序。
-     */
     @Select("SELECT * FROM pdc_nfc_asset " +
             "WHERE batch_id = #{batchId} AND status = 'CREATED' AND id > #{cursor} " +
             "ORDER BY id ASC LIMIT #{limit}")
@@ -44,10 +41,6 @@ public interface PdcNfcAssetDao extends BaseMapper<PdcNfcAssetEntity> {
             @Param("cursor") Long cursor,
             @Param("limit") int limit);
 
-    /**
-     * 条件更新：将 CREATED 资产标记为 SCHEME_GENERATED 并写入加密 Scheme。
-     * 仅当 status 仍为 CREATED 时成功，避免恢复后重复覆盖。
-     */
     @Update("UPDATE pdc_nfc_asset " +
             "SET scheme_key_version = #{keyVersion}, scheme_nonce = #{nonce}, " +
             "scheme_ciphertext = #{ciphertext}, scheme_sha256 = #{sha256}, " +
@@ -62,23 +55,20 @@ public interface PdcNfcAssetDao extends BaseMapper<PdcNfcAssetEntity> {
                            @Param("jobId") Long jobId,
                            @Param("now") Date now);
 
-    /**
-     * 将批次内 CREATED 资产绑定到指定 job。
-     */
     @Update("UPDATE pdc_nfc_asset SET active_scheme_job_id = #{jobId} " +
             "WHERE batch_id = #{batchId} AND status = 'CREATED'")
     int assignJobToCreatedAssets(@Param("batchId") Long batchId, @Param("jobId") Long jobId);
 
-    /**
-     * 释放批次内 CREATED 资产上的 job 绑定（用于 cancel / fail）。
-     */
     @Update("UPDATE pdc_nfc_asset SET active_scheme_job_id = NULL " +
             "WHERE batch_id = #{batchId} AND status = 'CREATED' AND active_scheme_job_id = #{jobId}")
     int releaseAssetsForJob(@Param("batchId") Long batchId, @Param("jobId") Long jobId);
 
-    /**
-     * 统计批次内 CREATED 资产数量。
-     */
     @Select("SELECT COUNT(*) FROM pdc_nfc_asset WHERE batch_id = #{batchId} AND status = 'CREATED'")
     int countCreatedAssets(@Param("batchId") Long batchId);
+
+    @Update("UPDATE pdc_nfc_asset SET status = 'CLAIMED', claimed_user_id = #{userId}, " +
+            "pet_id = #{petId}, claimed_at = NOW(), version = version + 1 " +
+            "WHERE id = #{id} AND version = #{version} AND status = 'ACTIVE'")
+    int markClaimed(@Param("id") Long id, @Param("version") Integer version,
+                    @Param("userId") Long userId, @Param("petId") String petId);
 }

@@ -1,0 +1,67 @@
+<view class="page">
+  <nav-bar title="领取蛋宝宝" bindback="onGoHome"></nav-bar>
+
+  <!-- BOOTSTRAPPING / LOADING_PREVIEW / SUBMITTING -->
+  <view wx:if="{{state === 'BOOTSTRAPPING' || state === 'LOADING_PREVIEW' || state === 'SUBMITTING'}}" class="loading">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">{{state === 'SUBMITTING' ? '正在领取…' : '加载中…'}}</text>
+  </view>
+
+  <!-- NEED_PHONE -->
+  <view wx:elif="{{state === 'NEED_PHONE'}}" class="center-panel">
+    <view class="icon-circle"><text class="icon-emoji">📱</text></view>
+    <text class="panel-title">领取前需要授权手机号</text>
+    <text class="panel-desc">用于保障你的蛋宝宝账号安全。</text>
+    <button class="primary-button" open-type="getPhoneNumber" loading="{{authorizingPhone}}" disabled="{{authorizingPhone}}" bindgetphonenumber="onAuthorizePhone">授权手机号并继续</button>
+  </view>
+
+  <!-- READY - claimable -->
+  <view wx:elif="{{state === 'READY'}}" class="center-panel">
+    <view class="icon-circle"><text class="icon-emoji">🥚</text></view>
+    <text class="panel-title">{{productName}}</text>
+    <text class="panel-prototype">原型：{{prototype}}</text>
+    <text class="panel-status">{{statusLabel}}</text>
+    <button class="primary-button confirm-button" bindtap="onConfirmClaim">立即领取</button>
+  </view>
+
+  <!-- SUCCESS -->
+  <view wx:elif="{{state === 'SUCCESS'}}" class="center-panel">
+    <view class="icon-circle icon-circle--success"><text class="icon-emoji">🎉</text></view>
+    <text class="panel-title">领取成功！</text>
+    <text wx:if="{{pet}}" class="panel-desc">{{pet.prototype}}已来到你的蛋宝宝家园。</text>
+    <button class="primary-button" bindtap="onGoHome">去看看它</button>
+  </view>
+
+  <!-- CLAIMED_BY_SELF -->
+  <view wx:elif="{{state === 'CLAIMED_BY_SELF'}}" class="center-panel">
+    <view class="icon-circle"><text class="icon-emoji">😊</text></view>
+    <text class="panel-title">你已经领取了这只蛋宝宝</text>
+    <text wx:if="{{pet}}" class="panel-desc">它的原型是{{pet.prototype}}，正在家园等你。</text>
+    <button class="primary-button" bindtap="onGoHome">回到首页</button>
+  </view>
+
+  <!-- CLAIMED_BY_OTHER -->
+  <view wx:elif="{{state === 'CLAIMED_BY_OTHER'}}" class="center-panel">
+    <view class="icon-circle"><text class="icon-emoji">😢</text></view>
+    <text class="panel-title">这只蛋宝宝已被其他小伙伴领取</text>
+    <text class="panel-desc">每件蛋宝宝实物只能领取一次。</text>
+    <button class="secondary-button" bindtap="onGoHome">回到首页</button>
+  </view>
+
+  <!-- UNAVAILABLE -->
+  <view wx:elif="{{state === 'UNAVAILABLE'}}" class="center-panel">
+    <view class="icon-circle"><text class="icon-emoji">⚠️</text></view>
+    <text class="panel-title">暂时无法领取</text>
+    <text class="panel-desc">{{errorMessage || '请稍后再试。'}}</text>
+    <button class="secondary-button" bindtap="onGoHome">回到首页</button>
+  </view>
+
+  <!-- NETWORK_ERROR -->
+  <view wx:elif="{{state === 'NETWORK_ERROR'}}" class="center-panel">
+    <view class="icon-circle"><text class="icon-emoji">📡</text></view>
+    <text class="panel-title">连接失败</text>
+    <text class="panel-desc">{{errorMessage || '暂时无法连接服务，请稍后重试'}}</text>
+    <button class="primary-button" bindtap="onRetry">重试</button>
+    <button class="secondary-button" bindtap="onGoHome">回到首页</button>
+  </view>
+</view>

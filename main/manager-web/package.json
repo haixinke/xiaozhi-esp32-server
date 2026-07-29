@@ -8,6 +8,7 @@
     "test:snapshot": "node --test src/components/agentSnapshotDisplayUtils.test.mjs src/apis/module/agentSnapshotApi.test.mjs",
     "build": "vue-cli-service build",
     "test:unit": "node --test tests/*.test.mjs",
+    "verify:nfc-coverage": "node --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-include=src/router/access.mjs --test-coverage-include=src/utils/pdcNfcState.mjs tests/pdcNfc*.test.mjs",
     "analyze": "cross-env ANALYZE=true vue-cli-service build"
   },
   "dependencies": {

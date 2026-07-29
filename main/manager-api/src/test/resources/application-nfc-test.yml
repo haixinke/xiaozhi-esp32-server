@@ -1,0 +1,38 @@
+# NFC 模块测试专用配置 - 禁用外部依赖和所有功能开关
+# 测试密钥仅存在于 src/test/resources，不得用于生产
+
+# 禁用 Redis 外部连接
+renren:
+  redis:
+    open: false
+
+spring:
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6399
+      password:
+      database: 15
+      timeout: 1000ms
+
+# 禁用 knife4j
+knife4j:
+  production: true
+
+# 所有 NFC 功能开关默认关闭
+pdc:
+  nfc:
+    enabled: false
+    model-id:
+    release-ready: false
+    scheme-generation-enabled: false
+    activation-enabled: false
+    claim-enabled: false
+    max-batch-quantity: 10000
+    claim-ref:
+      active-version: v1
+      active-hmac-key-base64: AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI=
+      active-aes-key-base64: AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+      previous-version: v0
+      previous-hmac-key-base64: BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=
+      previous-aes-key-base64: AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=

@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import { canAccessRoute, readStoredUserInfo } from './access.mjs'
 
 Vue.use(VueRouter)
 
@@ -208,6 +209,79 @@ const routes = [
       title: '通讯录管理'
     }
   },
+  // ==================== NFC 生产管理路由 ====================
+  {
+    path: '/pdc-nfc/product-types',
+    name: 'NfcProductTypes',
+    component: function () {
+      return import('../views/NfcPlaceholder.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: 'NFC 商品类型'
+    }
+  },
+  {
+    path: '/pdc-nfc/batches',
+    name: 'NfcBatches',
+    component: function () {
+      return import('../views/NfcPlaceholder.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: 'NFC 批次管理'
+    }
+  },
+  {
+    path: '/pdc-nfc/scheme',
+    name: 'NfcScheme',
+    component: function () {
+      return import('../views/NfcPlaceholder.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: 'NFC Scheme 任务'
+    }
+  },
+  {
+    path: '/pdc-nfc/write',
+    name: 'NfcWrite',
+    component: function () {
+      return import('../views/NfcPlaceholder.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: 'NFC 写卡任务'
+    }
+  },
+  {
+    path: '/pdc-nfc/assets',
+    name: 'NfcAssets',
+    component: function () {
+      return import('../views/NfcPlaceholder.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: 'NFC 资产管理'
+    }
+  },
+  {
+    path: '/pdc-nfc/audit',
+    name: 'NfcAudit',
+    component: function () {
+      return import('../views/NfcPlaceholder.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: 'NFC 审计日志'
+    }
+  },
 ]
 const router = new VueRouter({
   base: process.env.VUE_APP_PUBLIC_PATH || '/',
@@ -243,6 +317,20 @@ router.beforeEach((to, from, next) => {
       return
     }
   }
+
+  // NFC 路由使用 meta 驱动的访问控制
+  if (to.meta && (to.meta.requiresAuth || to.meta.requiresSuperAdmin)) {
+    const token = localStorage.getItem('token')
+    // 优先使用 Vuex 中的 userInfo，刷新竞态时回退到 localStorage
+    const vuexUserInfo = router.app && router.app.$store ? router.app.$store.state.userInfo : null
+    const userInfo = vuexUserInfo || readStoredUserInfo()
+    const result = canAccessRoute(to, token, userInfo)
+    if (!result.allowed) {
+      next({ path: result.redirect, query: result.redirect === '/login' ? { redirect: to.fullPath } : {} })
+      return
+    }
+  }
+
   next()
 })
 

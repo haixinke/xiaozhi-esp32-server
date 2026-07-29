@@ -1665,4 +1665,14 @@ export default {
   // Header navigation
   'header.addressBook': 'Danh bạ',
 
+  // NFC 生产管理
+  'nfc.title': 'Sản xuất NFC',
+  'nfc.productTypes': 'Loại sản phẩm',
+  'nfc.batches': 'Lô sản xuất',
+  'nfc.scheme': 'Tác vụ Scheme',
+  'nfc.write': 'Tác vụ ghi thẻ',
+  'nfc.assets': 'Quản lý tài sản',
+  'nfc.audit': 'Nhật ký kiểm toán',
+  'nfc.comingSoon': 'Tính năng đang phát triển, vui lòng chờ đợi',
+
 }

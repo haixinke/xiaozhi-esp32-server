@@ -1665,4 +1665,14 @@ export default {
   'addressBookManagement.monthsAgo': '{months}个月前',
   'addressBookManagement.yearsAgo': '{years}年前',
 
+  // NFC 生产管理
+  'nfc.title': 'NFC 生产管理',
+  'nfc.productTypes': '商品类型',
+  'nfc.batches': '批次管理',
+  'nfc.scheme': 'Scheme 任务',
+  'nfc.write': '写卡任务',
+  'nfc.assets': '资产管理',
+  'nfc.audit': '审计日志',
+  'nfc.comingSoon': '功能开发中，敬请期待',
+
 }

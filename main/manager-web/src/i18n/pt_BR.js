@@ -1665,4 +1665,14 @@ export default {
   // Header navigation
   'header.addressBook': 'Lista de Contatos',
 
+  // NFC 生产管理
+  'nfc.title': 'Produção NFC',
+  'nfc.productTypes': 'Tipos de Produto',
+  'nfc.batches': 'Lotes',
+  'nfc.scheme': 'Tarefas Scheme',
+  'nfc.write': 'Tarefas de Gravação',
+  'nfc.assets': 'Ativos',
+  'nfc.audit': 'Logs de Auditoria',
+  'nfc.comingSoon': 'Recurso em desenvolvimento, aguarde',
+
 }

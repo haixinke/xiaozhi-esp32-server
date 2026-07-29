@@ -1665,4 +1665,14 @@ export default {
   // Header navigation
   'header.addressBook': 'Adressbuch',
 
+  // NFC 生产管理
+  'nfc.title': 'NFC-Produktion',
+  'nfc.productTypes': 'Produkttypen',
+  'nfc.batches': 'Chargen',
+  'nfc.scheme': 'Scheme-Aufträge',
+  'nfc.write': 'Schreibaufträge',
+  'nfc.assets': 'Bestände',
+  'nfc.audit': 'Audit-Protokolle',
+  'nfc.comingSoon': 'Funktion in Entwicklung, bitte gedulden Sie sich',
+
 }

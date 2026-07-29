@@ -298,25 +298,20 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PetVO adopt(Long userId, PetAdoptDTO dto) {
-        if (userId == null) {
-            throw new RenException(ErrorCode.USER_NOT_LOGIN);
-        }
+    public PetVO createEgg(Long userId, String prototype) {
+        PetEntity pet = buildAndInsertEgg(userId, prototype);
+        return toVO(pet);
+    }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PetVO adopt(Long userId, PetAdoptDTO dto) {
         // 1. 先建蛋(EGG)：不建 device/agent，不生成任何破壳档案
         //    device_id=NULL 已由 changeset 202607101500 放宽
         //    Model X: adopt 即为破壳时间基线，写 hatchStartTime=now, expectedHatchTime=now+7d
         String prototype = PROTOTYPES.get(ThreadLocalRandom.current().nextInt(PROTOTYPES.size()));
-        Date now = new Date();
-        PetEntity pet = new PetEntity();
-        pet.setUserId(userId);
-        pet.setPrototype(prototype);
-        pet.setHatchStatus(HATCH_STATUS_EGG);
-        pet.setHatchStartTime(now);
-        pet.setExpectedHatchTime(new Date(now.getTime() + SEVEN_DAYS_MS));
-        pet.setAcceleratedMinutes(0);
-        pet.setCreator(userId);
-        petDao.insert(pet);
+        PetEntity pet = buildAndInsertEgg(userId, prototype);
+        Date now = pet.getHatchStartTime();
 
         // 2. 核销邀请码(REQUIRES_NEW)。
         //    无效/过期/无剩余码会抛异常 → 外层事务回滚 → 蛋回滚，不会产生孤儿蛋。
@@ -337,6 +332,34 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         log.info("蛋领养成功 userId={}, petId={}, prototype={}", userId, pet.getId(), prototype);
         refreshTodayMood(pet);
         return toVO(pet);
+    }
+
+    /**
+     * 纯数据库建蛋：校验 userId 和 prototype，创建 EGG 态 PetEntity 并插入，返回实体。
+     * 不发起任何外部调用，不刷新今日心情。加入调用方事务。
+     */
+    private PetEntity buildAndInsertEgg(Long userId, String prototype) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        requireValidPrototype(prototype);
+        Date now = new Date();
+        PetEntity pet = new PetEntity();
+        pet.setUserId(userId);
+        pet.setPrototype(prototype);
+        pet.setHatchStatus(HATCH_STATUS_EGG);
+        pet.setHatchStartTime(now);
+        pet.setExpectedHatchTime(new Date(now.getTime() + SEVEN_DAYS_MS));
+        pet.setAcceleratedMinutes(0);
+        pet.setCreator(userId);
+        petDao.insert(pet);
+        return pet;
+    }
+
+    private void requireValidPrototype(String prototype) {
+        if (!PROTOTYPE_KOI.equals(prototype) && !PROTOTYPE_RABBIT.equals(prototype)) {
+            throw new RenException(ErrorCode.PDC_NFC_INVALID_PROTOTYPE);
+        }
     }
 
     @Override

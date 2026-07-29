@@ -21,6 +21,13 @@ public interface PetService extends BaseService<PetEntity> {
     PetVO adopt(Long userId, PetAdoptDTO dto);
 
     /**
+     * 纯数据库创建蛋：建 ai_pet(EGG)，不建 device/agent/档案，不刷新今日心情。
+     * prototype 必须是 "锦鲤" 或 "玉兔"，由调用方指定（NFC 领取场景使用固定原型）。
+     * 加入调用方事务，不发起任何外部调用。
+     */
+    PetVO createEgg(Long userId, String prototype);
+
+    /**
      * 破壳：EGG 态蛋到点后破壳。
      * 校验 hatchStatus==EGG 且 now>=expectedHatchTime(adopt 设 now+7d，无动作蛋到点即破)。
      * 命理 bazi 主导 → LLM 推 MBTI → LLM 生成性格(作 agent 系统提示词)；

@@ -76,7 +76,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
     public PdcNfcClaimPreviewVO preview(Long userId, String claimRef) {
         // 1. Validate claimRef format
         if (claimRef == null || !CLAIM_REF_PATTERN.matcher(claimRef).matches()) {
-            log.debug("[NFC-CLAIM] Invalid claimRef format for userId={}", userId);
+            log.debug("[NFC-CLAIM] Invalid ref format for userId={}", userId);
             rateLimiter.recordInvalidRef(userId);
             return unavailable();
         }
@@ -113,7 +113,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
 
         // 6. No asset found → UNAVAILABLE (don't reveal existence)
         if (assets == null || assets.isEmpty()) {
-            log.debug("[NFC-CLAIM] No asset found for claimRef hash, userId={}", userId);
+            log.debug("[NFC-CLAIM] No asset found for ref hash, userId={}", userId);
             return unavailable();
         }
 
@@ -178,7 +178,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
 
         // 2. Validate claimRef format
         if (claimRef == null || !CLAIM_REF_PATTERN.matcher(claimRef).matches()) {
-            log.debug("[NFC-CLAIM-CONFIRM] Invalid claimRef format for userId={}", userId);
+            log.debug("[NFC-CLAIM-CONFIRM] Invalid ref format for userId={}", userId);
             rateLimiter.recordInvalidRef(userId);
             throw new RenException(ErrorCode.PDC_NFC_ASSET_NOT_FOUND);
         }
@@ -263,7 +263,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             throw new RenException(ErrorCode.PDC_NFC_ASSET_NOT_FOUND);
         }
         if (candidates.size() > 1) {
-            log.warn("[NFC-CLAIM-CONFIRM] Multiple assets found for claimRef hashes, count={}", candidates.size());
+            log.warn("[NFC-CLAIM-CONFIRM] Multiple assets found for ref hashes, count={}", candidates.size());
             throw new RenException(ErrorCode.PDC_NFC_ASSET_UNAVAILABLE);
         }
         return candidates.get(0);

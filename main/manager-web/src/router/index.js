@@ -250,7 +250,7 @@ const routes = [
     path: '/pdc-nfc/write',
     name: 'NfcWrite',
     component: function () {
-      return import('../views/NfcPlaceholder.vue')
+      return import('../views/nfc/NfcWriteJobManagement.vue')
     },
     meta: {
       requiresAuth: true,

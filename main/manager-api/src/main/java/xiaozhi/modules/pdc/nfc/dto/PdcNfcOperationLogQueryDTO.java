@@ -10,10 +10,13 @@ import java.util.Date;
 @Data
 public class PdcNfcOperationLogQueryDTO {
 
+    /** 对象类型（BATCH / ASSET / SCHEME_JOB / WRITE_JOB） */
     private String objectType;
 
+    /** 对象 ID */
     private Long objectId;
 
+    /** 操作类型（WRITE_RESULT_IMPORT / STOCK_IN / ACTIVATE / DISABLE / SCRAP 等） */
     private String operationType;
 
     /** 查询起始日期（operateTime >= startDate） */

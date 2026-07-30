@@ -97,6 +97,22 @@ xiaozhi
 - **Liquibase** 驱动 schema 变更。主变更日志位于 `src/main/resources/db/changelog/db.changelog-master.yaml`。每个 changeset 引用一个带日期的 SQL 文件。修改表时，**新增 changeset + SQL 文件**；不要编辑已有 changeset。
 - **MyBatis-Plus** 配置：`id-type: ASSIGN_ID`，`map-underscore-to-camel-case: true`。实体扫描包：`xiaozhi.modules.*.entity`。Mapper XML 位置：`classpath*:/mapper/**/*.xml`。
 
+#### 开发环境数据库
+
+本地开发实际使用 **OceanBase（MySQL 兼容模式）**，通过 MySQL 协议连接。进行业务测试需要直连数据库时，使用以下连接信息（与 `application-dev.yml` 一致）：
+
+| 项 | 值 |
+|---|---|
+| 地址 | `127.0.0.1` |
+| 端口 | `2881` |
+| 用户名 | `root` |
+| 密码 | `123456` |
+| 数据库 | `egg_database` |
+
+JDBC URL：`jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true`
+
+命令行连接示例：`mysql -h127.0.0.1 -P2881 -uroot -p123456 egg_database`
+
 ### 配置模式
 
 系统参数保存在 `sys_params` 表中，并缓存到 Redis。`SysParamsService` 提供 `getValue(String paramCode, Boolean fromCache)` 和 `getValueObject(String paramCode, Class<T> clazz)` 用于类型化读取。`ConfigService` 将这些参数聚合成结构化配置载荷，供 `xiaozhi-server` 消费。
@@ -127,6 +143,4 @@ xiaozhi
 
 ## 业务文档
 
-- [蛋宝宝用户资料与头像 OSS 上传](docs/egg-user-profile-avatar.md) — `GET/PUT /wechat/profile`、`POST /wechat/avatar`，`ai_wechat_user` 画像字段，阿里云 OSS 头像公开 URL。
-- [订阅、道具、微信支付技术方案](docs/companion-subscription-items-payment.md) — 套餐订阅（青铜/白银/黄金）、道具购买（SKU+库存+核销）、微信支付 V3 JSAPI 的后端设计与实现参考。
 - [蛋宝宝孵化闭环后端实现参考](docs/egg-pet-hatch-backend.md) — adopt/hatch-action/hatch 三段端点、Model X 时间模型（adopt 设基线、动作减时）、ai_pet_hatch_action 表、虚拟设备与 agent 个性注入、每日心情 todayMood（懒生成 LLM+静态兜底）、错误码、测试约定与后期开发指引。

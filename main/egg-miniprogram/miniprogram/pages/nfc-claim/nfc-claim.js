@@ -134,11 +134,15 @@ Page({
 
   async onConfirmClaim() {
     if (this.data.state !== STATES.READY) return;
-    this.setData({ state: STATES.SUBMITTING, errorMessage: '' });
     // Generate requestId on first attempt; reuse on retry
     if (!this._requestId) {
       this._requestId = this.generateRequestId();
     }
+    this.doConfirm();
+  },
+
+  async doConfirm() {
+    this.setData({ state: STATES.SUBMITTING, errorMessage: '' });
     try {
       const result = await nfcClaimApi.confirm(this.data.claimRef, this._requestId);
       this.handleClaimResult(result);
@@ -169,23 +173,9 @@ Page({
   onRetry() {
     if (this.data.state !== STATES.NETWORK_ERROR) return;
     if (this._requestId) {
-      // Retry confirm call directly
       this.doConfirm();
     } else {
       this.loadPreview();
-    }
-  },
-
-  async doConfirm() {
-    this.setData({ state: STATES.SUBMITTING, errorMessage: '' });
-    try {
-      const result = await nfcClaimApi.confirm(this.data.claimRef, this._requestId);
-      this.handleClaimResult(result);
-    } catch (error) {
-      this.setData({
-        state: STATES.NETWORK_ERROR,
-        errorMessage: (error && error.userMessage) || '暂时无法连接服务，请稍后重试'
-      });
     }
   },
 

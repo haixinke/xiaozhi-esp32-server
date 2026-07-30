@@ -14,12 +14,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PdcNfcLiquibaseContractTest {
 
     @Test
-    void writeJobItemTableStoresOnlyUriDigestInsteadOfPlaintext() throws Exception {
+    void baselineWriteJobItemTableUsesSchemeDigestColumn() throws Exception {
         String sql = Files.readString(Path.of(
                 "src/main/resources/db/changelog/202607291000.sql"));
 
         Set<String> writeJobItemTableColumns = tableColumns(sql, "pdc_nfc_write_job_item");
 
+        // 基线 changeset 不可变：保持建表时的列名。
+        assertThat(writeJobItemTableColumns)
+                .contains("scheme_sha256")
+                .doesNotContain("uri_payload");
+    }
+
+    @Test
+    void migrationRenamesWriteJobItemDigestColumnToUriSha256() throws Exception {
+        String baseline = Files.readString(Path.of(
+                "src/main/resources/db/changelog/202607291000.sql"));
+        String migration = Files.readString(Path.of(
+                "src/main/resources/db/changelog/202607301000.sql"));
+
+        // 最终生效 schema：迁移把 scheme_sha256 重命名为 uri_sha256，
+        // 全程不存在 uri_payload 明文列。
+        Set<String> writeJobItemTableColumns = tableColumns(baseline, "pdc_nfc_write_job_item");
+        writeJobItemTableColumns.remove("scheme_sha256");
+        writeJobItemTableColumns.add("uri_sha256");
+
+        assertThat(migration)
+                .contains("pdc_nfc_write_job_item")
+                .contains("scheme_sha256")
+                .contains("uri_sha256");
         assertThat(writeJobItemTableColumns)
                 .contains("uri_sha256")
                 .doesNotContain("uri_payload", "scheme_sha256");

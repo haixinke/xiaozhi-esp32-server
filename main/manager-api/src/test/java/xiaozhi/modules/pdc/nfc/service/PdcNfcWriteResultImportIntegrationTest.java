@@ -104,7 +104,8 @@ class PdcNfcWriteResultImportIntegrationTest extends MySqlContainerSupport {
     void setUpDatabase() {
         resetSchema();
         new ResourceDatabasePopulator(
-                new ClassPathResource("db/changelog/202607291000.sql"))
+                new ClassPathResource("db/changelog/202607291000.sql"),
+                new ClassPathResource("db/changelog/202607301000.sql"))
                 .execute(dataSource);
         insertBatch();
         insertAsset(

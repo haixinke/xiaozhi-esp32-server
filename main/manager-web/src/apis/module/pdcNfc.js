@@ -9,7 +9,7 @@ export default {
    */
   listProductTypes(params, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/product-types`)
+      .url(`${getServiceUrl()}/pdc/nfc/product-type/list`)
       .method('GET')
       .data(params)
       .success((res) => {
@@ -28,20 +28,9 @@ export default {
    * 新增商品类型
    */
   createProductType(data, callback) {
-    RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/product-types`)
-      .method('POST')
-      .data(data)
-      .success((res) => {
-        RequestService.clearRequestTime();
-        callback(res);
-      })
-      .networkFail((err) => {
-        console.error('新增商品类型失败:', err);
-        RequestService.reAjaxFun(() => {
-          this.createProductType(data, callback);
-        });
-      }).send();
+    // 后端当前无此端点，保留占位
+    console.warn('createProductType: backend endpoint not implemented')
+    callback({ data: { code: -1, msg: '暂不支持新增商品类型' } })
   },
 
   /**
@@ -49,9 +38,9 @@ export default {
    */
   registerProductTypeEvidence(productTypeId, data, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/product-types/${productTypeId}/evidence`)
+      .url(`${getServiceUrl()}/pdc/nfc/product-type/release-evidence`)
       .method('POST')
-      .data(data)
+      .data({ productTypeId, ...data })
       .success((res) => {
         RequestService.clearRequestTime();
         callback(res);
@@ -71,7 +60,7 @@ export default {
    */
   listBatches(params, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/batches`)
+      .url(`${getServiceUrl()}/pdc/nfc/batch/list`)
       .method('GET')
       .data(params)
       .success((res) => {
@@ -91,7 +80,7 @@ export default {
    */
   createBatch(data, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/batches`)
+      .url(`${getServiceUrl()}/pdc/nfc/batch/create`)
       .method('POST')
       .data(data)
       .success((res) => {
@@ -113,7 +102,7 @@ export default {
    */
   startSchemeJob(batchId, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/scheme/batches/${batchId}/jobs`)
+      .url(`${getServiceUrl()}/pdc/nfc/scheme/generate/${batchId}`)
       .method('POST')
       .success((res) => {
         RequestService.clearRequestTime();
@@ -130,9 +119,9 @@ export default {
   /**
    * 重试 Scheme 任务
    */
-  retrySchemeJob(jobId, callback) {
+  retrySchemeJob(batchId, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/scheme/jobs/${jobId}/retry`)
+      .url(`${getServiceUrl()}/pdc/nfc/scheme/retry/${batchId}`)
       .method('POST')
       .success((res) => {
         RequestService.clearRequestTime();
@@ -141,7 +130,7 @@ export default {
       .networkFail((err) => {
         console.error('重试 Scheme 任务失败:', err);
         RequestService.reAjaxFun(() => {
-          this.retrySchemeJob(jobId, callback);
+          this.retrySchemeJob(batchId, callback);
         });
       }).send();
   },
@@ -151,7 +140,7 @@ export default {
    */
   cancelSchemeJob(jobId, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/scheme/jobs/${jobId}/cancel`)
+      .url(`${getServiceUrl()}/pdc/nfc/scheme/cancel/${jobId}`)
       .method('POST')
       .success((res) => {
         RequestService.clearRequestTime();
@@ -168,9 +157,9 @@ export default {
   /**
    * 查询 Scheme 任务进度
    */
-  schemeJobProgress(jobId, callback) {
+  schemeJobProgress(batchId, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/scheme/jobs/${jobId}`)
+      .url(`${getServiceUrl()}/pdc/nfc/scheme/progress/${batchId}`)
       .method('GET')
       .success((res) => {
         RequestService.clearRequestTime();
@@ -179,7 +168,7 @@ export default {
       .networkFail((err) => {
         console.error('获取 Scheme 任务进度失败:', err);
         RequestService.reAjaxFun(() => {
-          this.schemeJobProgress(jobId, callback);
+          this.schemeJobProgress(batchId, callback);
         });
       }).send();
   },
@@ -191,7 +180,7 @@ export default {
    */
   createWriteJob(batchId, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/write/batches/${batchId}/jobs`)
+      .url(`${getServiceUrl()}/pdc/nfc/write/create/${batchId}`)
       .method('POST')
       .success((res) => {
         RequestService.clearRequestTime();
@@ -210,7 +199,7 @@ export default {
    */
   downloadWriteJob(jobId, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/write/jobs/${jobId}/download`)
+      .url(`${getServiceUrl()}/pdc/nfc/write/download/${jobId}`)
       .method('GET')
       .type('blob')
       .success((res) => {
@@ -233,7 +222,7 @@ export default {
     formData.append('file', file);
     formData.append('requestId', requestId);
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/write/jobs/${jobId}/import`)
+      .url(`${getServiceUrl()}/pdc/nfc/write/${jobId}/import`)
       .method('POST')
       .data(formData)
       .header({ 'content-type': 'multipart/form-data' })
@@ -254,7 +243,7 @@ export default {
    */
   cancelWriteJob(jobId, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/write/jobs/${jobId}/cancel`)
+      .url(`${getServiceUrl()}/pdc/nfc/write/cancel/${jobId}`)
       .method('POST')
       .success((res) => {
         RequestService.clearRequestTime();
@@ -273,7 +262,7 @@ export default {
    */
   getWriteJob(jobId, callback) {
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/admin/write/jobs/${jobId}`)
+      .url(`${getServiceUrl()}/pdc/nfc/write/progress/${jobId}`)
       .method('GET')
       .success((res) => {
         RequestService.clearRequestTime();

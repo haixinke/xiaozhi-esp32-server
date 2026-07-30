@@ -21,7 +21,7 @@
 
             <el-table
               v-loading="loading"
-              :data="tableData"
+              :data="filteredData"
               border
               stripe
               style="width: 100%;"
@@ -29,9 +29,9 @@
             >
               <el-table-column prop="typeCode" label="类型编码" min-width="140" align="center"></el-table-column>
               <el-table-column prop="typeName" label="类型名称" min-width="160" align="center"></el-table-column>
-              <el-table-column prop="prototype" label="原型" min-width="100" align="center">
+              <el-table-column prop="capabilityMode" label="能力模式" min-width="100" align="center">
                 <template slot-scope="{ row }">
-                  {{ row.prototype || '-' }}
+                  {{ row.capabilityMode || '-' }}
                 </template>
               </el-table-column>
               <el-table-column label="Model ID" min-width="180" align="center">
@@ -49,8 +49,7 @@
               <el-table-column label="最新证据" min-width="200" align="center">
                 <template slot-scope="{ row }">
                   <span v-if="row.latestEvidence">
-                    v{{ row.latestEvidence.version }}
-                    <span class="evidence-time">{{ formatDate(row.latestEvidence.releaseTime) }}</span>
+                    {{ row.latestEvidence.evidenceType }}
                   </span>
                   <span v-else class="text-muted">-</span>
                 </template>
@@ -63,19 +62,6 @@
                 </template>
               </el-table-column>
             </el-table>
-
-            <div class="pagination-wrapper">
-              <el-pagination
-                background
-                layout="total, sizes, prev, pager, next, jumper"
-                :total="total"
-                :current-page="currentPage"
-                :page-size="pageSize"
-                :page-sizes="[10, 20, 50]"
-                @current-change="handlePageChange"
-                @size-change="handleSizeChange"
-              ></el-pagination>
-            </div>
           </el-card>
         </div>
       </div>
@@ -99,22 +85,17 @@
         <el-form-item label="商品类型">
           <span>{{ currentProductType?.typeCode }} - {{ currentProductType?.typeName }}</span>
         </el-form-item>
-        <el-form-item label="版本号" prop="version">
-          <el-input v-model="evidenceForm.version" placeholder="请输入版本号" maxlength="32"></el-input>
+        <el-form-item label="证据类型" prop="evidenceType">
+          <el-select v-model="evidenceForm.evidenceType" placeholder="请选择证据类型" style="width: 100%;">
+            <el-option label="固件版本" value="FIRMWARE_VERSION"></el-option>
+            <el-option label="产线验证" value="PRODUCTION_VERIFY"></el-option>
+            <el-option label="质量审计" value="QUALITY_AUDIT"></el-option>
+          </el-select>
         </el-form-item>
-        <el-form-item label="发布时间" prop="releaseTime">
-          <el-date-picker
-            v-model="evidenceForm.releaseTime"
-            type="datetime"
-            placeholder="选择发布时间"
-            value-format="yyyy-MM-dd HH:mm:ss"
-            style="width: 100%;"
-          ></el-date-picker>
-        </el-form-item>
-        <el-form-item label="证据内容" prop="evidence">
+        <el-form-item label="证据内容" prop="evidenceContent">
           <el-input
             type="textarea"
-            v-model="evidenceForm.evidence"
+            v-model="evidenceForm.evidenceContent"
             :rows="4"
             placeholder="请输入证据内容"
             maxlength="500"
@@ -142,25 +123,29 @@ export default {
     return {
       loading: false,
       tableData: [],
-      total: 0,
-      currentPage: 1,
-      pageSize: 10,
       searchKeyword: '',
-      activeSearchKeyword: '',
       // Evidence dialog
       evidenceDialogVisible: false,
       evidenceSaving: false,
       currentProductType: null,
       evidenceForm: {
-        version: '',
-        releaseTime: '',
-        evidence: ''
+        evidenceType: '',
+        evidenceContent: ''
       },
       evidenceRules: {
-        version: [{ required: true, message: '请输入版本号', trigger: 'blur' }],
-        releaseTime: [{ required: true, message: '请选择发布时间', trigger: 'change' }],
-        evidence: [{ required: true, message: '请输入证据内容', trigger: 'blur' }]
+        evidenceType: [{ required: true, message: '请选择证据类型', trigger: 'change' }],
+        evidenceContent: [{ required: true, message: '请输入证据内容', trigger: 'blur' }]
       }
+    }
+  },
+  computed: {
+    filteredData() {
+      if (!this.searchKeyword) return this.tableData
+      const kw = this.searchKeyword.toLowerCase()
+      return this.tableData.filter(row =>
+        (row.typeCode && row.typeCode.toLowerCase().includes(kw)) ||
+        (row.typeName && row.typeName.toLowerCase().includes(kw))
+      )
     }
   },
   created() {
@@ -171,41 +156,21 @@ export default {
     formatDate,
     fetchProductTypes() {
       this.loading = true
-      const params = {
-        page: this.currentPage,
-        limit: this.pageSize
-      }
-      if (this.activeSearchKeyword) {
-        params.keyword = this.activeSearchKeyword
-      }
-      Api.pdcNfc.listProductTypes(params, (res) => {
+      Api.pdcNfc.listProductTypes({}, (res) => {
         this.loading = false
         if (res.data && res.data.code === 0) {
-          const data = res.data.data
-          this.tableData = data?.list || data || []
-          this.total = data?.total || this.tableData.length
+          this.tableData = res.data.data || []
         } else {
           this.$message.error(res.data?.msg || '获取商品类型列表失败')
         }
       })
     },
     handleSearch() {
-      this.activeSearchKeyword = this.searchKeyword
-      this.currentPage = 1
-      this.fetchProductTypes()
-    },
-    handlePageChange(page) {
-      this.currentPage = page
-      this.fetchProductTypes()
-    },
-    handleSizeChange(size) {
-      this.pageSize = size
-      this.currentPage = 1
-      this.fetchProductTypes()
+      // 前端过滤，无需重新请求
     },
     openEvidenceDialog(row) {
       this.currentProductType = row
-      this.evidenceForm = { version: '', releaseTime: '', evidence: '' }
+      this.evidenceForm = { evidenceType: '', evidenceContent: '' }
       this.evidenceDialogVisible = true
     },
     submitEvidence() {
@@ -318,12 +283,6 @@ export default {
     flex: 1;
     overflow: hidden;
   }
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 16px;
 }
 
 .evidence-time {

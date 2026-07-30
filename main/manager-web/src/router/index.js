@@ -347,15 +347,3 @@ router.beforeEach((to, from, next) => {
 })
 
 export default router
-    const userInfo = vuexUserInfo || readStoredUserInfo()
-    const result = canAccessRoute(to, token, userInfo)
-    if (!result.allowed) {
-      next({ path: result.redirect, query: result.redirect === '/login' ? { redirect: to.fullPath } : {} })
-      return
-    }
-  }
-
-  next()
-})
-
-export default router

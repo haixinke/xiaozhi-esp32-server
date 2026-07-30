@@ -238,7 +238,7 @@ const routes = [
     path: '/pdc-nfc/scheme',
     name: 'NfcScheme',
     component: function () {
-      return import('../views/NfcPlaceholder.vue')
+      return import('../views/nfc/NfcSchemeManagement.vue')
     },
     meta: {
       requiresAuth: true,

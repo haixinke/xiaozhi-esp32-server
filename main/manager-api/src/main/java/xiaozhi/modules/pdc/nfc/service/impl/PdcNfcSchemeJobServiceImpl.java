@@ -122,7 +122,7 @@ public class PdcNfcSchemeJobServiceImpl implements PdcNfcSchemeJobService {
     public PdcNfcSchemeProgressVO progress(Long batchId) {
         PdcNfcSchemeJobEntity job = jobDao.selectLatestByBatchId(batchId);
         if (job == null) {
-            throw new RenException(ErrorCode.PDC_NFC_JOB_NOT_FOUND);
+            return null;
         }
         return new PdcNfcSchemeProgressVO(
                 job.getId(),

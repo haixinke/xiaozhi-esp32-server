@@ -131,15 +131,33 @@ async function run() {
   assert.strictEqual(redirectTo, '/pages/nfc-claim/nfc-claim', 'NFC intent after async login navigates to claim page');
   assert.strictEqual(switchedTo, null, 'NFC intent should not switchTab to home');
 
-  // NFC意图但无手机号 → 停留欢迎页
+  // NFC意图 + 无手机号（同步路径）→ 优先进入领取页
   resetScenario();
   cachedSession = { userId: 42, hasPhone: false };
   cachedExpired = false;
   pendingIntent = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
   const nfcNoPhonePage = makePage();
   await nfcNoPhonePage.onLoad();
-  assert.strictEqual(redirectTo, null, 'NFC intent without phone stays on welcome');
-  assert.strictEqual(switchedTo, null, 'NFC intent without phone stays on welcome');
+  assert.strictEqual(redirectTo, '/pages/nfc-claim/nfc-claim', 'NFC intent without phone enters claim page');
+  assert.strictEqual(switchedTo, null, 'NFC intent without phone does not switchTab');
+
+  // NFC意图 + 异步登录后无手机号 → 优先进入领取页
+  resetScenario();
+  ensureSession = { userId: 42, hasPhone: false };
+  pendingIntent = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
+  const nfcAsyncNoPhonePage = makePage();
+  await nfcAsyncNoPhonePage.onLoad();
+  assert.strictEqual(redirectTo, '/pages/nfc-claim/nfc-claim', 'NFC intent after async login without phone enters claim page');
+  assert.strictEqual(switchedTo, null, 'NFC intent after async login without phone does not switchTab');
+
+  // 点击入口 + NFC意图 → 进入领取页而非首页
+  resetScenario();
+  pendingIntent = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
+  const nfcEnterPage = makePage();
+  nfcEnterPage.onEnterIsland();
+  assert.strictEqual(redirectTo, '/pages/nfc-claim/nfc-claim', 'entry button with NFC intent enters claim page');
+  assert.strictEqual(switchedTo, null, 'entry button with NFC intent does not switchTab');
+  assert.strictEqual(app.globalData.welcomeCompleted, true, 'entry button with NFC intent marks welcome completed');
 
   // 无NFC意图 + 已绑定手机号 → 正常跳转首页
   resetScenario();

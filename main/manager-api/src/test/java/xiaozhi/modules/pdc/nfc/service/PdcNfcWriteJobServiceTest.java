@@ -11,6 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.MessageSource;
+import xiaozhi.common.exception.RenException;
+import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcBatchStatus;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcWriteJobStatus;
@@ -29,12 +33,23 @@ import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcWriteJobServiceImpl;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteFile;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +77,14 @@ class PdcNfcWriteJobServiceTest {
         TableInfoHelper.initTableInfo(assistant, PdcNfcWriteJobEntity.class);
         TableInfoHelper.initTableInfo(assistant, PdcNfcAssetEntity.class);
         TableInfoHelper.initTableInfo(assistant, PdcNfcWriteJobItemEntity.class);
+
+        ApplicationContext applicationContext = mock(ApplicationContext.class);
+        MessageSource messageSource = mock(MessageSource.class);
+        when(applicationContext.getBean("messageSource")).thenReturn(messageSource);
+        when(messageSource.getMessage(
+                anyString(), any(), anyString(), any(Locale.class)))
+                .thenAnswer(invocation -> invocation.getArgument(2));
+        SpringContextUtils.applicationContext = applicationContext;
     }
 
     @BeforeEach
@@ -111,6 +134,7 @@ class PdcNfcWriteJobServiceTest {
         when(batchDao.selectById(10L)).thenReturn(batch);
         when(jobItemDao.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(item));
         lenient().when(assetDao.selectById(501L)).thenReturn(asset);
+        lenient().when(assetDao.selectBatchIds(anyCollection())).thenReturn(List.of(asset));
         lenient().when(claimRefProtection.decrypt(any(), any(EncryptedField.class)))
                 .thenReturn(SCHEME);
 
@@ -123,6 +147,71 @@ class PdcNfcWriteJobServiceTest {
         assertThat(PdcNfcWriteCsvExporter.sha256Hex(second.bytes())).isEqualTo(firstSha256);
         verify(claimRefProtection, org.mockito.Mockito.times(2))
                 .decrypt(any(), any(EncryptedField.class));
+    }
+
+    @Test
+    void exportLoadsAssetsInBatchesOfFiveHundredAndPreservesSnapshotOrder() {
+        PdcNfcWriteJobEntity job = exportedJob();
+        PdcNfcBatchEntity batch = batch();
+        List<PdcNfcWriteJobItemEntity> items = IntStream.rangeClosed(1, 501)
+                .mapToObj(PdcNfcWriteJobServiceTest::bulkItem)
+                .toList();
+        Map<Long, PdcNfcAssetEntity> assetsById = IntStream.rangeClosed(1, 501)
+                .mapToObj(PdcNfcWriteJobServiceTest::bulkAsset)
+                .collect(Collectors.toMap(PdcNfcAssetEntity::getId, Function.identity()));
+        when(jobDao.selectById(100L)).thenReturn(job);
+        when(batchDao.selectById(10L)).thenReturn(batch);
+        when(jobItemDao.selectList(any(LambdaQueryWrapper.class))).thenReturn(items);
+        lenient().when(assetDao.selectById(any())).thenAnswer(
+                invocation -> assetsById.get(invocation.<Long>getArgument(0)));
+        lenient().when(assetDao.selectBatchIds(anyCollection())).thenAnswer(invocation -> {
+            Collection<Long> assetIds = invocation.getArgument(0);
+            return assetIds.stream().map(assetsById::get).toList();
+        });
+        when(claimRefProtection.decrypt(any(), any(EncryptedField.class)))
+                .thenAnswer(invocation -> schemeForAsset(invocation.getArgument(0)));
+
+        PdcNfcWriteFile file = service.export(100L, 99L);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Collection<Long>> batches =
+                ArgumentCaptor.forClass((Class<Collection<Long>>) (Class<?>) Collection.class);
+        verify(assetDao, times(2)).selectBatchIds(batches.capture());
+        assertThat(batches.getAllValues())
+                .extracting(Collection::size)
+                .containsExactly(500, 1);
+        verify(assetDao, never()).selectById(any());
+
+        List<String> exportedAssetNos = new String(file.bytes(), StandardCharsets.UTF_8)
+                .lines()
+                .skip(1)
+                .map(line -> line.split(",", -1)[4])
+                .toList();
+        assertThat(exportedAssetNos)
+                .containsExactlyElementsOf(items.stream()
+                        .map(PdcNfcWriteJobItemEntity::getAssetNo)
+                        .toList());
+    }
+
+    @Test
+    void exportRejectsMissingAssetFromBatchLoad() {
+        PdcNfcAssetEntity asset = encryptedAsset();
+        stubSingleItemExport(asset);
+        lenient().when(assetDao.selectBatchIds(anyCollection())).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.export(100L, 99L))
+                .isInstanceOf(RenException.class);
+    }
+
+    @Test
+    void exportRejectsDuplicateAssetIdFromBatchLoad() {
+        PdcNfcAssetEntity asset = encryptedAsset();
+        stubSingleItemExport(asset);
+        lenient().when(assetDao.selectBatchIds(anyCollection()))
+                .thenReturn(List.of(asset, asset));
+
+        assertThatThrownBy(() -> service.export(100L, 99L))
+                .isInstanceOf(RenException.class);
     }
 
     private static PdcNfcBatchEntity batch() {
@@ -171,5 +260,48 @@ class PdcNfcWriteJobServiceTest {
         item.setPrototype("锦鲤");
         item.setUriSha256(SCHEME_SHA256);
         return item;
+    }
+
+    private static PdcNfcWriteJobItemEntity bulkItem(int sequenceNo) {
+        Long assetId = 10_000L + sequenceNo;
+        String scheme = schemeForAsset(assetId);
+        PdcNfcWriteJobItemEntity item = new PdcNfcWriteJobItemEntity();
+        item.setJobId(100L);
+        item.setAssetId(assetId);
+        item.setSequenceNo(sequenceNo);
+        item.setAssetNo(String.format("A%06d", sequenceNo));
+        item.setBatchNo("B001");
+        item.setWechatSn(String.format("SN%06d", sequenceNo));
+        item.setSkuCode("KOI");
+        item.setPrototype("锦鲤");
+        item.setUriSha256(PdcNfcWriteCsvExporter.sha256Hex(
+                scheme.getBytes(StandardCharsets.UTF_8)));
+        return item;
+    }
+
+    private static PdcNfcAssetEntity bulkAsset(int sequenceNo) {
+        Long assetId = 10_000L + sequenceNo;
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(assetId);
+        asset.setSchemeKeyVersion("v1");
+        asset.setSchemeNonce(new byte[12]);
+        asset.setSchemeCiphertext(new byte[]{1, 2, 3});
+        asset.setSchemeSha256(PdcNfcWriteCsvExporter.sha256Hex(
+                schemeForAsset(assetId).getBytes(StandardCharsets.UTF_8)));
+        return asset;
+    }
+
+    private static String schemeForAsset(Long assetId) {
+        return "weixin://dl/business/?t=" + assetId;
+    }
+
+    private void stubSingleItemExport(PdcNfcAssetEntity asset) {
+        when(jobDao.selectById(100L)).thenReturn(exportedJob());
+        when(batchDao.selectById(10L)).thenReturn(batch());
+        when(jobItemDao.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(writeJobItem()));
+        lenient().when(assetDao.selectById(501L)).thenReturn(asset);
+        lenient().when(claimRefProtection.decrypt(any(), any(EncryptedField.class)))
+                .thenReturn(SCHEME);
     }
 }

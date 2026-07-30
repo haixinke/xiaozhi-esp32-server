@@ -32,7 +32,11 @@ import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteFile;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteJobVO;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * NFC 写卡任务服务实现。
@@ -41,6 +45,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
+
+    private static final int ASSET_LOAD_BATCH_SIZE = 500;
 
     private final PdcNfcWriteJobDao jobDao;
     private final PdcNfcWriteJobItemDao jobItemDao;
@@ -175,8 +181,9 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
                         .eq(PdcNfcWriteJobItemEntity::getJobId, jobId)
                         .orderByAsc(PdcNfcWriteJobItemEntity::getSequenceNo));
 
+        Map<Long, PdcNfcAssetEntity> assetsById = loadAssetsById(items);
         List<PdcNfcWriteCsvRow> csvRows = items.stream()
-                .map(this::decryptCsvRow)
+                .map(item -> decryptCsvRow(item, assetsById.get(item.getAssetId())))
                 .toList();
 
         // 生成 CSV
@@ -249,8 +256,44 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
 
     // --- helpers ---
 
-    private PdcNfcWriteCsvRow decryptCsvRow(PdcNfcWriteJobItemEntity item) {
-        PdcNfcAssetEntity asset = assetDao.selectById(item.getAssetId());
+    private Map<Long, PdcNfcAssetEntity> loadAssetsById(
+            List<PdcNfcWriteJobItemEntity> items) {
+        List<Long> assetIds = items.stream()
+                .map(PdcNfcWriteJobItemEntity::getAssetId)
+                .toList();
+        if (assetIds.stream().anyMatch(java.util.Objects::isNull)
+                || new HashSet<>(assetIds).size() != assetIds.size()) {
+            throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
+        }
+
+        Map<Long, PdcNfcAssetEntity> assetsById = new HashMap<>();
+        for (int start = 0; start < assetIds.size(); start += ASSET_LOAD_BATCH_SIZE) {
+            int end = Math.min(start + ASSET_LOAD_BATCH_SIZE, assetIds.size());
+            List<Long> batchIds = assetIds.subList(start, end);
+            Set<Long> expectedBatchIds = new HashSet<>(batchIds);
+            List<PdcNfcAssetEntity> batchAssets = assetDao.selectBatchIds(batchIds);
+            if (batchAssets == null) {
+                throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+            }
+            for (PdcNfcAssetEntity asset : batchAssets) {
+                if (asset == null
+                        || asset.getId() == null
+                        || !expectedBatchIds.contains(asset.getId())
+                        || assetsById.putIfAbsent(asset.getId(), asset) != null) {
+                    throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
+                }
+            }
+        }
+
+        if (assetsById.size() != assetIds.size()
+                || !assetsById.keySet().containsAll(assetIds)) {
+            throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+        }
+        return Map.copyOf(assetsById);
+    }
+
+    private PdcNfcWriteCsvRow decryptCsvRow(
+            PdcNfcWriteJobItemEntity item, PdcNfcAssetEntity asset) {
         if (asset == null
                 || asset.getSchemeKeyVersion() == null
                 || asset.getSchemeNonce() == null

@@ -1,6 +1,5 @@
 package xiaozhi.modules.pdc.nfc.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import xiaozhi.modules.pdc.nfc.dao.PdcNfcOperationLogDao;
 import xiaozhi.modules.pdc.nfc.dto.PdcNfcReleaseEvidenceDTO;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcOperationLogEntity;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcAuditServiceImpl;
+import xiaozhi.modules.pdc.nfc.vo.ReleaseEvidence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -57,21 +57,34 @@ class PdcNfcAuditServiceTest {
     }
 
     @Test
-    @DisplayName("当前配置版本的最新成功发布证据 - 通过")
-    void acceptsLatestSuccessfulEvidenceForCurrentConfiguredVersion() {
-        when(operationLogDao.selectOne(org.mockito.ArgumentMatchers.<QueryWrapper<PdcNfcOperationLogEntity>>any()))
+    @DisplayName("当前版本证据之后登记其他版本 - 当前版本仍就绪")
+    void remainsReadyWhenCurrentVersionEvidenceExistsAfterOtherVersionIsRegistered() {
+        when(operationLogDao.selectLatestSuccessfulReleaseEvidence("1.2.3"))
                 .thenReturn(releaseEvidence("SUCCESS", "1.2.3"));
 
         assertThat(auditService.hasCurrentReleaseEvidence()).isTrue();
+        verify(operationLogDao).selectLatestSuccessfulReleaseEvidence("1.2.3");
     }
 
     @Test
     @DisplayName("旧版本或失败发布证据 - 不视为当前就绪")
     void rejectsStaleOrFailedReleaseEvidence() {
-        when(operationLogDao.selectOne(org.mockito.ArgumentMatchers.<QueryWrapper<PdcNfcOperationLogEntity>>any()))
+        when(operationLogDao.selectLatestSuccessfulReleaseEvidence("1.2.3"))
                 .thenReturn(releaseEvidence("SUCCESS", "1.2.2"));
 
         assertThat(auditService.hasCurrentReleaseEvidence()).isFalse();
+    }
+
+    @Test
+    @DisplayName("当前版本最新证据 - 作为全局证据返回")
+    void returnsLatestCurrentReleaseEvidenceGlobally() {
+        when(operationLogDao.selectLatestSuccessfulReleaseEvidence("1.2.3"))
+                .thenReturn(releaseEvidence("SUCCESS", "1.2.3"));
+
+        ReleaseEvidence evidence = auditService.latestCurrentReleaseEvidence();
+
+        assertThat(evidence.releaseVersion()).isEqualTo("1.2.3");
+        verify(operationLogDao).selectLatestSuccessfulReleaseEvidence("1.2.3");
     }
 
     private PdcNfcOperationLogEntity releaseEvidence(String result, String releaseVersion) {

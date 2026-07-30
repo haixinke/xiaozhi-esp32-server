@@ -1,6 +1,5 @@
 package xiaozhi.modules.pdc.nfc.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.RequiredArgsConstructor;
@@ -44,37 +43,21 @@ public class PdcNfcAuditServiceImpl implements PdcNfcAuditService {
             return false;
         }
 
-        QueryWrapper<PdcNfcOperationLogEntity> qw = new QueryWrapper<>();
-        qw.eq("object_type", "NFC_RELEASE")
-                .eq("operation_type", "RELEASE_EVIDENCE")
-                .eq("source", "ADMIN_API")
-                .eq("result", "SUCCESS")
-                .orderByDesc("create_date")
-                .last("LIMIT 1");
-        PdcNfcOperationLogEntity entry = operationLogDao.selectOne(qw);
+        PdcNfcOperationLogEntity entry = operationLogDao.selectLatestSuccessfulReleaseEvidence(releaseVersion);
         return entry != null && releaseVersion.equals(extractReleaseVersion(entry.getDetailJson()));
     }
 
     @Override
-    public ReleaseEvidence latestReleaseEvidence(Long productTypeId) {
-        QueryWrapper<PdcNfcOperationLogEntity> qw = new QueryWrapper<>();
-        qw.eq("object_type", "PRODUCT_TYPE")
-                .eq("object_id", productTypeId)
-                .eq("operation_type", "RELEASE_EVIDENCE")
-                .orderByDesc("create_date")
-                .last("LIMIT 1");
-        PdcNfcOperationLogEntity entry = operationLogDao.selectOne(qw);
+    public ReleaseEvidence latestCurrentReleaseEvidence() {
+        String releaseVersion = properties.getReleaseVersion();
+        if (releaseVersion == null || releaseVersion.isBlank()) {
+            return null;
+        }
+        PdcNfcOperationLogEntity entry = operationLogDao.selectLatestSuccessfulReleaseEvidence(releaseVersion);
         if (entry == null) {
             return null;
         }
-        return new ReleaseEvidence(
-                entry.getId(),
-                extractReleaseVersion(entry.getDetailJson()),
-                extractPublishedAt(entry.getDetailJson()),
-                extractSmokeEvidence(entry.getDetailJson()),
-                entry.getOperatorUserId(),
-                entry.getCreateDate()
-        );
+        return toReleaseEvidence(entry);
     }
 
     private String toJson(PdcNfcReleaseEvidenceDTO dto) {
@@ -103,5 +86,16 @@ public class PdcNfcAuditServiceImpl implements PdcNfcAuditService {
         }
         JSONObject detail = JSONUtil.parseObj(detailJson);
         return detail.getStr(fieldName);
+    }
+
+    private ReleaseEvidence toReleaseEvidence(PdcNfcOperationLogEntity entry) {
+        return new ReleaseEvidence(
+                entry.getId(),
+                extractReleaseVersion(entry.getDetailJson()),
+                extractPublishedAt(entry.getDetailJson()),
+                extractSmokeEvidence(entry.getDetailJson()),
+                entry.getOperatorUserId(),
+                entry.getCreateDate()
+        );
     }
 }

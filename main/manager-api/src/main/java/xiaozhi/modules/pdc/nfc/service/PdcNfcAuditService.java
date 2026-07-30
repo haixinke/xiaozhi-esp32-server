@@ -19,7 +19,7 @@ public interface PdcNfcAuditService {
     boolean hasCurrentReleaseEvidence();
 
     /**
-     * 查询商品类型的最新发布证据，无记录返回 null。
+     * 查询当前配置发布版本的最新成功证据，无记录返回 null。
      */
-    ReleaseEvidence latestReleaseEvidence(Long productTypeId);
+    ReleaseEvidence latestCurrentReleaseEvidence();
 }

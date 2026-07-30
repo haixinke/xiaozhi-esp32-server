@@ -49,7 +49,8 @@
               <el-table-column label="最新证据" min-width="200" align="center">
                 <template slot-scope="{ row }">
                   <span v-if="row.latestEvidence">
-                    {{ row.latestEvidence.evidenceType }}
+                    {{ row.latestEvidence.releaseVersion }}
+                    <span class="evidence-time">{{ formatDate(row.latestEvidence.publishedAt) }}</span>
                   </span>
                   <span v-else class="text-muted">-</span>
                 </template>
@@ -82,22 +83,18 @@
         label-width="100px"
         label-position="right"
       >
-        <el-form-item label="商品类型">
-          <span>{{ currentProductType?.typeCode }} - {{ currentProductType?.typeName }}</span>
+        <el-form-item label="发布版本" prop="releaseVersion">
+          <el-input v-model="evidenceForm.releaseVersion" placeholder="请输入当前领取页发布版本"></el-input>
         </el-form-item>
-        <el-form-item label="证据类型" prop="evidenceType">
-          <el-select v-model="evidenceForm.evidenceType" placeholder="请选择证据类型" style="width: 100%;">
-            <el-option label="固件版本" value="FIRMWARE_VERSION"></el-option>
-            <el-option label="产线验证" value="PRODUCTION_VERIFY"></el-option>
-            <el-option label="质量审计" value="QUALITY_AUDIT"></el-option>
-          </el-select>
+        <el-form-item label="发布时间" prop="publishedAt">
+          <el-input v-model="evidenceForm.publishedAt" placeholder="例如 2026-07-30T10:00:00+08:00"></el-input>
         </el-form-item>
-        <el-form-item label="证据内容" prop="evidenceContent">
+        <el-form-item label="冒烟证据" prop="smokeEvidence">
           <el-input
             type="textarea"
-            v-model="evidenceForm.evidenceContent"
+            v-model="evidenceForm.smokeEvidence"
             :rows="4"
-            placeholder="请输入证据内容"
+            placeholder="请输入冒烟验证证据"
             maxlength="500"
             show-word-limit
           ></el-input>
@@ -115,6 +112,7 @@
 import Api from '@/apis/api'
 import HeaderBar from '@/components/HeaderBar.vue'
 import { modelIdLabel, formatDate } from '@/utils/pdcNfcState.mjs'
+import { buildReleaseEvidencePayload } from '@/utils/pdcNfcReleaseEvidence.mjs'
 
 export default {
   name: 'NfcProductTypeManagement',
@@ -129,12 +127,14 @@ export default {
       evidenceSaving: false,
       currentProductType: null,
       evidenceForm: {
-        evidenceType: '',
-        evidenceContent: ''
+        releaseVersion: '',
+        publishedAt: '',
+        smokeEvidence: ''
       },
       evidenceRules: {
-        evidenceType: [{ required: true, message: '请选择证据类型', trigger: 'change' }],
-        evidenceContent: [{ required: true, message: '请输入证据内容', trigger: 'blur' }]
+        releaseVersion: [{ required: true, message: '请输入发布版本', trigger: 'blur' }],
+        publishedAt: [{ required: true, message: '请输入发布时间', trigger: 'blur' }],
+        smokeEvidence: [{ required: true, message: '请输入冒烟验证证据', trigger: 'blur' }]
       }
     }
   },
@@ -170,15 +170,15 @@ export default {
     },
     openEvidenceDialog(row) {
       this.currentProductType = row
-      this.evidenceForm = { evidenceType: '', evidenceContent: '' }
+      this.evidenceForm = { releaseVersion: '', publishedAt: '', smokeEvidence: '' }
       this.evidenceDialogVisible = true
     },
     submitEvidence() {
       this.$refs.evidenceForm.validate((valid) => {
         if (!valid) return
         this.evidenceSaving = true
-        const productTypeId = this.currentProductType?.id
-        Api.pdcNfc.registerProductTypeEvidence(productTypeId, this.evidenceForm, (res) => {
+        const payload = buildReleaseEvidencePayload(this.evidenceForm)
+        Api.pdcNfc.registerReleaseEvidence(payload, (res) => {
           this.evidenceSaving = false
           if (res.data && res.data.code === 0) {
             this.$message.success('发布证据登记成功')

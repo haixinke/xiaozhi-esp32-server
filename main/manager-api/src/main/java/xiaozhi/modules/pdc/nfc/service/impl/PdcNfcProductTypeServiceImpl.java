@@ -25,12 +25,16 @@ public class PdcNfcProductTypeServiceImpl implements PdcNfcProductTypeService {
     @Override
     public List<PdcNfcProductTypeVO> list() {
         List<PdcNfcProductTypeEntity> entities = productTypeDao.selectList(null);
-        return entities.stream().map(this::toVO).collect(Collectors.toList());
+        ReleaseEvidence evidence = auditService.latestCurrentReleaseEvidence();
+        return entities.stream().map(entity -> toVO(entity, evidence)).collect(Collectors.toList());
     }
 
     public PdcNfcProductTypeVO toVO(PdcNfcProductTypeEntity entity) {
+        return toVO(entity, auditService.latestCurrentReleaseEvidence());
+    }
+
+    private PdcNfcProductTypeVO toVO(PdcNfcProductTypeEntity entity, ReleaseEvidence evidence) {
         String modelId = properties.getModelId();
-        ReleaseEvidence evidence = auditService.latestReleaseEvidence(entity.getId());
         return new PdcNfcProductTypeVO(
                 entity.getId(), entity.getTypeCode(), entity.getTypeName(),
                 entity.getClaimPagePath(), entity.getCapabilityMode(), entity.getStatus(),

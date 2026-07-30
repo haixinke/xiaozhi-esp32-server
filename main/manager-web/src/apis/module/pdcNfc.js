@@ -1,5 +1,6 @@
 import { getServiceUrl } from '../api';
 import RequestService from '../httpRequest';
+import { buildReleaseEvidencePayload } from '../../utils/pdcNfcReleaseEvidence.mjs';
 
 export default {
   // ==================== 商品类型 ====================
@@ -34,22 +35,20 @@ export default {
   },
 
   /**
-   * 登记发布证据（商品类型）
+   * 登记当前领取页发布证据
    */
-  registerProductTypeEvidence(productTypeId, data, callback) {
+  registerReleaseEvidence(data, callback) {
     RequestService.sendRequest()
       .url(`${getServiceUrl()}/pdc/nfc/product-type/release-evidence`)
       .method('POST')
-      .data({ productTypeId, ...data })
+      .data(buildReleaseEvidencePayload(data))
       .success((res) => {
         RequestService.clearRequestTime();
         callback(res);
       })
       .networkFail((err) => {
         console.error('登记发布证据失败:', err);
-        RequestService.reAjaxFun(() => {
-          this.registerProductTypeEvidence(productTypeId, data, callback);
-        });
+        callback({ data: { code: -1, msg: '登记发布证据网络请求失败' } });
       }).send();
   },
 

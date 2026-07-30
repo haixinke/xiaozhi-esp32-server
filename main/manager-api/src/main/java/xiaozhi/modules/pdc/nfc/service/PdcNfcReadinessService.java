@@ -6,7 +6,7 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 
 /**
- * NFC Scheme 生成就绪门：检查功能开关、Scheme 生成开关、发布就绪证据。
+ * NFC Scheme 生成就绪门：检查功能开关、Scheme 生成开关、模型 ID 和发布就绪证据。
  * <p>
  * 三个门控全部通过才允许发起 Scheme 任务，任一未通过立即抛出 RenException。
  */
@@ -14,13 +14,15 @@ import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 public class PdcNfcReadinessService {
 
     private final PdcNfcProperties properties;
+    private final PdcNfcAuditService auditService;
 
-    public PdcNfcReadinessService(PdcNfcProperties properties) {
+    public PdcNfcReadinessService(PdcNfcProperties properties, PdcNfcAuditService auditService) {
         this.properties = properties;
+        this.auditService = auditService;
     }
 
     /**
-     * 要求 Scheme 生成就绪：enabled、schemeGenerationEnabled、releaseReady 三者全部为 true。
+     * 要求 Scheme 生成就绪：功能开关、模型 ID 与当前发布证据均已就绪。
      */
     public void requireSchemeGenerationReady() {
         if (!properties.isEnabled()) {
@@ -30,6 +32,14 @@ public class PdcNfcReadinessService {
             throw new RenException(ErrorCode.PDC_NFC_FEATURE_DISABLED);
         }
         if (!properties.isReleaseReady()) {
+            throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+        }
+        String modelId = properties.getModelId();
+        if (modelId == null || modelId.isBlank()
+                || (modelId.trim().startsWith("<") && modelId.trim().endsWith(">"))) {
+            throw new RenException(ErrorCode.PDC_NFC_MODEL_ID_NOT_CONFIGURED);
+        }
+        if (!auditService.hasCurrentReleaseEvidence()) {
             throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
         }
     }

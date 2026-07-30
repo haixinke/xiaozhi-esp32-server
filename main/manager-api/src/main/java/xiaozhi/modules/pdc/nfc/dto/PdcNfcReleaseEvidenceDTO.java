@@ -1,7 +1,6 @@
 package xiaozhi.modules.pdc.nfc.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,15 +15,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PdcNfcReleaseEvidenceDTO {
 
-    /** 关联商品类型 ID（对应 pdc_nfc_product_type.id） */
-    @NotNull(message = "商品类型ID不能为空")
-    private Long productTypeId;
+    /** 发布版本（必须与当前小程序领取页发布版本一致） */
+    @NotBlank(message = "发布版本不能为空")
+    private String releaseVersion;
 
-    /** 证据类型（如 FIRMWARE_VERSION / PRODUCTION_VERIFY / QUALITY_AUDIT） */
-    @NotBlank(message = "证据类型不能为空")
-    private String evidenceType;
+    /** 发布时间（ISO-8601 格式） */
+    @NotBlank(message = "发布时间不能为空")
+    private String publishedAt;
 
-    /** 证据内容，自由文本，最长 500 字符 */
-    @NotBlank(message = "证据内容不能为空")
-    private String evidenceContent;
+    /** 冒烟验证证据 */
+    @NotBlank(message = "冒烟验证证据不能为空")
+    private String smokeEvidence;
 }

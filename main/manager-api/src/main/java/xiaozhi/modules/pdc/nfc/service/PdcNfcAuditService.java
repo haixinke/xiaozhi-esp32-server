@@ -14,6 +14,11 @@ public interface PdcNfcAuditService {
     void registerReleaseEvidence(PdcNfcReleaseEvidenceDTO dto, Long operatorId);
 
     /**
+     * 当前配置模型版本是否具有最新的成功发布证据。
+     */
+    boolean hasCurrentReleaseEvidence();
+
+    /**
      * 查询商品类型的最新发布证据，无记录返回 null。
      */
     ReleaseEvidence latestReleaseEvidence(Long productTypeId);

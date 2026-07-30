@@ -18,6 +18,8 @@ import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static xiaozhi.common.exception.ErrorCode.PDC_NFC_MODEL_ID_NOT_CONFIGURED;
+import static xiaozhi.common.exception.ErrorCode.PDC_NFC_RELEASE_NOT_READY;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
@@ -40,11 +42,14 @@ class PdcNfcReadinessServiceTest {
 
     private PdcNfcProperties properties;
     private PdcNfcReadinessService readiness;
+    private PdcNfcAuditService auditService;
 
     @BeforeEach
     void setUp() {
         properties = new PdcNfcProperties();
-        readiness = new PdcNfcReadinessService(properties);
+        auditService = mock(PdcNfcAuditService.class);
+        when(auditService.hasCurrentReleaseEvidence()).thenReturn(true);
+        readiness = new PdcNfcReadinessService(properties, auditService);
     }
 
     @Test
@@ -53,6 +58,7 @@ class PdcNfcReadinessServiceTest {
         properties.setEnabled(true);
         properties.setSchemeGenerationEnabled(true);
         properties.setReleaseReady(true);
+        properties.setModelId("MODEL_001");
 
         assertThatCode(() -> readiness.requireSchemeGenerationReady())
                 .doesNotThrowAnyException();
@@ -111,5 +117,48 @@ class PdcNfcReadinessServiceTest {
 
         assertThatThrownBy(() -> readiness.requireSchemeGenerationReady())
                 .isInstanceOf(RenException.class);
+    }
+
+    @Test
+    @DisplayName("空白 model ID - 在创建 Scheme 任务前拒绝")
+    void rejectsBlankModelIdBeforeSchemeJobCreation() {
+        properties.setEnabled(true);
+        properties.setSchemeGenerationEnabled(true);
+        properties.setReleaseReady(true);
+        properties.setModelId(" ");
+
+        assertThatThrownBy(readiness::requireSchemeGenerationReady)
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(PDC_NFC_MODEL_ID_NOT_CONFIGURED);
+    }
+
+    @Test
+    @DisplayName("占位 model ID - 拒绝")
+    void rejectsPlaceholderModelId() {
+        properties.setEnabled(true);
+        properties.setSchemeGenerationEnabled(true);
+        properties.setReleaseReady(true);
+        properties.setModelId("<WECHAT_MODEL_ID>");
+
+        assertThatThrownBy(readiness::requireSchemeGenerationReady)
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(PDC_NFC_MODEL_ID_NOT_CONFIGURED);
+    }
+
+    @Test
+    @DisplayName("缺少当前发布证据 - 拒绝")
+    void rejectsMissingCurrentReleaseEvidence() {
+        properties.setEnabled(true);
+        properties.setSchemeGenerationEnabled(true);
+        properties.setReleaseReady(true);
+        properties.setModelId("MODEL_001");
+        when(auditService.hasCurrentReleaseEvidence()).thenReturn(false);
+
+        assertThatThrownBy(readiness::requireSchemeGenerationReady)
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(PDC_NFC_RELEASE_NOT_READY);
     }
 }

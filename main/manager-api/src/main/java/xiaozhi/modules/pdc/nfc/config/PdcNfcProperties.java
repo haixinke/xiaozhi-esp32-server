@@ -15,6 +15,7 @@ public class PdcNfcProperties {
 
     private boolean enabled = false;
     private String modelId;
+    private String releaseVersion;
     private boolean releaseReady = false;
     private boolean schemeGenerationEnabled = false;
     private boolean activationEnabled = false;

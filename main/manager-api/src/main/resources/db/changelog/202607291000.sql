@@ -175,7 +175,7 @@ CREATE TABLE pdc_nfc_write_job_item (
   wechat_sn VARCHAR(64) NOT NULL,
   sku_code VARCHAR(64) NOT NULL,
   prototype VARCHAR(16) NOT NULL,
-  scheme_sha256 CHAR(64) NOT NULL,
+  uri_sha256 CHAR(64) NOT NULL,
   uri_tnf VARCHAR(8) NOT NULL,
   uri_type VARCHAR(8) NOT NULL,
   aar_tnf VARCHAR(8) NOT NULL,

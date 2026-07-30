@@ -47,9 +47,6 @@ public class PdcNfcWriteJobItemEntity {
     /** 原型标识（快照） */
     private String prototype;
 
-    /** scheme 明文的 SHA-256 哈希（快照） */
-    private String schemeSha256;
-
     /** URI 记录的 SHA-256 哈希（用于写卡后完整性校验） */
     private String uriSha256;
 
@@ -58,9 +55,6 @@ public class PdcNfcWriteJobItemEntity {
 
     /** URI NDEF 记录类型（如 "U"） */
     private String uriType;
-
-    /** URI NDEF 记录载荷（完整的微信 Scheme URL） */
-    private String uriPayload;
 
     /** AAR NDEF 记录 TNF */
     private String aarTnf;

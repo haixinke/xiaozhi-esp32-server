@@ -1,8 +1,6 @@
 package xiaozhi.modules.pdc.nfc.service;
 
 import org.springframework.stereotype.Component;
-import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobItemEntity;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -18,7 +16,7 @@ import java.util.List;
 @Component
 public class PdcNfcWriteCsvExporter {
 
-    public static final String FORMAT_VERSION = "V1";
+    public static final String FORMAT_VERSION = "PDC_NFC_WRITE_V1";
     public static final String HEADER =
             "format_version,job_no,batch_no,item_no,asset_no,wechat_sn,sku_code,"
                     + "prototype,uri_tnf,uri_type,uri_payload,aar_tnf,aar_type,aar_payload";
@@ -27,9 +25,9 @@ public class PdcNfcWriteCsvExporter {
     private static final String CRLF = "\r\n";
 
     /** NDEF 常量 */
-    public static final String URI_TNF = "01";
-    public static final String URI_TYPE = "55";
-    public static final String AAR_TNF = "04";
+    public static final String URI_TNF = "0x01";
+    public static final String URI_TYPE = "U";
+    public static final String AAR_TNF = "0x04";
     public static final String AAR_TYPE = "android.com:pkg";
     public static final String AAR_PAYLOAD = "com.tencent.mm";
 
@@ -38,15 +36,15 @@ public class PdcNfcWriteCsvExporter {
      *
      * @param jobNo   任务编号
      * @param batchNo 批次编号
-     * @param items   按 sequenceNo 排序的快照行
+     * @param items   按 sequenceNo 排序的内存行
      * @return CSV 字节数组
      */
-    public byte[] generate(String jobNo, String batchNo, List<PdcNfcWriteJobItemEntity> items) {
+    public byte[] generate(String jobNo, String batchNo, List<PdcNfcWriteCsvRow> items) {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             out.write(UTF8_BOM);
             writeLine(out, HEADER);
-            for (PdcNfcWriteJobItemEntity item : items) {
+            for (PdcNfcWriteCsvRow item : items) {
                 String line = buildRow(jobNo, batchNo, item);
                 writeLine(out, line);
             }
@@ -75,25 +73,36 @@ public class PdcNfcWriteCsvExporter {
 
     // --- internal ---
 
-    private String buildRow(String jobNo, String batchNo, PdcNfcWriteJobItemEntity item) {
+    private String buildRow(String jobNo, String batchNo, PdcNfcWriteCsvRow item) {
         StringBuilder sb = new StringBuilder();
-        sb.append(quote(FORMAT_VERSION)).append(',');
-        sb.append(quote(formulaGuard(jobNo))).append(',');
-        sb.append(quote(formulaGuard(batchNo))).append(',');
-        sb.append(quote(String.valueOf(item.getSequenceNo()))).append(',');
-        sb.append(quote(formulaGuard(item.getAssetNo()))).append(',');
-        sb.append(quote(formulaGuard(item.getWechatSn()))).append(',');
-        sb.append(quote(formulaGuard(item.getSkuCode()))).append(',');
-        sb.append(quote(formulaGuard(item.getPrototype()))).append(',');
+        sb.append(csvCell(FORMAT_VERSION)).append(',');
+        sb.append(csvCell(formulaGuard(jobNo))).append(',');
+        sb.append(csvCell(formulaGuard(batchNo))).append(',');
+        sb.append(csvCell(String.format("%06d", item.sequenceNo()))).append(',');
+        sb.append(csvCell(formulaGuard(item.assetNo()))).append(',');
+        sb.append(csvCell(formulaGuard(item.wechatSn()))).append(',');
+        sb.append(csvCell(formulaGuard(item.skuCode()))).append(',');
+        sb.append(csvCell(formulaGuard(item.prototype()))).append(',');
         // NDEF 常量：固定值，不做公式处理
-        sb.append(quote(URI_TNF)).append(',');
-        sb.append(quote(URI_TYPE)).append(',');
+        sb.append(csvCell(URI_TNF)).append(',');
+        sb.append(csvCell(URI_TYPE)).append(',');
         // Scheme URI：始终双引号包裹，不做公式处理
-        sb.append(quote(item.getUriPayload())).append(',');
-        sb.append(quote(AAR_TNF)).append(',');
-        sb.append(quote(AAR_TYPE)).append(',');
-        sb.append(quote(AAR_PAYLOAD));
+        sb.append(quote(item.uriPayload())).append(',');
+        sb.append(csvCell(AAR_TNF)).append(',');
+        sb.append(csvCell(AAR_TYPE)).append(',');
+        sb.append(csvCell(AAR_PAYLOAD));
         return sb.toString();
+    }
+
+    private static String csvCell(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.indexOf(',') >= 0 || value.indexOf('"') >= 0
+                || value.indexOf('\r') >= 0 || value.indexOf('\n') >= 0) {
+            return quote(value);
+        }
+        return value;
     }
 
     /**

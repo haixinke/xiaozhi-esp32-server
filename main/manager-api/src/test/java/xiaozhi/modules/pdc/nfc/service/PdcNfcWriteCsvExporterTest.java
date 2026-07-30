@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import xiaozhi.common.utils.SpringContextUtils;
-import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobItemEntity;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,26 +41,19 @@ class PdcNfcWriteCsvExporterTest {
 
     // --- helpers ---
 
-    private PdcNfcWriteJobItemEntity makeItem(int seq, String assetNo, String wechatSn,
-                                               String skuCode, String prototype,
-                                               String schemeSha256, String uriPayload) {
-        PdcNfcWriteJobItemEntity item = new PdcNfcWriteJobItemEntity();
-        item.setSequenceNo(seq);
-        item.setAssetNo(assetNo);
-        item.setWechatSn(wechatSn);
-        item.setSkuCode(skuCode);
-        item.setPrototype(prototype);
-        item.setSchemeSha256(schemeSha256);
-        item.setUriPayload(uriPayload);
-        return item;
+    private PdcNfcWriteCsvRow makeItem(int seq, String assetNo, String wechatSn,
+                                       String skuCode, String prototype,
+                                       String uriPayload) {
+        return new PdcNfcWriteCsvRow(
+                seq, assetNo, wechatSn, skuCode, prototype, uriPayload);
     }
 
-    private List<PdcNfcWriteJobItemEntity> goldenItems() {
+    private List<PdcNfcWriteCsvRow> goldenItems() {
         return List.of(
                 makeItem(1, "B20260729001-000001", "EB00000000000000000000000001",
-                        "SKU-KOI", "锦鲤", "sha256-1", "weixin://wxpay/test-scheme-1"),
+                        "SKU-KOI", "锦鲤", "weixin://wxpay/test-scheme-1"),
                 makeItem(2, "B20260729001-000002", "EB00000000000000000000000002",
-                        "SKU-KOI", "玉兔", "sha256-2", "weixin://wxpay/test-scheme-2")
+                        "SKU-KOI", "玉兔", "weixin://wxpay/test-scheme-2")
         );
     }
 
@@ -83,10 +75,23 @@ class PdcNfcWriteCsvExporterTest {
     }
 
     @Test
+    @DisplayName("规范格式: 固定 14 列和 NDEF 常量")
+    void canonicalWriteFormat() {
+        byte[] generated = exporter.generate("WRT-100-1", "B20260729001", goldenItems());
+        String csv = new String(generated, StandardCharsets.UTF_8);
+
+        assertThat(csv).contains("PDC_NFC_WRITE_V1");
+        assertThat(csv).contains(",0x01,U,");
+        assertThat(csv).contains(",0x04,android.com:pkg,com.tencent.mm");
+        String header = csv.substring(csv.indexOf("format_version"), csv.indexOf("\r\n"));
+        assertThat(header.split(",", -1)).hasSize(14);
+    }
+
+    @Test
     @DisplayName("UTF-8 BOM: 前 3 字节为 EF BB BF")
     void utf8Bom() {
         byte[] csv = exporter.generate("WRT-1", "B1", List.of(
-                makeItem(1, "A-001", "SN1", "SKU", "锦鲤", "sha", "weixin://test")));
+                makeItem(1, "A-001", "SN1", "SKU", "锦鲤", "weixin://test")));
 
         assertThat(csv.length).isGreaterThanOrEqualTo(3);
         assertThat(csv[0] & 0xFF).isEqualTo(0xEF);
@@ -98,7 +103,7 @@ class PdcNfcWriteCsvExporterTest {
     @DisplayName("CRLF: 所有行以 \\r\\n 结尾，无孤立 \\n")
     void crlfLineEndings() {
         byte[] csv = exporter.generate("WRT-1", "B1", List.of(
-                makeItem(1, "A-001", "SN1", "SKU", "锦鲤", "sha", "weixin://test")));
+                makeItem(1, "A-001", "SN1", "SKU", "锦鲤", "weixin://test")));
         String text = new String(csv, StandardCharsets.UTF_8);
 
         assertThat(text).contains("\r\n");
@@ -141,7 +146,7 @@ class PdcNfcWriteCsvExporterTest {
     @Test
     @DisplayName("重复导出相同字节: 两次 generate 产出完全相同的 byte[]")
     void repeatedExportSameBytes() {
-        List<PdcNfcWriteJobItemEntity> items = goldenItems();
+        List<PdcNfcWriteCsvRow> items = goldenItems();
 
         byte[] first = exporter.generate("WRT-100-1", "B20260729001", items);
         byte[] second = exporter.generate("WRT-100-1", "B20260729001", items);

@@ -47,6 +47,7 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
 
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024; // 10 MiB
     private static final int MAX_LINE_LENGTH = 4096;
+    public static final String RESULT_FORMAT_VERSION = "PDC_NFC_RESULT_V1";
 
     public static final String EXPECTED_HEADER =
             "format_version,job_no,batch_no,item_no,asset_no,wechat_sn,sku_code,"
@@ -426,7 +427,7 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
 
         // Issue 1: format_version 校验
         String formatVersion = fields.get(0);
-        if (!PdcNfcWriteCsvExporter.FORMAT_VERSION.equals(formatVersion)) {
+        if (!RESULT_FORMAT_VERSION.equals(formatVersion)) {
             throw new RenException(ErrorCode.PDC_NFC_CSV_FORMAT_ERROR);
         }
 

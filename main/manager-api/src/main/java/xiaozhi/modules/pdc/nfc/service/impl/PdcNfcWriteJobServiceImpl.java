@@ -25,12 +25,12 @@ import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobItemEntity;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcBatchStateMachine;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcReadinessService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteCsvExporter;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteCsvRow;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteJobService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteJobStateMachine;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteFile;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteJobVO;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 
@@ -122,23 +122,7 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
             item.setWechatSn(asset.getWechatSn());
             item.setSkuCode(asset.getSkuCode());
             item.setPrototype(asset.getPrototype());
-            item.setSchemeSha256(asset.getSchemeSha256());
-            // 解密 Scheme URI 并存入快照，避免导出时再次解密
-            if (asset.getSchemeKeyVersion() != null
-                    && asset.getSchemeNonce() != null
-                    && asset.getSchemeCiphertext() != null) {
-                EncryptedField schemeField = new EncryptedField(
-                        asset.getSchemeKeyVersion(),
-                        asset.getSchemeNonce(),
-                        asset.getSchemeCiphertext());
-                String scheme = claimRefProtection.decrypt(asset.getId(), schemeField);
-                item.setUriPayload(scheme);
-                item.setUriSha256(PdcNfcWriteCsvExporter.sha256Hex(
-                        scheme.getBytes(StandardCharsets.UTF_8)));
-            } else {
-                item.setUriPayload("");
-                item.setUriSha256("");
-            }
+            item.setUriSha256(asset.getSchemeSha256());
             // NDEF 常量
             item.setUriTnf(PdcNfcWriteCsvExporter.URI_TNF);
             item.setUriType(PdcNfcWriteCsvExporter.URI_TYPE);
@@ -185,14 +169,18 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
             throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
         }
 
-        // 查询快照行（uriPayload 在 create 时已解密并写入快照）
+        // 查询不可变快照行；Scheme 明文仅在本次导出期间存在于内存。
         List<PdcNfcWriteJobItemEntity> items = jobItemDao.selectList(
                 new LambdaQueryWrapper<PdcNfcWriteJobItemEntity>()
                         .eq(PdcNfcWriteJobItemEntity::getJobId, jobId)
                         .orderByAsc(PdcNfcWriteJobItemEntity::getSequenceNo));
 
+        List<PdcNfcWriteCsvRow> csvRows = items.stream()
+                .map(this::decryptCsvRow)
+                .toList();
+
         // 生成 CSV
-        byte[] csvBytes = csvExporter.generate(job.getJobNo(), batchNo, items);
+        byte[] csvBytes = csvExporter.generate(job.getJobNo(), batchNo, csvRows);
         String sha256 = PdcNfcWriteCsvExporter.sha256Hex(csvBytes);
 
         // 更新 job
@@ -260,6 +248,35 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
     }
 
     // --- helpers ---
+
+    private PdcNfcWriteCsvRow decryptCsvRow(PdcNfcWriteJobItemEntity item) {
+        PdcNfcAssetEntity asset = assetDao.selectById(item.getAssetId());
+        if (asset == null
+                || asset.getSchemeKeyVersion() == null
+                || asset.getSchemeNonce() == null
+                || asset.getSchemeCiphertext() == null) {
+            throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+        }
+
+        EncryptedField schemeField = new EncryptedField(
+                asset.getSchemeKeyVersion(),
+                asset.getSchemeNonce(),
+                asset.getSchemeCiphertext());
+        String scheme = claimRefProtection.decrypt(asset.getId(), schemeField);
+        String uriSha256 = PdcNfcWriteCsvExporter.sha256Hex(
+                scheme.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        if (!uriSha256.equals(item.getUriSha256())) {
+            throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
+        }
+
+        return new PdcNfcWriteCsvRow(
+                item.getSequenceNo(),
+                item.getAssetNo(),
+                item.getWechatSn(),
+                item.getSkuCode(),
+                item.getPrototype(),
+                scheme);
+    }
 
     private PdcNfcWriteJobVO toVO(PdcNfcWriteJobEntity job, String batchNo) {
         return new PdcNfcWriteJobVO(

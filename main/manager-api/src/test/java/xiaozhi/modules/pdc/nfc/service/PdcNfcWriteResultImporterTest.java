@@ -184,7 +184,7 @@ class PdcNfcWriteResultImporterTest {
     void duplicateKeys() {
         String sha = sha256("weixin://wxpay/test-scheme-1");
         String header = PdcNfcWriteResultImporterImpl.EXPECTED_HEADER;
-        String row = "\"V1\",\"WRT-1\",\"B1\",\"1\",\"A-001\",\"SN1\",\"SKU\",\"proto\","
+        String row = "\"PDC_NFC_RESULT_V1\",\"WRT-1\",\"B1\",\"1\",\"A-001\",\"SN1\",\"SKU\",\"proto\","
                 + "\"01\",\"55\",\"uri\",\"04\",\"type\",\"pkg\","
                 + "\"true\",\"true\",\"2\",\"" + sha + "\",\"com.tencent.mm\",\"true\"";
         // 两行相同的 key
@@ -267,11 +267,11 @@ class PdcNfcWriteResultImporterTest {
 
         // 构建 CSV：第一行全部通过，第二行 verify_success=false
         String header = PdcNfcWriteResultImporterImpl.EXPECTED_HEADER;
-        String row1 = "\"V1\",\"WRT-100-1\",\"B20260729001\",\"1\","
+        String row1 = "\"PDC_NFC_RESULT_V1\",\"WRT-100-1\",\"B20260729001\",\"1\","
                 + "\"B20260729001-000001\",\"EB00000000000000000000000001\",\"SKU-KOI\",\"锦鲤\","
                 + "\"01\",\"55\",\"weixin://wxpay/test-scheme-1\",\"04\",\"android.com:pkg\",\"com.tencent.mm\","
                 + "\"true\",\"true\",\"2\",\"" + uriSha1 + "\",\"com.tencent.mm\",\"true\"";
-        String row2 = "\"V1\",\"WRT-100-1\",\"B20260729001\",\"2\","
+        String row2 = "\"PDC_NFC_RESULT_V1\",\"WRT-100-1\",\"B20260729001\",\"2\","
                 + "\"B20260729001-000002\",\"EB00000000000000000000000002\",\"SKU-KOI\",\"玉兔\","
                 + "\"01\",\"55\",\"weixin://wxpay/test-scheme-2\",\"04\",\"android.com:pkg\",\"com.tencent.mm\","
                 + "\"true\",\"false\",\"2\",\"" + uriSha2 + "\",\"com.tencent.mm\",\"true\"";
@@ -320,7 +320,7 @@ class PdcNfcWriteResultImporterTest {
     void writeFailure() {
         String uriSha1 = sha256("weixin://wxpay/test-scheme-1");
         String header = PdcNfcWriteResultImporterImpl.EXPECTED_HEADER;
-        String row = "\"V1\",\"WRT-1\",\"B1\",\"1\","
+        String row = "\"PDC_NFC_RESULT_V1\",\"WRT-1\",\"B1\",\"1\","
                 + "\"A-001\",\"SN-001\",\"SKU\",\"proto\","
                 + "\"01\",\"55\",\"weixin://wxpay/test-scheme-1\",\"04\",\"android.com:pkg\",\"com.tencent.mm\","
                 + "\"false\",\"false\",\"0\",\"\",\"\",\"false\"";
@@ -364,7 +364,7 @@ class PdcNfcWriteResultImporterTest {
     void rowCountMismatch() {
         String header = PdcNfcWriteResultImporterImpl.EXPECTED_HEADER;
         // 只有一行数据
-        String row = "\"V1\",\"WRT-1\",\"B1\",\"1\","
+        String row = "\"PDC_NFC_RESULT_V1\",\"WRT-1\",\"B1\",\"1\","
                 + "\"A-001\",\"SN-001\",\"SKU\",\"proto\","
                 + "\"01\",\"55\",\"uri\",\"04\",\"type\",\"pkg\","
                 + "\"true\",\"true\",\"2\",\"sha\",\"com.tencent.mm\",\"true\"";
@@ -394,7 +394,7 @@ class PdcNfcWriteResultImporterTest {
     @DisplayName("任务非 EXPORTED 状态 → INVALID_STATE")
     void wrongJobStatus() {
         String header = PdcNfcWriteResultImporterImpl.EXPECTED_HEADER;
-        String row = "\"V1\",\"WRT-1\",\"B1\",\"1\","
+        String row = "\"PDC_NFC_RESULT_V1\",\"WRT-1\",\"B1\",\"1\","
                 + "\"A-001\",\"SN-001\",\"SKU\",\"proto\","
                 + "\"01\",\"55\",\"uri\",\"04\",\"type\",\"pkg\","
                 + "\"true\",\"true\",\"2\",\"sha\",\"com.tencent.mm\",\"true\"";
@@ -416,7 +416,7 @@ class PdcNfcWriteResultImporterTest {
     @DisplayName("任务不存在 → JOB_NOT_FOUND")
     void jobNotFound() {
         String header = PdcNfcWriteResultImporterImpl.EXPECTED_HEADER;
-        String row = "\"V1\",\"WRT-1\",\"B1\",\"1\","
+        String row = "\"PDC_NFC_RESULT_V1\",\"WRT-1\",\"B1\",\"1\","
                 + "\"A-001\",\"SN-001\",\"SKU\",\"proto\","
                 + "\"01\",\"55\",\"uri\",\"04\",\"type\",\"pkg\","
                 + "\"true\",\"true\",\"2\",\"sha\",\"com.tencent.mm\",\"true\"";
@@ -481,7 +481,7 @@ class PdcNfcWriteResultImporterTest {
         String uriSha = sha256("weixin://wxpay/test-scheme-1");
         String header = PdcNfcWriteResultImporterImpl.EXPECTED_HEADER;
         // CSV 中的 job_no 是 "WRONG-JOB"，但任务是 "WRT-1"
-        String row = "\"V1\",\"WRONG-JOB\",\"B1\",\"1\","
+        String row = "\"PDC_NFC_RESULT_V1\",\"WRONG-JOB\",\"B1\",\"1\","
                 + "\"A-001\",\"SN-001\",\"SKU\",\"proto\","
                 + "\"01\",\"55\",\"weixin://wxpay/test-scheme-1\",\"04\",\"android.com:pkg\",\"com.tencent.mm\","
                 + "\"true\",\"true\",\"2\",\"" + uriSha + "\",\"com.tencent.mm\",\"true\"";
@@ -508,7 +508,7 @@ class PdcNfcWriteResultImporterTest {
         String header = PdcNfcWriteResultImporterImpl.EXPECTED_HEADER;
         // 构造一个超长字段
         String longField = "x".repeat(5000);
-        String row = "\"V1\",\"WRT-1\",\"B1\",\"1\","
+        String row = "\"PDC_NFC_RESULT_V1\",\"WRT-1\",\"B1\",\"1\","
                 + "\"" + longField + "\",\"SN-001\",\"SKU\",\"proto\","
                 + "\"01\",\"55\",\"uri\",\"04\",\"type\",\"pkg\","
                 + "\"true\",\"true\",\"2\",\"sha\",\"com.tencent.mm\",\"true\"";
@@ -528,7 +528,8 @@ class PdcNfcWriteResultImporterTest {
         byte[] headerBytes = (header + "\r\n").getBytes(StandardCharsets.UTF_8);
         // 构造包含无效 UTF-8 字节 (0xC0 0x80 = overlong NUL) 的数据行
         byte[] badBytes = new byte[]{(byte) 0xC0, (byte) 0x80};
-        byte[] rowPrefix = "\"V1\",\"WRT-1\",\"B1\",\"1\",\"".getBytes(StandardCharsets.UTF_8);
+        byte[] rowPrefix = "\"PDC_NFC_RESULT_V1\",\"WRT-1\",\"B1\",\"1\",\""
+                .getBytes(StandardCharsets.UTF_8);
         byte[] rowSuffix = "\",\"SN\",\"SKU\",\"p\",\"01\",\"55\",\"u\",\"04\",\"t\",\"p\",\"true\",\"true\",\"2\",\"s\",\"c\",\"true\"\r\n"
                 .getBytes(StandardCharsets.UTF_8);
         byte[] dataRow = new byte[rowPrefix.length + badBytes.length + rowSuffix.length];

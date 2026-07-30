@@ -214,6 +214,35 @@ class PdcNfcWriteJobServiceTest {
                 .isInstanceOf(RenException.class);
     }
 
+    @Test
+    void cancelFailsClosedWhenJobUpdateAffectsNoRows() {
+        when(jobDao.selectByIdForUpdate(100L)).thenReturn(exportedJob());
+        when(jobDao.updateById(any(PdcNfcWriteJobEntity.class))).thenReturn(0);
+
+        assertThatThrownBy(() -> service.cancel(100L, 99L))
+                .isInstanceOf(RenException.class);
+        verify(assetDao, never()).updateById(any(PdcNfcAssetEntity.class));
+    }
+
+    @Test
+    void cancelFailsClosedWhenAssetLeaseReleaseAffectsNoRows() {
+        PdcNfcWriteJobEntity job = exportedJob();
+        PdcNfcWriteJobItemEntity item = writeJobItem();
+        when(jobDao.selectByIdForUpdate(100L)).thenReturn(job);
+        when(jobDao.updateById(any(PdcNfcWriteJobEntity.class))).thenReturn(1);
+        when(jobItemDao.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(item));
+        when(assetDao.releaseWriteLease(
+                org.mockito.ArgumentMatchers.eq(501L),
+                org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq(99L),
+                any(java.util.Date.class)))
+                .thenReturn(0);
+
+        assertThatThrownBy(() -> service.cancel(100L, 99L))
+                .isInstanceOf(RenException.class);
+    }
+
     private static PdcNfcBatchEntity batch() {
         PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
         batch.setId(10L);

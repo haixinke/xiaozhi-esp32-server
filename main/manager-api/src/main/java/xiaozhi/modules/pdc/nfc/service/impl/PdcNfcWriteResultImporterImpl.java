@@ -15,6 +15,7 @@ import xiaozhi.modules.pdc.nfc.dto.PdcNfcWriteResultRow;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAssetEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobItemEntity;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcSensitiveTextGuard;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteCsvExporter;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImporter;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultTransactionService;
@@ -58,6 +59,9 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
     private static final int RESULT_COLUMN_COUNT = 14;
     private static final int EXPECTED_NDEF_RECORD_COUNT = 2;
     private static final String EXPECTED_AAR_PACKAGE = "com.tencent.mm";
+    private static final String RESULT_SUCCESS = "SUCCESS";
+    private static final String RESULT_FAILURE = "FAILURE";
+    private static final String VERIFY_SKIPPED = "SKIPPED";
     private static final Set<String> WRITE_RESULTS = Set.of("SUCCESS", "FAILURE");
     private static final Set<String> VERIFY_RESULTS =
             Set.of("SUCCESS", "FAILURE", "SKIPPED");
@@ -89,6 +93,7 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
 
         PdcNfcWriteJobEntity job = loadAndValidateJob(jobId);
         List<PdcNfcWriteJobItemEntity> items = loadAndValidateItems(jobId, rows.size());
+        validateDeclaredCounts(job, items, rows.size());
         Map<String, PdcNfcWriteJobItemEntity> itemsByKey = indexItems(items);
         Map<Long, PdcNfcAssetEntity> assetsById = loadAssets(items);
 
@@ -175,20 +180,28 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
         List<String> fields = parseCsvFields(line);
         if (fields.size() != RESULT_COLUMN_COUNT
                 || !RESULT_FORMAT_VERSION.equals(fields.get(0))
-                || anyBlank(fields, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11)) {
+                || anyBlank(fields, 1, 2, 3, 4, 5)) {
             throw formatError();
         }
+        // 自由文本字段在任何数据库访问前拒绝敏感明文
+        PdcNfcSensitiveTextGuard.requireNoSchemeLeakage(fields.get(12));
+        PdcNfcSensitiveTextGuard.requireNoSchemeLeakage(fields.get(13));
 
         String writeResult = fields.get(4);
         String verifyResult = fields.get(5);
         if (!WRITE_RESULTS.contains(writeResult)
                 || !VERIFY_RESULTS.contains(verifyResult)
                 || fields.get(6).length() > 128
-                || fields.get(8).length() != 64
-                || !fields.get(8).matches("[0-9a-fA-F]{64}")
+                || (!fields.get(8).isEmpty()
+                        && !fields.get(8).matches("[0-9a-fA-F]{64}"))
                 || fields.get(9).length() > 128
                 || fields.get(12).length() > 64
                 || fields.get(13).length() > 512) {
+            throw formatError();
+        }
+        if (RESULT_FAILURE.equals(writeResult)
+                && RESULT_SUCCESS.equals(verifyResult)) {
+            // 写入失败但验证成功的矛盾结果
             throw formatError();
         }
 
@@ -200,11 +213,11 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
                 writeResult,
                 verifyResult,
                 fields.get(6),
-                parseInteger(fields.get(7)),
-                fields.get(8).toLowerCase(Locale.ROOT),
+                parseOptionalInteger(fields.get(7)),
+                blankToNull(fields.get(8).toLowerCase(Locale.ROOT)),
                 fields.get(9),
-                parseBoolean(fields.get(10)),
-                parseWrittenAt(fields.get(11)),
+                parseOptionalBoolean(fields.get(10)),
+                parseOptionalWrittenAt(fields.get(11)),
                 fields.get(12),
                 fields.get(13)
         );
@@ -214,7 +227,14 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
         return Arrays.stream(indexes).anyMatch(index -> fields.get(index).isBlank());
     }
 
-    private int parseInteger(String value) {
+    private String blankToNull(String value) {
+        return value.isEmpty() ? null : value;
+    }
+
+    private Integer parseOptionalInteger(String value) {
+        if (value.isEmpty()) {
+            return null;
+        }
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException exception) {
@@ -222,7 +242,10 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
         }
     }
 
-    private boolean parseBoolean(String value) {
+    private Boolean parseOptionalBoolean(String value) {
+        if (value.isEmpty()) {
+            return null;
+        }
         if ("true".equals(value)) {
             return true;
         }
@@ -232,7 +255,10 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
         throw formatError();
     }
 
-    private LocalDateTime parseWrittenAt(String value) {
+    private LocalDateTime parseOptionalWrittenAt(String value) {
+        if (value.isEmpty()) {
+            return null;
+        }
         try {
             return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         } catch (DateTimeException exception) {
@@ -271,6 +297,27 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
             throw contentMismatch();
         }
         return List.copyOf(items);
+    }
+
+    /**
+     * 上传行数、快照条数、job.total_count 与 job.row_count 必须一致，
+     * 且快照 sequence_no 必须恰好是 1..N。
+     */
+    private void validateDeclaredCounts(
+            PdcNfcWriteJobEntity job,
+            List<PdcNfcWriteJobItemEntity> items,
+            int resultRowCount) {
+        if (job.getTotalCount() == null || job.getRowCount() == null
+                || job.getTotalCount() != resultRowCount
+                || job.getRowCount() != resultRowCount) {
+            throw contentMismatch();
+        }
+        for (int index = 0; index < items.size(); index++) {
+            Integer sequenceNo = items.get(index).getSequenceNo();
+            if (sequenceNo == null || sequenceNo != index + 1) {
+                throw contentMismatch();
+            }
+        }
     }
 
     private Map<String, PdcNfcWriteJobItemEntity> indexItems(
@@ -328,18 +375,33 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
         if (asset == null || !row.assetNo().equals(asset.getAssetNo())) {
             throw contentMismatch();
         }
-        if (!row.uriSha256().equalsIgnoreCase(item.getUriSha256())
-                || !EXPECTED_AAR_PACKAGE.equals(row.aarPackage())
-                || row.ndefRecordCount() != EXPECTED_NDEF_RECORD_COUNT
-                || !row.isReadOnly()) {
+
+        boolean writeSucceeded = RESULT_SUCCESS.equals(row.writeResult());
+        boolean verifySucceeded = RESULT_SUCCESS.equals(row.verifyResult());
+        if (writeSucceeded && row.writtenAt() == null) {
+            throw formatError();
+        }
+
+        boolean fullyVerified = writeSucceeded && verifySucceeded;
+        if (fullyVerified) {
+            // 完全成功必须携带完整且一致的完整性证据
+            if (row.uriSha256() == null
+                    || !row.uriSha256().equalsIgnoreCase(item.getUriSha256())
+                    || !EXPECTED_AAR_PACKAGE.equals(row.aarPackage())
+                    || row.ndefRecordCount() == null
+                    || row.ndefRecordCount() != EXPECTED_NDEF_RECORD_COUNT
+                    || !Boolean.TRUE.equals(row.isReadOnly())) {
+                throw contentMismatch();
+            }
+        } else if (row.uriSha256() != null
+                && !row.uriSha256().equalsIgnoreCase(item.getUriSha256())) {
+            // 提供的验证证据与快照不一致时同样拒绝
             throw contentMismatch();
         }
 
-        boolean fullyVerified = "SUCCESS".equals(row.writeResult())
-                && "SUCCESS".equals(row.verifyResult());
         PdcNfcAssetStatus targetStatus = fullyVerified
                 ? VERIFIED
-                : ("SUCCESS".equals(row.writeResult()) ? WRITTEN : SCHEME_GENERATED);
+                : (writeSucceeded ? WRITTEN : SCHEME_GENERATED);
         return new ValidatedWriteResult(
                 row, item, asset, targetStatus, fullyVerified);
     }

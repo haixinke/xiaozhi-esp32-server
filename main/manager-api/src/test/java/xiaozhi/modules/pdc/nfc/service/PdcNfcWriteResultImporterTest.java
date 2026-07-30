@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -151,6 +152,73 @@ class PdcNfcWriteResultImporterTest {
     }
 
     @Test
+    @DisplayName("error_message 泄露大小写混合的 weixin Scheme 时在任何数据库访问前拒绝")
+    void rejectsSchemeLeakageInErrorMessageBeforeDatabaseLookup() {
+        String[] fields = validFields("A-001", "SN-001", URI_SHA_1);
+        fields[13] = "reader exposed WeIxIn://dl/business/?t=secret";
+
+        assertThatThrownBy(() -> importer.importResult(
+                100L, UUID.randomUUID(), multipart(csv(toCsvRow(fields))), 99L))
+                .isInstanceOf(RenException.class);
+
+        verifyNoInteractions(jobDao, jobItemDao, assetDao, transactionService);
+    }
+
+    @Test
+    @DisplayName("写入失败行允许验证证据和 written_at 为空并保持 SCHEME_GENERATED")
+    void acceptsWriteFailureWithoutVerificationEvidence() {
+        stubOneItemSnapshot();
+        String[] fields = validFields("A-001", "SN-001", URI_SHA_1);
+        fields[4] = "FAILURE";
+        fields[5] = "FAILURE";
+        fields[6] = "";
+        fields[7] = "";
+        fields[8] = "";
+        fields[9] = "";
+        fields[10] = "";
+        fields[11] = "";
+        fields[12] = "WRITE_FAILED";
+        fields[13] = "reader rejected tag";
+
+        assertAcceptedWithTarget(
+                csv(toCsvRow(fields)),
+                PdcNfcAssetStatus.SCHEME_GENERATED,
+                false);
+    }
+
+    @Test
+    @DisplayName("回读失败行允许验证证据为空并进入 WRITTEN")
+    void acceptsReadbackFailureWithoutVerificationEvidence() {
+        stubOneItemSnapshot();
+        String[] fields = validFields("A-001", "SN-001", URI_SHA_1);
+        fields[5] = "FAILURE";
+        fields[7] = "";
+        fields[8] = "";
+        fields[9] = "";
+        fields[10] = "";
+        fields[12] = "VERIFY_FAILED";
+        fields[13] = "readback failed";
+
+        assertAcceptedWithTarget(
+                csv(toCsvRow(fields)),
+                PdcNfcAssetStatus.WRITTEN,
+                false);
+    }
+
+    @Test
+    @DisplayName("写入失败但验证成功的矛盾结果在任何数据库访问前拒绝")
+    void rejectsContradictoryFailureSuccessBeforeDatabaseLookup() {
+        String[] fields = validFields("A-001", "SN-001", URI_SHA_1);
+        fields[4] = "FAILURE";
+
+        assertThatThrownBy(() -> importer.importResult(
+                100L, UUID.randomUUID(), multipart(csv(toCsvRow(fields))), 99L))
+                .isInstanceOf(RenException.class);
+
+        verifyNoInteractions(jobDao, jobItemDao, assetDao, transactionService);
+    }
+
+    @Test
     @DisplayName("缺失结果行在数据库写入前被拒绝")
     void rejectsMissingRowsBeforeTransaction() {
         stubExpectedSnapshot();
@@ -168,6 +236,51 @@ class PdcNfcWriteResultImporterTest {
                 validRow("A-001", "SN-001", URI_SHA_1),
                 validRow("A-002", "SN-002", URI_SHA_2),
                 validRow("A-003", "SN-003", "3".repeat(64))));
+    }
+
+    static Stream<Arguments> declaredCountMismatches() {
+        return Stream.of(
+                Arguments.of("total_count", 1, 2),
+                Arguments.of("row_count", 2, 1)
+        );
+    }
+
+    @ParameterizedTest(name = "{0} 与上传行数不一致时拒绝整文件")
+    @MethodSource("declaredCountMismatches")
+    void rejectsMismatchedDeclaredCountsBeforeTransaction(
+            String field, int totalCount, int rowCount) {
+        stubExpectedSnapshot();
+        PdcNfcWriteJobEntity job = job();
+        job.setTotalCount(totalCount);
+        job.setRowCount(rowCount);
+        when(jobDao.selectById(100L)).thenReturn(job);
+
+        assertRejectedBeforeTransaction(csv(
+                validRow("B20260729001-000001",
+                        "EB00000000000000000000000001", URI_SHA_1),
+                validRow("B20260729001-000002",
+                        "EB00000000000000000000000002", URI_SHA_2)));
+    }
+
+    @Test
+    @DisplayName("快照 sequence_no 有缺口时拒绝整文件")
+    void rejectsCorruptSnapshotSequenceBeforeTransaction() {
+        PdcNfcWriteJobEntity job = job();
+        PdcNfcWriteJobItemEntity item1 = item(
+                1L, 1001L, 1, "A-001", "SN-001", URI_SHA_1);
+        PdcNfcWriteJobItemEntity item2 = item(
+                2L, 1002L, 3, "A-002", "SN-002", URI_SHA_2);
+        when(jobDao.selectById(100L)).thenReturn(job);
+        when(jobItemDao.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(item1, item2));
+        lenient().when(assetDao.selectBatchIds(any()))
+                .thenReturn(List.of(
+                        asset(1001L, "A-001", "SN-001"),
+                        asset(1002L, "A-002", "SN-002")));
+
+        assertRejectedBeforeTransaction(csv(
+                validRow("A-001", "SN-001", URI_SHA_1),
+                validRow("A-002", "SN-002", URI_SHA_2)));
     }
 
     @Test
@@ -255,6 +368,28 @@ class PdcNfcWriteResultImporterTest {
                 anyLong(), any(), anyString(), anyLong(), any(UUID.class));
     }
 
+    private void assertAcceptedWithTarget(
+            byte[] csvBytes,
+            PdcNfcAssetStatus expectedTarget,
+            boolean fullyVerified) {
+        assertThatCode(() -> importer.importResult(
+                100L, UUID.randomUUID(), multipart(csvBytes), 99L))
+                .doesNotThrowAnyException();
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ValidatedWriteResult>> rowsCaptor =
+                ArgumentCaptor.forClass(List.class);
+        verify(transactionService).apply(
+                org.mockito.ArgumentMatchers.eq(100L),
+                rowsCaptor.capture(),
+                anyString(),
+                org.mockito.ArgumentMatchers.eq(99L),
+                any(UUID.class));
+        assertThat(rowsCaptor.getValue()).singleElement().satisfies(validated -> {
+            assertThat(validated.targetStatus()).isEqualTo(expectedTarget);
+            assertThat(validated.fullyVerified()).isEqualTo(fullyVerified);
+        });
+    }
+
     private void stubExpectedSnapshot() {
         PdcNfcWriteJobEntity job = job();
         PdcNfcWriteJobItemEntity item1 =
@@ -272,19 +407,22 @@ class PdcNfcWriteResultImporterTest {
                 .thenReturn(List.of(item1, item2));
         lenient().when(assetDao.selectBatchIds(any()))
                 .thenReturn(List.of(
-                        asset(1001L, "B20260729001-000001"),
-                        asset(1002L, "B20260729001-000002")));
+                        asset(1001L, "B20260729001-000001",
+                                "EB00000000000000000000000001"),
+                        asset(1002L, "B20260729001-000002",
+                                "EB00000000000000000000000002")));
     }
 
     private void stubOneItemSnapshot() {
         PdcNfcWriteJobEntity job = job();
         job.setTotalCount(1);
+        job.setRowCount(1);
         when(jobDao.selectById(100L)).thenReturn(job);
         when(jobItemDao.selectList(any(LambdaQueryWrapper.class)))
                 .thenReturn(List.of(item(
                         1L, 1001L, 1, "A-001", "SN-001", URI_SHA_1)));
         lenient().when(assetDao.selectBatchIds(any()))
-                .thenReturn(List.of(asset(1001L, "A-001")));
+                .thenReturn(List.of(asset(1001L, "A-001", "SN-001")));
     }
 
     private PdcNfcWriteJobEntity job() {
@@ -294,6 +432,7 @@ class PdcNfcWriteResultImporterTest {
         job.setBatchId(1L);
         job.setStatus(PdcNfcWriteJobStatus.EXPORTED.name());
         job.setTotalCount(2);
+        job.setRowCount(2);
         return job;
     }
 
@@ -311,10 +450,12 @@ class PdcNfcWriteResultImporterTest {
         return item;
     }
 
-    private PdcNfcAssetEntity asset(Long id, String assetNo) {
+    private PdcNfcAssetEntity asset(Long id, String assetNo, String wechatSn) {
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
         asset.setId(id);
         asset.setAssetNo(assetNo);
+        asset.setBatchId(1L);
+        asset.setWechatSn(wechatSn);
         asset.setStatus(PdcNfcAssetStatus.SCHEME_GENERATED.name());
         asset.setVersion(1);
         asset.setActiveWriteJobId(100L);

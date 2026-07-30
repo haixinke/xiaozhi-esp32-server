@@ -19,9 +19,11 @@ import xiaozhi.modules.pdc.nfc.entity.PdcNfcAssetEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcBatchEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcOperationLogEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobEntity;
+import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobItemEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteRecordEntity;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcAssetStateMachine;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcBatchStateMachine;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcSensitiveTextGuard;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteJobStateMachine;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultTransactionService;
 import xiaozhi.modules.pdc.nfc.service.ValidatedWriteResult;
@@ -67,10 +69,11 @@ public class PdcNfcWriteResultTransactionServiceImpl
             Long operatorId,
             UUID requestId) {
         validateArguments(jobId, rows, resultFileSha256, operatorId, requestId);
-        PdcNfcWriteJobEntity job = loadJob(jobId);
+        PdcNfcWriteJobEntity job = lockJob(jobId);
         String originalJobStatus = job.getStatus();
         PdcNfcBatchEntity batch = loadBatch(job.getBatchId());
         Map<Long, PdcNfcAssetEntity> lockedAssets = lockAssets(rows);
+        revalidateAgainstLockedState(job, batch, rows, lockedAssets);
 
         int verifiedCount = 0;
         int writtenCount = 0;
@@ -146,10 +149,45 @@ public class PdcNfcWriteResultTransactionServiceImpl
                 || operatorId == null || requestId == null) {
             throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
         }
+        // 事务入口兜底：即使绕过 importer 也不允许敏感明文落库
+        for (ValidatedWriteResult row : rows) {
+            PdcNfcSensitiveTextGuard.requireNoSchemeLeakage(row.row().errorCode());
+            PdcNfcSensitiveTextGuard.requireNoSchemeLeakage(row.row().errorMessage());
+        }
     }
 
-    private PdcNfcWriteJobEntity loadJob(Long jobId) {
-        PdcNfcWriteJobEntity job = jobDao.selectById(jobId);
+    /**
+     * 锁定 job 和资产后重新核对：资产必须属于任务批次、仍被本任务租约持有、
+     * 且快照标识与 URI 摘要未发生变化。
+     */
+    private void revalidateAgainstLockedState(
+            PdcNfcWriteJobEntity job,
+            PdcNfcBatchEntity batch,
+            List<ValidatedWriteResult> rows,
+            Map<Long, PdcNfcAssetEntity> lockedAssets) {
+        for (ValidatedWriteResult validated : rows) {
+            PdcNfcAssetEntity asset = lockedAssets.get(validated.asset().getId());
+            if (asset == null) {
+                throw new RenException(ErrorCode.PDC_NFC_ASSET_NOT_FOUND);
+            }
+            if (!batch.getId().equals(asset.getBatchId())) {
+                throw new RenException(ErrorCode.PDC_NFC_CSV_CONTENT_MISMATCH);
+            }
+            if (PdcNfcWriteJobStatus.EXPORTED.name().equals(job.getStatus())
+                    && !job.getId().equals(asset.getActiveWriteJobId())) {
+                throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
+            }
+            PdcNfcWriteJobItemEntity item = validated.item();
+            if (!item.getAssetNo().equals(asset.getAssetNo())
+                    || !item.getWechatSn().equals(asset.getWechatSn())
+                    || !item.getUriSha256().equalsIgnoreCase(asset.getSchemeSha256())) {
+                throw new RenException(ErrorCode.PDC_NFC_CSV_CONTENT_MISMATCH);
+            }
+        }
+    }
+
+    private PdcNfcWriteJobEntity lockJob(Long jobId) {
+        PdcNfcWriteJobEntity job = jobDao.selectByIdForUpdate(jobId);
         if (job == null) {
             throw new RenException(ErrorCode.PDC_NFC_JOB_NOT_FOUND);
         }
@@ -201,7 +239,9 @@ public class PdcNfcWriteResultTransactionServiceImpl
             Date importedAt) {
         PdcNfcAssetStatus current = PdcNfcAssetStatus.valueOf(asset.getStatus());
         PdcNfcAssetStatus target = validated.targetStatus();
-        Date writtenAt = Timestamp.valueOf(validated.row().writtenAt());
+        Date writtenAt = validated.row().writtenAt() == null
+                ? null
+                : Timestamp.valueOf(validated.row().writtenAt());
 
         if (current != target) {
             if (current == SCHEME_GENERATED && target == VERIFIED) {
@@ -256,7 +296,9 @@ public class PdcNfcWriteResultTransactionServiceImpl
         record.setIsReadOnly(row.isReadOnly());
         record.setErrorCode(emptyToNull(row.errorCode()));
         record.setErrorMessage(emptyToNull(row.errorMessage()));
-        record.setWrittenAt(Timestamp.valueOf(row.writtenAt()));
+        record.setWrittenAt(row.writtenAt() == null
+                ? null
+                : Timestamp.valueOf(row.writtenAt()));
         record.setImportedAt(importedAt);
         record.setImportUserId(operatorId);
         if (writeRecordDao.insert(record) != 1) {

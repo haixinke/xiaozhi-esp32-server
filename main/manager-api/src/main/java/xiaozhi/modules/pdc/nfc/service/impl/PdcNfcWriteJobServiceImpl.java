@@ -206,7 +206,7 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long jobId, Long operatorId) {
-        PdcNfcWriteJobEntity job = jobDao.selectById(jobId);
+        PdcNfcWriteJobEntity job = jobDao.selectByIdForUpdate(jobId);
         if (job == null) {
             throw new RenException(ErrorCode.PDC_NFC_JOB_NOT_FOUND);
         }
@@ -220,23 +220,23 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
         }
         writeJobStateMachine.requireTransition(currentStatus, PdcNfcWriteJobStatus.CANCELLED);
 
+        Date now = new Date();
         job.setStatus(PdcNfcWriteJobStatus.CANCELLED.name());
-        job.setCancelledAt(new Date());
+        job.setCancelledAt(now);
         job.setUpdater(operatorId);
-        job.setUpdateDate(new Date());
-        jobDao.updateById(job);
+        job.setUpdateDate(now);
+        if (jobDao.updateById(job) != 1) {
+            throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
+        }
 
         // 释放 active_write_job_id
         List<PdcNfcWriteJobItemEntity> items = jobItemDao.selectList(
                 new LambdaQueryWrapper<PdcNfcWriteJobItemEntity>()
                         .eq(PdcNfcWriteJobItemEntity::getJobId, jobId));
         for (PdcNfcWriteJobItemEntity item : items) {
-            PdcNfcAssetEntity asset = assetDao.selectById(item.getAssetId());
-            if (asset != null && job.getId().equals(asset.getActiveWriteJobId())) {
-                asset.setActiveWriteJobId(null);
-                asset.setUpdater(operatorId);
-                asset.setUpdateDate(new Date());
-                assetDao.updateById(asset);
+            if (assetDao.releaseWriteLease(
+                    item.getAssetId(), jobId, operatorId, now) != 1) {
+                throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
             }
         }
 

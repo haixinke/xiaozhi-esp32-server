@@ -71,4 +71,12 @@ public interface PdcNfcAssetDao extends BaseMapper<PdcNfcAssetEntity> {
             "WHERE id = #{id} AND version = #{version} AND status = 'ACTIVE'")
     int markClaimed(@Param("id") Long id, @Param("version") Integer version,
                     @Param("userId") Long userId, @Param("petId") String petId);
+
+    @Update("UPDATE pdc_nfc_asset SET active_write_job_id = NULL, " +
+            "updater = #{operatorId}, update_date = #{now}, version = version + 1 " +
+            "WHERE id = #{assetId} AND active_write_job_id = #{jobId}")
+    int releaseWriteLease(@Param("assetId") Long assetId,
+                          @Param("jobId") Long jobId,
+                          @Param("operatorId") Long operatorId,
+                          @Param("now") Date now);
 }

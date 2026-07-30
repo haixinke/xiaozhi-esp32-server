@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
@@ -106,6 +107,28 @@ class PdcNfcClaimServiceTest {
         verify(petService).createEgg(USER_ID, "jade_rabbit");
         verify(claimRecordDao).insert(any(PdcNfcClaimRecordEntity.class));
         verify(assetDao).markClaimed(1L, 1, USER_ID, "pet-abc");
+    }
+
+    @Test
+    void firstClaimPersistsCreateDate() {
+        setupAllGatesEnabled();
+        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+        when(assetDao.selectByClaimHashesForUpdate(any(Collection.class)))
+                .thenReturn(List.of(createActiveAsset()));
+        when(claimRecordDao.findByUserAndRequest(eq(USER_ID), anyString())).thenReturn(Optional.empty());
+
+        PetVO petVO = new PetVO();
+        petVO.setId("pet-abc");
+        when(petService.createEgg(USER_ID, "jade_rabbit")).thenReturn(petVO);
+        when(assetDao.markClaimed(1L, 1, USER_ID, "pet-abc")).thenReturn(1);
+
+        claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
+
+        ArgumentCaptor<PdcNfcClaimRecordEntity> captor =
+                ArgumentCaptor.forClass(PdcNfcClaimRecordEntity.class);
+        verify(claimRecordDao).insert(captor.capture());
+        assertThat(captor.getValue().getCreateDate()).isNotNull();
     }
 
     @Test

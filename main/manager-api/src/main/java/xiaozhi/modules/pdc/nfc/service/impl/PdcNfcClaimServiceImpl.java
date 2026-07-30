@@ -2,6 +2,7 @@ package xiaozhi.modules.pdc.nfc.service.impl;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -228,6 +229,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
         record.setRequestFingerprint(fingerprint);
         record.setPetId(pet.getId());
         record.setResult("CLAIMED");
+        record.setCreateDate(new Date());
         claimRecordDao.insert(record);
 
         // 11. Mark asset as claimed (optimistic lock)

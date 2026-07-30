@@ -103,6 +103,17 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
 
         // 创建写卡任务
         Date now = new Date();
+
+        // 批次 READY_FOR_WRITE -> WRITING，与任务创建同事务
+        batchStateMachine.requireTransition(
+                PdcNfcBatchStatus.READY_FOR_WRITE, PdcNfcBatchStatus.WRITING);
+        batch.setStatus(PdcNfcBatchStatus.WRITING.name());
+        batch.setUpdater(operatorId);
+        batch.setUpdateDate(now);
+        if (batchDao.updateById(batch) != 1) {
+            throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
+        }
+
         PdcNfcWriteJobEntity job = new PdcNfcWriteJobEntity();
         job.setJobNo("WRT-" + batchId + "-" + now.getTime());
         job.setBatchId(batchId);

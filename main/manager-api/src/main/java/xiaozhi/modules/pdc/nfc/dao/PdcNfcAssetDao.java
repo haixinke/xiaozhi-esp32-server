@@ -66,6 +66,11 @@ public interface PdcNfcAssetDao extends BaseMapper<PdcNfcAssetEntity> {
     @Select("SELECT COUNT(*) FROM pdc_nfc_asset WHERE batch_id = #{batchId} AND status = 'CREATED'")
     int countCreatedAssets(@Param("batchId") Long batchId);
 
+    @Select("SELECT COUNT(*) FROM pdc_nfc_asset " +
+            "WHERE batch_id = #{batchId} AND status = #{status}")
+    int countByBatchIdAndStatus(@Param("batchId") Long batchId,
+                                @Param("status") String status);
+
     @Update("UPDATE pdc_nfc_asset SET status = 'CLAIMED', claimed_user_id = #{userId}, " +
             "pet_id = #{petId}, claimed_at = NOW(), version = version + 1 " +
             "WHERE id = #{id} AND version = #{version} AND status = 'ACTIVE'")

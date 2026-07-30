@@ -114,6 +114,7 @@ class PdcNfcWriteJobServiceTest {
             job.setId(100L);
             return 1;
         });
+        when(batchDao.updateById(any(PdcNfcBatchEntity.class))).thenReturn(1);
         service.create(10L, 99L);
 
         ArgumentCaptor<PdcNfcWriteJobItemEntity> savedItemCaptor =
@@ -122,6 +123,29 @@ class PdcNfcWriteJobServiceTest {
         PdcNfcWriteJobItemEntity savedItem = savedItemCaptor.getValue();
         assertThat(savedItem.getUriSha256()).isEqualTo(asset.getSchemeSha256());
         verify(claimRefProtection, never()).decrypt(any(), any(EncryptedField.class));
+    }
+
+    @Test
+    void createAdvancesBatchFromReadyForWriteToWriting() {
+        PdcNfcBatchEntity batch = batch();
+        PdcNfcAssetEntity asset = encryptedAsset();
+        when(batchDao.selectById(10L)).thenReturn(batch);
+        when(jobDao.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(assetDao.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(asset));
+        when(jobDao.insert(any(PdcNfcWriteJobEntity.class))).thenAnswer(invocation -> {
+            PdcNfcWriteJobEntity job = invocation.getArgument(0);
+            job.setId(100L);
+            return 1;
+        });
+        when(batchDao.updateById(any(PdcNfcBatchEntity.class))).thenReturn(1);
+
+        service.create(10L, 99L);
+
+        ArgumentCaptor<PdcNfcBatchEntity> batchCaptor =
+                ArgumentCaptor.forClass(PdcNfcBatchEntity.class);
+        verify(batchDao).updateById(batchCaptor.capture());
+        assertThat(batchCaptor.getValue().getStatus())
+                .isEqualTo(PdcNfcBatchStatus.WRITING.name());
     }
 
     @Test

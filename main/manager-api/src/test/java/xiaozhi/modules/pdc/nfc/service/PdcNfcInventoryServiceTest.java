@@ -22,6 +22,7 @@ import xiaozhi.modules.pdc.nfc.dao.PdcNfcOperationLogDao;
 import xiaozhi.modules.pdc.nfc.dto.PdcNfcBulkAssetOperationDTO;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAdminRequestEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAssetEntity;
+import xiaozhi.modules.pdc.nfc.entity.PdcNfcBatchEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcOperationLogEntity;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcAdminIdempotencyServiceImpl;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcInventoryServiceImpl;
@@ -72,13 +73,14 @@ class PdcNfcInventoryServiceTest {
         idempotencyService = new PdcNfcAdminIdempotencyServiceImpl(
                 adminRequestDao, requestFingerprint, objectMapper);
         PdcNfcAssetStateMachine stateMachine = new PdcNfcAssetStateMachine();
+        PdcNfcBatchStateMachine batchStateMachine = new PdcNfcBatchStateMachine();
         properties = new PdcNfcProperties();
         properties.setEnabled(true);
         properties.setReleaseReady(true);
         properties.setActivationEnabled(true);
         inventoryService = new PdcNfcInventoryServiceImpl(
                 idempotencyService, assetDao, operationLogDao, batchDao,
-                stateMachine, properties, objectMapper);
+                stateMachine, batchStateMachine, properties, objectMapper);
     }
 
     // --- 辅助方法 ---
@@ -290,5 +292,67 @@ class PdcNfcInventoryServiceTest {
         // 业务逻辑只执行一次
         verify(assetDao, times(1)).selectByIdsForUpdate(any());
         verify(assetDao, times(1)).updateById(any(PdcNfcAssetEntity.class));
+    }
+
+    @Test
+    @DisplayName("stockIn: 最后一个 VERIFIED 资产入库后批次进入 COMPLETED")
+    void stockInCompletesBatchWhenLastVerifiedAssetStocked() {
+        PdcNfcAssetEntity asset1 = createAsset(1L, "A001", "VERIFIED");
+        PdcNfcAssetEntity asset2 = createAsset(2L, "A002", "VERIFIED");
+        asset1.setBatchId(10L);
+        asset2.setBatchId(10L);
+        PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
+        batch.setId(10L);
+        batch.setStatus("READY_FOR_STOCK");
+
+        stubIdempotencyFirstCall();
+        when(assetDao.selectByIdsForUpdate(any())).thenReturn(List.of(asset1, asset2));
+        when(assetDao.selectById(any())).thenAnswer(invocation -> {
+            Long id = invocation.getArgument(0);
+            PdcNfcAssetEntity stocked = new PdcNfcAssetEntity();
+            stocked.setId(id);
+            stocked.setBatchId(10L);
+            stocked.setStatus("IN_STOCK");
+            return stocked;
+        });
+        when(batchDao.selectById(10L)).thenReturn(batch);
+        when(assetDao.countByBatchIdAndStatus(10L, "VERIFIED")).thenReturn(0);
+        when(batchDao.updateById(any(PdcNfcBatchEntity.class))).thenReturn(1);
+
+        inventoryService.stockIn(
+                createRequest(List.of(1L, 2L), "BN009", UUID.randomUUID()), 100L);
+
+        ArgumentCaptor<PdcNfcBatchEntity> batchCaptor =
+                ArgumentCaptor.forClass(PdcNfcBatchEntity.class);
+        verify(batchDao).updateById(batchCaptor.capture());
+        assertThat(batchCaptor.getValue().getStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    @DisplayName("stockIn: 仍有 VERIFIED 资产时批次保持 READY_FOR_STOCK")
+    void stockInKeepsReadyForStockWhileVerifiedAssetsRemain() {
+        PdcNfcAssetEntity asset1 = createAsset(1L, "A001", "VERIFIED");
+        asset1.setBatchId(10L);
+        PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
+        batch.setId(10L);
+        batch.setStatus("READY_FOR_STOCK");
+
+        stubIdempotencyFirstCall();
+        when(assetDao.selectByIdsForUpdate(any())).thenReturn(List.of(asset1));
+        when(assetDao.selectById(any())).thenAnswer(invocation -> {
+            Long id = invocation.getArgument(0);
+            PdcNfcAssetEntity stocked = new PdcNfcAssetEntity();
+            stocked.setId(id);
+            stocked.setBatchId(10L);
+            stocked.setStatus("IN_STOCK");
+            return stocked;
+        });
+        lenient().when(batchDao.selectById(10L)).thenReturn(batch);
+        lenient().when(assetDao.countByBatchIdAndStatus(10L, "VERIFIED")).thenReturn(1);
+
+        inventoryService.stockIn(
+                createRequest(List.of(1L), "BN010", UUID.randomUUID()), 100L);
+
+        verify(batchDao, never()).updateById(any(PdcNfcBatchEntity.class));
     }
 }

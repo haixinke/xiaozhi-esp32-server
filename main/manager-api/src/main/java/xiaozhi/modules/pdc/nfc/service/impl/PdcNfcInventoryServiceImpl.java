@@ -16,6 +16,7 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAdminOperationType;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
+import xiaozhi.modules.pdc.nfc.constant.PdcNfcBatchStatus;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcAssetDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcBatchDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcOperationLogDao;
@@ -27,6 +28,7 @@ import xiaozhi.modules.pdc.nfc.entity.PdcNfcBatchEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcOperationLogEntity;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcAdminIdempotencyService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcAssetStateMachine;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcBatchStateMachine;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcInventoryService;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcAssetVO;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcBulkOperationVO;
@@ -62,6 +64,7 @@ public class PdcNfcInventoryServiceImpl implements PdcNfcInventoryService {
     private final PdcNfcOperationLogDao operationLogDao;
     private final PdcNfcBatchDao batchDao;
     private final PdcNfcAssetStateMachine assetStateMachine;
+    private final PdcNfcBatchStateMachine batchStateMachine;
     private final PdcNfcProperties properties;
     private final ObjectMapper objectMapper;
 
@@ -126,10 +129,45 @@ public class PdcNfcInventoryServiceImpl implements PdcNfcInventoryService {
     // ==================== doXxx 方法 ====================
 
     private PdcNfcBulkOperationVO doStockIn(PdcNfcBulkAssetOperationDTO request, Long operatorId) {
-        return doBulkOperation(request, operatorId, "STOCK_IN",
+        PdcNfcBulkOperationVO result = doBulkOperation(request, operatorId, "STOCK_IN",
                 Set.of(VERIFIED), IN_STOCK,
                 PdcNfcAssetEntity::setStockedAt,
                 (asset, bn) -> asset.setStockBusinessNo(bn));
+        advanceCompletedBatches(request, operatorId);
+        return result;
+    }
+
+    /**
+     * 入库后按受影响批次检查：仅当该批次不再有 VERIFIED 资产且当前为
+     * READY_FOR_STOCK 时，推进为 COMPLETED。
+     */
+    private void advanceCompletedBatches(
+            PdcNfcBulkAssetOperationDTO request, Long operatorId) {
+        Set<Long> batchIds = new HashSet<>();
+        for (Long assetId : request.getAssetIds()) {
+            PdcNfcAssetEntity stocked = assetDao.selectById(assetId);
+            if (stocked != null && stocked.getBatchId() != null) {
+                batchIds.add(stocked.getBatchId());
+            }
+        }
+        Date now = new Date();
+        for (Long batchId : batchIds) {
+            PdcNfcBatchEntity batch = batchDao.selectById(batchId);
+            if (batch == null
+                    || !PdcNfcBatchStatus.READY_FOR_STOCK.name().equals(batch.getStatus())
+                    || assetDao.countByBatchIdAndStatus(
+                            batchId, VERIFIED.name()) != 0) {
+                continue;
+            }
+            batchStateMachine.requireTransition(
+                    PdcNfcBatchStatus.READY_FOR_STOCK, PdcNfcBatchStatus.COMPLETED);
+            batch.setStatus(PdcNfcBatchStatus.COMPLETED.name());
+            batch.setUpdater(operatorId);
+            batch.setUpdateDate(now);
+            if (batchDao.updateById(batch) != 1) {
+                throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
+            }
+        }
     }
 
     private PdcNfcBulkOperationVO doActivate(PdcNfcBulkAssetOperationDTO request, Long operatorId) {

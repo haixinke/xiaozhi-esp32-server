@@ -31,6 +31,7 @@
         <guava.version>33.0.0-jre</guava.version>
         <skipTests>true</skipTests>
         <liquibase-core.version>4.20.0</liquibase-core.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
         <aliyun-sms-version>4.1.0</aliyun-sms-version>
         <okio-version>3.4.0</okio-version>
         <volcengine-ark-sdk.version>2.0.18</volcengine-ark-sdk.version>

@@ -1,231 +1,262 @@
 package xiaozhi.modules.pdc.nfc.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
+import com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.MessageSource;
-import org.springframework.mock.web.MockMultipartFile;
-import xiaozhi.common.utils.SpringContextUtils;
-import xiaozhi.modules.pdc.nfc.constant.PdcNfcAdminOperationType;
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcWriteJobStatus;
-import xiaozhi.modules.pdc.nfc.crypto.RequestFingerprint;
-import xiaozhi.modules.pdc.nfc.dao.PdcNfcAdminRequestDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcAssetDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcBatchDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcOperationLogDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcWriteJobDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcWriteJobItemDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcWriteRecordDao;
+import xiaozhi.modules.pdc.nfc.dto.PdcNfcWriteResultRow;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAssetEntity;
+import xiaozhi.modules.pdc.nfc.entity.PdcNfcBatchEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobItemEntity;
-import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcAdminIdempotencyServiceImpl;
-import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcWriteResultImporterImpl;
-import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteImportVO;
+import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteRecordEntity;
+import xiaozhi.modules.pdc.nfc.support.MySqlContainerSupport;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@ExtendWith(MockitoExtension.class)
-@DisplayName("PdcNfcWriteResultImport 集成测试（幂等 + 导入）")
-class PdcNfcWriteResultImportIntegrationTest {
+@SpringJUnitConfig(PdcNfcWriteResultImportIntegrationTest.TestConfig.class)
+@DisplayName("PdcNfcWriteResultImport 真实事务集成测试")
+class PdcNfcWriteResultImportIntegrationTest extends MySqlContainerSupport {
 
-    @BeforeAll
-    static void initMessageSource() {
-        ApplicationContext applicationContext = mock(ApplicationContext.class);
-        MessageSource messageSource = mock(MessageSource.class);
-        lenient().when(applicationContext.getBean("messageSource")).thenReturn(messageSource);
-        lenient().when(messageSource.getMessage(anyString(), any(), anyString(), any(java.util.Locale.class)))
-                .thenAnswer(invocation -> invocation.getArgument(2));
-        SpringContextUtils.applicationContext = applicationContext;
-    }
+    private static final Long JOB_ID = 100L;
+    private static final Long FIRST_ASSET_ID = 1001L;
+    private static final Long SECOND_ASSET_ID = 1002L;
 
-    @Mock private PdcNfcAdminRequestDao adminRequestDao;
-    @Mock private PdcNfcWriteJobDao jobDao;
-    @Mock private PdcNfcWriteJobItemDao jobItemDao;
-    @Mock private PdcNfcAssetDao assetDao;
-    @Mock private PdcNfcBatchDao batchDao;
-    @Mock private PdcNfcWriteRecordDao writeRecordDao;
-    @Mock private PdcNfcOperationLogDao operationLogDao;
-
-    private PdcNfcAdminIdempotencyServiceImpl idempotencyService;
-    private PdcNfcWriteResultImporterImpl importer;
+    @Autowired private DataSource dataSource;
+    @Autowired private PdcNfcWriteResultTransactionService transactionService;
+    @Autowired private PdcNfcBatchDao batchDao;
+    @Autowired private PdcNfcAssetDao assetDao;
+    @Autowired private PdcNfcWriteJobDao writeJobDao;
+    @Autowired private PdcNfcWriteJobItemDao writeJobItemDao;
+    @Autowired private PdcNfcWriteRecordDao writeRecordDao;
+    @Autowired private PdcNfcOperationLogDao operationLogDao;
 
     @BeforeEach
-    void setUp() {
-        RequestFingerprint fingerprint = new RequestFingerprint();
-        ObjectMapper objectMapper = new ObjectMapper();
-        idempotencyService = new PdcNfcAdminIdempotencyServiceImpl(
-                adminRequestDao, fingerprint, objectMapper);
-        importer = new PdcNfcWriteResultImporterImpl(
-                jobDao, jobItemDao, assetDao, batchDao,
-                writeRecordDao, operationLogDao,
-                new PdcNfcWriteJobStateMachine(),
-                new PdcNfcAssetStateMachine());
-    }
-
-    private String sha256(String value) {
-        return PdcNfcWriteCsvExporter.sha256Hex(value.getBytes(StandardCharsets.UTF_8));
+    void setUpDatabase() {
+        new ResourceDatabasePopulator(
+                new ClassPathResource("db/changelog/202607291000.sql"))
+                .execute(dataSource);
+        insertBatch();
+        insertAsset(FIRST_ASSET_ID, "A-001", "000001", "SN-001", "1".repeat(64));
+        insertAsset(SECOND_ASSET_ID, "A-002", "000002", "SN-002", "2".repeat(64));
+        insertJob();
+        insertJobItem(1L, FIRST_ASSET_ID, 1, "A-001", "SN-001", "a".repeat(64));
+        insertJobItem(2L, SECOND_ASSET_ID, 2, "A-002", "SN-002", "b".repeat(64));
+        createSecondRecordFailureTrigger();
     }
 
     @Test
-    @DisplayName("完整流程：幂等服务包裹导入器，首次执行成功")
-    void fullFlowFirstExecution() throws IOException {
-        byte[] csvBytes;
-        try (InputStream is = getClass().getResourceAsStream("/pdc/nfc/PDC_NFC_RESULT_V1.valid.csv")) {
-            assertThat(is).isNotNull();
-            csvBytes = is.readAllBytes();
-        }
+    @DisplayName("第二行写卡记录数据库异常时，通过 Spring 代理回滚全部 NFC 写入")
+    void rollsBackEveryDatabaseWriteWhenSecondRecordInsertFails() {
+        assertThat(AopUtils.isAopProxy(transactionService)).isTrue();
+        assertThatThrownBy(() -> transactionService.apply(
+                JOB_ID, validatedRows(), "f".repeat(64), 99L, UUID.randomUUID()))
+                .hasRootCauseInstanceOf(SQLException.class);
 
-        MockMultipartFile file = new MockMultipartFile("file", "result.csv",
-                "text/csv", csvBytes);
+        assertThat(assetDao.selectById(FIRST_ASSET_ID).getStatus())
+                .isEqualTo(PdcNfcAssetStatus.SCHEME_GENERATED.name());
+        assertThat(assetDao.selectById(SECOND_ASSET_ID).getStatus())
+                .isEqualTo(PdcNfcAssetStatus.SCHEME_GENERATED.name());
+        assertThat(writeRecordDao.selectCount(
+                new LambdaQueryWrapper<PdcNfcWriteRecordEntity>()
+                        .eq(PdcNfcWriteRecordEntity::getJobId, JOB_ID)))
+                .isZero();
+        assertThat(writeJobDao.selectById(JOB_ID).getStatus())
+                .isEqualTo(PdcNfcWriteJobStatus.EXPORTED.name());
+        assertThat(batchDao.selectById(1L).getStatus()).isEqualTo("WRITING");
+        assertThat(operationLogDao.selectCount(null)).isZero();
+    }
 
-        UUID requestId = UUID.randomUUID();
-        Long jobId = 100L;
-        Long operatorId = 99L;
+    private void insertBatch() {
+        PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
+        batch.setId(1L);
+        batch.setBatchNo("B-001");
+        batch.setProductTypeId(1L);
+        batch.setSkuCode("SKU-KOI");
+        batch.setPrototype("锦鲤");
+        batch.setPlannedQuantity(2);
+        batch.setStatus("WRITING");
+        batch.setCreateDate(new Date());
+        batchDao.insert(batch);
+    }
 
-        // 幂等服务：无已有记录
-        when(adminRequestDao.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
-        lenient().when(adminRequestDao.insert(any(xiaozhi.modules.pdc.nfc.entity.PdcNfcAdminRequestEntity.class))).thenReturn(1);
+    private void insertAsset(Long id, String assetNo, String itemNo,
+                             String wechatSn, String claimHash) {
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(id);
+        asset.setAssetNo(assetNo);
+        asset.setBatchId(1L);
+        asset.setItemNo(itemNo);
+        asset.setSkuCode("SKU-KOI");
+        asset.setPrototype("锦鲤");
+        asset.setWechatSn(wechatSn);
+        asset.setClaimRefHash(claimHash);
+        asset.setClaimRefHashVersion("v1");
+        asset.setClaimRefKeyVersion("v1");
+        asset.setClaimRefNonce(new byte[12]);
+        asset.setClaimRefCiphertext(new byte[32]);
+        asset.setStatus(PdcNfcAssetStatus.SCHEME_GENERATED.name());
+        asset.setVersion(1);
+        asset.setActiveWriteJobId(JOB_ID);
+        asset.setCreateDate(new Date());
+        assetDao.insert(asset);
+    }
 
-        // 导入器模拟
-        String uriSha1 = sha256("weixin://wxpay/test-scheme-1");
-        String uriSha2 = sha256("weixin://wxpay/test-scheme-2");
-
+    private void insertJob() {
         PdcNfcWriteJobEntity job = new PdcNfcWriteJobEntity();
-        job.setId(jobId);
+        job.setId(JOB_ID);
         job.setJobNo("WRT-100-1");
-        job.setStatus(PdcNfcWriteJobStatus.EXPORTED.name());
         job.setBatchId(1L);
+        job.setFormatVersion("PDC_NFC_WRITE_V1");
+        job.setStatus(PdcNfcWriteJobStatus.EXPORTED.name());
         job.setTotalCount(2);
+        job.setSuccessCount(0);
+        job.setFailureCount(0);
         job.setCreateDate(new Date());
-        when(jobDao.selectById(jobId)).thenReturn(job);
-
-        PdcNfcWriteJobItemEntity item1 = new PdcNfcWriteJobItemEntity();
-        item1.setId(1L); item1.setJobId(jobId); item1.setAssetId(1001L);
-        item1.setSequenceNo(1); item1.setAssetNo("B20260729001-000001");
-        item1.setWechatSn("EB00000000000000000000000001"); item1.setUriSha256(uriSha1);
-        item1.setCreateDate(new Date());
-
-        PdcNfcWriteJobItemEntity item2 = new PdcNfcWriteJobItemEntity();
-        item2.setId(2L); item2.setJobId(jobId); item2.setAssetId(1002L);
-        item2.setSequenceNo(2); item2.setAssetNo("B20260729001-000002");
-        item2.setWechatSn("EB00000000000000000000000002"); item2.setUriSha256(uriSha2);
-        item2.setCreateDate(new Date());
-
-        when(jobItemDao.selectList(any(LambdaQueryWrapper.class)))
-                .thenReturn(List.of(item1, item2));
-
-        PdcNfcAssetEntity asset1 = new PdcNfcAssetEntity();
-        asset1.setId(1001L); asset1.setAssetNo("B20260729001-000001");
-        asset1.setStatus(PdcNfcAssetStatus.SCHEME_GENERATED.name());
-        asset1.setVersion(1); asset1.setActiveWriteJobId(jobId);
-        asset1.setCreateDate(new Date());
-
-        PdcNfcAssetEntity asset2 = new PdcNfcAssetEntity();
-        asset2.setId(1002L); asset2.setAssetNo("B20260729001-000002");
-        asset2.setStatus(PdcNfcAssetStatus.SCHEME_GENERATED.name());
-        asset2.setVersion(1); asset2.setActiveWriteJobId(jobId);
-        asset2.setCreateDate(new Date());
-
-        when(assetDao.selectByIdsForUpdate(any())).thenReturn(List.of(asset1, asset2));
-
-        lenient().when(jobDao.updateById(any(PdcNfcWriteJobEntity.class))).thenReturn(1);
-        lenient().when(assetDao.updateById(any(PdcNfcAssetEntity.class))).thenReturn(1);
-        lenient().when(writeRecordDao.insert(any(xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteRecordEntity.class))).thenReturn(1);
-        lenient().when(operationLogDao.insert(any(xiaozhi.modules.pdc.nfc.entity.PdcNfcOperationLogEntity.class))).thenReturn(1);
-
-        // 通过幂等服务执行
-        String canonicalRequest = jobId + ":" + requestId;
-        PdcNfcWriteImportVO vo = idempotencyService.execute(
-                PdcNfcAdminOperationType.WRITE_RESULT_IMPORT,
-                requestId,
-                canonicalRequest,
-                PdcNfcWriteImportVO.class,
-                () -> importer.importResult(jobId, requestId, file, operatorId)
-        );
-
-        // 验证
-        assertThat(vo.jobId()).isEqualTo(jobId);
-        assertThat(vo.verifiedCount()).isEqualTo(2);
-        assertThat(vo.writtenCount()).isEqualTo(0);
-        assertThat(vo.failureCount()).isEqualTo(0);
-        assertThat(vo.resultFileSha256()).hasSize(64);
-        assertThat(vo.requestId()).isEqualTo(requestId);
-
-        // 验证幂等记录被存储
-        verify(adminRequestDao).insert(any(xiaozhi.modules.pdc.nfc.entity.PdcNfcAdminRequestEntity.class));
-
-        // 验证任务状态推进
-        assertThat(job.getStatus()).isEqualTo(PdcNfcWriteJobStatus.COMPLETED.name());
+        writeJobDao.insert(job);
     }
 
-    @Test
-    @DisplayName("幂等重放：第二次调用返回缓存结果，不重新执行导入")
-    void idempotentReplay() {
-        UUID requestId = UUID.randomUUID();
-        Long jobId = 100L;
+    private void insertJobItem(Long id, Long assetId, int sequenceNo,
+                               String assetNo, String wechatSn, String uriSha256) {
+        PdcNfcWriteJobItemEntity item = new PdcNfcWriteJobItemEntity();
+        item.setId(id);
+        item.setJobId(JOB_ID);
+        item.setAssetId(assetId);
+        item.setSequenceNo(sequenceNo);
+        item.setAssetNo(assetNo);
+        item.setBatchNo("B-001");
+        item.setWechatSn(wechatSn);
+        item.setSkuCode("SKU-KOI");
+        item.setPrototype("锦鲤");
+        item.setUriSha256(uriSha256);
+        item.setUriTnf("0x01");
+        item.setUriType("U");
+        item.setAarTnf("0x04");
+        item.setAarType("android.com:pkg");
+        item.setAarPayload("com.tencent.mm");
+        item.setCreateDate(new Date());
+        writeJobItemDao.insert(item);
+    }
 
-        // 已存在的幂等记录
-        String canonicalRequest = jobId + ":" + requestId;
-        RequestFingerprint fp = new RequestFingerprint();
-        String fingerprint = fp.sha256Canonical(canonicalRequest);
-
-        PdcNfcWriteImportVO cachedVo = new PdcNfcWriteImportVO(
-                jobId, "WRT-100-1", 2, 0, 0,
-                "abc123def456", requestId);
-        ObjectMapper om = new ObjectMapper();
-        String cachedJson;
-        try {
-            cachedJson = om.writeValueAsString(cachedVo);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    private void createSecondRecordFailureTrigger() {
+        try (var connection = dataSource.getConnection();
+             var statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TRIGGER fail_second_write_record
+                    BEFORE INSERT ON pdc_nfc_write_record
+                    FOR EACH ROW
+                    BEGIN
+                      IF NEW.asset_id = 1002 THEN
+                        SIGNAL SQLSTATE '45000'
+                          SET MESSAGE_TEXT = 'second write record rejected';
+                      END IF;
+                    END
+                    """);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to create transaction test trigger", exception);
         }
+    }
 
-        var existing = new xiaozhi.modules.pdc.nfc.entity.PdcNfcAdminRequestEntity();
-        existing.setOperationType(PdcNfcAdminOperationType.WRITE_RESULT_IMPORT.name());
-        existing.setRequestId(requestId.toString());
-        existing.setRequestFingerprint(fingerprint);
-        existing.setResponseJson(cachedJson);
-        existing.setStatus("SUCCESS");
-
-        when(adminRequestDao.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
-
-        // 使用空文件（不应被解析）
-        MockMultipartFile file = new MockMultipartFile("file", "result.csv",
-                "text/csv", "should-not-be-parsed".getBytes(StandardCharsets.UTF_8));
-
-        // 通过幂等服务执行
-        PdcNfcWriteImportVO vo = idempotencyService.execute(
-                PdcNfcAdminOperationType.WRITE_RESULT_IMPORT,
-                requestId,
-                canonicalRequest,
-                PdcNfcWriteImportVO.class,
-                () -> { throw new AssertionError("Should not be called for replay"); }
+    private List<ValidatedWriteResult> validatedRows() {
+        return List.of(
+                validatedRow(
+                        1L, FIRST_ASSET_ID, "A-001", "SN-001", "a".repeat(64)),
+                validatedRow(
+                        2L, SECOND_ASSET_ID, "A-002", "SN-002", "b".repeat(64))
         );
+    }
 
-        assertThat(vo.jobId()).isEqualTo(jobId);
-        assertThat(vo.verifiedCount()).isEqualTo(2);
-        assertThat(vo.requestId()).isEqualTo(requestId);
+    private ValidatedWriteResult validatedRow(
+            Long itemId, Long assetId, String assetNo,
+            String wechatSn, String uriSha256) {
+        PdcNfcWriteResultRow row = new PdcNfcWriteResultRow(
+                "PDC_NFC_RESULT_V1",
+                "WRT-100-1",
+                assetNo,
+                wechatSn,
+                "SUCCESS",
+                "SUCCESS",
+                "04AABBCC",
+                2,
+                uriSha256,
+                "com.tencent.mm",
+                true,
+                LocalDateTime.of(2026, 7, 29, 10, 20, 30),
+                "",
+                ""
+        );
+        return new ValidatedWriteResult(
+                row,
+                writeJobItemDao.selectById(itemId),
+                assetDao.selectById(assetId),
+                PdcNfcAssetStatus.VERIFIED,
+                true
+        );
+    }
 
-        // 导入器不应被调用
-        verify(jobDao, never()).selectById(any());
+    @Configuration(proxyBeanMethods = false)
+    @EnableTransactionManagement
+    @MapperScan("xiaozhi.modules.pdc.nfc.dao")
+    @Import({
+            PdcNfcAssetStateMachine.class,
+            PdcNfcWriteJobStateMachine.class,
+            PdcNfcBatchStateMachine.class
+    })
+    @ComponentScan(
+            basePackages = "xiaozhi.modules.pdc.nfc.service.impl",
+            useDefaultFilters = false,
+            includeFilters = @ComponentScan.Filter(
+                    type = FilterType.REGEX,
+                    pattern = "xiaozhi\\.modules\\.pdc\\.nfc\\.service\\.impl\\."
+                            + "PdcNfcWriteResultTransactionServiceImpl"))
+    @ImportAutoConfiguration({
+            DataSourceAutoConfiguration.class,
+            DataSourceTransactionManagerAutoConfiguration.class,
+            TransactionAutoConfiguration.class,
+            MybatisPlusAutoConfiguration.class
+    })
+    static class TestConfig {
+
+        @Bean
+        MybatisPlusInterceptor mybatisPlusInterceptor() {
+            MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+            interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+            return interceptor;
+        }
     }
 }

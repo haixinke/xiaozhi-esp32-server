@@ -19,7 +19,8 @@ public abstract class MySqlContainerSupport {
             new MySQLContainer<>("mysql:8.4")
                     .withDatabaseName("xiaozhi_nfc_test")
                     .withUsername("test")
-                    .withPassword("test");
+                    .withPassword("test")
+                    .withCommand("--log-bin-trust-function-creators=1");
 
     @DynamicPropertySource
     static void mysqlProperties(DynamicPropertyRegistry registry) {

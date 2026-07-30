@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { describe, it } from 'node:test'
 import vm from 'node:vm'
-import { buildReleaseEvidencePayload } from '../src/utils/pdcNfcReleaseEvidence.mjs'
+import {
+  buildReleaseEvidencePayload,
+  buildReleaseEvidenceViewModel
+} from '../src/utils/pdcNfcReleaseEvidence.mjs'
 
 const pdcNfcSource = await readFile(
   new URL('../src/apis/module/pdcNfc.js', import.meta.url),
@@ -100,5 +103,19 @@ describe('release evidence request payload', () => {
 
     assert.equal(retryCount(), 0)
     assert.equal(response.data.code, -1)
+  })
+})
+
+describe('release evidence display', () => {
+  it('preserves all three evidence fields for review', () => {
+    assert.deepEqual(buildReleaseEvidenceViewModel({
+      releaseVersion: '1.2.3',
+      publishedAt: '2026-07-30T10:00:00+08:00',
+      smokeEvidence: 'smoke-passed-on-device-42'
+    }), {
+      releaseVersion: '1.2.3',
+      publishedAt: '2026-07-30T10:00:00+08:00',
+      smokeEvidence: 'smoke-passed-on-device-42'
+    })
   })
 })

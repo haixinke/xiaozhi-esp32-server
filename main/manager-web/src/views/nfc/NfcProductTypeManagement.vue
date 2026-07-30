@@ -46,11 +46,18 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="最新证据" min-width="200" align="center">
+              <el-table-column label="最新证据" min-width="260" align="center">
                 <template slot-scope="{ row }">
                   <span v-if="row.latestEvidence">
-                    {{ row.latestEvidence.releaseVersion }}
-                    <span class="evidence-time">{{ formatDate(row.latestEvidence.publishedAt) }}</span>
+                    <span>{{ releaseEvidenceView(row).releaseVersion }}</span>
+                    <span class="evidence-time">{{ formatDate(releaseEvidenceView(row).publishedAt) }}</span>
+                    <el-tooltip
+                      :content="releaseEvidenceView(row).smokeEvidence"
+                      placement="top"
+                      effect="dark"
+                    >
+                      <span class="evidence-smoke">{{ releaseEvidenceView(row).smokeEvidence }}</span>
+                    </el-tooltip>
                   </span>
                   <span v-else class="text-muted">-</span>
                 </template>
@@ -112,7 +119,10 @@
 import Api from '@/apis/api'
 import HeaderBar from '@/components/HeaderBar.vue'
 import { modelIdLabel, formatDate } from '@/utils/pdcNfcState.mjs'
-import { buildReleaseEvidencePayload } from '@/utils/pdcNfcReleaseEvidence.mjs'
+import {
+  buildReleaseEvidencePayload,
+  buildReleaseEvidenceViewModel
+} from '@/utils/pdcNfcReleaseEvidence.mjs'
 
 export default {
   name: 'NfcProductTypeManagement',
@@ -154,6 +164,9 @@ export default {
   methods: {
     modelIdLabel,
     formatDate,
+    releaseEvidenceView(row) {
+      return buildReleaseEvidenceViewModel(row.latestEvidence)
+    },
     fetchProductTypes() {
       this.loading = true
       Api.pdcNfc.listProductTypes({}, (res) => {
@@ -289,6 +302,14 @@ export default {
   color: #909399;
   font-size: 12px;
   margin-left: 6px;
+}
+
+.evidence-smoke {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .text-muted {

@@ -3,3 +3,9 @@ export const buildReleaseEvidencePayload = ({ releaseVersion, publishedAt, smoke
   publishedAt,
   smokeEvidence
 })
+
+export const buildReleaseEvidenceViewModel = (evidence = {}) => ({
+  releaseVersion: evidence.releaseVersion || '',
+  publishedAt: evidence.publishedAt || '',
+  smokeEvidence: evidence.smokeEvidence || ''
+})

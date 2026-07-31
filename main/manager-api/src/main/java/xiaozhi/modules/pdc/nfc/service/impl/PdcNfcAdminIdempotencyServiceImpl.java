@@ -1,6 +1,7 @@
 package xiaozhi.modules.pdc.nfc.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,9 +52,12 @@ public class PdcNfcAdminIdempotencyServiceImpl implements PdcNfcAdminIdempotency
         // Step 2: 执行业务逻辑
         T result = action.get();
 
-        // Step 3: 存储幂等记录
+        // Step 3: 存储幂等记录。
+        // 序列化或插入失败必须向外抛：此时业务尚未提交（调用方在事务内），
+        // 异常触发回滚，业务与幂等记录同生共死。若吞掉异常返回结果，
+        // 业务已生效但无幂等记录，客户端重试会重复执行业务。
         try {
-            String responseJson = objectMapper.writeValueAsString(result);
+            String responseJson = serializeResponse(result);
             PdcNfcAdminRequestEntity entity = new PdcNfcAdminRequestEntity();
             entity.setOperationType(opType);
             entity.setRequestId(reqIdStr);
@@ -71,9 +75,6 @@ public class PdcNfcAdminIdempotencyServiceImpl implements PdcNfcAdminIdempotency
             }
             // 极端情况：插入后又被删除（不应发生）
             throw new IllegalStateException("Idempotency record disappeared", e);
-        } catch (Exception e) {
-            log.warn("Failed to store idempotency record: {}", e.getMessage());
-            // 业务已成功，幂等记录存储失败不影响结果
         }
 
         return result;
@@ -84,6 +85,18 @@ public class PdcNfcAdminIdempotencyServiceImpl implements PdcNfcAdminIdempotency
                 new LambdaQueryWrapper<PdcNfcAdminRequestEntity>()
                         .eq(PdcNfcAdminRequestEntity::getOperationType, opType)
                         .eq(PdcNfcAdminRequestEntity::getRequestId, reqIdStr));
+    }
+
+    /**
+     * 序列化响应为 JSON。失败时包成非受检异常向外抛，
+     * 让调用方事务回滚而不是带着"业务已生效但无幂等记录"的状态返回成功。
+     */
+    private String serializeResponse(Object result) {
+        try {
+            return objectMapper.writeValueAsString(result);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize idempotent response", e);
+        }
     }
 
     private <T> T handleExisting(PdcNfcAdminRequestEntity existing, String fingerprint,

@@ -168,20 +168,20 @@ class PdcNfcAdminIdempotencyServiceTest {
     }
 
     @Test
-    @DisplayName("存储失败但不影响结果：幂等记录插入异常时仍返回业务结果")
-    void storeFailureDoesNotAffectResult() {
+    @DisplayName("存储失败向外抛：幂等记录插入异常必须传播，让调用方事务回滚")
+    void storeFailurePropagates() {
         UUID requestId = UUID.randomUUID();
         when(adminRequestDao.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
         when(adminRequestDao.insert(any(PdcNfcAdminRequestEntity.class))).thenThrow(new RuntimeException("DB error"));
 
-        TestResponse result = idempotencyService.execute(
+        // 业务已执行但幂等记录未保存：若吞掉异常返回结果，客户端用同一 requestId
+        // 重试时会再次执行业务（记录缺失），造成重复操作。必须抛出以回滚事务。
+        assertThatThrownBy(() -> idempotencyService.execute(
                 PdcNfcAdminOperationType.WRITE_RESULT_IMPORT,
                 requestId,
                 "test-request",
                 TestResponse.class,
                 () -> new TestResponse("success", 1)
-        );
-
-        assertThat(result.value()).isEqualTo("success");
+        )).isInstanceOf(RuntimeException.class).hasMessageContaining("DB error");
     }
 }

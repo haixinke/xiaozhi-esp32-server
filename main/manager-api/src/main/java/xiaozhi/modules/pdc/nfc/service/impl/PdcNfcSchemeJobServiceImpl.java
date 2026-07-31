@@ -105,9 +105,12 @@ public class PdcNfcSchemeJobServiceImpl implements PdcNfcSchemeJobService {
         job.setStatus(PdcNfcSchemeJobStatus.PENDING.name());
         job.setRequestedBy(operatorId);
         job.setTotalCount(previous.getTotalCount());
-        job.setSuccessCount(previous.getSuccessCount() != null ? previous.getSuccessCount() : 0);
-        job.setFailureCount(previous.getFailureCount() != null ? previous.getFailureCount() : 0);
-        job.setCursorAssetId(previous.getCursorAssetId() != null ? previous.getCursorAssetId() : 0L);
+        // 游标与计数归零：失败资产 status 仍为 CREATED 且 id <= 旧游标，
+        // 继承旧游标会让 id > cursor 的查询永久跳过它们。从头重扫，
+        // 已成功资产由 markSchemeGenerated 的 WHERE status='CREATED' 条件幂等跳过。
+        job.setSuccessCount(0);
+        job.setFailureCount(0);
+        job.setCursorAssetId(0L);
         job.setCreateDate(now);
         jobDao.insert(job);
 

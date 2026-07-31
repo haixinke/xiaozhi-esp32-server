@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -114,7 +115,8 @@ class PdcNfcWriteJobServiceTest {
             job.setId(100L);
             return 1;
         });
-        when(batchDao.updateById(any(PdcNfcBatchEntity.class))).thenReturn(1);
+        when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(1);
         service.create(10L, 99L);
 
         ArgumentCaptor<PdcNfcWriteJobItemEntity> savedItemCaptor =
@@ -137,15 +139,36 @@ class PdcNfcWriteJobServiceTest {
             job.setId(100L);
             return 1;
         });
-        when(batchDao.updateById(any(PdcNfcBatchEntity.class))).thenReturn(1);
+        when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(1);
 
         service.create(10L, 99L);
 
-        ArgumentCaptor<PdcNfcBatchEntity> batchCaptor =
-                ArgumentCaptor.forClass(PdcNfcBatchEntity.class);
-        verify(batchDao).updateById(batchCaptor.capture());
-        assertThat(batchCaptor.getValue().getStatus())
-                .isEqualTo(PdcNfcBatchStatus.WRITING.name());
+        // 原子状态翻转：READY_FOR_WRITE -> WRITING
+        verify(batchDao).transitionStatus(
+                eq(10L),
+                eq(PdcNfcBatchStatus.READY_FOR_WRITE.name()),
+                eq(PdcNfcBatchStatus.WRITING.name()),
+                eq(99L),
+                any());
+    }
+
+    @Test
+    void createThrowsConflictWhenBatchTransitionLoses() {
+        PdcNfcBatchEntity batch = batch();
+        PdcNfcAssetEntity asset = encryptedAsset();
+        when(batchDao.selectById(10L)).thenReturn(batch);
+        when(jobDao.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(assetDao.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(asset));
+        // 并发请求已先把批次推进到 WRITING：原子翻转影响 0 行
+        when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(0);
+
+        assertThatThrownBy(() -> service.create(10L, 99L))
+                .isInstanceOf(RenException.class);
+
+        // 冲突时不得创建任务
+        verify(jobDao, never()).insert(any(PdcNfcWriteJobEntity.class));
     }
 
     @Test

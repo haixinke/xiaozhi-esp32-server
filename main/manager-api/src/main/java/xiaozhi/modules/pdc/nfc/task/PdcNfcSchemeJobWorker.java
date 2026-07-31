@@ -88,7 +88,7 @@ public class PdcNfcSchemeJobWorker {
         int successCount = job.getSuccessCount() != null ? job.getSuccessCount() : 0;
         int failureCount = job.getFailureCount() != null ? job.getFailureCount() : 0;
         long cursor = job.getCursorAssetId() != null ? job.getCursorAssetId() : 0L;
-        long lastHeartbeatMs = System.currentTimeMillis();
+        long lastHeartbeatMs = currentTimeMs();
 
         log.info("Scheme job {} started, batchId={}, cursor={}, success={}, failure={}",
                 jobId, job.getBatchId(), cursor, successCount, failureCount);
@@ -161,6 +161,9 @@ public class PdcNfcSchemeJobWorker {
                     jobDao.updateProgress(jobId, cursor, successCount, failureCount, new Date());
                 }
             }
+        } catch (LeaseLostException e) {
+            // 租约已被其他实例接管：安静退出，由新实例继续处理，避免重复调用微信
+            log.info("Scheme job {} lease lost, exiting (taken over by another instance)", jobId);
         } catch (Exception e) {
             log.error("Scheme job {} unexpected error, lease will expire for recovery", jobId, e);
         } finally {
@@ -237,14 +240,35 @@ public class PdcNfcSchemeJobWorker {
     }
 
     private long maybeHeartbeat(Long jobId, String instanceId, long lastHeartbeatMs) {
-        long now = System.currentTimeMillis();
+        long now = currentTimeMs();
         if (now - lastHeartbeatMs >= HEARTBEAT_INTERVAL_MS) {
             Date nowDate = new Date(now);
             Date leaseUntil = new Date(now + LEASE_SECONDS * 1_000L);
-            jobDao.heartbeat(jobId, instanceId, nowDate, leaseUntil);
+            int updated = jobDao.heartbeat(jobId, instanceId, nowDate, leaseUntil);
+            if (updated == 0) {
+                // fencing：持有者不匹配或状态已非 RUNNING，说明租约被其他实例接管，
+                // 继续处理会与新实例并发调用微信。立即退出。
+                throw new LeaseLostException("job " + jobId + " lease lost");
+            }
             return now;
         }
         return lastHeartbeatMs;
+    }
+
+    /**
+     * 可重写的时间源，便于单测控制心跳触发时机。
+     */
+    long currentTimeMs() {
+        return System.currentTimeMillis();
+    }
+
+    /**
+     * 租约丢失信号：worker 捕获后安静退出，由持有租约的实例继续处理。
+     */
+    static final class LeaseLostException extends RuntimeException {
+        LeaseLostException(String message) {
+            super(message);
+        }
     }
 
     private void maybeTransitionBatch(Long batchId, String jobStatus) {

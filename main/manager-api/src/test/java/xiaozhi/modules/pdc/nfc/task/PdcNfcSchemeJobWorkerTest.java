@@ -277,6 +277,41 @@ class PdcNfcSchemeJobWorkerTest {
         assertThat(retryCaptor.getValue().after(new Date())).isTrue();
     }
 
+    // ===== Test: 租约丢失 fencing =====
+
+    @Test
+    @DisplayName("租约丢失 - 心跳返回0时 worker 停止处理后续资产")
+    void leaseLostStopsProcessing() {
+        // 两个资产：处理 asset1 后时间越过心跳间隔触发心跳，
+        // 心跳返回 0 表示租约已被其他实例接管，worker 必须停止，
+        // 不得再处理 asset2（避免重复调用微信）。
+        PdcNfcAssetEntity asset1 = createAsset(10L, "AbCdEfGhIjKlMnOpQrStUv");
+        PdcNfcAssetEntity asset2 = createAsset(20L, "BbCdEfGhIjKlMnOpQrStUv");
+        when(assetDao.selectCreatedAssetsAfterCursor(eq(BATCH_ID), anyLong(), anyInt()))
+                .thenReturn(List.of(asset1, asset2))
+                .thenReturn(List.of());
+
+        when(schemeClient.generate(eq("SN10"), anyString()))
+                .thenReturn(WechatNfcSchemeResult.ok("weixin://nfc/a"));
+        when(schemeClient.generate(eq("SN20"), anyString()))
+                .thenReturn(WechatNfcSchemeResult.ok("weixin://nfc/b"));
+
+        // 租约已丢失：持有者不匹配 → heartbeat 影响 0 行
+        when(jobDao.heartbeat(anyLong(), anyString(), any(Date.class), any(Date.class)))
+                .thenReturn(0);
+        // 模拟时间流逝：第二次取时间时越过心跳间隔，触发心跳
+        when(worker.currentTimeMs())
+                .thenReturn(0L)                          // run() 起始 lastHeartbeatMs
+                .thenAnswer(inv -> 25_000L);             // 之后均越过 20s 心跳间隔
+
+        worker.run(JOB_ID, "test-instance");
+
+        // asset2 绝不应被处理
+        verify(schemeClient, never()).generate(eq("SN20"), anyString());
+        // 不应标记任务完成
+        verify(jobDao, never()).completeJob(eq(JOB_ID), eq("SUCCEEDED"), any(), any(), any(Date.class));
+    }
+
     // ===== Helper =====
 
     private PdcNfcSchemeJobEntity runningJob() {

@@ -17,6 +17,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.agent.service.ChatHistoryDeleteService;
 import xiaozhi.modules.agent.service.ChatHistoryExportService;
 import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.wechat.dto.ChatHistoryExportReqDTO;
@@ -40,6 +41,7 @@ public class WechatController {
 
     private final WechatService wechatService;
     private final ChatHistoryExportService chatHistoryExportService;
+    private final ChatHistoryDeleteService chatHistoryDeleteService;
 
     @PostMapping("/login")
     @Operation(summary = "微信小程序登录(无需认证)")
@@ -104,6 +106,18 @@ public class WechatController {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
         chatHistoryExportService.exportAndEmailAsync(userId, dto.getEmail());
+        return new Result<>();
+    }
+
+    @PostMapping("/chat-history/delete")
+    @Operation(summary = "删除当前用户全部聊天记录(不可恢复)")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Void> deleteChatHistory() {
+        Long userId = SecurityUser.getUserId();
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        chatHistoryDeleteService.deleteAllByUserId(userId);
         return new Result<>();
     }
 }

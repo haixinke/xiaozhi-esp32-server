@@ -118,3 +118,41 @@
   background: #E5E3DF;                   /* hairline */
   color: #A8A6A0;                        /* disabled-text */
 }
+
+/* section 间距 */
+.section + .section {
+  margin-top: 24rpx;
+}
+
+/* button-danger：error 描边 + error 文字，危险操作次按钮 */
+.danger {
+  margin-top: 40rpx;
+  width: 100%;
+  height: 96rpx;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999rpx;                /* rounded.full */
+  background: #FFFFFF;
+  border: 2rpx solid #D9463C;            /* semantic-error */
+  color: #C33F36;                        /* semantic-error-text */
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 30rpx;
+  font-weight: 600;
+  transition: transform 180ms ease-out, background-color 180ms ease-out;
+}
+.danger::after {
+  border: none;
+}
+
+.danger--pressed {
+  background: #FDECEA;                   /* semantic-error-surface */
+  transform: scale(0.98);
+}
+
+.danger[disabled] {
+  background: #FFFFFF;
+  border-color: #E5E3DF;                 /* hairline */
+  color: #A8A6A0;                        /* disabled-text */
+}

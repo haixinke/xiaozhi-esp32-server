@@ -16,7 +16,7 @@
     <view class="menu-panel">
       <list-row label="我的卡册" bind:rowtap="onNavAlbum"></list-row>
       <list-row label="我的激活码" bind:rowtap="onNavCodes"></list-row>
-      <list-row label="对话设置" bind:rowtap="onNavChatSettings"></list-row>
+      <list-row label="对话记录" bind:rowtap="onNavChatSettings"></list-row>
       <!-- 系统设置，后期打开 -->
       <!-- <list-row label="系统设置" bind:rowtap="onNavSettings"></list-row> -->
       <!-- 账号，后期打开 -->

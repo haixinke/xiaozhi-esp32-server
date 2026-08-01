@@ -1,5 +1,5 @@
 <view class="page">
-  <nav-bar title="对话设置"></nav-bar>
+  <nav-bar title="对话记录"></nav-bar>
 
   <view class="content">
 
@@ -28,6 +28,19 @@
         disabled="{{submitting}}"
         bindtap="onExport"
       >{{submitting ? '提交中…' : '导出并发送到邮箱'}}</button>
+    </view>
+
+    <view class="section">
+      <text class="section-title">删除聊天记录</text>
+      <text class="section-desc">删除你的全部对话记录，删除后无法恢复。建议先导出备份。</text>
+
+      <button
+        class="danger"
+        hover-class="danger--pressed"
+        loading="{{deleting}}"
+        disabled="{{deleting}}"
+        bindtap="onDelete"
+      >{{deleting ? '删除中…' : '删除全部聊天记录'}}</button>
     </view>
 
   </view>

@@ -279,6 +279,46 @@ public interface Constant {
     }
 
     /**
+     * 系统邮件
+     */
+    enum SysEmailParam {
+        /**
+         * 阿里云授权keyID
+         */
+        ALIYUN_DM_ACCESS_KEY_ID("aliyun.dm.access_key_id"),
+        /**
+         * 阿里云授权密钥
+         */
+        ALIYUN_DM_ACCESS_KEY_SECRET("aliyun.dm.access_key_secret"),
+        /**
+         * 控制台配置的发信地址
+         */
+        ALIYUN_DM_ACCOUNT_NAME("aliyun.dm.account_name"),
+        /**
+         * 发信人昵称
+         */
+        ALIYUN_DM_FROM_ALIAS("aliyun.dm.from_alias"),
+        /**
+         * 邮件标签
+         */
+        ALIYUN_DM_TAG_NAME("aliyun.dm.tag_name"),
+        /**
+         * 是否启用回信地址
+         */
+        ALIYUN_DM_REPLY_TO_ADDRESS("aliyun.dm.reply_to_address");
+
+        private String value;
+
+        SysEmailParam(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    /**
      * 数据状态
      */
     enum DataOperation {

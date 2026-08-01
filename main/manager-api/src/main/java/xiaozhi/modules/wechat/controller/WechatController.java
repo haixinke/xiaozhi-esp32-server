@@ -17,7 +17,9 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.agent.service.ChatHistoryExportService;
 import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.wechat.dto.ChatHistoryExportReqDTO;
 import xiaozhi.modules.wechat.dto.WechatBindAccountReqDTO;
 import xiaozhi.modules.wechat.dto.WechatBindPhoneReqDTO;
 import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
@@ -37,6 +39,7 @@ import xiaozhi.modules.wechat.vo.WechatProfileVO;
 public class WechatController {
 
     private final WechatService wechatService;
+    private final ChatHistoryExportService chatHistoryExportService;
 
     @PostMapping("/login")
     @Operation(summary = "微信小程序登录(无需认证)")
@@ -90,5 +93,17 @@ public class WechatController {
     public Result<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
         Long userId = SecurityUser.getUserId();
         return new Result<String>().ok(wechatService.uploadAvatar(userId, file));
+    }
+
+    @PostMapping("/chat-history/export")
+    @Operation(summary = "异步导出当前用户全部聊天记录并发送到邮箱")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Void> exportChatHistory(@RequestBody @Valid ChatHistoryExportReqDTO dto) {
+        Long userId = SecurityUser.getUserId();
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        chatHistoryExportService.exportAndEmailAsync(userId, dto.getEmail());
+        return new Result<>();
     }
 }

@@ -102,6 +102,11 @@ public interface ErrorCode {
     // 资源处理相关错误码
     int RESOURCE_READ_ERROR = 10078; // 读取资源失败
 
+    // 邮件相关错误码
+    int EMAIL_SEND_FAILED = 10402; // 邮件发送失败
+    int EMAIL_CONNECTION_FAILED = 10403; // 邮件连接建立失败
+    int EMAIL_FORMAT_ERROR = 10404; // 邮箱格式不正确
+
     // 智能体相关错误码
     int LLM_INTENT_PARAMS_MISMATCH = 10079; // LLM大模型和Intent意图识别，选择参数不匹配
 

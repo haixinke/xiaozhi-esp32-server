@@ -5,12 +5,14 @@
 
 /**
  * 根据批次后端状态返回可用操作按钮
+ * 后端仅允许 DRAFT 批次启动 Scheme 任务（PdcNfcSchemeJobServiceImpl.start）。
+ * SCHEME_GENERATING 期间页面提供的是"查看进度"入口，不是再次生成。
  * @param {string} status - 批次状态
  * @returns {{ generateScheme: boolean, createWriteJob: boolean, stockIn: boolean }}
  */
 export function batchActions(status) {
   return {
-    generateScheme: status === 'READY_FOR_WRITE' || status === 'SCHEME_GENERATING',
+    generateScheme: status === 'DRAFT',
     createWriteJob: status === 'READY_FOR_WRITE',
     stockIn: false  // 始终从资产页面管理入库
   }

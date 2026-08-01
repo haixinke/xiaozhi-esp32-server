@@ -92,14 +92,34 @@ describe('pdcNfc API module', () => {
     assert.match(pdcNfcSource, /formData\.append\('requestId'/)
   })
 
-  it('all live methods include network failure retry', () => {
+  it('live methods include network failure handling; mutation POSTs do not auto-retry', () => {
     const networkFailCount = (pdcNfcSource.match(/\.networkFail\(/g) || []).length
     const reAjaxCount = (pdcNfcSource.match(/RequestService\.reAjaxFun/g) || []).length
-    // createProductType is an intentional stub (no backend endpoint, no network call);
-    // the remaining 21 methods each retry once, and reAjaxFun wraps 20 (one path
-    // returns early without re-issuing). Counts track the intentional stub state.
+    // createProductType is an intentional stub (no backend endpoint, no network call).
+    // The other 21 methods handle networkFail. Auto-retry (reAjaxFun) is kept only for
+    // reads and idempotent writes (those carrying a requestId): the 6 mutating POSTs
+    // without a fixed requestId (createBatch, startSchemeJob, retrySchemeJob,
+    // cancelSchemeJob, createWriteJob, cancelWriteJob) fail fast instead, because a
+    // blind retry after timeout could create duplicates.
     assert.equal(networkFailCount, 21, 'expected 21 networkFail handlers')
-    assert.equal(reAjaxCount, 20, 'expected 20 reAjaxFun calls')
+    assert.equal(reAjaxCount, 14, 'expected 14 reAjaxFun calls')
+  })
+
+  it('mutating POSTs without requestId report failure instead of auto-retrying', () => {
+    const failFastMessage = '请刷新确认'
+    for (const name of ['createBatch', 'startSchemeJob', 'retrySchemeJob',
+      'cancelSchemeJob', 'createWriteJob', 'cancelWriteJob']) {
+      const methodStart = pdcNfcSource.indexOf(`  ${name}(`)
+      assert.ok(methodStart >= 0, `method ${name} not found`)
+      const methodBody = pdcNfcSource.slice(methodStart, methodStart + 2000)
+      const reAjaxIdx = methodBody.indexOf('RequestService.reAjaxFun')
+      assert.ok(
+        reAjaxIdx === -1 || reAjaxIdx > 800,
+        `${name} must not auto-retry (reAjaxFun at ${reAjaxIdx} belongs to a later method)`)
+      assert.ok(
+        methodBody.includes(failFastMessage),
+        `${name} must surface a fail-fast message asking the user to confirm state`)
+    }
   })
 })
 

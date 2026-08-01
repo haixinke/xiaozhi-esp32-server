@@ -21,15 +21,21 @@ describe('NFC production workflow - button enable/disable logic', () => {
     assert.equal(actions.stockIn, false)
   })
 
-  it('READY_FOR_WRITE batch can generate scheme and create write job', () => {
-    const actions = batchActions('READY_FOR_WRITE')
+  it('DRAFT batch can generate scheme', () => {
+    const actions = batchActions('DRAFT')
     assert.equal(actions.generateScheme, true)
+    assert.equal(actions.createWriteJob, false)
+  })
+
+  it('READY_FOR_WRITE batch can create write job but not generate scheme', () => {
+    const actions = batchActions('READY_FOR_WRITE')
+    assert.equal(actions.generateScheme, false)
     assert.equal(actions.createWriteJob, true)
   })
 
-  it('SCHEME_GENERATING batch can retry scheme but cannot create write job', () => {
+  it('SCHEME_GENERATING batch shows progress entry instead of actions', () => {
     const actions = batchActions('SCHEME_GENERATING')
-    assert.equal(actions.generateScheme, true)
+    assert.equal(actions.generateScheme, false)
     assert.equal(actions.createWriteJob, false)
   })
 
@@ -172,23 +178,23 @@ describe('NFC production workflow - date formatting', () => {
 
 describe('NFC production workflow - end-to-end state transitions', () => {
   it('simulates a complete batch lifecycle', () => {
-    // 1. Batch created
-    let status = 'CREATED'
+    // 1. Batch created (DRAFT before scheme generation)
+    let status = 'DRAFT'
     let actions = batchActions(status)
+    assert.equal(actions.generateScheme, true)
+    assert.equal(actions.createWriteJob, false)
+
+    // 2. Scheme generation starts
+    status = 'SCHEME_GENERATING'
+    actions = batchActions(status)
     assert.equal(actions.generateScheme, false)
     assert.equal(actions.createWriteJob, false)
 
-    // 2. Batch becomes ready for write
+    // 3. Batch becomes ready for write
     status = 'READY_FOR_WRITE'
     actions = batchActions(status)
-    assert.equal(actions.generateScheme, true)
+    assert.equal(actions.generateScheme, false)
     assert.equal(actions.createWriteJob, true)
-
-    // 3. Scheme generation starts
-    status = 'SCHEME_GENERATING'
-    actions = batchActions(status)
-    assert.equal(actions.generateScheme, true)  // can retry
-    assert.equal(actions.createWriteJob, false)  // not yet
 
     // 4. Batch completed
     status = 'COMPLETED'

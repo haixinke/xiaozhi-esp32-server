@@ -14,6 +14,9 @@ import java.util.Date;
  * @param status          批次状态
  * @param remark          备注
  * @param assetCount      已分配资产数
+ * @param schemeJobId     最新 Scheme 任务 ID（无任务时为 null）
+ * @param writeJobId      最新写卡任务 ID（无任务时为 null）
+ * @param writeJobStatus  最新写卡任务状态（无任务时为 null）
  * @param creator         创建人 ID
  * @param createDate      创建时间
  */
@@ -27,6 +30,9 @@ public record PdcNfcBatchVO(
         String status,
         String remark,
         Integer assetCount,
+        Long schemeJobId,
+        Long writeJobId,
+        String writeJobStatus,
         Long creator,
         Date createDate
 ) {}

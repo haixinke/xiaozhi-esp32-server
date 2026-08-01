@@ -46,11 +46,9 @@
                   <el-tag :type="badgeType(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="统计" min-width="180" align="center">
+              <el-table-column label="统计" min-width="120" align="center">
                 <template slot-scope="{ row }">
-                  <span class="stat-item">Scheme: {{ row.schemeGeneratedCount ?? 0 }}</span>
-                  <el-divider direction="vertical"></el-divider>
-                  <span class="stat-item">已写入: {{ row.writtenCount ?? 0 }}</span>
+                  <span class="stat-item">资产: {{ row.assetCount ?? 0 }}</span>
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="320" align="center" fixed="right">
@@ -117,7 +115,7 @@
       <div v-loading="schemeLoading" class="scheme-progress">
         <el-descriptions :column="1" border size="medium">
           <el-descriptions-item label="批次号">{{ currentBatch?.batchNo || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="任务ID">{{ schemeJobDetail.id || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="任务ID">{{ schemeJobDetail.jobId || '-' }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="badgeType(schemeJobDetail.status)" size="small">
               {{ statusText(schemeJobDetail.status) }}
@@ -129,9 +127,9 @@
               :status="schemeProgressStatus"
             ></el-progress>
           </el-descriptions-item>
-          <el-descriptions-item label="已处理">{{ schemeJobDetail.processedCount ?? 0 }} / {{ schemeJobDetail.totalCount ?? 0 }}</el-descriptions-item>
-          <el-descriptions-item label="错误信息" v-if="schemeJobDetail.errorMessage">
-            <span class="error-text">{{ schemeJobDetail.errorMessage }}</span>
+          <el-descriptions-item label="已处理">{{ schemeProcessedCount }} / {{ schemeJobDetail.totalCount ?? 0 }}</el-descriptions-item>
+          <el-descriptions-item label="错误信息" v-if="schemeJobDetail.lastError">
+            <span class="error-text">{{ schemeJobDetail.lastError }}</span>
           </el-descriptions-item>
         </el-descriptions>
         <div v-if="schemeJobDetail.status === 'FAILED'" class="scheme-actions">
@@ -186,11 +184,16 @@ export default {
     }
   },
   computed: {
+    // 后端 PdcNfcSchemeProgressVO 只有 successCount/failureCount，已处理数前端相加
+    schemeProcessedCount() {
+      const success = this.schemeJobDetail.successCount || 0
+      const failure = this.schemeJobDetail.failureCount || 0
+      return success + failure
+    },
     schemeProgressPercent() {
       const total = this.schemeJobDetail.totalCount || 0
-      const processed = this.schemeJobDetail.processedCount || 0
       if (total === 0) return 0
-      return Math.min(100, Math.round((processed / total) * 100))
+      return Math.min(100, Math.round((this.schemeProcessedCount / total) * 100))
     },
     schemeProgressStatus() {
       const s = this.schemeJobDetail.status
@@ -257,11 +260,7 @@ export default {
           if (res.data && res.data.code === 0) {
             this.$message.success('Scheme 任务已启动')
             this.fetchBatches()
-            // If the response includes job info, open progress dialog
-            const job = res.data.data
-            if (job && job.id) {
-              this.openSchemeProgressWithJob(row, job)
-            }
+            this.openSchemeProgress(row)
           } else {
             this.$message.error(res.data?.msg || '启动 Scheme 任务失败')
           }
@@ -272,23 +271,14 @@ export default {
       this.currentBatch = row
       this.schemeJobDetail = {}
       this.schemeDialogVisible = true
-      if (row.schemeJobId) {
-        this.fetchSchemeProgress(row.schemeJobId)
-        this.startSchemePolling(row.schemeJobId)
-      }
+      // progress 接口按批次查询（/scheme/progress/{batchId}）
+      this.fetchSchemeProgress(row.id)
+      this.startSchemePolling(row.id)
     },
-    openSchemeProgressWithJob(row, job) {
-      this.currentBatch = row
-      this.schemeJobDetail = job || {}
-      this.schemeDialogVisible = true
-      if (job && job.id) {
-        this.startSchemePolling(job.id)
-      }
-    },
-    fetchSchemeProgress(jobId) {
-      if (!jobId) return
+    fetchSchemeProgress(batchId) {
+      if (!batchId) return
       this.schemeLoading = true
-      Api.pdcNfc.schemeJobProgress(jobId, (res) => {
+      Api.pdcNfc.schemeJobProgress(batchId, (res) => {
         this.schemeLoading = false
         if (res.data && res.data.code === 0) {
           this.schemeJobDetail = res.data.data || {}
@@ -300,10 +290,10 @@ export default {
         }
       })
     },
-    startSchemePolling(jobId) {
+    startSchemePolling(batchId) {
       this.stopSchemePolling()
       this.schemePollTimer = setInterval(() => {
-        this.fetchSchemeProgress(jobId)
+        this.fetchSchemeProgress(batchId)
       }, 2000)
     },
     stopSchemePolling() {
@@ -313,31 +303,34 @@ export default {
       }
     },
     handleRetryScheme() {
-      const jobId = this.schemeJobDetail.id
-      if (!jobId) return
-      Api.pdcNfc.retrySchemeJob(jobId, (res) => {
+      const batchId = this.currentBatch?.id
+      if (!batchId) return
+      // retry 接口按批次（/scheme/retry/{batchId}），重试后按批次轮询新任务
+      Api.pdcNfc.retrySchemeJob(batchId, (res) => {
         if (res.data && res.data.code === 0) {
           this.$message.success('重试已触发')
-          this.fetchSchemeProgress(jobId)
-          this.startSchemePolling(jobId)
+          this.fetchSchemeProgress(batchId)
+          this.startSchemePolling(batchId)
         } else {
           this.$message.error(res.data?.msg || '重试失败')
         }
       })
     },
     handleCancelScheme() {
-      const jobId = this.schemeJobDetail.id
+      const jobId = this.schemeJobDetail.jobId
       if (!jobId) return
+      const batchId = this.currentBatch?.id
       this.$confirm('确认取消该 Scheme 任务吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
+        // cancel 接口按任务（/scheme/cancel/{jobId}）
         Api.pdcNfc.cancelSchemeJob(jobId, (res) => {
           if (res.data && res.data.code === 0) {
             this.$message.success('任务已取消')
             this.stopSchemePolling()
-            this.fetchSchemeProgress(jobId)
+            if (batchId) this.fetchSchemeProgress(batchId)
             this.fetchBatches()
           } else {
             this.$message.error(res.data?.msg || '取消失败')

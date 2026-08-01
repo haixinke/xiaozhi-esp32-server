@@ -10,20 +10,29 @@ import {
 
 describe('batchActions', () => {
   it('buttons follow backend batch state', () => {
-    assert.deepEqual(batchActions('DRAFT'), { generateScheme: false, createWriteJob: false, stockIn: false })
+    assert.deepEqual(batchActions('DRAFT'), { generateScheme: true, createWriteJob: false, stockIn: false })
     assert.equal(batchActions('READY_FOR_WRITE').createWriteJob, true)
   })
 
-  it('READY_FOR_WRITE enables both generateScheme and createWriteJob', () => {
+  it('only DRAFT enables generateScheme (backend rejects other states)', () => {
+    for (const status of ['DRAFT']) {
+      assert.equal(batchActions(status).generateScheme, true)
+    }
+    for (const status of ['SCHEME_GENERATING', 'READY_FOR_WRITE', 'COMPLETED', 'CANCELLED']) {
+      assert.equal(batchActions(status).generateScheme, false)
+    }
+  })
+
+  it('READY_FOR_WRITE enables createWriteJob but not generateScheme', () => {
     const actions = batchActions('READY_FOR_WRITE')
-    assert.equal(actions.generateScheme, true)
+    assert.equal(actions.generateScheme, false)
     assert.equal(actions.createWriteJob, true)
     assert.equal(actions.stockIn, false)
   })
 
-  it('SCHEME_GENERATING keeps generateScheme enabled but disables createWriteJob', () => {
+  it('SCHEME_GENERATING disables both actions (page shows progress entry instead)', () => {
     const actions = batchActions('SCHEME_GENERATING')
-    assert.equal(actions.generateScheme, true)
+    assert.equal(actions.generateScheme, false)
     assert.equal(actions.createWriteJob, false)
   })
 

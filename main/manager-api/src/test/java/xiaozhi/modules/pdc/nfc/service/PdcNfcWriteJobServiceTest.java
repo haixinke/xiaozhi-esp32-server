@@ -251,6 +251,20 @@ class PdcNfcWriteJobServiceTest {
     }
 
     @Test
+    void exportFailsWhenAuditLogInsertThrows() {
+        PdcNfcAssetEntity asset = encryptedAsset();
+        stubSingleItemExport(asset);
+        lenient().when(assetDao.selectBatchIds(anyCollection())).thenReturn(List.of(asset));
+        when(operationLogDao.insert(any(xiaozhi.modules.pdc.nfc.entity.PdcNfcOperationLogEntity.class)))
+                .thenThrow(new RuntimeException("DB error"));
+
+        // 审计写入失败必须透出，导出不允许"明文已出库但无审计记录"
+        assertThatThrownBy(() -> service.export(100L, 99L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("DB error");
+    }
+
+    @Test
     void exportRejectsDuplicateAssetIdFromBatchLoad() {
         PdcNfcAssetEntity asset = encryptedAsset();
         stubSingleItemExport(asset);

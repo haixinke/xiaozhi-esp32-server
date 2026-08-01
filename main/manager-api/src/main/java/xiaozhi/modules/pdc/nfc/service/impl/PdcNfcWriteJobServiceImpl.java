@@ -206,13 +206,14 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
         byte[] csvBytes = csvExporter.generate(job.getJobNo(), batchNo, csvRows);
         String sha256 = PdcNfcWriteCsvExporter.sha256Hex(csvBytes);
 
+        // 先写审计再更新 job：审计失败则整个导出回滚，
+        // 不会出现"明文已出库但无审计记录"的窗口。
+        logOperation(operatorId, "WRITE_JOB", job.getId(), "EXPORT",
+                null, PdcNfcWriteJobStatus.EXPORTED.name(), null);
+
         // 更新 job
         job.setFileSha256(sha256);
         jobDao.updateById(job);
-
-        // 记录审计日志
-        logOperation(operatorId, "WRITE_JOB", job.getId(), "EXPORT",
-                null, PdcNfcWriteJobStatus.EXPORTED.name(), null);
 
         String fileName = job.getJobNo() + "_" + batchNo + ".csv";
         log.info("Write job {} exported, sha256={}, operator={}", jobId, sha256, operatorId);
@@ -358,21 +359,19 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
     private void logOperation(Long operatorId, String objectType, Long objectId,
                               String operationType, String beforeStatus, String afterStatus,
                               Integer quantity) {
-        try {
-            PdcNfcOperationLogEntity logEntry = new PdcNfcOperationLogEntity();
-            logEntry.setOperatorUserId(operatorId);
-            logEntry.setSource("ADMIN");
-            logEntry.setObjectType(objectType);
-            logEntry.setObjectId(objectId);
-            logEntry.setOperationType(operationType);
-            logEntry.setBeforeStatus(beforeStatus);
-            logEntry.setAfterStatus(afterStatus);
-            logEntry.setQuantity(quantity);
-            logEntry.setResult("SUCCESS");
-            logEntry.setCreateDate(new Date());
-            operationLogDao.insert(logEntry);
-        } catch (Exception e) {
-            log.warn("Failed to write operation log: {}", e.getMessage());
-        }
+        // 导出是敏感操作（Scheme 明文出库），审计写入失败必须透出，
+        // 由 @Transactional 回滚整个导出，不允许业务成功但无审计。
+        PdcNfcOperationLogEntity logEntry = new PdcNfcOperationLogEntity();
+        logEntry.setOperatorUserId(operatorId);
+        logEntry.setSource("ADMIN");
+        logEntry.setObjectType(objectType);
+        logEntry.setObjectId(objectId);
+        logEntry.setOperationType(operationType);
+        logEntry.setBeforeStatus(beforeStatus);
+        logEntry.setAfterStatus(afterStatus);
+        logEntry.setQuantity(quantity);
+        logEntry.setResult("SUCCESS");
+        logEntry.setCreateDate(new Date());
+        operationLogDao.insert(logEntry);
     }
 }

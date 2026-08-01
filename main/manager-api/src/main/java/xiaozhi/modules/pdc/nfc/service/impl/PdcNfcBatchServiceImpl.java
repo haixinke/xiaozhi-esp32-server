@@ -19,11 +19,15 @@ import xiaozhi.modules.pdc.nfc.crypto.ProtectedClaimRef;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcAssetDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcBatchDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcProductTypeDao;
+import xiaozhi.modules.pdc.nfc.dao.PdcNfcSchemeJobDao;
+import xiaozhi.modules.pdc.nfc.dao.PdcNfcWriteJobDao;
 import xiaozhi.modules.pdc.nfc.dto.CreatePdcNfcBatchDTO;
 import xiaozhi.modules.pdc.nfc.dto.PdcNfcBatchQueryDTO;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAssetEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcBatchEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcProductTypeEntity;
+import xiaozhi.modules.pdc.nfc.entity.PdcNfcSchemeJobEntity;
+import xiaozhi.modules.pdc.nfc.entity.PdcNfcWriteJobEntity;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcBatchService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcBatchStateMachine;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcBatchVO;
@@ -43,6 +47,8 @@ public class PdcNfcBatchServiceImpl implements PdcNfcBatchService {
     private final PdcNfcBatchDao batchDao;
     private final PdcNfcAssetDao assetDao;
     private final PdcNfcProductTypeDao productTypeDao;
+    private final PdcNfcSchemeJobDao schemeJobDao;
+    private final PdcNfcWriteJobDao writeJobDao;
     private final PdcNfcProperties properties;
     private final PdcNfcIdentifierGenerator identifiers;
     private final ClaimRefProtection claimRefs;
@@ -140,7 +146,9 @@ public class PdcNfcBatchServiceImpl implements PdcNfcBatchService {
         List<PdcNfcBatchEntity> batches = batchDao.selectList(qw);
         return batches.stream().map(b -> {
             int assetCount = countAssetsByBatchId(b.getId());
-            return toVO(b, assetCount);
+            PdcNfcSchemeJobEntity schemeJob = schemeJobDao.selectLatestByBatchId(b.getId());
+            PdcNfcWriteJobEntity writeJob = selectLatestWriteJob(b.getId());
+            return toVO(b, assetCount, schemeJob, writeJob);
         }).collect(Collectors.toList());
     }
 
@@ -178,7 +186,18 @@ public class PdcNfcBatchServiceImpl implements PdcNfcBatchService {
         return Math.toIntExact(assetDao.selectCount(qw));
     }
 
+    private PdcNfcWriteJobEntity selectLatestWriteJob(Long batchId) {
+        QueryWrapper<PdcNfcWriteJobEntity> qw = new QueryWrapper<>();
+        qw.eq("batch_id", batchId).orderByDesc("create_date").last("LIMIT 1");
+        return writeJobDao.selectOne(qw);
+    }
+
     private PdcNfcBatchVO toVO(PdcNfcBatchEntity batch, int assetCount) {
+        return toVO(batch, assetCount, null, null);
+    }
+
+    private PdcNfcBatchVO toVO(PdcNfcBatchEntity batch, int assetCount,
+                               PdcNfcSchemeJobEntity schemeJob, PdcNfcWriteJobEntity writeJob) {
         return new PdcNfcBatchVO(
                 batch.getId(),
                 batch.getBatchNo(),
@@ -189,6 +208,9 @@ public class PdcNfcBatchServiceImpl implements PdcNfcBatchService {
                 batch.getStatus(),
                 batch.getRemark(),
                 assetCount,
+                schemeJob != null ? schemeJob.getId() : null,
+                writeJob != null ? writeJob.getId() : null,
+                writeJob != null ? writeJob.getStatus() : null,
                 batch.getCreator(),
                 batch.getCreateDate()
         );

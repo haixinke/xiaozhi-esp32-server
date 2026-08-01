@@ -88,9 +88,8 @@ export default {
       })
       .networkFail((err) => {
         console.error('新增批次失败:', err);
-        RequestService.reAjaxFun(() => {
-          this.createBatch(data, callback);
-        });
+        // 创建类 POST 无 requestId 幂等保护，不做自动重试（避免超时后重复创建）
+        callback({ data: { code: -1, msg: '新增批次网络请求失败，请刷新列表确认是否已创建后再重试' } });
       }).send();
   },
 
@@ -109,9 +108,8 @@ export default {
       })
       .networkFail((err) => {
         console.error('启动 Scheme 任务失败:', err);
-        RequestService.reAjaxFun(() => {
-          this.startSchemeJob(batchId, callback);
-        });
+        // 变更类 POST 不做自动重试；后端状态机保证重复提交只会报错不会产生重复任务
+        callback({ data: { code: -1, msg: '启动 Scheme 任务网络请求失败，请刷新确认任务状态后再重试' } });
       }).send();
   },
 
@@ -128,9 +126,7 @@ export default {
       })
       .networkFail((err) => {
         console.error('重试 Scheme 任务失败:', err);
-        RequestService.reAjaxFun(() => {
-          this.retrySchemeJob(batchId, callback);
-        });
+        callback({ data: { code: -1, msg: '重试 Scheme 任务网络请求失败，请刷新确认任务状态后再重试' } });
       }).send();
   },
 
@@ -147,9 +143,8 @@ export default {
       })
       .networkFail((err) => {
         console.error('取消 Scheme 任务失败:', err);
-        RequestService.reAjaxFun(() => {
-          this.cancelSchemeJob(jobId, callback);
-        });
+        // 变更类 POST 不做自动重试；取消是状态机幂等转换，超时后由用户确认状态再操作
+        callback({ data: { code: -1, msg: '取消 Scheme 任务网络请求失败，请刷新确认任务状态后再重试' } });
       }).send();
   },
 
@@ -187,9 +182,8 @@ export default {
       })
       .networkFail((err) => {
         console.error('创建写卡任务失败:', err);
-        RequestService.reAjaxFun(() => {
-          this.createWriteJob(batchId, callback);
-        });
+        // 创建类 POST 不做自动重试（后端原子状态翻转兜底，但避免产生孤儿任务）
+        callback({ data: { code: -1, msg: '创建写卡任务网络请求失败，请刷新确认任务状态后再重试' } });
       }).send();
   },
 
@@ -250,9 +244,8 @@ export default {
       })
       .networkFail((err) => {
         console.error('取消写卡任务失败:', err);
-        RequestService.reAjaxFun(() => {
-          this.cancelWriteJob(jobId, callback);
-        });
+        // 变更类 POST 不做自动重试；取消是状态机幂等转换，超时后由用户确认状态再操作
+        callback({ data: { code: -1, msg: '取消写卡任务网络请求失败，请刷新确认任务状态后再重试' } });
       }).send();
   },
 

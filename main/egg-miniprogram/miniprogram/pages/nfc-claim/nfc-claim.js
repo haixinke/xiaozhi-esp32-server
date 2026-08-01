@@ -26,6 +26,19 @@ const STATUS_LABELS = {
   UNAVAILABLE: '暂时无法领取'
 };
 
+// Math.random 回退路径的 UUID v4 生成（原实现）
+function fallbackUuid() {
+  const hex = '0123456789abcdef';
+  let uuid = '';
+  for (let i = 0; i < 36; i++) {
+    if (i === 8 || i === 13 || i === 18 || i === 23) { uuid += '-'; continue; }
+    if (i === 14) { uuid += '4'; continue; }
+    if (i === 19) { uuid += hex[(Math.random() * 4 | 8)]; continue; }
+    uuid += hex[(Math.random() * 16) | 0];
+  }
+  return uuid;
+}
+
 Page({
   data: {
     state: STATES.BOOTSTRAPPING,
@@ -136,7 +149,7 @@ Page({
     if (this.data.state !== STATES.READY) return;
     // Generate requestId on first attempt; reuse on retry
     if (!this._requestId) {
-      this._requestId = this.generateRequestId();
+      this._requestId = await this.generateRequestId();
     }
     this.doConfirm();
   },
@@ -186,15 +199,24 @@ Page({
   },
 
   generateRequestId() {
-    // UUID v4
-    const hex = '0123456789abcdef';
-    let uuid = '';
-    for (let i = 0; i < 36; i++) {
-      if (i === 8 || i === 13 || i === 18 || i === 23) { uuid += '-'; continue; }
-      if (i === 14) { uuid += '4'; continue; }
-      if (i === 19) { uuid += hex[(Math.random() * 4 | 8)]; continue; }
-      uuid += hex[(Math.random() * 16) | 0];
+    // 优先使用加密安全随机源（基础库 2.15.0+）；失败或不支持时回退 Math.random。
+    // requestId 仅作幂等键（非安全令牌），回退路径可接受。
+    if (typeof wx.getRandomValues === 'function') {
+      return new Promise((resolve) => {
+        wx.getRandomValues({
+          length: 16,
+          success: (res) => {
+            const bytes = new Uint8Array(res.randomValues);
+            // UUID v4: 设置 version (4) 与 variant (10xx) 位
+            bytes[6] = (bytes[6] & 0x0f) | 0x40;
+            bytes[8] = (bytes[8] & 0x3f) | 0x80;
+            const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+            resolve(`${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`);
+          },
+          fail: () => resolve(fallbackUuid())
+        });
+      });
     }
-    return uuid;
+    return Promise.resolve(fallbackUuid());
   }
 });

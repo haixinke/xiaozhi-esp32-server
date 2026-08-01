@@ -27,6 +27,7 @@ import xiaozhi.modules.agent.dto.AgentDTO;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.agent.service.AgentChatHistoryService;
 import xiaozhi.modules.agent.service.AgentService;
+import xiaozhi.modules.sys.service.OperationLogService;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -41,6 +42,8 @@ class ChatHistoryDeleteServiceImplTest {
     private AiAgentChatHistoryDao chatHistoryDao;
     @Mock
     private AgentChatTitleDao agentChatTitleDao;
+    @Mock
+    private OperationLogService operationLogService;
 
     @InjectMocks
     private ChatHistoryDeleteServiceImpl service;

@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import xiaozhi.common.utils.JsonUtils;
+import xiaozhi.common.utils.SensitiveDataUtils;
 import xiaozhi.modules.agent.dao.AgentChatTitleDao;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
 import xiaozhi.modules.agent.dto.AgentDTO;
@@ -28,6 +29,8 @@ import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.agent.service.ChatHistoryExportService;
 import xiaozhi.modules.email.dto.EmailSendDTO;
 import xiaozhi.modules.email.service.EmailService;
+import xiaozhi.modules.sys.enums.OperationType;
+import xiaozhi.modules.sys.service.OperationLogService;
 
 /**
  * 聊天记录导出服务实现
@@ -47,6 +50,7 @@ public class ChatHistoryExportServiceImpl implements ChatHistoryExportService {
     private final AiAgentChatHistoryDao chatHistoryDao;
     private final AgentChatTitleDao agentChatTitleDao;
     private final EmailService emailService;
+    private final OperationLogService operationLogService;
 
     @Override
     @Async("taskExecutor")
@@ -74,8 +78,12 @@ public class ChatHistoryExportServiceImpl implements ChatHistoryExportService {
                 }
             }
             log.info("聊天记录导出邮件发送成功，userId={}, to={}", userId, toAddress);
+            operationLogService.record(OperationType.CHAT_HISTORY_EXPORT, true,
+                    "{\"email\":\"" + toAddress + "\"}", null);
         } catch (Exception e) {
             log.error("聊天记录导出或邮件发送失败，userId={}, to={}", userId, toAddress, e);
+            operationLogService.record(OperationType.CHAT_HISTORY_EXPORT, false,
+                    "{\"email\":\"" + toAddress + "\"}", e.getMessage());
         }
     }
 

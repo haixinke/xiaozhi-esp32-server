@@ -12,6 +12,6 @@
 4. 检查编译结果，如果编译失败则停止执行并输出错误信息。如果编译成功，继续下一步。
 5. 确保 `logs/` 目录存在（不存在则创建），然后使用 `nohup` 在后台启动后端服务：
    ```bash
-   mkdir -p /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/logs && nohup java -jar /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/target/xiaozhi-esp32-api-*.jar > /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/logs/api.log 2>&1 &
+   mkdir -p /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/logs && nohup java -jar /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/target/xiaozhi-esp32-api.jar > /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api/logs/api.log 2>&1 &
    ```
 6. 等待 5-8 秒（Spring Boot 启动较慢），检查进程是否启动成功，并输出 `logs/api.log` 最后 20 行确认服务已启动。如果日志中出现 `Started AdminApplication`，说明启动成功。

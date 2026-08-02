@@ -226,7 +226,7 @@ public class ChatHistoryExportServiceImpl implements ChatHistoryExportService {
             }
             for (AgentChatHistoryEntity msg : records) {
                 boolean isUserMessage = msg.getChatType() != null && msg.getChatType() == 1;
-                String role = isUserMessage ? "用户" : "智能体";
+                String role = isUserMessage ? "用户" : agentName;
                 String direction = isUserMessage ? ">>" : "<<";
                 String content = extractContent(msg.getContent());
                 sb.append('[').append(role).append("]-[").append(msg.getCreatedAt()).append(']')

@@ -96,7 +96,7 @@
   align-items: center;                   /* 垂直居中 */
   justify-content: center;               /* 水平居中 */
   border-radius: 9999rpx;                /* rounded.full */
-  background: #3F5A47;                   /* ink-green */
+  background: #002900;                   /* 与主页「和它说说话」按钮一致 */
   color: #FFFFFF;                        /* on-dark */
   font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
   font-size: 30rpx;                      /* 15px button-cn */
@@ -107,9 +107,9 @@
   border: none;
 }
 
-/* button-primary-pressed：ink-green-pressed + scale(0.98) */
+/* button-primary-pressed：深色按下态 + scale(0.98) */
 .primary--pressed {
-  background: #324839;                   /* ink-green-pressed */
+  background: #001C00;
   transform: scale(0.98);
 }
 

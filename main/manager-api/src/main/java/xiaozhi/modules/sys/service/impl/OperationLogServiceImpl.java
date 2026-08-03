@@ -39,12 +39,18 @@ public class OperationLogServiceImpl extends BaseServiceImpl<SysOperationLogDao,
 
     @Override
     public void record(OperationType type, boolean success, String detail, String errorMsg) {
+        record(type, null, success, detail, errorMsg);
+    }
+
+    @Override
+    public void record(OperationType type, Long userId, boolean success, String detail, String errorMsg) {
         SysOperationLogEntity entity = new SysOperationLogEntity();
         entity.setOperationType(type.name());
         entity.setOperationDesc(type.getDesc());
         entity.setStatus(success ? 1 : 0);
         entity.setDetail(detail);
         entity.setErrorMsg(success ? null : StringUtils.truncate(errorMsg, 500));
+        entity.setUserId(userId);
         fillOperator(entity);
         save(entity);
     }
@@ -90,14 +96,19 @@ public class OperationLogServiceImpl extends BaseServiceImpl<SysOperationLogDao,
     }
 
     /**
-     * 填充操作人与请求上下文（当前登录用户 + IP），匿名/系统操作则为空
+     * 填充操作人与请求上下文（当前登录用户 + IP），匿名/系统操作则为空。
+     * 已显式设置过 userId 时（如异步场景显式传入），不再覆盖，仅补全用户名与 IP。
      */
     private void fillOperator(SysOperationLogEntity entity) {
         try {
             UserDetail user = SecurityUser.getUser();
             if (user != null && user.getId() != null) {
-                entity.setUserId(user.getId());
-                entity.setUsername(user.getUsername());
+                if (entity.getUserId() == null) {
+                    entity.setUserId(user.getId());
+                }
+                if (entity.getUserId().equals(user.getId())) {
+                    entity.setUsername(user.getUsername());
+                }
             }
             if (HttpContextUtils.getHttpServletRequest() != null) {
                 entity.setIp(IpUtils.getIpAddr(HttpContextUtils.getHttpServletRequest()));

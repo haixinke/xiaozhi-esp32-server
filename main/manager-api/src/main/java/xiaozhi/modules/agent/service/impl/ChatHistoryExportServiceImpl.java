@@ -78,11 +78,11 @@ public class ChatHistoryExportServiceImpl implements ChatHistoryExportService {
                 }
             }
             log.info("聊天记录导出邮件发送成功，userId={}, to={}", userId, toAddress);
-            operationLogService.record(OperationType.CHAT_HISTORY_EXPORT, true,
+            operationLogService.record(OperationType.CHAT_HISTORY_EXPORT, userId, true,
                     "{\"email\":\"" + toAddress + "\"}", null);
         } catch (Exception e) {
             log.error("聊天记录导出或邮件发送失败，userId={}, to={}", userId, toAddress, e);
-            operationLogService.record(OperationType.CHAT_HISTORY_EXPORT, false,
+            operationLogService.record(OperationType.CHAT_HISTORY_EXPORT, userId, false,
                     "{\"email\":\"" + toAddress + "\"}", e.getMessage());
         }
     }

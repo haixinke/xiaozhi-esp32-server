@@ -59,7 +59,7 @@ public class ChatHistoryDeleteServiceImpl implements ChatHistoryDeleteService {
         log.info("用户聊天记录删除完成，userId={}, 智能体总数={}, 成功={}, 失败={}",
                 userId, agents.size(), success, failed);
         boolean allSuccess = failed == 0;
-        operationLogService.record(OperationType.CHAT_HISTORY_DELETE, allSuccess,
+        operationLogService.record(OperationType.CHAT_HISTORY_DELETE, userId, allSuccess,
                 "{\"agentTotal\":" + agents.size() + ",\"success\":" + success + ",\"failed\":" + failed + "}",
                 allSuccess ? null : failed + "个智能体删除失败");
     }

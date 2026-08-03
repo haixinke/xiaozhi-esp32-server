@@ -23,6 +23,17 @@ public interface OperationLogService {
     void record(OperationType type, boolean success, String detail, String errorMsg);
 
     /**
+     * 记录一条操作日志，显式指定操作人（用于异步线程等无法从请求上下文获取用户的场景）
+     *
+     * @param type     操作类型
+     * @param userId   操作人用户ID（可为 null，表示系统/匿名操作）
+     * @param success  是否成功
+     * @param detail   业务上下文（JSON 字符串，不含敏感信息，可为 null）
+     * @param errorMsg 失败原因（成功时传 null）
+     */
+    void record(OperationType type, Long userId, boolean success, String detail, String errorMsg);
+
+    /**
      * 落库（供 AOP 与内部调用），调用方需先组装好实体
      */
     void save(SysOperationLogEntity entity);

@@ -285,11 +285,11 @@ public interface Constant {
         /**
          * 阿里云授权keyID
          */
-        ALIYUN_DM_ACCESS_KEY_ID("aliyun.dm.access_key_id"),
+        ALIYUN_DM_ACCESS_KEY_ID("aliyun.access_key_id"),
         /**
          * 阿里云授权密钥
          */
-        ALIYUN_DM_ACCESS_KEY_SECRET("aliyun.dm.access_key_secret"),
+        ALIYUN_DM_ACCESS_KEY_SECRET("aliyun.access_key_secret"),
         /**
          * 控制台配置的发信地址
          */

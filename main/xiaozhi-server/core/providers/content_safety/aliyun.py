@@ -1,4 +1,5 @@
 import json
+import logging
 import threading
 import time
 from collections.abc import Mapping
@@ -14,6 +15,8 @@ from .base import (
     SafetyDirection,
     SafetyResult,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class AliyunContentSafetyProvider(ContentSafetyProviderBase):
@@ -71,7 +74,14 @@ class AliyunContentSafetyProvider(ContentSafetyProviderBase):
             self._throttle()
             response = self._client.multi_modal_guard(request)
             return self._normalize_response(response)
-        except Exception:
+        except Exception as exc:
+            # 原始异常记日志便于排错（audit 行只暴露 error_kind，看不到根因）。
+            # 异常来自阿里云网关/SDK，不含用户输入内容，可安全记录。
+            logger.exception(
+                "content_safety api error direction=%s chat_id=%s error_kind=api_error",
+                direction.value,
+                chat_id,
+            )
             return SafetyResult(
                 decision=SafetyDecision.ERROR,
                 error_kind="api_error",

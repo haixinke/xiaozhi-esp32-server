@@ -46,8 +46,8 @@ def config(**overrides):
         "max_request_chars": 8,
         "output_chunk_chars": 4,
         "mode": "enforce",
-        "input_messages": ["输入受限"],
-        "output_messages": ["输出受限"],
+        "input_block_message": ["输入受限"],
+        "output_block_message": ["输出受限"],
         "system_error_response": "系统繁忙",
     }
     return defaults | overrides
@@ -93,6 +93,28 @@ def test_input_stops_at_the_first_block_or_error():
     assert result.blocked
     assert result.audit == errored()
     assert [call.content for call in provider.calls] == ["甲乙", "丙丁"]
+
+
+def test_enforce_mode_blocks_input_when_provider_reports_block():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    result = ContentSafetyGate(
+        RecordingProvider(results=[blocked()]), config()
+    ).check_input("危险", ContentSafetyContext("turn-1"))
+
+    assert result.blocked is True
+    assert result.audit == blocked()
+
+
+def test_observe_mode_does_not_block_input_when_provider_reports_error():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    result = ContentSafetyGate(
+        RecordingProvider(results=[errored()]), config(mode="observe")
+    ).check_input("暂时异常", ContentSafetyContext("turn-1"))
+
+    assert result.blocked is False
+    assert result.audit == errored()
 
 
 def test_output_releases_on_punctuation_before_the_size_limit():
@@ -165,6 +187,20 @@ def test_observe_mode_releases_content_when_provider_reports_block():
     assert gate.feed("可观察文本。").released_parts == ("可观察文本。",)
 
 
+def test_observe_mode_releases_output_when_provider_reports_error():
+    from core.content_safety import ContentSafetyContext, OutputSafetyGate
+
+    result = OutputSafetyGate(
+        RecordingProvider(results=[errored()]),
+        config(mode="observe"),
+        ContentSafetyContext("turn-1"),
+        "s-1",
+    ).feed("可观察文本。")
+
+    assert result.blocked is False
+    assert result.released_parts == ("可观察文本。",)
+
+
 def test_output_blocks_when_provider_reports_an_api_error():
     from core.content_safety import ContentSafetyContext, OutputSafetyGate
 
@@ -182,14 +218,37 @@ def test_output_blocks_when_provider_reports_an_api_error():
     assert result.audit == errored()
 
 
-def test_block_message_is_selected_from_the_configured_output_array(monkeypatch):
+def test_block_message_uses_formal_nested_config_arrays(monkeypatch):
     from core.content_safety import ContentSafetyGate
 
+    nested_config = {
+        "system_error_response": "系统繁忙",
+        "content_safety": config(
+            input_block_message=["输入甲", "输入乙"],
+            output_block_message=["输出甲", "输出乙"],
+        ),
+    }
     gate = ContentSafetyGate(
-        RecordingProvider(results=[blocked()]), config(output_messages=["甲", "乙"])
+        RecordingProvider(results=[blocked()]), nested_config
     )
     monkeypatch.setattr("core.content_safety.gate.random.choice", lambda values: values[1])
 
+    assert gate.input_block_message() == "输入乙"
+    assert gate.output_block_message() == "输出乙"
+
+
+def test_blocked_output_gate_exposes_its_configured_block_message(monkeypatch):
+    from core.content_safety import ContentSafetyContext, OutputSafetyGate
+
+    gate = OutputSafetyGate(
+        RecordingProvider(results=[blocked()]),
+        config(output_block_message=["甲", "乙"]),
+        ContentSafetyContext("turn-1"),
+        "s-1",
+    )
+    monkeypatch.setattr("core.content_safety.gate.random.choice", lambda values: values[1])
+
+    assert gate.feed("危险。").blocked is True
     assert gate.output_block_message() == "乙"
 
 
@@ -198,7 +257,20 @@ def test_blank_message_arrays_fall_back_to_system_error_response(messages):
     from core.content_safety import ContentSafetyGate
 
     gate = ContentSafetyGate(
-        RecordingProvider(allow=True), config(input_messages=messages, output_messages=messages)
+        RecordingProvider(allow=True),
+        config(input_block_message=messages, output_block_message=messages),
+    )
+
+    assert gate.input_block_message() == "系统繁忙"
+    assert gate.output_block_message() == "系统繁忙"
+
+
+def test_string_message_config_falls_back_to_system_error_response():
+    from core.content_safety import ContentSafetyGate
+
+    gate = ContentSafetyGate(
+        RecordingProvider(allow=True),
+        config(input_block_message="错误", output_block_message="错误"),
     )
 
     assert gate.input_block_message() == "系统繁忙"
@@ -212,6 +284,8 @@ def test_blank_message_arrays_fall_back_to_system_error_response(messages):
         {"output_chunk_chars": 0},
         {"output_chunk_chars": 9, "max_request_chars": 8},
         {"max_request_chars": 2001},
+        {"max_request_chars": True},
+        {"output_chunk_chars": True},
         {"mode": "disabled"},
     ],
 )

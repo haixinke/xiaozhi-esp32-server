@@ -1,5 +1,5 @@
 import random
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -44,10 +44,10 @@ class ContentSafetyGate:
             "system_error_response", safety_config.get("system_error_response", "")
         )
         self._input_messages = self._trusted_messages(
-            safety_config.get("input_messages"), fallback
+            safety_config.get("input_block_message"), fallback
         )
         self._output_messages = self._trusted_messages(
-            safety_config.get("output_messages"), fallback
+            safety_config.get("output_block_message"), fallback
         )
 
     def check_input(self, text: str, context: ContentSafetyContext) -> GateResult:
@@ -78,6 +78,8 @@ class ContentSafetyGate:
         if not (
             isinstance(self._output_chunk_chars, int)
             and isinstance(self._max_request_chars, int)
+            and not isinstance(self._output_chunk_chars, bool)
+            and not isinstance(self._max_request_chars, bool)
             and 1 <= self._output_chunk_chars <= self._max_request_chars <= 2000
         ):
             raise ValueError(
@@ -88,9 +90,11 @@ class ContentSafetyGate:
 
     @staticmethod
     def _trusted_messages(messages: object, fallback: object) -> tuple[str, ...]:
+        if not isinstance(messages, Sequence) or isinstance(messages, str):
+            messages = ()
         trusted = tuple(
             message
-            for message in messages or ()
+            for message in messages
             if isinstance(message, str) and message.strip()
         )
         if trusted:
@@ -139,6 +143,9 @@ class OutputSafetyGate:
 
     def finish(self) -> GateResult:
         return self._flush(done=True)
+
+    def output_block_message(self) -> str:
+        return self._input_gate.output_block_message()
 
     def _flush(self, *, done: bool, chunk_size: int | None = None) -> GateResult:
         if not self._buffer or self._blocked:

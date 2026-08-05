@@ -1133,6 +1133,20 @@ class ConnectionHandler:
             output_gate.finish(), output_gate, sentence_id, response_message
         )
 
+    def _log_dialogue_summary(self, safety_context):
+        messages = self.dialogue.get_llm_dialogue()
+        role_counts = {}
+        for message in messages:
+            role = message.get("role", "unknown")
+            role_counts[role] = role_counts.get(role, 0) + 1
+        role_summary = ",".join(
+            f"{role}:{count}" for role, count in sorted(role_counts.items())
+        )
+        self.logger.bind(tag=TAG).debug(
+            f"chat_id={safety_context.chat_id}, "
+            f"dialogue_messages={len(messages)}, roles={role_summary}"
+        )
+
     def chat(self, query, depth=0, safety_context=None, output_gate=None):
         # 保存当前任务的sentence_id到局部变量，避免被新任务覆盖
         current_sentence_id = None
@@ -1249,7 +1263,11 @@ class ConnectionHandler:
                 f"chars={len(query) if query is not None else 0}, "
                 f"error_type={type(e).__name__}"
             )
-            return None
+            self._enqueue_checked_tts_text(
+                current_sentence_id, get_system_error_response(self.config)
+            )
+            self._enqueue_last_action(current_sentence_id)
+            return False
 
         # 处理流式响应
         tool_call_flag = False
@@ -1422,8 +1440,12 @@ class ConnectionHandler:
                 # 收集所有工具调用的 Future
                 futures_with_data = []
                 for tool_call_data in tool_calls_list:
+                    function_arguments = tool_call_data.get("arguments") or ""
                     self.logger.bind(tag=TAG).debug(
-                        f"function_name={tool_call_data['name']}, function_id={tool_call_data['id']}, function_arguments={tool_call_data['arguments']}"
+                        f"chat_id={safety_context.chat_id}, "
+                        f"function_name={tool_call_data['name']}, "
+                        f"function_id={tool_call_data['id']}, "
+                        f"argument_chars={len(function_arguments)}"
                     )
 
                     # 使用公共方法上报工具调用
@@ -1452,7 +1474,11 @@ class ConnectionHandler:
 
                     except Exception as e:
                         self.logger.bind(tag=TAG).error(
-                            f"工具调用超时或异常: {tool_call_data['name']}, 错误: {e}"
+                            f"工具调用超时或异常: chat_id={safety_context.chat_id}, "
+                            f"function_name={tool_call_data['name']}, "
+                            f"function_id={tool_call_data['id']}, "
+                            f"argument_chars={len(tool_call_data.get('arguments') or '')}, "
+                            f"error_type={type(e).__name__}"
                         )
                         # 超时时返回错误响应，避免整个流程卡死
                         tool_results.append((
@@ -1482,12 +1508,7 @@ class ConnectionHandler:
 
         if depth == 0:
             self._enqueue_last_action(current_sentence_id)
-            # 使用lambda延迟计算，只有在DEBUG级别时才执行get_llm_dialogue()
-            self.logger.bind(tag=TAG).debug(
-                lambda: json.dumps(
-                    self.dialogue.get_llm_dialogue(), indent=4, ensure_ascii=False
-                )
-            )
+            self._log_dialogue_summary(safety_context)
 
         return True
 

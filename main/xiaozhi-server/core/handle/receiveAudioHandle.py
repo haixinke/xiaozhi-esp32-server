@@ -88,6 +88,7 @@ async def startToChat(conn: "ConnectionHandler", text):
         safety_context,
     )
     if input_result.blocked:
+        conn.client_abort = False
         conn.sentence_id = uuid.uuid4().hex
         speak_trusted_text(conn, conn.content_safety_gate.input_block_message())
         return

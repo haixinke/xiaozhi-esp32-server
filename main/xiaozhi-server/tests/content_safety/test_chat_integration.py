@@ -795,3 +795,6 @@ def test_static_intent_fallback_bypasses_output_provider(
 
     assert conn.provider.calls == []
     assert conn.tts.middle_texts == ["系统繁忙"]
+
+
+from .chat_integration_review_cases import *

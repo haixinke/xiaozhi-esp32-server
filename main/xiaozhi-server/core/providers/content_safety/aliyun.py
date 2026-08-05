@@ -20,8 +20,12 @@ class AliyunContentSafetyProvider(ContentSafetyProviderBase):
     def __init__(
         self, safety_config: Mapping[str, Any], aliyun_config: Mapping[str, Any]
     ) -> None:
-        self._input_service = safety_config["input_service"]
-        self._output_service = safety_config["output_service"]
+        self._input_service = safety_config.get(
+            "input_service", "query_security_check_pro"
+        )
+        self._output_service = safety_config.get(
+            "output_service", "response_security_check_pro"
+        )
         configured_qps = float(safety_config.get("max_qps", 50))
         if configured_qps <= 0:
             raise ValueError("content_safety.max_qps must be positive")
@@ -47,6 +51,12 @@ class AliyunContentSafetyProvider(ContentSafetyProviderBase):
         session_id: str | None = None,
         done: bool = False,
     ) -> SafetyResult:
+        if len(content) > 2000:
+            return SafetyResult(
+                decision=SafetyDecision.ERROR,
+                error_kind="content_too_long",
+            )
+
         service_parameters: dict[str, Any] = {"content": content, "chatId": chat_id}
         if session_id:
             service_parameters["sessionId"] = session_id
@@ -89,7 +99,7 @@ class AliyunContentSafetyProvider(ContentSafetyProviderBase):
 
         data = getattr(body, "data", None)
         suggestion = getattr(data, "suggestion", None)
-        if data is None or suggestion is None:
+        if data is None or suggestion not in {"pass", "block", "watch", "mask"}:
             return self._error_result("malformed_response", body)
 
         labels, levels = self._audit_metadata(data)

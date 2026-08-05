@@ -39,12 +39,11 @@ def api_reply(suggestion="pass", request_id="req-default", code=200, status_code
     )
 
 
-def make_aliyun_provider(monkeypatch, mode="enforce"):
+def make_aliyun_provider(monkeypatch, mode="enforce", safety_overrides=None):
     import core.providers.content_safety.aliyun as aliyun_module
 
     monkeypatch.setattr(aliyun_module, "Client", FakeClient)
-    provider = AliyunContentSafetyProvider(
-        {
+    safety_config = {
             "mode": mode,
             "region_id": "cn-shanghai",
             "endpoint": "green-cip.cn-shanghai.aliyuncs.com",
@@ -53,7 +52,14 @@ def make_aliyun_provider(monkeypatch, mode="enforce"):
             "max_qps": 100,
             "connect_timeout_ms": 1000,
             "read_timeout_ms": 2000,
-        },
+        }
+    for key, value in (safety_overrides or {}).items():
+        if value is None:
+            safety_config.pop(key, None)
+        else:
+            safety_config[key] = value
+    provider = AliyunContentSafetyProvider(
+        safety_config,
         {"access_key_id": "test-id", "access_key_secret": "test-secret"},
     )
     return provider, provider._client
@@ -117,3 +123,75 @@ def test_aliyun_invalid_api_response_is_an_error(monkeypatch, reply):
         provider.check(SafetyDirection.INPUT, "正文", "chat-1").decision
         is SafetyDecision.ERROR
     )
+
+
+def test_aliyun_uses_default_services_when_service_config_is_omitted(monkeypatch):
+    """Catches a deployment without optional service keys failing or using wrong APIs."""
+    provider, client = make_aliyun_provider(
+        monkeypatch, safety_overrides={"input_service": None, "output_service": None}
+    )
+
+    provider.check(SafetyDirection.INPUT, "输入", "chat-1")
+    provider.check(SafetyDirection.OUTPUT, "输出", "chat-1")
+
+    assert [request.service for request in client.requests] == [
+        "query_security_check_pro",
+        "response_security_check_pro",
+    ]
+
+
+def test_aliyun_rejects_content_over_2000_characters_without_request(monkeypatch):
+    """Catches oversized text being sent to Alibaba Cloud."""
+    provider, client = make_aliyun_provider(monkeypatch)
+
+    at_limit = provider.check(SafetyDirection.INPUT, "a" * 2000, "chat-1")
+    over_limit = provider.check(SafetyDirection.INPUT, "a" * 2001, "chat-1")
+
+    assert at_limit.decision is SafetyDecision.ALLOW
+    assert over_limit.decision is SafetyDecision.ERROR
+    assert over_limit.error_kind == "content_too_long"
+    assert len(client.requests) == 1
+
+
+@pytest.mark.parametrize("suggestion", [None, "unknown"])
+def test_aliyun_unknown_or_absent_suggestion_is_a_malformed_response(
+    monkeypatch, suggestion
+):
+    """Catches an unrecognized provider decision failing open."""
+    provider, client = make_aliyun_provider(monkeypatch)
+    client.reply = api_reply(suggestion=suggestion)
+
+    result = provider.check(SafetyDirection.INPUT, "正文", "chat-1")
+
+    assert result.decision is SafetyDecision.ERROR
+    assert result.error_kind == "malformed_response"
+
+
+@pytest.mark.parametrize(
+    ("max_qps", "expected_spacing"), [(100, 0.02), (4, 0.25)],
+)
+def test_aliyun_throttles_consecutive_requests_at_configured_qps_cap(
+    monkeypatch, max_qps, expected_spacing
+):
+    """Catches QPS above 50 or below 50 using the wrong request spacing."""
+    provider, _client = make_aliyun_provider(
+        monkeypatch, safety_overrides={"max_qps": max_qps}
+    )
+    import core.providers.content_safety.aliyun as aliyun_module
+
+    clock_values = iter((1.0, 1.0, 1.0, 1.0 + expected_spacing))
+    sleep_calls = []
+    monkeypatch.setattr(aliyun_module.time, "monotonic", lambda: next(clock_values))
+    monkeypatch.setattr(aliyun_module.time, "sleep", sleep_calls.append)
+
+    provider.check(SafetyDirection.INPUT, "第一条", "chat-1")
+    provider.check(SafetyDirection.INPUT, "第二条", "chat-1")
+
+    assert sleep_calls == [pytest.approx(expected_spacing)]
+
+
+@pytest.mark.parametrize("max_qps", [0, -1])
+def test_aliyun_rejects_nonpositive_qps(monkeypatch, max_qps):
+    """Catches invalid QPS configuration disabling the throttle."""
+    with pytest.raises(ValueError, match="content_safety.max_qps must be positive"):
+        make_aliyun_provider(monkeypatch, safety_overrides={"max_qps": max_qps})

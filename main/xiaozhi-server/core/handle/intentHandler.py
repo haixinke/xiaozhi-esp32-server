@@ -13,6 +13,8 @@ from core.handle.sendAudioHandle import send_stt_message
 from core.handle.reportHandle import enqueue_tool_report
 from core.utils.util import remove_punctuation_and_length
 from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType
+from core.content_safety import ContentSafetyContext, OutputSafetyGate
+from core.providers.intent.intent_llm.intent_llm import IntentReply
 
 TAG = __name__
 
@@ -128,7 +130,7 @@ async def process_intent_result(
                         conn.logger.bind(tag=TAG).error(f"LLM生成回复失败: {e}")
                         response = None
                     if response:
-                        speak_txt(conn, response)
+                        speak_generated_llm_text(conn, response)
 
                 conn.executor.submit(process_context_result)
                 return True
@@ -201,10 +203,11 @@ async def process_intent_result(
                             ).result()
                         except Exception as e:
                             conn.logger.bind(tag=TAG).error(f"LLM生成回复失败: {e}")
-                            llm_result = text
+                            llm_result = None
                         if llm_result is None:
-                            llm_result = text
-                        speak_txt(conn, llm_result)
+                            speak_txt(conn, text)
+                        else:
+                            speak_generated_llm_text(conn, llm_result)
                     elif (
                         result.action == Action.NOTFOUND
                         or result.action == Action.ERROR
@@ -250,3 +253,34 @@ def speak_txt(conn: "ConnectionHandler", text):
         )
     )
     conn.dialogue.put(Message(role="assistant", content=text))
+
+
+def speak_trusted_text(conn: "ConnectionHandler", text: str) -> None:
+    speak_txt(conn, text)
+
+
+def speak_generated_llm_text(
+    conn: "ConnectionHandler", reply: IntentReply
+) -> None:
+    if not reply.generated:
+        speak_txt(conn, reply.text)
+        return
+
+    context = ContentSafetyContext(chat_id=uuid.uuid4().hex)
+    gate = OutputSafetyGate(
+        conn.content_safety_provider,
+        conn.config,
+        context,
+        conn.sentence_id,
+    )
+    first = gate.feed(reply.text)
+    if first.blocked:
+        speak_trusted_text(conn, gate.output_block_message())
+        return
+    final = gate.finish()
+    if final.blocked:
+        speak_trusted_text(conn, gate.output_block_message())
+        return
+    released_text = "".join((*first.released_parts, *final.released_parts))
+    if released_text:
+        speak_txt(conn, released_text)

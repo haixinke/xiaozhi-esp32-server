@@ -46,6 +46,12 @@ from core.utils.prompt_manager import PromptManager
 from core.utils.voiceprint_provider import VoiceprintProvider
 from core.utils.util import get_system_error_response
 from core.utils import textUtils
+from core.content_safety import (
+    ContentSafetyContext,
+    ContentSafetyGate,
+    OutputSafetyGate,
+)
+from core.utils.content_safety import create_content_safety_provider
 
 
 TAG = __name__
@@ -87,12 +93,19 @@ class ConnectionHandler:
             _memory,
             _intent,
             server=None,
+            content_safety_provider=None,
     ):
         self.common_config = config
         self.config = copy.deepcopy(config)
         self.session_id = str(uuid.uuid4())
         self.logger = setup_logging()
         self.server = server  # 保存server实例的引用
+        self.content_safety_provider = (
+            content_safety_provider or create_content_safety_provider(config)
+        )
+        self.content_safety_gate = ContentSafetyGate(
+            self.content_safety_provider, self.config
+        )
 
         self.need_bind = False  # 是否需要绑定设备
         self.bind_completed_event = asyncio.Event()
@@ -1052,12 +1065,85 @@ class ConnectionHandler:
             self.logger.bind(tag=TAG).warning(f"配额检查异常，保守放行: {e}")
             return False
     
-    def chat(self, query, depth=0):
+    def _enqueue_checked_tts_text(self, sentence_id, text):
+        self.tts.tts_text_queue.put(
+            TTSMessageDTO(
+                sentence_id=sentence_id,
+                sentence_type=SentenceType.MIDDLE,
+                content_type=ContentType.TEXT,
+                content_detail=text,
+            )
+        )
+
+    def _enqueue_last_action(self, sentence_id):
+        self.tts.tts_text_queue.put(
+            TTSMessageDTO(
+                sentence_id=sentence_id,
+                sentence_type=SentenceType.LAST,
+                content_type=ContentType.ACTION,
+            )
+        )
+
+    def _persist_released_output(self, sentence_id, response_message):
+        if not response_message:
+            return
+        text = "".join(response_message)
+        self.tts.store_tts_text(sentence_id, text)
+        self.dialogue.put(Message(role="assistant", content=text))
+        response_message.clear()
+
+    def _speak_trusted_output_block(self, sentence_id, text):
+        self._enqueue_checked_tts_text(sentence_id, text)
+        self.tts.store_tts_text(sentence_id, text)
+        self.dialogue.put(Message(role="assistant", content=text))
+
+    def _release_gate_result(
+        self, gate_result, output_gate, sentence_id, response_message
+    ):
+        for released in gate_result.released_parts:
+            response_message.append(released)
+            self._enqueue_checked_tts_text(sentence_id, released)
+        if not gate_result.blocked:
+            return False
+
+        audit = gate_result.audit
+        self.logger.bind(tag=TAG).warning(
+            "大模型输出被内容安全策略阻断: "
+            f"decision={getattr(audit, 'decision', None)}, "
+            f"request_id={getattr(audit, 'request_id', None)}"
+        )
+        self._persist_released_output(sentence_id, response_message)
+        self._speak_trusted_output_block(
+            sentence_id, output_gate.output_block_message()
+        )
+        self._enqueue_last_action(sentence_id)
+        return True
+
+    def _feed_checked_output(
+        self, output_gate, text, sentence_id, response_message
+    ):
+        return self._release_gate_result(
+            output_gate.feed(text), output_gate, sentence_id, response_message
+        )
+
+    def _finish_checked_output(
+        self, output_gate, sentence_id, response_message
+    ):
+        return self._release_gate_result(
+            output_gate.finish(), output_gate, sentence_id, response_message
+        )
+
+    def chat(self, query, depth=0, safety_context=None, output_gate=None):
         # 保存当前任务的sentence_id到局部变量，避免被新任务覆盖
         current_sentence_id = None
 
+        if safety_context is None:
+            safety_context = ContentSafetyContext(chat_id=uuid.uuid4().hex)
+
         if query is not None:
-            self.logger.bind(tag=TAG).info(f"大模型收到用户消息: {query}")
+            self.logger.bind(tag=TAG).info(
+                f"大模型收到用户消息: chat_id={safety_context.chat_id}, chars={len(query)}"
+            )
 
         # 为最顶层时新建会话ID和发送FIRST请求
         if depth == 0:
@@ -1080,6 +1166,14 @@ class ConnectionHandler:
         else:
             # 递归调用时，使用当前的sentence_id
             current_sentence_id = self.sentence_id
+
+        if output_gate is None:
+            output_gate = OutputSafetyGate(
+                self.content_safety_provider,
+                self.config,
+                safety_context,
+                current_sentence_id,
+            )
 
         # 设置最大递归深度，避免无限循环，可根据实际需求调整
         MAX_DEPTH = 5
@@ -1150,7 +1244,11 @@ class ConnectionHandler:
                     ),
                 )
         except Exception as e:
-            self.logger.bind(tag=TAG).error(f"LLM 处理出错 {query}: {e}")
+            self.logger.bind(tag=TAG).error(
+                f"LLM 处理出错: chat_id={safety_context.chat_id}, "
+                f"chars={len(query) if query is not None else 0}, "
+                f"error_type={type(e).__name__}"
+            )
             return None
 
         # 处理流式响应
@@ -1194,14 +1292,13 @@ class ConnectionHandler:
                                     new_part = self._clean_response_garbage(new_part)
                                     if new_part:
                                         tc["_da_sent"] = safe_end
-                                        self.tts.tts_text_queue.put(
-                                            TTSMessageDTO(
-                                                sentence_id=current_sentence_id,
-                                                sentence_type=SentenceType.MIDDLE,
-                                                content_type=ContentType.TEXT,
-                                                content_detail=new_part,
-                                            )
-                                        )
+                                        if self._feed_checked_output(
+                                            output_gate,
+                                            new_part,
+                                            current_sentence_id,
+                                            response_message,
+                                        ):
+                                            return False
                 else:
                     content = response
 
@@ -1216,34 +1313,27 @@ class ConnectionHandler:
 
                 if content is not None and len(content) > 0:
                     if not tool_call_flag:
-                        response_message.append(content)
-                        self.tts.tts_text_queue.put(
-                            TTSMessageDTO(
-                                sentence_id=current_sentence_id,
-                                sentence_type=SentenceType.MIDDLE,
-                                content_type=ContentType.TEXT,
-                                content_detail=content,
-                            )
-                        )
+                        if self._feed_checked_output(
+                            output_gate,
+                            content,
+                            current_sentence_id,
+                            response_message,
+                        ):
+                            return False
         except Exception as e:
-            self.logger.bind(tag=TAG).error(f"LLM stream processing error: {e}")
-            self.tts.tts_text_queue.put(
-                TTSMessageDTO(
-                    sentence_id=current_sentence_id,
-                    sentence_type=SentenceType.MIDDLE,
-                    content_type=ContentType.TEXT,
-                    content_detail=get_system_error_response(self.config),
-                )
+            self.logger.bind(tag=TAG).error(
+                "LLM stream processing error: "
+                f"chat_id={safety_context.chat_id}, "
+                f"error_type={type(e).__name__}"
             )
-            if depth == 0:
-                self.tts.tts_text_queue.put(
-                    TTSMessageDTO(
-                        sentence_id=current_sentence_id,
-                        sentence_type=SentenceType.LAST,
-                        content_type=ContentType.ACTION,
-                    )
-                )
-            return
+            self._persist_released_output(
+                current_sentence_id, response_message
+            )
+            self._enqueue_checked_tts_text(
+                current_sentence_id, get_system_error_response(self.config)
+            )
+            self._enqueue_last_action(current_sentence_id)
+            return False
         # 处理function call
         if tool_call_flag:
             bHasError = False
@@ -1263,15 +1353,15 @@ class ConnectionHandler:
                                 ),
                             }
                         )
-                    except Exception as e:
+                    except Exception:
                         bHasError = True
-                        response_message.append(a)
                 else:
                     bHasError = True
-                    response_message.append(content_arguments)
                 if bHasError:
                     self.logger.bind(tag=TAG).error(
-                        f"function call error: {content_arguments}"
+                        "function call parse error: "
+                        f"chat_id={safety_context.chat_id}, "
+                        f"chars={len(content_arguments)}"
                     )
 
             if not bHasError and len(tool_calls_list) > 0:
@@ -1292,28 +1382,26 @@ class ConnectionHandler:
                             if remaining:
                                 remaining = self._clean_response_garbage(remaining)
                                 if remaining:
-                                    self.tts.tts_text_queue.put(
-                                        TTSMessageDTO(
-                                            sentence_id=current_sentence_id,
-                                            sentence_type=SentenceType.MIDDLE,
-                                            content_type=ContentType.TEXT,
-                                            content_detail=remaining,
-                                        )
-                                    )
-                            # 写入对话历史
-                            da_response = self._clean_response_garbage(da_response)
-                            self.tts.store_tts_text(current_sentence_id, da_response)
-                            self.dialogue.put(Message(role="assistant", content=da_response))
+                                    if self._feed_checked_output(
+                                        output_gate,
+                                        remaining,
+                                        current_sentence_id,
+                                        response_message,
+                                    ):
+                                        return False
 
                     if not real_tool_calls:
+                        if self._finish_checked_output(
+                            output_gate,
+                            current_sentence_id,
+                            response_message,
+                        ):
+                            return False
+                        self._persist_released_output(
+                            current_sentence_id, response_message
+                        )
                         if depth == 0:
-                            self.tts.tts_text_queue.put(
-                                TTSMessageDTO(
-                                    sentence_id=current_sentence_id,
-                                    sentence_type=SentenceType.LAST,
-                                    content_type=ContentType.ACTION,
-                                )
-                            )
+                            self._enqueue_last_action(current_sentence_id)
                         return
 
                     tool_calls_list = real_tool_calls
@@ -1376,22 +1464,24 @@ class ConnectionHandler:
 
                 # 统一处理工具调用结果
                 if tool_results:
-                    self._handle_function_result(tool_results, depth=depth, streamed_text=streamed_text)
+                    function_result = self._handle_function_result(
+                        tool_results,
+                        depth=depth,
+                        streamed_text=streamed_text,
+                        safety_context=safety_context,
+                        output_gate=output_gate,
+                    )
+                    if function_result is False:
+                        return False
 
-        # 存储对话内容
-        if len(response_message) > 0:
-            text_buff = "".join(response_message)
-            self.tts.store_tts_text(current_sentence_id, text_buff)
-            self.dialogue.put(Message(role="assistant", content=text_buff))
+        if self._finish_checked_output(
+            output_gate, current_sentence_id, response_message
+        ):
+            return False
+        self._persist_released_output(current_sentence_id, response_message)
 
         if depth == 0:
-            self.tts.tts_text_queue.put(
-                TTSMessageDTO(
-                    sentence_id=current_sentence_id,
-                    sentence_type=SentenceType.LAST,
-                    content_type=ContentType.ACTION,
-                )
-            )
+            self._enqueue_last_action(current_sentence_id)
             # 使用lambda延迟计算，只有在DEBUG级别时才执行get_llm_dialogue()
             self.logger.bind(tag=TAG).debug(
                 lambda: json.dumps(
@@ -1401,7 +1491,14 @@ class ConnectionHandler:
 
         return True
 
-    def _handle_function_result(self, tool_results, depth, streamed_text=""):
+    def _handle_function_result(
+        self,
+        tool_results,
+        depth,
+        streamed_text="",
+        safety_context=None,
+        output_gate=None,
+    ):
         need_llm_tools = []
         record_tools = []
 
@@ -1507,7 +1604,16 @@ class ConnectionHandler:
                         )
                     )
 
-            self.chat(None, depth=depth + 1)
+            recursive_result = self.chat(
+                None,
+                depth=depth + 1,
+                safety_context=safety_context,
+                output_gate=output_gate,
+            )
+            if recursive_result is False:
+                return False
+
+        return True
 
     def _report_worker(self):
         """聊天记录上报工作线程"""

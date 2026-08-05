@@ -272,6 +272,7 @@ def speak_generated_llm_text(
         conn.config,
         context,
         conn.sentence_id,
+        audit_log=conn.logger.bind(tag=TAG).info,
     )
     first = gate.feed(reply.text)
     if first.blocked:

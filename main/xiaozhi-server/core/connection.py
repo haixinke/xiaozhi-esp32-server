@@ -104,7 +104,9 @@ class ConnectionHandler:
             content_safety_provider or create_content_safety_provider(config)
         )
         self.content_safety_gate = ContentSafetyGate(
-            self.content_safety_provider, self.config
+            self.content_safety_provider,
+            self.config,
+            audit_log=self.logger.bind(tag=TAG).info,
         )
 
         self.need_bind = False  # 是否需要绑定设备
@@ -1187,6 +1189,7 @@ class ConnectionHandler:
                 self.config,
                 safety_context,
                 current_sentence_id,
+                audit_log=self.logger.bind(tag=TAG).info,
             )
 
         # 设置最大递归深度，避免无限循环，可根据实际需求调整

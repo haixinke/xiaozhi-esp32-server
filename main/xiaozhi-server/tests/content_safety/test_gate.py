@@ -117,6 +117,144 @@ def test_observe_mode_does_not_block_input_when_provider_reports_error():
     assert result.audit == errored()
 
 
+def test_observe_input_audit_logs_redacted_metadata_without_source_text():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    source_text = "input-secret-text"
+    audit = SafetyResult(
+        decision=SafetyDecision.BLOCK,
+        suggestion="block",
+        request_id="req-123",
+        labels=("category",),
+        levels=("high",),
+    )
+    audit_logs: list[str] = []
+
+    result = ContentSafetyGate(
+        RecordingProvider(results=[audit]),
+        config(mode="observe", max_request_chars=100, output_chunk_chars=100),
+        audit_log=audit_logs.append,
+    ).check_input(source_text, ContentSafetyContext("turn-1"))
+
+    assert result.allowed
+    assert source_text not in audit_logs[0]
+    assert "direction=input" in audit_logs[0]
+    assert "mode=observe" in audit_logs[0]
+    assert "decision=block" in audit_logs[0]
+    assert "suggestion=block" in audit_logs[0]
+    assert "chars=17" in audit_logs[0]
+    assert "categories=count:1" in audit_logs[0]
+    assert "levels=count:1" in audit_logs[0]
+    assert "request_id=redacted" in audit_logs[0]
+
+
+def test_observe_output_audit_logs_redacted_metadata_without_model_text():
+    from core.content_safety import ContentSafetyContext, OutputSafetyGate
+
+    model_text = "model-secret-text。"
+    audit = SafetyResult(
+        decision=SafetyDecision.BLOCK,
+        suggestion="block",
+        request_id="req-456",
+        labels=("category",),
+        levels=("high",),
+    )
+    audit_logs: list[str] = []
+    gate = OutputSafetyGate(
+        RecordingProvider(results=[audit]),
+        config(mode="observe", max_request_chars=100, output_chunk_chars=100),
+        ContentSafetyContext("turn-1"),
+        "sentence-1",
+        audit_log=audit_logs.append,
+    )
+
+    result = gate.feed(model_text)
+
+    assert result.allowed
+    assert model_text not in audit_logs[0]
+    assert "direction=output" in audit_logs[0]
+    assert "mode=observe" in audit_logs[0]
+    assert "decision=block" in audit_logs[0]
+    assert "suggestion=block" in audit_logs[0]
+    assert "chars=18" in audit_logs[0]
+    assert "categories=count:1" in audit_logs[0]
+    assert "levels=count:1" in audit_logs[0]
+    assert "request_id=redacted" in audit_logs[0]
+
+
+def test_audit_log_redacts_urls_tool_values_exceptions_and_credentials():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    unsafe_values = (
+        "https://content.example/path",
+        "tool_argument=secret-value",
+        "Traceback (most recent call last)",
+        "Bearer credential-value",
+    )
+    audit_logs: list[str] = []
+    audit = SafetyResult(
+        decision=SafetyDecision.ALLOW,
+        suggestion=unsafe_values[0],
+        labels=(unsafe_values[1],),
+        levels=(unsafe_values[2],),
+        request_id=unsafe_values[3],
+    )
+
+    ContentSafetyGate(
+        RecordingProvider(results=[audit]),
+        config(mode="observe", max_request_chars=100, output_chunk_chars=100),
+        audit_log=audit_logs.append,
+    ).check_input("safe text", ContentSafetyContext("turn-1"))
+
+    assert all(value not in audit_logs[0] for value in unsafe_values)
+    assert audit_logs[0].count("redacted") == 2
+    assert "categories=count:1" in audit_logs[0]
+    assert "levels=count:1" in audit_logs[0]
+
+
+def test_audit_log_redacts_compact_echoed_source_metadata():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    source_text = "small-token-123"
+    audit_logs: list[str] = []
+    audit = SafetyResult(
+        decision=SafetyDecision.ALLOW,
+        suggestion=source_text,
+        labels=(source_text,),
+        levels=(source_text,),
+        request_id=source_text,
+    )
+
+    ContentSafetyGate(
+        RecordingProvider(results=[audit]),
+        config(mode="observe", max_request_chars=100, output_chunk_chars=100),
+        audit_log=audit_logs.append,
+    ).check_input(source_text, ContentSafetyContext("turn-1"))
+
+    assert source_text not in audit_logs[0]
+    assert "suggestion=redacted" in audit_logs[0]
+    assert "categories=count:1" in audit_logs[0]
+    assert "levels=count:1" in audit_logs[0]
+    assert "request_id=redacted" in audit_logs[0]
+
+
+def test_audit_log_includes_fixed_metadata_fields_when_provider_omits_them():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    audit_logs: list[str] = []
+
+    ContentSafetyGate(
+        RecordingProvider(allow=True),
+        config(mode="observe"),
+        audit_log=audit_logs.append,
+    ).check_input("safe text", ContentSafetyContext("turn-1"))
+
+    assert "suggestion=none" in audit_logs[0]
+    assert "categories=count:0" in audit_logs[0]
+    assert "levels=count:0" in audit_logs[0]
+    assert "request_id=none" in audit_logs[0]
+
+
 def test_output_releases_on_punctuation_before_the_size_limit():
     from core.content_safety import ContentSafetyContext, OutputSafetyGate
 

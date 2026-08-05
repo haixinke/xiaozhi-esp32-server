@@ -1,5 +1,7 @@
+import logging
 import random
-from collections.abc import Mapping, Sequence
+import time
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,6 +14,8 @@ from core.providers.content_safety import (
 
 
 _FLUSH_PUNCTUATION = "。！？!?；;\n"
+_SAFE_SUGGESTIONS = frozenset({"pass", "block", "watch", "mask"})
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -32,13 +36,17 @@ class GateResult:
 
 class ContentSafetyGate:
     def __init__(
-        self, provider: ContentSafetyProviderBase, config: Mapping[str, Any]
+        self,
+        provider: ContentSafetyProviderBase,
+        config: Mapping[str, Any],
+        audit_log: Callable[[str], None] | None = None,
     ) -> None:
         safety_config = config.get("content_safety", config)
         self._provider = provider
         self._max_request_chars = safety_config.get("max_request_chars", 2000)
         self._output_chunk_chars = safety_config.get("output_chunk_chars", 2000)
         self._mode = safety_config.get("mode", "enforce")
+        self._audit_log = audit_log or logger.info
         self._validate_config()
         fallback = config.get(
             "system_error_response", safety_config.get("system_error_response", "")
@@ -56,7 +64,14 @@ class ContentSafetyGate:
             chunk = text[offset : offset + self._max_request_chars]
             if not chunk:
                 continue
+            started_at = time.perf_counter()
             result = self._provider.check(SafetyDirection.INPUT, chunk, context.chat_id)
+            self._record_audit(
+                SafetyDirection.INPUT,
+                result,
+                len(chunk),
+                time.perf_counter() - started_at,
+            )
             last_audit = result
             if self._enforces_block(result):
                 return GateResult((), True, result)
@@ -73,6 +88,50 @@ class ContentSafetyGate:
             SafetyDecision.BLOCK,
             SafetyDecision.ERROR,
         }
+
+    def _record_audit(
+        self,
+        direction: SafetyDirection,
+        result: SafetyResult,
+        character_count: int,
+        elapsed_seconds: float,
+    ) -> None:
+        fields = [
+            f"direction={direction.value}",
+            f"mode={self._mode}",
+            f"decision={result.decision.value}",
+            f"chars={character_count}",
+            f"elapsed_ms={round(elapsed_seconds * 1000)}",
+        ]
+        fields.extend(
+            (
+                f"suggestion={self._suggestion_summary(result.suggestion)}",
+                f"categories={self._count_summary(result.labels)}",
+                f"levels={self._count_summary(result.levels)}",
+                f"request_id={self._request_id_summary(result.request_id)}",
+            )
+        )
+        self._audit_log("content_safety_audit " + " ".join(fields))
+
+    @staticmethod
+    def _suggestion_summary(value: object) -> str:
+        if value is None:
+            return "none"
+        if isinstance(value, str) and value in _SAFE_SUGGESTIONS:
+            return value
+        return "redacted"
+
+    @staticmethod
+    def _count_summary(value: object) -> str:
+        if isinstance(value, tuple):
+            return f"count:{len(value)}"
+        return "redacted"
+
+    @staticmethod
+    def _request_id_summary(value: object) -> str:
+        if value is None:
+            return "none"
+        return "redacted"
 
     def _validate_config(self) -> None:
         if not (
@@ -111,8 +170,9 @@ class OutputSafetyGate:
         config: Mapping[str, Any],
         context: ContentSafetyContext,
         session_id: str,
+        audit_log: Callable[[str], None] | None = None,
     ) -> None:
-        self._input_gate = ContentSafetyGate(provider, config)
+        self._input_gate = ContentSafetyGate(provider, config, audit_log)
         self._provider = provider
         self._context = context
         self._session_id = session_id
@@ -154,12 +214,19 @@ class OutputSafetyGate:
             chunk, self._buffer = self._buffer, ""
         else:
             chunk, self._buffer = self._buffer[:chunk_size], self._buffer[chunk_size:]
+        started_at = time.perf_counter()
         result = self._provider.check(
             SafetyDirection.OUTPUT,
             chunk,
             self._context.chat_id,
             self._session_id,
             done=done,
+        )
+        self._input_gate._record_audit(
+            SafetyDirection.OUTPUT,
+            result,
+            len(chunk),
+            time.perf_counter() - started_at,
         )
         if self._input_gate._enforces_block(result):
             self._blocked = True

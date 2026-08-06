@@ -1,5 +1,6 @@
 const auth = require('./utils/auth');
 const { post } = require('./utils/request');
+const shareInvite = require('./utils/share-invite');
 
 const AUTH_FIELDS = ['token', 'userId', 'openid', 'isNewUser', 'hasPhone', 'agentId'];
 
@@ -18,6 +19,11 @@ function loginWithWechat() {
   }).then((code) => post('/wechat/login', { code }, { anonymous: true }));
 }
 
+function saveShareInviteContext(options) {
+  const context = shareInvite.parseEntryOptions(options);
+  if (context) shareInvite.savePending(context);
+}
+
 App({
   globalData: {
     version: '1.0.0-mvp',
@@ -33,6 +39,7 @@ App({
   },
 
   onLaunch(options) {
+    saveShareInviteContext(options);
     this.globalData.launchPath = options && options.path
       ? options.path
       : 'pages/home/home';
@@ -50,7 +57,8 @@ App({
       });
   },
 
-  onShow() {
+  onShow(options) {
+    saveShareInviteContext(options);
     const session = auth.getSession();
     if (session && auth.isExpired()) {
       this.clearLoginState();

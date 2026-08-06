@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xiaozhi.common.constant.Constant;
@@ -303,6 +304,12 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
 
+        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
+        existWrapper.eq("user_id", userId);
+        if (petDao.exists(existWrapper)) {
+            throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
+        }
+
         // 1. 先建蛋(EGG)：不建 device/agent，不生成任何破壳档案
         //    device_id=NULL 已由 changeset 202607101500 放宽
         //    Model X: adopt 即为破壳时间基线，写 hatchStartTime=now, expectedHatchTime=now+7d
@@ -316,7 +323,11 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setExpectedHatchTime(new Date(now.getTime() + SEVEN_DAYS_MS));
         pet.setAcceleratedMinutes(0);
         pet.setCreator(userId);
-        petDao.insert(pet);
+        try {
+            petDao.insert(pet);
+        } catch (DuplicateKeyException e) {
+            throw new RenException(ErrorCode.PET_ALREADY_EXISTS, e);
+        }
 
         // 2. 核销邀请码(REQUIRES_NEW)。
         //    无效/过期/无剩余码会抛异常 → 外层事务回滚 → 蛋回滚，不会产生孤儿蛋。
@@ -348,23 +359,30 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             throw new RenException(ErrorCode.PET_DEVICE_NOT_FOUND);
         }
 
-        // 2. 使用当前时间作为出生时间
+        // 2. 查询该设备是否已有宠物；同设备宠物保留演示更新行为
+        QueryWrapper<PetEntity> deviceWrapper = new QueryWrapper<>();
+        deviceWrapper.eq("device_id", deviceId);
+        PetEntity existingPet = petDao.selectOne(deviceWrapper);
+        if (existingPet == null) {
+            QueryWrapper<PetEntity> userWrapper = new QueryWrapper<>();
+            userWrapper.eq("user_id", device.getUserId());
+            if (petDao.exists(userWrapper)) {
+                throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
+            }
+        }
+
+        // 3. 使用当前时间作为出生时间
         LocalDateTime birthTime = LocalDateTime.now();
 
-        // 3. 计算八字、五行、星座
+        // 4. 计算八字、五行、星座
         PetBirthCalculator.BirthResult calcResult = PetBirthCalculator.calculate(birthTime);
 
-        // 4. 调用 LLM 推算 MBTI
+        // 5. 调用 LLM 推算 MBTI
         String mbti = deriveMbti(calcResult);
 
-        // 5. 随机分配性别和血型
+        // 6. 随机分配性别和血型
         String gender = ThreadLocalRandom.current().nextInt(2) == 0 ? "MALE" : "FEMALE";
         String bloodType = new String[]{"A", "B", "O", "AB"}[ThreadLocalRandom.current().nextInt(4)];
-
-        // 6. 查询该设备是否已有宠物
-        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
-        existWrapper.eq("device_id", deviceId);
-        PetEntity existingPet = petDao.selectOne(existWrapper);
 
         Date birthDate = Date.from(birthTime.atZone(ZoneId.systemDefault()).toInstant());
 
@@ -409,7 +427,11 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setTodayMood(PetMood.random().name());
         pet.setCreator(device.getUserId());
 
-        petDao.insert(pet);
+        try {
+            petDao.insert(pet);
+        } catch (DuplicateKeyException e) {
+            throw new RenException(ErrorCode.PET_ALREADY_EXISTS, e);
+        }
 
         // 9. 创建 agent 并注入角色设定
         AgentCreateDTO agentDto = new AgentCreateDTO();

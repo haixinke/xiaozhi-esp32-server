@@ -13,7 +13,9 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
+import org.springframework.dao.DuplicateKeyException;
 
+import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
@@ -223,6 +225,39 @@ class PetServiceImplAdoptTest {
                 .isInstanceOf(RenException.class);
 
         verify(petDao, never()).insert(any(PetEntity.class));
+        verify(inviteService, never()).consume(any(), any());
+    }
+
+    @Test
+    @DisplayName("账号已有宠物 - 拒绝领养且不创建或核销邀请码")
+    void adopt_existingPet_throwsAndDoesNotCreateOrConsumeInviteCode() {
+        Long userId = 1004L;
+        PetAdoptDTO dto = new PetAdoptDTO();
+        dto.setInviteCode("CODE-EXISTS");
+        when(petDao.exists(any())).thenReturn(true);
+
+        assertThatThrownBy(() -> petService.adopt(userId, dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(exception -> assertThat(((RenException) exception).getCode())
+                        .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
+
+        verify(petDao, never()).insert(any(PetEntity.class));
+        verify(inviteService, never()).consume(any(), any());
+    }
+
+    @Test
+    @DisplayName("并发重复创建 - 唯一索引冲突转为账号已有宠物且不核销邀请码")
+    void adopt_duplicateUserId_throwsAndDoesNotConsumeInviteCode() {
+        Long userId = 1005L;
+        PetAdoptDTO dto = new PetAdoptDTO();
+        dto.setInviteCode("CODE-DUPLICATE");
+        when(petDao.insert(any(PetEntity.class))).thenThrow(new DuplicateKeyException("duplicate user_id"));
+
+        assertThatThrownBy(() -> petService.adopt(userId, dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(exception -> assertThat(((RenException) exception).getCode())
+                        .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
+
         verify(inviteService, never()).consume(any(), any());
     }
 

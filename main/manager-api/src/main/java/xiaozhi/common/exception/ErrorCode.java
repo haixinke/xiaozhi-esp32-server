@@ -268,7 +268,7 @@ public interface ErrorCode {
 
     // AI宠物相关错误码
     int PET_DEVICE_NOT_FOUND = 10205; // 宠物关联的设备不存在
-    int PET_ALREADY_EXISTS = 10206; // 该设备已创建过宠物
+    int PET_ALREADY_EXISTS = 10206; // 该账号已创建过宠物
     int PET_NOT_FOUND = 10207; // 宠物不存在
     int PET_NO_PERMISSION = 10208; // 没有权限操作该宠物
     int PET_ALREADY_HATCHED = 10209; // 已破壳，不能再做修炼动作

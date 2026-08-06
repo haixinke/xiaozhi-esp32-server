@@ -11,6 +11,7 @@
       <text class="brand-kicker">EGGBABY</text>
       <text class="brand-name">蛋宝宝</text>
       <text class="brand-slogan">一颗蛋，一段只属于你的陪伴。</text>
+      <text wx:if="{{hasPendingInvite}}" class="brand-slogan">好友邀请你一起开启陪伴</text>
     </view>
 
     <view class="egg-stage">

@@ -3,10 +3,11 @@
 > 范围：`manager-api` 中蛋宝宝（egg）从领养到破壳的后端实现。供后期开发参考。
 > 关联：[`egg-miniprogram/docs/egg-pet-identity-and-hatch-api.md`](../../egg-miniprogram/docs/egg-pet-identity-and-hatch-api.md)（接口契约/草案）、[`egg-miniprogram/CLAUDE.md`](../../egg-miniprogram/CLAUDE.md)（小程序侧交互）。
 > 状态：adopt / hatch-action / hatch / `GET /pet/{id}` / 每日心情 todayMood 已落地并通过单测；OTA→xiaozhi-server WS 真机联调、AI 生图、旧端点 `@Deprecated` 迁移待做。
+> 当前版本约束：每个账号只能领养 1 只蛋宝宝，`ai_pet.user_id` 由唯一索引保证。未来多宠版本需先移除该约束，并补齐宠物列表与切换交互后再开放。
 
 ## 1. 全景
 
-蛋宝宝是「一人多宠」的孵化型 AI 宠物。后端把生命周期拆成三段，对应三个端点族：
+蛋宝宝当前是「一人一宠」的孵化型 AI 宠物。后端把生命周期拆成三段，对应三个端点族：
 
 ```
 wx.login → /wechat/login(token,userId)
@@ -22,13 +23,13 @@ wx.login → /wechat/login(token,userId)
    └─ 破壳后：小程序用 activeDeviceId 走 OTA(/ota/) 拿 websocket → 直连 xiaozhi-server:8000 语音对话
 ```
 
-身份模型（多宠关键）：**一只蛋 = 一个虚拟 `ai_device` = 一个 `ai_agent`**。`openid` 只换 `token/userId`，不进 device；否则所有蛋共用一条 device/agent，性格音色无法区分，且 `uk_ai_pet_device_id` 唯一索引阻止第二只蛋。破壳时才建 device+agent（懒创建），领养阶段 `device_id=null`。
+身份模型：**一只蛋 = 一个虚拟 `ai_device` = 一个 `ai_agent`**。`openid` 只换 `token/userId`，不进 device；破壳时才建 device+agent（懒创建），领养阶段 `device_id=null`。多宠是后续版本能力，不在当前约束内。
 
 ## 2. 数据模型
 
-### 2.1 `ai_pet`（复用，不改 schema）
+### 2.1 `ai_pet`（复用，当前版本约束一账号一宠）
 
-孵化相关字段由 changeset `202607101030.sql` 补齐，`device_id` 由 `202607101500.sql` 放宽为可空（原 NOT NULL）：
+孵化相关字段由 changeset `202607101030.sql` 补齐，`device_id` 由 `202607101500.sql` 放宽为可空（原 NOT NULL）；changeset `202608061500.sql` 增加 `uk_ai_pet_user_id`，作为一账号一宠的并发兜底：
 
 | 字段 | 说明 | 谁写 |
 |---|---|---|
@@ -77,7 +78,7 @@ CREATE TABLE `ai_pet_hatch_action` (
 | 常量 | 值 | 含义 | 状态 |
 |---|---|---|---|
 | `PET_DEVICE_NOT_FOUND` | 10205 | 宠物关联设备不存在 | 旧 birth 用 |
-| `PET_ALREADY_EXISTS` | 10206 | 该设备已创建过宠物 | 旧（多宠下不再适用） |
+| `PET_ALREADY_EXISTS` | 10206 | 该账号已创建过宠物 | ✅ 当前版本领养守卫 |
 | `PET_NOT_FOUND` | 10207 | 宠物不存在 | ✅ |
 | `PET_NO_PERMISSION` | 10208 | 没有权限操作该宠物 | ✅ |
 | `PET_ALREADY_HATCHED` | 10209 | 已破壳（hatch-action / hatch 守卫） | ✅ |
@@ -103,7 +104,7 @@ PRD §5.3 是「双轨孵化（进度不减时）」；本实现按产品确认�
 
 ### 4.1 `POST /pet/adopt`（鉴权 normal）
 - 入参 `PetAdoptDTO { inviteCode @NotBlank }`
-- 行为：prototype 后端随机（锦鲤/玉兔，与 inviteCode 解耦）→ 建 `ai_pet`（EGG、`device_id=null`、设 Model X 基线、不生成档案）→ `InviteService.consume(inviteCode, userId)`（幂等，`@Transactional(REQUIRES_NEW)`；无效码抛异常 → 外层事务回滚 insert，不产生孤儿蛋）
+- 行为：先检查账号未拥有宠物（唯一索引并发兜底）→ prototype 后端随机（锦鲤/玉兔，与 inviteCode 解耦）→ 建 `ai_pet`（EGG、`device_id=null`、设 Model X 基线、不生成档案）→ `InviteService.consume(inviteCode, userId)`（幂等；无效码抛异常 → 外层事务回滚 insert，不产生孤儿蛋）
 - 出参 `PetVO`（前端 stage=waiting）
 
 ### 4.2 `POST /pet/{id}/hatch-action`（鉴权 normal）

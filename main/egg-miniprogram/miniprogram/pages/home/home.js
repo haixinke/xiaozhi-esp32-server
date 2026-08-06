@@ -3,8 +3,12 @@ const auth = require('../../utils/auth');
 const { get } = require('../../utils/request');
 const wechatApi = require('../../utils/wechat-api');
 const sceneConfig = require('../../utils/life-scenes');
+const inviteApi = require('../../utils/invite-api');
+const shareInvite = require('../../utils/share-invite');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
+const SHARE_TITLE = '一起来养蛋宝宝吧';
+const BASE_SHARE_PATH = '/pages/home/home?v=1&source=home_share';
 Page({
   data: {
     pet: null,
@@ -20,7 +24,9 @@ Page({
     petRestoreLoading: true,
     hatching: false,
     showPhoneAuthorization: false,
-    authorizingPhone: false
+    authorizingPhone: false,
+    hasPendingInvite: false,
+    petRestoreError: ''
   },
 
   _navigating: false,
@@ -31,6 +37,7 @@ Page({
     if (cached && !auth.isExpired()) {
       // 本地有有效登录态，直接放行渲染
       this.setData({ authChecked: true });
+      this.loadShareInviteCode();
       return;
     }
     // 本地无有效登录态，等待 app 层异步登录完成后再判断
@@ -39,6 +46,7 @@ Page({
       app.globalData.authReady.then((session) => {
         if (session) {
           this.setData({ authChecked: true });
+          this.loadShareInviteCode();
           this.onShow();
         } else if (!this._navigating) {
           this._navigating = true;
@@ -68,18 +76,57 @@ Page({
     }
     // 冷启动:缓存空,从后端拉取已有蛋
     this._petRestoreFinished = false;
-    this.setData({ pet: null, stage: 'empty', petRestoreLoading: true });
+    this.setData({ pet: null, stage: 'empty', petRestoreLoading: true, petRestoreError: '' });
     this.loadPetFromServer();
+  },
+
+  async loadShareInviteCode() {
+    this._shareInviteCode = null;
+    try {
+      const inviteCode = await inviteApi.getMine();
+      if (this.isUsableShareInvite(inviteCode)) this._shareInviteCode = inviteCode.code;
+      const pending = shareInvite.getPending();
+      if (pending && inviteCode && pending.code === inviteCode.code) {
+        shareInvite.clearPending();
+        this.setData({ hasPendingInvite: false });
+      }
+    } catch (error) {
+      this._shareInviteCode = null;
+    }
+  },
+
+  isUsableShareInvite(inviteCode) {
+    return !!(inviteCode && inviteCode.code && inviteCode.remaining > 0 && inviteCode.status === 1);
+  },
+
+  syncPendingInvite(pet) {
+    const pending = shareInvite.getPending();
+    if (pet && pending) shareInvite.clearPending();
+    this.setData({ hasPendingInvite: !pet && !!pending });
+  },
+
+  onShareAppMessage() {
+    const inviteCode = this._shareInviteCode;
+    return {
+      title: SHARE_TITLE,
+      path: inviteCode ? `${BASE_SHARE_PATH}&inviteCode=${encodeURIComponent(inviteCode)}` : BASE_SHARE_PATH
+    };
   },
 
   async loadPetFromServer() {
     try {
       const list = await get('/pet/list');
+      this.setData({ petRestoreError: '' });
       if (Array.isArray(list) && list.length > 0) {
         this.renderPet(petStore.savePetFromVO(list[0]));
+      } else {
+        this.syncPendingInvite(null);
       }
     } catch (error) {
       // 拉取失败(未登录/网络异常)保持空态,不打扰用户
+      if (!this.data.pet) {
+        this.setData({ hasPendingInvite: false, petRestoreError: '宠物状态加载失败，请重试' });
+      }
     } finally {
       if (!this._petRestoreFinished) this.finishPetRestore();
     }
@@ -92,16 +139,32 @@ Page({
     });
   },
 
+  onRetryPetRestore() {
+    if (this.data.petRestoreLoading) return;
+    this._petRestoreFinished = false;
+    this.setData({
+      pet: null,
+      stage: 'empty',
+      petRestoreLoading: true,
+      petRestoreError: '',
+      hasPendingInvite: false
+    });
+    this.loadPetFromServer();
+  },
+
   renderPet(pet) {
     if (!pet) {
+      this.syncPendingInvite(null);
       this.finishPetRestore({ pet: null, stage: 'empty' });
       return;
     }
+    this.syncPendingInvite(pet);
     const stage = petStore.getStage(pet);
     const presentation = petStore.getStagePresentation(stage);
     this.finishPetRestore({
       pet: { ...pet, petType: pet.prototype },
       stage,
+      petRestoreError: '',
       stageText: presentation.homeText,
       countdown: petStore.getCountdown(pet),
       dailyStatus: petStore.getDailyStatus(),

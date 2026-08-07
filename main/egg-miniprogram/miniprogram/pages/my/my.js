@@ -1,12 +1,52 @@
 const petStore = require('../../utils/pet-store');
 const request = require('../../utils/request');
+const inviteApi = require('../../utils/invite-api');
+
+const SHARE_TITLE = '一起来养蛋宝宝吧';
+const SHARE_HOME_PATH = '/pages/home/home?v=1&source=home_share';
 
 Page({
-  data: { userName: '蛋友', avatarUrl: '', eggCount: 0 },
+  data: { userName: '蛋友', avatarUrl: '', eggCount: 0, shareReady: false },
 
   onShow() {
     this.loadUserProfile();
     this.loadPetStatus();
+    this.prepareShare();
+  },
+
+  prepareShare() {
+    const requestId = (this._shareRequestId || 0) + 1;
+    this._shareRequestId = requestId;
+    this.setData({ shareReady: false });
+    if (typeof wx !== 'undefined' && wx.hideShareMenu) {
+      wx.hideShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
+    }
+    this.loadShareInviteCode(requestId);
+  },
+
+  async loadShareInviteCode(requestId) {
+    const currentRequestId = requestId === undefined
+      ? (this._shareRequestId = (this._shareRequestId || 0) + 1)
+      : requestId;
+    this._shareInviteCode = null;
+    try {
+      const inviteCode = await inviteApi.getMine();
+      if (this._shareRequestId !== currentRequestId) return;
+      if (this.isUsableShareInvite(inviteCode)) this._shareInviteCode = inviteCode.code;
+    } catch (error) {
+      if (this._shareRequestId !== currentRequestId) return;
+      this._shareInviteCode = null;
+    } finally {
+      if (this._shareRequestId !== currentRequestId) return;
+      this.setData({ shareReady: true });
+      if (typeof wx !== 'undefined' && wx.showShareMenu) {
+        wx.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
+      }
+    }
+  },
+
+  isUsableShareInvite(inviteCode) {
+    return !!(inviteCode && inviteCode.code && inviteCode.remaining > 0 && inviteCode.status === 1);
   },
 
   loadUserProfile() {
@@ -35,5 +75,19 @@ Page({
   onNavChatSettings() { wx.navigateTo({ url: '/pages/chat-settings/chat-settings' }); },
   onNavAccount() { wx.navigateTo({ url: '/pages/account/account' }); },
   onNavPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); },
-  onNavHelp() { wx.navigateTo({ url: '/pages/help/help' }); }
+  onNavHelp() { wx.navigateTo({ url: '/pages/help/help' }); },
+
+  onShareAppMessage() {
+    if (!this.data.shareReady) return false;
+    const inviteCode = this._shareInviteCode;
+    return {
+      title: SHARE_TITLE,
+      path: inviteCode ? `${SHARE_HOME_PATH}&inviteCode=${encodeURIComponent(inviteCode)}` : SHARE_HOME_PATH
+    };
+  },
+
+  onShareTimeline() {
+    if (!this.data.shareReady) return false;
+    return { title: SHARE_TITLE };
+  }
 });

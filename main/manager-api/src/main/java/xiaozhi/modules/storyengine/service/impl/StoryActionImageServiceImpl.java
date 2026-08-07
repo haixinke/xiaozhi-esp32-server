@@ -18,6 +18,7 @@ import xiaozhi.modules.storyengine.entity.ActionImageEntity;
 import xiaozhi.modules.storyengine.service.StoryActionImageService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,6 +35,13 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
 
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
             "image/png", "image/jpeg", "image/webp", "image/gif");
+
+    /**
+     * OSS Key 中的原型/时段目录名使用英文，避免中文路径带来的编码问题。
+     */
+    private static final Map<String, String> PROTOTYPE_KEY_MAP = Map.of("锦鲤", "koi", "玉兔", "rabbit");
+
+    private static final Map<String, String> TIME_KEY_MAP = Map.of("白天", "day", "落日", "sunset", "黑夜", "night");
 
     private final ActionImageDao actionImageDao;
     private final OssService ossService;
@@ -63,7 +71,9 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
 
         String ext = extensionOf(file.getContentType());
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-        String ossKey = "story-engine/" + petPrototype + "/" + actionId + "/" + timeOfDay + "_" + suffix + "." + ext;
+        String protoKey = PROTOTYPE_KEY_MAP.getOrDefault(petPrototype, petPrototype);
+        String timeKey = TIME_KEY_MAP.getOrDefault(timeOfDay, timeOfDay);
+        String ossKey = "story-engine/" + protoKey + "/" + actionId + "/" + timeKey + "_" + suffix + "." + ext;
         try {
             ossService.upload(ossKey, file.getBytes(), CannedAccessControlList.PublicRead);
         } catch (Exception e) {

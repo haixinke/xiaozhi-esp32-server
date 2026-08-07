@@ -30,11 +30,19 @@ class WechatPhoneGateTest {
     }
 
     @Test
-    void allowsNonWechatAccount() {
+    void rejectsAccountWithoutWechatMapping() {
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(List.of());
 
-        assertThat(gate.canAccess(7L)).isTrue();
+        assertThat(gate.canAccess(7L)).isFalse();
+    }
+
+    @Test
+    void rejectsNullMappingResult() {
+        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
+                .thenReturn(null);
+
+        assertThat(gate.canAccess(7L)).isFalse();
     }
 
     @Test

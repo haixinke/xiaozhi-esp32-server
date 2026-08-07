@@ -20,8 +20,6 @@ import xiaozhi.common.utils.HttpContextUtils;
 import xiaozhi.common.utils.JsonUtils;
 import xiaozhi.common.utils.MessageUtils;
 import xiaozhi.common.utils.Result;
-import xiaozhi.modules.security.user.SecurityUser;
-import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 /**
  * oauth2过滤器
@@ -31,13 +29,6 @@ import xiaozhi.modules.wechat.service.WechatPhoneGate;
 public class Oauth2Filter extends AuthenticatingFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(Oauth2Filter.class);
-    private static final String BIND_PHONE_PATH = "/wechat/bindPhone";
-
-    private final WechatPhoneGate wechatPhoneGate;
-
-    public Oauth2Filter(WechatPhoneGate wechatPhoneGate) {
-        this.wechatPhoneGate = wechatPhoneGate;
-    }
 
     @Override
     protected AuthenticationToken createToken(ServletRequest request, ServletResponse response) throws Exception {
@@ -81,29 +72,7 @@ public class Oauth2Filter extends AuthenticatingFilter {
             return false;
         }
 
-        if (!executeLogin(request, response)) {
-            return false;
-        }
-
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        if (isPhoneAccessAllowed(httpRequest, SecurityUser.getUserId())) {
-            return true;
-        }
-
-        writeError((HttpServletResponse) response, ErrorCode.FORBIDDEN);
-        return false;
-    }
-
-    protected boolean isPhoneAccessAllowed(HttpServletRequest request, Long userId) {
-        String requestPath = request.getRequestURI().substring(request.getContextPath().length());
-        return BIND_PHONE_PATH.equals(requestPath) || wechatPhoneGate.canAccess(userId);
-    }
-
-    private void writeError(HttpServletResponse response, int errorCode) throws IOException {
-        response.setContentType("application/json;charset=utf-8");
-        response.setHeader("Access-Control-Allow-Credentials", "true");
-        response.setHeader("Access-Control-Allow-Origin", HttpContextUtils.getOrigin());
-        response.getWriter().print(JsonUtils.toJsonString(new Result<Void>().error(errorCode)));
+        return executeLogin(request, response);
     }
 
     @Override

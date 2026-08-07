@@ -102,7 +102,8 @@
             $route.path === '/ota-management' ||
             $route.path === '/user-management' ||
             $route.path === '/feature-management' ||
-            $route.path === '/replacement-word-management'
+            $route.path === '/replacement-word-management' ||
+            $route.path === '/story-engine-management'
         }" @visible-change="handleParamDropdownVisibleChange">
           <span class="el-dropdown-link">
             <img loading="lazy" alt="" src="@/assets/header/param_management.png" :style="{
@@ -115,7 +116,8 @@
                   $route.path === '/ota-management' ||
                   $route.path === '/user-management' ||
                   $route.path === '/feature-management' ||
-                  $route.path === '/replacement-word-management'
+                  $route.path === '/replacement-word-management' ||
+                  $route.path === '/story-engine-management'
                   ? 'brightness(0) invert(1)'
                   : 'None',
             }" />
@@ -149,6 +151,9 @@
             </el-dropdown-item>
             <el-dropdown-item @click.native="handleRouter('featureManagement')">
               {{ $t("header.featureManagement") }}
+            </el-dropdown-item>
+            <el-dropdown-item @click.native="handleRouter('storyEngineManagement')">
+              故事引擎
             </el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
@@ -220,6 +225,7 @@ export default {
         replacementWordManagement: "/replacement-word-management",
         serverSideManagement: "/server-side-management",
         featureManagement: "/feature-management",
+        storyEngineManagement: "/story-engine-management",
       }
     };
   },

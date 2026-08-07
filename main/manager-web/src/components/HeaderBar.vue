@@ -9,7 +9,7 @@
 
       <!-- 中间导航菜单 -->
       <div class="header-center">
-        <div v-if="!userInfo.superAdmin || (userInfo.role || 'admin') === 'admin'" class="equipment-management" :class="{
+        <div v-if="!userInfo.superAdmin || ['admin', 'operator'].includes(userInfo.role || 'admin')" class="equipment-management" :class="{
           'active-tab':
             $route.path === '/home' ||
             $route.path === '/role-config' ||
@@ -315,22 +315,23 @@ export default {
               label: this.$t("language.zhTW"),
               value: "zh_TW",
             },
-            {
-              label: this.$t("language.en"),
-              value: "en",
-            },
-            {
-              label: this.$t("language.de"),
-              value: "de",
-            },
-            {
-              label: this.$t("language.vi"),
-              value: "vi",
-            },
-            {
-              label: this.$t("language.ptBR"),
-              value: "pt_BR",
-            },
+            // 暂时只保留中文简体和繁体，其余语言屏蔽
+            // {
+            //   label: this.$t("language.en"),
+            //   value: "en",
+            // },
+            // {
+            //   label: this.$t("language.de"),
+            //   value: "de",
+            // },
+            // {
+            //   label: this.$t("language.vi"),
+            //   value: "vi",
+            // },
+            // {
+            //   label: this.$t("language.ptBR"),
+            //   value: "pt_BR",
+            // },
           ],
         },
         {

@@ -46,6 +46,7 @@
                 <el-dropdown-item @click.native="changeLanguage('zh_TW')">
                   {{ $t("language.zhTW") }}
                 </el-dropdown-item>
+                <!-- 暂时只保留中文简体和繁体，其余语言屏蔽
                 <el-dropdown-item @click.native="changeLanguage('en')">
                   {{ $t("language.en") }}
                 </el-dropdown-item>
@@ -58,6 +59,7 @@
                 <el-dropdown-item @click.native="changeLanguage('pt_BR')">
                   {{ $t("language.ptBR") }}
                 </el-dropdown-item>
+                -->
               </el-dropdown-menu>
             </el-dropdown>
           </div>

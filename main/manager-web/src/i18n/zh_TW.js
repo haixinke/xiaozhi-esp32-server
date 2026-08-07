@@ -723,7 +723,7 @@ export default {
 
   // 首頁文本
   'home.addAgent': '添加智能體',
-  'home.greeting': '你好小智',
+  'home.greeting': '你好蛋寶寶',
   'home.wish': '讓我們度過美好的一天！',
   'home.languageModel': '語言模型',
   'home.voiceModel': '音色模型',

@@ -9,7 +9,7 @@
 
       <!-- 中间导航菜单 -->
       <div class="header-center">
-        <div class="equipment-management" :class="{
+        <div v-if="!userInfo.superAdmin || (userInfo.role || 'admin') === 'admin'" class="equipment-management" :class="{
           'active-tab':
             $route.path === '/home' ||
             $route.path === '/role-config' ||
@@ -66,7 +66,7 @@
           </el-dropdown-menu>
         </el-dropdown>
 
-        <div v-if="userInfo.superAdmin" class="equipment-management"
+        <div v-if="userInfo.superAdmin && (userInfo.role || 'admin') === 'admin'" class="equipment-management"
           :class="{ 'active-tab': $route.path === '/model-config' }" @click="handleRouter('modelConfig')">
           <img loading="lazy" alt="" src="@/assets/header/model_config.png" :style="{
             filter:
@@ -92,7 +92,8 @@
           }" />
           <span class="nav-text">{{ $t("header.addressBook") }}</span>
         </div>
-        <el-dropdown v-if="userInfo.superAdmin" trigger="click" class="equipment-management more-dropdown" :class="{
+        <el-dropdown v-if="userInfo.superAdmin && (userInfo.role || 'admin') === 'admin'" trigger="click"
+          class="equipment-management more-dropdown" :class="{
           'active-tab':
             $route.path === '/dict-management' ||
             $route.path === '/params-management' ||

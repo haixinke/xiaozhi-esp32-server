@@ -32,7 +32,7 @@
     <view class="actions">
       <view class="action-row">
         <button class="secondary" bindtap="onSave">保存图片</button>
-        <button class="secondary" open-type="share">分享给好友</button>
+        <button wx:if="{{shareReady}}" class="secondary" open-type="share">分享给好友</button>
       </view>
     </view>
     <canvas canvas-id="shareCanvas" class="share-canvas"></canvas>

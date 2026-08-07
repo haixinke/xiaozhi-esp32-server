@@ -102,8 +102,7 @@
             $route.path === '/ota-management' ||
             $route.path === '/user-management' ||
             $route.path === '/feature-management' ||
-            $route.path === '/replacement-word-management' ||
-            $route.path === '/story-engine-management'
+            $route.path === '/replacement-word-management'
         }" @visible-change="handleParamDropdownVisibleChange">
           <span class="el-dropdown-link">
             <img loading="lazy" alt="" src="@/assets/header/param_management.png" :style="{
@@ -116,8 +115,7 @@
                   $route.path === '/ota-management' ||
                   $route.path === '/user-management' ||
                   $route.path === '/feature-management' ||
-                  $route.path === '/replacement-word-management' ||
-                  $route.path === '/story-engine-management'
+                  $route.path === '/replacement-word-management'
                   ? 'brightness(0) invert(1)'
                   : 'None',
             }" />
@@ -152,6 +150,24 @@
             <el-dropdown-item @click.native="handleRouter('featureManagement')">
               {{ $t("header.featureManagement") }}
             </el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+
+        <!-- 内容运营 -->
+        <el-dropdown v-if="userInfo.superAdmin" trigger="click" class="equipment-management more-dropdown" :class="{
+          'active-tab': $route.path === '/story-engine-management'
+        }" @visible-change="handleContentDropdownVisibleChange">
+          <span class="el-dropdown-link">
+            <img loading="lazy" alt="" src="@/assets/header/param_management.png" :style="{
+              filter:
+                $route.path === '/story-engine-management'
+                  ? 'brightness(0) invert(1)'
+                  : 'None',
+            }" />
+            <span class="nav-text">内容运营</span>
+            <i class="el-icon-arrow-down" :class="{ 'rotate-down': contentDropdownVisible }"></i>
+          </span>
+          <el-dropdown-menu slot="dropdown">
             <el-dropdown-item @click.native="handleRouter('storyEngineManagement')">
               故事引擎
             </el-dropdown-item>
@@ -198,6 +214,7 @@ export default {
       search: "",
       isChangePasswordDialogVisible: false, // 控制修改密码弹窗的显示
       paramDropdownVisible: false,
+      contentDropdownVisible: false,
       voiceCloneDropdownVisible: false,
       userMenuVisible: false, // 添加用户菜单可见状态
       menuVisibleTimer: null, // 菜单显示定时器，防止够快触发
@@ -365,6 +382,11 @@ export default {
     // 监听参数字典下拉菜单的可见状态变化
     handleParamDropdownVisibleChange(visible) {
       this.paramDropdownVisible = visible;
+    },
+
+    // 监听内容运营下拉菜单的可见状态变化
+    handleContentDropdownVisibleChange(visible) {
+      this.contentDropdownVisible = visible;
     },
 
     // 监听音色克隆下拉菜单的可见状态变化

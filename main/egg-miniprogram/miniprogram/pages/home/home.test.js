@@ -185,6 +185,13 @@ assert.ok(!homeTemplate.includes('open-type="share"'),
     },
     'an active personal invitation code should be included in the synchronous share path'
   );
+  assert.deepStrictEqual(
+    sharePage.onShareTimeline(),
+    {
+      title: '一起来养蛋宝宝吧'
+    },
+    'timeline sharing must not carry or prefill a personal invitation code'
+  );
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -199,6 +206,13 @@ assert.ok(!homeTemplate.includes('open-type="share"'),
       path: '/pages/home/home?v=1&source=home_share'
     },
     'a failed invitation lookup should still provide a privacy-safe base share'
+  );
+  assert.deepStrictEqual(
+    fallbackSharePage.onShareTimeline(),
+    {
+      title: '一起来养蛋宝宝吧'
+    },
+    'timeline sharing should remain a plain home share without an invitation query'
   );
 
   resetScenario();

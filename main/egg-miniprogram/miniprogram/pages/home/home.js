@@ -8,7 +8,13 @@ const shareInvite = require('../../utils/share-invite');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
 const SHARE_TITLE = '一起来养蛋宝宝吧';
-const BASE_SHARE_PATH = '/pages/home/home?v=1&source=home_share';
+
+function buildShareQuery(inviteCode) {
+  return inviteCode
+    ? `v=1&source=home_share&inviteCode=${encodeURIComponent(inviteCode)}`
+    : 'v=1&source=home_share';
+}
+
 Page({
   data: {
     pet: null,
@@ -109,7 +115,13 @@ Page({
     const inviteCode = this._shareInviteCode;
     return {
       title: SHARE_TITLE,
-      path: inviteCode ? `${BASE_SHARE_PATH}&inviteCode=${encodeURIComponent(inviteCode)}` : BASE_SHARE_PATH
+      path: `/pages/home/home?${buildShareQuery(inviteCode)}`
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: SHARE_TITLE
     };
   },
 

@@ -85,7 +85,7 @@ class PetServiceImplChangeSceneTest {
         PetCollectionCardProperties collectionCardProperties = new PetCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
-                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties);
+                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, null);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 

@@ -55,7 +55,7 @@ class PetServiceImplUpdatePetTest {
     @BeforeEach
     void setUp() {
         service = new PetServiceImpl(petDao, null, null, null, null, null, null, null, null,
-                null, null, null, petCollectionCardService, null);
+                null, null, null, petCollectionCardService, null, null);
     }
 
     private PetEntity eggPet() {

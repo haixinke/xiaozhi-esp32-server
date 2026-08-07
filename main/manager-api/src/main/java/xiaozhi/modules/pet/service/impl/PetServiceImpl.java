@@ -59,6 +59,7 @@ import xiaozhi.modules.pet.vo.ChatHistoryVO;
 import xiaozhi.modules.pet.vo.MemoryVO;
 import xiaozhi.modules.pet.vo.PetVO;
 import xiaozhi.modules.pet.vo.UserProfileVO;
+import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -92,6 +93,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final PetCollectionCardProperties petCollectionCardProperties;
     private final PetCollectionCardService petCollectionCardService;
     private final PetSceneProperties petSceneProperties;
+    private final WechatPhoneGate wechatPhoneGate;
 
     @Value("${pet.quick-hatch.code:}")
     private String quickHatchCode;
@@ -302,6 +304,9 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     public PetVO adopt(Long userId, PetAdoptDTO dto) {
         if (userId == null) {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        if (!wechatPhoneGate.canAccess(userId)) {
+            throw new RenException(ErrorCode.FORBIDDEN);
         }
 
         QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();

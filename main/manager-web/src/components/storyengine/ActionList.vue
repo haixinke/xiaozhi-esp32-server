@@ -205,9 +205,9 @@
         </el-form-item>
         <el-form-item label="时长区间" prop="durationMin">
           <div class="duration-row">
-            <el-input-number v-model="form.durationMin" :min="1" :max="24" controls-position="right" />
+            <el-input-number v-model="form.durationMin" :min="1" :max="240" controls-position="right" />
             <span class="duration-sep">~</span>
-            <el-input-number v-model="form.durationMax" :min="1" :max="24" controls-position="right" />
+            <el-input-number v-model="form.durationMax" :min="1" :max="240" controls-position="right" />
             <span class="form-hint">单位：小时</span>
           </div>
         </el-form-item>

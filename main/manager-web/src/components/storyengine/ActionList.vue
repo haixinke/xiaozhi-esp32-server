@@ -538,7 +538,7 @@ export default {
       );
     },
     handleDeleteImage(image) {
-      this.$confirm("删除后该图片将同时从 OSS 移除，是否继续？", "警告", {
+      this.$confirm("确定删除该图片记录吗？", "警告", {
         confirmButtonText: "确定删除",
         cancelButtonText: "取消",
         type: "warning"
@@ -662,7 +662,7 @@ export default {
       );
     },
     handleDelete(row) {
-      this.$confirm(`删除动作「${row.name}」将同时删除其下所有图片，是否继续？`, "警告", {
+      this.$confirm(`删除动作「${row.name}」将同时删除其下所有图片记录，是否继续？`, "警告", {
         confirmButtonText: "确定删除",
         cancelButtonText: "取消",
         type: "warning"

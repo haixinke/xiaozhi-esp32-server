@@ -114,7 +114,7 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
         if (entity == null) {
             throw new RenException("动作图片不存在");
         }
-        deleteOssObjects(List.of(entity));
+        // OSS原始图片不删除，快照履历场景仍需访问原始URL
         actionImageDao.deleteById(id);
     }
 
@@ -127,7 +127,7 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
         if (images.isEmpty()) {
             return;
         }
-        deleteOssObjects(images);
+        // OSS原始图片不删除，快照履历场景仍需访问原始URL
         actionImageDao.delete(wrapper);
     }
 
@@ -140,29 +140,6 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
                 .eq("pet_prototype", petPrototype)
                 .eq("time_of_day", timeOfDay);
         return Math.toIntExact(actionImageDao.selectCount(wrapper));
-    }
-
-    /**
-     * 清理 OSS 文件。OSS 清理失败不阻塞数据库记录删除，仅告警，避免残留脏数据。
-     */
-    private void deleteOssObjects(List<ActionImageEntity> images) {
-        if (!ossService.isEnabled()) {
-            log.warn("OSS未启用，跳过故事引擎动作图片文件清理, count={}", images.size());
-            return;
-        }
-        List<String> ossKeys = images.stream()
-                .map(ActionImageEntity::getImageUrl)
-                .filter(url -> url != null && url.startsWith(OSS_URL_PREFIX))
-                .map(url -> url.substring(OSS_URL_PREFIX.length()))
-                .toList();
-        if (ossKeys.isEmpty()) {
-            return;
-        }
-        try {
-            ossService.deleteBatch(ossKeys);
-        } catch (Exception e) {
-            log.warn("故事引擎动作图片OSS清理失败, ossKeys={}", ossKeys, e);
-        }
     }
 
     private static String extensionOf(String contentType) {

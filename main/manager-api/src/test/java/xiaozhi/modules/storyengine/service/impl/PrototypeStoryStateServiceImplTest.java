@@ -349,6 +349,28 @@ class PrototypeStoryStateServiceImplTest {
     }
 
     @Test
+    void stateUpdateFailureAfterHistoryInsertRollsBackAndPropagates() {
+        ZonedDateTime evaluatedAt = at("2026-08-08T10:15:00+08:00");
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T09:00:00+08:00");
+        List<StorySceneCandidate> candidates = List.of();
+        prepareDueSelection(evaluatedAt, current, candidates, StorySelectionResult.selected(selected(3)));
+        doReturn(1).when(historyDao).insert(any(PetStoryHistoryEntity.class));
+        doThrow(new IllegalStateException("state update unavailable"))
+                .when(stateDao).updateById(current);
+
+        assertThatThrownBy(() -> service.evaluate(PROTOTYPE, evaluatedAt))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("state update unavailable");
+
+        InOrder writes = inOrder(historyDao, stateDao);
+        writes.verify(historyDao).insert(any(PetStoryHistoryEntity.class));
+        writes.verify(stateDao).updateById(current);
+        verify(transactionManager).rollback(transactionStatus);
+        verify(transactionManager, never()).commit(transactionStatus);
+        assertThat(current.getActionId()).isEqualTo("new-action-id");
+    }
+
+    @Test
     void missingSeededPrototypeRowThrowsAndRollsBack() {
         when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(null);
 

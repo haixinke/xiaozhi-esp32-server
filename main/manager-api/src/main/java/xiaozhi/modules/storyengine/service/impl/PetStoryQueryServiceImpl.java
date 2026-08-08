@@ -22,6 +22,9 @@ import xiaozhi.modules.storyengine.vo.PetStoryStateVO;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 宠物故事只读查询实现。先校验宠物归属与破壳状态，再按原型读取共享数据。
+ */
 @Service
 @RequiredArgsConstructor
 public class PetStoryQueryServiceImpl implements PetStoryQueryService {
@@ -81,6 +84,7 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
         return new PageData<>(records, result.getTotal());
     }
 
+    /** 校验宠物存在且归属当前用户，否则抛出对应业务异常 */
     private PetEntity ownedPet(Long userId, String petId) {
         PetEntity pet = petDao.selectById(petId);
         if (pet == null) {

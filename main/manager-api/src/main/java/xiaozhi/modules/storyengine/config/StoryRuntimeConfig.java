@@ -7,6 +7,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import java.time.Clock;
 import java.time.ZoneId;
 
+/**
+ * 故事运行时配置。开启调度并提供 Asia/Shanghai 时区时钟，时钟可注入以便测试替换。
+ */
 @Configuration
 @EnableScheduling
 public class StoryRuntimeConfig {

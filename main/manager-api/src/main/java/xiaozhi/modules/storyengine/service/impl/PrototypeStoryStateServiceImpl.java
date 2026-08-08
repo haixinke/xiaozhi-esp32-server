@@ -24,6 +24,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 原型级共享故事状态服务实现。
+ * 并发语义：原型行锁（FOR UPDATE）+ last_evaluated_hour 时槽标记，二者共同保证
+ * 多实例下每个原型、每个整点时槽最多完成一次有效计算。概率未命中也提交时槽标记，
+ * 避免其他实例在同一小时获得额外抽取机会。
+ */
 @Service
 public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateService {
     private final PetStoryStateDao stateDao;
@@ -50,11 +56,13 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
     }
 
     private StoryEvaluationResult evaluateLocked(String prototype, ZonedDateTime evaluatedAt) {
+        // 行锁读取，保证多实例串行处理同一原型
         PetStoryStateEntity current = stateDao.selectByPrototypeForUpdate(prototype);
         if (current == null) {
             throw new IllegalStateException("缺少宠物原型故事状态占位行");
         }
 
+        // 时槽幂等：本整点已计算过（含更晚的水位）则跳过
         Date hourSlot = Date.from(evaluatedAt.truncatedTo(ChronoUnit.HOURS).toInstant());
         Date lastEvaluatedHour = current.getLastEvaluatedHour();
         if (lastEvaluatedHour != null && !lastEvaluatedHour.before(hourSlot)) {
@@ -76,6 +84,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
                                                    StoryPeriodContext period, String prototype,
                                                    ZonedDateTime evaluatedAt) {
         Date now = Date.from(evaluatedAt.toInstant());
+        // 动作未到期则保持，不加载候选内容
         if (runtimeStatus == StoryRuntimeStatus.ACTIVE && current.getExpectedEndAt().after(now)) {
             return StoryEvaluationResult.KEPT_NOT_DUE;
         }
@@ -113,10 +122,12 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         }
         return switch (runtimeStatus) {
             case UNINITIALIZED -> {
+                // 首次初始化：直接激活占位行，不写历史
                 activate(current, selected, prototype, period, now);
                 yield StoryEvaluationResult.INITIALIZED;
             }
             case ACTIVE -> {
+                // 普通切换：先归档旧快照，再写入新状态，同一事务提交
                 historyDao.insert(snapshot(current, now));
                 activate(current, selected, prototype, period, now);
                 yield StoryEvaluationResult.SWITCHED;
@@ -176,6 +187,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         return new IllegalStateException("故事选择结果字段无效: " + fieldName);
     }
 
+    /** 复制当前状态为历史快照，archivedAt 取实际被替换时间（连续未命中时可超过原预计结束时间） */
     private PetStoryHistoryEntity snapshot(PetStoryStateEntity source, Date archivedAt) {
         PetStoryHistoryEntity history = new PetStoryHistoryEntity();
         history.setPetPrototype(source.getPetPrototype());
@@ -197,6 +209,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         return history;
     }
 
+    /** 把选中的新状态写入当前行；expectedEndAt = startedAt + durationHours 小时 */
     private void activate(PetStoryStateEntity target, SelectedStoryState selected, String prototype,
                           StoryPeriodContext period, Date startedAt) {
         target.setPetPrototype(prototype);

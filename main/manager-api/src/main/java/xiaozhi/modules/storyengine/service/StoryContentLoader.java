@@ -23,6 +23,10 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 批量装载启用故事内容，组装为选择器所需的候选树。
+ * 每张表只做一次批量查询，避免按场景/动作逐条查库。
+ */
 @Component
 @RequiredArgsConstructor
 public class StoryContentLoader {
@@ -33,8 +37,13 @@ public class StoryContentLoader {
     private final ActionDao actionDao;
     private final ActionImageDao actionImageDao;
 
+    /**
+     * 装载指定原型在当前时段下的启用候选树。
+     * 仅包含 status=1 的大场景/小场景/动作，图片按原型与图片时段过滤。
+     */
     public List<StorySceneCandidate> load(String prototype, StoryPeriodContext period) {
         List<BigSceneEntity> bigScenes = loadBigScenes();
+        // 父层为空直接返回，避免后续 .in(...) 收到空集合
         if (bigScenes.isEmpty()) {
             return List.of();
         }
@@ -133,6 +142,7 @@ public class StoryContentLoader {
         return new StoryImageCandidate(image.getId(), image.getImageUrl(), image.getCaptions());
     }
 
+    /** 取小场景在当前权重时段的权重，null 视为 0 */
     private int weightOf(SmallSceneEntity scene, StoryWeightPeriod period) {
         Integer weight = switch (period) {
             case NIGHT -> scene.getWeightNight();
@@ -159,6 +169,7 @@ public class StoryContentLoader {
         return value == null ? 0 : value;
     }
 
+    /** 稳定排序：sort_order 升序，id 升序，null 排前 */
     private static <T> Comparator<T> bySortOrderAndId(Function<T, Integer> sortOrder, Function<T, String> id) {
         return Comparator.comparing(sortOrder, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(id, Comparator.nullsFirst(Comparator.naturalOrder()));

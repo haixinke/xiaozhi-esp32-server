@@ -14,6 +14,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.EnumMap;
 import java.util.Map;
 
+/**
+ * 原型共享故事状态整点调度任务。每小时整点（Asia/Shanghai）遍历固定支持的原型列表，
+ * 各原型独立事务、互不阻塞；单个原型失败不影响其他原型。日志只记录原型、时槽与聚合计数，
+ * 不包含用户/宠物实例/设备等敏感标识。
+ */
 @Slf4j
 @Component
 public class PrototypeStoryStateRefreshTask {

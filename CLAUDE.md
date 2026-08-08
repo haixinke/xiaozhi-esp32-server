@@ -147,6 +147,15 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+### 5. Comment New Code
+
+**所有新增代码必须添加注释。**
+
+- 类、接口、枚举：添加 Javadoc 说明其职责与业务语义。
+- 实体字段：沿用项目风格添加 `@Schema(description = "...")`。
+- 关键业务规则（概率、状态流转、并发幂等、边界条件等）：在对应代码处添加行内注释说明“为什么”，而非仅复述“做什么”。
+- 注释使用简洁中文；不改动既有逻辑，注释不得泄露密钥、token 等敏感信息。
+
 ## Security Checklist (All Sub-projects)
 
 Before ANY commit:

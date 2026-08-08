@@ -5,6 +5,9 @@ import xiaozhi.modules.storyengine.service.StoryRandomSource;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * 基于 ThreadLocalRandom 的生产随机数实现。
+ */
 @Component
 public class ThreadLocalStoryRandomSource implements StoryRandomSource {
     @Override

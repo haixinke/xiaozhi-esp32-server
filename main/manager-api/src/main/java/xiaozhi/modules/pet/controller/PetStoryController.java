@@ -1,5 +1,6 @@
 package xiaozhi.modules.pet.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -25,6 +26,7 @@ public class PetStoryController {
 
     private final PetStoryQueryService queryService;
 
+    @Operation(summary = "宠物原型共享故事当前状态")
     @GetMapping("/{id}/story-state")
     @RequiresPermissions("sys:role:normal")
     public Result<PetStoryStateVO> current(@PathVariable String id) {
@@ -32,6 +34,7 @@ public class PetStoryController {
                 queryService.getCurrent(SecurityUser.getUserId(), id));
     }
 
+    @Operation(summary = "宠物原型共享故事历史")
     @GetMapping("/{id}/story-history")
     @RequiresPermissions("sys:role:normal")
     public Result<PageData<PetStoryHistoryVO>> history(

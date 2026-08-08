@@ -1,9 +1,11 @@
 package xiaozhi.modules.storyengine.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import xiaozhi.modules.storyengine.constant.StoryImageTimeOfDay;
@@ -20,6 +22,7 @@ import xiaozhi.modules.storyengine.model.StoryPeriodContext;
 import xiaozhi.modules.storyengine.model.StorySceneCandidate;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,10 +86,23 @@ class StoryContentLoaderTest {
         assertThat(result.get(2).actions().get(1).images())
                 .extracting(image -> image.id(), image -> image.imageUrl(), image -> image.captions())
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("image-b", "day-url", "早安"));
-        verify(bigSceneDao, times(1)).selectList(any());
-        verify(smallSceneDao, times(1)).selectList(any());
-        verify(actionDao, times(1)).selectList(any());
-        verify(actionImageDao, times(1)).selectList(any());
+
+        ArgumentCaptor<QueryWrapper<BigSceneEntity>> bigSceneQuery = queryCaptor();
+        ArgumentCaptor<QueryWrapper<SmallSceneEntity>> smallSceneQuery = queryCaptor();
+        ArgumentCaptor<QueryWrapper<ActionEntity>> actionQuery = queryCaptor();
+        ArgumentCaptor<QueryWrapper<ActionImageEntity>> actionImageQuery = queryCaptor();
+        verify(bigSceneDao, times(1)).selectList(bigSceneQuery.capture());
+        verify(smallSceneDao, times(1)).selectList(smallSceneQuery.capture());
+        verify(actionDao, times(1)).selectList(actionQuery.capture());
+        verify(actionImageDao, times(1)).selectList(actionImageQuery.capture());
+
+        assertQuery(bigSceneQuery.getValue(), List.of("status=", "orderbysort_orderasc,idasc"), 1);
+        assertQuery(smallSceneQuery.getValue(), List.of("big_scene_idin", "status=", "orderbysort_orderasc,idasc"),
+                "big-a", "big-b", 1);
+        assertQuery(actionQuery.getValue(), List.of("small_scene_idin", "status=", "orderbysort_orderasc,idasc"),
+                "small-before-b", "small-a", "small-b", 1);
+        assertQuery(actionImageQuery.getValue(), List.of("action_idin", "pet_prototype=", "time_of_day="),
+                "action-a", "action-b", "锦鲤", "白天");
     }
 
     @ParameterizedTest
@@ -137,6 +153,17 @@ class StoryContentLoaderTest {
 
     private StoryContentLoader loader() {
         return new StoryContentLoader(bigSceneDao, smallSceneDao, actionDao, actionImageDao);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> ArgumentCaptor<QueryWrapper<T>> queryCaptor() {
+        return ArgumentCaptor.forClass(QueryWrapper.class);
+    }
+
+    private static void assertQuery(QueryWrapper<?> wrapper, List<String> sqlFragments, Object... parameterValues) {
+        String sqlSegment = wrapper.getSqlSegment().replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+        assertThat(sqlSegment).contains(sqlFragments.toArray(String[]::new));
+        assertThat(wrapper.getParamNameValuePairs().values()).containsExactlyInAnyOrder(parameterValues);
     }
 
     private static Stream<org.junit.jupiter.params.provider.Arguments> weightPeriods() {

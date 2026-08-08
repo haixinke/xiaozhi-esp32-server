@@ -17,12 +17,12 @@ public interface StorySmallSceneService extends BaseService<SmallSceneEntity> {
     List<SmallSceneVO> listByBigSceneId(String bigSceneId);
 
     /**
-     * 新增小场景，写入前校验同大场景下各时段权重合计不超过100%。
+     * 新增小场景，写入前校验所有大场景下各时段权重合计不超过100%。
      */
     void save(SmallSceneDTO dto);
 
     /**
-     * 修改小场景，写入前校验同大场景下各时段权重合计不超过100%。
+     * 修改小场景，写入前校验所有大场景下各时段权重合计不超过100%。
      */
     void update(SmallSceneDTO dto);
 
@@ -37,7 +37,7 @@ public interface StorySmallSceneService extends BaseService<SmallSceneEntity> {
     void delete(String id);
 
     /**
-     * 统计指定大场景下已启用小场景的各时段权重合计。
+     * 统计所有大场景下已启用小场景的各时段权重合计。
      */
-    WeightSummaryVO getWeightSummary(String bigSceneId);
+    WeightSummaryVO getWeightSummary();
 }

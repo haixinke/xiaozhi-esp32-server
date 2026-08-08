@@ -18,7 +18,6 @@ import xiaozhi.modules.storyengine.vo.ActionVO;
 import xiaozhi.modules.storyengine.vo.SmallSceneVO;
 import xiaozhi.modules.storyengine.vo.WeightSummaryVO;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -69,7 +68,7 @@ public class StorySmallSceneServiceImpl extends BaseServiceImpl<SmallSceneDao, S
         int[] weights = { nz(dto.getWeightNight()), nz(dto.getWeightMorning()),
                 nz(dto.getWeightAfternoon()), nz(dto.getWeightEvening()) };
         if (status == STATUS_ENABLED) {
-            validateTotals(sumOtherWeights(dto.getBigSceneId(), List.of()), weights);
+            validateTotals(sumOtherWeights(List.of()), weights);
         }
 
         SmallSceneEntity entity = new SmallSceneEntity();
@@ -105,7 +104,7 @@ public class StorySmallSceneServiceImpl extends BaseServiceImpl<SmallSceneDao, S
         };
         // 校验时排除自身，避免把自身旧权重重复计入合计
         if (status == STATUS_ENABLED) {
-            validateTotals(sumOtherWeights(bigSceneId, List.of(existing.getId())), weights);
+            validateTotals(sumOtherWeights(List.of(existing.getId())), weights);
         }
 
         existing.setBigSceneId(bigSceneId);
@@ -138,29 +137,23 @@ public class StorySmallSceneServiceImpl extends BaseServiceImpl<SmallSceneDao, S
             throw new RenException("部分小场景不存在，请刷新后重试");
         }
 
-        // 按大场景分组，逐组校验：组内提交值 + 组内未提交的启用场景现有值
-        Map<String, List<SmallSceneEntity>> groups = new LinkedHashMap<>();
+        // 全局校验：所有提交项的启用场景权重值合计，加上全局其他启用场景的现有值
+        List<String> groupIds = entities.stream().map(SmallSceneEntity::getId).toList();
+        int[] submitted = new int[PERIOD_LABELS.length];
         for (SmallSceneEntity entity : entities) {
-            groups.computeIfAbsent(entity.getBigSceneId(), k -> new ArrayList<>()).add(entity);
-        }
-        for (Map.Entry<String, List<SmallSceneEntity>> group : groups.entrySet()) {
-            List<String> groupIds = group.getValue().stream().map(SmallSceneEntity::getId).toList();
-            int[] submitted = new int[PERIOD_LABELS.length];
-            for (SmallSceneEntity entity : group.getValue()) {
-                if (!Integer.valueOf(STATUS_ENABLED).equals(entity.getStatus())) {
-                    continue;
-                }
-                BatchWeightUpdateDTO.SmallSceneWeightItem item = itemById.get(entity.getId());
-                submitted[0] += item.getWeightNight() == null ? nz(entity.getWeightNight()) : item.getWeightNight();
-                submitted[1] += item.getWeightMorning() == null ? nz(entity.getWeightMorning())
-                        : item.getWeightMorning();
-                submitted[2] += item.getWeightAfternoon() == null ? nz(entity.getWeightAfternoon())
-                        : item.getWeightAfternoon();
-                submitted[3] += item.getWeightEvening() == null ? nz(entity.getWeightEvening())
-                        : item.getWeightEvening();
+            if (!Integer.valueOf(STATUS_ENABLED).equals(entity.getStatus())) {
+                continue;
             }
-            validateTotals(sumOtherWeights(group.getKey(), groupIds), submitted);
+            BatchWeightUpdateDTO.SmallSceneWeightItem item = itemById.get(entity.getId());
+            submitted[0] += item.getWeightNight() == null ? nz(entity.getWeightNight()) : item.getWeightNight();
+            submitted[1] += item.getWeightMorning() == null ? nz(entity.getWeightMorning())
+                    : item.getWeightMorning();
+            submitted[2] += item.getWeightAfternoon() == null ? nz(entity.getWeightAfternoon())
+                    : item.getWeightAfternoon();
+            submitted[3] += item.getWeightEvening() == null ? nz(entity.getWeightEvening())
+                    : item.getWeightEvening();
         }
+        validateTotals(sumOtherWeights(groupIds), submitted);
 
         for (SmallSceneEntity entity : entities) {
             BatchWeightUpdateDTO.SmallSceneWeightItem item = itemById.get(entity.getId());
@@ -194,11 +187,8 @@ public class StorySmallSceneServiceImpl extends BaseServiceImpl<SmallSceneDao, S
     }
 
     @Override
-    public WeightSummaryVO getWeightSummary(String bigSceneId) {
-        if (StringUtils.isBlank(bigSceneId)) {
-            throw new RenException("大场景ID不能为空");
-        }
-        int[] totals = sumOtherWeights(bigSceneId, List.of());
+    public WeightSummaryVO getWeightSummary() {
+        int[] totals = sumOtherWeights(List.of());
         WeightSummaryVO vo = new WeightSummaryVO();
         vo.setTotalNight(totals[0]);
         vo.setTotalMorning(totals[1]);
@@ -208,18 +198,18 @@ public class StorySmallSceneServiceImpl extends BaseServiceImpl<SmallSceneDao, S
     }
 
     /**
-     * 统计指定大场景下已启用小场景的各时段权重合计，可排除指定ID（用于修改场景的自我排除）。
+     * 统计所有大场景下已启用小场景的各时段权重合计，可排除指定ID（用于修改场景的自我排除）。
      *
      * @return 长度为4的数组，顺序与 PERIOD_LABELS 一致
      */
-    private int[] sumOtherWeights(String bigSceneId, Collection<String> excludeIds) {
+    private int[] sumOtherWeights(Collection<String> excludeIds) {
         QueryWrapper<SmallSceneEntity> wrapper = new QueryWrapper<>();
         wrapper.select(
                 "IFNULL(SUM(weight_night), 0) AS " + SUM_ALIASES[0],
                 "IFNULL(SUM(weight_morning), 0) AS " + SUM_ALIASES[1],
                 "IFNULL(SUM(weight_afternoon), 0) AS " + SUM_ALIASES[2],
                 "IFNULL(SUM(weight_evening), 0) AS " + SUM_ALIASES[3]);
-        wrapper.eq("big_scene_id", bigSceneId).eq("status", STATUS_ENABLED);
+        wrapper.eq("status", STATUS_ENABLED);
         if (excludeIds != null && !excludeIds.isEmpty()) {
             wrapper.notIn("id", excludeIds);
         }
@@ -247,7 +237,7 @@ public class StorySmallSceneServiceImpl extends BaseServiceImpl<SmallSceneDao, S
     }
 
     /**
-     * 校验「其它场景合计 + 本次提交值」不超过100%。
+     * 校验「全局其它场景合计 + 本次提交值」不超过100%。
      */
     private static void validateTotals(int[] otherTotals, int[] currentValues) {
         for (int i = 0; i < PERIOD_LABELS.length; i++) {

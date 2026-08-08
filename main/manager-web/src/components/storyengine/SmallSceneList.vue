@@ -376,7 +376,7 @@ export default {
     // ==================== 新增/编辑 ====================
     fetchWeightSummary() {
       this.summaryLoading = true;
-      Api.storyEngine.getWeightSummary(this.bigSceneId, ({ data }) => {
+      Api.storyEngine.getWeightSummary(({ data }) => {
         this.summaryLoading = false;
         if (data.code === 0) {
           this.summaryTotals = data.data || {};

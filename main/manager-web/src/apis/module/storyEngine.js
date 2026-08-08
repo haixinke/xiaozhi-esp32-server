@@ -197,10 +197,10 @@ export default {
                 })
             }).send()
     },
-    // 权重汇总
-    getWeightSummary(bigSceneId, callback) {
+    // 权重汇总（全局）
+    getWeightSummary(callback) {
         RequestService.sendRequest()
-            .url(`${getServiceUrl()}/storyEngine/smallScene/weightSummary?bigSceneId=${bigSceneId}`)
+            .url(`${getServiceUrl()}/storyEngine/smallScene/weightSummary`)
             .method('GET')
             .success((res) => {
                 RequestService.clearRequestTime()
@@ -209,7 +209,7 @@ export default {
             .networkFail((err) => {
                 console.error('获取权重汇总失败:', err)
                 RequestService.reAjaxFun(() => {
-                    this.getWeightSummary(bigSceneId, callback)
+                    this.getWeightSummary(callback)
                 })
             }).send()
     },

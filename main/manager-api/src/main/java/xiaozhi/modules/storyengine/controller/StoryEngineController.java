@@ -114,10 +114,10 @@ public class StoryEngineController {
     }
 
     @GetMapping("/smallScene/weightSummary")
-    @Operation(summary = "查询指定大场景下各时段权重合计")
+    @Operation(summary = "查询各时段权重合计（全局）")
     @RequiresPermissions("sys:role:superAdmin")
-    public Result<WeightSummaryVO> weightSummary(@RequestParam String bigSceneId) {
-        return new Result<WeightSummaryVO>().ok(smallSceneService.getWeightSummary(bigSceneId));
+    public Result<WeightSummaryVO> weightSummary() {
+        return new Result<WeightSummaryVO>().ok(smallSceneService.getWeightSummary());
     }
 
     @GetMapping("/action/list")

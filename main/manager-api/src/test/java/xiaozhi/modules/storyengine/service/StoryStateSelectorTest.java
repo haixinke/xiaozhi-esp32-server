@@ -27,6 +27,21 @@ class StoryStateSelectorTest {
     }
 
     @Test
+    void transitionSelectsAdjacentScenesAtAndAfterCumulativeBoundary() {
+        QueueRandomSource random = randomWithRolls(
+                draw(1, 101, 40), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0),
+                draw(1, 101, 41), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+        StoryStateSelector selector = new StoryStateSelector(random);
+        List<StorySceneCandidate> scenes = List.of(
+                scene("边界前", 40, validAction(1, 1)),
+                scene("边界后", 60, validAction(1, 1)));
+
+        assertThat(selector.selectTransition(scenes).state().smallSceneName()).isEqualTo("边界前");
+        assertThat(selector.selectTransition(scenes).state().smallSceneName()).isEqualTo("边界后");
+        random.assertAllDrawsConsumed();
+    }
+
+    @Test
     void initialSelectionNormalizesValidWeightsAndSelectsCompleteSnapshot() {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 71, 60), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 1));
@@ -82,6 +97,33 @@ class StoryStateSelectorTest {
 
         assertThat(selector.selectTransition(List.of(scene("A", 100, invalidDuration))).type())
                 .isEqualTo(StorySelectionResultType.INVALID_CONFIGURATION);
+    }
+
+    @Test
+    void selectionSamplesBothInclusiveDurationEndpoints() {
+        QueueRandomSource random = randomWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 0),
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 1));
+        StoryStateSelector selector = new StoryStateSelector(random);
+        StorySceneCandidate scene = scene("卧室", 100, validAction(1, 2));
+
+        assertThat(selector.selectTransition(List.of(scene)).state().durationHours()).isEqualTo(1);
+        assertThat(selector.selectTransition(List.of(scene)).state().durationHours()).isEqualTo(2);
+        random.assertAllDrawsConsumed();
+    }
+
+    @Test
+    void selectionExcludesInvalidActionsBeforeDrawingAnEligibleAction() {
+        QueueRandomSource random = randomWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryActionCandidate invalid = action("invalid", 0, 1, image("invalid-image", "", "invalid-url"));
+        StoryActionCandidate valid = action("valid", 1, 1, image("valid-image", "", "valid-url"));
+
+        StorySelectionResult result = selector.selectTransition(List.of(scene("卧室", 100, invalid, valid)));
+
+        assertThat(result.state().actionId()).isEqualTo("valid-id");
+        random.assertAllDrawsConsumed();
     }
 
     @Test

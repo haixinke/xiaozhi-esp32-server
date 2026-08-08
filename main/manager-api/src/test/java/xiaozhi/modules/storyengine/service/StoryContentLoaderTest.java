@@ -101,7 +101,8 @@ class StoryContentLoaderTest {
                 "big-a", "big-b", 1);
         assertQuery(actionQuery.getValue(), List.of("small_scene_idin", "status=", "orderbysort_orderasc,idasc"),
                 "small-before-b", "small-a", "small-b", 1);
-        assertQuery(actionImageQuery.getValue(), List.of("action_idin", "pet_prototype=", "time_of_day="),
+        assertQuery(actionImageQuery.getValue(),
+                List.of("action_idin", "pet_prototype=", "time_of_day=", "orderbysort_orderasc,idasc"),
                 "action-a", "action-b", "锦鲤", "白天");
     }
 

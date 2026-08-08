@@ -21,6 +21,7 @@
 - 不修改历史 Liquibase changeSet，只新增 `202608081000.sql` 并注册到 master。
 - 日志不得包含用户 ID、宠物实例 ID、设备 ID、token 或其他敏感数据。
 - 新增运行时代码目标覆盖率不低于 80%；所有 Maven 测试命令必须显式带 `-DskipTests=false`。
+- Task 1 的 Liquibase/实体/DAO 属于用户批准的持久化脚手架 TDD 例外；不添加读取 SQL 源文本或反射方法名的脆弱测试，行为由后续服务测试覆盖。
 - 保留并且不得提交现有用户修改 `main/manager-api/.factorypath`。
 
 ---
@@ -34,79 +35,13 @@
 - Create: `main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/PetStoryHistoryEntity.java`
 - Create: `main/manager-api/src/main/java/xiaozhi/modules/storyengine/dao/PetStoryStateDao.java`
 - Create: `main/manager-api/src/main/java/xiaozhi/modules/storyengine/dao/PetStoryHistoryDao.java`
-- Create: `main/manager-api/src/test/java/xiaozhi/modules/storyengine/StoryRuntimePersistenceContractTest.java`
 
 **Interfaces:**
 - Produces: `PetStoryStateDao.selectByPrototypeForUpdate(String prototype): PetStoryStateEntity`
 - Produces: MyBatis-Plus CRUD for `ai_pet_story_state` and `ai_pet_story_history`
 - Produces: exactly two seeded state rows with `runtime_status='UNINITIALIZED'`
 
-- [ ] **Step 1: Write the failing persistence contract test**
-
-Create a test that verifies table mappings, the locking query signature, migration registration, the prototype unique key, history paging index, and both seed rows.
-
-```java
-package xiaozhi.modules.storyengine;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-
-import org.junit.jupiter.api.Test;
-
-import com.baomidou.mybatisplus.annotation.TableName;
-
-import xiaozhi.modules.storyengine.dao.PetStoryStateDao;
-import xiaozhi.modules.storyengine.entity.PetStoryHistoryEntity;
-import xiaozhi.modules.storyengine.entity.PetStoryStateEntity;
-
-class StoryRuntimePersistenceContractTest {
-    @Test
-    void entitiesMapToRuntimeTables() {
-        assertThat(PetStoryStateEntity.class.getAnnotation(TableName.class).value())
-                .isEqualTo("ai_pet_story_state");
-        assertThat(PetStoryHistoryEntity.class.getAnnotation(TableName.class).value())
-                .isEqualTo("ai_pet_story_history");
-        assertThat(PetStoryStateDao.class.getDeclaredMethods())
-                .extracting(java.lang.reflect.Method::getName)
-                .contains("selectByPrototypeForUpdate");
-    }
-
-    @Test
-    void migrationDefinesSharedPrototypeConstraintsAndSeeds() throws Exception {
-        String sql = resource("/db/changelog/202608081000.sql");
-        String master = resource("/db/changelog/db.changelog-master.yaml");
-        assertThat(sql).contains("CREATE TABLE `ai_pet_story_state`")
-                .contains("CREATE TABLE `ai_pet_story_history`")
-                .contains("UNIQUE KEY `uk_pet_story_state_prototype` (`pet_prototype`)")
-                .contains("KEY `idx_pet_story_history_prototype_started` (`pet_prototype`, `started_at`, `id`)")
-                .contains("'锦鲤', 'UNINITIALIZED'")
-                .contains("'玉兔', 'UNINITIALIZED'");
-        assertThat(master).contains("id: 202608081000")
-                .contains("path: classpath:db/changelog/202608081000.sql");
-    }
-
-    private String resource(String path) throws Exception {
-        try (InputStream input = getClass().getResourceAsStream(path)) {
-            assertThat(input).as(path).isNotNull();
-            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
-        }
-    }
-}
-```
-
-- [ ] **Step 2: Run the contract test and verify RED**
-
-Run from `main/manager-api`:
-
-```bash
-mvn -DskipTests=false -Dtest=StoryRuntimePersistenceContractTest test
-```
-
-Expected: test compilation fails because the two entities and DAOs do not exist.
-
-- [ ] **Step 3: Add the new Liquibase changeSet**
+- [ ] **Step 1: Add the new Liquibase changeSet**
 
 Create `202608081000.sql` as a new formatted SQL changeSet. Use the following columns exactly; current rows allow nullable snapshots only while `UNINITIALIZED`, while history rows contain only completed `ACTIVE` snapshots.
 
@@ -173,7 +108,7 @@ VALUES
 
 Append one matching `changeSet` entry to `db.changelog-master.yaml`; do not edit `202608071000.sql` or any earlier migration.
 
-- [ ] **Step 4: Add entities and DAOs**
+- [ ] **Step 2: Add entities and DAOs**
 
 Map every snake-case column to a camel-case Lombok field using the existing entity conventions. State uses `@TableId(type = IdType.ASSIGN_UUID)` and audit fills; history uses its own assigned UUID.
 
@@ -221,20 +156,20 @@ public interface PetStoryHistoryDao extends BaseMapper<PetStoryHistoryEntity> {
 }
 ```
 
-- [ ] **Step 5: Run the contract test and verify GREEN**
+- [ ] **Step 3: Compile and validate the persistence slice**
 
-Run:
+Run from `main/manager-api`:
 
 ```bash
-mvn -DskipTests=false -Dtest=StoryRuntimePersistenceContractTest test
+mvn -DskipTests package
 ```
 
-Expected: PASS.
+Expected: BUILD SUCCESS; Java mappings compile and Liquibase resources are packaged. Confirm the generated JAR contains both `db/changelog/202608081000.sql` and the modified master changelog. Full Liquibase application and runtime behavior are verified by the later service tasks and final environment validation.
 
-- [ ] **Step 6: Commit the persistence slice**
+- [ ] **Step 4: Commit the persistence slice**
 
 ```bash
-git add main/manager-api/src/main/resources/db/changelog/202608081000.sql main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/PetStoryStateEntity.java main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/PetStoryHistoryEntity.java main/manager-api/src/main/java/xiaozhi/modules/storyengine/dao/PetStoryStateDao.java main/manager-api/src/main/java/xiaozhi/modules/storyengine/dao/PetStoryHistoryDao.java main/manager-api/src/test/java/xiaozhi/modules/storyengine/StoryRuntimePersistenceContractTest.java
+git add main/manager-api/src/main/resources/db/changelog/202608081000.sql main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/PetStoryStateEntity.java main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/PetStoryHistoryEntity.java main/manager-api/src/main/java/xiaozhi/modules/storyengine/dao/PetStoryStateDao.java main/manager-api/src/main/java/xiaozhi/modules/storyengine/dao/PetStoryHistoryDao.java
 git commit -m "feat: add shared pet story persistence"
 ```
 
@@ -1014,7 +949,7 @@ git commit -m "feat: expose shared pet story queries"
 - [ ] **Step 1: Run all focused story runtime tests**
 
 ```bash
-mvn -DskipTests=false -Dtest=StoryRuntimePersistenceContractTest,StoryPeriodResolverTest,StoryStateSelectorTest,StoryContentLoaderTest,PrototypeStoryStateServiceImplTest,PrototypeStoryStateRefreshTaskTest,PetStoryQueryServiceImplTest,PetStoryControllerTest test
+mvn -DskipTests=false -Dtest=StoryPeriodResolverTest,StoryStateSelectorTest,StoryContentLoaderTest,PrototypeStoryStateServiceImplTest,PrototypeStoryStateRefreshTaskTest,PetStoryQueryServiceImplTest,PetStoryControllerTest test
 ```
 
 Expected: all focused tests PASS.

@@ -2,6 +2,9 @@ package xiaozhi.modules.storyengine.service.impl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -162,6 +165,52 @@ class PrototypeStoryStateServiceImplTest {
     }
 
     @Test
+    void olderHourNeverRegressesCommittedWatermark() {
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T09:00:00+08:00");
+        current.setLastEvaluatedHour(date("2026-08-08T11:00:00+08:00"));
+        when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
+
+        assertThat(service.evaluate(PROTOTYPE, at("2026-08-08T10:35:00+08:00")))
+                .isEqualTo(StoryEvaluationResult.SKIPPED_ALREADY_EVALUATED);
+
+        assertThat(current.getLastEvaluatedHour()).isEqualTo(date("2026-08-08T11:00:00+08:00"));
+        verify(stateDao, never()).updateById(any(PetStoryStateEntity.class));
+        verifyNoInteractions(periodResolver, contentLoader, selector, historyDao);
+        verifyCommittedOnce();
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "UNKNOWN")
+    void invalidRuntimeStatusRollsBackBeforeLoading(String runtimeStatus) {
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T09:00:00+08:00");
+        current.setRuntimeStatus(runtimeStatus);
+        when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
+
+        assertThatThrownBy(() -> service.evaluate(PROTOTYPE, at("2026-08-08T10:00:00+08:00")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("runtimeStatus");
+
+        verifyInvalidStateRolledBackBeforeSelection();
+    }
+
+    @Test
+    void activeWithoutExpectedEndRollsBackBeforeLoading() {
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T09:00:00+08:00");
+        current.setExpectedEndAt(null);
+
+        assertInvalidActiveSnapshot(current, "expectedEndAt");
+    }
+
+    @Test
+    void activeWithoutRequiredActionImageRollsBackBeforeLoading() {
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T09:00:00+08:00");
+        current.setActionImageId(null);
+
+        assertInvalidActiveSnapshot(current, "actionImageId");
+    }
+
+    @Test
     void futureExpectedEndKeepsCompleteSnapshotWithoutLoadingAndPersistsSlot() {
         ZonedDateTime evaluatedAt = at("2026-08-08T10:22:33+08:00");
         PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T10:22:34+08:00");
@@ -210,6 +259,63 @@ class PrototypeStoryStateServiceImplTest {
         verify(selector, times(1)).selectTransition(candidates);
         verifyNoInteractions(historyDao);
         verifyCommittedOnce();
+    }
+
+    @Test
+    void nullInitialSelectionResultRollsBackWithoutWrites() {
+        ZonedDateTime evaluatedAt = at("2026-08-08T10:00:00+08:00");
+        PetStoryStateEntity current = uninitialized(PROTOTYPE);
+        List<StorySceneCandidate> candidates = List.of();
+        prepareInitialSelection(evaluatedAt, current, candidates, null);
+
+        assertThatThrownBy(() -> service.evaluate(PROTOTYPE, evaluatedAt))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("result");
+
+        verifySelectionFailureRolledBackWithoutWrites();
+    }
+
+    @Test
+    void selectionWithoutTypeRollsBackWithoutWrites() {
+        ZonedDateTime evaluatedAt = at("2026-08-08T10:00:00+08:00");
+        PetStoryStateEntity current = uninitialized(PROTOTYPE);
+        List<StorySceneCandidate> candidates = List.of();
+        prepareInitialSelection(evaluatedAt, current, candidates,
+                new StorySelectionResult(null, selected(2)));
+
+        assertThatThrownBy(() -> service.evaluate(PROTOTYPE, evaluatedAt))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("type");
+
+        verifySelectionFailureRolledBackWithoutWrites();
+    }
+
+    @Test
+    void selectedInitialWithoutStateRollsBackWithoutWrites() {
+        ZonedDateTime evaluatedAt = at("2026-08-08T10:00:00+08:00");
+        PetStoryStateEntity current = uninitialized(PROTOTYPE);
+        List<StorySceneCandidate> candidates = List.of();
+        prepareInitialSelection(evaluatedAt, current, candidates, StorySelectionResult.selected(null));
+
+        assertThatThrownBy(() -> service.evaluate(PROTOTYPE, evaluatedAt))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("state");
+
+        verifySelectionFailureRolledBackWithoutWrites();
+    }
+
+    @Test
+    void selectedTransitionWithoutStateRollsBackBeforeHistoryOrCurrentWrite() {
+        ZonedDateTime evaluatedAt = at("2026-08-08T10:00:00+08:00");
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T09:00:00+08:00");
+        List<StorySceneCandidate> candidates = List.of();
+        prepareDueSelection(evaluatedAt, current, candidates, StorySelectionResult.selected(null));
+
+        assertThatThrownBy(() -> service.evaluate(PROTOTYPE, evaluatedAt))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("state");
+
+        verifySelectionFailureRolledBackWithoutWrites();
     }
 
     @Test
@@ -262,6 +368,38 @@ class PrototypeStoryStateServiceImplTest {
         when(periodResolver.resolve(evaluatedAt)).thenReturn(MORNING);
         when(contentLoader.load(PROTOTYPE, MORNING)).thenReturn(candidates);
         when(selector.selectTransition(candidates)).thenReturn(selection);
+    }
+
+    private void prepareInitialSelection(ZonedDateTime evaluatedAt, PetStoryStateEntity current,
+                                         List<StorySceneCandidate> candidates, StorySelectionResult selection) {
+        when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
+        when(periodResolver.resolve(evaluatedAt)).thenReturn(MORNING);
+        when(contentLoader.load(PROTOTYPE, MORNING)).thenReturn(candidates);
+        when(selector.selectInitial(candidates)).thenReturn(selection);
+    }
+
+    private void assertInvalidActiveSnapshot(PetStoryStateEntity current, String fieldName) {
+        when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
+
+        assertThatThrownBy(() -> service.evaluate(PROTOTYPE, at("2026-08-08T10:00:00+08:00")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(fieldName);
+
+        verifyInvalidStateRolledBackBeforeSelection();
+    }
+
+    private void verifyInvalidStateRolledBackBeforeSelection() {
+        verify(transactionManager).rollback(transactionStatus);
+        verify(transactionManager, never()).commit(any());
+        verify(stateDao, never()).updateById(any(PetStoryStateEntity.class));
+        verifyNoInteractions(periodResolver, contentLoader, selector, historyDao);
+    }
+
+    private void verifySelectionFailureRolledBackWithoutWrites() {
+        verify(transactionManager).rollback(transactionStatus);
+        verify(transactionManager, never()).commit(any());
+        verify(stateDao, never()).updateById(any(PetStoryStateEntity.class));
+        verifyNoInteractions(historyDao);
     }
 
     private void verifyCommittedOnce() {

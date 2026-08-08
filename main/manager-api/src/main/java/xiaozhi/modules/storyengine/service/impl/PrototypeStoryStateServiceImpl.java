@@ -56,46 +56,124 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         }
 
         Date hourSlot = Date.from(evaluatedAt.truncatedTo(ChronoUnit.HOURS).toInstant());
-        if (hourSlot.equals(current.getLastEvaluatedHour())) {
+        Date lastEvaluatedHour = current.getLastEvaluatedHour();
+        if (lastEvaluatedHour != null && !lastEvaluatedHour.before(hourSlot)) {
             return StoryEvaluationResult.SKIPPED_ALREADY_EVALUATED;
         }
 
+        StoryRuntimeStatus runtimeStatus = requireRuntimeStatus(current.getRuntimeStatus());
+        if (runtimeStatus == StoryRuntimeStatus.ACTIVE) {
+            validateActiveSnapshot(current);
+        }
         StoryPeriodContext period = periodResolver.resolve(evaluatedAt);
-        StoryEvaluationResult result = evaluateDueState(current, period, prototype, evaluatedAt);
+        StoryEvaluationResult result = evaluateDueState(current, runtimeStatus, period, prototype, evaluatedAt);
         current.setLastEvaluatedHour(hourSlot);
         stateDao.updateById(current);
         return result;
     }
 
-    private StoryEvaluationResult evaluateDueState(PetStoryStateEntity current, StoryPeriodContext period,
-                                                   String prototype, ZonedDateTime evaluatedAt) {
+    private StoryEvaluationResult evaluateDueState(PetStoryStateEntity current, StoryRuntimeStatus runtimeStatus,
+                                                   StoryPeriodContext period, String prototype,
+                                                   ZonedDateTime evaluatedAt) {
         Date now = Date.from(evaluatedAt.toInstant());
-        if (StoryRuntimeStatus.ACTIVE.name().equals(current.getRuntimeStatus())
-                && current.getExpectedEndAt() != null
-                && current.getExpectedEndAt().after(now)) {
+        if (runtimeStatus == StoryRuntimeStatus.ACTIVE && current.getExpectedEndAt().after(now)) {
             return StoryEvaluationResult.KEPT_NOT_DUE;
         }
 
         List<StorySceneCandidate> candidates = contentLoader.load(prototype, period);
-        boolean uninitialized = StoryRuntimeStatus.UNINITIALIZED.name().equals(current.getRuntimeStatus());
-        StorySelectionResult selection = uninitialized
-                ? selector.selectInitial(candidates)
-                : selector.selectTransition(candidates);
-        if (selection.type() == StorySelectionResultType.REMAIN) {
-            return StoryEvaluationResult.KEPT_REMAINDER;
-        }
-        if (selection.type() == StorySelectionResultType.INVALID_CONFIGURATION) {
-            return StoryEvaluationResult.KEPT_INVALID_CONFIGURATION;
-        }
+        StorySelectionResult selection = switch (runtimeStatus) {
+            case UNINITIALIZED -> selector.selectInitial(candidates);
+            case ACTIVE -> selector.selectTransition(candidates);
+        };
+        return applySelection(current, runtimeStatus, selection, prototype, period, now);
+    }
 
-        if (uninitialized) {
-            activate(current, selection.state(), prototype, period, now);
-            return StoryEvaluationResult.INITIALIZED;
+    private StoryEvaluationResult applySelection(PetStoryStateEntity current, StoryRuntimeStatus runtimeStatus,
+                                                 StorySelectionResult selection, String prototype,
+                                                 StoryPeriodContext period, Date now) {
+        if (selection == null) {
+            throw invalidSelection("result");
         }
+        StorySelectionResultType type = selection.type();
+        if (type == null) {
+            throw invalidSelection("type");
+        }
+        return switch (type) {
+            case REMAIN -> StoryEvaluationResult.KEPT_REMAINDER;
+            case INVALID_CONFIGURATION -> StoryEvaluationResult.KEPT_INVALID_CONFIGURATION;
+            case SELECTED -> applySelected(current, runtimeStatus, selection.state(), prototype, period, now);
+        };
+    }
 
-        historyDao.insert(snapshot(current, now));
-        activate(current, selection.state(), prototype, period, now);
-        return StoryEvaluationResult.SWITCHED;
+    private StoryEvaluationResult applySelected(PetStoryStateEntity current, StoryRuntimeStatus runtimeStatus,
+                                                SelectedStoryState selected, String prototype,
+                                                StoryPeriodContext period, Date now) {
+        if (selected == null) {
+            throw invalidSelection("state");
+        }
+        return switch (runtimeStatus) {
+            case UNINITIALIZED -> {
+                activate(current, selected, prototype, period, now);
+                yield StoryEvaluationResult.INITIALIZED;
+            }
+            case ACTIVE -> {
+                historyDao.insert(snapshot(current, now));
+                activate(current, selected, prototype, period, now);
+                yield StoryEvaluationResult.SWITCHED;
+            }
+        };
+    }
+
+    private StoryRuntimeStatus requireRuntimeStatus(String value) {
+        if (value == null) {
+            throw invalidRuntimeStatus();
+        }
+        try {
+            return StoryRuntimeStatus.valueOf(value);
+        } catch (IllegalArgumentException exception) {
+            throw invalidRuntimeStatus();
+        }
+    }
+
+    private void validateActiveSnapshot(PetStoryStateEntity current) {
+        requireActiveText(current.getPetPrototype(), "petPrototype");
+        requireActiveText(current.getBigSceneId(), "bigSceneId");
+        requireActiveText(current.getBigSceneName(), "bigSceneName");
+        requireActiveText(current.getSmallSceneId(), "smallSceneId");
+        requireActiveText(current.getSmallSceneName(), "smallSceneName");
+        requireActiveText(current.getActionId(), "actionId");
+        requireActiveText(current.getActionName(), "actionName");
+        requireActiveText(current.getActionImageId(), "actionImageId");
+        requireActiveText(current.getWeightPeriod(), "weightPeriod");
+        requireActiveText(current.getImageTimeOfDay(), "imageTimeOfDay");
+        requireActiveText(current.getImageUrl(), "imageUrl");
+        if (current.getDurationHours() == null || current.getDurationHours() < 1) {
+            throw invalidActiveSnapshot("durationHours");
+        }
+        if (current.getStartedAt() == null) {
+            throw invalidActiveSnapshot("startedAt");
+        }
+        if (current.getExpectedEndAt() == null) {
+            throw invalidActiveSnapshot("expectedEndAt");
+        }
+    }
+
+    private void requireActiveText(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw invalidActiveSnapshot(fieldName);
+        }
+    }
+
+    private IllegalStateException invalidRuntimeStatus() {
+        return new IllegalStateException("故事状态字段无效: runtimeStatus");
+    }
+
+    private IllegalStateException invalidActiveSnapshot(String fieldName) {
+        return new IllegalStateException("ACTIVE 故事状态快照字段无效: " + fieldName);
+    }
+
+    private IllegalStateException invalidSelection(String fieldName) {
+        return new IllegalStateException("故事选择结果字段无效: " + fieldName);
     }
 
     private PetStoryHistoryEntity snapshot(PetStoryStateEntity source, Date archivedAt) {

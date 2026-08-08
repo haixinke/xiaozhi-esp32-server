@@ -294,6 +294,18 @@ const routes = [
       title: 'NFC 审计日志'
     }
   },
+  // 故事引擎内容运营页面路由
+  {
+    path: '/story-engine-management',
+    name: 'StoryEngineManagement',
+    component: function () {
+      return import('../views/StoryEngineManagement.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      title: '故事引擎'
+    }
+  },
 ]
 const router = new VueRouter({
   base: process.env.VUE_APP_PUBLIC_PATH || '/',

@@ -14,6 +14,7 @@ public class UserDetail implements Serializable {
     private Long id;
     private String username;
     private Integer superAdmin;
+    private String role;
     private String token;
     private Integer status;
 }

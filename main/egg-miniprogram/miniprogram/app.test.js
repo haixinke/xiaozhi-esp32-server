@@ -20,6 +20,19 @@ let relaunchCalls = 0;
 let hideTabBarCalls = 0;
 let currentRoute = 'pages/home/home';
 let captureCalls = [];
+const parsedEntryOptions = [];
+const savedPendingContexts = [];
+
+const shareInvite = {
+  parseEntryOptions(options) {
+    parsedEntryOptions.push(options);
+    if (!options || !options.query || !options.query.inviteCode) return null;
+    return { code: 'ABCDE', source: 'home_share', version: 1 };
+  },
+  savePending(context) {
+    savedPendingContexts.push(context);
+  }
+};
 
 const auth = {
   getSession: () => storedSession,
@@ -57,6 +70,7 @@ Module._load = function (requestPath, parent, isMain) {
   if (parent && parent.filename === appPath && requestPath === './utils/auth') return auth;
   if (parent && parent.filename === appPath && requestPath === './utils/request') return request;
   if (parent && parent.filename === appPath && requestPath === './utils/nfc-claim-intent') return nfcClaimIntent;
+  if (parent && parent.filename === appPath && requestPath === './utils/share-invite') return shareInvite;
   return originalLoad.call(this, requestPath, parent, isMain);
 };
 
@@ -104,6 +118,25 @@ async function run() {
   assert.strictEqual(wxLoginCalls, callsBeforeRestore, 'valid session should not call wx.login');
   assert.strictEqual(appConfig.globalData.token, 'saved-token');
 
+  const validShareEntry = {
+    path: 'pages/home/home',
+    query: { v: '1', source: 'home_share', inviteCode: 'ABCDE' }
+  };
+  appConfig.onLaunch.call(appConfig, validShareEntry);
+  await appConfig.globalData.authReady;
+  assert.deepStrictEqual(parsedEntryOptions.at(-1), validShareEntry,
+    'launch should parse the entry options before login continues');
+  assert.deepStrictEqual(savedPendingContexts.at(-1),
+    { code: 'ABCDE', source: 'home_share', version: 1 },
+    'a valid launch share context should be saved without entering login data');
+
+  appConfig.onShow.call(appConfig, validShareEntry);
+  assert.deepStrictEqual(parsedEntryOptions.at(-1), validShareEntry,
+    'show should also parse share entry options');
+  assert.deepStrictEqual(savedPendingContexts.at(-1),
+    { code: 'ABCDE', source: 'home_share', version: 1 },
+    'a valid show share context should be saved');
+
   storedSession = { ...restored, hasPhone: false };
   relaunchedTo = null;
   relaunchCalls = 0;
@@ -114,7 +147,7 @@ async function run() {
   await appConfig.globalData.authReady;
   assert.strictEqual(captureCalls.length, 1, 'onLaunch must capture NFC intent');
   assert.strictEqual(captureCalls[0], launchOptions, 'onLaunch must pass launch options to capture');
-  assert.strictEqual(hideTabBarCalls, 1,
+  assert.strictEqual(hideTabBarCalls, 2,
     'home launch hides the native tab bar before the pet state is restored');
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
     'unbound session should launch into welcome before claiming a pet');

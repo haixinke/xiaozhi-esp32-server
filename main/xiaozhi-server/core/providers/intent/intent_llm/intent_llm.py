@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 from typing import List, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -16,6 +17,12 @@ import time
 
 TAG = __name__
 logger = setup_logging()
+
+
+@dataclass(frozen=True)
+class IntentReply:
+    text: str
+    generated: bool
 
 
 class IntentProvider(IntentProviderBase):
@@ -134,10 +141,12 @@ class IntentProvider(IntentProviderBase):
                 system_prompt=text,
                 user_prompt=user_prompt,
             )
-            return llm_result
+            return IntentReply(text=llm_result, generated=True)
         except Exception as e:
             logger.bind(tag=TAG).error(f"Error in generating reply result: {e}")
-            return get_system_error_response(self.config)
+            return IntentReply(
+                text=get_system_error_response(self.config), generated=False
+            )
 
     async def detect_intent(
         self, conn: "ConnectionHandler", dialogue_history: List[Dict], text: str

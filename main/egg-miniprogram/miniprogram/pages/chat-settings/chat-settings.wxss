@@ -1,0 +1,158 @@
+/* 对话设置页 — 遵循 DESIGN.md（eggbabe 设计系统） */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #FFFFFF;
+}
+
+.content {
+  flex: 1;
+  background: #FAFAF8;
+  padding: 24rpx 32rpx;
+}
+
+/* card-base：白底 + hairline 边 + rounded.lg + elevation.raised */
+.section {
+  background: #FFFFFF;
+  border: 1rpx solid #E5E3DF;           /* hairline */
+  border-radius: 32rpx;                  /* rounded.lg = 16px */
+  box-shadow: 0rpx 2rpx 4rpx rgba(38, 54, 43, 0.06), 0rpx 4rpx 8rpx rgba(38, 54, 43, 0.04); /* elevation.raised */
+  padding: 48rpx 40rpx;                  /* spacing.xl = 24px */
+}
+
+/* section-header / 标题：heading-3-cn */
+.section-title {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 36rpx;                      /* 18px heading-3-cn */
+  font-weight: 600;
+  color: #1A1A1A;                        /* ink */
+}
+
+/* 描述：body-sm-cn，ink-muted */
+.section-desc {
+  display: block;
+  margin-top: 16rpx;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 26rpx;                      /* 13px body-sm-cn */
+  line-height: 1.55;
+  color: #5C5C5C;                        /* ink-muted */
+}
+
+/* text-input：48px 高、hairline-strong 边、rounded.md */
+.input-wrap {
+  margin-top: 32rpx;
+  background: #FFFFFF;                   /* canvas */
+  border: 1rpx solid #CFCBC4;            /* hairline-strong */
+  border-radius: 24rpx;                  /* rounded.md = 12px */
+  height: 96rpx;                         /* 48px */
+  padding: 0 32rpx;                      /* spacing.md 水平 */
+  display: flex;
+  align-items: center;
+  transition: border-color 180ms ease-out, box-shadow 180ms ease-out;
+}
+
+/* text-input-focused：ink-green 2px 边 + focus-ring */
+.input-wrap--focus {
+  border: 2rpx solid #3F5A47;            /* ink-green */
+  box-shadow: 0rpx 0rpx 0rpx 6rpx rgba(63, 90, 71, 0.30); /* elevation.focus-ring */
+}
+
+/* text-input-error：error 边 + 浅红底 */
+.input-wrap--error {
+  border: 2rpx solid #D9463C;            /* semantic-error */
+  background: #FDECEA;                   /* semantic-error-surface */
+}
+
+.email-input {
+  flex: 1;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 30rpx;                      /* 15px body-md-cn */
+  color: #1A1A1A;                        /* ink */
+}
+
+.placeholder {
+  color: #8C8C88;                        /* ink-faint */
+}
+
+/* input-error-message：semantic-error-text + caption-cn */
+.error {
+  display: block;
+  margin-top: 16rpx;
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 24rpx;                      /* 12px caption-cn */
+  font-weight: 500;
+  color: #C33F36;                        /* semantic-error-text */
+}
+
+/* button-primary：ink-green 底、白字、rounded.full、button-cn */
+.primary {
+  margin-top: 40rpx;
+  width: 100%;
+  height: 96rpx;                         /* 48px 触控高度 */
+  padding: 0;                            /* 清除 button 默认 padding，配合 flex 居中 */
+  display: flex;
+  align-items: center;                   /* 垂直居中 */
+  justify-content: center;               /* 水平居中 */
+  border-radius: 9999rpx;                /* rounded.full */
+  background: #002900;                   /* 与主页「和它说说话」按钮一致 */
+  color: #FFFFFF;                        /* on-dark */
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 30rpx;                      /* 15px button-cn */
+  font-weight: 600;
+  transition: transform 180ms ease-out, background-color 180ms ease-out;
+}
+.primary::after {
+  border: none;
+}
+
+/* button-primary-pressed：深色按下态 + scale(0.98) */
+.primary--pressed {
+  background: #001C00;
+  transform: scale(0.98);
+}
+
+/* button-primary-disabled：hairline 底 + disabled-text */
+.primary[disabled] {
+  background: #E5E3DF;                   /* hairline */
+  color: #A8A6A0;                        /* disabled-text */
+}
+
+/* section 间距 */
+.section + .section {
+  margin-top: 24rpx;
+}
+
+/* button-danger：error 描边 + error 文字，危险操作次按钮 */
+.danger {
+  margin-top: 40rpx;
+  width: 100%;
+  height: 96rpx;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999rpx;                /* rounded.full */
+  background: #FFFFFF;
+  border: 2rpx solid #D9463C;            /* semantic-error */
+  color: #C33F36;                        /* semantic-error-text */
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 30rpx;
+  font-weight: 600;
+  transition: transform 180ms ease-out, background-color 180ms ease-out;
+}
+.danger::after {
+  border: none;
+}
+
+.danger--pressed {
+  background: #FDECEA;                   /* semantic-error-surface */
+  transform: scale(0.98);
+}
+
+.danger[disabled] {
+  background: #FFFFFF;
+  border-color: #E5E3DF;                 /* hairline */
+  color: #A8A6A0;                        /* disabled-text */
+}

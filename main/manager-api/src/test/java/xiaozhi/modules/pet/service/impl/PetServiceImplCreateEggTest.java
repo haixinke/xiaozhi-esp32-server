@@ -30,6 +30,7 @@ import xiaozhi.modules.pet.dao.UserProfileDao;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.service.PetCollectionCardService;
 import xiaozhi.modules.pet.vo.PetVO;
+import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 import java.util.Locale;
 
@@ -70,6 +71,7 @@ class PetServiceImplCreateEggTest {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private PetCollectionCardService petCollectionCardService;
     @Mock private PetSceneProperties petSceneProperties;
+    @Mock private WechatPhoneGate wechatPhoneGate;
 
     private PetServiceImpl petService;
 
@@ -79,7 +81,7 @@ class PetServiceImplCreateEggTest {
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
-                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties);
+                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, wechatPhoneGate);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 

@@ -16,6 +16,7 @@ let ensureSession = null;
 let cachedSession = null;
 let cachedExpired = false;
 let pendingIntent = null;
+let pendingInvite = null;
 
 const authMock = {
   getSession: () => cachedSession,
@@ -24,6 +25,10 @@ const authMock = {
 
 const nfcIntentMock = {
   getPendingNfcClaimIntent: () => pendingIntent
+};
+
+const shareInvite = {
+  getPending: () => pendingInvite
 };
 
 const app = {
@@ -42,6 +47,7 @@ Module._load = function (request, parent, isMain) {
   if (parent && parent.filename === welcomePath) {
     if (request === '../../utils/auth') return authMock;
     if (request === '../../utils/nfc-claim-intent') return nfcIntentMock;
+    if (request === '../../utils/share-invite') return shareInvite;
   }
   return originalLoad.call(this, request, parent, isMain);
 };
@@ -71,6 +77,7 @@ function resetScenario() {
   cachedSession = null;
   cachedExpired = false;
   pendingIntent = null;
+  pendingInvite = null;
   app.globalData = { userId: null, hasPhone: null, welcomeCompleted: false };
 }
 
@@ -87,14 +94,19 @@ async function run() {
   assert.strictEqual(switchedTo, null, 'cached valid unbound session stays on welcome');
   assert.strictEqual(ensureCalls, 0, 'synchronous path should not call ensureLogin');
   assert.strictEqual(syncPage.data.ready, true, 'ready is rendered for valid unbound session');
+  assert.strictEqual(syncPage.data.hasPendingInvite, false,
+    'welcome does not show an invite message without a pending share');
 
   // 异步路径：本地无 session，静默登录后未绑定手机号 → 停留欢迎页
   resetScenario();
   ensureSession = { userId: 42, hasPhone: false };
+  pendingInvite = { code: 'ABCDE', source: 'home_share', version: 1, receivedAt: 1000 };
   const asyncUnboundPage = makePage();
   await asyncUnboundPage.onLoad();
   assert.strictEqual(switchedTo, null, 'user after silent login without phone stays on welcome');
   assert.strictEqual(asyncUnboundPage.data.ready, true, 'ready set to true for async login');
+  assert.strictEqual(asyncUnboundPage.data.hasPendingInvite, true,
+    'welcome shows its invite message when a pending share exists');
 
   // 异步路径：本地无 session，静默登录后已绑定手机号 → 跳转首页
   resetScenario();

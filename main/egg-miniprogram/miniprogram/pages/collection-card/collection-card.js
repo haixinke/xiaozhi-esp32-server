@@ -1,6 +1,8 @@
 const petStore = require('../../utils/pet-store');
+const inviteApi = require('../../utils/invite-api');
 
 const ZODIAC_SYMBOLS = { 白羊座: '♈', 金牛座: '♉', 双子座: '♊', 巨蟹座: '♋', 狮子座: '♌', 处女座: '♍', 天秤座: '♎', 天蝎座: '♏', 射手座: '♐', 摩羯座: '♑', 水瓶座: '♒', 双鱼座: '♓' };
+const SHARE_HOME_PATH = '/pages/home/home?v=1&source=home_share';
 
 // 与 app.wxss 全局 font-family 保持一致，确保 Canvas 保存图片字体与页面渲染一致
 const FONT_FAMILY = "'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif";
@@ -34,7 +36,7 @@ function signatureClass(value) {
 }
 
 Page({
-  data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', genderClass: '', zodiacSymbol: '', signatureClass: '' },
+  data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', genderClass: '', zodiacSymbol: '', signatureClass: '', shareReady: false },
 
   onLoad(query) {
     const pet = petStore.getPet();
@@ -72,6 +74,25 @@ Page({
       signatureClass: signatureClass(card.personality),
       isNew: query.new === '1'
     });
+    if (typeof wx !== 'undefined' && wx.hideShareMenu) wx.hideShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
+    this.loadShareInviteCode();
+  },
+
+  async loadShareInviteCode() {
+    this._shareInviteCode = null;
+    try {
+      const inviteCode = await inviteApi.getMine();
+      if (this.isUsableShareInvite(inviteCode)) this._shareInviteCode = inviteCode.code;
+    } catch (error) {
+      this._shareInviteCode = null;
+    } finally {
+      this.setData({ shareReady: true });
+      if (typeof wx !== 'undefined' && wx.showShareMenu) wx.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
+    }
+  },
+
+  isUsableShareInvite(inviteCode) {
+    return !!(inviteCode && inviteCode.code && inviteCode.remaining > 0 && inviteCode.status === 1);
   },
 
   onReady() {
@@ -413,7 +434,17 @@ Page({
 
   onShareAppMessage() {
     const card = this.data.card;
-    if (!card) return false;
-    return { title: `我孵化了${card.name}，编号 ${card.serial}`, path: '/pages/welcome/welcome' };
+    if (!card || !this.data.shareReady) return false;
+    const inviteCode = this._shareInviteCode;
+    return {
+      title: `我孵化了${card.name}，编号 ${card.serial}`,
+      path: inviteCode ? `${SHARE_HOME_PATH}&inviteCode=${encodeURIComponent(inviteCode)}` : SHARE_HOME_PATH
+    };
+  },
+
+  onShareTimeline() {
+    const card = this.data.card;
+    if (!card || !this.data.shareReady) return false;
+    return { title: `我孵化了${card.name}，编号 ${card.serial}` };
   }
 });

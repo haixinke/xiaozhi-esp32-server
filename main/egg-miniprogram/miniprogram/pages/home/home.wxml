@@ -3,11 +3,23 @@
     <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
 
     <scroll-view class="content" scroll-y>
-      <view wx:if="{{!pet}}" class="empty-state">
+      <view wx:if="{{petRestoreError}}" class="empty-state pet-restore-error">
+        <view class="empty-orbit"><view class="empty-egg"></view></view>
+        <text class="empty-title">暂时无法加载蛋宝宝</text>
+        <text class="empty-desc">请检查网络后重新加载。</text>
+        <button class="primary-button" bindtap="onRetryPetRestore">重新加载</button>
+      </view>
+
+      <view wx:elif="{{!pet}}" class="empty-state">
         <view class="empty-orbit"><view class="empty-egg"></view></view>
         <text class="empty-title">领取我的蛋宝宝</text>
         <text class="empty-desc">输入购买或好友送给你的激活码，开始一段只属于你们的孵化旅程。</text>
-        <button class="primary-button" bindtap="onAddDevice">添加蛋宝宝</button>
+        <view wx:if="{{hasPendingInvite}}" class="friend-invite-card">
+          <text class="friend-invite-title">好友送你一颗蛋</text>
+          <text class="friend-invite-copy">完成手机号授权后即可领取。</text>
+          <button class="primary-button" bindtap="onAddDevice">领取好友邀请</button>
+        </view>
+        <button wx:else class="primary-button" bindtap="onAddDevice">添加蛋宝宝</button>
         <text class="empty-note">当前版本每个账号只能绑定 1 只</text>
       </view>
 

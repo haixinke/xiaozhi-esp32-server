@@ -102,6 +102,11 @@ public interface ErrorCode {
     // 资源处理相关错误码
     int RESOURCE_READ_ERROR = 10078; // 读取资源失败
 
+    // 邮件相关错误码
+    int EMAIL_SEND_FAILED = 10402; // 邮件发送失败
+    int EMAIL_CONNECTION_FAILED = 10403; // 邮件连接建立失败
+    int EMAIL_FORMAT_ERROR = 10404; // 邮箱格式不正确
+
     // 智能体相关错误码
     int LLM_INTENT_PARAMS_MISMATCH = 10079; // LLM大模型和Intent意图识别，选择参数不匹配
 
@@ -263,7 +268,7 @@ public interface ErrorCode {
 
     // AI宠物相关错误码
     int PET_DEVICE_NOT_FOUND = 10205; // 宠物关联的设备不存在
-    int PET_ALREADY_EXISTS = 10206; // 该设备已创建过宠物
+    int PET_ALREADY_EXISTS = 10206; // 该账号已创建过宠物
     int PET_NOT_FOUND = 10207; // 宠物不存在
     int PET_NO_PERMISSION = 10208; // 没有权限操作该宠物
     int PET_ALREADY_HATCHED = 10209; // 已破壳，不能再做修炼动作

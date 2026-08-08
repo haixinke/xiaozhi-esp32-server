@@ -20,7 +20,8 @@
     "pages/help/help",
     "pages/deregister/deregister",
     "pages/privacy/privacy",
-    "pages/life-scene/life-scene"
+    "pages/life-scene/life-scene",
+    "pages/chat-settings/chat-settings"
   ],
   "tabBar": {
     "color": "#8C8C88",

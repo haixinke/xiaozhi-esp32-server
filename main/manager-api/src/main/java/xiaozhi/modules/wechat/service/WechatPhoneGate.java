@@ -29,9 +29,8 @@ public class WechatPhoneGate {
                         .select("phone")
                         .eq("user_id", userId));
 
-        return mappings == null
-                || mappings.isEmpty()
-                || mappings.stream()
+        return mappings != null
+                && mappings.stream()
                         .filter(java.util.Objects::nonNull)
                         .anyMatch(mapping -> StringUtils.isNotBlank(mapping.getPhone()));
     }

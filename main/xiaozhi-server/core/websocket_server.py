@@ -33,6 +33,7 @@ _setup_websockets_logger()
 from core.connection import ConnectionHandler
 from config.config_loader import get_config_from_api_async
 from core.auth import AuthManager, AuthenticationError
+from core.utils.content_safety import create_content_safety_provider
 from core.utils.modules_initialize import initialize_modules
 from core.utils.util import check_vad_update, check_asr_update
 
@@ -59,6 +60,7 @@ class WebSocketServer:
         self._llm = modules["llm"] if "llm" in modules else None
         self._intent = modules["intent"] if "intent" in modules else None
         self._memory = modules["memory"] if "memory" in modules else None
+        self._content_safety_provider = create_content_safety_provider(self.config)
 
         auth_config = self.config["server"].get("auth", {})
         self.auth_enable = auth_config.get("enabled", False)
@@ -153,6 +155,7 @@ class WebSocketServer:
                 self._memory,
                 self._intent,
                 self,  # 传入server实例
+                self._content_safety_provider,
             )
             try:
                 await handler.handle_connection(websocket)
@@ -211,6 +214,9 @@ class WebSocketServer:
                 )
                 # 更新配置
                 self.config = new_config
+                self._content_safety_provider = create_content_safety_provider(
+                    self.config
+                )
                 # 重新初始化组件
                 modules = initialize_modules(
                     self.logger,

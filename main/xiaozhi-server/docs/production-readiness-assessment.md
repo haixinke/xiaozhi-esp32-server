@@ -69,7 +69,7 @@ xiaozhi-esp32-server 项目的聊天服务是一个**自适应流式音视频交
    - 特殊: 设备绑定/MQTT 接收/MCP 消息
 
 **出站流程**（服务器→客户端）：
-- TTS 文本入队 (`tts.tts_text_queue`) → 文本处理 → 合成 → Opus 编码 → 音频流发送
+- LLM → 内容安全闸门 → TTS 文本入队 (`tts.tts_text_queue`) → 文本处理 → 合成 → Opus 编码 → 音频流发送；未经内容安全闸门放行的 LLM 文本不得进入 `tts_text_queue`
 - WebSocket 消息序列化 JSON 格式
 
 #### 超时与清理机制

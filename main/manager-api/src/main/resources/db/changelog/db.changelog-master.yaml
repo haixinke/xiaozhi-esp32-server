@@ -893,3 +893,46 @@ databaseChangeLog:
         - sqlFile:
             encoding: utf8
             path: classpath:db/changelog/202607301000.sql
+  - changeSet:
+      id: 202608011200
+      author: minwang
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608011200.sql
+  - changeSet:
+      id: 202608011500
+      author: minwang
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608011500.sql
+  - changeSet:
+      id: 202608051500
+      author: minwang
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608051500.sql
+  - changeSet:
+      id: 202608061500
+      author: minwang
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608061500.sql
+  - changeSet:
+      id: 202608071000
+      author: minwang
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608071000.sql
+  - changeSet:
+      id: 202608071100
+      author: minwang
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608071100.sql
+>>>>>>> egg-dev

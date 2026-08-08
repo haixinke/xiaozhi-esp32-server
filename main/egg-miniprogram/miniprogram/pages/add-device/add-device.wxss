@@ -4,6 +4,7 @@
 .intro { margin-bottom: 48rpx; }
 .intro-title { display: block; font-size: 40rpx; font-weight: 600; color: #1A1A1A; margin-bottom: 16rpx; }
 .intro-desc { display: block; font-size: 26rpx; color: #5C5C5C; line-height: 1.7; }
+.invite-note { margin: -16rpx 0 32rpx; padding: 20rpx 24rpx; border-radius: 18rpx; background: #FFF7D8; color: #5C4A13; font-size: 24rpx; line-height: 1.6; }
 
 .code-block { margin-bottom: 40rpx; }
 .label { display: block; font-size: 24rpx; color: #8C8C88; margin-bottom: 16rpx; }

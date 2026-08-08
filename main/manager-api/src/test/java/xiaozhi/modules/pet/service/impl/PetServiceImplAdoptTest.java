@@ -13,7 +13,9 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
+import org.springframework.dao.DuplicateKeyException;
 
+import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
@@ -29,6 +31,7 @@ import xiaozhi.modules.pet.dao.UserProfileDao;
 import xiaozhi.modules.pet.dto.PetAdoptDTO;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.vo.PetVO;
+import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 import java.lang.reflect.Field;
 import java.util.Locale;
@@ -42,6 +45,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,6 +79,7 @@ class PetServiceImplAdoptTest {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private xiaozhi.modules.pet.service.PetCollectionCardService petCollectionCardService;
     @Mock private xiaozhi.modules.pet.config.PetSceneProperties petSceneProperties;
+    @Mock private WechatPhoneGate wechatPhoneGate;
 
     private PetServiceImpl petService;
 
@@ -83,8 +88,11 @@ class PetServiceImplAdoptTest {
         PetAvatarProperties avatarProperties = buildAvatarProperties();
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
-                memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher, avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties);
+                memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
+                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties,
+                wechatPhoneGate);
         setQuickHatchCode(DEMO_QUICK_HATCH_CODE);
+        when(wechatPhoneGate.canAccess(any())).thenReturn(true);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 
@@ -124,6 +132,21 @@ class PetServiceImplAdoptTest {
         properties.setRabbit(rabbit);
 
         return properties;
+    }
+
+    @Test
+    @DisplayName("未绑定手机号 - 拒绝领取且不访问宠物或邀请码数据")
+    void adopt_phoneNotBound_throwsForbiddenBeforeDataAccess() {
+        Long userId = 1000L;
+        PetAdoptDTO dto = new PetAdoptDTO();
+        dto.setInviteCode("EGG-ABCD-1");
+        when(wechatPhoneGate.canAccess(userId)).thenReturn(false);
+
+        assertThatThrownBy(() -> petService.adopt(userId, dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(exception -> assertThat(((RenException) exception).getCode())
+                        .isEqualTo(ErrorCode.FORBIDDEN));
+        verifyNoInteractions(petDao, inviteService);
     }
 
     @Test
@@ -223,6 +246,39 @@ class PetServiceImplAdoptTest {
                 .isInstanceOf(RenException.class);
 
         verify(petDao, never()).insert(any(PetEntity.class));
+        verify(inviteService, never()).consume(any(), any());
+    }
+
+    @Test
+    @DisplayName("账号已有宠物 - 拒绝领养且不创建或核销邀请码")
+    void adopt_existingPet_throwsAndDoesNotCreateOrConsumeInviteCode() {
+        Long userId = 1004L;
+        PetAdoptDTO dto = new PetAdoptDTO();
+        dto.setInviteCode("CODE-EXISTS");
+        when(petDao.exists(any())).thenReturn(true);
+
+        assertThatThrownBy(() -> petService.adopt(userId, dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(exception -> assertThat(((RenException) exception).getCode())
+                        .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
+
+        verify(petDao, never()).insert(any(PetEntity.class));
+        verify(inviteService, never()).consume(any(), any());
+    }
+
+    @Test
+    @DisplayName("并发重复创建 - 唯一索引冲突转为账号已有宠物且不核销邀请码")
+    void adopt_duplicateUserId_throwsAndDoesNotConsumeInviteCode() {
+        Long userId = 1005L;
+        PetAdoptDTO dto = new PetAdoptDTO();
+        dto.setInviteCode("CODE-DUPLICATE");
+        when(petDao.insert(any(PetEntity.class))).thenThrow(new DuplicateKeyException("duplicate user_id"));
+
+        assertThatThrownBy(() -> petService.adopt(userId, dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(exception -> assertThat(((RenException) exception).getCode())
+                        .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
+
         verify(inviteService, never()).consume(any(), any());
     }
 

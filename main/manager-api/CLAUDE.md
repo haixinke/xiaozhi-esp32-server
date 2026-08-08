@@ -141,6 +141,41 @@ JDBC URL：`jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEn
 
 反例：`List<Entity> all = dao.selectList(null)` 一次性加载全表。
 
+## 用户角色与权限
+
+### 角色体系
+
+`sys_user` 表通过 `super_admin` + `role` 两个字段控制权限：
+
+| super_admin | role | 身份 | 可见菜单 |
+|-------------|------|------|---------|
+| 0 | - | 普通用户 | 首页、设备管理 |
+| 1 | admin | 管理员 | 全部菜单 |
+| 1 | operator | 运营者 | 仅"内容运营"菜单 |
+
+### 后端权限
+
+- 接口级权限仍统一使用 `@RequiresPermissions("sys:role:superAdmin")`，不区分 admin/operator。`Oauth2Realm` 仅按 `superAdmin` 注入 `sys:role:superAdmin` / `sys:role:normal`。
+- `role` 字段仅用于前端菜单可见性控制（`manager-web` 的 `HeaderBar.vue`）。
+- 用户信息通过 `GET /user/info`（`LoginController`）返回 `UserDetail`，包含 `superAdmin` 和 `role` 字段。
+
+### 创建超管/运营者
+
+- 系统第一个注册用户自动成为超管：`SysUserServiceImpl.save()` 在 `getUserCount() == 0` 时置 `super_admin=1`；`role` 取库表默认值 `admin`。
+- 后续用户需手动 SQL 提权：
+
+  ```sql
+  UPDATE sys_user SET super_admin = 1, role = 'admin' WHERE username = 'xxx';
+  UPDATE sys_user SET super_admin = 1, role = 'operator' WHERE username = 'xxx';
+  ```
+
+### 扩展指引
+
+- 新增角色：在 `role` 字段增加新值（如 `viewer`），前端 `HeaderBar` 添加对应 `v-if` 条件。
+- 后端角色鉴权：如需服务端区分 admin/operator，可在 `Oauth2Realm` 中按 `role` 值注入不同权限标识。
+- 用户管理 UI 提权：如需在智控台直接设置角色，在用户管理页增加角色选择器，后端增加 `PUT /admin/user/role` 接口。
+
 ## 业务文档
 
+- [蛋宝宝用户资料与头像 OSS 上传](docs/egg-user-profile-avatar.md) — `GET/PUT /wechat/profile`、`POST /wechat/avatar`，`ai_wechat_user` 画像字段，阿里云 OSS 头像公开 URL。
 - [蛋宝宝孵化闭环后端实现参考](docs/egg-pet-hatch-backend.md) — adopt/hatch-action/hatch 三段端点、Model X 时间模型（adopt 设基线、动作减时）、ai_pet_hatch_action 表、虚拟设备与 agent 个性注入、每日心情 todayMood（懒生成 LLM+静态兜底）、错误码、测试约定与后期开发指引。

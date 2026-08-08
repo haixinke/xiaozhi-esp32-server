@@ -7,6 +7,10 @@
       <text class="intro-desc">购买或受邀后获得的激活码都从这里输入。添加成功会告诉你原型，具体款式留到破壳时揭晓。</text>
     </view>
 
+    <view wx:if="{{sharedInvite}}" class="invite-note">
+      <text>好友送你的激活码已填好，请确认后领取蛋宝宝。</text>
+    </view>
+
     <view class="code-block">
       <text class="label">激活码</text>
       <input class="code-input" value="{{code}}" bindinput="onCodeInput"

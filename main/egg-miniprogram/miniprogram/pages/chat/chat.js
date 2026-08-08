@@ -8,6 +8,9 @@ const STATE_IDLE = 'idle';
 const STATE_THINKING = 'thinking';
 const STATE_SPEAKING = 'speaking';
 
+// 两条消息间隔超过该阈值才显示居中时间分隔条
+const TIME_GAP_MS = 5 * 60 * 1000;
+
 Page({
   data: {
     pet: null,
@@ -259,7 +262,7 @@ Page({
           time: this._parseTime(item.createdAt),
         }));
 
-        const messages = historyMsgs.concat(this.data.messages);
+        const messages = this._stampSeparators(historyMsgs.concat(this.data.messages));
         this._historyPage = page;
         this._historyLoading = false;
 
@@ -322,7 +325,7 @@ Page({
           time: this._parseTime(item.createdAt),
         }));
 
-        const messages = historyMsgs.concat(this.data.messages);
+        const messages = this._stampSeparators(historyMsgs.concat(this.data.messages));
         this._historyPage = page;
         this._historyLoading = false;
 
@@ -361,6 +364,63 @@ Page({
     const normalized = value.replace(' ', 'T');
     const t = new Date(normalized).getTime();
     return isNaN(t) ? Date.now() : t;
+  },
+
+  // 判断两个时间戳是否落在同一天
+  _isSameDay(a, b) {
+    if (!a || !b) return false;
+    const da = new Date(this._parseTime(a));
+    const db = new Date(this._parseTime(b));
+    return da.getFullYear() === db.getFullYear()
+      && da.getMonth() === db.getMonth()
+      && da.getDate() === db.getDate();
+  },
+
+  // 时间分隔条文案：今天 HH:mm；昨天「昨天 HH:mm」；同年更早「M月D日 HH:mm」；否则带年份
+  _formatTimeLabel(ms) {
+    const d = new Date(ms);
+    const now = new Date();
+    const pad = (n) => (n < 10 ? '0' + n : '' + n);
+    const hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    if (this._isSameDay(ms, now.getTime())) return hm;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (this._isSameDay(ms, yesterday.getTime())) return '昨天 ' + hm;
+    if (d.getFullYear() === now.getFullYear()) {
+      return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hm;
+    }
+    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hm;
+  },
+
+  // 给消息数组打 showTime / timeLabel：首条，或与上一条间隔≥5分钟，或跨天，则显示分隔条
+  _stampSeparators(messages) {
+    const n = messages.length;
+    if (n === 0) return messages;
+    const out = [];
+    let prevTime = 0;
+    for (let i = 0; i < n; i++) {
+      const m = messages[i];
+      const t = m.time || 0;
+      const show = i === 0 || (t - prevTime >= TIME_GAP_MS) || !this._isSameDay(t, prevTime);
+      out.push(show
+        ? Object.assign({}, m, { showTime: true, timeLabel: this._formatTimeLabel(t) })
+        : Object.assign({}, m, { showTime: false, timeLabel: '' }));
+      prevTime = t;
+    }
+    return out;
+  },
+
+  // 新消息只与最后一条比较，O(1) 打标后追加
+  _appendWithSeparator(messages, msg) {
+    const prev = messages.length ? messages[messages.length - 1] : null;
+    const t = msg.time || 0;
+    const show = !prev
+      || (t - (prev.time || 0) >= TIME_GAP_MS)
+      || !this._isSameDay(t, prev.time || 0);
+    const stamped = show
+      ? Object.assign({}, msg, { showTime: true, timeLabel: this._formatTimeLabel(t) })
+      : Object.assign({}, msg, { showTime: false, timeLabel: '' });
+    return messages.concat([stamped]);
   },
 
   // -------------------------------------------------------------------------
@@ -432,12 +492,12 @@ Page({
 
   _addMessage(role, content) {
     const id = `msg-${this._msgIdSeed++}`;
-    const messages = this.data.messages.concat([{
+    const messages = this._appendWithSeparator(this.data.messages, {
       id,
       role,
       content,
       time: Date.now(),
-    }]);
+    });
     this._persistAndSetMessages(messages, id);
   },
 
@@ -450,13 +510,13 @@ Page({
       }
     } else {
       const id = `msg-${this._msgIdSeed++}`;
-      const messages = this.data.messages.concat([{
+      const messages = this._appendWithSeparator(this.data.messages, {
         id,
         role: 'assistant',
         content: text,
         typing: true,
         time: Date.now(),
-      }]);
+      });
       this._streamingIdx = messages.length - 1;
       this._streamingBuffer = text;
       this._persistAndSetMessages(messages, id, { chatState });
@@ -500,6 +560,8 @@ Page({
         role: msg.role,
         content,
         time: msg.time,
+        showTime: msg.showTime,
+        timeLabel: msg.timeLabel,
       };
     }
 

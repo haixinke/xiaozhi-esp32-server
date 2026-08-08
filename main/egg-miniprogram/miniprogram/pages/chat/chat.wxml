@@ -20,6 +20,8 @@
     <view class="tip" wx:if="{{!historyLoading}}">{{historyNoMore ? '已显示全部对话' : '上滑查看更多 · 仅保留最近几个月的记录'}}</view>
 
     <view wx:for="{{messages}}" wx:key="id" id="msg-{{item.id}}">
+      <!-- 时间分隔条：首条 / 间隔≥5分钟 / 跨天 -->
+      <view wx:if="{{item.showTime}}" class="time-sep"><text class="time-sep-text" user-select="none">{{item.timeLabel}}</text></view>
       <!-- 用户气泡（右） -->
       <view wx:if="{{item.role === 'user'}}" class="row row--user">
         <view class="bubble bubble--user">{{item.content}}</view>

@@ -25,8 +25,15 @@ let bindPhonePromise = null;
 let requestGetCalls = 0;
 let requestGetResult = [];
 let requestGetPromise = null;
+let requestGetError = null;
 let savedPetVO = null;
 let showTabBarCalls = 0;
+let storedPet = null;
+let inviteMineResult = null;
+let inviteMineError = null;
+let inviteMineCalls = 0;
+let pendingInvite = null;
+let clearPendingCalls = 0;
 
 const authMock = {
   getSession: () => cachedSession,
@@ -34,7 +41,7 @@ const authMock = {
   markPhoneBound: () => markPhoneResult
 };
 const petStoreMock = {
-  getPet: () => null,
+  getPet: () => storedPet,
   savePetFromVO: (pet) => {
     savedPetVO = pet;
     return pet;
@@ -44,10 +51,25 @@ const petStoreMock = {
   getCountdown: () => '',
   getDailyStatus: () => null
 };
+const inviteApiMock = {
+  getMine: async () => {
+    inviteMineCalls += 1;
+    if (inviteMineError) throw inviteMineError;
+    return inviteMineResult;
+  }
+};
+const shareInviteMock = {
+  getPending: () => pendingInvite,
+  clearPending: () => {
+    clearPendingCalls += 1;
+    pendingInvite = null;
+  }
+};
 const requestMock = {
   get: async () => {
     requestGetCalls += 1;
     if (requestGetPromise) return requestGetPromise;
+    if (requestGetError) throw requestGetError;
     return requestGetResult;
   }
 };
@@ -76,6 +98,8 @@ Module._load = function (request, parent, isMain) {
     if (request === '../../utils/pet-store') return petStoreMock;
     if (request === '../../utils/wechat-api') return wechatApiMock;
     if (request === '../../utils/request') return requestMock;
+    if (request === '../../utils/invite-api') return inviteApiMock;
+    if (request === '../../utils/share-invite') return shareInviteMock;
   }
   return originalLoad.call(this, request, parent, isMain);
 };
@@ -116,8 +140,15 @@ function resetScenario() {
   requestGetCalls = 0;
   requestGetResult = [];
   requestGetPromise = null;
+  requestGetError = null;
   savedPetVO = null;
   showTabBarCalls = 0;
+  storedPet = null;
+  inviteMineResult = null;
+  inviteMineError = null;
+  inviteMineCalls = 0;
+  pendingInvite = null;
+  clearPendingCalls = 0;
   app.globalData = { authReady: null };
 }
 
@@ -125,13 +156,124 @@ async function run() {
   const homeTemplate = fs.readFileSync(path.join(__dirname, 'home.wxml'), 'utf8');
   assert.ok(!homeTemplate.includes('<text class="state-time">{{countdown}}</text>'),
     'home must not reveal the hatching countdown');
-  assert.ok(homeTemplate.includes('<view wx:if="{{!pet}}" class="empty-state">'),
+  assert.ok(homeTemplate.includes('<view wx:elif="{{!pet}}" class="empty-state">'),
     'home must preserve the empty state after restoration completes');
   assert.ok(homeTemplate.includes('<block wx:if="{{authChecked && !petRestoreLoading}}">'),
     'home must keep all page content hidden while restoring the pet');
+  assert.ok(homeTemplate.includes('wx:if="{{hasPendingInvite}}"'),
+    'home should offer a dedicated CTA when a friend invitation is pending');
+assert.ok(!homeTemplate.includes('open-type="share"'),
+  'home should rely on the native top-right menu instead of inline share buttons');
+  assert.ok(homeTemplate.includes('wx:if="{{petRestoreError}}"'),
+    'home should render a dedicated pet restoration error state');
 
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  inviteMineResult = { code: 'EGG-ABCD', remaining: 3, status: 1 };
+  const sharePage = makePage();
+  sharePage.onLoad();
+  await Promise.resolve();
+  assert.strictEqual(inviteMineCalls, 1, 'home load should preload the personal invitation code');
+  assert.deepStrictEqual(
+    sharePage.onShareAppMessage(),
+    {
+      title: '一起来养蛋宝宝吧',
+      path: '/pages/home/home?v=1&source=home_share&inviteCode=EGG-ABCD'
+    },
+    'an active personal invitation code should be included in the synchronous share path'
+  );
+  assert.deepStrictEqual(
+    sharePage.onShareTimeline(),
+    {
+      title: '一起来养蛋宝宝吧'
+    },
+    'timeline sharing must not carry or prefill a personal invitation code'
+  );
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  inviteMineError = new Error('network unavailable');
+  const fallbackSharePage = makePage();
+  fallbackSharePage.onLoad();
+  await Promise.resolve();
+  assert.deepStrictEqual(
+    fallbackSharePage.onShareAppMessage(),
+    {
+      title: '一起来养蛋宝宝吧',
+      path: '/pages/home/home?v=1&source=home_share'
+    },
+    'a failed invitation lookup should still provide a privacy-safe base share'
+  );
+  assert.deepStrictEqual(
+    fallbackSharePage.onShareTimeline(),
+    {
+      title: '一起来养蛋宝宝吧'
+    },
+    'timeline sharing should remain a plain home share without an invitation query'
+  );
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  inviteMineResult = { code: 'EGG-USED', remaining: 0, status: 1 };
+  const exhaustedSharePage = makePage();
+  exhaustedSharePage.onLoad();
+  await Promise.resolve();
+  assert.deepStrictEqual(
+    exhaustedSharePage.onShareAppMessage(),
+    {
+      title: '一起来养蛋宝宝吧',
+      path: '/pages/home/home?v=1&source=home_share'
+    },
+    'an exhausted code should not be exposed in the share path'
+  );
+
+  resetScenario();
+  pendingInvite = { code: 'ABCDE', source: 'home_share', version: 1, receivedAt: Date.now() };
+  const pendingInvitePage = makePage();
+  await pendingInvitePage.loadPetFromServer();
+  assert.strictEqual(pendingInvitePage.data.hasPendingInvite, true,
+    'a petless user with a pending friend invite should see the invitation CTA');
+  assert.strictEqual(clearPendingCalls, 0, 'a petless user should retain the friend invitation');
+
+  resetScenario();
+  pendingInvite = { code: 'ABCDE', source: 'home_share', version: 1, receivedAt: Date.now() };
+  requestGetError = new Error('network unavailable');
+  const failedRestorePage = makePage();
+  await failedRestorePage.loadPetFromServer();
+  assert.strictEqual(failedRestorePage.data.hasPendingInvite, false,
+    'a failed pet restoration must not expose the pending invitation CTA');
+  assert.strictEqual(failedRestorePage.data.petRestoreError, '宠物状态加载失败，请重试',
+    'a failed pet restoration should surface a retryable error state');
+  assert.strictEqual(clearPendingCalls, 0,
+    'a failed pet restoration must retain the pending invitation for a later retry');
+  requestGetError = null;
+  await failedRestorePage.onRetryPetRestore();
+  assert.strictEqual(failedRestorePage.data.petRestoreError, '',
+    'a successful retry should clear the pet restoration error');
+  assert.strictEqual(failedRestorePage.data.hasPendingInvite, true,
+    'a successful petless retry should restore the pending invitation CTA');
+
+  resetScenario();
+  storedPet = { id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' };
+  pendingInvite = { code: 'ABCDE', source: 'home_share', version: 1, receivedAt: Date.now() };
+  const existingPetPage = makePage();
+  existingPetPage.setData({ authChecked: true });
+  existingPetPage.onShow();
+  assert.strictEqual(clearPendingCalls, 1, 'an existing pet should clear a pending friend invitation');
+  assert.strictEqual(existingPetPage.data.hasPendingInvite, false,
+    'an existing pet should not show the invitation CTA');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  pendingInvite = { code: 'ABCDE', source: 'home_share', version: 1, receivedAt: Date.now() };
+  inviteMineResult = { code: 'ABCDE', remaining: 3, status: 1 };
+  const selfInvitePage = makePage();
+  selfInvitePage.onLoad();
+  await Promise.resolve();
+  assert.strictEqual(clearPendingCalls, 1, 'opening a personal invitation should clear the self-invite context');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };

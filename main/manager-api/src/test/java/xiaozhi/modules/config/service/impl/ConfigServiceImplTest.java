@@ -70,6 +70,29 @@ class ConfigServiceImplTest {
         assertEquals(List.of("first", "second"), features.get("labels"));
     }
 
+    @Test
+    void contentSafetyParametersAreNestedWithTopLevelAliyunCredentials() {
+        SysParamsService sysParamsService = mock(SysParamsService.class);
+        when(sysParamsService.list(anyMap())).thenReturn(List.of(
+                parameter("aliyun.access_key_id", "id-value", "string"),
+                parameter("aliyun.access_key_secret", "secret-value", "string"),
+                parameter("content_safety.enabled", "false", "boolean"),
+                parameter("content_safety.input_block_message", "甲;乙", "array"),
+                parameter("content_safety.output_chunk_chars", "120", "number")));
+        ConfigServiceImpl service = newService(sysParamsService, mock(RedisUtils.class));
+        Map<String, Object> config = new HashMap<>();
+
+        ReflectionTestUtils.invokeMethod(service, "buildConfig", config);
+
+        Map<?, ?> aliyun = assertInstanceOf(Map.class, config.get("aliyun"));
+        assertEquals("id-value", aliyun.get("access_key_id"));
+        assertEquals("secret-value", aliyun.get("access_key_secret"));
+        Map<?, ?> safety = assertInstanceOf(Map.class, config.get("content_safety"));
+        assertEquals(false, safety.get("enabled"));
+        assertEquals(List.of("甲", "乙"), safety.get("input_block_message"));
+        assertEquals(120, safety.get("output_chunk_chars"));
+    }
+
     private static SysParamsDTO parameter(String code, String value, String type) {
         SysParamsDTO parameter = new SysParamsDTO();
         parameter.setParamCode(code);

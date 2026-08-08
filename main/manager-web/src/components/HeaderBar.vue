@@ -9,7 +9,7 @@
 
       <!-- 中间导航菜单 -->
       <div class="header-center">
-        <div class="equipment-management" :class="{
+        <div v-if="!userInfo.superAdmin || ['admin', 'operator'].includes(userInfo.role || 'admin')" class="equipment-management" :class="{
           'active-tab':
             $route.path === '/home' ||
             $route.path === '/role-config' ||
@@ -66,7 +66,7 @@
           </el-dropdown-menu>
         </el-dropdown>
 
-        <div v-if="userInfo.superAdmin" class="equipment-management"
+        <div v-if="userInfo.superAdmin && (userInfo.role || 'admin') === 'admin'" class="equipment-management"
           :class="{ 'active-tab': $route.path === '/model-config' }" @click="handleRouter('modelConfig')">
           <img loading="lazy" alt="" src="@/assets/header/model_config.png" :style="{
             filter:
@@ -92,7 +92,8 @@
           }" />
           <span class="nav-text">{{ $t("header.addressBook") }}</span>
         </div>
-        <el-dropdown v-if="userInfo.superAdmin" trigger="click" class="equipment-management more-dropdown" :class="{
+        <el-dropdown v-if="userInfo.superAdmin && (userInfo.role || 'admin') === 'admin'" trigger="click"
+          class="equipment-management more-dropdown" :class="{
           'active-tab':
             $route.path === '/dict-management' ||
             $route.path === '/params-management' ||
@@ -188,6 +189,27 @@
             </el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
+
+        <!-- 内容运营 -->
+        <el-dropdown v-if="userInfo.superAdmin" trigger="click" class="equipment-management more-dropdown" :class="{
+          'active-tab': $route.path === '/story-engine-management'
+        }" @visible-change="handleContentDropdownVisibleChange">
+          <span class="el-dropdown-link">
+            <img loading="lazy" alt="" src="@/assets/header/param_management.png" :style="{
+              filter:
+                $route.path === '/story-engine-management'
+                  ? 'brightness(0) invert(1)'
+                  : 'None',
+            }" />
+            <span class="nav-text">内容运营</span>
+            <i class="el-icon-arrow-down" :class="{ 'rotate-down': contentDropdownVisible }"></i>
+          </span>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item @click.native="handleRouter('storyEngineManagement')">
+              故事引擎
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
       </div>
 
       <!-- 右侧元素 -->
@@ -229,6 +251,7 @@ export default {
       search: "",
       isChangePasswordDialogVisible: false, // 控制修改密码弹窗的显示
       paramDropdownVisible: false,
+      contentDropdownVisible: false,
       voiceCloneDropdownVisible: false,
       nfcDropdownVisible: false,
       userMenuVisible: false, // 添加用户菜单可见状态
@@ -263,6 +286,7 @@ export default {
         nfcWrite: "/pdc-nfc/write",
         nfcAssets: "/pdc-nfc/assets",
         nfcAudit: "/pdc-nfc/audit",
+        storyEngineManagement: "/story-engine-management",
       }
     };
   },
@@ -334,22 +358,23 @@ export default {
               label: this.$t("language.zhTW"),
               value: "zh_TW",
             },
-            {
-              label: this.$t("language.en"),
-              value: "en",
-            },
-            {
-              label: this.$t("language.de"),
-              value: "de",
-            },
-            {
-              label: this.$t("language.vi"),
-              value: "vi",
-            },
-            {
-              label: this.$t("language.ptBR"),
-              value: "pt_BR",
-            },
+            // 暂时只保留中文简体和繁体，其余语言屏蔽
+            // {
+            //   label: this.$t("language.en"),
+            //   value: "en",
+            // },
+            // {
+            //   label: this.$t("language.de"),
+            //   value: "de",
+            // },
+            // {
+            //   label: this.$t("language.vi"),
+            //   value: "vi",
+            // },
+            // {
+            //   label: this.$t("language.ptBR"),
+            //   value: "pt_BR",
+            // },
           ],
         },
         {
@@ -402,6 +427,11 @@ export default {
     // 监听参数字典下拉菜单的可见状态变化
     handleParamDropdownVisibleChange(visible) {
       this.paramDropdownVisible = visible;
+    },
+
+    // 监听内容运营下拉菜单的可见状态变化
+    handleContentDropdownVisibleChange(visible) {
+      this.contentDropdownVisible = visible;
     },
 
     // 监听音色克隆下拉菜单的可见状态变化

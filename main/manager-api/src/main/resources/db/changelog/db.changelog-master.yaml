@@ -935,4 +935,10 @@ databaseChangeLog:
         - sqlFile:
             encoding: utf8
             path: classpath:db/changelog/202608071100.sql
->>>>>>> egg-dev
+  - changeSet:
+      id: 202608081000
+      author: minwang
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608081000.sql

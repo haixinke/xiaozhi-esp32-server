@@ -125,6 +125,43 @@ async function run() {
   assert.strictEqual(clearPendingCalls, 1, 'editing a shared code discards the pending invite');
   assert.strictEqual(editedInvitePage.data.sharedInvite, false, 'edited codes are treated as manual input');
 
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  const inputPage = makePage();
+  inputPage.onLoad();
+  inputPage.onCodeInput({ detail: { value: 'ab-12' } });
+  assert.strictEqual(inputPage.data.code, 'AB12', 'input is uppercased and non-alphanumerics stripped');
+  assert.strictEqual(inputPage.data.canSubmit, false, 'fewer than 5 characters cannot be submitted');
+  assert.deepStrictEqual(
+    inputPage.data.codeCells.map((cell) => cell.value),
+    ['A', 'B', '1', '2', ''],
+    'filled cells mirror the typed code'
+  );
+  assert.deepStrictEqual(
+    inputPage.data.codeCells.map((cell) => cell.active),
+    [false, false, false, false, true],
+    'next empty cell is marked active'
+  );
+  inputPage.onCodeInput({ detail: { value: 'abc12345' } });
+  assert.strictEqual(inputPage.data.code, 'ABC12', 'input is truncated to 5 characters');
+  assert.strictEqual(inputPage.data.canSubmit, true, 'full 5-character code can be submitted');
+  assert.ok(
+    inputPage.data.codeCells.every((cell) => !cell.active),
+    'no cell is active once the code is complete'
+  );
+  inputPage.onCodeFocus();
+  assert.strictEqual(inputPage.data.codeFocused, true, 'focus highlights the active cell');
+  inputPage.onCodeBlur();
+  assert.strictEqual(inputPage.data.codeFocused, false, 'blur removes the highlight');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  const shortPage = makePage();
+  shortPage.onLoad();
+  shortPage.onCodeInput({ detail: { value: 'ABC' } });
+  await shortPage.onValidate();
+  assert.strictEqual(postCalls, 0, 'short codes never reach the adopt API');
+
   console.log('add-device.test.js: ALL PASS');
 }
 

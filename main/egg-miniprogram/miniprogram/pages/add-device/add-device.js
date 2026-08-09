@@ -3,8 +3,27 @@ const petStore = require('../../utils/pet-store');
 const auth = require('../../utils/auth');
 const shareInvite = require('../../utils/share-invite');
 
+const ACTIVATION_CODE_LENGTH = 5;
+
+function activationCodeCells(code) {
+  const value = String(code || '');
+  return Array.from({ length: ACTIVATION_CODE_LENGTH }, (_, index) => ({
+    value: value[index] || '',
+    active: value.length < ACTIVATION_CODE_LENGTH && index === value.length
+  }));
+}
+
 Page({
-  data: { code: '', error: '', canSubmit: false, success: null, submitting: false, sharedInvite: false },
+  data: {
+    code: '',
+    codeCells: activationCodeCells(''),
+    codeFocused: false,
+    error: '',
+    canSubmit: false,
+    success: null,
+    submitting: false,
+    sharedInvite: false
+  },
 
   onLoad() {
     const session = auth.getSession();
@@ -14,16 +33,46 @@ Page({
     }
     const pending = shareInvite.getPending();
     if (pending && pending.code) {
-      this.setData({ code: pending.code, canSubmit: true, sharedInvite: true });
+      const code = String(pending.code)
+        .replace(/[^a-z0-9]/gi, '')
+        .toUpperCase()
+        .slice(0, ACTIVATION_CODE_LENGTH);
+      this.setData({
+        code,
+        codeCells: activationCodeCells(code),
+        canSubmit: code.length === ACTIVATION_CODE_LENGTH,
+        sharedInvite: true
+      });
     }
   },
 
   onCodeInput(e) {
-    const code = e.detail.value;
+    const code = String(e.detail.value || '')
+      .replace(/[^a-z0-9]/gi, '')
+      .toUpperCase()
+      .slice(0, ACTIVATION_CODE_LENGTH);
     const pending = this.data.sharedInvite ? shareInvite.getPending() : null;
-    const sharedInvite = !!(pending && code.trim().toUpperCase() === pending.code);
+    const sharedInvite = !!(pending && code === pending.code);
     if (this.data.sharedInvite && !sharedInvite) shareInvite.clearPending();
-    this.setData({ code, error: '', canSubmit: code.trim().length > 0, sharedInvite });
+    this.setData({
+      code,
+      codeCells: activationCodeCells(code),
+      error: '',
+      canSubmit: code.length === ACTIVATION_CODE_LENGTH,
+      sharedInvite
+    });
+  },
+
+  onCodeFocus() {
+    this.setData({ codeFocused: true });
+  },
+
+  onCodeBlur() {
+    this.setData({ codeFocused: false });
+  },
+
+  onCodeTap() {
+    this.setData({ codeFocused: true });
   },
 
   async onValidate() {

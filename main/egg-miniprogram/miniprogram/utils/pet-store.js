@@ -321,13 +321,12 @@ function completeLesson(value) {
   return completeDailyTask('lesson', value);
 }
 
-async function saveDoodle(color, colorName, pattern) {
+async function saveDoodle(artUrl) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
   try {
-    const result = await petApi.submitHatchAction(pet.id, 'DOODLE', { color, colorName, pattern });
+    const result = await petApi.submitHatchAction(pet.id, 'DOODLE', { artUrl });
     const updated = savePetFromVO(result.pet);
-    updated.shell = { color, colorName, pattern };
     savePet(updated);
     return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
   } catch (error) {

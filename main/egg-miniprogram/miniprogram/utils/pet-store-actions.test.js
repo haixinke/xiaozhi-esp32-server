@@ -124,11 +124,11 @@ function todayKey() {
     pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 1440, prototype: '玉兔',
            expectedHatchTime: new Date(Date.now() + 7 * DAY).toISOString() }
   }];
-  const doodleResult = await petStore.saveDoodle('#FFD700', '金色', '波点');
+  const doodleResult = await petStore.saveDoodle('https://oss.example/doodles/gold.png');
   assert.strictEqual(doodleResult.ok, true, 'doodle ok');
   assert.strictEqual(actionCalls.at(-1).type, 'DOODLE');
-  assert.deepStrictEqual(actionCalls.at(-1).payload, { color: '#FFD700', colorName: '金色', pattern: '波点' });
-  assert.strictEqual(petStore.getPet().shell.colorName, '金色', 'shell cached on pet');
+  assert.deepStrictEqual(actionCalls.at(-1).payload, { artUrl: 'https://oss.example/doodles/gold.png' });
+  assert.strictEqual(petStore.getPet().shell.colorName, '奶油白', 'doodle no longer mutates shell');
 
   // === 错误路径：后端 reject（business error）===
   const Module2 = require('module');

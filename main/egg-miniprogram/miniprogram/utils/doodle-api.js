@@ -52,10 +52,24 @@ async function getLatestDoodleArtUrl(petId) {
   const actions = await get(`/pet/${petId}/hatch-actions`);
   const doodles = (actions || []).filter((a) => (a.actionType || a.action_type) === 'DOODLE');
   if (!doodles.length) return '';
-  const latest = doodles[doodles.length - 1];
+  // 按动作日期排序后取最新一条，避免依赖后端返回顺序
+  const sorted = doodles.slice().sort((a, b) => {
+    const ta = Date.parse(a.actionDate || a.action_date || '');
+    const tb = Date.parse(b.actionDate || b.action_date || '');
+    return (Number.isFinite(ta) ? ta : 0) - (Number.isFinite(tb) ? tb : 0);
+  });
+  const latest = sorted[sorted.length - 1];
   const payload = latest.payload;
   if (!payload) return '';
-  const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
+  let parsed = payload;
+  if (typeof payload === 'string') {
+    try {
+      parsed = JSON.parse(payload);
+    } catch (error) {
+      // 后端返回非法 JSON 时按无画作处理，不抛原生异常破坏调用方
+      return '';
+    }
+  }
   return parsed.artUrl || '';
 }
 

@@ -28,13 +28,6 @@ function clamp(value, min, max) {
   return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : min;
 }
 
-function hexToRgba(hex, alpha) {
-  const value = String(hex || '').replace('#', '');
-  const normalized = value.length === 3 ? value.split('').map(c => c + c).join('') : value;
-  const parsed = /^[0-9a-f]{6}$/i.test(normalized) ? parseInt(normalized, 16) : 0xEDE78E;
-  return `rgba(${(parsed >> 16) & 255},${(parsed >> 8) & 255},${parsed & 255},${clamp(alpha, 0, 1)})`;
-}
-
 function eggPath(context, width, height) {
   context.beginPath();
   context.moveTo(width * 0.5, height * 0.035);

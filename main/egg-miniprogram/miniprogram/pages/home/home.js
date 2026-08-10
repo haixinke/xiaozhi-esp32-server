@@ -226,7 +226,6 @@ Page({
     this.syncPendingInvite(pet);
     const stage = petStore.getStage(pet);
     const presentation = petStore.getStagePresentation(stage);
-    const isHatched = stage === 'hatched';
     const wishUnlocked = true;
     const learnUnlocked = false;
     this.finishPetRestore({

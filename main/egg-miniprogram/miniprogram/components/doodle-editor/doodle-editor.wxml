@@ -1,0 +1,146 @@
+<view class="doodle-editor" wx:if="{{visible}}">
+  <view class="doodle-nav">
+    <view class="doodle-status-bar" style="height:{{statusBarHeight}}px"></view>
+    <view class="doodle-nav-row">
+      <view class="doodle-nav-leading">
+        <view class="doodle-back" aria-role="button" aria-label="返回" bindtap="onClose">
+          <view class="doodle-chevron"></view>
+        </view>
+      </view>
+      <text class="doodle-title">画我的蛋壳</text>
+      <view class="doodle-nav-safe"></view>
+    </view>
+  </view>
+
+  <view class="preview" bindtap="onCanvasBackdropTap">
+    <view class="canvas-action-rail">
+      <view
+        class="canvas-action-button {{!canUndo ? 'canvas-action-button--disabled' : ''}}"
+        aria-role="button"
+        aria-label="撤销一步"
+        bindtap="onUndo"
+      >
+        <text class="canvas-action-label">撤销</text>
+      </view>
+      <view
+        class="canvas-action-button canvas-action-button--clear {{!canClear ? 'canvas-action-button--disabled' : ''}}"
+        aria-role="button"
+        aria-label="清空画面"
+        bindtap="onClear"
+      >
+        <text class="canvas-action-label">清空</text>
+      </view>
+    </view>
+
+    <view class="preview-aura"></view>
+    <view class="egg-canvas-stack" style="transform:scale({{canvasScale}});">
+      <canvas type="2d" id="eggBaseCanvas" class="egg-canvas egg-canvas--base"></canvas>
+      <canvas
+        type="2d"
+        id="eggArtCanvas"
+        class="egg-canvas egg-canvas--art"
+        disable-scroll
+        catchtouchstart="onCanvasTouchStart"
+        catchtouchmove="onCanvasTouchMove"
+        catchtouchend="onCanvasTouchEnd"
+        catchtouchcancel="onCanvasTouchCancel"
+      ></canvas>
+    </view>
+    <text wx:if="{{!canvasReady}}" class="canvas-loading">正在准备蛋壳…</text>
+
+    <view class="tool-sheet" catchtap="onToolPanelTap">
+      <view wx:if="{{toolPanelOpen}}" class="tool-options">
+        <view wx:if="{{activeTool === 'brush'}}" class="brush-options">
+          <view class="brush-settings-grid">
+            <view class="brush-setting-group">
+              <text class="brush-setting-title">粗细</text>
+              <view class="brush-size-row">
+                <view
+                  wx:for="{{brushSizes}}"
+                  wx:key="pixels"
+                  class="brush-size-option {{brushSizeIndex === index ? 'brush-size-option--selected' : ''}}"
+                  data-index="{{index}}"
+                  aria-role="button"
+                  aria-label="{{item.pixels}} px"
+                  bindtap="onBrushSize"
+                >
+                  <view class="brush-size-dot" style="width:{{item.previewRpx}}rpx;height:{{item.previewRpx}}rpx;background:{{selectedColor}};"></view>
+                  <text class="brush-size-label">{{item.pixels}} px</text>
+                </view>
+              </view>
+            </view>
+            <view class="brush-setting-group brush-setting-group--color">
+              <text class="brush-setting-title">颜色</text>
+              <view
+                class="brush-color-trigger"
+                aria-role="button"
+                aria-label="选择画笔颜色，当前{{selectedColorName}}"
+                bindtap="onToggleBrushColorPicker"
+              >
+                <view class="brush-selected-color" style="background:{{selectedColor}};"></view>
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{colorPickerOpen}}" class="brush-color-popover" catchtap="onColorPickerTap">
+            <view class="brush-color-grid">
+              <view
+                wx:for="{{brushColors}}"
+                wx:key="token"
+                class="brush-color-card {{selectedColor === item.value ? 'brush-color-card--selected' : ''}}"
+                data-token="{{item.token}}"
+                aria-role="button"
+                aria-label="{{item.name}}"
+                bindtap="onBrushColor"
+                style="background:{{item.value}};"
+              ></view>
+            </view>
+          </view>
+        </view>
+        <view wx:elif="{{activeTool === 'eraser'}}" class="eraser-options">
+          <view class="eraser-size-grid">
+            <view
+              wx:for="{{eraserSizes}}"
+              wx:key="pixels"
+              class="eraser-size-option {{eraserSizeIndex === index ? 'eraser-size-option--selected' : ''}}"
+              data-index="{{index}}"
+              aria-role="button"
+              aria-label="橡皮擦 {{item.pixels}} px"
+              bindtap="onEraserSize"
+            >
+              <view class="eraser-size-dot" style="width:{{item.previewRpx}}rpx;height:{{item.previewRpx}}rpx;"></view>
+              <text class="eraser-size-label">{{item.pixels}} px</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="figma-toolbar {{toolPanelOpen ? 'figma-toolbar--with-options' : ''}}">
+        <view
+          class="tool-button {{toolPanelOpen && activeTool === 'brush' ? 'tool-button--selected' : ''}}"
+          data-tool="brush"
+          aria-role="button"
+          aria-label="画笔"
+          bindtap="onTool"
+        >
+          <view class="toolbar-icon-wrap">
+            <text class="toolbar-icon">画笔</text>
+            <view class="brush-current-color" style="background:{{selectedColor}};"></view>
+          </view>
+        </view>
+        <view
+          class="tool-button {{toolPanelOpen && activeTool === 'eraser' ? 'tool-button--selected' : ''}}"
+          data-tool="eraser"
+          aria-role="button"
+          aria-label="橡皮擦"
+          bindtap="onTool"
+        >
+          <text class="toolbar-icon">橡皮</text>
+        </view>
+      </view>
+
+      <view class="save-bar" bindtap="onSave">
+        <text class="save-text">保存蛋壳</text>
+      </view>
+    </view>
+  </view>
+</view>

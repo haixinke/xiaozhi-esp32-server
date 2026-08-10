@@ -7,6 +7,7 @@ const inviteApi = require('../../utils/invite-api');
 const shareInvite = require('../../utils/share-invite');
 const incubationEnv = require('../../utils/incubation-environment');
 const envState = require('../../utils/environment-state');
+const doodleApi = require('../../utils/doodle-api');
 const { INTERACTION_ICONS } = require('../../config/pre-hatch-assets');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
@@ -54,6 +55,7 @@ Page({
     environment: null,
     eggArtUrl: '',
     lampOn: false,
+    doodleEditorVisible: false,
     // 每日窗景弹层数据
     dailyWindowVisible: false,
     dailyWindowOriginStyle: '',
@@ -108,12 +110,22 @@ Page({
       this.renderPet(cached);
       // 后台静默刷新后端派生字段(今日心情等)，避免缓存跨天后一直展示旧状态
       this.loadPetFromServer();
+      // 回显最新涂鸦画作到场景蛋壳的 art 层；失败静默，不阻塞主流程
+      this.restoreDoodleArt(cached);
       return;
     }
     // 冷启动:缓存空,从后端拉取已有蛋
     this._petRestoreFinished = false;
     this.setData({ pet: null, stage: 'empty', petRestoreLoading: true, petRestoreError: '' });
     this.loadPetFromServer();
+  },
+
+  // 拉取最新 DOODLE 记录的 artUrl 回显到场景蛋壳；孵化期之外或失败时不处理
+  restoreDoodleArt(pet) {
+    if (!pet || !pet.id || petStore.getStage(pet) === 'hatched') return;
+    doodleApi.getLatestDoodleArtUrl(pet.id)
+      .then((artUrl) => { if (artUrl) this.setData({ eggArtUrl: artUrl }); })
+      .catch(() => {});
   },
 
   onHide() {
@@ -433,13 +445,34 @@ Page({
     const key = e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.key;
     if (key === 'wish' && !this.data.wishUnlocked) return this.showFeedback('许愿池还在准备中。');
     if (key === 'learn' && !this.data.learnUnlocked) return this.showFeedback('蛋宝宝还没到早教的年龄，明天来试试吧。');
-    if (key === 'draw') return wx.showToast({ title: '画画功能即将上线', icon: 'none' });
+    if (key === 'draw') { this.setData({ doodleEditorVisible: true }); return; }
     const routes = { wish: '/pages/wish/wish', learn: '/pages/lesson/lesson' };
     if (routes[key]) {
       // 300ms 场景过渡后跳转，与静态项目节奏一致
       setTimeout(() => wx.navigateTo({ url: routes[key] }), 300);
     }
   },
+
+  // 涂鸦编辑器导出画作后：先上传 OSS 拿 artUrl，再记录 DOODLE 动作；上传失败则保留画布可重试
+  async onDoodleSaved(e) {
+    const tempFilePath = e && e.detail && e.detail.tempFilePath;
+    if (!tempFilePath) return;
+    try {
+      const artUrl = await doodleApi.uploadDoodleImage(tempFilePath);
+      const result = await petStore.saveDoodle(artUrl);
+      if (!result.ok) {
+        wx.showToast({ title: result.message || '保存失败，请稍后重试', icon: 'none' });
+        return;
+      }
+      this.setData({ eggArtUrl: artUrl, doodleEditorVisible: false });
+      wx.showToast({ title: result.alreadyDone ? '蛋壳外观已更新' : '蛋壳变漂亮了', icon: 'none' });
+    } catch (error) {
+      wx.showToast({ title: (error && error.userMessage) || '画作没有保存好，请再试一次', icon: 'none' });
+      // 编辑器保持打开，画布状态保留可重试
+    }
+  },
+
+  onDoodleEditorClose() { this.setData({ doodleEditorVisible: false }); },
 
   doHatch() {
     if (this.data.hatching) return;

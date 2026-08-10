@@ -110,6 +110,14 @@
     bind:retry="onDailyWindowRetry"
   />
 
+  <!-- 涂鸦编辑器（孵化期场景内嵌） -->
+  <doodle-editor
+    visible="{{doodleEditorVisible}}"
+    pet-id="{{pet.id}}"
+    bind:saved="onDoodleSaved"
+    bind:close="onDoodleEditorClose"
+  />
+
   <!-- 破壳视频遮罩 -->
   <view wx:if="{{hatching}}" class="hatch-overlay">
     <video

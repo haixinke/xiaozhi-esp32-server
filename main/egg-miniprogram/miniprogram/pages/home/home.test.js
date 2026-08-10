@@ -49,6 +49,15 @@ let timerCallback = null;
 let timerIdSequence = 12345;
 let clearedTimers = [];
 let vibrateCalls = [];
+let doodleArtUrlResult = '';
+let doodleArtUrlError = null;
+let uploadDoodleResult = '';
+let uploadDoodleError = null;
+let uploadDoodleCalls = 0;
+let saveDoodleCalls = 0;
+let lastSaveDoodleArtUrl = null;
+let saveDoodleResult = { ok: true, alreadyDone: false };
+let getLatestDoodleArtUrlCalls = 0;
 
 const FIXED_TIMESTAMP = 1754880000000;
 
@@ -84,7 +93,12 @@ const petStoreMock = {
     lastCuddleCall = Date.now();
     return cuddleResult;
   },
-  createCollectionCard: async () => createCollectionCardResult
+  createCollectionCard: async () => createCollectionCardResult,
+  saveDoodle: async (artUrl) => {
+    saveDoodleCalls += 1;
+    lastSaveDoodleArtUrl = artUrl;
+    return saveDoodleResult;
+  }
 };
 
 const inviteApiMock = {
@@ -154,6 +168,19 @@ const environmentStateMock = {
   }
 };
 
+const doodleApiMock = {
+  uploadDoodleImage: async (tempFilePath) => {
+    uploadDoodleCalls += 1;
+    if (uploadDoodleError) throw uploadDoodleError;
+    return uploadDoodleResult;
+  },
+  getLatestDoodleArtUrl: async () => {
+    getLatestDoodleArtUrlCalls += 1;
+    if (doodleArtUrlError) throw doodleArtUrlError;
+    return doodleArtUrlResult;
+  }
+};
+
 const app = {
   globalData: { authReady: null },
   async ensureLogin() {
@@ -175,6 +202,7 @@ Module._load = function (request, parent, isMain) {
     if (request === '../../utils/share-invite') return shareInviteMock;
     if (request === '../../utils/incubation-environment') return incubationEnvMock;
     if (request === '../../utils/environment-state') return environmentStateMock;
+    if (request === '../../utils/doodle-api') return doodleApiMock;
     if (request === '../../utils/life-scenes') return { getSceneKeyFromUrl: () => '' };
     if (request === '../../config/pre-hatch-assets') return preHatchAssetsMock;
   }
@@ -253,6 +281,15 @@ function resetScenario() {
   timerIdSequence = 12345;
   clearedTimers = [];
   vibrateCalls = [];
+  doodleArtUrlResult = '';
+  doodleArtUrlError = null;
+  uploadDoodleResult = '';
+  uploadDoodleError = null;
+  uploadDoodleCalls = 0;
+  saveDoodleCalls = 0;
+  lastSaveDoodleArtUrl = null;
+  saveDoodleResult = { ok: true, alreadyDone: false };
+  getLatestDoodleArtUrlCalls = 0;
 }
 
 function requirePetStage(stage, options = {}) {
@@ -673,7 +710,7 @@ async function run() {
   assert.strictEqual(pageLearnLocked.data.feedback, '蛋宝宝还没到早教的年龄，明天来试试吧。', 'locked learn shows feedback');
   assert.strictEqual(navigatedTo, null, 'locked learn does not navigate');
 
-  // 4. draw 点击显示占位 toast
+  // 4. draw 点击打开涂鸦编辑器（不再显示占位 toast）
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatching');
@@ -681,8 +718,9 @@ async function run() {
   pageDraw.onLoad();
   pageDraw.onShow();
   pageDraw.onCompanionTap({ currentTarget: { dataset: { key: 'draw' } } });
-  assert.strictEqual(toastTitle, '画画功能即将上线', 'draw tap shows placeholder toast');
-  assert.strictEqual(navigatedTo, null, 'draw tap does not navigate');
+  assert.strictEqual(pageDraw.data.doodleEditorVisible, true, 'draw entry opens the doodle editor');
+  assert.strictEqual(navigatedTo, null, 'draw entry does not navigate away');
+  assert.strictEqual(toastTitle, null, 'draw entry no longer shows the placeholder toast');
 
   // 5. wish 未解锁时点击给出 feedback，不跳转
   resetScenario();
@@ -715,6 +753,50 @@ async function run() {
   pageReadyHatch.onShow();
   pageReadyHatch.onPrimaryAction();
   assert.strictEqual(pageReadyHatch.data.hatching, true, 'ready onPrimaryAction starts hatching overlay');
+
+  // 8. 涂鸦保存：上传成功 → 记录动作 → 回显 artUrl → 关闭编辑器
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  uploadDoodleResult = 'https://oss.eggbabe.com/doodle/pet-001.png';
+  const pageSave = makePage();
+  pageSave.onLoad();
+  pageSave.onShow();
+  saveDoodleCalls = 0;
+  await pageSave.onDoodleSaved({ detail: { tempFilePath: 'wxfile://tmp/doodle.png' } });
+  assert.strictEqual(uploadDoodleCalls, 1, 'doodle image uploaded once');
+  assert.strictEqual(saveDoodleCalls, 1, 'saveDoodle called after upload succeeds');
+  assert.strictEqual(lastSaveDoodleArtUrl, 'https://oss.eggbabe.com/doodle/pet-001.png', 'saveDoodle received the artUrl');
+  assert.strictEqual(pageSave.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/pet-001.png', 'eggArtUrl updated for scene art layer');
+  assert.strictEqual(pageSave.data.doodleEditorVisible, false, 'editor closes after a successful save');
+
+  // 10. 涂鸦上传失败 → 不记录动作 → 编辑器保持打开
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  uploadDoodleError = { userMessage: '画作上传失败' };
+  const pageSaveFail = makePage();
+  pageSaveFail.onLoad();
+  pageSaveFail.onShow();
+  pageSaveFail.setData({ doodleEditorVisible: true });
+  saveDoodleCalls = 0;
+  await pageSaveFail.onDoodleSaved({ detail: { tempFilePath: 'wxfile://tmp/doodle.png' } });
+  assert.strictEqual(saveDoodleCalls, 0, 'saveDoodle is not called when upload fails');
+  assert.strictEqual(pageSaveFail.data.doodleEditorVisible, true, 'editor stays open so the artwork can be retried');
+  assert.ok(toastTitle, 'upload failure shows a toast');
+
+  // 11. onShow 孵化期回显最新涂鸦 artUrl
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  doodleArtUrlResult = 'https://oss.eggbabe.com/doodle/existing.png';
+  const pageRestore = makePage();
+  pageRestore.onLoad();
+  pageRestore.onShow();
+  // getLatestDoodleArtUrl 是异步的，等待微任务落定后再断言
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(pageRestore.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/existing.png', 'onShow restores the latest doodle artUrl onto the scene');
 
   console.log('home.test.js: ALL PASS');
 }

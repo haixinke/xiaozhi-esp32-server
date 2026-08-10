@@ -5,9 +5,20 @@ const wechatApi = require('../../utils/wechat-api');
 const sceneConfig = require('../../utils/life-scenes');
 const inviteApi = require('../../utils/invite-api');
 const shareInvite = require('../../utils/share-invite');
+const incubationEnv = require('../../utils/incubation-environment');
+const envState = require('../../utils/environment-state');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
 const SHARE_TITLE = '一起来养蛋宝宝吧';
+
+const WEATHER_LABELS = {
+  sunny: '晴朗',
+  cloudy: '多云',
+  rain: '下雨',
+  storm: '雷雨',
+  snow: '降雪',
+  postSnow: '雪后'
+};
 
 function buildShareQuery(inviteCode) {
   return inviteCode
@@ -32,11 +43,20 @@ Page({
     showPhoneAuthorization: false,
     authorizingPhone: false,
     hasPendingInvite: false,
-    petRestoreError: ''
+    petRestoreError: '',
+    // 破壳前场景渲染数据
+    environment: null,
+    eggArtUrl: '',
+    lampOn: false,
+    // 每日窗景弹层数据
+    dailyWindowVisible: false,
+    dailyWindowOriginStyle: '',
+    dailyWindowWeatherLabel: '',
+    dailyWindowPeriodLabel: ''
   },
 
   _navigating: false,
-  
+
   onLoad() {
     // 同步检查登录态：未注册用户留在空白页(不渲染内容)，等 app 登录完成后再决定去向
     const cached = auth.getSession();
@@ -84,6 +104,17 @@ Page({
     this._petRestoreFinished = false;
     this.setData({ pet: null, stage: 'empty', petRestoreLoading: true, petRestoreError: '' });
     this.loadPetFromServer();
+  },
+
+  onHide() {
+    this.clearEnvironmentTimer();
+  },
+
+  onUnload() {
+    this.clearEnvironmentTimer();
+    clearTimeout(this.cuddleTimer);
+    clearTimeout(this.feedbackTimer);
+    clearInterval(this.cuddleTicker);
   },
 
   async loadShareInviteCode() {
@@ -182,6 +213,35 @@ Page({
       dailyStatus: petStore.getDailyStatus(),
       actionLabel: presentation.actionLabel
     });
+    // 刷新破壳前环境
+    this.refreshEnvironment();
+  },
+
+  // 环境刷新：破壳前每次展示时计算当前场景，并按下一时段边界定时刷新
+  refreshEnvironment() {
+    if (!this.data.pet || this.data.stage === 'hatched') {
+      this.setData({ environment: null });
+      this.clearEnvironmentTimer();
+      return;
+    }
+    const environment = incubationEnv.resolveForPet(this.data.pet, Date.now());
+    this.setData({ environment });
+    this.scheduleEnvironmentRefresh();
+  },
+
+  scheduleEnvironmentRefresh() {
+    this.clearEnvironmentTimer();
+    this.environmentTimer = setTimeout(
+      () => this.refreshEnvironment(),
+      envState.millisecondsUntilNextEnvironmentBoundary(Date.now())
+    );
+  },
+
+  clearEnvironmentTimer() {
+    if (this.environmentTimer) {
+      clearTimeout(this.environmentTimer);
+      this.environmentTimer = null;
+    }
   },
 
   onAddDevice() {
@@ -229,6 +289,7 @@ Page({
 
   noop() {},
 
+  // 轻触蛋：来自 incubation-scene 的 eggtap 事件
   onEggTap() {
     if (this.completedLongPress) {
       this.completedLongPress = false;
@@ -244,7 +305,8 @@ Page({
     setTimeout(() => this.setData({ eggMotion: '' }), 600);
   },
 
-  onTouchStart() {
+  // 长按贴贴：来自 incubation-scene 的 eggcuddle 事件
+  onEggCuddle() {
     if (!this.data.pet || this.data.stage === 'hatched') return;
     this.completedLongPress = false;
     const started = Date.now();
@@ -272,6 +334,61 @@ Page({
         }, 900);
       })();
     }, 3000);
+  },
+
+  // 台灯开关：由页面持有状态，避免组件内部回环
+  onLampTap() {
+    this.setData({ lampOn: !this.data.lampOn });
+  },
+
+  // 场景主图加载失败时点击重试
+  onRetryScene() {
+    this.refreshEnvironment();
+  },
+
+  // 点击窗户热区：打开每日窗景详情
+  onWindowTap(e) {
+    const environment = this.data.environment;
+    if (!environment || !environment.windowImage) return;
+    const rect = e && e.detail || {};
+    const periodLabel = environment.lightPhase === 'sunset'
+      ? '日落'
+      : (environment.period === 'night' ? '夜晚' : '日间');
+    this.setData({
+      dailyWindowVisible: true,
+      dailyWindowOriginStyle: [
+        `--daily-window-origin-left:${Number(rect.left || 0)}px;`,
+        `--daily-window-origin-top:${Number(rect.top || 0)}px;`,
+        `--daily-window-origin-width:${Math.max(1, Number(rect.width || 1))}px;`,
+        `--daily-window-origin-height:${Math.max(1, Number(rect.height || 1))}px;`
+      ].join(''),
+      dailyWindowWeatherLabel: WEATHER_LABELS[environment.weather] || '晴朗',
+      dailyWindowPeriodLabel: periodLabel
+    });
+  },
+
+  // 关闭每日窗景详情
+  onDailyWindowClosed() {
+    this.setData({ dailyWindowVisible: false });
+  },
+
+  // 窗景图片加载失败时重置 displayImage 触发重载
+  onDailyWindowRetry() {
+    const environment = this.data.environment;
+    if (!environment || !environment.windowImage) return;
+    this.setData({
+      dailyWindowVisible: false,
+      'environment.windowImage': ''
+    }, () => {
+      this.setData({
+        dailyWindowVisible: true,
+        'environment.windowImage': environment.windowImage
+      });
+    });
+  },
+
+  onTouchStart() {
+    this.onEggCuddle();
   },
 
   onTouchEnd() {
@@ -359,11 +476,5 @@ Page({
     }
     this.setData({ 'pet.sceneUrl': result.sceneUrl });
     this.showFeedback('场景已更换');
-  },
-
-  onUnload() {
-    clearTimeout(this.cuddleTimer);
-    clearTimeout(this.feedbackTimer);
-    clearInterval(this.cuddleTicker);
   }
 });

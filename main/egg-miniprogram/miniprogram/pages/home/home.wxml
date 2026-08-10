@@ -32,18 +32,25 @@
           <view wx:if="{{stage !== 'hatched'}}" class="progress-ring"><text>{{pet.progress}}%</text></view>
         </view>
 
+        <!-- 破壳前：使用场景组件；破壳后：保留现有宠物展示 -->
         <view class="egg-zone" bindtap="onOpenProfile">
           <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
-          <view class="egg-aura {{eggMotion}}"></view>
-          <image wx:if="{{stage === 'hatched' && pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
-          <pet-avatar wx:elif="{{stage === 'hatched'}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
-          <view wx:else class="egg {{eggMotion}}" style="background: linear-gradient(155deg, #FFFDF0 6%, {{pet.shell.color}} 58%, #F4B9AE 125%);" catchtap="onEggTap" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd">
-            <view class="egg-pattern egg-pattern--one"></view>
-            <view class="egg-pattern egg-pattern--two"></view>
-            <view class="egg-shine"></view>
+          <view wx:if="{{stage === 'hatched'}}" class="scene-or-avatar">
+            <image wx:if="{{pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
+            <pet-avatar wx:else pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
           </view>
-          <view class="egg-shadow"></view>
-          <view wx:if="{{cuddleProgress > 0}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
+          <incubation-scene
+            wx:else
+            environment="{{environment}}"
+            egg-art-url="{{eggArtUrl}}"
+            lamp-on="{{lampOn}}"
+            bind:eggtap="onEggTap"
+            bind:eggcuddle="onEggCuddle"
+            bind:lamptap="onLampTap"
+            bind:windowtap="onWindowTap"
+            bind:retryscene="onRetryScene"
+          />
+          <view wx:if="{{cuddleProgress > 0 && stage !== 'hatched'}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
         </view>
 
         <view class="state-card">
@@ -74,6 +81,21 @@
       <button class="phone-auth-cancel" disabled="{{authorizingPhone}}" bindtap="onClosePhoneAuthorization">暂不领取</button>
     </view>
   </view>
+
+  <!-- 每日窗景详情 -->
+  <daily-window-detail
+    visible="{{dailyWindowVisible}}"
+    image="{{environment.windowImage}}"
+    weather="{{environment.weather}}"
+    season="{{environment.season}}"
+    period="{{environment.period}}"
+    light-phase="{{environment.lightPhase}}"
+    weather-label="{{dailyWindowWeatherLabel}}"
+    period-label="{{dailyWindowPeriodLabel}}"
+    origin-style="{{dailyWindowOriginStyle}}"
+    bind:close="onDailyWindowClosed"
+    bind:retry="onDailyWindowRetry"
+  />
 
   <!-- 破壳视频遮罩 -->
   <view wx:if="{{hatching}}" class="hatch-overlay">

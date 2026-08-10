@@ -1,6 +1,8 @@
 {
   "usingComponents": {
     "nav-bar": "../../components/nav-bar/nav-bar",
-    "pet-avatar": "../../components/pet-avatar/pet-avatar"
+    "pet-avatar": "../../components/pet-avatar/pet-avatar",
+    "incubation-scene": "../../components/incubation-scene/incubation-scene",
+    "daily-window-detail": "../../components/daily-window-detail/daily-window-detail"
   }
 }

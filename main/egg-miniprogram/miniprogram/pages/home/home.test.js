@@ -57,6 +57,9 @@ let uploadDoodleCalls = 0;
 let saveDoodleCalls = 0;
 let lastSaveDoodleArtUrl = null;
 let saveDoodleResult = { ok: true, alreadyDone: false };
+let updateNicknameCalls = 0;
+let lastNicknameValue = null;
+let updateNicknameResult = { ok: true, alreadyDone: false, pet: null };
 let getLatestDoodleArtUrlCalls = 0;
 
 const FIXED_TIMESTAMP = 1754880000000;
@@ -98,6 +101,11 @@ const petStoreMock = {
     saveDoodleCalls += 1;
     lastSaveDoodleArtUrl = artUrl;
     return saveDoodleResult;
+  },
+  updateNickname: async (name) => {
+    updateNicknameCalls += 1;
+    lastNicknameValue = name;
+    return updateNicknameResult;
   }
 };
 
@@ -289,6 +297,9 @@ function resetScenario() {
   saveDoodleCalls = 0;
   lastSaveDoodleArtUrl = null;
   saveDoodleResult = { ok: true, alreadyDone: false };
+  updateNicknameCalls = 0;
+  lastNicknameValue = null;
+  updateNicknameResult = { ok: true, alreadyDone: false, pet: null };
   getLatestDoodleArtUrlCalls = 0;
 }
 
@@ -324,8 +335,10 @@ async function run() {
     'home.wxml must render incubation-scene component for pre-hatch stages');
   assert.ok(homeTemplate.includes('<daily-window-detail'),
     'home.wxml must render daily-window-detail component');
-  assert.ok(homeTemplate.includes('class="companion-section"'),
-    'home.wxml must render companion-section');
+  assert.ok(homeTemplate.includes('class="companion-section companion-section--incubating"'),
+    'home.wxml must render the floating companion-section dock');
+  assert.ok(homeTemplate.includes('companion-primary-dock'),
+    'companion entries must sit inside the static project primary dock');
   assert.ok(homeTemplate.includes('wx:for="{{companionActions}}"'),
     'companion-section must iterate companionActions');
   assert.ok(homeTemplate.includes('data-key="{{item.key}}"'),
@@ -336,6 +349,18 @@ async function run() {
     'home.wxml must render hatch-entry for ready stage');
   assert.ok(homeTemplate.includes('wx:if="{{stage === \'ready\'}}"'),
     'hatch-entry must be conditionally rendered for ready stage');
+  assert.ok(homeTemplate.includes('content--incubating'),
+    'incubating stages must render the full-screen content variant');
+  assert.ok(homeTemplate.includes('pet-view--incubating'),
+    'incubating stages must render the full-screen pet view variant');
+  assert.ok(homeTemplate.includes('<nav-bar wx:if="{{!pet}}"'),
+    'nav-bar only renders before a pet is claimed, so the scene stays full screen');
+  assert.ok(homeTemplate.includes('bindtap="onPetNameTap"'),
+    'the pet name pill must open the naming sheet');
+  assert.ok(homeTemplate.includes('class="name-sheet"'),
+    'home.wxml must render the naming sheet');
+  assert.ok(homeTemplate.includes('maxlength="10"'),
+    'the naming input keeps the 10 character limit');
 
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
@@ -485,8 +510,8 @@ async function run() {
   assert.strictEqual(coldStartPage.data.petRestoreLoading, false,
     'restoration completes after the server pet is returned');
   assert.strictEqual(coldStartPage.data.stage, 'hatched', 'hatched server pet renders the success state');
-  assert.strictEqual(showTabBarCalls, 1,
-    'native tab bar appears only after the server pet state is restored');
+  assert.strictEqual(showTabBarCalls, 0,
+    'custom floating tab bar replaces the native tab bar after restoration');
 
   // ===== 手机号授权断言 =====
   resetScenario();
@@ -797,6 +822,43 @@ async function run() {
   await Promise.resolve();
   await Promise.resolve();
   assert.strictEqual(pageRestore.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/existing.png', 'onShow restores the latest doodle artUrl onto the scene');
+
+  // 12. 命名弹层：打开回填当前名字，输入限 10 字符
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pageName = makePage();
+  pageName.onLoad();
+  pageName.onShow();
+  pageName.onPetNameTap();
+  assert.strictEqual(pageName.data.showNameSheet, true, 'tapping the name pill opens the naming sheet');
+  assert.strictEqual(pageName.data.nameDraft, '小白', 'the sheet pre-fills the current pet name');
+  pageName.onNameInput({ detail: { value: '一二三四五六七八九十十一' } });
+  assert.strictEqual(pageName.data.nameCount, 10, 'the naming input is capped at 10 characters');
+
+  // 13. 命名保存成功：调用 pet-store 并关闭弹层
+  updateNicknameResult = { ok: true, alreadyDone: false, pet: { name: '小白白' } };
+  pageName.onNameInput({ detail: { value: '小白白' } });
+  await pageName.onSaveName();
+  assert.strictEqual(updateNicknameCalls, 1, 'saving delegates to petStore.updateNickname');
+  assert.strictEqual(lastNicknameValue, '小白白', 'the trimmed draft reaches pet-store');
+  assert.strictEqual(pageName.data.showNameSheet, false, 'sheet closes after a successful save');
+  assert.strictEqual(pageName.data.pet.name, '小白白', 'the new name renders on the page');
+
+  // 14. 命名保存失败：弹层保留并展示错误
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  updateNicknameResult = { ok: false, message: '昵称含有不适合的内容，请换一个' };
+  const pageNameFail = makePage();
+  pageNameFail.onLoad();
+  pageNameFail.onShow();
+  pageNameFail.onPetNameTap();
+  pageNameFail.onNameInput({ detail: { value: '诈骗蛋' } });
+  await pageNameFail.onSaveName();
+  assert.strictEqual(pageNameFail.data.showNameSheet, true, 'sheet stays open when saving fails');
+  assert.strictEqual(pageNameFail.data.nameError, '昵称含有不适合的内容，请换一个', 'the failure message surfaces inline');
+  assert.strictEqual(pageNameFail.data.savingName, false, 'saving state resets after failure');
 
   console.log('home.test.js: ALL PASS');
 }

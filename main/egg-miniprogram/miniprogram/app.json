@@ -22,13 +22,14 @@
     "pages/chat-settings/chat-settings"
   ],
   "tabBar": {
+    "custom": true,
     "color": "#8C8C88",
     "selectedColor": "#002900",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [
       { "pagePath": "pages/home/home", "text": "蛋宝宝", "iconPath": "assets/tab/egg.png", "selectedIconPath": "assets/tab/egg-active.png" },
-      { "pagePath": "pages/my/my", "text": "我的", "iconPath": "assets/tab/me.png", "selectedIconPath": "assets/tab/me-active.png" }
+      { "pagePath": "pages/my/my", "text": "我的", "iconPath": "assets/ui/3d-actions/ui_3d_tabbar_interaction_gear_flat_96_v04.png", "selectedIconPath": "assets/ui/3d-actions/ui_3d_tabbar_interaction_gear_flat_96_v04.png" }
     ]
   },
   "window": {

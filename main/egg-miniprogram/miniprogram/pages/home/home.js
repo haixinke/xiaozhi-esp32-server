@@ -64,7 +64,14 @@ Page({
     // 陪伴入口图标数据
     companionActions: [],
     wishUnlocked: true,
-    learnUnlocked: false
+    learnUnlocked: false,
+    // 命名弹层与左上角布局数据
+    nameTopPx: 88,
+    showNameSheet: false,
+    nameDraft: '',
+    nameCount: 0,
+    nameError: '',
+    savingName: false
   },
 
   _navigating: false,
@@ -105,6 +112,8 @@ Page({
 
   onShow() {
     if (!this.data.authChecked) return;
+    this.configureLayoutMetrics();
+    this.syncTabBar();
     const cached = petStore.getPet();
     if (cached) {
       this.renderPet(cached);
@@ -126,6 +135,28 @@ Page({
     doodleApi.getLatestDoodleArtUrl(pet.id)
       .then((artUrl) => { if (artUrl) this.setData({ eggArtUrl: artUrl }); })
       .catch(() => {});
+  },
+
+  // 左上角布局指标：名字药丸顶部对齐微信胶囊下沿；时钟位置由 incubation-scene 组件自行推导
+  configureLayoutMetrics() {
+    try {
+      const windowInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+      const menuRect = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null;
+      const statusBarHeight = Number(windowInfo.statusBarHeight || 20);
+      const nameTopPx = menuRect && Number(menuRect.bottom)
+        ? Number(menuRect.bottom) + 8
+        : statusBarHeight + 42;
+      this.setData({ nameTopPx: Math.round(nameTopPx) });
+    } catch (error) {
+      this.setData({ nameTopPx: 88 });
+    }
+  },
+
+  // 自定义悬浮 tabBar：破壳视频与命名弹层期间隐藏，其余时间显示当前为「蛋宝宝」
+  syncTabBar() {
+    if (typeof this.getTabBar !== 'function') return;
+    const tabBar = this.getTabBar();
+    if (tabBar) tabBar.setData({ selected: 0, hidden: !!(this.data.hatching || this.data.showNameSheet) });
   },
 
   onHide() {
@@ -200,7 +231,7 @@ Page({
   finishPetRestore(data) {
     this._petRestoreFinished = true;
     this.setData({ ...(data || {}), petRestoreLoading: false }, () => {
-      if (wx.showTabBar) wx.showTabBar({ animation: false });
+      this.syncTabBar();
     });
   },
 
@@ -473,10 +504,52 @@ Page({
 
   onDoodleEditorClose() { this.setData({ doodleEditorVisible: false }); },
 
+  // 点击左上角名字药丸：打开命名弹层
+  onPetNameTap() {
+    if (!this.data.pet) return;
+    const name = this.data.pet.name || '';
+    this.setData({
+      showNameSheet: true,
+      nameDraft: name,
+      nameCount: Array.from(name).length,
+      nameError: ''
+    });
+    this.syncTabBar();
+  },
+
+  onNameInput(event) {
+    const value = Array.from((event && event.detail && event.detail.value) || '').slice(0, 10).join('');
+    this.setData({ nameDraft: value, nameCount: Array.from(value).length, nameError: '' });
+  },
+
+  // 保存昵称：孵化动作 NICKNAME + 兜底 PUT /pet/update 均由 pet-store 处理
+  async onSaveName() {
+    if (this.data.savingName || !this.data.pet) return;
+    this.setData({ savingName: true, nameError: '' });
+    const result = await petStore.updateNickname(this.data.nameDraft);
+    this.setData({ savingName: false });
+    if (!result.ok) {
+      this.setData({ nameError: result.message || '名字没有保存成功，请重试' });
+      return;
+    }
+    this.setData({
+      showNameSheet: false,
+      pet: { ...this.data.pet, name: result.pet ? result.pet.name : this.data.nameDraft }
+    });
+    this.syncTabBar();
+    this.showFeedback(result.alreadyDone ? '名字改好啦。' : '我记住自己的名字啦。');
+  },
+
+  onCloseNameSheet() {
+    if (this.data.savingName) return;
+    this.setData({ showNameSheet: false, nameError: '' });
+    this.syncTabBar();
+  },
+
   doHatch() {
     if (this.data.hatching) return;
-    wx.hideTabBar();
     this.setData({ hatching: true }, () => {
+      this.syncTabBar();
       // 确保 video 组件已渲染后主动调 play
       this.hatchVideoCtx = wx.createVideoContext('hatchVideo', this);
       if (this.hatchVideoCtx) this.hatchVideoCtx.play();
@@ -486,8 +559,8 @@ Page({
   },
 
   _finishHatch(result) {
-    wx.showTabBar();
     this.setData({ hatching: false });
+    this.syncTabBar();
     if (!result || !result.ok) {
       wx.showToast({ title: (result && result.message) || '破壳失败，请稍后重试', icon: 'none' });
       return;

@@ -229,16 +229,22 @@ Component({
     },
 
     deriveClockPosition() {
-      // 时钟默认摆放在右上角，保留与源页面一致的偏移
-      const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
-      const screenWidth = info.windowWidth || info.screenWidth || 375;
-      const pxRatio = info.pixelRatio || 1;
-      // 176rpx 宽度按 750rpx 基准换算
-      const clockWidthPx = (176 / 750) * screenWidth;
-      const rightGapPx = (24 / 750) * screenWidth;
-      const topPx = (48 / 750) * screenWidth + (info.statusBarHeight || 0);
-      const leftPx = screenWidth - clockWidthPx - rightGapPx;
-      this.setData({ clockTopPx: Math.round(topPx), clockLeftPx: Math.round(leftPx) });
+      // 时钟位于左上角：顶部对齐微信胶囊下沿再下探一行名字区高度，左侧留安全边距
+      try {
+        const windowInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+        const menuRect = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null;
+        const statusBarHeight = Number(windowInfo.statusBarHeight || 20);
+        const safeLeft = windowInfo.safeArea ? Number(windowInfo.safeArea.left || 0) : 0;
+        const nameTopPx = menuRect && Number(menuRect.bottom)
+          ? Number(menuRect.bottom) + 8
+          : statusBarHeight + 42;
+        this.setData({
+          clockTopPx: Math.round(nameTopPx + 44),
+          clockLeftPx: Math.round(safeLeft + 18)
+        });
+      } catch (error) {
+        this.setData({ clockTopPx: 132, clockLeftPx: 18 });
+      }
     }
   }
 });

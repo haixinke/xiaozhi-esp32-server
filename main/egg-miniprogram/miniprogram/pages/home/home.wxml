@@ -1,8 +1,8 @@
 <view class="page">
   <block wx:if="{{authChecked && !petRestoreLoading}}">
-    <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
+    <nav-bar wx:if="{{!pet}}" title="蛋宝宝" show-back="{{false}}"></nav-bar>
 
-    <scroll-view class="content" scroll-y>
+    <scroll-view class="content {{pet && stage !== 'hatched' ? 'content--incubating' : ''}}" scroll-y="{{!(pet && stage !== 'hatched')}}">
       <view wx:if="{{petRestoreError}}" class="empty-state pet-restore-error">
         <view class="empty-orbit"><view class="empty-egg"></view></view>
         <text class="empty-title">暂时无法加载蛋宝宝</text>
@@ -23,24 +23,17 @@
         <text class="empty-note">当前版本每个账号只能绑定 1 只</text>
       </view>
 
-      <view wx:else class="pet-view">
-        <view class="top-row">
-          <view>
-            <text class="eyebrow">{{stage === 'hatched' ? pet.petType + ' · 已破壳' : '孵化记录'}}</text>
+      <!-- 孵化期：整屏场景 -->
+      <view wx:elif="{{stage !== 'hatched'}}" class="pet-view pet-view--incubating">
+        <view class="top-row" style="top:{{nameTopPx}}px;">
+          <view class="pet-name-row" bindtap="onPetNameTap" aria-role="button" aria-label="给蛋宝宝起名字">
             <text class="pet-name">{{pet.name || '还没有名字'}}</text>
           </view>
-          <view wx:if="{{stage !== 'hatched'}}" class="progress-ring"><text>{{pet.progress}}%</text></view>
         </view>
 
-        <!-- 破壳前：使用场景组件；破壳后：保留现有宠物展示 -->
-        <view class="egg-zone" bindtap="onOpenProfile">
-          <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
-          <view wx:if="{{stage === 'hatched'}}" class="scene-or-avatar">
-            <image wx:if="{{pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
-            <pet-avatar wx:else pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
-          </view>
+        <view class="egg-zone egg-zone--incubating">
+          <view wx:if="{{feedback}}" class="feedback-bubble feedback-bubble--incubating" style="top:{{nameTopPx}}px;" catchtap="noop">{{feedback}}</view>
           <incubation-scene
-            wx:else
             environment="{{environment}}"
             egg-art-url="{{eggArtUrl}}"
             lamp-on="{{lampOn}}"
@@ -50,7 +43,46 @@
             bind:windowtap="onWindowTap"
             bind:retryscene="onRetryScene"
           />
-          <view wx:if="{{cuddleProgress > 0 && stage !== 'hatched'}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
+          <view wx:if="{{cuddleProgress > 0}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
+        </view>
+
+        <view wx:if="{{stage !== 'ready'}}" class="companion-section companion-section--incubating">
+          <view class="companion-primary-dock">
+            <view class="companion-item companion-item--{{item.key}} {{item.locked ? 'companion-item--locked' : ''}}"
+                  wx:for="{{companionActions}}" wx:key="key"
+                  hover-class="companion-item--pressed"
+                  data-key="{{item.key}}"
+                  aria-role="button"
+                  aria-label="{{item.locked ? item.title + '，暂未开放' : item.title}}"
+                  bindtap="onCompanionTap">
+              <view class="companion-icon-wrap">
+                <image class="companion-icon" src="{{item.icon}}" mode="aspectFit" />
+                <text wx:if="{{item.key === 'draw'}}" class="draw-action-spark">✦</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{stage === 'ready'}}" class="hatch-entry">
+          <button class="primary-button" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
+        </view>
+      </view>
+
+      <!-- 破壳后：保留原有宠物展示 -->
+      <view wx:else class="pet-view">
+        <view class="top-row">
+          <view>
+            <text class="eyebrow">{{pet.petType}} · 已破壳</text>
+            <text class="pet-name pet-name--plain">{{pet.name || '还没有名字'}}</text>
+          </view>
+        </view>
+
+        <view class="egg-zone" bindtap="onOpenProfile">
+          <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
+          <view class="scene-or-avatar">
+            <image wx:if="{{pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
+            <pet-avatar wx:else pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
+          </view>
         </view>
 
         <view class="state-card">
@@ -65,22 +97,9 @@
           <text class="status-line">{{dailyStatus.line}}</text>
         </view>
 
-        <view class="home-actions" wx:if="{{stage === 'hatched'}}">
+        <view class="home-actions">
           <button class="primary-button home-actions__chat" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
-          <button wx:if="{{stage === 'hatched'}}" class="primary-button home-actions__scene" bindtap="onChangeScene"><text class="button-label">更换场景</text></button>
-        </view>
-
-        <view class="companion-section" wx:if="{{stage !== 'hatched'}}">
-          <view class="companion-item companion-item--{{item.key}} {{item.locked ? 'companion-item--locked' : ''}}"
-                wx:for="{{companionActions}}" wx:key="key"
-                data-key="{{item.key}}" bindtap="onCompanionTap">
-            <image class="companion-icon" src="{{item.icon}}" mode="aspectFit" />
-            <text class="companion-title">{{item.title}}</text>
-          </view>
-        </view>
-
-        <view wx:if="{{stage === 'ready'}}" class="hatch-entry">
-          <button class="primary-button" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
+          <button class="primary-button home-actions__scene" bindtap="onChangeScene"><text class="button-label">更换场景</text></button>
         </view>
       </view>
     </scroll-view>
@@ -92,6 +111,26 @@
       <text class="phone-auth-copy">用于保障你的蛋宝宝账号安全。</text>
       <button class="primary-button" open-type="getPhoneNumber" loading="{{authorizingPhone}}" disabled="{{authorizingPhone}}" bindgetphonenumber="onAuthorizePhone">授权手机号并继续</button>
       <button class="phone-auth-cancel" disabled="{{authorizingPhone}}" bindtap="onClosePhoneAuthorization">暂不领取</button>
+    </view>
+  </view>
+
+  <!-- 命名弹层：点击左上角名字药丸打开 -->
+  <view wx:if="{{showNameSheet}}" class="name-mask" catchtouchmove="noop">
+    <view class="name-sheet">
+      <view class="name-handle"></view>
+      <view class="name-sheet-content">
+        <text class="name-sheet-title">{{pet && pet.name ? '修改名字' : '我还没有名字'}}</text>
+        <text class="name-sheet-copy">{{pet && pet.name ? '新名字保存后会继续留在这间房里。' : '给我起一个昵称吧，也可以以后再决定。'}}</text>
+        <view class="name-input-wrap">
+          <input class="name-input" value="{{nameDraft}}" maxlength="10" placeholder="最多 10 个字" bindinput="onNameInput" />
+          <text class="name-count">{{nameCount}}/10</text>
+        </view>
+        <text wx:if="{{nameError}}" class="name-error">{{nameError}}</text>
+        <view class="name-actions">
+          <button class="name-save" hover-class="button-press" disabled="{{savingName}}" bindtap="onSaveName"><text class="button-label">{{savingName ? '正在保存…' : '记住这个名字'}}</text></button>
+          <button class="name-skip" hover-class="button-press" bindtap="onCloseNameSheet"><text class="button-label">{{pet && pet.name ? '取消' : '暂不命名'}}</text></button>
+        </view>
+      </view>
     </view>
   </view>
 

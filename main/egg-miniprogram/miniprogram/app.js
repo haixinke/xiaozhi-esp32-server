@@ -43,9 +43,6 @@ App({
     this.globalData.launchPath = options && options.path
       ? options.path
       : 'pages/home/home';
-    if (this.globalData.launchPath === 'pages/home/home' && wx.hideTabBar) {
-      wx.hideTabBar({ animation: false });
-    }
     this.globalData.authReady = this.ensureLogin()
       .then((session) => {
         this.redirectUnboundToWelcome(this.globalData.launchPath);

@@ -134,8 +134,8 @@ async function run() {
   currentRoute = 'pages/home/home';
   appConfig.onLaunch.call(appConfig, { path: 'pages/home/home' });
   await appConfig.globalData.authReady;
-  assert.strictEqual(hideTabBarCalls, 2,
-    'home launch hides the native tab bar before the pet state is restored');
+  assert.strictEqual(hideTabBarCalls, 0,
+    'custom floating tab bar replaced the native tab bar, so launch never hides it');
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
     'unbound session should launch into welcome before claiming a pet');
   assert.strictEqual(relaunchCalls, 1,

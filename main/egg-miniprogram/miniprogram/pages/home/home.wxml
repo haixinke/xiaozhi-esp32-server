@@ -65,9 +65,18 @@
           <text class="status-line">{{dailyStatus.line}}</text>
         </view>
 
-        <view class="home-actions">
+        <view class="home-actions" wx:if="{{stage === 'hatched'}}">
           <button class="primary-button home-actions__chat" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
           <button wx:if="{{stage === 'hatched'}}" class="primary-button home-actions__scene" bindtap="onChangeScene"><text class="button-label">更换场景</text></button>
+        </view>
+
+        <view class="companion-section" wx:if="{{stage !== 'hatched'}}">
+          <view class="companion-item companion-item--{{item.key}} {{item.locked ? 'companion-item--locked' : ''}}"
+                wx:for="{{companionActions}}" wx:key="key"
+                data-key="{{item.key}}" bindtap="onCompanionTap">
+            <image class="companion-icon" src="{{item.icon}}" mode="aspectFit" />
+            <text class="companion-title">{{item.title}}</text>
+          </view>
         </view>
       </view>
     </scroll-view>

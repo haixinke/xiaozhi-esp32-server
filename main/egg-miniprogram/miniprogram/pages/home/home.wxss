@@ -42,4 +42,11 @@
 .phone-auth-cancel::after { border: none; }
 .hatch-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .hatch-video { width: 100vw; height: 100vh; }
+.companion-section { margin-top: 28rpx; padding: 0 12rpx; }
+.companion-item { position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 160rpx; margin-right: 24rpx; padding: 16rpx 0 12rpx; border-radius: 24rpx; background: #FFF; box-shadow: 0 8rpx 24rpx rgba(0,41,0,.06); text-align: center; transition: transform .16s ease, background .16s ease, opacity .16s ease; }
+.companion-item::after { border: none; }
+.companion-item--locked { opacity: .68; }
+.companion-item--locked .companion-icon { filter: grayscale(1); opacity: .62; }
+.companion-icon { width: 78rpx; height: 78rpx; display: block; }
+.companion-title { display: block; margin-top: 10rpx; font-size: 22rpx; color: #3D4930; }
 @keyframes bubbleIn { from { transform: translateY(8rpx); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

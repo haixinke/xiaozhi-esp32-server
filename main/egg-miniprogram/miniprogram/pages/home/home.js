@@ -7,9 +7,16 @@ const inviteApi = require('../../utils/invite-api');
 const shareInvite = require('../../utils/share-invite');
 const incubationEnv = require('../../utils/incubation-environment');
 const envState = require('../../utils/environment-state');
+const { INTERACTION_ICONS } = require('../../config/pre-hatch-assets');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
 const SHARE_TITLE = '一起来养蛋宝宝吧';
+
+const COMPANION_ACTIONS = [
+  { key: 'wish', title: '许愿池', icon: INTERACTION_ICONS.wish },
+  { key: 'learn', title: '早教班', icon: INTERACTION_ICONS.learn },
+  { key: 'draw', title: '画画', icon: INTERACTION_ICONS.draw }
+];
 
 const WEATHER_LABELS = {
   sunny: '晴朗',
@@ -51,7 +58,11 @@ Page({
     dailyWindowVisible: false,
     dailyWindowOriginStyle: '',
     dailyWindowWeatherLabel: '',
-    dailyWindowPeriodLabel: ''
+    dailyWindowPeriodLabel: '',
+    // 陪伴入口图标数据
+    companionActions: [],
+    wishUnlocked: true,
+    learnUnlocked: false
   },
 
   _navigating: false,
@@ -203,6 +214,9 @@ Page({
     this.syncPendingInvite(pet);
     const stage = petStore.getStage(pet);
     const presentation = petStore.getStagePresentation(stage);
+    const isHatched = stage === 'hatched';
+    const wishUnlocked = true;
+    const learnUnlocked = false;
     this.finishPetRestore({
       pet: { ...pet, petType: pet.prototype },
       stage,
@@ -210,10 +224,26 @@ Page({
       stageText: presentation.homeText,
       countdown: petStore.getCountdown(pet),
       dailyStatus: petStore.getDailyStatus(),
-      actionLabel: presentation.actionLabel
+      actionLabel: presentation.actionLabel,
+      wishUnlocked,
+      learnUnlocked,
+      companionActions: this.buildCompanionActions(wishUnlocked, learnUnlocked)
     });
     // 刷新破壳前环境
     this.refreshEnvironment();
+  },
+
+  /**
+   * 构建陪伴入口图标列表，附加解锁状态。
+   * @param {boolean} wishUnlocked 许愿池是否已解锁
+   * @param {boolean} learnUnlocked 早教班是否已解锁
+   * @returns {Array<{key: string, title: string, icon: string, locked: boolean}>}
+   */
+  buildCompanionActions(wishUnlocked, learnUnlocked) {
+    return COMPANION_ACTIONS.map((action) => ({
+      ...action,
+      locked: (action.key === 'wish' && !wishUnlocked) || (action.key === 'learn' && !learnUnlocked)
+    }));
   },
 
   // 环境刷新：破壳前每次展示时计算当前场景，并按下一时段边界定时刷新
@@ -392,6 +422,22 @@ Page({
       wx.navigateTo({ url: '/pages/chat/chat' });
     } else {
       wx.navigateTo({ url: '/pages/hatch-guide/hatch-guide' });
+    }
+  },
+
+  /**
+   * 点击陪伴入口图标：未解锁入口给出反馈，draw 为占位提示，其余按 300ms 场景过渡后跳转。
+   * @param {WechatMiniProgramEvent} e 点击事件
+   */
+  onCompanionTap(e) {
+    const key = e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.key;
+    if (key === 'wish' && !this.data.wishUnlocked) return this.showFeedback('许愿池还在准备中。');
+    if (key === 'learn' && !this.data.learnUnlocked) return this.showFeedback('蛋宝宝还没到早教的年龄，明天来试试吧。');
+    if (key === 'draw') return wx.showToast({ title: '画画功能即将上线', icon: 'none' });
+    const routes = { wish: '/pages/wish/wish', learn: '/pages/lesson/lesson' };
+    if (routes[key]) {
+      // 300ms 场景过渡后跳转，与静态项目节奏一致
+      setTimeout(() => wx.navigateTo({ url: routes[key] }), 300);
     }
   },
 

@@ -139,6 +139,14 @@ const incubationEnvMock = {
   }
 };
 
+const preHatchAssetsMock = {
+  INTERACTION_ICONS: {
+    wish: '/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.webp',
+    learn: '/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.webp',
+    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.webp'
+  }
+};
+
 const environmentStateMock = {
   millisecondsUntilNextEnvironmentBoundary: () => {
     timerDelay = nextEnvironmentBoundaryMs;
@@ -168,6 +176,7 @@ Module._load = function (request, parent, isMain) {
     if (request === '../../utils/incubation-environment') return incubationEnvMock;
     if (request === '../../utils/environment-state') return environmentStateMock;
     if (request === '../../utils/life-scenes') return { getSceneKeyFromUrl: () => '' };
+    if (request === '../../config/pre-hatch-assets') return preHatchAssetsMock;
   }
   return originalLoad.call(this, request, parent, isMain);
 };
@@ -277,6 +286,14 @@ async function run() {
     'home.wxml must render incubation-scene component for pre-hatch stages');
   assert.ok(homeTemplate.includes('<daily-window-detail'),
     'home.wxml must render daily-window-detail component');
+  assert.ok(homeTemplate.includes('class="companion-section"'),
+    'home.wxml must render companion-section');
+  assert.ok(homeTemplate.includes('wx:for="{{companionActions}}"'),
+    'companion-section must iterate companionActions');
+  assert.ok(homeTemplate.includes('data-key="{{item.key}}"'),
+    'companion items must carry data-key');
+  assert.ok(homeTemplate.includes('bindtap="onCompanionTap"'),
+    'companion items must bind onCompanionTap');
 
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
@@ -606,6 +623,73 @@ async function run() {
   assert.strictEqual(pageLamp.data.lampOn, true, 'lamp toggles on');
   pageLamp.onLampTap();
   assert.strictEqual(pageLamp.data.lampOn, false, 'lamp toggles off');
+
+  // ===== Task 8 新增断言：companion 图标入口 =====
+  // 1. companionActions 包含 wish/learn/draw 且携带图标与锁定状态
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pageCompanion = makePage();
+  pageCompanion.onLoad();
+  pageCompanion.onShow();
+  const actions = pageCompanion.data.companionActions;
+  assert.ok(Array.isArray(actions), 'companionActions is array');
+  assert.strictEqual(actions.length, 3, 'companionActions has three entries');
+  assert.deepStrictEqual(actions.map(a => a.key), ['wish', 'learn', 'draw'], 'companionActions keys order');
+  actions.forEach((a) => {
+    assert.ok(a.icon, `companion action ${a.key} has icon`);
+    assert.ok(a.title, `companion action ${a.key} has title`);
+    assert.ok('locked' in a, `companion action ${a.key} has locked field`);
+  });
+
+  // 2. 解锁 wish 时点击跳转 /pages/wish/wish（300ms setTimeout 后触发 wx.navigateTo）
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pageWish = makePage();
+  pageWish.onLoad();
+  pageWish.onShow();
+  pageWish.setData({ wishUnlocked: true, learnUnlocked: true });
+  pageWish.onCompanionTap({ currentTarget: { dataset: { key: 'wish' } } });
+  assert.strictEqual(timerDelay, 300, 'wish navigation delayed 300ms');
+  assert.ok(typeof timerCallback === 'function', 'wish navigation scheduled');
+  timerCallback();
+  assert.strictEqual(navigatedTo, '/pages/wish/wish', 'wish tap navigates to wish page');
+
+  // 3. learn 未解锁时点击给出 feedback，不跳转
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pageLearnLocked = makePage();
+  pageLearnLocked.onLoad();
+  pageLearnLocked.onShow();
+  pageLearnLocked.setData({ wishUnlocked: true, learnUnlocked: false });
+  pageLearnLocked.onCompanionTap({ currentTarget: { dataset: { key: 'learn' } } });
+  assert.strictEqual(pageLearnLocked.data.feedback, '蛋宝宝还没到早教的年龄，明天来试试吧。', 'locked learn shows feedback');
+  assert.strictEqual(navigatedTo, null, 'locked learn does not navigate');
+
+  // 4. draw 点击显示占位 toast
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pageDraw = makePage();
+  pageDraw.onLoad();
+  pageDraw.onShow();
+  pageDraw.onCompanionTap({ currentTarget: { dataset: { key: 'draw' } } });
+  assert.strictEqual(toastTitle, '画画功能即将上线', 'draw tap shows placeholder toast');
+  assert.strictEqual(navigatedTo, null, 'draw tap does not navigate');
+
+  // 5. wish 未解锁时点击给出 feedback，不跳转
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pageWishLocked = makePage();
+  pageWishLocked.onLoad();
+  pageWishLocked.onShow();
+  pageWishLocked.setData({ wishUnlocked: false, learnUnlocked: true });
+  pageWishLocked.onCompanionTap({ currentTarget: { dataset: { key: 'wish' } } });
+  assert.strictEqual(pageWishLocked.data.feedback, '许愿池还在准备中。', 'locked wish shows feedback');
+  assert.strictEqual(navigatedTo, null, 'locked wish does not navigate');
 
   console.log('home.test.js: ALL PASS');
 }

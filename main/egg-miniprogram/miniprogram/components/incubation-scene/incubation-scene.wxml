@@ -1,0 +1,117 @@
+<view class="incubation-scene {{environment.className || ''}}" style="width: 100vw; height: 100vh; position: relative;">
+  <view wx:if="{{!previousFullSceneImage && environment.fullSceneImage && !fullSceneImageFailed && !sceneCrossfadeActive}}" class="incubation-scene-loading">
+    <view class="incubation-scene-loading-glow"></view>
+  </view>
+
+  <image
+    wx:if="{{previousFullSceneImage}}"
+    class="incubation-full-scene-image incubation-full-scene-image--previous"
+    src="{{previousFullSceneImage}}"
+    mode="aspectFill"
+  ></image>
+  <image
+    wx:if="{{environment.fullSceneImage && !fullSceneImageFailed}}"
+    class="incubation-full-scene-image {{sceneCrossfadeActive ? 'incubation-full-scene-image--revealing' : ''}}"
+    src="{{environment.fullSceneImage}}"
+    mode="aspectFill"
+    bindload="onFullSceneImageLoad"
+    binderror="onFullSceneImageError"
+  ></image>
+
+  <image
+    wx:if="{{environment.nestImage && !fullSceneImageFailed}}"
+    class="incubation-nest-image"
+    src="{{environment.nestImage}}"
+    mode="aspectFit"
+    data-asset="窝垫"
+    binderror="onIncubationAssetError"
+  ></image>
+
+  <view wx:if="{{fullSceneImageFailed}}" class="incubation-scene-error">
+    <text class="incubation-scene-error__title">房间没有加载完整</text>
+    <text class="incubation-scene-error__copy">不会用其他天气或角色图片代替当前场景。</text>
+    <view class="incubation-scene-error__retry" aria-role="button" aria-label="重新加载当前房间" bindtap="onRetryFullSceneImage">重新加载</view>
+  </view>
+
+  <view wx:if="{{!fullSceneImageFailed}}" class="window-effects">
+    <view class="window-visual-effects">
+      <view class="window-light"></view>
+      <view class="time-atmosphere">
+        <view class="time-beam"></view>
+        <view class="time-mote time-mote--one"></view>
+        <view class="time-mote time-mote--two"></view>
+        <view class="time-mote time-mote--three"></view>
+        <view class="time-mote time-mote--four"></view>
+        <view class="time-mote time-mote--five"></view>
+        <view class="time-mote time-mote--six"></view>
+        <view class="time-night-glint time-night-glint--one"></view>
+        <view class="time-night-glint time-night-glint--two"></view>
+        <view class="time-night-glint time-night-glint--three"></view>
+        <view class="time-sunset-glint"></view>
+      </view>
+      <view class="curtain-light curtain-light--left"></view>
+      <view class="curtain-light curtain-light--right"></view>
+      <view class="season-atmosphere">
+        <view class="season-piece season-piece--one"></view>
+        <view class="season-piece season-piece--two"></view>
+        <view class="season-piece season-piece--three"></view>
+      </view>
+    </view>
+    <canvas
+      type="2d"
+      id="windowWeatherCanvas"
+      class="window-weather-canvas"
+      aria-role="button"
+      aria-label="点击窗户，查看窗外景色"
+      catchtap="onWindowTap"
+    ></canvas>
+  </view>
+
+  <view class="room-light-breathe"></view>
+  <view
+    class="room-lamp-hotspot"
+    aria-role="button"
+    aria-label="{{lampOn ? '关闭台灯' : '打开台灯'}}"
+    catchtap="onLampTap"
+  ></view>
+
+  <view
+    class="room-clock room-clock--{{clockMode}}"
+    style="top:{{clockTopPx}}px;left:{{clockLeftPx}}px;"
+    aria-role="button"
+    aria-label="{{clockMode === 'analog' ? '当前时间 ' + clockTimeText + '，点击显示数字时间' : '当前时间 ' + clockTimeText + '，点击显示指针时钟'}}"
+    catchtap="onClockTap"
+  >
+    <view wx:if="{{clockMode === 'analog'}}" class="clock-face">
+      <text class="clock-number clock-number--twelve">12</text>
+      <text class="clock-number clock-number--three">3</text>
+      <text class="clock-number clock-number--six">6</text>
+      <text class="clock-number clock-number--nine">9</text>
+      <view class="clock-hand clock-hand--hour" style="{{clockHourStyle}}"></view>
+      <view class="clock-hand clock-hand--minute" style="{{clockMinuteStyle}}"></view>
+      <view class="clock-hand clock-hand--second" style="{{clockSecondStyle}}"></view>
+      <view class="clock-pin"></view>
+    </view>
+    <view wx:else class="clock-digital">
+      <text class="clock-time">{{clockTimeText}}</text>
+      <text class="clock-date">{{clockDateText}}</text>
+    </view>
+  </view>
+
+  <view class="egg egg-shell {{eggCuddling ? 'egg--warming' : ''}}" aria-role="button" aria-label="轻触蛋宝宝" catchtap="onEggTap" bindlongpress="onEggCuddle">
+    <image class="egg-shell-preview egg-shell-preview--base" src="{{environment.eggImage}}" mode="aspectFit" data-layer="base"></image>
+    <image wx:if="{{eggArtUrl}}" class="egg-shell-preview egg-shell-preview--art" src="{{eggArtUrl}}" mode="aspectFit" data-layer="art"></image>
+    <image
+      class="egg-shell-depth"
+      src="{{depthOverlay}}"
+      mode="scaleToFill"
+      aria-hidden="true"
+    ></image>
+    <image
+      class="egg-shell-specular"
+      src="{{specularOverlay}}"
+      mode="scaleToFill"
+      aria-hidden="true"
+    ></image>
+  </view>
+</view>

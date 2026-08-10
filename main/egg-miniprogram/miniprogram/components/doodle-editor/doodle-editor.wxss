@@ -1,4 +1,8 @@
 .doodle-editor { position: fixed; z-index: 200; inset: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: #FAFAF8; }
+.page--waiting { opacity: 0; }
+.page--entering { animation: doodle-page-fade-in 320ms ease-out both; }
+.page--visible { opacity: 1; }
+.page--exiting { animation: doodle-page-fade-out 320ms ease-in both; pointer-events: none; }
 
 .doodle-nav { position: relative; z-index: 50; flex: 0 0 auto; background: #FFF; }
 .doodle-status-bar { width: 100%; }
@@ -7,16 +11,26 @@
 .doodle-back { width: 112rpx; height: 112rpx; flex: 0 0 112rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: transform 180ms ease-out, background 180ms ease-out; }
 .doodle-back:active { background: #F3F7E7; transform: scale(.98); }
 .doodle-chevron { width: 16rpx; height: 16rpx; margin-left: 8rpx; border-top: 3rpx solid #002900; border-right: 3rpx solid #002900; transform: rotate(-135deg); }
+.save-status { min-width: 76rpx; padding: 8rpx 14rpx; border-radius: 999rpx; color: #687548; font-size: 20rpx; line-height: 1; text-align: center; transition: background 180ms ease, color 180ms ease; }
+.save-status--saved { background: #F2F5EC; color: #6A7757; }
+.save-status--saving { background: #F6F3EA; color: #81755E; }
+.save-status--unsaved { background: #FFF0E5; color: #A75D39; }
+.save-status--unsaved:active { transform: scale(.98); }
 .doodle-title { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #002900; font-size: 30rpx; font-weight: 600; white-space: nowrap; }
 .doodle-nav-safe { width: 184rpx; height: 112rpx; margin-left: auto; }
 
 .preview { position: relative; z-index: 30; isolation: isolate; min-height: 0; flex: 1; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(180deg, #FFF 0%, #F7F5EE 100%); }
+.canvas-notice-anchor { position: absolute; z-index: 35; top: calc(50% - 448rpx); left: 132rpx; right: 132rpx; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.canvas-notice { padding: 12rpx 24rpx; border-radius: 999rpx; background: rgba(255,253,247,.96); box-shadow: 0 8rpx 22rpx rgba(45,55,40,.12); color: #536047; font-size: 22rpx; line-height: 1.3; opacity: 0; transform: translateY(6rpx); transition: opacity 180ms ease-out, transform 180ms ease-out; }
+.canvas-notice--visible { opacity: 1; transform: translateY(0); }
+.canvas-notice--warning { color: #A75D39; background: rgba(255,240,229,.96); }
 .canvas-action-button { width: 112rpx; height: 112rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; color: #536047; transition: transform 180ms ease, opacity 180ms ease, color 180ms ease; }
 .canvas-action-button + .canvas-action-button { border-top: 1rpx solid #E5E3DF; }
 .canvas-action-button:active { transform: scale(.98); }
 .canvas-action-rail { position: absolute; z-index: 30; top: calc(50% + 72rpx); right: 20rpx; width: 112rpx; height: 224rpx; display: flex; flex-direction: column; gap: 0; overflow: hidden; border: 1rpx solid #E5E3DF; border-radius: 56rpx; background: rgba(255,255,255,.94); box-shadow: 0 8rpx 22rpx rgba(45,55,40,.1); transform: translateY(-50%); backdrop-filter: blur(12rpx); }
 .canvas-action-button--disabled { pointer-events: none; opacity: .45; }
 .canvas-action-button--clear { color: #765C55; }
+.canvas-action-image { width: 52rpx; height: 52rpx; flex: 0 0 52rpx; }
 .canvas-action-label { margin-top: 4rpx; font-size: 20rpx; line-height: 1; }
 .preview-aura { position: absolute; z-index: 0; width: 96vw; height: 96vw; border-radius: 50%; background: radial-gradient(circle, rgba(237,231,142,.3), rgba(237,231,142,0) 68%); }
 .egg-canvas-stack { position: relative; z-index: 1; top: -168rpx; width: 89vw; height: 89vw; flex: 0 0 auto; filter: drop-shadow(0 14rpx 16rpx rgba(51,48,35,.14)); transform-origin: center; }
@@ -25,16 +39,35 @@
 .egg-canvas--art { z-index: 2; touch-action: none; }
 .canvas-loading { position: absolute; z-index: 4; bottom: 18rpx; padding: 7rpx 14rpx; border-radius: 999rpx; background: rgba(255,255,255,.82); color: #77756E; font-size: 20rpx; }
 
-.tool-sheet { position: absolute; z-index: 100; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; padding: 12rpx 24rpx calc(24rpx + env(safe-area-inset-bottom)); box-sizing: border-box; }
-.tool-options { width: 100%; margin: 0 0 12rpx; padding: 16rpx 18rpx; border-radius: 24rpx; background: rgba(255,255,255,.96); box-shadow: 0 2rpx 8rpx rgba(38,54,43,.06), 0 4rpx 12rpx rgba(38,54,43,.04); animation: tool-options-fade-in 180ms ease-out both; box-sizing: border-box; }
-.brush-options { padding: 12rpx; }
+.content { position: absolute; z-index: 100; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; justify-content: center; padding: 12rpx 24rpx calc(24rpx + env(safe-area-inset-bottom)); box-sizing: border-box; }
+.tool-section { position: relative; width: 100%; flex: 0 0 auto; padding: 0; box-sizing: border-box; }
+.tool-section--compact { width: 368rpx; margin: 0; padding: 0; border: 0; border-radius: 56rpx; background: transparent; }
+.figma-toolbar { width: 100%; height: 104rpx; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 12rpx 0 0; padding: 0; overflow: hidden; box-sizing: border-box; border: 1rpx solid #E3E5DF; border-radius: 52rpx; background: #F6F7F4; }
+.figma-toolbar--compact { width: 368rpx; height: 112rpx; grid-template-columns: repeat(3, 112rpx); margin: 0; padding: 0 15rpx; border-color: rgba(225,226,211,.9); border-radius: 56rpx; background: #FFF; box-shadow: 0 8rpx 24rpx rgba(43,55,39,.1), inset 0 1rpx 0 rgba(255,255,255,.72); -webkit-backdrop-filter: blur(14rpx); backdrop-filter: blur(14rpx); }
+.figma-toolbar--with-options { margin: 12rpx auto 0; }
+.tool-button { position: relative; width: auto; height: 104rpx; min-width: 0; min-height: 104rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5rpx; border: 0; border-radius: 0; color: #596155; font-size: 20rpx; transition: transform 160ms ease, background 160ms ease, border-color 160ms ease; }
+.figma-toolbar--compact .tool-button { width: 112rpx; height: 112rpx; min-height: 112rpx; }
+.tool-button + .tool-button::before { position: absolute; left: 0; top: 28rpx; bottom: 28rpx; width: 1rpx; content: ""; background: #E3E5DF; }
+.figma-toolbar--compact .tool-button + .tool-button::before { top: 22rpx; bottom: 22rpx; background: rgba(64,82,57,.12); }
+.tool-button:active { transform: scale(.98); }
+.tool-button--selected { background: #FFF0DD; color: #6A3F2D; }
+.tool-button--selected:first-child { box-shadow: -15rpx 0 0 #FFF0DD; }
+.tool-button--selected:last-child { box-shadow: 15rpx 0 0 #FFF0DD; }
+.toolbar-icon-wrap { position: relative; width: 58rpx; height: 58rpx; }
+.toolbar-image-icon { width: 58rpx; height: 58rpx; flex: 0 0 58rpx; }
+.figma-toolbar--compact .toolbar-icon-wrap, .figma-toolbar--compact .toolbar-image-icon { width: 62rpx; height: 62rpx; flex-basis: 62rpx; }
+.figma-toolbar--compact .brush-current-color { display: none; }
+.brush-current-color { position: absolute; right: -3rpx; bottom: -2rpx; width: 18rpx; height: 18rpx; box-sizing: border-box; border: 3rpx solid #FFF; border-radius: 50%; box-shadow: 0 1rpx 4rpx rgba(40,45,35,.24); }
+
+.tool-options { margin: 0; padding: 16rpx 18rpx; border-radius: 24rpx; background: rgba(255,255,255,.96); box-shadow: 0 2rpx 8rpx rgba(38,54,43,.06), 0 4rpx 12rpx rgba(38,54,43,.04); animation: tool-options-fade-in 180ms ease-out both; box-sizing: border-box; }
+.tool-options.brush-options { position: relative; padding: 12rpx; }
 .brush-settings-grid { display: grid; grid-template-columns: minmax(0, 1fr) 112rpx; gap: 12rpx; }
 .brush-setting-group { min-width: 0; padding: 10rpx 8rpx 8rpx; box-sizing: border-box; border-radius: 22rpx; background: #F7F8F5; }
 .brush-setting-group--color { position: relative; }
 .brush-setting-title { display: block; margin: 0 0 8rpx 4rpx; color: #566430; font-size: 24rpx; font-weight: 500; line-height: 1.2; }
 .brush-color-trigger { position: relative; height: 68rpx; padding: 7rpx; box-sizing: border-box; border-radius: 20rpx; background: rgba(255,255,255,.88); }
 .brush-selected-color { width: 100%; height: 100%; border-radius: 14rpx; box-shadow: inset 0 1rpx 0 rgba(255,255,255,.32); }
-.brush-color-popover { position: relative; margin-top: 12rpx; padding: 14rpx; overflow: hidden; border-radius: 24rpx; background: #FFF; box-shadow: 0 12rpx 32rpx rgba(38,54,43,.12); animation: tool-options-fade-in 180ms ease-out both; }
+.brush-color-popover { position: absolute; z-index: 120; left: -12rpx; right: -12rpx; bottom: calc(100% + 12rpx); padding: 14rpx; overflow: hidden; border-radius: 24rpx; background: #FFF; box-shadow: 0 24rpx 64rpx rgba(38,54,43,.16); animation: tool-options-fade-in 180ms ease-out both; }
 .brush-color-grid { display: flex; flex-wrap: wrap; padding: 8rpx; box-sizing: border-box; }
 .brush-color-card { width: 20%; height: 112rpx; border: 4rpx solid #FFF; border-radius: 16rpx; box-sizing: border-box; }
 .brush-color-card--selected { box-shadow: inset 0 0 0 5rpx #002900, inset 0 0 0 8rpx #FFF; }
@@ -51,26 +84,18 @@
 .eraser-size-option--selected { background: #E6EED0; color: #566430; }
 .eraser-size-dot { min-width: 12rpx; min-height: 12rpx; border-radius: 50%; background: #002900; }
 .eraser-size-label { color: #566430; font-size: 20rpx; line-height: 1; font-variant-numeric: tabular-nums; }
-
-.figma-toolbar { width: 368rpx; height: 112rpx; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin: 0; padding: 0 15rpx; overflow: hidden; box-sizing: border-box; border: 1rpx solid rgba(225,226,211,.9); border-radius: 56rpx; background: #FFF; box-shadow: 0 8rpx 24rpx rgba(43,55,39,.1), inset 0 1rpx 0 rgba(255,255,255,.72); backdrop-filter: blur(14rpx); }
-.figma-toolbar--with-options { margin-top: 12rpx; }
-.tool-button { position: relative; width: auto; height: 112rpx; min-width: 0; min-height: 112rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5rpx; border: 0; border-radius: 0; color: #596155; font-size: 20rpx; transition: transform 160ms ease, background 160ms ease, border-color 160ms ease; }
-.tool-button + .tool-button::before { position: absolute; left: 0; top: 22rpx; bottom: 22rpx; width: 1rpx; content: ""; background: rgba(64,82,57,.12); }
-.tool-button:active { transform: scale(.98); }
-.tool-button--selected { background: #FFF0DD; color: #6A3F2D; }
-.tool-button--selected:first-child { box-shadow: -15rpx 0 0 #FFF0DD; }
-.tool-button--selected:last-child { box-shadow: 15rpx 0 0 #FFF0DD; }
-.toolbar-icon-wrap { position: relative; width: 58rpx; height: 58rpx; display: flex; align-items: center; justify-content: center; }
-.toolbar-icon { font-size: 24rpx; color: #596155; }
-.brush-current-color { position: absolute; right: -3rpx; bottom: -2rpx; width: 18rpx; height: 18rpx; box-sizing: border-box; border: 3rpx solid #FFF; border-radius: 50%; box-shadow: 0 1rpx 4rpx rgba(40,45,35,.24); }
-
-.save-bar { width: 368rpx; height: 94rpx; margin-top: 16rpx; display: flex; align-items: center; justify-content: center; border-radius: 999rpx; background: #002900; color: #FFF; font-size: 29rpx; transition: transform 160ms ease, background 160ms ease; }
-.save-bar:active { transform: scale(.98); background: #1A3A1A; }
-.save-text { line-height: 1; }
+.sticker-options { padding-top: 13rpx; }
+.pattern-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10rpx; }
+.pattern { height: 86rpx; display: flex; align-items: center; justify-content: center; gap: 7rpx; border: 0; border-radius: 999rpx; background: #FDFCF0; color: #526047; font-size: 20rpx; }
+.pattern--selected { background: #E6EED0; color: #566430; }
+.pattern-symbol { height: 27rpx; color: #536447; font-size: 27rpx; line-height: 27rpx; }
 
 @media (prefers-reduced-motion: reduce) {
+  .page--entering, .page--exiting { animation-duration: 20ms; }
   .tool-options, .brush-color-popover { animation-duration: 20ms; }
-  .canvas-action-button, .tool-button, .save-bar, .doodle-back { transition: none; }
+  .canvas-notice, .canvas-action-button, .tool-button, .save-status, .doodle-back { transition: none; }
 }
 
-@keyframes tool-options-fade-in { from { opacity: 0; transform: translateY(8rpx); } to { opacity: 1; transform: translateY(0); } }
+@keyframes doodle-page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes doodle-page-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes tool-options-fade-in { from { opacity: 0; } to { opacity: 1; } }

@@ -1,6 +1,7 @@
+// 蛋壳涂鸦画布引擎：操作（笔画/贴纸）模型 + 双层 canvas 渲染。
+// 与静态 UI 项目的 egg-shell-art 对齐：画笔像素印章、橡皮 destination-out、贴纸像素画。
 const canvas2d = require('../../utils/canvas-2d');
 
-// 从 STATIC egg-shell-art.js 内联的 10 色画笔色板
 const BRUSH_COLORS = [
   { token: 'forest', name: '森林绿', value: '#526B4D' },
   { token: 'apricot-orange', name: '杏子橙', value: '#D98652' },
@@ -13,19 +14,93 @@ const BRUSH_COLORS = [
   { token: 'wine-red', name: '葡萄酒红', value: '#7B3E52' },
   { token: 'lavender', name: '浅藤紫', value: '#B9ABD2' }
 ];
-
 const DEFAULT_BRUSH_COLOR = BRUSH_COLORS[0].value;
 
-const BRUSH_SIZES = [2, 5, 8, 12, 18];
-const ERASER_SIZES = [6, 10, 15, 22, 30];
 const BRUSH_REFERENCE_PX = 180;
 const ERASER_REFERENCE_PX = 150;
-const MIN_POINT_DISTANCE = 0.006;
+const BRUSH_SIZES = [2, 5, 8, 12, 18].map(pixels => ({ label: `${pixels} px`, pixels, width: pixels / BRUSH_REFERENCE_PX }));
+const ERASER_SIZES = [6, 10, 15, 22, 30].map(pixels => ({ label: `${pixels} px`, pixels, width: pixels / ERASER_REFERENCE_PX }));
+const ERASER_DEFAULT_PX = 15;
+const DEFAULT_BRUSH_WIDTH = BRUSH_SIZES[1].width;
+const DEFAULT_ERASER_WIDTH = ERASER_DEFAULT_PX / ERASER_REFERENCE_PX;
+
+const PATTERNS = [
+  { type: 'star', name: '星星', symbol: '✦' },
+  { type: 'heart', name: '爱心', symbol: '♡' },
+  { type: 'leaf', name: '叶子', symbol: '⌁' }
+];
+const PIXEL_STICKERS = {
+  star: [
+    '0001000',
+    '0001000',
+    '1101011',
+    '0111110',
+    '0011100',
+    '0110110',
+    '1100011'
+  ],
+  heart: [
+    '0110110',
+    '1111111',
+    '1111111',
+    '0111110',
+    '0011100',
+    '0001000'
+  ],
+  leaf: [
+    '0000110',
+    '0001110',
+    '0011100',
+    '0111000',
+    '1110000',
+    '0100000'
+  ]
+};
+
+const MAX_OPERATIONS = 240;
 const MAX_POINTS_PER_STROKE = 300;
+const MIN_POINT_DISTANCE = 0.006;
+const MIN_CANVAS_SCALE = 1;
+const MAX_CANVAS_SCALE = 1.6;
 
 function clamp(value, min, max) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : min;
+}
+
+function brushWidthForPixels(pixels, canvasSize) {
+  const reference = Math.max(1, Number(canvasSize) || BRUSH_REFERENCE_PX);
+  const safePixels = BRUSH_SIZES.some(item => item.pixels === Number(pixels)) ? Number(pixels) : BRUSH_SIZES[1].pixels;
+  return clamp(safePixels / reference, 0.004, 0.3);
+}
+
+function eraserWidthForPixels(pixels, canvasSize) {
+  const reference = Math.max(1, Number(canvasSize) || ERASER_REFERENCE_PX);
+  return clamp(clamp(pixels, 4, 30) / reference, 0.008, 0.3);
+}
+
+function createStroke(tool, points, sequence, width, color) {
+  const safeTool = tool === 'eraser' ? 'eraser' : 'brush';
+  return {
+    id: `stroke-${Math.max(0, Number(sequence) || 0) + 1}`,
+    type: 'stroke',
+    tool: safeTool,
+    points: (points || []).map(p => ({ x: clamp(p.x, 0, 1), y: clamp(p.y, 0, 1) })),
+    width: width || (safeTool === 'eraser' ? DEFAULT_ERASER_WIDTH : DEFAULT_BRUSH_WIDTH),
+    color: safeTool === 'brush' ? (color || DEFAULT_BRUSH_COLOR) : DEFAULT_BRUSH_COLOR
+  };
+}
+
+function createSticker(pattern, sequence, point) {
+  const safePattern = PATTERNS.some(item => item.type === pattern) ? pattern : PATTERNS[0].type;
+  const hasPoint = point && Number.isFinite(Number(point.x)) && Number.isFinite(Number(point.y));
+  return {
+    id: `sticker-${Math.max(0, Number(sequence) || 0) + 1}`,
+    type: 'sticker',
+    pattern: safePattern,
+    x: hasPoint ? clamp(point.x, 0.12, 0.88) : 0.5,
+    y: hasPoint ? clamp(point.y, 0.12, 0.9) : 0.5
+  };
 }
 
 function eggPath(context, width, height) {
@@ -72,13 +147,31 @@ function drawBase(context, image, width, height, shellColor) {
   context.drawImage(image, 0, 0, width, height);
 }
 
-function drawPixelStroke(context, stroke, width, height) {
-  const points = stroke.points || [];
+function drawSticker(context, operation, width, height) {
+  const pixels = PIXEL_STICKERS[operation.pattern] || PIXEL_STICKERS.star;
+  const cellSize = Math.max(2, Math.round(Math.min(width, height) * 0.012));
+  const columns = Math.max(...pixels.map(row => row.length));
+  const rows = pixels.length;
+  const startX = Math.round(operation.x * width - columns * cellSize / 2);
+  const startY = Math.round(operation.y * height - rows * cellSize / 2);
+  context.save();
+  context.fillStyle = 'rgba(70,91,62,.58)';
+  pixels.forEach((row, rowIndex) => {
+    Array.from(row).forEach((pixel, columnIndex) => {
+      if (pixel !== '1') return;
+      context.fillRect(startX + columnIndex * cellSize, startY + rowIndex * cellSize, cellSize, cellSize);
+    });
+  });
+  context.restore();
+}
+
+function drawPixelStroke(context, operation, width, height) {
+  const points = operation.points || [];
   if (!points.length) return;
-  const pixelSize = Math.max(1, Math.round(Math.min(width, height) * (stroke.width || 0.028)));
+  const pixelSize = Math.max(1, Math.round(Math.min(width, height) * operation.width));
   context.save();
   context.globalCompositeOperation = 'source-over';
-  context.fillStyle = stroke.color || '#526B4D';
+  context.fillStyle = operation.color || '#536447';
   const stamp = (point) => {
     const x = Math.round(point.x * width - pixelSize / 2);
     const y = Math.round(point.y * height - pixelSize / 2);
@@ -104,12 +197,12 @@ function drawPixelStroke(context, stroke, width, height) {
   context.restore();
 }
 
-function drawEraserStroke(context, stroke, width, height) {
-  const points = stroke.points || [];
+function drawEraserStroke(context, operation, width, height) {
+  const points = operation.points || [];
   if (!points.length) return;
   context.save();
   context.globalCompositeOperation = 'destination-out';
-  context.lineWidth = Math.min(width, height) * (stroke.width || 0.1);
+  context.lineWidth = Math.min(width, height) * operation.width;
   context.lineCap = 'round';
   context.lineJoin = 'round';
   if (points.length === 1) {
@@ -125,21 +218,19 @@ function drawEraserStroke(context, stroke, width, height) {
   context.restore();
 }
 
-function drawArt(context, maskImage, width, height, strokes, currentStroke) {
+function drawArt(context, maskImage, width, height, operations, activeOperation) {
   context.clearRect(0, 0, width, height);
   if (!maskImage) {
     context.save();
     eggPath(context, width, height);
     context.clip();
   }
-  strokes.list.forEach(stroke => {
-    if (stroke.tool === 'eraser') drawEraserStroke(context, stroke, width, height);
-    else drawPixelStroke(context, stroke, width, height);
+  (operations || []).concat(activeOperation || []).forEach(operation => {
+    if (!operation) return;
+    if (operation.type === 'sticker') drawSticker(context, operation, width, height);
+    if (operation.type === 'stroke' && operation.tool === 'eraser') drawEraserStroke(context, operation, width, height);
+    if (operation.type === 'stroke' && operation.tool === 'brush') drawPixelStroke(context, operation, width, height);
   });
-  if (currentStroke) {
-    if (currentStroke.tool === 'eraser') drawEraserStroke(context, currentStroke, width, height);
-    else drawPixelStroke(context, currentStroke, width, height);
-  }
   if (!maskImage) {
     context.restore();
     return;
@@ -150,65 +241,9 @@ function drawArt(context, maskImage, width, height, strokes, currentStroke) {
   context.restore();
 }
 
-function createStrokeStore() {
-  return { list: [], history: [], current: null };
-}
-
-function beginStroke(strokes, point) {
-  if (!point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y))) return;
-  strokes.history.push(strokes.list.slice());
-  const size = clamp(point.size, 1, 100);
-  strokes.current = {
-    tool: point.tool === 'eraser' ? 'eraser' : 'brush',
-    color: point.color || DEFAULT_BRUSH_COLOR,
-    width: point.tool === 'eraser' ? size / ERASER_REFERENCE_PX : size / BRUSH_REFERENCE_PX,
-    points: [{ x: clamp(point.x, 0, 1), y: clamp(point.y, 0, 1) }]
-  };
-}
-
-function appendPoint(strokes, point) {
-  if (!strokes.current || !point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y))) return;
-  const x = clamp(point.x, 0, 1);
-  const y = clamp(point.y, 0, 1);
-  const points = strokes.current.points;
-  const previous = points[points.length - 1];
-  const dx = Math.abs(previous.x - x);
-  const dy = Math.abs(previous.y - y);
-  if (dx + dy < MIN_POINT_DISTANCE) return;
-  strokes.current.points = points.concat({ x, y });
-  if (strokes.current.points.length > MAX_POINTS_PER_STROKE) {
-    strokes.current.points = strokes.current.points.slice(-MAX_POINTS_PER_STROKE);
-  }
-}
-
-function endStroke(strokes) {
-  if (!strokes.current) return;
-  strokes.list.push(strokes.current);
-  strokes.current = null;
-}
-
-function undo(strokes) {
-  const snapshot = strokes.history.pop();
-  if (!snapshot) return;
-  strokes.list = snapshot;
-  strokes.current = null;
-}
-
-function clear(strokes) {
-  strokes.history.push(strokes.list.slice());
-  strokes.list = [];
-  strokes.current = null;
-}
-
-function normalizeBrushSize(size, isEraser) {
-  const options = isEraser ? ERASER_SIZES : BRUSH_SIZES;
-  const target = clamp(Number(size) || options[1], options[0], options[options.length - 1]);
-  return options.reduce((prev, curr) => Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev);
-}
-
 function createEngine(options) {
   const page = options && options.page;
-  const selectors = options && options.selectors || {};
+  const selectors = (options && options.selectors) || {};
   const baseImageSource = options && options.baseImage;
   const shellColor = options && options.shellColor;
 
@@ -217,12 +252,23 @@ function createEngine(options) {
   let baseImage = null;
   let artMaskImage = null;
   let setupToken = 0;
-  const strokes = createStrokeStore();
-  let brush = { color: DEFAULT_BRUSH_COLOR, size: BRUSH_SIZES[1], tool: 'brush' };
+  // 操作列表 + 撤销栈（存操作快照）+ 进行中的笔画
+  let operations = [];
+  let undoStack = [];
+  let currentStroke = null;
+  let operationSequence = 0;
 
-  function render() {
+  function snapshot() {
+    return JSON.parse(JSON.stringify(operations));
+  }
+
+  function pushHistory() {
+    undoStack = undoStack.concat([snapshot()]).slice(-120);
+  }
+
+  function render(activeOperation) {
     if (baseLayer) drawBase(baseLayer.context, baseImage, baseLayer.width, baseLayer.height, shellColor);
-    if (artLayer) drawArt(artLayer.context, artMaskImage, artLayer.width, artLayer.height, strokes, strokes.current);
+    if (artLayer) drawArt(artLayer.context, artMaskImage, artLayer.width, artLayer.height, operations, activeOperation === undefined ? currentStroke : activeOperation);
   }
 
   function init() {
@@ -254,79 +300,108 @@ function createEngine(options) {
     artLayer = null;
     baseImage = null;
     artMaskImage = null;
+    currentStroke = null;
   }
 
-  function setBrush(next) {
-    const update = next || {};
-    if (update.color) brush.color = update.color;
-    if (Number.isFinite(Number(update.size))) brush.size = normalizeBrushSize(update.size, update.tool === 'eraser');
-    if (update.tool === 'brush' || update.tool === 'eraser') brush.tool = update.tool;
-  }
-
-  function canvasPoint(event, scale) {
-    const touch = (event.touches || event.changedTouches || [])[0];
-    if (!touch || !artLayer) return null;
-    const s = Math.max(1, Number(scale) || 1);
-    const clientX = Number.isFinite(Number(touch.clientX)) ? Number(touch.clientX) : Number(touch.x);
-    const clientY = Number.isFinite(Number(touch.clientY)) ? Number(touch.clientY) : Number(touch.y);
-    if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
-    const scaledWidth = artLayer.width * s;
-    const scaledHeight = artLayer.height * s;
-    const scaledLeft = artLayer.left - (scaledWidth - artLayer.width) / 2;
-    const scaledTop = artLayer.top - (scaledHeight - artLayer.height) / 2;
-    const x = (clientX - scaledLeft) / scaledWidth;
-    const y = (clientY - scaledTop) / scaledHeight;
-    return { x: clamp(x, 0, 1), y: clamp(y, 0, 1) };
-  }
-
-  function touchStart(event, scale) {
-    const point = canvasPoint(event, scale);
+  function beginStroke(point, brush) {
     if (!point) return;
-    beginStroke(strokes, { x: point.x, y: point.y, color: brush.color, size: brush.size, tool: brush.tool });
+    pushHistory();
+    const tool = brush && brush.tool === 'eraser' ? 'eraser' : 'brush';
+    const canvasSize = artLayer ? Math.min(artLayer.width, artLayer.height) : undefined;
+    const width = tool === 'eraser'
+      ? eraserWidthForPixels(brush && brush.size, canvasSize)
+      : brushWidthForPixels(brush && brush.size, canvasSize);
+    operationSequence += 1;
+    currentStroke = createStroke(tool, [point], operationSequence, width, brush && brush.color);
     render();
   }
 
-  function touchMove(event, scale) {
-    const point = canvasPoint(event, scale);
-    if (!point) return;
-    appendPoint(strokes, point);
+  function appendPoint(point) {
+    if (!currentStroke || !point) return;
+    const points = currentStroke.points;
+    const previous = points[points.length - 1];
+    if (Math.abs(previous.x - point.x) + Math.abs(previous.y - point.y) < MIN_POINT_DISTANCE) return;
+    currentStroke.points = points.concat(point).slice(-MAX_POINTS_PER_STROKE);
     render();
   }
 
-  function touchEnd() {
-    endStroke(strokes);
-    render();
+  function endStroke() {
+    if (!currentStroke) return false;
+    operations = operations.concat(currentStroke).slice(-MAX_OPERATIONS);
+    currentStroke = null;
+    render(null);
+    return true;
   }
 
-  function undoStroke() {
-    undo(strokes);
-    render();
+  function cancelStroke() {
+    if (!currentStroke) return;
+    currentStroke = null;
+    if (undoStack.length) undoStack.pop();
+    render(null);
   }
 
-  function clearStrokes() {
-    clear(strokes);
-    render();
+  function placeSticker(pattern, point) {
+    pushHistory();
+    operationSequence += 1;
+    operations = operations.concat(createSticker(pattern, operationSequence, point)).slice(-MAX_OPERATIONS);
+    render(null);
   }
 
+  function undo() {
+    const snapshotOps = undoStack.pop();
+    if (!snapshotOps) return;
+    operations = snapshotOps;
+    currentStroke = null;
+    render(null);
+  }
+
+  function clear() {
+    if (!operations.length) return;
+    pushHistory();
+    operations = [];
+    currentStroke = null;
+    render(null);
+  }
+
+  // 导出成品图：艺术层叠到底图之上合成整颗蛋
   function exportArtwork() {
     if (!artLayer) return Promise.resolve('');
-    render();
-    return canvas2d.exportImage(artLayer);
+    render(null);
+    if (baseLayer) {
+      baseLayer.context.save();
+      baseLayer.context.drawImage(artLayer.canvas, 0, 0, baseLayer.width, baseLayer.height);
+      baseLayer.context.restore();
+    }
+    return canvas2d.exportImage(baseLayer).then(tempFilePath => {
+      // 导出后重绘底层，擦掉合成上去的艺术层，保持画布干净
+      render(null);
+      return tempFilePath;
+    });
   }
 
   return {
     init,
     dispose,
     render,
-    setBrush,
-    touchStart,
-    touchMove,
-    touchEnd,
-    undo: undoStroke,
-    clear: clearStrokes,
+    beginStroke,
+    appendPoint,
+    endStroke,
+    cancelStroke,
+    placeSticker,
+    undo,
+    clear,
     exportArtwork,
-    getStrokes: () => strokes,
-    getLayerInfo: () => ({ baseLayer, artLayer })
+    canvasSize: () => (artLayer ? Math.min(artLayer.width, artLayer.height) : 0),
+    layerRect: () => (artLayer ? { left: artLayer.left || 0, top: artLayer.top || 0 } : { left: 0, top: 0 }),
+    canUndo: () => undoStack.length > 0,
+    canClear: () => operations.length > 0 || !!currentStroke,
+    // 测试口：注入假层，跳过 wx.createSelectorQuery
+    _setLayersForTest(base, art) {
+      baseLayer = base;
+      artLayer = art;
+      baseImage = null;
+      artMaskImage = null;
+    }
   };
 }
 
@@ -334,12 +409,12 @@ module.exports = {
   BRUSH_COLORS,
   BRUSH_SIZES,
   ERASER_SIZES,
+  ERASER_DEFAULT_PX,
+  PATTERNS,
   DEFAULT_BRUSH_COLOR,
-  createStrokeStore,
-  beginStroke,
-  appendPoint,
-  endStroke,
-  undo,
-  clear,
+  MIN_CANVAS_SCALE,
+  MAX_CANVAS_SCALE,
+  createStroke,
+  createSticker,
   createEngine
 };

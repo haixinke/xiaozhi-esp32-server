@@ -34,7 +34,6 @@ Page({
     countdown: '',
     dailyStatus: null,
     feedback: '',
-    eggMotion: '',
     cuddleProgress: 0,
     actionLabel: '孵化修炼手册',
     authChecked: false,
@@ -299,10 +298,8 @@ Page({
     if (this.lastTapAt && now - this.lastTapAt < 2000) return;
     this.lastTapAt = now;
     petStore.recordTouch();
-    this.setData({ eggMotion: 'egg--wobble' });
     this.showFeedback(TOUCH_LINES[Math.floor(Math.random() * TOUCH_LINES.length)]);
     if (wx.vibrateShort) wx.vibrateShort({ type: 'light' });
-    setTimeout(() => this.setData({ eggMotion: '' }), 600);
   },
 
   // 长按贴贴：来自 incubation-scene 的 eggcuddle 事件
@@ -310,7 +307,7 @@ Page({
     if (!this.data.pet || this.data.stage === 'hatched') return;
     this.completedLongPress = false;
     const started = Date.now();
-    this.setData({ eggMotion: 'egg--warming', cuddleProgress: 1 });
+    this.setData({ cuddleProgress: 1 });
     this.cuddleTicker = setInterval(() => {
       const progress = Math.min(99, Math.round((Date.now() - started) / 30));
       this.setData({ cuddleProgress: progress });
@@ -318,18 +315,18 @@ Page({
     this.cuddleTimer = setTimeout(() => {
       clearInterval(this.cuddleTicker);
       this.completedLongPress = true;
-      this.setData({ cuddleProgress: 100, eggMotion: 'egg--warm' });
+      this.setData({ cuddleProgress: 100 });
       if (wx.vibrateShort) wx.vibrateShort({ type: 'medium' });
       (async () => {
         const result = await petStore.completeCuddle();
         if (!result.ok) {
           this.showFeedback(result.message || '操作失败，请稍后重试');
-          setTimeout(() => { this.setData({ cuddleProgress: 0, eggMotion: '' }); }, 900);
+          setTimeout(() => { this.setData({ cuddleProgress: 0 }); }, 900);
           return;
         }
         this.showFeedback(result.alreadyDone ? '它又往你这边靠了靠' : '它暖起来了');
         setTimeout(() => {
-          this.setData({ cuddleProgress: 0, eggMotion: '' });
+          this.setData({ cuddleProgress: 0 });
           this.onShow();
         }, 900);
       })();
@@ -385,16 +382,6 @@ Page({
         'environment.windowImage': environment.windowImage
       });
     });
-  },
-
-  onTouchStart() {
-    this.onEggCuddle();
-  },
-
-  onTouchEnd() {
-    clearTimeout(this.cuddleTimer);
-    clearInterval(this.cuddleTicker);
-    if (!this.completedLongPress) this.setData({ cuddleProgress: 0, eggMotion: '' });
   },
 
   onPrimaryAction() {

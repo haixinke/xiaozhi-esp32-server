@@ -78,6 +78,10 @@
             <text class="companion-title">{{item.title}}</text>
           </view>
         </view>
+
+        <view wx:if="{{stage === 'ready'}}" class="hatch-entry">
+          <button class="primary-button" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
+        </view>
       </view>
     </scroll-view>
   </block>

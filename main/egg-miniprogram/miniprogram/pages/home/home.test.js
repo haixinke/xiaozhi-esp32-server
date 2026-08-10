@@ -190,6 +190,7 @@ global.wx = {
   showToast({ title }) { toastTitle = title; },
   vibrateShort(opts) { vibrateCalls.push(opts); },
   hideTabBar() {},
+  createVideoContext() { return { play: () => {} }; },
   getSystemInfoSync() { return { windowWidth: 375, statusBarHeight: 44, pixelRatio: 2 }; },
   getWindowInfo() { return { windowWidth: 375, statusBarHeight: 44, pixelRatio: 2 }; },
   getMenuButtonBoundingClientRect() { return { bottom: 88 }; }
@@ -294,6 +295,10 @@ async function run() {
     'companion items must carry data-key');
   assert.ok(homeTemplate.includes('bindtap="onCompanionTap"'),
     'companion items must bind onCompanionTap');
+  assert.ok(homeTemplate.includes('class="hatch-entry"'),
+    'home.wxml must render hatch-entry for ready stage');
+  assert.ok(homeTemplate.includes('wx:if="{{stage === \'ready\'}}"'),
+    'hatch-entry must be conditionally rendered for ready stage');
 
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
@@ -690,6 +695,26 @@ async function run() {
   pageWishLocked.onCompanionTap({ currentTarget: { dataset: { key: 'wish' } } });
   assert.strictEqual(pageWishLocked.data.feedback, '许愿池还在准备中。', 'locked wish shows feedback');
   assert.strictEqual(navigatedTo, null, 'locked wish does not navigate');
+
+  // 6. ready 态渲染破壳入口按钮并显示「查看破壳结果」文案
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('ready', { hatchAt: FIXED_TIMESTAMP });
+  const pageReady = makePage();
+  pageReady.onLoad();
+  pageReady.onShow();
+  assert.strictEqual(pageReady.data.stage, 'ready', 'ready stage is recognized');
+  assert.strictEqual(pageReady.data.actionLabel, '查看破壳结果', 'ready stage action label invites hatch');
+
+  // 7. ready 态点击破壳入口调 doHatch（启动破壳视频遮罩）
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('ready', { hatchAt: FIXED_TIMESTAMP });
+  const pageReadyHatch = makePage();
+  pageReadyHatch.onLoad();
+  pageReadyHatch.onShow();
+  pageReadyHatch.onPrimaryAction();
+  assert.strictEqual(pageReadyHatch.data.hatching, true, 'ready onPrimaryAction starts hatching overlay');
 
   console.log('home.test.js: ALL PASS');
 }

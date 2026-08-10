@@ -134,22 +134,9 @@ function resolve(options) {
 }
 
 module.exports = {
-  DAY_MS,
-  SEASONS,
-  PERIODS,
-  WEATHER_POOLS,
-  timestampOf,
-  localParts,
-  localDateKey,
-  localDaySerial,
-  companionDay,
-  seasonBeforeHatch,
+  resolve,
   periodFromLocalTime,
-  lightPhaseFromPeriod,
-  weatherForSlot,
-  weatherAssetName,
+  seasonBeforeHatch,
   sceneKey,
-  nextEnvironmentBoundary,
-  millisecondsUntilNextEnvironmentBoundary,
-  resolve
+  millisecondsUntilNextEnvironmentBoundary
 };

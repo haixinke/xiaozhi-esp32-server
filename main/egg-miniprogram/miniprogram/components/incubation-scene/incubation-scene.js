@@ -34,9 +34,6 @@ Component({
   observers: {
     'environment.sceneKey': function () {
       this.applySceneChange();
-    },
-    'lampOn': function (value) {
-      this.triggerEvent('lamptap', { lampOn: value });
     }
   },
 

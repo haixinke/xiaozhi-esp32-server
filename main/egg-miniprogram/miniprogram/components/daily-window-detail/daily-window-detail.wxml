@@ -50,7 +50,6 @@
 
   <view class="daily-window__topbar" style="top:{{topbarTopPx}}px;">
     <view class="daily-window__back" aria-role="button" aria-label="返回房间" bindtap="requestClose"><view class="daily-window__back-icon"></view></view>
-    <view class="daily-window__meta"><text>窗外 · {{weatherLabel}} · {{periodLabel}}</text></view>
   </view>
   <view
     wx:if="{{!loading && !failed}}"

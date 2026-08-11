@@ -75,8 +75,6 @@ Page({
     // 每日窗景弹层数据
     dailyWindowVisible: false,
     dailyWindowOriginStyle: '',
-    dailyWindowWeatherLabel: '',
-    dailyWindowPeriodLabel: '',
     // 陪伴入口图标数据
     companionActions: [],
     wishUnlocked: true,
@@ -181,7 +179,9 @@ Page({
   syncTabBar() {
     if (typeof this.getTabBar !== 'function') return;
     const tabBar = this.getTabBar();
-    if (tabBar) tabBar.setData({ selected: 0, hidden: !!(this.data.hatching || this.data.showNameSheet) });
+    // 孵化/命名弹层/窗景详情打开时隐藏悬浮「我的」齿轮，避免遮挡
+    const hidden = !!(this.data.hatching || this.data.showNameSheet || this.data.dailyWindowVisible);
+    if (tabBar) tabBar.setData({ selected: 0, hidden });
   },
 
   onHide() {
@@ -494,9 +494,6 @@ Page({
     const environment = this.data.environment;
     if (!environment || !environment.windowImage) return;
     const rect = e && e.detail || {};
-    const periodLabel = environment.lightPhase === 'sunset'
-      ? '日落'
-      : (environment.period === 'night' ? '夜晚' : '日间');
     this.setData({
       dailyWindowVisible: true,
       dailyWindowOriginStyle: [
@@ -504,15 +501,15 @@ Page({
         `--daily-window-origin-top:${Number(rect.top || 0)}px;`,
         `--daily-window-origin-width:${Math.max(1, Number(rect.width || 1))}px;`,
         `--daily-window-origin-height:${Math.max(1, Number(rect.height || 1))}px;`
-      ].join(''),
-      dailyWindowWeatherLabel: WEATHER_LABELS[environment.weather] || '晴朗',
-      dailyWindowPeriodLabel: periodLabel
+      ].join('')
     });
+    this.syncTabBar();
   },
 
   // 关闭每日窗景详情
   onDailyWindowClosed() {
     this.setData({ dailyWindowVisible: false });
+    this.syncTabBar();
   },
 
   // 窗景图片加载失败时重置 displayImage 触发重载
@@ -527,6 +524,7 @@ Page({
         dailyWindowVisible: true,
         'environment.windowImage': environment.windowImage
       });
+      this.syncTabBar();
     });
   },
 

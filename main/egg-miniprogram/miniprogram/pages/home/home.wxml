@@ -164,8 +164,6 @@
     season="{{environment.season}}"
     period="{{environment.period}}"
     light-phase="{{environment.lightPhase}}"
-    weather-label="{{dailyWindowWeatherLabel}}"
-    period-label="{{dailyWindowPeriodLabel}}"
     origin-style="{{dailyWindowOriginStyle}}"
     bind:close="onDailyWindowClosed"
     bind:retry="onDailyWindowRetry"

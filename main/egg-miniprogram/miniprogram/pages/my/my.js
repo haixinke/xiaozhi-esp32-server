@@ -12,7 +12,7 @@ Page({
     // 自定义悬浮 tabBar：标记当前 tab；在「我的」页不渲染任何圆形按钮
     if (typeof this.getTabBar === 'function') {
       const tabBar = this.getTabBar();
-      if (tabBar) tabBar.setData({ selected: 1, hidden: false });
+      if (tabBar) tabBar.setData({ selected: 1, hidden: true });
     }
     this.loadUserProfile();
     this.loadPetStatus();

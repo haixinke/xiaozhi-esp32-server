@@ -86,11 +86,12 @@ const EGG_ASSET_ROOT = '/assets/scenes/egg';
 module.exports = {
   SCENE_OPTIONS,
   WINDOW_WEATHER,
-  EGG_DEPTH_OVERLAY: `${EGG_ASSET_ROOT}/egg_shell_depth_overlay_512_v01.webp`,
-  EGG_SPECULAR_OVERLAY: `${EGG_ASSET_ROOT}/egg_shell_specular_overlay_512_v01.webp`,
+  // 本地打包资源统一用 PNG：微信上传管线对 .webp 资源可能漏打包导致生产不显示，PNG 稳定
+  EGG_DEPTH_OVERLAY: `${EGG_ASSET_ROOT}/egg_shell_depth_overlay_512_v01.png`,
+  EGG_SPECULAR_OVERLAY: `${EGG_ASSET_ROOT}/egg_shell_specular_overlay_512_v01.png`,
   INTERACTION_ICONS: {
-    wish: '/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.webp',
-    learn: '/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.webp',
-    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.webp'
+    wish: '/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.png',
+    learn: '/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.png',
+    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.png'
   }
 };

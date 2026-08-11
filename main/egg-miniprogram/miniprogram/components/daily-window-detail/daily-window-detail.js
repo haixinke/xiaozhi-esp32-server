@@ -32,8 +32,6 @@ Component({
     season: { type: String, value: 'spring' },
     period: { type: String, value: 'day' },
     lightPhase: { type: String, value: 'midday' },
-    weatherLabel: { type: String, value: '晴朗' },
-    periodLabel: { type: String, value: '日间' },
     originStyle: { type: String, value: '' }
   },
 

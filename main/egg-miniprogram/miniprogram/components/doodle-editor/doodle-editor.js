@@ -19,10 +19,11 @@ const TOOLBAR_ICONS = {
   brush: '/assets/ui/3d-actions/ui_3d_toolbar_brush_96_v02.png',
   eraser: '/assets/ui/3d-actions/ui_3d_toolbar_eraser_96_v02.png',
   sticker: '/assets/ui/3d-actions/ui_3d_toolbar_sticker_96_v02.png',
-  undo: '/assets/ui/3d-actions/ui_3d_toolbar_undo_96_v02.webp',
-  undoDisabled: '/assets/ui/3d-actions/ui_3d_toolbar_undo_disabled_96_v01.webp',
-  clear: '/assets/ui/3d-actions/ui_3d_toolbar_clear_96_v01.webp',
-  clearDisabled: '/assets/ui/3d-actions/ui_3d_toolbar_clear_disabled_96_v01.webp'
+  // 本地资源统一 PNG，避免上传打包漏掉 webp 导致生产不显示
+  undo: '/assets/ui/3d-actions/ui_3d_toolbar_undo_96_v02.png',
+  undoDisabled: '/assets/ui/3d-actions/ui_3d_toolbar_undo_disabled_96_v01.png',
+  clear: '/assets/ui/3d-actions/ui_3d_toolbar_clear_96_v01.png',
+  clearDisabled: '/assets/ui/3d-actions/ui_3d_toolbar_clear_disabled_96_v01.png'
 };
 
 function buildSizeOptions(list) {

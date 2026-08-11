@@ -69,8 +69,6 @@ let getDoodleShellCalls = 0;
 
 const FIXED_TIMESTAMP = 1754880000000;
 
-const WEATHER_LABELS = { sunny: '晴朗', cloudy: '多云', rain: '下雨', storm: '雷雨', snow: '降雪', postSnow: '雪后' };
-
 const authMock = {
   getSession: () => cachedSession,
   isExpired: () => cachedExpired,
@@ -195,9 +193,9 @@ const incubationEnvMock = {
 
 const preHatchAssetsMock = {
   INTERACTION_ICONS: {
-    wish: '/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.webp',
-    learn: '/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.webp',
-    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.webp'
+    wish: '/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.png',
+    learn: '/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.png',
+    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.png'
   },
   SCENE_OPTIONS: [
     {
@@ -680,8 +678,6 @@ async function run() {
   assert.strictEqual(pageWindow.data.dailyWindowVisible, true, 'window tap opens detail when image exists');
   assert.ok(pageWindow.data.dailyWindowOriginStyle.includes('--daily-window-origin-left:100px'),
     'origin style captures left position');
-  assert.strictEqual(pageWindow.data.dailyWindowWeatherLabel, WEATHER_LABELS.sunny, 'weather label mapped');
-  assert.strictEqual(pageWindow.data.dailyWindowPeriodLabel, '日间', 'period label is daytime');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };

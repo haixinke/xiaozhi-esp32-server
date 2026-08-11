@@ -153,6 +153,7 @@
   <doodle-editor
     visible="{{doodleEditorVisible}}"
     pet-id="{{pet.id}}"
+    initial-operations="{{doodleInitialOperations}}"
     bind:saved="onDoodleSaved"
     bind:close="onDoodleEditorClose"
   />

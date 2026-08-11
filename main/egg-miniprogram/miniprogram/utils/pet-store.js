@@ -3,6 +3,8 @@ const PET_KEY = 'eggbaby_mvp_pet_v1';
 const USER_KEY = 'eggbaby_mvp_user_v1';
 const IDENTITY_KEY = 'eggbaby_mvp_identity_v1';
 const ACTIVE_PET_KEY = 'eggbaby_active_pet_v1';
+// 涂鸦操作序列(shell)本地缓存：仅存操作 JSON，用于重开编辑器恢复画布继续编辑；云端只存合成 PNG
+const DOODLE_SHELL_KEY = 'eggbaby_doodle_shell_v1';
 
 const DAY = 24 * 60 * 60 * 1000;
 const HATCH_TOTAL_MINUTES = 7 * 24 * 60;
@@ -70,6 +72,7 @@ function getIdentityId() {
 // 后两个 key 分别由 pages/profile 与 pages/deregister 写入，这里统一纳入清理。
 const ACCOUNT_KEYS = [
   PET_KEY, USER_KEY, IDENTITY_KEY, ACTIVE_PET_KEY,
+  DOODLE_SHELL_KEY,
   'eggbaby_profile_v1',
   'eggbaby_deregister_request_v1'
 ];
@@ -334,6 +337,19 @@ async function saveDoodle(artUrl) {
   }
 }
 
+// 涂鸦操作序列(shell)写入本地缓存，按 petId 关联；保存失败静默吞错（本地缓存不阻塞主流程）
+function saveDoodleShell(petId, operations) {
+  if (!petId || !Array.isArray(operations)) return;
+  write(DOODLE_SHELL_KEY, { petId, operations, savedAt: Date.now() });
+}
+
+// 读取本地涂鸦操作序列；petId 不匹配(换了宠物/数据串号)视为无缓存返回 null
+function getDoodleShell(petId) {
+  const record = read(DOODLE_SHELL_KEY);
+  if (!record || record.petId !== petId || !Array.isArray(record.operations)) return null;
+  return record.operations;
+}
+
 // 修炼任务完成态：无 _hatchActions 缓存时从 pet.tasks 读取；有缓存则按当日派生。
 function getHatchActionState(pet) {
   if (!pet) return { nicknameDone: false, cuddleDone: false, wishDone: false, lessonDone: false, doodleDone: false };
@@ -564,6 +580,8 @@ module.exports = {
   completeWish,
   completeLesson,
   saveDoodle,
+  saveDoodleShell,
+  getDoodleShell,
   getHatchActionState,
   getStage,
   getStagePresentation,

@@ -68,6 +68,26 @@ function clamp(value, min, max) {
   return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : min;
 }
 
+// 导出坐标量化到 4 位小数，控制本地缓存(shell JSON)体积；引擎内部仍用原始精度
+function quantizeCoord(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.round(n * 10000) / 10000 : 0;
+}
+
+// 导出用：把一条操作的坐标量化为 4 位小数（不改引擎内部状态，作用于 snapshot 副本）
+function quantizeOperation(operation) {
+  if (!operation || typeof operation !== 'object') return operation;
+  if (operation.type === 'stroke') {
+    return Object.assign({}, operation, {
+      points: (operation.points || []).map(p => ({ x: quantizeCoord(p.x), y: quantizeCoord(p.y) }))
+    });
+  }
+  if (operation.type === 'sticker') {
+    return Object.assign({}, operation, { x: quantizeCoord(operation.x), y: quantizeCoord(operation.y) });
+  }
+  return operation;
+}
+
 function brushWidthForPixels(pixels, canvasSize) {
   const reference = Math.max(1, Number(canvasSize) || BRUSH_REFERENCE_PX);
   const safePixels = BRUSH_SIZES.some(item => item.pixels === Number(pixels)) ? Number(pixels) : BRUSH_SIZES[1].pixels;
@@ -363,6 +383,30 @@ function createEngine(options) {
     render(null);
   }
 
+  // 导出操作序列(shell)供本地持久化：深拷贝 + 坐标量化，外部拿到独立副本，改它不影响引擎
+  function getOperations() {
+    return snapshot().map(quantizeOperation);
+  }
+
+  // 从持久化的 shell 恢复操作序列：逐条归一化(非法项丢弃)，重置序号防 id 冲突，清空撤销栈后重绘
+  function restoreOperations(list) {
+    const source = Array.isArray(list) ? list : [];
+    const restored = [];
+    source.forEach(item => {
+      if (!item || typeof item !== 'object') return;
+      if (item.type === 'stroke') {
+        restored.push(createStroke(item.tool, item.points, restored.length, item.width, item.color));
+      } else if (item.type === 'sticker') {
+        restored.push(createSticker(item.pattern, restored.length, { x: item.x, y: item.y }));
+      }
+    });
+    operations = restored.slice(-MAX_OPERATIONS);
+    operationSequence = operations.length;
+    currentStroke = null;
+    undoStack = [];
+    render(null);
+  }
+
   // 导出成品图：艺术层叠到底图之上合成整颗蛋
   function exportArtwork() {
     if (!artLayer) return Promise.resolve('');
@@ -390,6 +434,8 @@ function createEngine(options) {
     placeSticker,
     undo,
     clear,
+    getOperations,
+    restoreOperations,
     exportArtwork,
     canvasSize: () => (artLayer ? Math.min(artLayer.width, artLayer.height) : 0),
     layerRect: () => (artLayer ? { left: artLayer.left || 0, top: artLayer.top || 0 } : { left: 0, top: 0 }),

@@ -47,7 +47,9 @@ function touchDistance(touches) {
 Component({
   properties: {
     visible: { type: Boolean, value: false },
-    petId: { type: String, value: '' }
+    petId: { type: String, value: '' },
+    // 打开编辑器时传入的历史涂鸦操作序列(shell)，用于恢复画布继续编辑；空数组表示空白开局
+    initialOperations: { type: Array, value: [] }
   },
 
   data: {
@@ -138,6 +140,11 @@ Component({
       });
       this.engine.init().then(() => {
         if (token !== this.setupToken || !this.pageActive) return;
+        // 有历史涂鸦操作则恢复画布，让用户在之前的作品上继续编辑
+        const initial = this.data.initialOperations;
+        if (Array.isArray(initial) && initial.length) {
+          this.engine.restoreOperations(initial);
+        }
         this.syncActionState();
         this.revealEditor();
       });
@@ -233,7 +240,8 @@ Component({
       this.setSaveStatus('saving');
       this.savePromise = this.engine.exportArtwork().then(tempFilePath => {
         if (!tempFilePath) return { ok: false, message: '画作没有保存好，请再试一次' };
-        this.triggerEvent('saved', { tempFilePath });
+        // 同时导出操作序列(shell)，供 home 页落本地缓存，重开编辑器可恢复继续编辑
+        this.triggerEvent('saved', { tempFilePath, operations: this.engine.getOperations() });
         return { ok: true };
       }).catch(() => ({ ok: false, message: '画作没有保存好，请再试一次' }));
       const result = await this.savePromise;
@@ -419,7 +427,6 @@ Component({
       this.engine.clear();
       this.syncActionState();
       this.markDirty();
-      this.showCanvasNotice('已清空，可以撤销', 'info');
     },
 
     /** 当前工具的笔刷描述（传给引擎） */

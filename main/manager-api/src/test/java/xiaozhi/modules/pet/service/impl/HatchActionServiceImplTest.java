@@ -267,6 +267,67 @@ class HatchActionServiceImplTest {
         verify(hatchActionDao, never()).insert(any(HatchActionEntity.class));
     }
 
+    @Test
+    @DisplayName("首次DOODLE - 加速720, insert动作记录")
+    void firstDoodle_acceleratesAndInserts() {
+        PetEntity pet = eggPet();
+        long startTs = 1_700_000_000_000L;
+        pet.setHatchStartTime(new Date(startTs));
+        pet.setExpectedHatchTime(new Date(startTs + SEVEN_DAYS_MS));
+        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        when(hatchActionDao.selectCount(any())).thenReturn(0L);
+
+        HatchActionDTO dto = dto("DOODLE", Map.of("artUrl", "https://oss.eggbabe.com/eggbabe/avatar/u1/a.png"));
+
+        HatchActionResultVO result = service.recordHatchAction(USER_ID, PET_ID, dto);
+
+        assertThat(result.getAddedMinutes()).isEqualTo(720);
+        assertThat(result.isAlreadyDone()).isFalse();
+
+        ArgumentCaptor<HatchActionEntity> actCaptor = ArgumentCaptor.forClass(HatchActionEntity.class);
+        verify(hatchActionDao).insert(actCaptor.capture());
+        HatchActionEntity act = actCaptor.getValue();
+        assertThat(act.getActionType()).isEqualTo("DOODLE");
+        assertThat(act.getAcceleratedMinutes()).isEqualTo(720);
+        assertThat(act.getPayload()).contains("a.png");
+        verify(hatchActionDao, never()).updateById(any(HatchActionEntity.class));
+    }
+
+    @Test
+    @DisplayName("重复DOODLE - alreadyDone=true, added=0, 更新已有记录payload为新artUrl, 不insert不加速")
+    void duplicateDoodle_updatesExistingPayload() {
+        PetEntity pet = eggPet();
+        pet.setHatchStartTime(new Date());
+        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        when(hatchActionDao.selectCount(any())).thenReturn(1L);
+
+        HatchActionEntity existing = new HatchActionEntity();
+        existing.setId(555L);
+        existing.setPetId(PET_ID);
+        existing.setActionType("DOODLE");
+        existing.setPayload("{\"artUrl\":\"https://oss.eggbabe.com/eggbabe/avatar/u1/old.png\"}");
+        when(hatchActionDao.selectOne(any())).thenReturn(existing);
+
+        HatchActionDTO dto = dto("DOODLE", Map.of("artUrl", "https://oss.eggbabe.com/eggbabe/avatar/u1/new.png"));
+
+        HatchActionResultVO result = service.recordHatchAction(USER_ID, PET_ID, dto);
+
+        assertThat(result.isAlreadyDone()).isTrue();
+        assertThat(result.getAddedMinutes()).isZero();
+
+        // 不重复加速、不新增行
+        verify(petDao, never()).updateById(any(PetEntity.class));
+        verify(hatchActionDao, never()).insert(any(HatchActionEntity.class));
+
+        // 更新已有记录的 payload 为最新 artUrl
+        ArgumentCaptor<HatchActionEntity> updateCaptor = ArgumentCaptor.forClass(HatchActionEntity.class);
+        verify(hatchActionDao).updateById(updateCaptor.capture());
+        HatchActionEntity updated = updateCaptor.getValue();
+        assertThat(updated.getId()).isEqualTo(555L);
+        assertThat(updated.getPayload()).contains("new.png");
+        assertThat(updated.getPayload()).doesNotContain("old.png");
+    }
+
     // 静态引用, 防止 IDE 误判 import 未使用
     @SuppressWarnings("unused")
     private HatchActionType unused() {

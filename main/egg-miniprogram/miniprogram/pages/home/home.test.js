@@ -61,6 +61,11 @@ let updateNicknameCalls = 0;
 let lastNicknameValue = null;
 let updateNicknameResult = { ok: true, alreadyDone: false, pet: null };
 let getLatestDoodleArtUrlCalls = 0;
+let saveDoodleShellCalls = 0;
+let lastSaveDoodleShellPetId = null;
+let lastSaveDoodleShellOperations = null;
+let getDoodleShellResult = null;
+let getDoodleShellCalls = 0;
 
 const FIXED_TIMESTAMP = 1754880000000;
 
@@ -101,6 +106,15 @@ const petStoreMock = {
     saveDoodleCalls += 1;
     lastSaveDoodleArtUrl = artUrl;
     return saveDoodleResult;
+  },
+  saveDoodleShell: (petId, operations) => {
+    saveDoodleShellCalls += 1;
+    lastSaveDoodleShellPetId = petId;
+    lastSaveDoodleShellOperations = operations;
+  },
+  getDoodleShell: () => {
+    getDoodleShellCalls += 1;
+    return getDoodleShellResult;
   },
   updateNickname: async (name) => {
     updateNicknameCalls += 1;
@@ -301,6 +315,11 @@ function resetScenario() {
   lastNicknameValue = null;
   updateNicknameResult = { ok: true, alreadyDone: false, pet: null };
   getLatestDoodleArtUrlCalls = 0;
+  saveDoodleShellCalls = 0;
+  lastSaveDoodleShellPetId = null;
+  lastSaveDoodleShellOperations = null;
+  getDoodleShellResult = null;
+  getDoodleShellCalls = 0;
 }
 
 function requirePetStage(stage, options = {}) {
@@ -735,17 +754,32 @@ async function run() {
   assert.strictEqual(pageLearnLocked.data.feedback, '蛋宝宝还没到早教的年龄，明天来试试吧。', 'locked learn shows feedback');
   assert.strictEqual(navigatedTo, null, 'locked learn does not navigate');
 
-  // 4. draw 点击打开涂鸦编辑器（不再显示占位 toast）
+  // 4. draw 点击打开涂鸦编辑器（不再显示占位 toast），并把本地缓存的 shell 传给编辑器恢复画布
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatching');
+  const cachedShell = [{ type: 'stroke', tool: 'brush', points: [{ x: 0.3, y: 0.3 }], width: 0.03, color: '#526B4D' }];
+  getDoodleShellResult = cachedShell;
   const pageDraw = makePage();
   pageDraw.onLoad();
   pageDraw.onShow();
   pageDraw.onCompanionTap({ currentTarget: { dataset: { key: 'draw' } } });
   assert.strictEqual(pageDraw.data.doodleEditorVisible, true, 'draw entry opens the doodle editor');
+  assert.strictEqual(getDoodleShellCalls, 1, 'opening the editor reads the local shell cache');
+  assert.deepStrictEqual(pageDraw.data.doodleInitialOperations, cachedShell, 'cached shell passed to editor for restore');
   assert.strictEqual(navigatedTo, null, 'draw entry does not navigate away');
   assert.strictEqual(toastTitle, null, 'draw entry no longer shows the placeholder toast');
+
+  // 4b. 无本地缓存时打开编辑器传空数组（空白开局）
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  getDoodleShellResult = null;
+  const pageDrawEmpty = makePage();
+  pageDrawEmpty.onLoad();
+  pageDrawEmpty.onShow();
+  pageDrawEmpty.onCompanionTap({ currentTarget: { dataset: { key: 'draw' } } });
+  assert.deepStrictEqual(pageDrawEmpty.data.doodleInitialOperations, [], 'no cache opens editor with empty operations');
 
   // 5. wish 未解锁时点击给出 feedback，不跳转
   resetScenario();
@@ -779,7 +813,7 @@ async function run() {
   pageReadyHatch.onPrimaryAction();
   assert.strictEqual(pageReadyHatch.data.hatching, true, 'ready onPrimaryAction starts hatching overlay');
 
-  // 8. 涂鸦保存：上传成功 → 记录动作 → 回显 artUrl → 关闭编辑器
+  // 8. 涂鸦保存：shell 先落本地缓存 → 上传成功 → 记录动作 → 回显 artUrl → 编辑器保持打开（手动返回才回 home）
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatching');
@@ -787,15 +821,20 @@ async function run() {
   const pageSave = makePage();
   pageSave.onLoad();
   pageSave.onShow();
+  pageSave.setData({ doodleEditorVisible: true });
   saveDoodleCalls = 0;
-  await pageSave.onDoodleSaved({ detail: { tempFilePath: 'wxfile://tmp/doodle.png' } });
+  const shellOps = [{ type: 'stroke', tool: 'brush', points: [{ x: 0.2, y: 0.2 }], width: 0.03, color: '#526B4D' }];
+  await pageSave.onDoodleSaved({ detail: { tempFilePath: 'wxfile://tmp/doodle.png', operations: shellOps } });
+  assert.strictEqual(saveDoodleShellCalls, 1, 'shell operations persisted to local cache first');
+  assert.strictEqual(lastSaveDoodleShellPetId, 'pet-001', 'shell cached against current pet id');
+  assert.deepStrictEqual(lastSaveDoodleShellOperations, shellOps, 'shell operations cached as-is');
   assert.strictEqual(uploadDoodleCalls, 1, 'doodle image uploaded once');
   assert.strictEqual(saveDoodleCalls, 1, 'saveDoodle called after upload succeeds');
   assert.strictEqual(lastSaveDoodleArtUrl, 'https://oss.eggbabe.com/doodle/pet-001.png', 'saveDoodle received the artUrl');
   assert.strictEqual(pageSave.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/pet-001.png', 'eggArtUrl updated for scene art layer');
-  assert.strictEqual(pageSave.data.doodleEditorVisible, false, 'editor closes after a successful save');
+  assert.strictEqual(pageSave.data.doodleEditorVisible, true, 'editor stays open after a successful save; only manual back returns home');
 
-  // 10. 涂鸦上传失败 → 不记录动作 → 编辑器保持打开
+  // 10. 涂鸦上传失败 → shell 仍落本地兜底 → 不记录动作 → 编辑器保持打开
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatching');
@@ -805,7 +844,8 @@ async function run() {
   pageSaveFail.onShow();
   pageSaveFail.setData({ doodleEditorVisible: true });
   saveDoodleCalls = 0;
-  await pageSaveFail.onDoodleSaved({ detail: { tempFilePath: 'wxfile://tmp/doodle.png' } });
+  await pageSaveFail.onDoodleSaved({ detail: { tempFilePath: 'wxfile://tmp/doodle.png', operations: [{ type: 'sticker', pattern: 'star', x: 0.5, y: 0.5 }] } });
+  assert.strictEqual(saveDoodleShellCalls, 1, 'shell cached locally even when upload fails');
   assert.strictEqual(saveDoodleCalls, 0, 'saveDoodle is not called when upload fails');
   assert.strictEqual(pageSaveFail.data.doodleEditorVisible, true, 'editor stays open so the artwork can be retried');
   assert.ok(toastTitle, 'upload failure shows a toast');

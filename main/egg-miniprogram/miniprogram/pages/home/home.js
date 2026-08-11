@@ -8,7 +8,7 @@ const shareInvite = require('../../utils/share-invite');
 const incubationEnv = require('../../utils/incubation-environment');
 const envState = require('../../utils/environment-state');
 const doodleApi = require('../../utils/doodle-api');
-const { INTERACTION_ICONS } = require('../../config/pre-hatch-assets');
+const { INTERACTION_ICONS, SCENE_OPTIONS } = require('../../config/pre-hatch-assets');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
 const SHARE_TITLE = '一起来养蛋宝宝吧';
@@ -29,6 +29,18 @@ const WEATHER_LABELS = {
   snow: '降雪',
   postSnow: '雪后'
 };
+
+// 临时测试：场景切换器的季节/时段中文映射
+const SEASON_LABELS = { spring: '春季', summer: '夏季', autumn: '秋季', winter: '冬季' };
+const PERIOD_LABELS = { day: '日间', sunset: '日落', night: '夜晚' };
+
+// 临时测试：场景切换器选项（实时环境 + 36 组季节/天气/时段组合）。
+// option 保留完整 scene 字段(season/weather/period/lightPhase/background/nest/egg)，override 时直接构造环境。
+const SCENE_TESTER_OPTIONS = [{ key: 'auto', label: '实时环境' }].concat(
+  SCENE_OPTIONS.map(o => Object.assign({}, o, {
+    label: `${SEASON_LABELS[o.season] || o.season} · ${WEATHER_LABELS[o.weather] || o.weather} · ${PERIOD_LABELS[o.period] || o.period}`
+  }))
+);
 
 function buildShareQuery(inviteCode) {
   return inviteCode
@@ -75,10 +87,17 @@ Page({
     nameDraft: '',
     nameCount: 0,
     nameError: '',
-    savingName: false
+    savingName: false,
+    // 临时测试：场景切换器数据
+    sceneTesterOpen: false,
+    sceneTesterKey: 'auto',
+    sceneTesterLabel: '实时环境',
+    sceneTesterOptions: SCENE_TESTER_OPTIONS
   },
 
   _navigating: false,
+  // 临时测试：手动选中的场景 option；null 表示实时自动推导
+  sceneTestOverride: null,
 
   onLoad() {
     // 同步检查登录态：未注册用户留在空白页(不渲染内容)，等 app 登录完成后再决定去向
@@ -316,9 +335,43 @@ Page({
       this.clearEnvironmentTimer();
       return;
     }
+    // 临时测试：手动模式优先——用选中项的 OSS URL 构造环境，并暂停定时器避免到点被自动刷掉
+    if (this.sceneTestOverride) {
+      const o = this.sceneTestOverride;
+      const environment = incubationEnv.resolveScene({
+        sceneKey: o.key,
+        season: o.season,
+        weather: o.weather,
+        period: o.period,
+        lightPhase: o.lightPhase
+      });
+      this.setData({ environment });
+      this.clearEnvironmentTimer();
+      return;
+    }
     const environment = incubationEnv.resolveForPet(this.data.pet, Date.now());
     this.setData({ environment });
     this.scheduleEnvironmentRefresh();
+  },
+
+  // 临时测试：展开/收起场景切换菜单（破壳前且非涂鸦打开时可用）
+  onSceneTesterToggle() {
+    if (this.data.doodleEditorVisible) return;
+    this.setData({ sceneTesterOpen: !this.data.sceneTesterOpen });
+  },
+
+  // 临时测试：选择场景；'auto' 恢复实时自动推导，其余用手动 override 应用对应 OSS 场景
+  onSceneTesterSelect(event) {
+    const key = event && event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.scene;
+    const target = SCENE_TESTER_OPTIONS.find(item => item.key === key);
+    if (!target) return;
+    this.sceneTestOverride = key === 'auto' ? null : target;
+    this.setData({
+      sceneTesterKey: target.key,
+      sceneTesterLabel: target.label,
+      sceneTesterOpen: false
+    });
+    this.refreshEnvironment();
   },
 
   scheduleEnvironmentRefresh() {

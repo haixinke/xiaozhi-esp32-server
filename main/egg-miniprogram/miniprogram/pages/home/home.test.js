@@ -172,6 +172,24 @@ const incubationEnvMock = {
       windowImage: 'https://oss.eggbabe.com/window/sunny_day.png',
       className: 'season-summer weather-sunny period-day light-midday'
     };
+  },
+  // 场景切换器 override 用：按 sceneKey 返回对应场景（匹配 preHatchAssetsMock.SCENE_OPTIONS）
+  resolveScene: (env) => {
+    const match = (preHatchAssetsMock.SCENE_OPTIONS || []).find(o => o.key === (env && env.sceneKey));
+    if (!match) {
+      return Object.assign({}, env, {
+        valid: false, fullSceneImage: '', nestImage: '', eggImage: '', windowImage: '',
+        className: `season-${env && env.season} weather-${env && env.weather} period-${env && env.period} light-${env && env.lightPhase}`
+      });
+    }
+    return Object.assign({}, env, {
+      valid: true,
+      fullSceneImage: match.background,
+      nestImage: match.nest,
+      eggImage: match.egg,
+      windowImage: `https://oss.eggbabe.com/window/${match.key}.webp`,
+      className: match.className
+    });
   }
 };
 
@@ -180,7 +198,23 @@ const preHatchAssetsMock = {
     wish: '/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.webp',
     learn: '/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.webp',
     draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.webp'
-  }
+  },
+  SCENE_OPTIONS: [
+    {
+      key: 'winter_snow_night', season: 'winter', weather: 'snow', period: 'night', lightPhase: 'night',
+      className: 'season-winter weather-snow period-night light-night',
+      background: 'https://oss.eggbabe.com/scene/winter_snow_night.webp',
+      nest: 'https://oss.eggbabe.com/nest/winter_snow_night_nest_pad.webp',
+      egg: 'https://oss.eggbabe.com/egg/winter_snow_night_egg_right45.webp'
+    },
+    {
+      key: 'spring_rain_day', season: 'spring', weather: 'rain', period: 'day', lightPhase: 'midday',
+      className: 'season-spring weather-rain period-day light-midday',
+      background: 'https://oss.eggbabe.com/scene/spring_rain_day.webp',
+      nest: 'https://oss.eggbabe.com/nest/spring_rain_day_nest_pad.webp',
+      egg: 'https://oss.eggbabe.com/egg/spring_rain_day_egg_right45.webp'
+    }
+  ]
 };
 
 const environmentStateMock = {
@@ -950,6 +984,52 @@ async function run() {
   pageHatchedUnnamed.onLoad();
   pageHatchedUnnamed.onShow();
   assert.strictEqual(pageHatchedUnnamed.data.showNameSheet, false, 'hatched pet does not auto-open the naming sheet');
+
+  // 18. 场景切换器：展开菜单
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pageTester = makePage();
+  pageTester.onLoad();
+  pageTester.onShow();
+  assert.strictEqual(pageTester.data.sceneTesterKey, 'auto', 'scene tester defaults to auto (live environment)');
+  assert.strictEqual(pageTester.data.sceneTesterLabel, '实时环境', 'scene tester default label is live environment');
+  pageTester.onSceneTesterToggle();
+  assert.strictEqual(pageTester.data.sceneTesterOpen, true, 'toggling opens the scene tester menu');
+  assert.strictEqual(pageTester.data.sceneTesterOptions.length, 3, 'options = auto + mocked SCENE_OPTIONS');
+  assert.strictEqual(pageTester.data.sceneTesterOptions[0].key, 'auto', 'first option is live environment');
+
+  // 19. 场景切换器：选具体场景 → override 生效 + environment 更新 + 定时器暂停
+  pageTester.onSceneTesterSelect({ currentTarget: { dataset: { scene: 'winter_snow_night' } } });
+  assert.strictEqual(pageTester.data.sceneTesterOpen, false, 'selecting closes the menu');
+  assert.strictEqual(pageTester.data.sceneTesterKey, 'winter_snow_night', 'selected scene key reflected');
+  assert.strictEqual(pageTester.data.sceneTesterLabel, '冬季 · 降雪 · 夜晚', 'selected scene label composed from season/weather/period');
+  assert.ok(pageTester.sceneTestOverride, 'manual override is set after selecting a scene');
+  assert.strictEqual(pageTester.sceneTestOverride.key, 'winter_snow_night', 'override holds the selected scene option');
+  assert.strictEqual(pageTester.data.environment.className, 'season-winter weather-snow period-night light-night', 'environment rebuilt from override via resolveScene');
+  assert.strictEqual(pageTester.data.environment.eggImage, 'https://oss.eggbabe.com/egg/winter_snow_night_egg_right45.webp', 'override egg uses the OSS url of the selected scene');
+  const timerIdAfterManual = pageTester.environmentTimer;
+  assert.strictEqual(timerIdAfterManual, null, 'manual mode pauses the auto-refresh timer');
+
+  // 20. 场景切换器：选另一场景再切回'实时环境' → 恢复自动推导与定时刷新
+  pageTester.onSceneTesterSelect({ currentTarget: { dataset: { scene: 'spring_rain_day' } } });
+  assert.strictEqual(pageTester.data.environment.className, 'season-spring weather-rain period-day light-midday', 'switching scenes rebuilds environment');
+  pageTester.onSceneTesterSelect({ currentTarget: { dataset: { scene: 'auto' } } });
+  assert.strictEqual(pageTester.sceneTestOverride, null, 'selecting auto clears the override');
+  assert.strictEqual(pageTester.data.sceneTesterKey, 'auto', 'auto key reflected after switching back');
+  assert.strictEqual(pageTester.data.environment.className, 'season-summer weather-sunny period-day light-midday', 'auto mode restores live-derived environment');
+  assert.ok(typeof timerCallback === 'function', 'auto mode reschedules the environment refresh timer');
+
+  // 21. 涂鸦编辑器打开时切换器不可用
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pageTesterDoodle = makePage();
+  pageTesterDoodle.onLoad();
+  pageTesterDoodle.onShow();
+  pageTesterDoodle.setData({ doodleEditorVisible: true });
+  pageTesterDoodle.onSceneTesterToggle();
+  assert.strictEqual(pageTesterDoodle.data.sceneTesterOpen, false, 'scene tester stays closed while doodle editor is open');
 
   console.log('home.test.js: ALL PASS');
 }

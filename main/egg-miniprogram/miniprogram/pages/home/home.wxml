@@ -31,6 +31,28 @@
           </view>
         </view>
 
+        <!-- 临时测试：场景切换器（已隐藏，正式上线前删除整段；恢复时去掉外层注释即可） -->
+        <!--
+        <view wx:if="{{!doodleEditorVisible}}" class="scene-tester" style="top:{{nameTopPx}}px;">
+          <view class="scene-tester-button {{sceneTesterOpen ? 'scene-tester-button--open' : ''}}" aria-role="button" aria-label="切换场景，当前{{sceneTesterLabel}}" catchtap="onSceneTesterToggle">
+            <text class="scene-tester-tag">场景</text><text class="scene-tester-current">{{sceneTesterLabel}}</text><text class="scene-tester-chevron">⌄</text>
+          </view>
+          <scroll-view wx:if="{{sceneTesterOpen}}" class="scene-tester-menu" scroll-y="true">
+            <view
+              wx:for="{{sceneTesterOptions}}"
+              wx:key="key"
+              class="scene-tester-option {{sceneTesterKey === item.key ? 'scene-tester-option--active' : ''}}"
+              data-scene="{{item.key}}"
+              aria-role="button"
+              aria-label="切换到{{item.label}}"
+              catchtap="onSceneTesterSelect"
+            >
+              <text class="scene-tester-option-label">{{item.label}}</text><text wx:if="{{sceneTesterKey === item.key}}" class="scene-tester-option-check">✓</text>
+            </view>
+          </scroll-view>
+        </view>
+        -->
+
         <view class="egg-zone egg-zone--incubating">
           <view wx:if="{{feedback}}" class="feedback-bubble feedback-bubble--incubating" style="top:{{nameTopPx}}px;" catchtap="noop">{{feedback}}</view>
           <incubation-scene

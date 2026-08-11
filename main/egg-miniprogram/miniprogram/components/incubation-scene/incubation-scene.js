@@ -6,6 +6,8 @@ const { EGG_DEPTH_OVERLAY, EGG_SPECULAR_OVERLAY } = require('../../config/pre-ha
 
 const CROSSFADE_MS = 600;
 const CUDDLE_MS = 600;
+// 轻触蛋的晃动时长，对齐静态 UI 项目 wobble 动效节奏
+const WOBBLE_MS = 760;
 const CLOCK_TICK_MS = 1000;
 
 Component({
@@ -28,7 +30,9 @@ Component({
     clockMinuteStyle: '',
     clockSecondStyle: '',
     clockTopPx: 0,
-    clockLeftPx: 0
+    clockLeftPx: 0,
+    // 轻触蛋时的左右晃动态，760ms 后自动复位
+    eggWobbling: false
   },
 
   observers: {
@@ -55,6 +59,10 @@ Component({
       if (this.cuddleTimer) {
         clearTimeout(this.cuddleTimer);
         this.cuddleTimer = null;
+      }
+      if (this.wobbleTimer) {
+        clearTimeout(this.wobbleTimer);
+        this.wobbleTimer = null;
       }
     }
   },
@@ -101,6 +109,12 @@ Component({
 
     onEggTap() {
       this.triggerEvent('eggtap');
+      // 轻触给蛋一个左右晃动，760ms 后复位（对齐静态 UI 项目点蛋动效）
+      this.setData({ eggWobbling: true });
+      if (this.wobbleTimer) clearTimeout(this.wobbleTimer);
+      this.wobbleTimer = setTimeout(() => {
+        this.setData({ eggWobbling: false });
+      }, WOBBLE_MS);
     },
 
     onEggCuddle() {

@@ -99,12 +99,17 @@
 .egg--warming, .egg--warm { filter: drop-shadow(0 0 24rpx rgba(255,235,150,.72)); }
 .egg--warming { animation: warm-lean 1.2s ease-in-out infinite; }
 .egg--warming .egg-shell-specular { animation: shell-glint-cuddle 1.2s ease-in-out infinite; }
+/* 轻触蛋：左右晃动一下（对齐静态 UI 项目 wobble 动效） */
+.egg.egg--wobble { animation: wobble .76s ease-in-out; }
+.egg.egg--wobble .egg-shell-specular { animation: shell-glint-touch .76s ease-out; }
+.egg.egg--wobble .egg-shell-depth { animation: shell-depth-touch .76s ease-out; }
 .scene-paused .egg,.scene-paused .egg-aura,.scene-paused .egg-shell-specular,.scene-paused .egg-shell-depth,.scene-paused .room-light-breathe { animation-play-state: paused; }
 
 @keyframes egg-breathe { 0%,100% { transform: scale(1); } 50% { transform: translateY(2rpx) scale(1.008,.986); } }
 @keyframes egg-breathe-night { 0%,100% { transform: scale(1); } 50% { transform: translateY(1rpx) scale(1.004,.992); } }
 @keyframes aura { 0%,100% { transform: scale(.96); opacity: .42; } 50% { transform: scale(1.035); opacity: .7; } }
 @keyframes warm-lean { 0%,100% { transform: translateY(1rpx) rotate(0) scale(1); } 50% { transform: translateY(5rpx) rotate(1.4deg) scale(.99,.975); } }
+@keyframes wobble { 0%,100% { transform: translateY(0) rotate(0) scale(1); } 24% { transform: translateY(2rpx) rotate(-4deg) scale(.992,1.005); } 52% { transform: translateY(4rpx) rotate(2deg) scale(1.012,.982); } 72% { transform: translateY(1rpx) rotate(3.5deg) scale(.998,1.002); } }
 @keyframes shell-glint-cuddle { 0%,100% { transform: translate(0,0) scale(1); opacity: .08; } 50% { transform: translate(2%,5%) scale(1.08,.94); opacity: .28; } }
 @keyframes shell-glint-warm { 0%,100% { transform: translate(0,0) scale(1); opacity: 0; } 46% { transform: translate(-2%,4%) scale(1.16); opacity: .42; } }
 @keyframes shell-depth-touch { 0%,100% { transform: translate(0,0) scale(1); opacity: 0; } 38% { transform: translate(-4%,2%) scale(.98,1.06); opacity: .34; } 70% { transform: translate(4%,0) scale(1.04,.96); opacity: .27; } }

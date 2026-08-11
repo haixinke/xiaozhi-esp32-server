@@ -36,6 +36,10 @@ const instance = {
 componentConfig.methods.onEggTap.call(instance);
 componentConfig.methods.onEggCuddle.call(instance);
 assert.deepStrictEqual(events.map(e => e.name), ['eggtap', 'eggcuddle']);
+// 点蛋触发左右晃动态（对齐静态 UI 项目 wobble 动效）
+assert.strictEqual(instance.data.eggWobbling, true, 'egg tap turns on the wobble state');
+assert.ok(instance.wobbleTimer, 'a timer is scheduled to reset the wobble state');
+clearTimeout(instance.wobbleTimer); // 释放定时器，避免占用事件循环
 
 // 背景图加载失败进入错误态
 componentConfig.methods.onFullSceneImageError.call(instance);
@@ -44,5 +48,13 @@ assert.strictEqual(instance.data.fullSceneImageFailed, true);
 componentConfig.methods.onRetryFullSceneImage.call(instance);
 assert.strictEqual(instance.data.fullSceneImageFailed, false);
 assert.strictEqual(events[events.length - 1].name, 'retryscene');
+
+// wxml 蛋元素绑定 wobble 类
+const fs = require('fs');
+const sceneWxml = fs.readFileSync(path.join(__dirname, 'incubation-scene.wxml'), 'utf8');
+assert.ok(sceneWxml.includes("eggWobbling ? 'egg--wobble' : ''"), 'egg element binds the egg--wobble class');
+const sceneWxss = fs.readFileSync(path.join(__dirname, 'incubation-scene.wxss'), 'utf8');
+assert.ok(sceneWxss.includes('@keyframes wobble'), 'wobble keyframes defined');
+assert.ok(sceneWxss.includes('.egg.egg--wobble'), 'egg--wobble class defined');
 
 console.log('incubation-scene.test.js: ALL PASS');

@@ -75,9 +75,10 @@ let uploadResponses = [];
   const uploaded = await doodleApi.uploadDoodleImage('/tmp/doodle.png');
   assert.strictEqual(uploaded, 'https://oss.example/doodles/1.png', 'uploadDoodleImage resolves envelope.data');
   assert.strictEqual(uploads.length, 1, 'uploadDoodleImage calls wx.uploadFile once');
-  assert.strictEqual(uploads[0].url, `${API_BASE_URL}/wechat/avatar`, 'uploadDoodleImage uses /wechat/avatar');
+  assert.strictEqual(uploads[0].url, `${API_BASE_URL}/upload/image`, 'uploadDoodleImage uses /upload/image');
   assert.strictEqual(uploads[0].filePath, '/tmp/doodle.png', 'uploadDoodleImage passes tempFilePath');
   assert.strictEqual(uploads[0].name, 'file', 'uploadDoodleImage field name is file');
+  assert.strictEqual(uploads[0].formData.scene, 'doodle', 'uploadDoodleImage passes scene=doodle');
   assert.strictEqual(uploads[0].header.Authorization, 'Bearer token-42', 'uploadDoodleImage adds Bearer header');
 
   // 2. statusCode 500 → reject '画作上传失败'

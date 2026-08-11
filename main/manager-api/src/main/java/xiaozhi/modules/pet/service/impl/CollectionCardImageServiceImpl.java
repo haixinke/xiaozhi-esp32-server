@@ -220,6 +220,6 @@ public class CollectionCardImageServiceImpl implements CollectionCardImageServic
     }
 
     private String buildOssUrl(String ossKey) {
-        return "https://oss.eggbabe.com/" + ossKey;
+        return ossService.buildPublicUrl(ossKey);
     }
 }

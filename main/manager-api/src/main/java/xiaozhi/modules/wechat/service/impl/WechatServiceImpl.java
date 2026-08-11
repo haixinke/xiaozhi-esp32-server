@@ -309,7 +309,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
             log.error("头像上传OSS失败 userId={}", userId, e);
             throw new RenException(ErrorCode.OSS_UPLOAD_FILE_ERROR);
         }
-        return "https://oss.eggbabe.com/" + ossKey;
+        return ossService.buildPublicUrl(ossKey);
     }
 
     private static String extensionOf(String contentType) {

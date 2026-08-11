@@ -46,6 +46,33 @@ public class OssService {
     }
 
     /**
+     * OSS 公网访问域名兜底值，配置缺失时使用，保证向后兼容。
+     */
+    private static final String DEFAULT_PUBLIC_URL = "https://oss.eggbabe.com";
+
+    /**
+     * 把 ossKey 拼接成公网可访问 URL。
+     *
+     * <p>优先使用配置的 {@code aliyun.oss.public-url}；未配置时回退到默认域名，
+     * 避免空配置破坏现有头像/默认素材的 URL 生成。
+     *
+     * @param ossKey 对象键
+     * @return 形如 {@code https://oss.eggbabe.com/<ossKey>} 的公网 URL
+     */
+    public String buildPublicUrl(String ossKey) {
+        AssertUtils.isBlank(ossKey, ErrorCode.OSS_DELETE_FILE_ERROR, "ossKey");
+        String base = ossProperties.getPublicUrl();
+        if (base == null || base.isBlank()) {
+            base = DEFAULT_PUBLIC_URL;
+        }
+        // 去掉 base 末尾多余的斜杠，避免拼出双斜杠
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + "/" + ossKey;
+    }
+
+    /**
      * 上传字节数组到OSS
      *
      * @param ossKey 对象键

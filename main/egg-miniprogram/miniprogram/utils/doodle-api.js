@@ -1,11 +1,11 @@
-// 涂鸦图片上传与回显：图片经 /wechat/avatar 通道传 OSS，画作出处存 hatch-action payload。
+// 涂鸦图片上传与回显：图片经通用上传接口 /upload/image 传 OSS，画作出处存 hatch-action payload。
 const { post, get } = require('./request');
 const auth = require('./auth');
 const { API_BASE_URL } = require('../config/api');
 
 /**
  * 上传涂鸦图片到 OSS。
- * 复用头像上传通道 POST /wechat/avatar，接口返回通用 envelope { code, data, msg }。
+ * 调用通用上传接口 POST /upload/image（scene=doodle），接口返回通用 envelope { code, data, msg }。
  * @param {string} tempFilePath 本地临时文件路径
  * @returns {Promise<string>} OSS 图片 URL
  */
@@ -17,9 +17,10 @@ function uploadDoodleImage(tempFilePath) {
       return;
     }
     wx.uploadFile({
-      url: `${API_BASE_URL}/wechat/avatar`,
+      url: `${API_BASE_URL}/upload/image`,
       filePath: tempFilePath,
       name: 'file',
+      formData: { scene: 'doodle' },
       header: { Authorization: `Bearer ${session.token}` },
       success: (res) => {
         if (res.statusCode !== 200) {

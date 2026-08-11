@@ -3,6 +3,7 @@ package xiaozhi.modules.wechat.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -150,6 +151,7 @@ class WechatServiceImplProfileTest {
     void uploadAvatar_success_returnsPublicUrl() throws Exception {
         when(ossService.isEnabled()).thenReturn(true);
         when(ossService.upload(any(), any(), any())).thenReturn("eggbabe/avatar/7/uuid.png");
+        when(ossService.buildPublicUrl(anyString())).thenAnswer(inv -> "https://oss.eggbabe.com/" + inv.getArgument(0));
 
         MultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "x".getBytes());
         String url = service.uploadAvatar(7L, file);

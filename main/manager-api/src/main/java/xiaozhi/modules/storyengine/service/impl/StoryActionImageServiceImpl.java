@@ -28,11 +28,6 @@ import java.util.UUID;
 public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao, ActionImageEntity>
         implements StoryActionImageService {
 
-    /**
-     * OSS 公网访问域名前缀，与用户头像/默认素材保持一致。
-     */
-    private static final String OSS_URL_PREFIX = "https://oss.eggbabe.com/";
-
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
             "image/png", "image/jpeg", "image/webp", "image/gif");
 
@@ -85,7 +80,7 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
         entity.setActionId(actionId);
         entity.setPetPrototype(petPrototype);
         entity.setTimeOfDay(timeOfDay);
-        entity.setImageUrl(OSS_URL_PREFIX + ossKey);
+        entity.setImageUrl(ossService.buildPublicUrl(ossKey));
         entity.setCaptions(captions);
         entity.setSortOrder(nextSortOrder(actionId, petPrototype, timeOfDay));
         actionImageDao.insert(entity);

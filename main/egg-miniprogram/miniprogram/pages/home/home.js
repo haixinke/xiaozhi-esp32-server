@@ -12,6 +12,8 @@ const { INTERACTION_ICONS } = require('../../config/pre-hatch-assets');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
 const SHARE_TITLE = '一起来养蛋宝宝吧';
+// 早教班解锁门槛：领养满 24 小时（过第一天）后开放
+const LEARN_UNLOCK_MIN_AGE_MS = 24 * 60 * 60 * 1000;
 
 const COMPANION_ACTIONS = [
   { key: 'wish', title: '许愿池', icon: INTERACTION_ICONS.wish },
@@ -114,6 +116,8 @@ Page({
 
   onShow() {
     if (!this.data.authChecked) return;
+    // 每次进入 home 都允许因未命名自动弹一次命名框；本页内多次 renderPet 不重复弹
+    this._namePromptShownForShow = false;
     this.configureLayoutMetrics();
     this.syncTabBar();
     const cached = petStore.getPet();
@@ -260,7 +264,8 @@ Page({
     const stage = petStore.getStage(pet);
     const presentation = petStore.getStagePresentation(stage);
     const wishUnlocked = true;
-    const learnUnlocked = false;
+    // 早教班过第一天(领养满24h)解锁：createdAt 缺失时视为已解锁，避免老数据被误锁
+    const learnUnlocked = !pet.createdAt || (Date.now() - pet.createdAt) >= LEARN_UNLOCK_MIN_AGE_MS;
     this.finishPetRestore({
       pet: { ...pet, petType: pet.prototype },
       stage,
@@ -275,6 +280,20 @@ Page({
     });
     // 刷新破壳前环境
     this.refreshEnvironment();
+    // 破壳前未命名时自动弹出命名框，引导用户给蛋宝宝起名
+    this.maybePromptPetName(pet, stage);
+  },
+
+  // 破壳前且未命名时自动打开命名弹层；每次 onShow 只自动弹一次，用户手动点名字药丸仍可随时打开
+  maybePromptPetName(pet, stage) {
+    if (!pet || stage === 'hatched') return;
+    if (this._namePromptShownForShow) return;
+    if (this.data.hatching || this.data.showNameSheet) return;
+    const name = (pet.name || '').trim();
+    if (name) return;
+    this._namePromptShownForShow = true;
+    this.setData({ showNameSheet: true, nameDraft: '', nameCount: 0, nameError: '' });
+    this.syncTabBar();
   },
 
   /**

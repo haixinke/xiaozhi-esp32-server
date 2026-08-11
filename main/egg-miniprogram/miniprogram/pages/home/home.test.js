@@ -754,6 +754,29 @@ async function run() {
   assert.strictEqual(pageLearnLocked.data.feedback, '蛋宝宝还没到早教的年龄，明天来试试吧。', 'locked learn shows feedback');
   assert.strictEqual(navigatedTo, null, 'locked learn does not navigate');
 
+  // 3a. 领养未满 24h(未过第一天)：恢复后 learnUnlocked=false，点击拦截不跳转
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching', { createdAt: Date.now() - 2 * 60 * 60 * 1000 }); // 2 小时前领养
+  const pageLearnYoung = makePage();
+  pageLearnYoung.onLoad();
+  pageLearnYoung.onShow();
+  assert.strictEqual(pageLearnYoung.data.learnUnlocked, false, 'learn stays locked within the first day');
+  pageLearnYoung.onCompanionTap({ currentTarget: { dataset: { key: 'learn' } } });
+  assert.strictEqual(pageLearnYoung.data.feedback, '蛋宝宝还没到早教的年龄，明天来试试吧。', 'first-day learn click shows feedback');
+  assert.strictEqual(navigatedTo, null, 'first-day learn does not navigate');
+
+  // 3b. 领养满 24h(过了第一天)：恢复后 learnUnlocked=true，点击解锁可跳转
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching', { createdAt: Date.now() - 25 * 60 * 60 * 1000 }); // 25 小时前领养
+  const pageLearnOld = makePage();
+  pageLearnOld.onLoad();
+  pageLearnOld.onShow();
+  assert.strictEqual(pageLearnOld.data.learnUnlocked, true, 'learn unlocks after the first day');
+  pageLearnOld.onCompanionTap({ currentTarget: { dataset: { key: 'learn' } } });
+  assert.strictEqual(pageLearnOld.data.feedback, '', 'unlocked learn shows no locked feedback');
+
   // 4. draw 点击打开涂鸦编辑器（不再显示占位 toast），并把本地缓存的 shell 传给编辑器恢复画布
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -899,6 +922,34 @@ async function run() {
   assert.strictEqual(pageNameFail.data.showNameSheet, true, 'sheet stays open when saving fails');
   assert.strictEqual(pageNameFail.data.nameError, '昵称含有不适合的内容，请换一个', 'the failure message surfaces inline');
   assert.strictEqual(pageNameFail.data.savingName, false, 'saving state resets after failure');
+
+  // 15. 破壳前未命名：打开 home 自动弹出命名框
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching', { name: '' });
+  const pageUnnamed = makePage();
+  pageUnnamed.onLoad();
+  pageUnnamed.onShow();
+  assert.strictEqual(pageUnnamed.data.showNameSheet, true, 'unnamed pre-hatch pet auto-opens the naming sheet on home entry');
+  assert.strictEqual(pageUnnamed.data.nameDraft, '', 'auto-opened sheet starts with an empty draft');
+
+  // 16. 破壳前已命名：不自动弹
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching', { name: '小白' });
+  const pageNamed = makePage();
+  pageNamed.onLoad();
+  pageNamed.onShow();
+  assert.strictEqual(pageNamed.data.showNameSheet, false, 'named pet does not auto-open the naming sheet');
+
+  // 17. 已破壳未命名：不自动弹（仅破壳前引导命名）
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched', { name: '' });
+  const pageHatchedUnnamed = makePage();
+  pageHatchedUnnamed.onLoad();
+  pageHatchedUnnamed.onShow();
+  assert.strictEqual(pageHatchedUnnamed.data.showNameSheet, false, 'hatched pet does not auto-open the naming sheet');
 
   console.log('home.test.js: ALL PASS');
 }

@@ -14,6 +14,7 @@ main/manager-mobile/dist/
 # === 第三方打包库 (minified/compiled) ===
 main/digital-human/js/
 main/miniprogram/libs/
+main/eggbabe-miniprogram/
 
 # === OceanBase 数据库 ===
 main/xiaozhi-server/oceanbase/

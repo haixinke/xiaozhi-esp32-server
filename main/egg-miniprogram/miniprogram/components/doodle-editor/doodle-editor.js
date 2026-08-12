@@ -1,6 +1,6 @@
-// 画我的蛋壳编辑器：对齐静态 UI 项目的完整交互（画笔/橡皮/贴纸 + 捏合缩放 + 自动保存）。
-// 持久化走 home 页 orchestration：编辑器只负责导出合成 PNG，通过 saved 事件抛出。
+// 画我的蛋壳编辑器：对齐静态 UI 项目的完整交互（画笔/橡皮/贴纸 + 捏合缩放 + 手动保存）。
 const petStore = require('../../utils/pet-store');
+const { saveArtwork } = require('../../utils/doodle-save');
 const canvas = require('./doodle-canvas');
 const { OSS_SCENE_BASE } = require('../../config/api');
 
@@ -8,7 +8,6 @@ const TOOL_BRUSH = 'brush';
 const TOOL_ERASER = 'eraser';
 const TOOL_STICKER = 'sticker';
 const PREVIEW_RPX_RATIO = 2;
-const AUTO_SAVE_DELAY = 700;
 const PAGE_TRANSITION_MS = 320;
 const CANVAS_NOTICE_DURATION = 1800;
 const CANVAS_NOTICE_FADE_MS = 180;
@@ -78,6 +77,9 @@ Component({
     canvasNoticeText: '',
     canvasNoticeTone: 'info',
     canvasNoticeVisible: false,
+    exitConfirmVisible: false,
+    exitConfirmSaving: false,
+    exitConfirmErrorText: '',
     pageTransitionPhase: 'waiting'
   },
 
@@ -88,6 +90,9 @@ Component({
       this.setupToken = 0;
       this.editRevision = 0;
       this.savedRevision = 0;
+      this.savePromise = null;
+      this.manualSaveTask = null;
+      this.backInProgress = false;
       const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
       this.setData({ statusBarHeight: info.statusBarHeight || 20 });
     },
@@ -95,7 +100,6 @@ Component({
     detached() {
       this.disposeEngine();
       this.pageActive = false;
-      this.clearAutoSaveTimer();
       this.clearCanvasNoticeTimers();
       clearTimeout(this.pageTransitionTimer);
     }
@@ -115,16 +119,25 @@ Component({
       this.pageActive = true;
       this.editRevision = 0;
       this.savedRevision = 0;
+      this.savePromise = null;
+      this.manualSaveTask = null;
+      this.backInProgress = false;
       const pet = petStore.getPet();
       const shellColor = (pet && pet.shell && pet.shell.color) || '#EDE78E';
-      this.setData({ canvasReady: false, pageTransitionPhase: 'waiting' });
+      this.setData({
+        canvasReady: false,
+        exitConfirmVisible: false,
+        exitConfirmSaving: false,
+        exitConfirmErrorText: '',
+        pageTransitionPhase: 'waiting'
+      });
+      this.setSaveStatus('saved');
       this.initEngine(shellColor);
     },
 
     /** 退出编辑器：释放 canvas 层与计时器 */
     exitEditor() {
       this.pageActive = false;
-      this.clearAutoSaveTimer();
       this.clearCanvasNoticeTimers();
       this.disposeEngine();
     },
@@ -198,15 +211,14 @@ Component({
       });
     },
 
-    /** 有未保存修改：标记并调度自动保存 */
+    /** 有未保存修改：只推进编辑版本，等待用户点击状态胶囊保存 */
     markDirty() {
       this.editRevision += 1;
       this.setSaveStatus('unsaved');
-      this.scheduleAutoSave();
     },
 
     setSaveStatus(status) {
-      const labels = { saved: '已保存', saving: '保存中…', unsaved: '未保存' };
+      const labels = { saved: '已保存', saving: '保存中…', unsaved: '保存', error: '重新保存' };
       this.setData({
         saving: status === 'saving',
         saveStatus: status,
@@ -214,80 +226,113 @@ Component({
       });
     },
 
-    clearAutoSaveTimer() {
-      clearTimeout(this.autoSaveTimer);
-      this.autoSaveTimer = null;
-    },
-
-    scheduleAutoSave() {
-      this.clearAutoSaveTimer();
-      if (!this.pageActive || this.editRevision === this.savedRevision) return;
-      this.autoSaveTimer = setTimeout(() => {
-        this.autoSaveTimer = null;
-        this.persistCurrent({ silent: true });
-      }, AUTO_SAVE_DELAY);
-    },
-
-    /** 导出并抛出 saved；并发保存排队，成功后按 revision 对齐状态 */
-    async persistCurrent(options) {
-      const settings = options || {};
-      this.clearAutoSaveTimer();
+    /** 执行一次完整保存事务；成功后按事务开始时的 revision 推进状态 */
+    async persistCurrent() {
       if (!this.engine || !this.pageActive) return { ok: false };
-      if (this.savePromise) {
-        await this.savePromise;
-        if (this.editRevision === this.savedRevision) return { ok: true };
-      }
       const targetRevision = this.editRevision;
+      const operations = this.engine.getOperations();
       this.setSaveStatus('saving');
-      this.savePromise = this.engine.exportArtwork().then(tempFilePath => {
-        if (!tempFilePath) return { ok: false, message: '画作没有保存好，请再试一次' };
-        // 同时导出操作序列(shell)，供 home 页落本地缓存，重开编辑器可恢复继续编辑
-        this.triggerEvent('saved', { tempFilePath, operations: this.engine.getOperations() });
-        return { ok: true };
-      }).catch(() => ({ ok: false, message: '画作没有保存好，请再试一次' }));
-      const result = await this.savePromise;
-      this.savePromise = null;
+      const task = saveArtwork({
+        petId: this.data.petId || (this.properties && this.properties.petId) || '',
+        operations,
+        exportArtwork: () => this.engine.exportArtwork()
+      }).catch(error => ({
+        ok: false,
+        message: (error && error.message) || '画作没有保存好，请再试一次'
+      }));
+      this.savePromise = task;
+      const result = await task;
+      if (this.savePromise === task) this.savePromise = null;
       if (result.ok) {
         this.savedRevision = Math.max(this.savedRevision, targetRevision);
+        this.triggerEvent('saved', result);
         if (this.editRevision === targetRevision) {
           this.setSaveStatus('saved');
         } else {
           this.setSaveStatus('unsaved');
-          this.scheduleAutoSave();
         }
-        return { ok: this.editRevision === this.savedRevision };
+        return result;
       }
       this.saveErrorMessage = result.message;
-      this.setSaveStatus('unsaved');
-      if (!settings.silent && this.pageActive) {
-        wx.showToast({ title: result.message, icon: 'none' });
+      this.setSaveStatus('error');
+      if (this.pageActive) {
+        wx.showToast({ title: result.message || '画作没有保存好，请再试一次', icon: 'none' });
       }
       return result;
     },
 
-    onRetrySave() {
-      if (this.data.saveStatus !== 'unsaved') return;
-      this.persistCurrent({ silent: false });
+    async onManualSave() {
+      if (this.manualSaveTask) return this.manualSaveTask;
+      if (this.engine && this.engine.endStroke()) {
+        this.syncActionState();
+        this.markDirty();
+      }
+      if (this.editRevision === this.savedRevision) {
+        this.setSaveStatus('saved');
+        return { ok: true };
+      }
+      this.dismissCanvasNotice();
+      const task = this.persistCurrent();
+      this.manualSaveTask = task;
+      try {
+        return await task;
+      } finally {
+        if (this.manualSaveTask === task) this.manualSaveTask = null;
+      }
     },
 
-    /** 返回：先把进行中的笔画收尾并保存，再播退出过渡关闭 */
-    async onClose() {
+    onContinueEditing() {
+      if (this.backInProgress || this.data.exitConfirmSaving) return;
+      this.setData({ exitConfirmVisible: false, exitConfirmErrorText: '' });
+    },
+
+    onExitConfirmTap() {
+      this.onContinueEditing();
+    },
+
+    onExitConfirmDialogTap() {},
+
+    async leaveEditor() {
       if (this.backInProgress) return;
       this.backInProgress = true;
-      this.clearAutoSaveTimer();
-      if (this.engine) this.engine.endStroke();
-      let result = { ok: true };
-      if (this.editRevision !== this.savedRevision || this.savePromise) {
-        result = await this.persistCurrent({ silent: true });
-      }
-      if (result.ok && this.editRevision === this.savedRevision) {
-        await this.waitForPageExit();
-        this.backInProgress = false;
-        this.triggerEvent('close');
+      this.setData({ exitConfirmVisible: false });
+      await this.waitForPageExit();
+      this.triggerEvent('close');
+    },
+
+    async onSaveAndExit() {
+      if (!this.data.exitConfirmVisible || this.backInProgress || this.data.exitConfirmSaving) return;
+      this.setData({ exitConfirmSaving: true, exitConfirmErrorText: '' });
+      const result = await this.onManualSave();
+      if (result && result.ok && this.editRevision === this.savedRevision) {
+        await this.leaveEditor();
         return;
       }
-      this.backInProgress = false;
-      wx.showToast({ title: this.saveErrorMessage || '还没有保存成功，请点"未保存"重试', icon: 'none' });
+      this.setData({
+        exitConfirmSaving: false,
+        exitConfirmErrorText: (result && result.message) || '保存失败，请重试'
+      });
+    },
+
+    /** 返回：已保存直接离开，未保存只展示放弃修改确认 */
+    async onBack() {
+      if (this.backInProgress || this.data.exitConfirmVisible) return;
+      if (this.engine && this.engine.endStroke()) {
+        this.syncActionState();
+        this.markDirty();
+      }
+      if (this.manualSaveTask) {
+        this.backInProgress = true;
+        await this.manualSaveTask;
+        this.backInProgress = false;
+      }
+      if (this.editRevision !== this.savedRevision) {
+        this.collapseToolPanel();
+        this.dismissCanvasNotice();
+        this.setData({ exitConfirmVisible: true, exitConfirmSaving: false, exitConfirmErrorText: '' });
+        return;
+      }
+      await this.leaveEditor();
     },
 
     /** 画布通知条（清空提示、贴纸未选提示） */

@@ -99,8 +99,7 @@
   </view>
 
   <view wx:if="{{!fullSceneImageFailed}}" class="egg egg-shell {{eggCuddling ? 'egg--warming' : ''}} {{eggWobbling ? 'egg--wobble' : ''}}" aria-role="button" aria-label="轻触蛋宝宝" catchtap="onEggTap" bindlongpress="onEggCuddle">
-    <image class="egg-shell-preview egg-shell-preview--base" src="{{environment.eggImage}}" mode="aspectFit" data-layer="base"></image>
-    <image wx:if="{{eggArtUrl}}" class="egg-shell-preview egg-shell-preview--art" src="{{eggArtUrl}}" mode="aspectFit" data-layer="art"></image>
+    <image class="egg-shell-preview egg-shell-preview--base" src="{{eggArtUrl || environment.eggImage}}" mode="aspectFit" data-layer="base"></image>
     <image
       class="egg-shell-depth"
       src="{{depthOverlay}}"

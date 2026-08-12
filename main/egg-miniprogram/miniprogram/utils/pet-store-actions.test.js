@@ -124,11 +124,46 @@ function todayKey() {
     pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 1440, prototype: '玉兔',
            expectedHatchTime: new Date(Date.now() + 7 * DAY).toISOString() }
   }];
-  const doodleResult = await petStore.saveDoodle('https://oss.example/doodles/gold.png');
+  const doodleResult = await petStore.saveDoodle('https://oss.example/doodles/gold.png', 'real-1');
   assert.strictEqual(doodleResult.ok, true, 'doodle ok');
   assert.strictEqual(actionCalls.at(-1).type, 'DOODLE');
   assert.deepStrictEqual(actionCalls.at(-1).payload, { artUrl: 'https://oss.example/doodles/gold.png' });
   assert.strictEqual(petStore.getPet().shell.colorName, '奶油白', 'doodle no longer mutates shell');
+
+  actionResponses = [{
+    addedMinutes: 0, alreadyDone: true, readyToHatch: false,
+    pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 1440, prototype: '玉兔',
+           expectedHatchTime: new Date(Date.now() + 7 * DAY).toISOString() }
+  }];
+  const emptyDoodleResult = await petStore.saveDoodle('', 'real-1');
+  assert.strictEqual(emptyDoodleResult.ok, true, 'empty doodle clears the committed artwork');
+  assert.deepStrictEqual(actionCalls.at(-1).payload, { artUrl: '' }, 'empty doodle submits an explicit empty artUrl');
+  assert.strictEqual(emptyDoodleResult.alreadyDone, true, 'clearing a doodle does not repeat the first-time acceleration');
+
+  const callsBeforeMismatchedDoodle = actionCalls.length;
+  const mismatchedDoodle = await petStore.saveDoodle('https://oss.example/doodles/wrong-pet.png', 'other-pet');
+  assert.strictEqual(mismatchedDoodle.ok, false, 'doodle save rejects a stale editor pet id');
+  assert.strictEqual(actionCalls.length, callsBeforeMismatchedDoodle, 'a stale pet id must not submit a DOODLE action');
+
+  const originalSetStorageSync = wx.setStorageSync;
+  wx.setStorageSync = () => { throw new Error('storage full'); };
+  assert.strictEqual(petStore.saveDoodleShell('real-1', []), false, 'shell persistence reports a storage failure');
+  wx.setStorageSync = originalSetStorageSync;
+  assert.strictEqual(petStore.saveDoodleShell('real-1', []), true, 'shell persistence confirms a successful storage write');
+
+  let resolvePendingDoodle;
+  actionResponses = [new Promise(resolve => { resolvePendingDoodle = resolve; })];
+  const pendingDoodle = petStore.saveDoodle('https://oss.example/doodles/pending.png', 'real-1');
+  petStore.savePet({ ...realPet, id: 'real-2' });
+  resolvePendingDoodle({
+    addedMinutes: 0, alreadyDone: true, readyToHatch: false,
+    pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 1440, prototype: '玉兔',
+           expectedHatchTime: new Date(Date.now() + 7 * DAY).toISOString() }
+  });
+  const changedPetResult = await pendingDoodle;
+  assert.strictEqual(changedPetResult.ok, false, 'switching pets while a doodle request is pending rejects the stale response');
+  assert.strictEqual(petStore.getPet().id, 'real-2', 'a stale doodle response cannot replace the current pet cache');
+  petStore.savePet(realPet);
 
   // === 错误路径：后端 reject（business error）===
   const Module2 = require('module');

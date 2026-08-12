@@ -3,14 +3,14 @@
     <view class="doodle-status-bar" style="height:{{statusBarHeight}}px"></view>
     <view class="doodle-nav-row">
       <view class="doodle-nav-leading">
-        <view class="doodle-back" aria-role="button" aria-label="返回并保存" bindtap="onClose">
+        <view class="doodle-back" aria-role="button" aria-label="返回" bindtap="onBack">
           <view class="doodle-chevron"></view>
         </view>
         <text
           class="save-status save-status--{{saveStatus}}"
           aria-role="button"
           aria-label="{{saveStatusText}}"
-          bindtap="onRetrySave"
+          bindtap="onManualSave"
         >{{saveStatusText}}</text>
       </view>
       <text class="doodle-title">画我的蛋壳</text>
@@ -54,11 +54,17 @@
 
     <view class="preview-aura"></view>
     <view class="egg-canvas-stack" style="transform:scale({{canvasScale}});">
-      <canvas type="2d" id="eggBaseCanvas" class="egg-canvas egg-canvas--base"></canvas>
+      <canvas
+        type="2d"
+        id="eggBaseCanvas"
+        class="egg-canvas egg-canvas--base"
+        hidden="{{exitConfirmVisible}}"
+      ></canvas>
       <canvas
         type="2d"
         id="eggArtCanvas"
         class="egg-canvas egg-canvas--art"
+        hidden="{{exitConfirmVisible}}"
         disable-scroll
         catchtouchstart="onCanvasTouchStart"
         catchtouchmove="onCanvasTouchMove"
@@ -177,4 +183,33 @@
       </view>
     </view>
   </view>
+
+  <root-portal wx:if="{{exitConfirmVisible}}">
+    <cover-view
+      class="exit-confirm-overlay"
+      aria-label="当前修改尚未保存"
+      catchtap="onExitConfirmTap"
+    >
+      <cover-view class="exit-confirm-dialog" catchtap="onExitConfirmDialogTap">
+        <cover-view class="exit-confirm-title">画画还没有保存</cover-view>
+        <cover-view class="exit-confirm-message {{exitConfirmErrorText ? 'exit-confirm-message--error' : ''}}">{{exitConfirmErrorText || '保存后，蛋宝宝会带着新装饰回到卧室。'}}</cover-view>
+        <cover-view class="exit-confirm-actions">
+          <cover-view
+            class="exit-confirm-button exit-confirm-button--continue {{exitConfirmSaving ? 'exit-confirm-control--disabled' : ''}}"
+            aria-role="button"
+            aria-label="继续画"
+            aria-disabled="{{exitConfirmSaving}}"
+            bindtap="onContinueEditing"
+          >继续画</cover-view>
+          <cover-view
+            class="exit-confirm-button exit-confirm-button--save"
+            aria-role="button"
+            aria-label="{{exitConfirmSaving ? '保存中' : '保存并返回'}}"
+            aria-disabled="{{exitConfirmSaving}}"
+            bindtap="onSaveAndExit"
+          >{{exitConfirmSaving ? '保存中…' : '保存并返回'}}</cover-view>
+        </cover-view>
+      </cover-view>
+    </cover-view>
+  </root-portal>
 </view>

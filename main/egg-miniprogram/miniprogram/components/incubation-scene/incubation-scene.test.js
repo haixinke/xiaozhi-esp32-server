@@ -53,6 +53,8 @@ assert.strictEqual(events[events.length - 1].name, 'retryscene');
 const fs = require('fs');
 const sceneWxml = fs.readFileSync(path.join(__dirname, 'incubation-scene.wxml'), 'utf8');
 assert.ok(sceneWxml.includes("eggWobbling ? 'egg--wobble' : ''"), 'egg element binds the egg--wobble class');
+assert.ok(sceneWxml.includes('src="{{eggArtUrl || environment.eggImage}}"'), 'committed artwork replaces the environment egg image');
+assert.ok(!sceneWxml.includes('wx:if="{{eggArtUrl}}"'), 'scene does not render a second full egg image on top of the base egg');
 const sceneWxss = fs.readFileSync(path.join(__dirname, 'incubation-scene.wxss'), 'utf8');
 assert.ok(sceneWxss.includes('@keyframes wobble'), 'wobble keyframes defined');
 assert.ok(sceneWxss.includes('.egg.egg--wobble'), 'egg--wobble class defined');

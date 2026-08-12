@@ -152,11 +152,26 @@ Page({
     this.loadPetFromServer();
   },
 
-  // 拉取最新 DOODLE 记录的 artUrl 回显到场景蛋壳；孵化期之外或失败时不处理
+  // 拉取最新 DOODLE 记录的 artUrl；空值表示恢复环境蛋，旧请求不能覆盖新保存结果
   restoreDoodleArt(pet) {
-    if (!pet || !pet.id || petStore.getStage(pet) === 'hatched') return;
-    doodleApi.getLatestDoodleArtUrl(pet.id)
-      .then((artUrl) => { if (artUrl) this.setData({ eggArtUrl: artUrl }); })
+    const requestToken = (this._doodleRestoreToken || 0) + 1;
+    this._doodleRestoreToken = requestToken;
+    if (!pet || !pet.id || petStore.getStage(pet) === 'hatched') {
+      this._eggArtPetId = '';
+      this.setData({ eggArtUrl: '' });
+      return Promise.resolve();
+    }
+    const petId = String(pet.id);
+    if (this.data.eggArtUrl && this._eggArtPetId !== petId) {
+      this.setData({ eggArtUrl: '' });
+    }
+    return doodleApi.getLatestDoodleArtUrl(pet.id)
+      .then((artUrl) => {
+        const currentPet = this.data.pet;
+        if (this._doodleRestoreToken !== requestToken || !currentPet || String(currentPet.id) !== petId) return;
+        this._eggArtPetId = petId;
+        this.setData({ eggArtUrl: typeof artUrl === 'string' ? artUrl : '' });
+      })
       .catch(() => {});
   },
 
@@ -235,11 +250,15 @@ Page({
   },
 
   async loadPetFromServer() {
+    const shouldRestoreDoodle = !this.data.pet;
+    const previousPetId = this.data.pet && String(this.data.pet.id);
     try {
       const list = await get('/pet/list');
       this.setData({ petRestoreError: '' });
       if (Array.isArray(list) && list.length > 0) {
-        this.renderPet(petStore.savePetFromVO(list[0]));
+        const pet = petStore.savePetFromVO(list[0]);
+        this.renderPet(pet);
+        if (shouldRestoreDoodle || previousPetId !== String(pet.id)) this.restoreDoodleArt(pet);
       } else {
         this.syncPendingInvite(null);
       }
@@ -561,30 +580,15 @@ Page({
     }
   },
 
-  // 涂鸦编辑器导出画作后：先把操作序列(shell)落本地缓存兜底，再上传 OSS 拿 artUrl 记录 DOODLE 动作；上传失败则保留画布可重试
-  async onDoodleSaved(e) {
+  // 编辑器只会在完整保存事务成功后通知 home；这里仅切换场景展示
+  onDoodleSaved(e) {
     const detail = (e && e.detail) || {};
-    const tempFilePath = detail.tempFilePath;
-    if (!tempFilePath) return;
-    // 先把可再编辑的操作序列(shell)写本地缓存：即使云端上传失败，重开编辑器仍能恢复画布
     const pet = this.data.pet;
-    if (pet && Array.isArray(detail.operations)) {
-      petStore.saveDoodleShell(pet.id, detail.operations);
-    }
-    try {
-      const artUrl = await doodleApi.uploadDoodleImage(tempFilePath);
-      const result = await petStore.saveDoodle(artUrl);
-      if (!result.ok) {
-        wx.showToast({ title: result.message || '保存失败，请稍后重试', icon: 'none' });
-        return;
-      }
-      // 保存成功只更新蛋壳图并保持编辑器打开，用户手动返回(onDoodleEditorClose)才回到 home
-      // 不弹 toast 以免打断创作；保存态由编辑器内"已保存/保存中"胶囊外显
-      this.setData({ eggArtUrl: artUrl });
-    } catch (error) {
-      wx.showToast({ title: (error && error.userMessage) || '画作没有保存好，请再试一次', icon: 'none' });
-      // 编辑器保持打开，画布状态保留可重试
-    }
+    if (detail.ok !== true || typeof detail.artUrl !== 'string' || !pet
+      || String(detail.petId) !== String(pet.id)) return;
+    this._doodleRestoreToken = (this._doodleRestoreToken || 0) + 1;
+    this._eggArtPetId = String(pet.id);
+    this.setData({ eggArtUrl: detail.artUrl });
   },
 
   onDoodleEditorClose() { this.setData({ doodleEditorVisible: false }); },

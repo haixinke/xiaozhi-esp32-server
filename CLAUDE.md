@@ -169,11 +169,10 @@ Before ANY commit:
 
 ## graphify
 
-本项目在 `graphify-out/` 目录下构建了知识图谱，包含核心节点（God Nodes）、社区结构和跨文件关系。
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
-**使用规则**：
-
-- 在阅读源代码文件、运行 grep/glob 搜索或回答代码库相关问题之前，**必须先读取** `graphify-out/GRAPH_REPORT.md`。知识图谱是你浏览代码库的首要地图。
-- 如果 `graphify-out/wiki/index.md` 存在，优先通过它导航而不是直接阅读原始文件
-- 对于跨模块的"X 如何与 Y 关联"这类问题，优先使用 `graphify query "<问题>"`、`graphify path "<A>" "<B>"` 或 `graphify explain "<概念>"` 而非 grep —— 这些命令会遍历图谱的**提取边（EXTRACTED）**和**推断边（INFERRED）**，而不是扫描文件内容
-- 修改代码后，运行 `graphify update .` 以保持图谱为最新状态（仅使用 AST，无 API 成本）
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

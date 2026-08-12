@@ -51,6 +51,7 @@ let clearedTimers = [];
 let vibrateCalls = [];
 let doodleArtUrlResult = '';
 let doodleArtUrlError = null;
+let doodleArtUrlPromise = null;
 let uploadDoodleResult = '';
 let uploadDoodleError = null;
 let uploadDoodleCalls = 0;
@@ -230,6 +231,7 @@ const doodleApiMock = {
   },
   getLatestDoodleArtUrl: async () => {
     getLatestDoodleArtUrlCalls += 1;
+    if (doodleArtUrlPromise) return doodleArtUrlPromise;
     if (doodleArtUrlError) throw doodleArtUrlError;
     return doodleArtUrlResult;
   }
@@ -337,6 +339,7 @@ function resetScenario() {
   vibrateCalls = [];
   doodleArtUrlResult = '';
   doodleArtUrlError = null;
+  doodleArtUrlPromise = null;
   uploadDoodleResult = '';
   uploadDoodleError = null;
   uploadDoodleCalls = 0;
@@ -866,44 +869,38 @@ async function run() {
   pageReadyHatch.onPrimaryAction();
   assert.strictEqual(pageReadyHatch.data.hatching, true, 'ready onPrimaryAction starts hatching overlay');
 
-  // 8. 涂鸦保存：shell 先落本地缓存 → 上传成功 → 记录动作 → 回显 artUrl → 编辑器保持打开（手动返回才回 home）
+  // 8. 涂鸦保存事务成功后，home 只消费已确认的 artUrl，不再重复持久化
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatching');
-  uploadDoodleResult = 'https://oss.eggbabe.com/doodle/pet-001.png';
   const pageSave = makePage();
   pageSave.onLoad();
   pageSave.onShow();
   pageSave.setData({ doodleEditorVisible: true });
-  saveDoodleCalls = 0;
   const shellOps = [{ type: 'stroke', tool: 'brush', points: [{ x: 0.2, y: 0.2 }], width: 0.03, color: '#526B4D' }];
-  await pageSave.onDoodleSaved({ detail: { tempFilePath: 'wxfile://tmp/doodle.png', operations: shellOps } });
-  assert.strictEqual(saveDoodleShellCalls, 1, 'shell operations persisted to local cache first');
-  assert.strictEqual(lastSaveDoodleShellPetId, 'pet-001', 'shell cached against current pet id');
-  assert.deepStrictEqual(lastSaveDoodleShellOperations, shellOps, 'shell operations cached as-is');
-  assert.strictEqual(uploadDoodleCalls, 1, 'doodle image uploaded once');
-  assert.strictEqual(saveDoodleCalls, 1, 'saveDoodle called after upload succeeds');
-  assert.strictEqual(lastSaveDoodleArtUrl, 'https://oss.eggbabe.com/doodle/pet-001.png', 'saveDoodle received the artUrl');
+  await pageSave.onDoodleSaved({
+    detail: { ok: true, petId: 'pet-001', artUrl: 'https://oss.eggbabe.com/doodle/pet-001.png', operations: shellOps, empty: false }
+  });
+  assert.strictEqual(saveDoodleShellCalls, 0, 'home does not duplicate the editor save transaction');
+  assert.strictEqual(uploadDoodleCalls, 0, 'home does not upload an already committed artwork');
+  assert.strictEqual(saveDoodleCalls, 0, 'home does not submit a second DOODLE action');
   assert.strictEqual(pageSave.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/pet-001.png', 'eggArtUrl updated for scene art layer');
   assert.strictEqual(pageSave.data.doodleEditorVisible, true, 'editor stays open after a successful save; only manual back returns home');
 
-  // 10. 涂鸦上传失败 → shell 仍落本地兜底 → 不记录动作 → 编辑器保持打开
-  resetScenario();
-  cachedSession = { userId: 42, hasPhone: true };
-  requirePetStage('hatching');
-  uploadDoodleError = { userMessage: '画作上传失败' };
-  const pageSaveFail = makePage();
-  pageSaveFail.onLoad();
-  pageSaveFail.onShow();
-  pageSaveFail.setData({ doodleEditorVisible: true });
-  saveDoodleCalls = 0;
-  await pageSaveFail.onDoodleSaved({ detail: { tempFilePath: 'wxfile://tmp/doodle.png', operations: [{ type: 'sticker', pattern: 'star', x: 0.5, y: 0.5 }] } });
-  assert.strictEqual(saveDoodleShellCalls, 1, 'shell cached locally even when upload fails');
-  assert.strictEqual(saveDoodleCalls, 0, 'saveDoodle is not called when upload fails');
-  assert.strictEqual(pageSaveFail.data.doodleEditorVisible, true, 'editor stays open so the artwork can be retried');
-  assert.ok(toastTitle, 'upload failure shows a toast');
+  // 9. 保存空作品会清掉旧作品；未保存关闭不改变 home 当前展示
+  pageSave.setData({ eggArtUrl: 'https://oss.eggbabe.com/doodle/old.png' });
+  await pageSave.onDoodleSaved({ detail: { ok: true, petId: 'pet-001', artUrl: '', operations: [], empty: true } });
+  assert.strictEqual(pageSave.data.eggArtUrl, '', 'empty committed artwork restores the original environment egg');
+  pageSave.onDoodleSaved({
+    detail: { ok: true, petId: 'another-pet', artUrl: 'https://oss.eggbabe.com/doodle/wrong-pet.png', operations: [], empty: false }
+  });
+  assert.strictEqual(pageSave.data.eggArtUrl, '', 'home ignores a saved event that belongs to another pet');
+  pageSave.setData({ eggArtUrl: 'https://oss.eggbabe.com/doodle/kept.png' });
+  pageSave.onDoodleEditorClose();
+  assert.strictEqual(pageSave.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/kept.png', 'discarding unsaved edits keeps the last committed artwork');
+  assert.strictEqual(pageSave.data.doodleEditorVisible, false, 'closing the editor returns to home');
 
-  // 11. onShow 孵化期回显最新涂鸦 artUrl
+  // 10. onShow 孵化期回显最新涂鸦 artUrl
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatching');
@@ -915,6 +912,53 @@ async function run() {
   await Promise.resolve();
   await Promise.resolve();
   assert.strictEqual(pageRestore.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/existing.png', 'onShow restores the latest doodle artUrl onto the scene');
+
+  // 11. 服务端明确返回空作品时清掉旧图，冷启动恢复宠物后也会拉取作品
+  doodleArtUrlResult = '';
+  pageRestore.setData({ eggArtUrl: 'https://oss.eggbabe.com/doodle/stale.png' });
+  pageRestore.restoreDoodleArt(pageRestore.data.pet);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(pageRestore.data.eggArtUrl, '', 'an empty server artwork clears a stale local preview');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  stageValue = 'hatching';
+  requestGetResult = [{ id: 'pet-cold-start', hatchStatus: 'HATCHING', prototype: '玉兔' }];
+  doodleArtUrlResult = 'https://oss.eggbabe.com/doodle/cold-start.png';
+  const coldStartDoodlePage = makePage();
+  await coldStartDoodlePage.loadPetFromServer();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(getLatestDoodleArtUrlCalls, 1, 'cold start restores artwork after loading the pet');
+  assert.strictEqual(coldStartDoodlePage.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/cold-start.png', 'cold start shows the committed artwork');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  let resolveOldDoodleRestore;
+  doodleArtUrlPromise = new Promise(resolve => { resolveOldDoodleRestore = resolve; });
+  const restoreRacePage = makePage();
+  restoreRacePage.onLoad();
+  restoreRacePage.setData({ pet: storedPet });
+  const oldRestoreTask = restoreRacePage.restoreDoodleArt(storedPet);
+  restoreRacePage.onDoodleSaved({
+    detail: { ok: true, petId: 'pet-001', artUrl: 'https://oss.eggbabe.com/doodle/new-save.png', operations: [], empty: false }
+  });
+  resolveOldDoodleRestore('https://oss.eggbabe.com/doodle/old-restore.png');
+  await oldRestoreTask;
+  assert.strictEqual(
+    restoreRacePage.data.eggArtUrl,
+    'https://oss.eggbabe.com/doodle/new-save.png',
+    'an older restore response must not overwrite a newer manual save'
+  );
+
+  doodleArtUrlPromise = null;
+  doodleArtUrlError = new Error('restore failed');
+  restoreRacePage.setData({ pet: { ...storedPet, id: 'pet-002' } });
+  const failedChangedPetRestore = restoreRacePage.restoreDoodleArt(restoreRacePage.data.pet);
+  assert.strictEqual(restoreRacePage.data.eggArtUrl, '', 'switching pets clears the previous pet artwork before restore completes');
+  await failedChangedPetRestore;
 
   // 12. 命名弹层：打开回填当前名字，输入限 10 字符
   resetScenario();

@@ -14,8 +14,10 @@
 .save-status { min-width: 76rpx; padding: 8rpx 14rpx; border-radius: 999rpx; color: #687548; font-size: 20rpx; line-height: 1; text-align: center; transition: background 180ms ease, color 180ms ease; }
 .save-status--saved { background: #F2F5EC; color: #6A7757; }
 .save-status--saving { background: #F6F3EA; color: #81755E; }
-.save-status--unsaved { background: #FFF0E5; color: #A75D39; }
+.save-status--unsaved { background: #002900; color: #FFF; }
+.save-status--error { background: #8C4F42; color: #FFF; }
 .save-status--unsaved:active { transform: scale(.98); }
+.save-status--error:active { transform: scale(.98); }
 .doodle-title { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #002900; font-size: 30rpx; font-weight: 600; white-space: nowrap; }
 .doodle-nav-safe { width: 184rpx; height: 112rpx; margin-left: auto; }
 
@@ -90,12 +92,25 @@
 .pattern--selected { background: #E6EED0; color: #566430; }
 .pattern-symbol { height: 27rpx; color: #536447; font-size: 27rpx; line-height: 27rpx; }
 
+.exit-confirm-overlay { position: fixed; z-index: 9999; inset: 0; display: flex; align-items: center; justify-content: center; padding: 40rpx; box-sizing: border-box; background: rgba(0,0,0,.24); animation: exit-confirm-fade-in 180ms ease-out both; }
+.exit-confirm-dialog { position: relative; width: 560rpx; padding: 44rpx 32rpx 28rpx; box-sizing: border-box; border: 1rpx solid #E5E3DF; border-radius: 32rpx; background: #FFF; box-shadow: 0 24rpx 64rpx rgba(0,41,0,.14); color: #1A1A1A; }
+.exit-confirm-title { padding: 0 54rpx; color: #1A1A1A; font-size: 30rpx; font-weight: 600; line-height: 1.35; text-align: center; }
+.exit-confirm-message { margin-top: 16rpx; color: #5C5C5C; font-size: 24rpx; line-height: 1.5; text-align: center; }
+.exit-confirm-message--error { color: #D9463C; }
+.exit-confirm-actions { display: flex; margin-top: 32rpx; }
+.exit-confirm-button { height: 96rpx; flex: 1; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border-radius: 48rpx; font-size: 24rpx; font-weight: 600; line-height: 96rpx; text-align: center; }
+.exit-confirm-button--continue { border: 1rpx solid #D8DDD5; background: #F7F8F5; color: #002900; }
+.exit-confirm-button--save { margin-left: 16rpx; background: #002900; color: #FFF; }
+.exit-confirm-control--disabled { opacity: .56; }
+
 @media (prefers-reduced-motion: reduce) {
   .page--entering, .page--exiting { animation-duration: 20ms; }
   .tool-options, .brush-color-popover { animation-duration: 20ms; }
+  .exit-confirm-overlay { animation-duration: 20ms; }
   .canvas-notice, .canvas-action-button, .tool-button, .save-status, .doodle-back { transition: none; }
 }
 
 @keyframes doodle-page-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes doodle-page-fade-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes tool-options-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes exit-confirm-fade-in { from { opacity: 0; } to { opacity: 1; } }

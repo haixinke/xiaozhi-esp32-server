@@ -324,23 +324,37 @@ function completeLesson(value) {
   return completeDailyTask('lesson', value);
 }
 
-async function saveDoodle(artUrl) {
+async function saveDoodle(artUrl, petId) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
+  if (!petId || String(pet.id) !== String(petId)) {
+    return { ok: false, message: '蛋宝宝状态已变化，请返回后重试' };
+  }
   try {
-    const result = await petApi.submitHatchAction(pet.id, 'DOODLE', { artUrl });
+    const result = await petApi.submitHatchAction(petId, 'DOODLE', { artUrl });
+    const currentPet = getPet();
+    const responsePet = result && result.pet;
+    if (!currentPet || String(currentPet.id) !== String(petId)
+      || !responsePet || String(responsePet.id) !== String(petId)) {
+      return { ok: false, message: '蛋宝宝状态已变化，请返回后重试' };
+    }
     const updated = savePetFromVO(result.pet);
     savePet(updated);
-    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
+    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated, petId: String(petId) };
   } catch (error) {
     return { ok: false, message: (error && error.userMessage) || '提交失败，请稍后重试' };
   }
 }
 
-// 涂鸦操作序列(shell)写入本地缓存，按 petId 关联；保存失败静默吞错（本地缓存不阻塞主流程）
+// 涂鸦操作序列(shell)写入本地缓存，按 petId 关联；返回值用于保存事务确认本地记录已落盘
 function saveDoodleShell(petId, operations) {
-  if (!petId || !Array.isArray(operations)) return;
-  write(DOODLE_SHELL_KEY, { petId, operations, savedAt: Date.now() });
+  if (!petId || !Array.isArray(operations)) return false;
+  try {
+    wx.setStorageSync(DOODLE_SHELL_KEY, { petId, operations, savedAt: Date.now() });
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 // 读取本地涂鸦操作序列；petId 不匹配(换了宠物/数据串号)视为无缓存返回 null

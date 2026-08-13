@@ -224,6 +224,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         target.setWeightPeriod(period.weightPeriod().name());
         target.setImageTimeOfDay(period.imageTimeOfDay().databaseValue());
         target.setImageUrl(selected.imageUrl());
+        target.setTagImageUrl(selected.tagImageUrl());
         target.setCaption(selected.caption());
         target.setDurationHours(selected.durationHours());
         target.setStartedAt(startedAt);

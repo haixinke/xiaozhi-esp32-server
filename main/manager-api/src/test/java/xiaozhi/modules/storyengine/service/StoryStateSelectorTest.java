@@ -191,6 +191,33 @@ class StoryStateSelectorTest {
         assertThatThrownBy(() -> action.images().clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
+    @Test
+    void selectedStateCarriesWindowTagImageUrlWhenActionHasWindowImage() {
+        // 动作含一张 tag=窗户 的图片，选中后 tagImageUrl 应取该图 URL
+        StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
+        StoryImageCandidate normalImage = image("image-id", "", "https://example.com/image.png");
+        StoryActionCandidate action = action("动作", 1, 1, normalImage, windowImage);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().tagImageUrl()).isEqualTo("https://example.com/window.png");
+    }
+
+    @Test
+    void selectedStateHasNullTagImageUrlWhenActionHasNoWindowImage() {
+        StoryActionCandidate action = validAction(1, 1);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().tagImageUrl()).isNull();
+    }
+
     private StoryStateSelector selectorWithRolls(ExpectedDraw... draws) {
         return new StoryStateSelector(randomWithRolls(draws));
     }
@@ -217,7 +244,11 @@ class StoryStateSelectorTest {
     }
 
     private static StoryImageCandidate image(String id, String captions, String imageUrl) {
-        return new StoryImageCandidate(id, imageUrl, captions);
+        return new StoryImageCandidate(id, imageUrl, captions, null);
+    }
+
+    private static StoryImageCandidate taggedImage(String id, String tag, String imageUrl) {
+        return new StoryImageCandidate(id, imageUrl, "", tag);
     }
 
     private record ExpectedDraw(int originInclusive, int boundExclusive, int value) {

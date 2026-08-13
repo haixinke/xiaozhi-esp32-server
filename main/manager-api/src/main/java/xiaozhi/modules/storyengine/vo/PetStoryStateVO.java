@@ -42,6 +42,9 @@ public class PetStoryStateVO {
     @Schema(description = "图片URL")
     private String imageUrl;
 
+    @Schema(description = "窗户标签图URL")
+    private String tagImageUrl;
+
     @Schema(description = "已选配文")
     private String caption;
 

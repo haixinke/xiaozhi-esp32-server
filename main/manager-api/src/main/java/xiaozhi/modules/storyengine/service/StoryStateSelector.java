@@ -18,6 +18,9 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class StoryStateSelector {
+    /** 窗户标签：选中动作内带此标签的图片 URL 作为窗景快照写入状态 */
+    private static final String WINDOW_TAG = "窗户";
+
     private final StoryRandomSource random;
 
     /**
@@ -82,12 +85,18 @@ public class StoryStateSelector {
         StoryActionCandidate action = eligibleActions.get(random.nextInt(0, eligibleActions.size()));
         StoryImageCandidate image = action.images().get(random.nextInt(0, action.images().size()));
         String caption = selectCaption(image.captions());
+        // 选定动作内找 tag='窗户' 的图片 URL（当前时段候选图首张），供客户端渲染窗景
+        String tagImageUrl = action.images().stream()
+                .filter(candidate -> WINDOW_TAG.equals(candidate.tag()))
+                .map(StoryImageCandidate::imageUrl)
+                .findFirst()
+                .orElse(null);
         // 持续小时数在 [durationMin, durationMax] 闭区间内等概率选择
         int durationHours = action.durationMin()
                 + random.nextInt(0, action.durationMax() - action.durationMin() + 1);
         return StorySelectionResult.selected(new SelectedStoryState(
                 scene.bigSceneId(), scene.bigSceneName(), scene.smallSceneId(), scene.smallSceneName(),
-                action.id(), action.name(), image.id(), image.imageUrl(), caption, durationHours));
+                action.id(), action.name(), image.id(), image.imageUrl(), caption, durationHours, tagImageUrl));
     }
 
     /** 从 | 分隔的配文中去空白后等概率选一条；无非空配文时返回空串 */

@@ -31,7 +31,8 @@ public class PrototypeStoryStateRefreshTask {
         this.clock = clock;
     }
 
-    @Scheduled(cron = "0 0 * * * ?", zone = "Asia/Shanghai")
+    // 每 10 分钟刷新一次原型故事状态，让时段切换与配置修复更快生效
+    @Scheduled(cron = "0 */10 * * * ?", zone = "Asia/Shanghai")
     public void refreshStates() {
         ZonedDateTime evaluatedAt = ZonedDateTime.ofInstant(clock.instant(), clock.getZone());
         Map<StoryEvaluationResult, Integer> counts = new EnumMap<>(StoryEvaluationResult.class);

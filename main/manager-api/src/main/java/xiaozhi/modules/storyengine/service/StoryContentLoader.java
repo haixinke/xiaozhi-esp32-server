@@ -139,7 +139,7 @@ public class StoryContentLoader {
     }
 
     private StoryImageCandidate toCandidate(ActionImageEntity image) {
-        return new StoryImageCandidate(image.getId(), image.getImageUrl(), image.getCaptions());
+        return new StoryImageCandidate(image.getId(), image.getImageUrl(), image.getCaptions(), image.getTag());
     }
 
     /** 取小场景在当前权重时段的权重，null 视为 0 */

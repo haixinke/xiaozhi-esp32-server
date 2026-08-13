@@ -102,13 +102,13 @@ class PrototypeStoryStateRefreshTaskTest {
     }
 
     @Test
-    void refreshStatesUsesTheHourlyShanghaiSchedule() throws NoSuchMethodException {
+    void refreshStatesUsesTheTenMinuteShanghaiSchedule() throws NoSuchMethodException {
         Method refreshStates = PrototypeStoryStateRefreshTask.class.getDeclaredMethod("refreshStates");
 
         Scheduled scheduled = refreshStates.getAnnotation(Scheduled.class);
 
         assertThat(scheduled).isNotNull();
-        assertThat(scheduled.cron()).isEqualTo("0 0 * * * ?");
+        assertThat(scheduled.cron()).isEqualTo("0 */10 * * * ?");
         assertThat(scheduled.zone()).isEqualTo("Asia/Shanghai");
     }
 

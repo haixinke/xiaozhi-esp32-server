@@ -117,8 +117,9 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
         copySnapshot(entity.getPetPrototype(), entity.getBigSceneId(), entity.getBigSceneName(),
                 entity.getSmallSceneId(), entity.getSmallSceneName(), entity.getActionId(),
                 entity.getActionName(), entity.getActionImageId(), entity.getWeightPeriod(),
-                entity.getImageTimeOfDay(), entity.getImageUrl(), entity.getCaption(),
-                entity.getDurationHours(), entity.getStartedAt(), entity.getExpectedEndAt(), vo);
+                entity.getImageTimeOfDay(), entity.getImageUrl(), entity.getTagImageUrl(),
+                entity.getCaption(), entity.getDurationHours(), entity.getStartedAt(),
+                entity.getExpectedEndAt(), vo);
         return vo;
     }
 
@@ -127,8 +128,9 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
         copySnapshot(entity.getPetPrototype(), entity.getBigSceneId(), entity.getBigSceneName(),
                 entity.getSmallSceneId(), entity.getSmallSceneName(), entity.getActionId(),
                 entity.getActionName(), entity.getActionImageId(), entity.getWeightPeriod(),
-                entity.getImageTimeOfDay(), entity.getImageUrl(), entity.getCaption(),
-                entity.getDurationHours(), entity.getStartedAt(), entity.getExpectedEndAt(), vo);
+                entity.getImageTimeOfDay(), entity.getImageUrl(), null,
+                entity.getCaption(), entity.getDurationHours(), entity.getStartedAt(),
+                entity.getExpectedEndAt(), vo);
         vo.setArchivedAt(entity.getArchivedAt());
         return vo;
     }
@@ -136,7 +138,7 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
     private void copySnapshot(String petPrototype, String bigSceneId, String bigSceneName,
             String smallSceneId, String smallSceneName, String actionId, String actionName,
             String actionImageId, String weightPeriod, String imageTimeOfDay, String imageUrl,
-            String caption, Integer durationHours, java.util.Date startedAt,
+            String tagImageUrl, String caption, Integer durationHours, java.util.Date startedAt,
             java.util.Date expectedEndAt, PetStoryStateVO vo) {
         vo.setPetPrototype(petPrototype);
         vo.setBigSceneId(bigSceneId);
@@ -149,6 +151,7 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
         vo.setWeightPeriod(weightPeriod);
         vo.setImageTimeOfDay(imageTimeOfDay);
         vo.setImageUrl(imageUrl);
+        vo.setTagImageUrl(tagImageUrl);
         vo.setCaption(caption);
         vo.setDurationHours(durationHours);
         vo.setStartedAt(startedAt);

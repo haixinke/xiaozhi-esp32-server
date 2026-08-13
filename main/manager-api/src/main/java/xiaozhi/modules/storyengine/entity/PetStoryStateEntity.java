@@ -59,6 +59,9 @@ public class PetStoryStateEntity {
     @Schema(description = "动作图片URL快照")
     private String imageUrl;
 
+    @Schema(description = "窗户标签图URL快照(选中动作中tag=窗户的图片,取当前时段首张)")
+    private String tagImageUrl;
+
     @Schema(description = "选中的单条配文快照，可空")
     private String caption;
 

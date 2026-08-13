@@ -442,6 +442,7 @@ class PrototypeStoryStateServiceImplTest {
         assertThat(current.getWeightPeriod()).isEqualTo(StoryWeightPeriod.MORNING.name());
         assertThat(current.getImageTimeOfDay()).isEqualTo(StoryImageTimeOfDay.DAY.databaseValue());
         assertThat(current.getImageUrl()).isEqualTo("https://example.com/new.png");
+        assertThat(current.getTagImageUrl()).isEqualTo("https://example.com/window.png");
         assertThat(current.getCaption()).isEqualTo("新文案");
         assertThat(current.getDurationHours()).isEqualTo(durationHours);
         assertThat(current.getStartedAt()).isEqualTo(Date.from(evaluatedAt.toInstant()));
@@ -535,6 +536,7 @@ class PrototypeStoryStateServiceImplTest {
         copy.setWeightPeriod(source.getWeightPeriod());
         copy.setImageTimeOfDay(source.getImageTimeOfDay());
         copy.setImageUrl(source.getImageUrl());
+        copy.setTagImageUrl(source.getTagImageUrl());
         copy.setCaption(source.getCaption());
         copy.setDurationHours(source.getDurationHours());
         copy.setStartedAt(source.getStartedAt());
@@ -550,7 +552,7 @@ class PrototypeStoryStateServiceImplTest {
     private static SelectedStoryState selected(int durationHours) {
         return new SelectedStoryState("new-big-id", "新大场景", "new-small-id", "新小场景",
                 "new-action-id", "新动作", "new-image-id", "https://example.com/new.png",
-                "新文案", durationHours);
+                "新文案", durationHours, "https://example.com/window.png");
     }
 
     private static ZonedDateTime at(String value) {

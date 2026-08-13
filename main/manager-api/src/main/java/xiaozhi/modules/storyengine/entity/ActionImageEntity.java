@@ -36,6 +36,9 @@ public class ActionImageEntity {
     @Schema(description = "图片配文,多句用|分隔,前端随机展示一句")
     private String captions;
 
+    @Schema(description = "图片标签(管理端分类标注,单标签,最长64字符)")
+    private String tag;
+
     @Schema(description = "排序序号(同组多图排序)")
     private Integer sortOrder;
 

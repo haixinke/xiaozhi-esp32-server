@@ -301,7 +301,7 @@ export default {
     },
 
     // ==================== 动作图片 ====================
-    // 上传动作图片，formData 需包含 file、petPrototype、timeOfDay、captions
+    // 上传动作图片，formData 需包含 file、petPrototype、timeOfDay、captions(选填)、tag(选填,单标签最长64字符)
     uploadActionImage(actionId, formData, callback, failCallback) {
         RequestService.sendRequest()
             .url(`${getServiceUrl()}/storyEngine/action/${actionId}/image`)
@@ -324,7 +324,7 @@ export default {
                 })
             }).send()
     },
-    // 修改动作图片配文
+    // 修改动作图片配文与标签（整体更新语义，data 需包含 id、captions、tag）
     updateActionImage(data, callback, failCallback) {
         RequestService.sendRequest()
             .url(`${getServiceUrl()}/storyEngine/actionImage`)
@@ -341,7 +341,7 @@ export default {
                 }
             })
             .networkFail((err) => {
-                console.error('修改动作图片配文失败:', err)
+                console.error('修改动作图片配文与标签失败:', err)
                 RequestService.reAjaxFun(() => {
                     this.updateActionImage(data, callback, failCallback)
                 })

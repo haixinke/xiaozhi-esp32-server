@@ -38,12 +38,17 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
 
     private static final Map<String, String> TIME_KEY_MAP = Map.of("白天", "day", "落日", "sunset", "黑夜", "night");
 
+    /**
+     * 图片标签最大长度，与 ai_story_action_image.tag 列宽一致。
+     */
+    private static final int TAG_MAX_LENGTH = 64;
+
     private final ActionImageDao actionImageDao;
     private final OssService ossService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void uploadImage(String actionId, String petPrototype, String timeOfDay, String captions,
+    public void uploadImage(String actionId, String petPrototype, String timeOfDay, String captions, String tag,
             MultipartFile file) {
         if (StringUtils.isBlank(actionId)) {
             throw new RenException("动作ID不能为空");
@@ -63,6 +68,7 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
         if (!ossService.isEnabled()) {
             throw new RenException(ErrorCode.OSS_UPLOAD_FILE_ERROR);
         }
+        String normalizedTag = normalizeTag(tag);
 
         String ext = extensionOf(file.getContentType());
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
@@ -82,13 +88,14 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
         entity.setTimeOfDay(timeOfDay);
         entity.setImageUrl(ossService.buildPublicUrl(ossKey));
         entity.setCaptions(captions);
+        entity.setTag(normalizedTag);
         entity.setSortOrder(nextSortOrder(actionId, petPrototype, timeOfDay));
         actionImageDao.insert(entity);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateCaptions(String id, String captions) {
+    public void updateInfo(String id, String captions, String tag) {
         if (StringUtils.isBlank(id)) {
             throw new RenException("图片ID不能为空");
         }
@@ -96,9 +103,11 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
         if (entity == null) {
             throw new RenException("动作图片不存在");
         }
-        // captions 为空时需要显式置空，MyBatis-Plus 默认忽略 null 字段，故使用 UpdateWrapper
+        // captions/tag 为空时需要显式置空，MyBatis-Plus 默认忽略 null 字段，故使用 UpdateWrapper
         UpdateWrapper<ActionImageEntity> wrapper = new UpdateWrapper<>();
-        wrapper.eq("id", id).set("captions", StringUtils.isBlank(captions) ? null : captions.trim());
+        wrapper.eq("id", id)
+                .set("captions", StringUtils.isBlank(captions) ? null : captions.trim())
+                .set("tag", normalizeTag(tag));
         actionImageDao.update(null, wrapper);
     }
 
@@ -135,6 +144,20 @@ public class StoryActionImageServiceImpl extends BaseServiceImpl<ActionImageDao,
                 .eq("pet_prototype", petPrototype)
                 .eq("time_of_day", timeOfDay);
         return Math.toIntExact(actionImageDao.selectCount(wrapper));
+    }
+
+    /**
+     * 规范化标签：trim 后空串置 NULL；超长直接抛错（列宽 64，超长落库会截断或报错）。
+     */
+    private static String normalizeTag(String tag) {
+        if (StringUtils.isBlank(tag)) {
+            return null;
+        }
+        String trimmed = tag.trim();
+        if (trimmed.length() > TAG_MAX_LENGTH) {
+            throw new RenException("标签长度不能超过" + TAG_MAX_LENGTH + "字符");
+        }
+        return trimmed;
     }
 
     private static String extensionOf(String contentType) {

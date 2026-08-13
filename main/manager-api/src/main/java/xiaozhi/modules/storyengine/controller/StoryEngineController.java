@@ -158,16 +158,17 @@ public class StoryEngineController {
             @RequestParam String petPrototype,
             @RequestParam String timeOfDay,
             @RequestParam(required = false) String captions,
+            @RequestParam(required = false) String tag,
             @RequestParam("file") MultipartFile file) {
-        actionImageService.uploadImage(id, petPrototype, timeOfDay, captions, file);
+        actionImageService.uploadImage(id, petPrototype, timeOfDay, captions, tag, file);
         return new Result<>();
     }
 
     @PutMapping("/actionImage")
-    @Operation(summary = "修改动作图片配文")
+    @Operation(summary = "修改动作图片配文与标签(整体更新,两字段一起提交)")
     @RequiresPermissions("sys:role:superAdmin")
     public Result<Void> updateActionImage(@Valid @RequestBody ActionImageUpdateDTO dto) {
-        actionImageService.updateCaptions(dto.getId(), dto.getCaptions());
+        actionImageService.updateInfo(dto.getId(), dto.getCaptions(), dto.getTag());
         return new Result<>();
     }
 

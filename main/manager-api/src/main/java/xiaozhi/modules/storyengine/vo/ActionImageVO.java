@@ -26,6 +26,9 @@ public class ActionImageVO {
     @Schema(description = "图片配文,多句用|分隔,前端随机展示一句")
     private String captions;
 
+    @Schema(description = "图片标签(管理端分类标注,单标签,最长64字符)")
+    private String tag;
+
     @Schema(description = "排序序号(同组多图排序)")
     private Integer sortOrder;
 
@@ -37,6 +40,7 @@ public class ActionImageVO {
         vo.setTimeOfDay(entity.getTimeOfDay());
         vo.setImageUrl(entity.getImageUrl());
         vo.setCaptions(entity.getCaptions());
+        vo.setTag(entity.getTag());
         vo.setSortOrder(entity.getSortOrder());
         return vo;
     }

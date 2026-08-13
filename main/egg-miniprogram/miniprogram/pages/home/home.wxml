@@ -113,21 +113,16 @@
           </view>
         </view>
 
-        <view class="state-card">
-          <view class="state-dot"></view>
-          <view class="state-copy">
-            <text class="state-title">{{stageText}}</text>
-          </view>
-        </view>
-
         <view wx:if="{{dailyStatus}}" class="status-daily">
           <text class="status-meta">今日状态 · {{dailyStatus.mood}}</text>
           <text class="status-line">{{dailyStatus.line}}</text>
         </view>
 
-        <view class="home-actions">
-          <button class="primary-button home-actions__chat" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
-          <button class="primary-button home-actions__scene" bindtap="onChangeScene"><text class="button-label">更换场景</text></button>
+        <!-- 左下角聊天入口：与静态项目一致的圆形宠物 icon 按钮 -->
+        <view class="story-chat-entry">
+          <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
+            <pet-avatar pet-type="{{pet.prototype}}" size="{{64}}"></pet-avatar>
+          </view>
         </view>
       </view>
     </scroll-view>

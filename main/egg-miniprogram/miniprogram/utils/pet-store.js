@@ -529,18 +529,6 @@ async function createCollectionCard() {
   }
 }
 
-async function changeScene() {
-  const pet = getPet();
-  if (!pet) return { ok: false, message: '还没有蛋宝宝' };
-  try {
-    const vo = await petApi.changeScene(pet.id);
-    const updated = savePetFromVO(vo);
-    return { ok: true, sceneUrl: updated.sceneUrl, pet: updated };
-  } catch (error) {
-    return { ok: false, message: (error && error.userMessage) || '更换场景失败，请稍后重试' };
-  }
-}
-
 function getMessages(options) {
   const pet = getPet();
   if (!pet) return { list: [], total: 0, hasMore: false };
@@ -604,7 +592,6 @@ module.exports = {
   recordTouch,
   cardSerial,
   createCollectionCard,
-  changeScene,
   saveMessage,
   getMessages,
   todayKey

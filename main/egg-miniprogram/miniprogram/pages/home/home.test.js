@@ -466,6 +466,12 @@ async function run() {
     'post-hatch home must wrap the story scene in a draggable track');
   assert.ok(homeTemplate.includes('bindtouchmove="onStoryDragMove"'),
     'post-hatch home must handle drag gestures for the story background');
+  assert.ok(!homeTemplate.includes('class="state-card"'),
+    'post-hatch home must not render the static stage text card');
+  assert.ok(homeTemplate.includes('class="story-chat-entry"'),
+    'post-hatch home must render the bottom-left chat entry icon');
+  assert.ok(!homeTemplate.includes('home-actions__chat'),
+    'post-hatch home must not render the full-width chat button');
   assert.ok(homeTemplate.includes('image="{{storyTagImageUrl}}"'),
     'post-hatch home must feed the story window tag image into the window detail layer');
   assert.ok(homeTemplate.includes('bindtap="onStoryWindowTap"'),

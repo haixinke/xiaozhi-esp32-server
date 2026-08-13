@@ -846,18 +846,5 @@ Page({
     if (!sceneUrl) return;
     var sceneKey = sceneConfig.getSceneKeyFromUrl(sceneUrl);
     wx.navigateTo({ url: '/pages/life-scene/life-scene?scene=' + sceneKey });
-  },
-
-  async onChangeScene() {
-    if (this._changingScene) return;
-    this._changingScene = true;
-    const result = await petStore.changeScene();
-    this._changingScene = false;
-    if (!result.ok) {
-      this.showFeedback(result.message || '更换场景失败，请稍后重试');
-      return;
-    }
-    this.setData({ 'pet.sceneUrl': result.sceneUrl });
-    this.showFeedback('场景已更换');
   }
 });

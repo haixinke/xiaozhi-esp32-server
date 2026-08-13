@@ -2,7 +2,7 @@
   <block wx:if="{{authChecked && !petRestoreLoading}}">
     <nav-bar wx:if="{{!pet}}" title="蛋宝宝" show-back="{{false}}"></nav-bar>
 
-    <scroll-view class="content {{pet && stage !== 'hatched' ? 'content--incubating' : ''}}" scroll-y="{{!(pet && stage !== 'hatched')}}">
+    <scroll-view class="content {{pet && stage !== 'hatched' ? 'content--incubating' : ''}} {{pet && stage === 'hatched' && storyImageUrl ? 'content--story' : ''}}" scroll-y="{{!(pet && (stage !== 'hatched' || storyImageUrl))}}">
       <view wx:if="{{petRestoreError}}" class="empty-state pet-restore-error">
         <view class="empty-orbit"><view class="empty-egg"></view></view>
         <text class="empty-title">暂时无法加载蛋宝宝</text>

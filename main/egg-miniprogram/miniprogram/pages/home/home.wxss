@@ -1,6 +1,9 @@
 .page { display: flex; flex-direction: column; height: 100vh; background: #FAFAF8; }
 .content { flex: 1; padding: 30rpx 40rpx 48rpx; box-sizing: border-box; }
 .content--incubating { height: 100vh; padding: 0; overflow: hidden; }
+/* 破壳后故事场景：禁用 scroll-view 滚动（见 home.wxml scroll-y 条件），
+   真机上原生滚动容器会截获平移手势导致背景拖不动；整屏内容均为 fixed 层，无需滚动 */
+.content--story { height: 100vh; padding: 0; overflow: hidden; }
 .empty-state { min-height: 1040rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .empty-orbit { width: 300rpx; height: 300rpx; border-radius: 50%; border: 2rpx dashed #D8D6C8; display: flex; align-items: center; justify-content: center; margin-bottom: 50rpx; background: radial-gradient(circle, rgba(237,231,142,.22), transparent 68%); }
 .empty-egg { width: 150rpx; height: 184rpx; border-radius: 52% 48% 48% 52% / 61% 59% 41% 39%; border: 4rpx solid #D7D4CA; background: #FFF; }

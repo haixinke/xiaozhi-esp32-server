@@ -22,14 +22,15 @@ const STORY_WINDOW_BIG_SCENE = '在家';
 const STORY_WINDOW_SMALL_SCENE = '卧室';
 // 故事背景轨道宽 200vw，可横向拖拽查看左半屏；位移超过阈值才判定为拖拽，避免误伤点击
 const STORY_DRAG_THRESHOLD_PX = 12;
-// 左下角聊天入口 icon：按宠物原型选图，与静态项目同一组 96px 素材
+// 左下角聊天入口 icon：按宠物原型选图，与静态项目同一组 96px 素材；
+// 必须用 PNG：部分真机（尤其 iOS）image 组件无法解码 webp，icon 会空白
 const CHAT_ENTRY_ICONS = {
-  '玉兔': '/assets/ui/3d-actions/ui_3d_scene_find_home_jade_rabbit_96_v01.webp',
-  'YT': '/assets/ui/3d-actions/ui_3d_scene_find_home_jade_rabbit_96_v01.webp',
-  '锦鲤': '/assets/ui/3d-actions/ui_3d_scene_find_home_boon_koi_96_v01.webp',
-  'KOI': '/assets/ui/3d-actions/ui_3d_scene_find_home_boon_koi_96_v01.webp'
+  '玉兔': '/assets/ui/3d-actions/ui_3d_scene_find_home_jade_rabbit_96_v01.png',
+  'YT': '/assets/ui/3d-actions/ui_3d_scene_find_home_jade_rabbit_96_v01.png',
+  '锦鲤': '/assets/ui/3d-actions/ui_3d_scene_find_home_boon_koi_96_v01.png',
+  'KOI': '/assets/ui/3d-actions/ui_3d_scene_find_home_boon_koi_96_v01.png'
 };
-const CHAT_ENTRY_ICON_FALLBACK = '/assets/ui/3d-actions/ui_3d_scene_find_home_egg_96_v01.webp';
+const CHAT_ENTRY_ICON_FALLBACK = '/assets/ui/3d-actions/ui_3d_scene_find_home_egg_96_v01.png';
 
 function chatEntryIcon(prototype) {
   return CHAT_ENTRY_ICONS[String(prototype || '')] || CHAT_ENTRY_ICON_FALLBACK;

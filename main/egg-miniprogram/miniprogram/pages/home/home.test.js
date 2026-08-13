@@ -296,8 +296,8 @@ global.wx = {
   vibrateShort(opts) { vibrateCalls.push(opts); },
   hideTabBar() {},
   createVideoContext() { return { play: () => {} }; },
-  getSystemInfoSync() { return { windowWidth: 375, statusBarHeight: 44, pixelRatio: 2 }; },
-  getWindowInfo() { return { windowWidth: 375, statusBarHeight: 44, pixelRatio: 2 }; },
+  getSystemInfoSync() { return { windowWidth: 375, windowHeight: 667, statusBarHeight: 44, pixelRatio: 2 }; },
+  getWindowInfo() { return { windowWidth: 375, windowHeight: 667, statusBarHeight: 44, pixelRatio: 2 }; },
   getMenuButtonBoundingClientRect() { return { bottom: 88 }; },
   createSelectorQuery() {
     return {
@@ -464,6 +464,8 @@ async function run() {
     'post-hatch home must render the story scene as a full-screen background');
   assert.ok(homeTemplate.includes('class="story-track"'),
     'post-hatch home must wrap the story scene in a draggable track');
+  assert.ok(homeTemplate.indexOf('class="story-track"') > homeTemplate.indexOf('</scroll-view>'),
+    'story track must live outside the scroll-view so the fixed background is not clipped into white borders');
   assert.ok(homeTemplate.includes('bindtouchmove="onStoryDragMove"'),
     'post-hatch home must handle drag gestures for the story background');
   assert.ok(!homeTemplate.includes('class="state-card"'),
@@ -1311,6 +1313,26 @@ async function run() {
   pageEggIcon.onLoad();
   pageEggIcon.onShow();
   assert.ok(pageEggIcon.data.storyChatIcon.includes('find_home_egg'), 'unknown prototype falls back to the egg icon');
+
+  // 33. 背景图加载后按真实宽高比扩展轨道，整张图任何区域都能拖到
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pagePano = makePage();
+  pagePano.onLoad();
+  pagePano.onShow();
+  pagePano.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/pano.png' });
+  // 2823x1672 全景，屏高 667 → 轨道宽 round(667 * 2823/1672) = 1126
+  pagePano.onStoryBgLoad({ detail: { width: 2823, height: 1672 } });
+  assert.strictEqual(pagePano.data.storyTrackWidthPx, 1126, 'track width follows the image aspect ratio');
+  assert.ok(pagePano.data.storyTrackWidthStyle.includes('width:1126px'), 'track width style written');
+  assert.ok(pagePano.data.storyWindowHotspotStyle.includes('left:878px'), 'window hotspot repositioned to 78% of the track');
+  pagePano.onStoryDragStart({ touches: [{ clientX: 800 }] });
+  pagePano.onStoryDragMove({ touches: [{ clientX: 0 }] });
+  assert.strictEqual(pagePano.data.storyScrollX, -751, 'drag range extends to track width minus one screen (1126-375)');
+  // 竖图（宽<高）：轨道不窄于屏宽，不可拖
+  pagePano.onStoryBgLoad({ detail: { width: 600, height: 1200 } });
+  assert.strictEqual(pagePano.data.storyTrackWidthPx, 375, 'portrait image falls back to one screen width without drag');
 
   console.log('home.test.js: ALL PASS');
 }

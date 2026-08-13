@@ -90,14 +90,9 @@
         </view>
       </view>
 
-      <!-- 破壳后：故事场景全屏背景（可横向拖拽）+ 保留原有宠物展示 -->
+      <!-- 破壳后：保留原有宠物展示（故事背景等 fixed 层在 scroll-view 外，见页面底部） -->
       <view wx:else class="pet-view {{storyImageUrl ? 'pet-view--story' : ''}}"
             bindtouchstart="onStoryDragStart" bindtouchmove="onStoryDragMove" bindtouchend="onStoryDragEnd" bindtouchcancel="onStoryDragEnd">
-        <view wx:if="{{storyImageUrl}}" class="story-track" style="transform: translateX({{storyScrollX}}px);">
-          <image class="story-bg" src="{{storyImageUrl}}" mode="aspectFill"></image>
-          <view class="story-bg-mask"></view>
-        </view>
-        <view wx:if="{{storyWindowAvailable}}" class="story-window-hotspot" style="transform: translateX({{storyScrollX}}px);" aria-role="button" aria-label="看看窗外的风景" bindtap="onStoryWindowTap"></view>
         <view class="top-row">
           <view>
             <text class="eyebrow">{{pet.petType}} · 已破壳</text>
@@ -112,20 +107,29 @@
             <pet-avatar wx:elif="{{!storyImageUrl}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
           </view>
         </view>
-
-        <view wx:if="{{dailyStatus}}" class="status-daily">
-          <text class="status-meta">今日状态 · {{dailyStatus.mood}}</text>
-          <text class="status-line">{{dailyStatus.line}}</text>
-        </view>
-
-        <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图 -->
-        <view class="story-chat-entry">
-          <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
-            <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFit" />
-          </view>
-        </view>
       </view>
     </scroll-view>
+
+    <!-- 破壳后故事场景 fixed 层：移出 scroll-view，避免滚动容器裁剪/偏移造成白边 -->
+    <block wx:if="{{pet && stage === 'hatched'}}">
+      <view wx:if="{{storyImageUrl}}" class="story-track" style="{{storyTrackWidthStyle}}transform: translateX({{storyScrollX}}px);">
+        <image class="story-bg" src="{{storyImageUrl}}" mode="aspectFill" style="{{storyTrackWidthStyle}}" bindload="onStoryBgLoad"></image>
+        <view class="story-bg-mask" style="{{storyTrackWidthStyle}}"></view>
+      </view>
+      <view wx:if="{{storyWindowAvailable}}" class="story-window-hotspot" style="{{storyWindowHotspotStyle}}transform: translateX({{storyScrollX}}px);" aria-role="button" aria-label="看看窗外的风景" bindtap="onStoryWindowTap"></view>
+
+      <view wx:if="{{dailyStatus}}" class="status-daily">
+        <text class="status-meta">今日状态 · {{dailyStatus.mood}}</text>
+        <text class="status-line">{{dailyStatus.line}}</text>
+      </view>
+
+      <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图 -->
+      <view class="story-chat-entry">
+        <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
+          <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFit" />
+        </view>
+      </view>
+    </block>
   </block>
 
   <view wx:if="{{showPhoneAuthorization}}" class="phone-auth-mask" catchtap="onClosePhoneAuthorization">

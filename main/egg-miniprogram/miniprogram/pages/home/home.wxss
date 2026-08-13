@@ -14,16 +14,17 @@
 .friend-invite-title { display: block; font-size: 30rpx; font-weight: 600; color: #002900; }
 .friend-invite-copy { display: block; margin: 10rpx 0 22rpx; font-size: 24rpx; color: #6D6B65; }
 .pet-view { padding-bottom: 30rpx; }
-/* 破壳后故事场景：故事引擎场景图作全屏背景（200vw 轨道可横向拖拽），原有内容浮于其上 */
-.pet-view--story { position: relative; z-index: 0; min-height: 100vh; }
+/* 破壳后故事场景：故事引擎场景图作全屏背景（轨道可横向拖拽），原有内容浮于其上；
+   fixed 层置于 scroll-view 外避免裁剪白边，内容层 z-index 1 压住背景轨道 */
+.pet-view--story { position: relative; z-index: 1; min-height: 100vh; }
 .story-track { position: fixed; z-index: 0; top: 0; left: 0; width: 200vw; height: 100vh; will-change: transform; }
 .story-bg { display: block; width: 200vw; height: 100vh; }
 .story-bg-mask { position: absolute; z-index: 1; top: 0; left: 0; width: 200vw; height: 100vh; pointer-events: none; background: linear-gradient(180deg, rgba(22,31,24,.30), rgba(22,31,24,0) 30%, rgba(22,31,24,0) 60%, rgba(22,31,24,.34)); }
 .pet-view--story .top-row, .pet-view--story .egg-zone { position: relative; z-index: 2; }
 .pet-view--story .eyebrow { color: rgba(255,255,255,.88); text-shadow: 0 2rpx 10rpx rgba(22,31,24,.5); }
 .pet-view--story .pet-name--plain { color: #FFF; text-shadow: 0 2rpx 12rpx rgba(22,31,24,.55); }
-/* 卧室窗户热区：与轨道右半屏的窗户位置对齐（200vw 轨道 right:3% width:19% 换算为视口坐标），
-   独立置于内容层之上；用与轨道相同的 translateX 跟随拖拽 */
+/* 卧室窗户热区：轨道 right:3% width:19% 位置（200vw 兜底值换算为视口坐标），
+   图片加载后由 onStoryBgLoad 按真实轨道宽重写 left/width；独立置于内容层之上；用与轨道相同的 translateX 跟随拖拽 */
 .story-window-hotspot { position: fixed; z-index: 4; top: 15vh; left: 156vw; width: 38vw; height: 32vh; border-radius: 24rpx; will-change: transform; }
 /* 左下角聊天入口：静态项目同款 112rpx 圆形玻璃质感按钮，内嵌 72rpx 原型 icon */
 .story-chat-entry { position: fixed; z-index: 4; left: 24rpx; bottom: calc(24rpx + env(safe-area-inset-bottom)); }

@@ -101,8 +101,13 @@ Page({
     storyWindowAvailable: false,
     storyWindowVisible: false,
     storyWindowOriginStyle: '',
-    // 故事背景横向拖拽位移（px），轨道宽 200vw，范围 [-屏宽, 0]
+    // 故事背景横向拖拽位移（px），轨道宽按图片真实宽高比自适应，范围 [屏宽-轨道宽, 0]
     storyScrollX: 0,
+    // 故事轨道宽度样式（onStoryBgLoad 后按图片宽高比写入，空串时用 WXSS 的 200vw 兜底）
+    storyTrackWidthPx: 0,
+    storyTrackWidthStyle: '',
+    // 窗户热区位置样式（随轨道宽按比例换算，空串时用 WXSS 的 200vw 比例兜底）
+    storyWindowHotspotStyle: '',
     // 左下角聊天入口 icon（按原型选图）
     storyChatIcon: CHAT_ENTRY_ICON_FALLBACK,
     // 陪伴入口图标数据
@@ -570,17 +575,48 @@ Page({
     this._storyDrag = null;
   },
 
-  // 轨道宽 200vw，最大平移量为一屏宽；惰性读取并缓存
-  _storyMaxScrollPx() {
-    if (this._storyMaxScroll == null) {
+  // 视口尺寸惰性读取并缓存；windowHeight 缺失时兜底 667
+  _storyViewport() {
+    if (!this._storyViewportSize) {
       try {
         const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
-        this._storyMaxScroll = Math.max(0, Number(info.windowWidth || 0));
+        this._storyViewportSize = {
+          width: Math.max(0, Number(info.windowWidth || 0)),
+          height: Math.max(0, Number(info.windowHeight || 0)) || 667
+        };
       } catch (error) {
-        this._storyMaxScroll = 0;
+        this._storyViewportSize = { width: 0, height: 667 };
       }
     }
-    return this._storyMaxScroll;
+    return this._storyViewportSize;
+  },
+
+  // 最大平移量 = 轨道宽 - 屏宽；图片未加载完成前按 200vw 兜底
+  _storyMaxScrollPx() {
+    const viewport = this._storyViewport();
+    const trackWidth = this.data.storyTrackWidthPx || viewport.width * 2;
+    return Math.max(0, trackWidth - viewport.width);
+  },
+
+  // 背景图加载完成：按真实宽高比铺满一屏高计算轨道宽，整张图任何区域都可拖拽到达
+  onStoryBgLoad(event) {
+    const detail = (event && event.detail) || {};
+    const imageWidth = Number(detail.width || 0);
+    const imageHeight = Number(detail.height || 0);
+    if (!imageWidth || !imageHeight) return;
+    const viewport = this._storyViewport();
+    const trackWidth = Math.max(viewport.width, Math.round(viewport.height * imageWidth / imageHeight));
+    if (trackWidth === this.data.storyTrackWidthPx) return;
+    const maxShift = Math.max(0, trackWidth - viewport.width);
+    // 窗户热区按轨道比例（right:3% width:19%）换算成像素，跟随轨道宽
+    const hotspotWidth = Math.round(trackWidth * 0.19);
+    const hotspotLeft = Math.round(trackWidth * 0.78);
+    this.setData({
+      storyTrackWidthPx: trackWidth,
+      storyTrackWidthStyle: `width:${trackWidth}px;`,
+      storyWindowHotspotStyle: `left:${hotspotLeft}px;width:${hotspotWidth}px;`,
+      storyScrollX: Math.max(-maxShift, Math.min(0, this.data.storyScrollX))
+    });
   },
 
   onAddDevice() {

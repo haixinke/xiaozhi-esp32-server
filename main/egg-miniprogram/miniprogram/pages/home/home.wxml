@@ -90,8 +90,14 @@
         </view>
       </view>
 
-      <!-- 破壳后：保留原有宠物展示 -->
-      <view wx:else class="pet-view">
+      <!-- 破壳后：故事场景全屏背景（可横向拖拽）+ 保留原有宠物展示 -->
+      <view wx:else class="pet-view {{storyImageUrl ? 'pet-view--story' : ''}}"
+            bindtouchstart="onStoryDragStart" bindtouchmove="onStoryDragMove" bindtouchend="onStoryDragEnd" bindtouchcancel="onStoryDragEnd">
+        <view wx:if="{{storyImageUrl}}" class="story-track" style="transform: translateX({{storyScrollX}}px);">
+          <image class="story-bg" src="{{storyImageUrl}}" mode="aspectFill"></image>
+          <view class="story-bg-mask"></view>
+        </view>
+        <view wx:if="{{storyWindowAvailable}}" class="story-window-hotspot" style="transform: translateX({{storyScrollX}}px);" aria-role="button" aria-label="看看窗外的风景" bindtap="onStoryWindowTap"></view>
         <view class="top-row">
           <view>
             <text class="eyebrow">{{pet.petType}} · 已破壳</text>
@@ -99,11 +105,11 @@
           </view>
         </view>
 
-        <view class="egg-zone" bindtap="onOpenProfile">
+        <view class="egg-zone">
           <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
           <view class="scene-or-avatar">
-            <image wx:if="{{pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
-            <pet-avatar wx:else pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
+            <image wx:if="{{!storyImageUrl && pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
+            <pet-avatar wx:elif="{{!storyImageUrl}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
           </view>
         </view>
 
@@ -167,6 +173,15 @@
     origin-style="{{dailyWindowOriginStyle}}"
     bind:close="onDailyWindowClosed"
     bind:retry="onDailyWindowRetry"
+  />
+
+  <!-- 破壳后卧室窗景弹层：故事引擎“窗户”标签图 -->
+  <daily-window-detail
+    visible="{{storyWindowVisible}}"
+    image="{{storyTagImageUrl}}"
+    origin-style="{{storyWindowOriginStyle}}"
+    bind:close="onStoryWindowClosed"
+    bind:retry="onStoryWindowRetry"
   />
 
   <!-- 涂鸦编辑器（孵化期场景内嵌） -->

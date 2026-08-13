@@ -9,6 +9,8 @@ const originalPage = global.Page;
 const originalWx = global.wx;
 const originalSetTimeout = global.setTimeout;
 const originalClearTimeout = global.clearTimeout;
+const originalSetInterval = global.setInterval;
+const originalClearInterval = global.clearInterval;
 const originalGetApp = global.getApp;
 
 let pageConfig;
@@ -67,6 +69,15 @@ let lastSaveDoodleShellPetId = null;
 let lastSaveDoodleShellOperations = null;
 let getDoodleShellResult = null;
 let getDoodleShellCalls = 0;
+let storyStateResult = null;
+let storyStateError = null;
+let getStoryStateCalls = 0;
+let lastStoryStatePetId = null;
+let intervalDelay = null;
+let intervalCallback = null;
+let intervalIdSequence = 555;
+let clearedIntervals = [];
+let selectorRect = { left: 200, top: 120, width: 130, height: 220 };
 
 const FIXED_TIMESTAMP = 1754880000000;
 
@@ -237,6 +248,15 @@ const doodleApiMock = {
   }
 };
 
+const storyApiMock = {
+  getStoryState: async (petId) => {
+    getStoryStateCalls += 1;
+    lastStoryStatePetId = petId;
+    if (storyStateError) throw storyStateError;
+    return storyStateResult;
+  }
+};
+
 const app = {
   globalData: { authReady: null },
   async ensureLogin() {
@@ -259,6 +279,7 @@ Module._load = function (request, parent, isMain) {
     if (request === '../../utils/incubation-environment') return incubationEnvMock;
     if (request === '../../utils/environment-state') return environmentStateMock;
     if (request === '../../utils/doodle-api') return doodleApiMock;
+    if (request === '../../utils/story-api') return storyApiMock;
     if (request === '../../utils/life-scenes') return { getSceneKeyFromUrl: () => '' };
     if (request === '../../config/pre-hatch-assets') return preHatchAssetsMock;
   }
@@ -277,7 +298,15 @@ global.wx = {
   createVideoContext() { return { play: () => {} }; },
   getSystemInfoSync() { return { windowWidth: 375, statusBarHeight: 44, pixelRatio: 2 }; },
   getWindowInfo() { return { windowWidth: 375, statusBarHeight: 44, pixelRatio: 2 }; },
-  getMenuButtonBoundingClientRect() { return { bottom: 88 }; }
+  getMenuButtonBoundingClientRect() { return { bottom: 88 }; },
+  createSelectorQuery() {
+    return {
+      in() { return this; },
+      select() { return this; },
+      boundingClientRect(callback) { callback(selectorRect); return this; },
+      exec() {}
+    };
+  }
 };
 global.setTimeout = (callback, delay) => {
   timerCallback = callback;
@@ -286,6 +315,13 @@ global.setTimeout = (callback, delay) => {
   return id;
 };
 global.clearTimeout = (id) => { clearedTimers.push(id); };
+global.setInterval = (callback, delay) => {
+  intervalCallback = callback;
+  intervalDelay = delay;
+  const id = intervalIdSequence++;
+  return id;
+};
+global.clearInterval = (id) => { clearedIntervals.push(id); };
 
 function makePage() {
   return {
@@ -355,6 +391,15 @@ function resetScenario() {
   lastSaveDoodleShellOperations = null;
   getDoodleShellResult = null;
   getDoodleShellCalls = 0;
+  storyStateResult = null;
+  storyStateError = null;
+  getStoryStateCalls = 0;
+  lastStoryStatePetId = null;
+  intervalDelay = null;
+  intervalCallback = null;
+  intervalIdSequence = 555;
+  clearedIntervals = [];
+  selectorRect = { left: 200, top: 120, width: 130, height: 220 };
 }
 
 function requirePetStage(stage, options = {}) {
@@ -415,6 +460,18 @@ async function run() {
     'home.wxml must render the naming sheet');
   assert.ok(homeTemplate.includes('maxlength="10"'),
     'the naming input keeps the 10 character limit');
+  assert.ok(homeTemplate.includes('class="story-bg"'),
+    'post-hatch home must render the story scene as a full-screen background');
+  assert.ok(homeTemplate.includes('class="story-track"'),
+    'post-hatch home must wrap the story scene in a draggable track');
+  assert.ok(homeTemplate.includes('bindtouchmove="onStoryDragMove"'),
+    'post-hatch home must handle drag gestures for the story background');
+  assert.ok(homeTemplate.includes('image="{{storyTagImageUrl}}"'),
+    'post-hatch home must feed the story window tag image into the window detail layer');
+  assert.ok(homeTemplate.includes('bindtap="onStoryWindowTap"'),
+    'post-hatch home must render the story window hotspot');
+  assert.ok(homeTemplate.includes('wx:if="{{storyWindowAvailable}}"'),
+    'the story window hotspot must be gated by storyWindowAvailable');
 
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
@@ -1071,6 +1128,157 @@ async function run() {
   pageTesterDoodle.onSceneTesterToggle();
   assert.strictEqual(pageTesterDoodle.data.sceneTesterOpen, false, 'scene tester stays closed while doodle editor is open');
 
+  // ===== 破壳后故事场景断言 =====
+  // 22. hatched：拉取故事状态写入场景字段，并按 10 分钟间隔轮询
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched', { sceneUrl: 'https://oss.eggbabe.com/scene/home.png' });
+  storyStateResult = {
+    bigSceneName: '在家', smallSceneName: '卧室',
+    imageUrl: 'https://oss.eggbabe.com/story/bedroom.png',
+    tagImageUrl: 'https://oss.eggbabe.com/story/window.png'
+  };
+  const pageStory = makePage();
+  pageStory.onLoad();
+  pageStory.onShow();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(getStoryStateCalls >= 1, true, 'hatched home loads the story state');
+  assert.strictEqual(lastStoryStatePetId, 'pet-001', 'story state is queried by pet id');
+  assert.strictEqual(pageStory.data.storyImageUrl, 'https://oss.eggbabe.com/story/bedroom.png', 'story image url drives the background');
+  assert.strictEqual(pageStory.data.storyTagImageUrl, 'https://oss.eggbabe.com/story/window.png', 'story tag image url stored');
+  assert.strictEqual(pageStory.data.storyWindowAvailable, true, 'home bedroom with a tag image enables the window hotspot');
+  assert.strictEqual(intervalDelay, 600000, 'story state refreshes every 10 minutes');
+  assert.ok(pageStory.storyTimer, 'story refresh interval is active');
+
+  // 23. 窗户可用条件：非卧室、非在家、无窗景图均不可用
+  const windowOffCases = [
+    { bigSceneName: '在家', smallSceneName: '客厅', imageUrl: 'u', tagImageUrl: 't' },
+    { bigSceneName: '户外', smallSceneName: '卧室', imageUrl: 'u', tagImageUrl: 't' },
+    { bigSceneName: '在家', smallSceneName: '卧室', imageUrl: 'u', tagImageUrl: null }
+  ];
+  for (const state of windowOffCases) {
+    resetScenario();
+    cachedSession = { userId: 42, hasPhone: true };
+    requirePetStage('hatched');
+    storyStateResult = state;
+    const pageWindowOff = makePage();
+    pageWindowOff.onLoad();
+    pageWindowOff.onShow();
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.strictEqual(pageWindowOff.data.storyWindowAvailable, false,
+      `window hotspot must stay off for ${state.bigSceneName}/${state.smallSceneName}/tag=${state.tagImageUrl}`);
+  }
+
+  // 24. 后端返回 null（无激活状态）：场景字段清空
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  storyStateResult = null;
+  const pageStoryEmpty = makePage();
+  pageStoryEmpty.onLoad();
+  pageStoryEmpty.onShow();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(pageStoryEmpty.data.storyImageUrl, '', 'null story state clears the background');
+  assert.strictEqual(pageStoryEmpty.data.storyWindowAvailable, false, 'null story state disables the window hotspot');
+
+  // 25. 破壳前：不拉取故事状态
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching');
+  const pagePreHatchStory = makePage();
+  pagePreHatchStory.onLoad();
+  pagePreHatchStory.onShow();
+  assert.strictEqual(getStoryStateCalls, 0, 'pre-hatch home does not query the story state');
+  assert.strictEqual(pagePreHatchStory.data.storyImageUrl, '', 'pre-hatch home keeps story fields empty');
+
+  // 26. 点击窗户热区：弹层打开并携带热区原点；关闭后复原
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageStoryWindow = makePage();
+  pageStoryWindow.onLoad();
+  pageStoryWindow.onShow();
+  pageStoryWindow.setData({ storyWindowAvailable: true, storyTagImageUrl: 'https://oss.eggbabe.com/story/window.png' });
+  pageStoryWindow.onStoryWindowTap();
+  assert.strictEqual(pageStoryWindow.data.storyWindowVisible, true, 'window tap opens the story window layer');
+  assert.ok(pageStoryWindow.data.storyWindowOriginStyle.includes('--daily-window-origin-left:200px'),
+    'origin style captures the hotspot rect');
+  pageStoryWindow.onStoryWindowClosed();
+  assert.strictEqual(pageStoryWindow.data.storyWindowVisible, false, 'closing hides the story window layer');
+
+  // 27. 窗户不可用时不打开弹层
+  pageStoryWindow.setData({ storyWindowAvailable: false });
+  pageStoryWindow.onStoryWindowTap();
+  assert.strictEqual(pageStoryWindow.data.storyWindowVisible, false, 'window tap does nothing when the hotspot is unavailable');
+
+  // 28. onHide/onUnload 清理故事轮询定时器
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageStoryLifecycle = makePage();
+  pageStoryLifecycle.onLoad();
+  pageStoryLifecycle.onShow();
+  const storyTimerId = pageStoryLifecycle.storyTimer;
+  assert.ok(storyTimerId, 'story interval is set after show');
+  pageStoryLifecycle.onHide();
+  assert.ok(clearedIntervals.includes(storyTimerId), 'onHide clears the story interval');
+  pageStoryLifecycle.onUnload();
+  assert.strictEqual(pageStoryLifecycle.storyTimer, null, 'onUnload leaves the story interval cleared');
+
+  // 29. 拉取失败保留旧场景
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageStoryFail = makePage();
+  pageStoryFail.onLoad();
+  pageStoryFail.onShow();
+  await Promise.resolve();
+  await Promise.resolve();
+  pageStoryFail.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/old.png' });
+  storyStateError = new Error('network unavailable');
+  await pageStoryFail.loadStoryState();
+  assert.strictEqual(pageStoryFail.data.storyImageUrl, 'https://oss.eggbabe.com/story/old.png',
+    'a failed story refresh keeps the previous scene');
+
+  // 30. 背景横向拖拽：超过阈值才平移，范围钳制在 [-屏宽, 0]
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageDrag = makePage();
+  pageDrag.onLoad();
+  pageDrag.onShow();
+  pageDrag.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/pano.png' });
+  pageDrag.onStoryDragStart({ touches: [{ clientX: 300 }] });
+  pageDrag.onStoryDragMove({ touches: [{ clientX: 295 }] });
+  assert.strictEqual(pageDrag.data.storyScrollX, 0, 'movement below the threshold does not drag the background');
+  pageDrag.onStoryDragMove({ touches: [{ clientX: 100 }] });
+  assert.strictEqual(pageDrag.data.storyScrollX, -200, 'drag translates the track by the gesture delta');
+  pageDrag.onStoryDragMove({ touches: [{ clientX: -500 }] });
+  assert.strictEqual(pageDrag.data.storyScrollX, -375, 'drag is clamped to one screen width (mock windowWidth 375)');
+  pageDrag.onStoryDragMove({ touches: [{ clientX: 900 }] });
+  assert.strictEqual(pageDrag.data.storyScrollX, 0, 'drag is clamped at the right edge');
+  pageDrag.onStoryDragEnd();
+
+  // 31. 拖拽后的 tap 不触发窗户弹层；无故事背景时拖拽不生效
+  pageDrag.setData({ storyWindowAvailable: true, storyTagImageUrl: 'https://oss.eggbabe.com/story/window.png' });
+  pageDrag.onStoryDragStart({ touches: [{ clientX: 300 }] });
+  pageDrag.onStoryDragMove({ touches: [{ clientX: 100 }] });
+  pageDrag.onStoryDragEnd();
+  pageDrag.onStoryWindowTap();
+  assert.strictEqual(pageDrag.data.storyWindowVisible, false, 'a tap after dragging does not open the window layer');
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageNoBg = makePage();
+  pageNoBg.onLoad();
+  pageNoBg.onShow();
+  pageNoBg.onStoryDragStart({ touches: [{ clientX: 300 }] });
+  pageNoBg.onStoryDragMove({ touches: [{ clientX: 100 }] });
+  assert.strictEqual(pageNoBg.data.storyScrollX, 0, 'no story background means no drag');
+
   console.log('home.test.js: ALL PASS');
 }
 
@@ -1081,6 +1289,8 @@ run().finally(() => {
   global.wx = originalWx;
   global.setTimeout = originalSetTimeout;
   global.clearTimeout = originalClearTimeout;
+  global.setInterval = originalSetInterval;
+  global.clearInterval = originalClearInterval;
   delete require.cache[pagePath];
 }).catch((error) => {
   console.error(error);

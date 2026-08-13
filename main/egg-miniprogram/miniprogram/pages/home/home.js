@@ -8,12 +8,20 @@ const shareInvite = require('../../utils/share-invite');
 const incubationEnv = require('../../utils/incubation-environment');
 const envState = require('../../utils/environment-state');
 const doodleApi = require('../../utils/doodle-api');
+const storyApi = require('../../utils/story-api');
 const { INTERACTION_ICONS, SCENE_OPTIONS } = require('../../config/pre-hatch-assets');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
 const SHARE_TITLE = '一起来养蛋宝宝吧';
 // 早教班解锁门槛：领养满 24 小时（过第一天）后开放
 const LEARN_UNLOCK_MIN_AGE_MS = 24 * 60 * 60 * 1000;
+// 破壳后故事场景轮询频率：与后端故事状态定时任务（每 10 分钟）保持一致
+const STORY_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+// 窗户弹层只在“在家”大场景的“卧室”小场景出现（硬编码产品约定）
+const STORY_WINDOW_BIG_SCENE = '在家';
+const STORY_WINDOW_SMALL_SCENE = '卧室';
+// 故事背景轨道宽 200vw，可横向拖拽查看左半屏；位移超过阈值才判定为拖拽，避免误伤点击
+const STORY_DRAG_THRESHOLD_PX = 12;
 
 const COMPANION_ACTIONS = [
   { key: 'wish', title: '许愿池', icon: INTERACTION_ICONS.wish },
@@ -75,6 +83,14 @@ Page({
     // 每日窗景弹层数据
     dailyWindowVisible: false,
     dailyWindowOriginStyle: '',
+    // 破壳后故事场景数据：来自故事引擎当前状态接口，10 分钟轮询
+    storyImageUrl: '',
+    storyTagImageUrl: '',
+    storyWindowAvailable: false,
+    storyWindowVisible: false,
+    storyWindowOriginStyle: '',
+    // 故事背景横向拖拽位移（px），轨道宽 200vw，范围 [-屏宽, 0]
+    storyScrollX: 0,
     // 陪伴入口图标数据
     companionActions: [],
     wishUnlocked: true,
@@ -195,16 +211,19 @@ Page({
     if (typeof this.getTabBar !== 'function') return;
     const tabBar = this.getTabBar();
     // 孵化/命名弹层/窗景详情打开时隐藏悬浮「我的」齿轮，避免遮挡
-    const hidden = !!(this.data.hatching || this.data.showNameSheet || this.data.dailyWindowVisible);
+    const hidden = !!(this.data.hatching || this.data.showNameSheet
+      || this.data.dailyWindowVisible || this.data.storyWindowVisible);
     if (tabBar) tabBar.setData({ selected: 0, hidden });
   },
 
   onHide() {
     this.clearEnvironmentTimer();
+    this.clearStoryTimer();
   },
 
   onUnload() {
     this.clearEnvironmentTimer();
+    this.clearStoryTimer();
     clearTimeout(this.cuddleTimer);
     clearTimeout(this.feedbackTimer);
     clearInterval(this.cuddleTicker);
@@ -318,6 +337,8 @@ Page({
     });
     // 刷新破壳前环境
     this.refreshEnvironment();
+    // 破壳后启动故事场景加载与 10 分钟轮询；破壳前清空
+    this.refreshStoryState(stage);
     // 破壳前未命名时自动弹出命名框，引导用户给蛋宝宝起名
     this.maybePromptPetName(pet, stage);
   },
@@ -406,6 +427,145 @@ Page({
       clearTimeout(this.environmentTimer);
       this.environmentTimer = null;
     }
+  },
+
+  // 破壳后故事场景：仅 hatched 阶段加载并启动 10 分钟轮询；其余阶段清空并停止
+  refreshStoryState(stage) {
+    if (stage !== 'hatched') {
+      this.clearStoryTimer();
+      if (this.data.storyImageUrl || this.data.storyTagImageUrl || this.data.storyWindowAvailable) {
+        this.setData({
+          storyImageUrl: '',
+          storyTagImageUrl: '',
+          storyWindowAvailable: false,
+          storyWindowVisible: false
+        });
+      }
+      return;
+    }
+    this.loadStoryState();
+    this.scheduleStoryRefresh();
+  },
+
+  // 拉取故事引擎当前状态；失败静默保留旧场景，宠物切换或回退到破壳前时丢弃过期结果
+  loadStoryState() {
+    const pet = this.data.pet;
+    if (!pet || !pet.id || this.data.stage !== 'hatched') return Promise.resolve();
+    const petId = String(pet.id);
+    return storyApi.getStoryState(pet.id)
+      .then((state) => {
+        const currentPet = this.data.pet;
+        if (!currentPet || String(currentPet.id) !== petId || this.data.stage !== 'hatched') return;
+        const imageUrl = state && typeof state.imageUrl === 'string' ? state.imageUrl : '';
+        const tagImageUrl = state && typeof state.tagImageUrl === 'string' ? state.tagImageUrl : '';
+        // 窗户弹层仅“在家”大场景 + “卧室”小场景 + 有窗景图时开放
+        const windowAvailable = !!(state
+          && state.bigSceneName === STORY_WINDOW_BIG_SCENE
+          && state.smallSceneName === STORY_WINDOW_SMALL_SCENE
+          && tagImageUrl);
+        this.setData({
+          storyImageUrl: imageUrl,
+          storyTagImageUrl: tagImageUrl,
+          storyWindowAvailable: windowAvailable,
+          storyWindowVisible: windowAvailable ? this.data.storyWindowVisible : false
+        });
+      })
+      .catch(() => {});
+  },
+
+  scheduleStoryRefresh() {
+    this.clearStoryTimer();
+    this.storyTimer = setInterval(() => this.loadStoryState(), STORY_REFRESH_INTERVAL_MS);
+  },
+
+  clearStoryTimer() {
+    if (this.storyTimer) {
+      clearInterval(this.storyTimer);
+      this.storyTimer = null;
+    }
+  },
+
+  // 点击卧室窗户热区：量出热区矩形作为弹层展开原点，打开窗景弹层
+  onStoryWindowTap() {
+    // 拖拽结束的 touchend 先于 tap 触发：本次手势是拖拽时不当作点窗户
+    if (this._storyDragMoved) {
+      this._storyDragMoved = false;
+      return;
+    }
+    if (!this.data.storyWindowAvailable || !this.data.storyTagImageUrl || this.data.storyWindowVisible) return;
+    const applyOrigin = (rect) => {
+      const origin = rect || { left: 0, top: 0, width: 1, height: 1 };
+      this.setData({
+        storyWindowVisible: true,
+        storyWindowOriginStyle: [
+          `--daily-window-origin-left:${Number(origin.left || 0)}px;`,
+          `--daily-window-origin-top:${Number(origin.top || 0)}px;`,
+          `--daily-window-origin-width:${Math.max(1, Number(origin.width || 1))}px;`,
+          `--daily-window-origin-height:${Math.max(1, Number(origin.height || 1))}px;`
+        ].join('')
+      });
+      this.syncTabBar();
+    };
+    if (!wx.createSelectorQuery) {
+      applyOrigin(null);
+      return;
+    }
+    wx.createSelectorQuery().in(this).select('.story-window-hotspot').boundingClientRect(applyOrigin).exec();
+  },
+
+  onStoryWindowClosed() {
+    this.setData({ storyWindowVisible: false });
+    this.syncTabBar();
+  },
+
+  // 窗景图加载失败：重置 visible 触发组件重新加载
+  onStoryWindowRetry() {
+    if (!this.data.storyTagImageUrl) return;
+    this.setData({ storyWindowVisible: false }, () => {
+      this.setData({ storyWindowVisible: true });
+      this.syncTabBar();
+    });
+  },
+
+  // 故事背景横向拖拽：页面级手势，轨道 200vw 通过 transform 平移；
+  // 位移超过阈值才进入拖拽，小幅移动不拦截，保证按钮与窗户热区的 tap 正常触发
+  onStoryDragStart(event) {
+    if (!this.data.storyImageUrl) return;
+    const touch = event && event.touches && event.touches[0];
+    if (!touch) return;
+    this._storyDragMoved = false;
+    this._storyDrag = { startX: Number(touch.clientX || 0), baseX: this.data.storyScrollX, moved: false };
+  },
+
+  onStoryDragMove(event) {
+    const drag = this._storyDrag;
+    if (!drag) return;
+    const touch = event && event.touches && event.touches[0];
+    if (!touch) return;
+    const delta = Number(touch.clientX || 0) - drag.startX;
+    if (!drag.moved && Math.abs(delta) < STORY_DRAG_THRESHOLD_PX) return;
+    drag.moved = true;
+    const maxShift = this._storyMaxScrollPx();
+    const next = Math.max(-maxShift, Math.min(0, drag.baseX + delta));
+    this.setData({ storyScrollX: next });
+  },
+
+  onStoryDragEnd() {
+    if (this._storyDrag) this._storyDragMoved = this._storyDrag.moved;
+    this._storyDrag = null;
+  },
+
+  // 轨道宽 200vw，最大平移量为一屏宽；惰性读取并缓存
+  _storyMaxScrollPx() {
+    if (this._storyMaxScroll == null) {
+      try {
+        const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+        this._storyMaxScroll = Math.max(0, Number(info.windowWidth || 0));
+      } catch (error) {
+        this._storyMaxScroll = 0;
+      }
+    }
+    return this._storyMaxScroll;
   },
 
   onAddDevice() {
@@ -678,10 +838,6 @@ Page({
         this._finishHatch(null);
       }
     })();
-  },
-
-  onOpenProfile() {
-    if (this.data.stage === 'hatched') wx.navigateTo({ url: '/pages/collection-card/collection-card?index=0' });
   },
 
   onOpenLifeScene() {

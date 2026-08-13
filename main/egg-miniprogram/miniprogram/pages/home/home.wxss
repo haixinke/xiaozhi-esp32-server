@@ -18,6 +18,17 @@
 .home-actions__chat { flex: 7 1 0; }
 .home-actions__scene { flex: 3 1 0; background: #F5F8ED; color: #002900; border: 1rpx solid #D9E3C2; }
 .pet-view { padding-bottom: 30rpx; }
+/* 破壳后故事场景：故事引擎场景图作全屏背景（200vw 轨道可横向拖拽），原有内容浮于其上 */
+.pet-view--story { position: relative; z-index: 0; min-height: 100vh; }
+.story-track { position: fixed; z-index: 0; top: 0; left: 0; width: 200vw; height: 100vh; will-change: transform; }
+.story-bg { display: block; width: 200vw; height: 100vh; }
+.story-bg-mask { position: absolute; z-index: 1; top: 0; left: 0; width: 200vw; height: 100vh; pointer-events: none; background: linear-gradient(180deg, rgba(22,31,24,.30), rgba(22,31,24,0) 30%, rgba(22,31,24,0) 60%, rgba(22,31,24,.34)); }
+.pet-view--story .top-row, .pet-view--story .egg-zone, .pet-view--story .state-card, .pet-view--story .status-daily, .pet-view--story .home-actions { position: relative; z-index: 2; }
+.pet-view--story .eyebrow { color: rgba(255,255,255,.88); text-shadow: 0 2rpx 10rpx rgba(22,31,24,.5); }
+.pet-view--story .pet-name--plain { color: #FFF; text-shadow: 0 2rpx 12rpx rgba(22,31,24,.55); }
+/* 卧室窗户热区：与轨道右半屏的窗户位置对齐（200vw 轨道 right:3% width:19% 换算为视口坐标），
+   独立置于内容层之上；用与轨道相同的 translateX 跟随拖拽 */
+.story-window-hotspot { position: fixed; z-index: 4; top: 15vh; left: 156vw; width: 38vw; height: 32vh; border-radius: 24rpx; will-change: transform; }
 .pet-view--incubating { position: relative; width: 100vw; height: 100vh; padding: 0; overflow: hidden; }
 .top-row { display: flex; justify-content: space-between; align-items: center; }
 .pet-view--incubating .top-row { position: absolute; z-index: 20; left: 34rpx; right: 34rpx; }

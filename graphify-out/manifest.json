@@ -5280,9 +5280,9 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1786523126.7180142,
-    "ast_hash": "5a32101fb64eec7b6229ee4af58981c1",
-    "semantic_hash": "5a32101fb64eec7b6229ee4af58981c1"
+    "mtime": 1786625591.446541,
+    "ast_hash": "3d32b544e1aebd39e763b74a2bb2553b",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/life-scenes.js": {
     "mtime": 1784964358.3383377,
@@ -5435,14 +5435,14 @@
     "semantic_hash": "6b420f51b109c3af164bcdd8821df1c0"
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1786523126.721181,
-    "ast_hash": "ffb90be573da2356e0940974ac9e5c1b",
-    "semantic_hash": "ffb90be573da2356e0940974ac9e5c1b"
+    "mtime": 1786626711.9427946,
+    "ast_hash": "0152979a097b6acac6c3a380197aa031",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1786523126.7206616,
-    "ast_hash": "966744f29e79ee027b1154380f19338b",
-    "semantic_hash": "966744f29e79ee027b1154380f19338b"
+    "mtime": 1786626585.6790354,
+    "ast_hash": "9f0938e2a6f674a67545572e4af5e545",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
     "mtime": 1786523126.7192185,
@@ -7472,6 +7472,16 @@
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/impl/StoryActionImageServiceImplTest.java": {
     "mtime": 1786610615.2948742,
     "ast_hash": "c442a7377650690114b6fceaf194e0e7",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/story-api.js": {
+    "mtime": 1786621925.221411,
+    "ast_hash": "17fb240facf3e13ba1cc766be09c76e9",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/story-api.test.js": {
+    "mtime": 1786621932.0831149,
+    "ast_hash": "3393668ffbddae16aae2871bd9c7215d",
     "semantic_hash": ""
   }
 }

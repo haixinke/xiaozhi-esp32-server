@@ -470,6 +470,8 @@ async function run() {
     'post-hatch home must not render the static stage text card');
   assert.ok(homeTemplate.includes('class="story-chat-entry"'),
     'post-hatch home must render the bottom-left chat entry icon');
+  assert.ok(homeTemplate.includes('src="{{storyChatIcon}}"'),
+    'chat entry icon must render the prototype-based image');
   assert.ok(!homeTemplate.includes('home-actions__chat'),
     'post-hatch home must not render the full-width chat button');
   assert.ok(homeTemplate.includes('image="{{storyTagImageUrl}}"'),
@@ -1284,6 +1286,31 @@ async function run() {
   pageNoBg.onStoryDragStart({ touches: [{ clientX: 300 }] });
   pageNoBg.onStoryDragMove({ touches: [{ clientX: 100 }] });
   assert.strictEqual(pageNoBg.data.storyScrollX, 0, 'no story background means no drag');
+
+  // 32. 聊天入口 icon 按原型选图：玉兔/锦鲤/未知兜底
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched', { prototype: '玉兔' });
+  const pageRabbitIcon = makePage();
+  pageRabbitIcon.onLoad();
+  pageRabbitIcon.onShow();
+  assert.ok(pageRabbitIcon.data.storyChatIcon.includes('find_home_jade_rabbit'), 'rabbit prototype picks the rabbit icon');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched', { prototype: '锦鲤' });
+  const pageKoiIcon = makePage();
+  pageKoiIcon.onLoad();
+  pageKoiIcon.onShow();
+  assert.ok(pageKoiIcon.data.storyChatIcon.includes('find_home_boon_koi'), 'koi prototype picks the koi icon');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched', { prototype: '未知兽' });
+  const pageEggIcon = makePage();
+  pageEggIcon.onLoad();
+  pageEggIcon.onShow();
+  assert.ok(pageEggIcon.data.storyChatIcon.includes('find_home_egg'), 'unknown prototype falls back to the egg icon');
 
   console.log('home.test.js: ALL PASS');
 }

@@ -118,10 +118,10 @@
           <text class="status-line">{{dailyStatus.line}}</text>
         </view>
 
-        <!-- 左下角聊天入口：与静态项目一致的圆形宠物 icon 按钮 -->
+        <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图 -->
         <view class="story-chat-entry">
           <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
-            <pet-avatar pet-type="{{pet.prototype}}" size="{{64}}"></pet-avatar>
+            <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFit" />
           </view>
         </view>
       </view>

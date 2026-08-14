@@ -2,7 +2,6 @@ const petStore = require('../../utils/pet-store');
 const auth = require('../../utils/auth');
 const { get } = require('../../utils/request');
 const wechatApi = require('../../utils/wechat-api');
-const sceneConfig = require('../../utils/life-scenes');
 const inviteApi = require('../../utils/invite-api');
 const shareInvite = require('../../utils/share-invite');
 const incubationEnv = require('../../utils/incubation-environment');
@@ -890,13 +889,5 @@ Page({
         this._finishHatch(null);
       }
     })();
-  },
-
-  onOpenLifeScene() {
-    if (this.data.stage !== 'hatched') return;
-    var sceneUrl = this.data.pet && this.data.pet.sceneUrl;
-    if (!sceneUrl) return;
-    var sceneKey = sceneConfig.getSceneKeyFromUrl(sceneUrl);
-    wx.navigateTo({ url: '/pages/life-scene/life-scene?scene=' + sceneKey });
   }
 });

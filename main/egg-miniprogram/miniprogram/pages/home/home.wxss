@@ -45,8 +45,6 @@
 .progress-ring { width: 86rpx; height: 86rpx; border-radius: 50%; border: 8rpx solid #DCE5C1; display: flex; align-items: center; justify-content: center; color: #54632C; font-size: 23rpx; font-weight: 600; }
 .egg-zone { position: relative; height: 600rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .egg-zone--incubating { width: 100vw; height: 100vh; margin: 0; }
-.scene-or-avatar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-.life-home-scene { position: relative; z-index: 2; width: 430rpx; height: 450rpx; border-radius: 42rpx; box-shadow: 0 26rpx 50rpx rgba(0,41,0,.16); }
 .feedback-bubble { position: absolute; z-index: 5; top: 48rpx; max-width: 480rpx; padding: 18rpx 26rpx; border-radius: 28rpx 28rpx 28rpx 8rpx; background: #FFF; box-shadow: 0 12rpx 36rpx rgba(0,41,0,.10); font-size: 25rpx; color: #3D4930; animation: bubbleIn .25s ease-out; }
 .feedback-bubble--incubating { z-index: 24; left: 50%; transform: translateX(-50%); }
 .cuddle-track { position: absolute; z-index: 24; bottom: 220rpx; left: 50%; margin-left: -140rpx; width: 280rpx; height: 8rpx; border-radius: 999rpx; overflow: hidden; background: rgba(255,255,255,.6); }

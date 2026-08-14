@@ -280,7 +280,6 @@ Module._load = function (request, parent, isMain) {
     if (request === '../../utils/environment-state') return environmentStateMock;
     if (request === '../../utils/doodle-api') return doodleApiMock;
     if (request === '../../utils/story-api') return storyApiMock;
-    if (request === '../../utils/life-scenes') return { getSceneKeyFromUrl: () => '' };
     if (request === '../../config/pre-hatch-assets') return preHatchAssetsMock;
   }
   return originalLoad.call(this, request, parent, isMain);

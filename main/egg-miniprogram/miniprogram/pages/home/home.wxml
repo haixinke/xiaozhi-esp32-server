@@ -102,10 +102,6 @@
 
         <view class="egg-zone">
           <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
-          <view class="scene-or-avatar">
-            <image wx:if="{{!storyImageUrl && pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
-            <pet-avatar wx:elif="{{!storyImageUrl}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
-          </view>
         </view>
       </view>
     </scroll-view>

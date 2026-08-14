@@ -83,7 +83,11 @@ public class StoryStateSelector {
             return StorySelectionResult.invalid();
         }
         StoryActionCandidate action = eligibleActions.get(random.nextInt(0, eligibleActions.size()));
-        StoryImageCandidate image = action.images().get(random.nextInt(0, action.images().size()));
+        // 主场景图只在非窗户图中等概率选择；窗户图仅供窗景快照，不能当主背景
+        List<StoryImageCandidate> mainImages = action.images().stream()
+                .filter(candidate -> !WINDOW_TAG.equals(candidate.tag()))
+                .toList();
+        StoryImageCandidate image = mainImages.get(random.nextInt(0, mainImages.size()));
         String caption = selectCaption(image.captions());
         // 选定动作内找 tag='窗户' 的图片 URL（当前时段候选图首张），供客户端渲染窗景
         String tagImageUrl = action.images().stream()
@@ -121,11 +125,11 @@ public class StoryStateSelector {
         return scene.actions().stream().anyMatch(this::isEligible);
     }
 
-    /** 动作可用性：时长区间合法（下限>=1 且上限>=下限）且至少有一张匹配图片 */
+    /** 动作可用性：时长区间合法（下限>=1 且上限>=下限）且至少有一张非窗户标签的主场景图 */
     private boolean isEligible(StoryActionCandidate action) {
         return action.durationMin() >= 1
                 && action.durationMax() >= action.durationMin()
-                && !action.images().isEmpty();
+                && action.images().stream().anyMatch(candidate -> !WINDOW_TAG.equals(candidate.tag()));
     }
 
     /**

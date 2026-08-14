@@ -193,17 +193,46 @@ class StoryStateSelectorTest {
 
     @Test
     void selectedStateCarriesWindowTagImageUrlWhenActionHasWindowImage() {
-        // 动作含一张 tag=窗户 的图片，选中后 tagImageUrl 应取该图 URL
+        // 动作含一张 tag=窗户 的图片，选中后 tagImageUrl 应取该图 URL，主图只能是非窗户图
         StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
         StoryImageCandidate normalImage = image("image-id", "", "https://example.com/image.png");
         StoryActionCandidate action = action("动作", 1, 1, normalImage, windowImage);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().imageUrl()).isEqualTo("https://example.com/image.png");
+        assertThat(result.state().tagImageUrl()).isEqualTo("https://example.com/window.png");
+    }
+
+    @Test
+    void mainImageNeverFallsBackToWindowTaggedImage() {
+        // 主图抽取范围不含窗户图：即使随机数指向窗户图原下标，主图也只能命中非窗户图
+        StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
+        StoryImageCandidate firstImage = image("first-id", "", "https://example.com/first.png");
+        StoryImageCandidate secondImage = image("second-id", "", "https://example.com/second.png");
+        StoryActionCandidate action = action("动作", 1, 1, firstImage, windowImage, secondImage);
         StoryStateSelector selector = selectorWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
 
         StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
 
         assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().imageUrl()).isEqualTo("https://example.com/second.png");
         assertThat(result.state().tagImageUrl()).isEqualTo("https://example.com/window.png");
+    }
+
+    @Test
+    void actionWithOnlyWindowTaggedImagesIsIneligible() {
+        // 动作只有窗户图时没有主图可用，视为配置失败而不是把窗景当主场景
+        StoryActionCandidate action = action("动作", 1, 1,
+                taggedImage("window-id", "窗户", "https://example.com/window.png"));
+
+        StorySelectionResult result = selectorWithRolls().selectInitial(List.of(scene("卧室", 100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.INVALID_CONFIGURATION);
     }
 
     @Test

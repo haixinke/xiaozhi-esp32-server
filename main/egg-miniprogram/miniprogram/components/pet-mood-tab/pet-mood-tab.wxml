@@ -1,0 +1,16 @@
+<view
+  class="pet-mood-tab pet-mood-tab--{{expanded ? 'expanded' : 'compact'}}"
+  aria-role="button"
+  aria-label="{{expanded ? petName + '，今日心情，' + moodLabel + '，' + moodText + '，点击收起' : petName + '，今日心情，' + moodLabel + '，点击查看完整心情'}}"
+  bindtap="onToggle"
+>
+  <text wx:if="{{nameInteractive}}" class="pet-mood-tab__name pet-mood-tab__name--interactive" catchtap="onNameTap">{{petName}}</text>
+  <text wx:else class="pet-mood-tab__name">{{petName}}</text>
+  <view class="pet-mood-tab__mood-summary">
+    <text class="pet-mood-tab__eyebrow">今日心情：</text>
+    <text class="pet-mood-tab__mood-label">{{moodLabel}}</text>
+  </view>
+  <view class="pet-mood-tab__sentence {{contentVisible ? 'pet-mood-tab__sentence--visible' : ''}}" aria-hidden="{{!contentVisible}}">
+    <text class="pet-mood-tab__text">{{moodText}}</text>
+  </view>
+</view>

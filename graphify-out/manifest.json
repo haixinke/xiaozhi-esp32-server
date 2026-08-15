@@ -5284,15 +5284,10 @@
     "ast_hash": "3d32b544e1aebd39e763b74a2bb2553b",
     "semantic_hash": ""
   },
-  "main/egg-miniprogram/miniprogram/utils/life-scenes.js": {
-    "mtime": 1784964358.3383377,
-    "ast_hash": "11060745f2ac88ab0dd44b2df8b8cd0f",
-    "semantic_hash": "11060745f2ac88ab0dd44b2df8b8cd0f"
-  },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
-    "mtime": 1785559690.4138978,
-    "ast_hash": "5442d7f2335d6f223f282310a0e16ed9",
-    "semantic_hash": "5442d7f2335d6f223f282310a0e16ed9"
+    "mtime": 1786628384.646885,
+    "ast_hash": "37ec1859808e821e7c5ae31277061e63",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/request.js": {
     "mtime": 1784964358.3391562,
@@ -5310,9 +5305,9 @@
     "semantic_hash": "f93043828dd68c996c6888b9c9fde406"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.js": {
-    "mtime": 1786523126.7245939,
-    "ast_hash": "1090bc10d0fc474f050ca315546a3c3f",
-    "semantic_hash": "1090bc10d0fc474f050ca315546a3c3f"
+    "mtime": 1786628349.8708036,
+    "ast_hash": "df086493304293aeaeadfc3a70f3ba01",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store-actions.test.js": {
     "mtime": 1786523126.7242892,
@@ -5345,9 +5340,9 @@
     "semantic_hash": "7cc11677593e89348fdd8de52818c1b2"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-api.js": {
-    "mtime": 1784964358.338701,
-    "ast_hash": "42a32fddbcfa8e615d64fb7720fa09c1",
-    "semantic_hash": "42a32fddbcfa8e615d64fb7720fa09c1"
+    "mtime": 1786628356.6817079,
+    "ast_hash": "524ad50ae8c5a4c2506b0af41d53ebd2",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/wechat-api.test.js": {
     "mtime": 1784964358.3394885,
@@ -5435,13 +5430,13 @@
     "semantic_hash": "6b420f51b109c3af164bcdd8821df1c0"
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1786626711.9427946,
-    "ast_hash": "0152979a097b6acac6c3a380197aa031",
+    "mtime": 1786672639.9135246,
+    "ast_hash": "b22b6431963ad0e35078648f3fef452f",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1786626585.6790354,
-    "ast_hash": "9f0938e2a6f674a67545572e4af5e545",
+    "mtime": 1786671556.5474236,
+    "ast_hash": "6717d82ad5a1061b7bf0b4c1720042d1",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -5468,11 +5463,6 @@
     "mtime": 1784964358.3364565,
     "ast_hash": "be03a2df3784436eff0cc106b6ceb2ce",
     "semantic_hash": "be03a2df3784436eff0cc106b6ceb2ce"
-  },
-  "main/egg-miniprogram/miniprogram/pages/life-scene/life-scene.js": {
-    "mtime": 1784964358.3314548,
-    "ast_hash": "62bf7382bae7fc20825e68ab771ac296",
-    "semantic_hash": "62bf7382bae7fc20825e68ab771ac296"
   },
   "main/egg-miniprogram/miniprogram/pages/collection-card/collection-card.test.js": {
     "mtime": 1786167262.1433125,
@@ -5810,9 +5800,9 @@
     "semantic_hash": "16610a4f8b8d31b8e79bfa2bbf238b72"
   },
   "main/xiaozhi-server/agent-base-prompt.txt": {
-    "mtime": 1785056323.0131164,
-    "ast_hash": "7e31b890bcd47a043d3bf07975bd583d",
-    "semantic_hash": "7e31b890bcd47a043d3bf07975bd583d"
+    "mtime": 1786689438.663179,
+    "ast_hash": "08a8fe15415e14417551792909440302",
+    "semantic_hash": ""
   },
   "main/xiaozhi-server/config_from_api.yaml": {
     "mtime": 1776309435.8597004,
@@ -6145,9 +6135,9 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/app.json": {
-    "mtime": 1786523126.7098389,
-    "ast_hash": "426c5b691997e09deeef232062301716",
-    "semantic_hash": "426c5b691997e09deeef232062301716"
+    "mtime": 1786672620.043484,
+    "ast_hash": "d3778ef2974ed4bb2af4666b32185a39",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/components/button/button.json": {
     "mtime": 1784964358.31847,
@@ -6336,11 +6326,6 @@
   },
   "main/egg-miniprogram/miniprogram/pages/lesson/lesson.json": {
     "mtime": 1784964358.3311505,
-    "ast_hash": "",
-    "semantic_hash": ""
-  },
-  "main/egg-miniprogram/miniprogram/pages/life-scene/life-scene.json": {
-    "mtime": 1784964358.3315048,
     "ast_hash": "",
     "semantic_hash": ""
   },
@@ -6745,8 +6730,8 @@
     "semantic_hash": "b899475675861e56f6683ae1a1186404"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/StoryStateSelector.java": {
-    "mtime": 1786615245.9222052,
-    "ast_hash": "02ccc72e9d44f10bf2c69efa455be8bd",
+    "mtime": 1786666025.9958022,
+    "ast_hash": "7dfe1b63508e75019f513a269f9a54f5",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/impl/PetStoryQueryServiceImpl.java": {
@@ -6935,8 +6920,8 @@
     "semantic_hash": "d49b70b7eb368ee71a550b29020aaa20"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/StoryStateSelectorTest.java": {
-    "mtime": 1786615372.6600478,
-    "ast_hash": "636a08bc217fc05c5b0563783636824f",
+    "mtime": 1786665998.9263093,
+    "ast_hash": "2d5bce789c0981d7011c82a3c9cd90a3",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/impl/PetStoryQueryServiceImplTest.java": {
@@ -7482,6 +7467,21 @@
   "main/egg-miniprogram/miniprogram/utils/story-api.test.js": {
     "mtime": 1786621932.0831149,
     "ast_hash": "3393668ffbddae16aae2871bd9c7215d",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/components/pet-mood-tab/pet-mood-tab.js": {
+    "mtime": 1786756631.130488,
+    "ast_hash": "140c91787208d757d5d6b8b8d5a4bcb9",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/components/room-clock/room-clock.js": {
+    "mtime": 1786757039.106983,
+    "ast_hash": "49456975d45b18539ad9bd34f5842b09",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/device-clock.js": {
+    "mtime": 1786756998.6408796,
+    "ast_hash": "311ed92c2eea0ade5b49b743ca4c7aba",
     "semantic_hash": ""
   }
 }

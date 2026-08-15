@@ -90,16 +90,9 @@
         </view>
       </view>
 
-      <!-- 破壳后：保留原有宠物展示（故事背景等 fixed 层在 scroll-view 外，见页面底部） -->
+      <!-- 破壳后：名字与今日心情由 fixed 层 pet-mood-tab 卡片承载（见页面底部），此处只保留场景与拖拽 -->
       <view wx:else class="pet-view {{storyImageUrl ? 'pet-view--story' : ''}}"
             bindtouchstart="onStoryDragStart" bindtouchmove="onStoryDragMove" bindtouchend="onStoryDragEnd" bindtouchcancel="onStoryDragEnd">
-        <view class="top-row">
-          <view>
-            <text class="eyebrow">{{pet.petType}} · 已破壳</text>
-            <text class="pet-name pet-name--plain">{{pet.name || '还没有名字'}}</text>
-          </view>
-        </view>
-
         <view class="egg-zone">
           <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
         </view>
@@ -114,9 +107,17 @@
       </view>
       <view wx:if="{{storyWindowAvailable}}" class="story-window-hotspot" style="{{storyWindowHotspotStyle}}transform: translateX({{storyScrollX}}px);" aria-role="button" aria-label="看看窗外的风景" bindtap="onStoryWindowTap"></view>
 
-      <view wx:if="{{dailyStatus}}" class="status-daily">
-        <text class="status-meta">今日状态 · {{dailyStatus.mood}}</text>
-        <text class="status-line">{{dailyStatus.line}}</text>
+      <!-- 左上角状态栈：心情卡片 + 房间时钟（点击切换指针/数字），置于 scroll-view 外避免拖拽手势冲突 -->
+      <view class="story-status-stack" style="top:{{nameTopPx}}px;">
+        <pet-mood-tab
+          wx:if="{{dailyStatus}}"
+          pet-name="{{pet.name || '还没有名字'}}"
+          mood-label="{{dailyStatus.mood}}"
+          mood-text="{{dailyStatus.line}}"
+          name-interactive="{{true}}"
+          bindnametap="onPetNameTap"
+        />
+        <room-clock />
       </view>
 
       <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图 -->

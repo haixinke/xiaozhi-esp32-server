@@ -24,8 +24,9 @@
 .story-bg { display: block; width: 200vw; height: 100vh; }
 .story-bg-mask { position: absolute; z-index: 1; top: 0; left: 0; width: 200vw; height: 100vh; pointer-events: none; background: linear-gradient(180deg, rgba(22,31,24,.30), rgba(22,31,24,0) 30%, rgba(22,31,24,0) 60%, rgba(22,31,24,.34)); }
 .pet-view--story .top-row, .pet-view--story .egg-zone { position: relative; z-index: 2; }
-.pet-view--story .eyebrow { color: rgba(255,255,255,.88); text-shadow: 0 2rpx 10rpx rgba(22,31,24,.5); }
-.pet-view--story .pet-name--plain { color: #FFF; text-shadow: 0 2rpx 12rpx rgba(22,31,24,.55); }
+/* 破壳后左上角状态栈（心情卡片 + 时钟）：fixed 定位避开 scroll-view 裁剪与背景拖拽手势，
+   竖向堆叠、子项自行响应点击，布局对齐静态项目 home-status-stack */
+.story-status-stack { position: fixed; z-index: 4; left: 24rpx; display: flex; flex-direction: column; align-items: flex-start; gap: 28rpx; max-width: calc(100vw - 48rpx); pointer-events: none; }
 /* 卧室窗户热区：轨道 right:3% width:19% 位置（200vw 兜底值换算为视口坐标），
    图片加载后由 onStoryBgLoad 按真实轨道宽重写 left/width；独立置于内容层之上；用与轨道相同的 translateX 跟随拖拽 */
 .story-window-hotspot { position: fixed; z-index: 4; top: 15vh; left: 156vw; width: 38vw; height: 32vh; border-radius: 24rpx; will-change: transform; }
@@ -37,9 +38,7 @@
 .pet-view--incubating { position: relative; width: 100vw; height: 100vh; padding: 0; overflow: hidden; }
 .top-row { display: flex; justify-content: space-between; align-items: center; }
 .pet-view--incubating .top-row { position: absolute; z-index: 20; left: 34rpx; right: 34rpx; }
-.eyebrow { display: block; font-size: 20rpx; letter-spacing: 2rpx; color: #829047; }
 .pet-name { display: block; margin-top: 10rpx; font-size: 42rpx; font-weight: 600; color: #1A1A1A; }
-.pet-name--plain { margin-top: 10rpx; }
 .pet-name-row { max-width: 440rpx; min-height: 64rpx; display: flex; align-items: center; padding: 0 22rpx; box-sizing: border-box; border: 1rpx solid rgba(239,235,220,.92); border-radius: 999rpx; background: rgba(255,252,243,.82); box-shadow: 0 8rpx 24rpx rgba(61,51,35,.12), inset 0 1rpx 0 rgba(255,255,255,.82); }
 .pet-name-row .pet-name { margin-top: 0; overflow: hidden; color: #294732; font-size: 34rpx; line-height: 1.15; letter-spacing: 1rpx; text-overflow: ellipsis; white-space: nowrap; }
 .progress-ring { width: 86rpx; height: 86rpx; border-radius: 50%; border: 8rpx solid #DCE5C1; display: flex; align-items: center; justify-content: center; color: #54632C; font-size: 23rpx; font-weight: 600; }
@@ -49,10 +48,6 @@
 .feedback-bubble--incubating { z-index: 24; left: 50%; transform: translateX(-50%); }
 .cuddle-track { position: absolute; z-index: 24; bottom: 220rpx; left: 50%; margin-left: -140rpx; width: 280rpx; height: 8rpx; border-radius: 999rpx; overflow: hidden; background: rgba(255,255,255,.6); }
 .cuddle-fill { height: 100%; border-radius: 999rpx; background: #9DB65B; transition: width .1s linear; }
-/* 今日状态 + 心情一句话：固定页面底部（避开左下角聊天按钮），黑色字体 */
-.status-daily { position: fixed; z-index: 2; left: 168rpx; right: 40rpx; bottom: calc(48rpx + env(safe-area-inset-bottom)); margin: 0; padding: 0; text-align: left; }
-.status-meta { display: block; font-size: 21rpx; line-height: 1.5; color: #1A1A1A; text-shadow: 0 1rpx 8rpx rgba(255,255,255,.65); }
-.status-line { display: block; margin-top: 8rpx; font-size: 28rpx; line-height: 1.55; color: #1A1A1A; text-shadow: 0 1rpx 8rpx rgba(255,255,255,.65); }
 .phone-auth-mask { position: fixed; z-index: 9998; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; padding: 48rpx; box-sizing: border-box; background: rgba(0,41,0,.42); }
 .phone-auth-dialog { width: 100%; padding: 52rpx 44rpx 34rpx; border-radius: 36rpx; box-sizing: border-box; background: #FFF; box-shadow: 0 24rpx 64rpx rgba(0,41,0,.18); text-align: center; }
 .phone-auth-title { display: block; font-size: 34rpx; font-weight: 600; color: #002900; }

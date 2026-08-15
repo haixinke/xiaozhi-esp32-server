@@ -105,7 +105,7 @@
         <image class="story-bg" src="{{storyImageUrl}}" mode="aspectFill" style="{{storyTrackWidthStyle}}" bindload="onStoryBgLoad"></image>
         <view class="story-bg-mask" style="{{storyTrackWidthStyle}}"></view>
       </view>
-      <view wx:if="{{storyWindowAvailable}}" class="story-window-hotspot" style="{{storyWindowHotspotStyle}}transform: translateX({{storyScrollX}}px);" aria-role="button" aria-label="看看窗外的风景" bindtap="onStoryWindowTap"></view>
+      <view wx:if="{{storyWindowAvailable}}" class="story-window-hotspot" style="{{storyWindowHotspotStyle}}transform: translateX({{storyScrollX}}px);" aria-role="button" aria-label="看看窗外的风景" bindtap="onStoryWindowTap" bindtouchstart="onStoryDragStart" bindtouchmove="onStoryDragMove" bindtouchend="onStoryDragEnd" bindtouchcancel="onStoryDragEnd"></view>
 
       <!-- 左上角状态栈：心情卡片 + 房间时钟（点击切换指针/数字），置于 scroll-view 外避免拖拽手势冲突 -->
       <view class="story-status-stack" style="top:{{nameTopPx}}px;">

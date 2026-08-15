@@ -652,9 +652,9 @@ Page({
     const trackWidth = Math.max(viewport.width, Math.round(viewport.height * imageWidth / imageHeight));
     if (trackWidth === this.data.storyTrackWidthPx) return;
     const maxShift = Math.max(0, trackWidth - viewport.width);
-    // 窗户热区按轨道比例（right:3% width:19%）换算成像素，跟随轨道宽
-    const hotspotWidth = Math.round(trackWidth * 0.19);
-    const hotspotLeft = Math.round(trackWidth * 0.78);
+    // 窗户热区按轨道比例（left:56% width:41%）换算成像素，跟随轨道宽；覆盖卧室背景图整扇飘窗
+    const hotspotWidth = Math.round(trackWidth * 0.41);
+    const hotspotLeft = Math.round(trackWidth * 0.56);
     this.setData({
       storyTrackWidthPx: trackWidth,
       storyTrackWidthStyle: `width:${trackWidth}px;`,

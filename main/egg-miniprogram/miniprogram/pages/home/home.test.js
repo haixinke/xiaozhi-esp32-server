@@ -1325,7 +1325,7 @@ async function run() {
   pagePano.onStoryBgLoad({ detail: { width: 2823, height: 1672 } });
   assert.strictEqual(pagePano.data.storyTrackWidthPx, 1126, 'track width follows the image aspect ratio');
   assert.ok(pagePano.data.storyTrackWidthStyle.includes('width:1126px'), 'track width style written');
-  assert.ok(pagePano.data.storyWindowHotspotStyle.includes('left:878px'), 'window hotspot repositioned to 78% of the track');
+  assert.ok(pagePano.data.storyWindowHotspotStyle.includes('left:631px'), 'window hotspot repositioned to 56% of the track');
   pagePano.onStoryDragStart({ touches: [{ clientX: 800 }] });
   pagePano.onStoryDragMove({ touches: [{ clientX: 0 }] });
   assert.strictEqual(pagePano.data.storyScrollX, -751, 'drag range extends to track width minus one screen (1126-375)');

@@ -29,7 +29,7 @@
 .story-status-stack { position: fixed; z-index: 4; left: 24rpx; display: flex; flex-direction: column; align-items: flex-start; gap: 28rpx; max-width: calc(100vw - 48rpx); pointer-events: none; }
 /* 卧室窗户热区：轨道 right:3% width:19% 位置（200vw 兜底值换算为视口坐标），
    图片加载后由 onStoryBgLoad 按真实轨道宽重写 left/width；独立置于内容层之上；用与轨道相同的 translateX 跟随拖拽 */
-.story-window-hotspot { position: fixed; z-index: 4; top: 15vh; left: 156vw; width: 38vw; height: 32vh; border-radius: 24rpx; will-change: transform; }
+.story-window-hotspot { position: fixed; z-index: 4; top: 5vh; left: 112vw; width: 82vw; height: 42vh; border-radius: 24rpx; will-change: transform; }
 /* 故事状态 caption toast：移植静态项目 scene-feedback-stack 的 system 深色 pill，
    固定 34vh 居中，180ms 淡入淡出；容器不拦截触摸，避免挡住背景拖拽 */
 .story-caption-toast { position: fixed; z-index: 70; top: 34vh; left: 40rpx; right: 40rpx; display: flex; justify-content: center; pointer-events: none; }

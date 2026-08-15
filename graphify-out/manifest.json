@@ -5430,13 +5430,13 @@
     "semantic_hash": "6b420f51b109c3af164bcdd8821df1c0"
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1786672639.9135246,
-    "ast_hash": "b22b6431963ad0e35078648f3fef452f",
+    "mtime": 1786758468.3392057,
+    "ast_hash": "6908f985e6ef5dca8b2b6add53c61fe8",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1786671556.5474236,
-    "ast_hash": "6717d82ad5a1061b7bf0b4c1720042d1",
+    "mtime": 1786758911.976019,
+    "ast_hash": "e41a55dac8401d0598d394209f5c1911",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {

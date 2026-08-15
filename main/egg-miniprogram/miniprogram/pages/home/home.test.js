@@ -1295,7 +1295,7 @@ async function run() {
   const pageRabbitIcon = makePage();
   pageRabbitIcon.onLoad();
   pageRabbitIcon.onShow();
-  assert.ok(pageRabbitIcon.data.storyChatIcon.includes('find_home_jade_rabbit'), 'rabbit prototype picks the rabbit icon');
+  assert.ok(pageRabbitIcon.data.storyChatIcon.includes('scene_chat_jade_rabbit'), 'rabbit prototype picks the rabbit chat icon');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -1303,7 +1303,7 @@ async function run() {
   const pageKoiIcon = makePage();
   pageKoiIcon.onLoad();
   pageKoiIcon.onShow();
-  assert.ok(pageKoiIcon.data.storyChatIcon.includes('find_home_boon_koi'), 'koi prototype picks the koi icon');
+  assert.ok(pageKoiIcon.data.storyChatIcon.includes('scene_chat_boon_koi'), 'koi prototype picks the koi chat icon');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -1332,6 +1332,44 @@ async function run() {
   // 竖图（宽<高）：轨道不窄于屏宽，不可拖
   pagePano.onStoryBgLoad({ detail: { width: 600, height: 1200 } });
   assert.strictEqual(pagePano.data.storyTrackWidthPx, 375, 'portrait image falls back to one screen width without drag');
+
+  // 34. 故事状态 caption toast：首弹 1800ms 后淡出；相同 caption 轮询不重弹；caption 变化再弹
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  storyStateResult = {
+    bigSceneName: '在家', smallSceneName: '卧室',
+    imageUrl: 'u', tagImageUrl: 't',
+    caption: '阳光正好，我在卧室发呆'
+  };
+  const pageCaption = makePage();
+  pageCaption.onLoad();
+  pageCaption.onShow();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(pageCaption.data.storyCaptionToastText, '阳光正好，我在卧室发呆', 'caption toast shows the story state caption');
+  assert.strictEqual(pageCaption.data.storyCaptionToastVisible, true, 'caption toast fades in');
+  assert.strictEqual(timerDelay, 1800, 'caption toast displays for 1800ms');
+  // 展示结束：先淡出，180ms 后卸载文本
+  timerCallback();
+  assert.strictEqual(pageCaption.data.storyCaptionToastVisible, false, 'caption toast fades out after 1800ms');
+  assert.strictEqual(timerDelay, 180, 'caption toast fade lasts 180ms');
+  timerCallback();
+  assert.strictEqual(pageCaption.data.storyCaptionToastText, '', 'caption toast text unmounted after fade');
+
+  // 相同 caption 再次轮询：不重弹、不动计时器
+  const clearedBeforeRepoll = clearedTimers.length;
+  await pageCaption.loadStoryState();
+  await Promise.resolve();
+  assert.strictEqual(pageCaption.data.storyCaptionToastText, '', 'same caption does not re-show the toast');
+  assert.strictEqual(clearedTimers.length, clearedBeforeRepoll, 'same caption does not touch toast timers');
+
+  // caption 变化：再次弹出
+  storyStateResult = { ...storyStateResult, caption: '有点困了，想小憩一下' };
+  await pageCaption.loadStoryState();
+  await Promise.resolve();
+  assert.strictEqual(pageCaption.data.storyCaptionToastText, '有点困了，想小憩一下', 'changed caption re-shows the toast');
+  assert.strictEqual(pageCaption.data.storyCaptionToastVisible, true, 'changed caption toast fades in again');
 
   console.log('home.test.js: ALL PASS');
 }

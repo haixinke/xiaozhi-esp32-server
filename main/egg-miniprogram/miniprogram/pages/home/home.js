@@ -21,15 +21,19 @@ const STORY_WINDOW_BIG_SCENE = '在家';
 const STORY_WINDOW_SMALL_SCENE = '卧室';
 // 故事背景轨道宽 200vw，可横向拖拽查看左半屏；位移超过阈值才判定为拖拽，避免误伤点击
 const STORY_DRAG_THRESHOLD_PX = 12;
-// 左下角聊天入口 icon：按宠物原型选图，与静态项目同一组 96px 素材；
+// 故事状态 caption 提示条：对齐静态项目 system toast，1800ms 展示 + 180ms 淡出
+const STORY_CAPTION_TOAST_DURATION_MS = 1800;
+const STORY_CAPTION_TOAST_FADE_MS = 180;
+// 左下角聊天入口 icon：按宠物原型选图，与静态项目 life-scene 页同一组素材
+// （玉兔/锦鲤为专用聊天 icon v02，未知原型兜底 find_home 蛋 p8 版）；
 // 必须用 PNG：部分真机（尤其 iOS）image 组件无法解码 webp，icon 会空白
 const CHAT_ENTRY_ICONS = {
-  '玉兔': '/assets/ui/3d-actions/ui_3d_scene_find_home_jade_rabbit_96_v01.png',
-  'YT': '/assets/ui/3d-actions/ui_3d_scene_find_home_jade_rabbit_96_v01.png',
-  '锦鲤': '/assets/ui/3d-actions/ui_3d_scene_find_home_boon_koi_96_v01.png',
-  'KOI': '/assets/ui/3d-actions/ui_3d_scene_find_home_boon_koi_96_v01.png'
+  '玉兔': '/assets/ui/3d-actions/ui_3d_scene_chat_jade_rabbit_96_v02.png',
+  'YT': '/assets/ui/3d-actions/ui_3d_scene_chat_jade_rabbit_96_v02.png',
+  '锦鲤': '/assets/ui/3d-actions/ui_3d_scene_chat_boon_koi_96_v02.png',
+  'KOI': '/assets/ui/3d-actions/ui_3d_scene_chat_boon_koi_96_v02.png'
 };
-const CHAT_ENTRY_ICON_FALLBACK = '/assets/ui/3d-actions/ui_3d_scene_find_home_egg_96_v01.png';
+const CHAT_ENTRY_ICON_FALLBACK = '/assets/ui/3d-actions/ui_3d_scene_find_home_egg_96_v01_p8_v01.png';
 
 function chatEntryIcon(prototype) {
   return CHAT_ENTRY_ICONS[String(prototype || '')] || CHAT_ENTRY_ICON_FALLBACK;
@@ -110,6 +114,9 @@ Page({
     storyWindowHotspotStyle: '',
     // 左下角聊天入口 icon（按原型选图）
     storyChatIcon: CHAT_ENTRY_ICON_FALLBACK,
+    // 故事状态 caption 提示条（toast）：状态变化时展示 1800ms 后淡出
+    storyCaptionToastText: '',
+    storyCaptionToastVisible: false,
     // 陪伴入口图标数据
     companionActions: [],
     wishUnlocked: true,
@@ -238,11 +245,13 @@ Page({
   onHide() {
     this.clearEnvironmentTimer();
     this.clearStoryTimer();
+    this.clearStoryCaptionToast();
   },
 
   onUnload() {
     this.clearEnvironmentTimer();
     this.clearStoryTimer();
+    this.clearStoryCaptionToast();
     clearTimeout(this.cuddleTimer);
     clearTimeout(this.feedbackTimer);
     clearInterval(this.cuddleTicker);
@@ -453,6 +462,8 @@ Page({
   refreshStoryState(stage) {
     if (stage !== 'hatched') {
       this.clearStoryTimer();
+      this.clearStoryCaptionToast();
+      this.lastStoryCaption = '';
       if (this.data.storyImageUrl || this.data.storyTagImageUrl || this.data.storyWindowAvailable) {
         this.setData({
           storyImageUrl: '',
@@ -489,8 +500,41 @@ Page({
           storyWindowAvailable: windowAvailable,
           storyWindowVisible: windowAvailable ? this.data.storyWindowVisible : false
         });
+        // caption 变化（含首次进入）时弹 toast；10 分钟轮询到相同文案不重复弹
+        const caption = state && typeof state.caption === 'string' ? state.caption.trim() : '';
+        if (caption && caption !== this.lastStoryCaption) {
+          this.lastStoryCaption = caption;
+          this.showStoryCaptionToast(caption);
+        }
       })
       .catch(() => {});
+  },
+
+  // 故事状态 caption toast：1800ms 展示后淡出，与静态项目 system toast 时长一致
+  showStoryCaptionToast(text) {
+    this.clearStoryCaptionToast();
+    this.setData({ storyCaptionToastText: text, storyCaptionToastVisible: false }, () => {
+      this.setData({ storyCaptionToastVisible: true });
+      this.storyCaptionToastTimer = setTimeout(() => {
+        this.storyCaptionToastTimer = null;
+        this.setData({ storyCaptionToastVisible: false });
+        // 等淡出动画结束再卸载文本，避免文案一闪即没
+        this.storyCaptionToastFadeTimer = setTimeout(() => {
+          this.storyCaptionToastFadeTimer = null;
+          this.setData({ storyCaptionToastText: '' });
+        }, STORY_CAPTION_TOAST_FADE_MS);
+      }, STORY_CAPTION_TOAST_DURATION_MS);
+    });
+  },
+
+  clearStoryCaptionToast() {
+    clearTimeout(this.storyCaptionToastTimer);
+    clearTimeout(this.storyCaptionToastFadeTimer);
+    this.storyCaptionToastTimer = null;
+    this.storyCaptionToastFadeTimer = null;
+    if (this.data.storyCaptionToastText || this.data.storyCaptionToastVisible) {
+      this.setData({ storyCaptionToastText: '', storyCaptionToastVisible: false });
+    }
   },
 
   scheduleStoryRefresh() {

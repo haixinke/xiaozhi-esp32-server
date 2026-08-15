@@ -120,10 +120,17 @@
         <room-clock />
       </view>
 
+      <!-- 故事状态 caption toast：状态文案变化时展示 1800ms 后淡出（静态项目 system toast 同款深色 pill） -->
+      <view wx:if="{{storyCaptionToastText}}" class="story-caption-toast">
+        <view class="story-caption-toast__pill {{storyCaptionToastVisible ? 'story-caption-toast__pill--visible' : ''}}" aria-role="status" aria-label="{{storyCaptionToastVisible ? storyCaptionToastText : ''}}" aria-hidden="{{!storyCaptionToastVisible}}">
+          <text class="story-caption-toast__text">{{storyCaptionToastText}}</text>
+        </view>
+      </view>
+
       <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图 -->
       <view class="story-chat-entry">
         <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
-          <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFit" />
+          <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFill" />
         </view>
       </view>
     </block>

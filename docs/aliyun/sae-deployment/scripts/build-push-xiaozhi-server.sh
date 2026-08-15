@@ -8,7 +8,9 @@ source "${SCRIPT_DIR}/_common.sh"
 init
 
 echo "🔧 Building xiaozhi-server:${VERSION} for ${PLATFORM} ..."
+# 阿里云 ACR 不接受 provenance attestation 的 OCI empty manifest，必须关闭
 docker buildx build --platform "${PLATFORM}" \
+  --provenance=false \
   -t "${REGISTRY}/xiaozhi-server:${VERSION}" \
   -f "${PROJECT_ROOT}/main/xiaozhi-server/Dockerfile" "${PROJECT_ROOT}/main/xiaozhi-server/" \
   --push

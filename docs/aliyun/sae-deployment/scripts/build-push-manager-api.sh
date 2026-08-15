@@ -15,7 +15,9 @@ if [ -f "${CCR_CA_CERT}" ]; then
 fi
 
 echo "🔧 Building manager-api:${VERSION} for ${PLATFORM} ..."
+# 阿里云 ACR 不接受 provenance attestation 的 OCI empty manifest，必须关闭
 docker buildx build --platform "${PLATFORM}" \
+  --provenance=false \
   -t "${REGISTRY}/manager-api:${VERSION}" \
   -f "${PROJECT_ROOT}/main/manager-api/Dockerfile" "${PROJECT_ROOT}/main/manager-api/" \
   ${BUILD_SECRET_ARGS[@]+"${BUILD_SECRET_ARGS[@]}"} \

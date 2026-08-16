@@ -4555,9 +4555,9 @@
     "semantic_hash": "2606e90d263539f68f10722cb7d5366c"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/constant/HatchActionType.java": {
-    "mtime": 1784964358.3514562,
-    "ast_hash": "383d1ded931cc3c6566c87375e125cdc",
-    "semantic_hash": "383d1ded931cc3c6566c87375e125cdc"
+    "mtime": 1786794547.4374251,
+    "ast_hash": "1915694f41f108bd11680db80e2fbb6f",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/constant/TodayMood.java": {
     "mtime": 1784964358.3519292,
@@ -5280,12 +5280,12 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1786625591.446541,
+    "mtime": 1786794201.949091,
     "ast_hash": "3d32b544e1aebd39e763b74a2bb2553b",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
-    "mtime": 1786628384.646885,
+    "mtime": 1786794201.9525294,
     "ast_hash": "37ec1859808e821e7c5ae31277061e63",
     "semantic_hash": ""
   },
@@ -5305,7 +5305,7 @@
     "semantic_hash": "f93043828dd68c996c6888b9c9fde406"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.js": {
-    "mtime": 1786628349.8708036,
+    "mtime": 1786794201.952187,
     "ast_hash": "df086493304293aeaeadfc3a70f3ba01",
     "semantic_hash": ""
   },
@@ -5340,7 +5340,7 @@
     "semantic_hash": "7cc11677593e89348fdd8de52818c1b2"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-api.js": {
-    "mtime": 1786628356.6817079,
+    "mtime": 1786794201.95184,
     "ast_hash": "524ad50ae8c5a4c2506b0af41d53ebd2",
     "semantic_hash": ""
   },
@@ -5430,13 +5430,13 @@
     "semantic_hash": "6b420f51b109c3af164bcdd8821df1c0"
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1786758468.3392057,
-    "ast_hash": "6908f985e6ef5dca8b2b6add53c61fe8",
+    "mtime": 1786794201.9504511,
+    "ast_hash": "5fcc2b31a592d2f17419529d9a6df2b7",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1786758911.976019,
-    "ast_hash": "e41a55dac8401d0598d394209f5c1911",
+    "mtime": 1786794201.9496725,
+    "ast_hash": "edb2390e77896465046b51cd684810ec",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -5800,7 +5800,7 @@
     "semantic_hash": "16610a4f8b8d31b8e79bfa2bbf238b72"
   },
   "main/xiaozhi-server/agent-base-prompt.txt": {
-    "mtime": 1786689438.663179,
+    "mtime": 1786794201.9593687,
     "ast_hash": "08a8fe15415e14417551792909440302",
     "semantic_hash": ""
   },
@@ -5900,7 +5900,7 @@
     "semantic_hash": "0b87bce4d6ab427f0000a7861e592017"
   },
   "main/manager-api/src/main/resources/application-dev.yml": {
-    "mtime": 1786586123.1507645,
+    "mtime": 1786794201.956916,
     "ast_hash": "b49ad319030baf5e37a3a5084e36b52f",
     "semantic_hash": ""
   },
@@ -5910,7 +5910,7 @@
     "semantic_hash": "80a0732f87a244731b6b8d4e103b61c9"
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1786615217.7766685,
+    "mtime": 1786794201.9575052,
     "ast_hash": "6c107028b8f67ea2b4c45805cc70746b",
     "semantic_hash": ""
   },
@@ -5920,19 +5920,19 @@
     "semantic_hash": "79adf30113fc46b4c7ced1f80911167f"
   },
   "docs/aliyun/sae-deployment/scripts/build-push-manager-api.sh": {
-    "mtime": 1785057425.3833377,
-    "ast_hash": "87d2a20badcd01ba2f5e40579129919d",
-    "semantic_hash": "87d2a20badcd01ba2f5e40579129919d"
+    "mtime": 1786794201.924388,
+    "ast_hash": "007f92e8fbb2fa3fd00bfa4da53319e7",
+    "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/build-push-manager-web.sh": {
-    "mtime": 1784487790.0848126,
-    "ast_hash": "a510c005756cac3532a4945ffc8dbb0f",
-    "semantic_hash": "a510c005756cac3532a4945ffc8dbb0f"
+    "mtime": 1786794201.9246857,
+    "ast_hash": "a8fb6f13cb7445add90a5201cb8718e3",
+    "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/build-push-xiaozhi-server.sh": {
-    "mtime": 1784487790.084859,
-    "ast_hash": "bd84f9dad43f008076a3b66c9e468112",
-    "semantic_hash": "bd84f9dad43f008076a3b66c9e468112"
+    "mtime": 1786794201.9250722,
+    "ast_hash": "2e79990cca39a3eaf9bad64a8772ee4e",
+    "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/mirror-funasr-image.sh": {
     "mtime": 1784487790.0850625,
@@ -6135,7 +6135,7 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/app.json": {
-    "mtime": 1786672620.043484,
+    "mtime": 1786794201.9453423,
     "ast_hash": "d3778ef2974ed4bb2af4666b32185a39",
     "semantic_hash": ""
   },
@@ -6555,7 +6555,7 @@
     "semantic_hash": "81e790cd67207f8a1c704907123989de"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/controller/StoryEngineController.java": {
-    "mtime": 1786610336.9665694,
+    "mtime": 1786794201.953445,
     "ast_hash": "ed8126d75534be77e8b74c4f093c17e6",
     "semantic_hash": ""
   },
@@ -6595,7 +6595,7 @@
     "semantic_hash": "69e94f6befe00bb3d6432b121f7531f0"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/dto/ActionImageUpdateDTO.java": {
-    "mtime": 1786610146.2238672,
+    "mtime": 1786794201.9536183,
     "ast_hash": "18b23ce958c06dbd200dc60d94e35f9d",
     "semantic_hash": ""
   },
@@ -6620,7 +6620,7 @@
     "semantic_hash": "a9cc9c82c043df24155fbd4861805bbc"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/ActionImageEntity.java": {
-    "mtime": 1786610119.0624378,
+    "mtime": 1786794201.9538224,
     "ast_hash": "e3b40b8f87ff04fa39de17b7a3b92160",
     "semantic_hash": ""
   },
@@ -6635,8 +6635,8 @@
     "semantic_hash": "827a5b89b9e65274fc20f6f6085643c6"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/PetStoryStateEntity.java": {
-    "mtime": 1786615249.978739,
-    "ast_hash": "7448164002ad6225b301cd12dab78633",
+    "mtime": 1786849545.5271266,
+    "ast_hash": "3553059189314d853ad12a70a56e3bf8",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/SmallSceneEntity.java": {
@@ -6645,8 +6645,8 @@
     "semantic_hash": "ba544d7b0124b3c7f61cc3a0f70f9652"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/model/SelectedStoryState.java": {
-    "mtime": 1786615224.0808702,
-    "ast_hash": "04cc16e74df328dfcd2cdb39ef598d8e",
+    "mtime": 1786849542.7764292,
+    "ast_hash": "432365144ef0a9590e4bd395ee55231a",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/model/StoryActionCandidate.java": {
@@ -6660,8 +6660,8 @@
     "semantic_hash": "5606f84ee9de2c647a310ca9c35166f0"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/model/StoryImageCandidate.java": {
-    "mtime": 1786615221.9419217,
-    "ast_hash": "239d41c8fb903fa404f0929cc76d3920",
+    "mtime": 1786849536.206992,
+    "ast_hash": "5d931c688c276c2ee21ad86ff6ae725d",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/model/StoryPeriodContext.java": {
@@ -6695,7 +6695,7 @@
     "semantic_hash": "2c4025bd12069cf3a03f5c26b0478826"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/StoryActionImageService.java": {
-    "mtime": 1786610205.830127,
+    "mtime": 1786794201.9547038,
     "ast_hash": "32bebbb866ccd9463387fdefc01ef1ea",
     "semantic_hash": ""
   },
@@ -6710,7 +6710,7 @@
     "semantic_hash": "fa40e9dae85061006f078bebbd2077f7"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/StoryContentLoader.java": {
-    "mtime": 1786615228.208025,
+    "mtime": 1786794201.9549305,
     "ast_hash": "6bd06254a324a21a3a4e640c8b144d45",
     "semantic_hash": ""
   },
@@ -6730,22 +6730,22 @@
     "semantic_hash": "b899475675861e56f6683ae1a1186404"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/StoryStateSelector.java": {
-    "mtime": 1786666025.9958022,
-    "ast_hash": "7dfe1b63508e75019f513a269f9a54f5",
+    "mtime": 1786849435.949093,
+    "ast_hash": "04d5c06d19b311eb291085bd8decc0d3",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/impl/PetStoryQueryServiceImpl.java": {
-    "mtime": 1786615268.1228228,
+    "mtime": 1786794201.955461,
     "ast_hash": "66d50013bd723e61b2634bbad058b31b",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/impl/PrototypeStoryStateServiceImpl.java": {
-    "mtime": 1786615250.80731,
+    "mtime": 1786794201.9556632,
     "ast_hash": "a9a1e20bbfeea734f1ebea7d124c2a3b",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/impl/StoryActionImageServiceImpl.java": {
-    "mtime": 1786610281.273396,
+    "mtime": 1786794201.955947,
     "ast_hash": "cb678deade795be868e10b2289ac9e65",
     "semantic_hash": ""
   },
@@ -6770,12 +6770,12 @@
     "semantic_hash": "b8e1d2456c2ac9f8d3c2c3c5a9f7bce6"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/task/PrototypeStoryStateRefreshTask.java": {
-    "mtime": 1786613653.4604023,
+    "mtime": 1786794201.9561286,
     "ast_hash": "d46d87ab8e4292cd8cdffe47d7f8ed21",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/vo/ActionImageVO.java": {
-    "mtime": 1786610138.8266726,
+    "mtime": 1786794201.9564247,
     "ast_hash": "302e18c6a91e3eade3a44e2fe45f6de8",
     "semantic_hash": ""
   },
@@ -6795,7 +6795,7 @@
     "semantic_hash": "0020f8fdf476be29a26e908e5a179bfb"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/vo/PetStoryStateVO.java": {
-    "mtime": 1786615254.9709485,
+    "mtime": 1786794201.9566274,
     "ast_hash": "5322b60a5bfb7f26e0d494858ecca68d",
     "semantic_hash": ""
   },
@@ -6920,8 +6920,8 @@
     "semantic_hash": "d49b70b7eb368ee71a550b29020aaa20"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/StoryStateSelectorTest.java": {
-    "mtime": 1786665998.9263093,
-    "ast_hash": "2d5bce789c0981d7011c82a3c9cd90a3",
+    "mtime": 1786849343.979847,
+    "ast_hash": "7fa8bfcdc4d5f070c234c8139543cbe7",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/impl/PetStoryQueryServiceImplTest.java": {
@@ -6930,12 +6930,12 @@
     "semantic_hash": "38f87736595d04564c7a7db335cac715"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/impl/PrototypeStoryStateServiceImplTest.java": {
-    "mtime": 1786615325.5993657,
+    "mtime": 1786794201.9580297,
     "ast_hash": "abbd4726005efbbd962c08df9c377f9d",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/task/PrototypeStoryStateRefreshTaskTest.java": {
-    "mtime": 1786613752.2954733,
+    "mtime": 1786794201.9585617,
     "ast_hash": "46c2c5f9eb36f7dbd215152bb74a67ab",
     "semantic_hash": ""
   },
@@ -6980,12 +6980,12 @@
     "semantic_hash": "bead76e665077162ce880157f37f9969"
   },
   "main/manager-web/src/apis/module/storyEngine.js": {
-    "mtime": 1786610949.7713056,
+    "mtime": 1786794201.9588342,
     "ast_hash": "3377ab4fbf617e3671a296dee998f2b2",
     "semantic_hash": ""
   },
   "main/manager-web/src/components/storyengine/ActionList.vue": {
-    "mtime": 1786610904.4927058,
+    "mtime": 1786794201.9590886,
     "ast_hash": "4c4431008bf0d206b2379538a15c9a35",
     "semantic_hash": ""
   },
@@ -7455,33 +7455,43 @@
     "semantic_hash": "16c0b9aae2810fb8f3e4584545176e60"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/impl/StoryActionImageServiceImplTest.java": {
-    "mtime": 1786610615.2948742,
+    "mtime": 1786794201.9583037,
     "ast_hash": "c442a7377650690114b6fceaf194e0e7",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/story-api.js": {
-    "mtime": 1786621925.221411,
+    "mtime": 1786794201.9528918,
     "ast_hash": "17fb240facf3e13ba1cc766be09c76e9",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/story-api.test.js": {
-    "mtime": 1786621932.0831149,
+    "mtime": 1786794201.9530537,
     "ast_hash": "3393668ffbddae16aae2871bd9c7215d",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/components/pet-mood-tab/pet-mood-tab.js": {
-    "mtime": 1786756631.130488,
+    "mtime": 1786794201.9468472,
     "ast_hash": "140c91787208d757d5d6b8b8d5a4bcb9",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/components/room-clock/room-clock.js": {
-    "mtime": 1786757039.106983,
+    "mtime": 1786794201.9483745,
     "ast_hash": "49456975d45b18539ad9bd34f5842b09",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/device-clock.js": {
-    "mtime": 1786756998.6408796,
+    "mtime": 1786794201.9514873,
     "ast_hash": "311ed92c2eea0ade5b49b743ca4c7aba",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/SpecialSceneTagRegistry.java": {
+    "mtime": 1786849382.7714407,
+    "ast_hash": "65db9dd7621005cb8092c2a80b197565",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/SpecialSceneTagRegistryTest.java": {
+    "mtime": 1786849355.5449996,
+    "ast_hash": "740ea8ab9e3d6de2e1f6ac196d90b125",
     "semantic_hash": ""
   }
 }

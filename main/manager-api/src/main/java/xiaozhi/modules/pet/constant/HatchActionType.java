@@ -11,9 +11,9 @@ import java.util.Optional;
 public enum HatchActionType {
 
     NICKNAME(720, true),
-    CUDDLE(60, false),
-    WISH(60, false),
-    LESSON(60, false),
+    CUDDLE(120, false),
+    WISH(120, false),
+    LESSON(120, false),
     DOODLE(720, true);
 
     private final int minutes;

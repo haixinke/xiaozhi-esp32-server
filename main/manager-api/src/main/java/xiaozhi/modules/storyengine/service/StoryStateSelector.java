@@ -14,14 +14,15 @@ import java.util.List;
 /**
  * 纯领域故事选择器。负责首次初始化与普通切换的随机选择，不涉及事务与数据库写入。
  * 随机数来源可注入，以支持确定性测试。
+ * 特殊图片标签（如卧室窗景）的语义由 SpecialSceneTagRegistry 按场景组合决定，
+ * 未命中规则的场景中 tag 不影响主图抽取。
  */
 @Component
 @RequiredArgsConstructor
 public class StoryStateSelector {
-    /** 窗户标签：选中动作内带此标签的图片 URL 作为窗景快照写入状态 */
-    private static final String WINDOW_TAG = "窗户";
 
     private final StoryRandomSource random;
+    private final SpecialSceneTagRegistry tagRegistry;
 
     /**
      * 首次初始化：在配置完整（有权值且有可用动作）的候选间按相对权重选择，权重合计不要求为 100。
@@ -75,23 +76,25 @@ public class StoryStateSelector {
 
     /** 在命中的小场景内等概率选动作、图片、配文，并在上下限间随机持续小时数 */
     private StorySelectionResult chooseWithinScene(StorySceneCandidate scene) {
+        // 特殊标签（如卧室窗景）仅在该场景组合有规则时生效；否则 tag 不影响抽取
+        String specialTag = tagRegistry.specialTagOf(scene.bigSceneName(), scene.smallSceneName()).orElse(null);
         List<StoryActionCandidate> eligibleActions = scene.actions().stream()
-                .filter(this::isEligible)
+                .filter(action -> isEligible(action, specialTag))
                 .toList();
         // 命中小场景但无可用动作，视为配置失败，不重抽其他场景以免改变概率
         if (eligibleActions.isEmpty()) {
             return StorySelectionResult.invalid();
         }
         StoryActionCandidate action = eligibleActions.get(random.nextInt(0, eligibleActions.size()));
-        // 主场景图只在非窗户图中等概率选择；窗户图仅供窗景快照，不能当主背景
+        // 主场景图只在非特殊标签图中等概率选择；特殊标签图仅供快照，不能当主背景
         List<StoryImageCandidate> mainImages = action.images().stream()
-                .filter(candidate -> !WINDOW_TAG.equals(candidate.tag()))
+                .filter(candidate -> !isSpecialTag(candidate, specialTag))
                 .toList();
         StoryImageCandidate image = mainImages.get(random.nextInt(0, mainImages.size()));
         String caption = selectCaption(image.captions());
-        // 选定动作内找 tag='窗户' 的图片 URL（当前时段候选图首张），供客户端渲染窗景
-        String tagImageUrl = action.images().stream()
-                .filter(candidate -> WINDOW_TAG.equals(candidate.tag()))
+        // 有规则时取动作内特殊标签图（当前时段候选图首张）URL 快照，供客户端渲染（如窗景）
+        String tagImageUrl = specialTag == null ? null : action.images().stream()
+                .filter(candidate -> isSpecialTag(candidate, specialTag))
                 .map(StoryImageCandidate::imageUrl)
                 .findFirst()
                 .orElse(null);
@@ -122,14 +125,20 @@ public class StoryStateSelector {
     }
 
     private boolean hasEligibleAction(StorySceneCandidate scene) {
-        return scene.actions().stream().anyMatch(this::isEligible);
+        String specialTag = tagRegistry.specialTagOf(scene.bigSceneName(), scene.smallSceneName()).orElse(null);
+        return scene.actions().stream().anyMatch(action -> isEligible(action, specialTag));
     }
 
-    /** 动作可用性：时长区间合法（下限>=1 且上限>=下限）且至少有一张非窗户标签的主场景图 */
-    private boolean isEligible(StoryActionCandidate action) {
+    /** 动作可用性：时长区间合法（下限>=1 且上限>=下限）且至少有一张可充当主场景图的图片 */
+    private boolean isEligible(StoryActionCandidate action, String specialTag) {
         return action.durationMin() >= 1
                 && action.durationMax() >= action.durationMin()
-                && action.images().stream().anyMatch(candidate -> !WINDOW_TAG.equals(candidate.tag()));
+                && action.images().stream().anyMatch(candidate -> !isSpecialTag(candidate, specialTag));
+    }
+
+    /** 图片是否命中场景特殊标签；无规则（specialTag 为 null）时任何图片都不算特殊 */
+    private boolean isSpecialTag(StoryImageCandidate candidate, String specialTag) {
+        return specialTag != null && specialTag.equals(candidate.tag());
     }
 
     /**

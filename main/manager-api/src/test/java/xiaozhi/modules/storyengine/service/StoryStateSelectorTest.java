@@ -31,7 +31,7 @@ class StoryStateSelectorTest {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 101, 40), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0),
                 draw(1, 101, 41), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
-        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryStateSelector selector = new StoryStateSelector(random, new SpecialSceneTagRegistry());
         List<StorySceneCandidate> scenes = List.of(
                 scene("边界前", 40, validAction(1, 1)),
                 scene("边界后", 60, validAction(1, 1)));
@@ -45,7 +45,7 @@ class StoryStateSelectorTest {
     void initialSelectionNormalizesValidWeightsAndSelectsCompleteSnapshot() {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 71, 60), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 1));
-        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryStateSelector selector = new StoryStateSelector(random, new SpecialSceneTagRegistry());
 
         StorySelectionResult result = selector.selectInitial(List.of(
                 scene("卧室", 40, validAction(1, 2)),
@@ -104,7 +104,7 @@ class StoryStateSelectorTest {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 0),
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 1));
-        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryStateSelector selector = new StoryStateSelector(random, new SpecialSceneTagRegistry());
         StorySceneCandidate scene = scene("卧室", 100, validAction(1, 2));
 
         assertThat(selector.selectTransition(List.of(scene)).state().durationHours()).isEqualTo(1);
@@ -116,7 +116,7 @@ class StoryStateSelectorTest {
     void selectionExcludesInvalidActionsBeforeDrawingAnEligibleAction() {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
-        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryStateSelector selector = new StoryStateSelector(random, new SpecialSceneTagRegistry());
         StoryActionCandidate invalid = action("invalid", 0, 1, image("invalid-image", "", "invalid-url"));
         StoryActionCandidate valid = action("valid", 1, 1, image("valid-image", "", "valid-url"));
 
@@ -193,14 +193,14 @@ class StoryStateSelectorTest {
 
     @Test
     void selectedStateCarriesWindowTagImageUrlWhenActionHasWindowImage() {
-        // 动作含一张 tag=窗户 的图片，选中后 tagImageUrl 应取该图 URL，主图只能是非窗户图
+        // 在家+卧室场景下，动作含 tag=窗户 图：tagImageUrl 取该图 URL，主图只能是非窗户图
         StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
         StoryImageCandidate normalImage = image("image-id", "", "https://example.com/image.png");
         StoryActionCandidate action = action("动作", 1, 1, normalImage, windowImage);
         StoryStateSelector selector = selectorWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
 
-        StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
+        StorySelectionResult result = selector.selectInitial(List.of(bedroomScene(100, action)));
 
         assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
         assertThat(result.state().imageUrl()).isEqualTo("https://example.com/image.png");
@@ -217,7 +217,7 @@ class StoryStateSelectorTest {
         StoryStateSelector selector = selectorWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
 
-        StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
+        StorySelectionResult result = selector.selectInitial(List.of(bedroomScene(100, action)));
 
         assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
         assertThat(result.state().imageUrl()).isEqualTo("https://example.com/second.png");
@@ -226,11 +226,11 @@ class StoryStateSelectorTest {
 
     @Test
     void actionWithOnlyWindowTaggedImagesIsIneligible() {
-        // 动作只有窗户图时没有主图可用，视为配置失败而不是把窗景当主场景
+        // 卧室场景动作只有窗户图时没有主图可用，视为配置失败而不是把窗景当主场景
         StoryActionCandidate action = action("动作", 1, 1,
                 taggedImage("window-id", "窗户", "https://example.com/window.png"));
 
-        StorySelectionResult result = selectorWithRolls().selectInitial(List.of(scene("卧室", 100, action)));
+        StorySelectionResult result = selectorWithRolls().selectInitial(List.of(bedroomScene(100, action)));
 
         assertThat(result.type()).isEqualTo(StorySelectionResultType.INVALID_CONFIGURATION);
     }
@@ -241,14 +241,45 @@ class StoryStateSelectorTest {
         StoryStateSelector selector = selectorWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
 
-        StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
+        StorySelectionResult result = selector.selectInitial(List.of(bedroomScene(100, action)));
 
         assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
         assertThat(result.state().tagImageUrl()).isNull();
     }
 
+    @Test
+    void windowTaggedImageIsOrdinaryMainImageOutsideBedroomRule() {
+        // 未命中特殊标签规则的场景：tag=窗户 仅为运营备注，图片正常参与主图抽取且 tagImageUrl 为 null
+        StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
+        StoryImageCandidate normalImage = image("image-id", "", "https://example.com/image.png");
+        StoryActionCandidate action = action("动作", 1, 1, normalImage, windowImage);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(scene("公园", 100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().imageUrl()).isEqualTo("https://example.com/window.png");
+        assertThat(result.state().tagImageUrl()).isNull();
+    }
+
+    @Test
+    void windowTaggedImageIsOrdinaryWhenBigSceneDoesNotMatchRule() {
+        // 小场景名为卧室但大场景不是"在家"，规则不生效
+        StoryActionCandidate action = action("动作", 1, 1,
+                taggedImage("window-id", "窗户", "https://example.com/window.png"));
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().imageUrl()).isEqualTo("https://example.com/window.png");
+        assertThat(result.state().tagImageUrl()).isNull();
+    }
+
     private StoryStateSelector selectorWithRolls(ExpectedDraw... draws) {
-        return new StoryStateSelector(randomWithRolls(draws));
+        return new StoryStateSelector(randomWithRolls(draws), new SpecialSceneTagRegistry());
     }
 
     private QueueRandomSource randomWithRolls(ExpectedDraw... draws) {
@@ -261,6 +292,11 @@ class StoryStateSelectorTest {
 
     private static StorySceneCandidate scene(String name, int weight, StoryActionCandidate... actions) {
         return new StorySceneCandidate("big-id", "大场景", name + "-id", name, weight, List.of(actions));
+    }
+
+    // 命中窗户特殊标签规则的场景组合：大场景=在家 + 小场景=卧室
+    private static StorySceneCandidate bedroomScene(int weight, StoryActionCandidate... actions) {
+        return new StorySceneCandidate("home-id", "在家", "bedroom-id", "卧室", weight, List.of(actions));
     }
 
     private static StoryActionCandidate validAction(int durationMin, int durationMax) {

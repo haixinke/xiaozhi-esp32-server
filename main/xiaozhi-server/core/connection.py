@@ -130,6 +130,8 @@ class ConnectionHandler:
 
         # 客户端状态相关
         self.client_abort = False
+        # 当前轮次是否命中危机内容（轻生等）；入口放行时置 True，出口兜底据此分级
+        self.crisis_context = False
         self.client_is_speaking = False
         self.client_listen_mode = "auto"
         self.client_aec = False  # 是否启用了服务端AEC
@@ -1115,9 +1117,13 @@ class ConnectionHandler:
             f"request_id={getattr(audit, 'request_id', None)}"
         )
         self._persist_released_output(sentence_id, response_message)
-        self._speak_trusted_output_block(
-            sentence_id, output_gate.output_block_message()
+        # 危机上下文中播危机专用兜底话术，避免"换个话题"式敷衍造成二次伤害
+        block_message = (
+            self.content_safety_gate.crisis_output_fallback()
+            if self.crisis_context
+            else output_gate.output_block_message()
         )
+        self._speak_trusted_output_block(sentence_id, block_message)
         self._enqueue_last_action(sentence_id)
         return True
 

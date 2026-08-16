@@ -140,8 +140,9 @@ class Submission:
 
 
 class InputSafetyProvider:
-    def __init__(self, decision):
+    def __init__(self, decision=None, result=None):
         self.decision = decision
+        self.result = result
         self.calls = []
 
     def check(self, direction, content, chat_id, session_id=None, done=False):
@@ -154,6 +155,8 @@ class InputSafetyProvider:
                 "done": done,
             }
         )
+        if self.result is not None:
+            return self.result
         return SafetyResult(decision=self.decision)
 
 
@@ -184,6 +187,8 @@ class InputConnection:
         self.client_is_speaking = False
         self.client_listen_mode = "auto"
         self.client_abort = False
+        self.crisis_context = False
+        self.headers = {"device-id": "test-device"}
         self.sentence_id = ""
         self.provider = InputSafetyProvider(decision)
         self.content_safety_gate = ContentSafetyGate(self.provider, self.config)
@@ -334,6 +339,7 @@ def chat_connection(connection_module, outputs, decisions):
     conn.system_introduced_speakers = set()
     conn.features = {}
     conn.client_abort = False
+    conn.crisis_context = False
     conn.sentence_id = ""
     conn.provider = ScriptedSafetyProvider(decisions)
     conn.content_safety_provider = conn.provider
@@ -795,6 +801,112 @@ def test_static_intent_fallback_bypasses_output_provider(
 
     assert conn.provider.calls == []
     assert conn.tts.middle_texts == ["系统繁忙"]
+
+
+def crisis_input_connection():
+    crisis_result = SafetyResult(
+        decision=SafetyDecision.BLOCK,
+        suggestion="block",
+        labels=("nonLabel", "inappropriate_suicide"),
+        levels=("none", "high"),
+    )
+    conn = InputConnection(SafetyDecision.BLOCK)
+    conn.provider = InputSafetyProvider(result=crisis_result)
+    conn.config = safety_config()
+    conn.config["content_safety"]["crisis_labels"] = ["inappropriate_suicide"]
+    conn.content_safety_gate = ContentSafetyGate(conn.provider, conn.config)
+    return conn
+
+
+def test_crisis_input_is_released_to_chat_and_flags_crisis_context(monkeypatch):
+    conn = crisis_input_connection()
+    intent_inputs = []
+
+    async def record_intent(_conn, text):
+        intent_inputs.append(text)
+        return False
+
+    async def ignore_stt(_conn, _text):
+        return None
+
+    def record_trusted_speech(_conn, text):
+        conn.tts.spoken_texts.append(text)
+
+    monkeypatch.setattr(receiveAudioHandle, "handle_user_intent", record_intent)
+    monkeypatch.setattr(receiveAudioHandle, "send_stt_message", ignore_stt)
+    monkeypatch.setattr(
+        receiveAudioHandle, "speak_trusted_text", record_trusted_speech
+    )
+
+    asyncio.run(
+        receiveAudioHandle.startToChat(conn, '{"speaker":"小明","content":"我不想活了"}')
+    )
+
+    # 危机内容不拦截：进入 chat 流程、不播通用拦截话术、标记危机上下文
+    assert len(conn.executor.submissions) == 1
+    assert conn.tts.spoken_texts == []
+    assert conn.crisis_context is True
+
+
+def test_crisis_context_resets_on_next_non_crisis_turn(monkeypatch):
+    conn = crisis_input_connection()
+
+    async def no_intent(_conn, _text):
+        return False
+
+    async def ignore_stt(_conn, _text):
+        return None
+
+    monkeypatch.setattr(receiveAudioHandle, "handle_user_intent", no_intent)
+    monkeypatch.setattr(receiveAudioHandle, "send_stt_message", ignore_stt)
+    monkeypatch.setattr(
+        receiveAudioHandle, "speak_trusted_text", lambda *_args: None
+    )
+
+    asyncio.run(
+        receiveAudioHandle.startToChat(conn, '{"speaker":"小明","content":"我不想活了"}')
+    )
+    assert conn.crisis_context is True
+
+    conn.provider = InputSafetyProvider(SafetyDecision.ALLOW)
+    conn.content_safety_gate = ContentSafetyGate(conn.provider, conn.config)
+    asyncio.run(
+        receiveAudioHandle.startToChat(conn, '{"speaker":"小明","content":"你好"}')
+    )
+
+    assert conn.crisis_context is False
+
+
+def test_crisis_context_output_block_uses_crisis_fallback(connection_module):
+    conn = chat_connection(
+        connection_module,
+        outputs=["危险。"],
+        decisions=[SafetyDecision.BLOCK],
+    )
+    conn.config["content_safety"]["crisis_labels"] = ["inappropriate_suicide"]
+    conn.config["content_safety"]["crisis_output_fallback_message"] = ["危机兜底话术"]
+    conn.content_safety_gate = ContentSafetyGate(conn.provider, conn.config)
+    conn.crisis_context = True
+
+    conn.chat("我不想活了", safety_context=ContentSafetyContext("turn-1"))
+
+    assert conn.tts.middle_texts == ["危机兜底话术"]
+    assert conn.tts.last_action_count == 1
+
+
+def test_non_crisis_output_block_uses_generic_message(connection_module):
+    conn = chat_connection(
+        connection_module,
+        outputs=["危险。"],
+        decisions=[SafetyDecision.BLOCK],
+    )
+    conn.config["content_safety"]["crisis_output_fallback_message"] = ["危机兜底话术"]
+    conn.content_safety_gate = ContentSafetyGate(conn.provider, conn.config)
+    conn.crisis_context = False
+
+    conn.chat("用户输入", safety_context=ContentSafetyContext("turn-1"))
+
+    assert conn.tts.middle_texts == ["输出已拒绝"]
 
 
 from .chat_integration_review_cases import *

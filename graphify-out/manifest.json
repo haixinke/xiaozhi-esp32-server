@@ -550,9 +550,9 @@
     "semantic_hash": "f80289140a75fd24886fdd36e0150b4a"
   },
   "main/xiaozhi-server/core/connection.py": {
-    "mtime": 1786167262.175947,
-    "ast_hash": "25794b3ba3e490a630608aab91dc03dc",
-    "semantic_hash": "25794b3ba3e490a630608aab91dc03dc"
+    "mtime": 1786861465.962258,
+    "ast_hash": "ed8e32f72d091ca4fca9b20dc86c0022",
+    "semantic_hash": ""
   },
   "main/xiaozhi-server/core/handle/helloHandle.py": {
     "mtime": 1784964522.8717315,
@@ -560,9 +560,9 @@
     "semantic_hash": "171494c3b95959c2333bbf2afe8702cb"
   },
   "main/xiaozhi-server/core/handle/intentHandler.py": {
-    "mtime": 1786167262.176906,
-    "ast_hash": "8f8a6b8253b807875b5d7c3188fb19f6",
-    "semantic_hash": "8f8a6b8253b807875b5d7c3188fb19f6"
+    "mtime": 1786861499.146505,
+    "ast_hash": "9f82f69e4e25ba4473f59910c2b76809",
+    "semantic_hash": ""
   },
   "main/xiaozhi-server/core/handle/textMessageHandlerRegistry.py": {
     "mtime": 1776309435.8615153,
@@ -595,9 +595,9 @@
     "semantic_hash": "66b05387afb9e6cb0c790b6060aff2ad"
   },
   "main/xiaozhi-server/core/handle/receiveAudioHandle.py": {
-    "mtime": 1786167262.1771433,
-    "ast_hash": "a5a9bf90f52fcff7a1b7de58a969bcc8",
-    "semantic_hash": "a5a9bf90f52fcff7a1b7de58a969bcc8"
+    "mtime": 1786861419.537811,
+    "ast_hash": "6d24025a2b48d55e8da5e9b77b88a925",
+    "semantic_hash": ""
   },
   "main/xiaozhi-server/core/handle/textMessageType.py": {
     "mtime": 1776309435.8616436,
@@ -5280,8 +5280,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1786794201.949091,
-    "ast_hash": "3d32b544e1aebd39e763b74a2bb2553b",
+    "mtime": 1786857422.2144074,
+    "ast_hash": "ad06b487f29c13eb5bb0181833fbe76a",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5910,8 +5910,8 @@
     "semantic_hash": "80a0732f87a244731b6b8d4e103b61c9"
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1786794201.9575052,
-    "ast_hash": "6c107028b8f67ea2b4c45805cc70746b",
+    "mtime": 1786861673.450107,
+    "ast_hash": "57cea62bc91b514816425aaec79f98ab",
     "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/_common.sh": {
@@ -7120,9 +7120,9 @@
     "semantic_hash": "f3a9e0dcf91decdb8a2915934c3d0bc6"
   },
   "main/xiaozhi-server/core/content_safety/gate.py": {
-    "mtime": 1786167262.1764462,
-    "ast_hash": "a3a32a6a07a5f013877d510372516558",
-    "semantic_hash": "a3a32a6a07a5f013877d510372516558"
+    "mtime": 1786861336.43355,
+    "ast_hash": "9c30b26683d1e25b1ef732fb850add5a",
+    "semantic_hash": ""
   },
   "main/xiaozhi-server/core/providers/content_safety/__init__.py": {
     "mtime": 1786167262.1773472,
@@ -7185,14 +7185,14 @@
     "semantic_hash": "f3be14b5c8b13d44be76a0341da3950c"
   },
   "main/xiaozhi-server/tests/content_safety/test_chat_integration.py": {
-    "mtime": 1786167262.1812093,
-    "ast_hash": "20a89ec9e71bd6ecf4305f481afbbcad",
-    "semantic_hash": "20a89ec9e71bd6ecf4305f481afbbcad"
+    "mtime": 1786861574.2918224,
+    "ast_hash": "289a4145bdd9cccd1da7c6ec4d0c9903",
+    "semantic_hash": ""
   },
   "main/xiaozhi-server/tests/content_safety/test_gate.py": {
-    "mtime": 1786167262.1817715,
-    "ast_hash": "f4f9358cad455e7b7f5b2bde824b24cb",
-    "semantic_hash": "f4f9358cad455e7b7f5b2bde824b24cb"
+    "mtime": 1786861373.1671062,
+    "ast_hash": "ee253df4ce3830a31cd183175b236e47",
+    "semantic_hash": ""
   },
   "main/xiaozhi-server/tests/content_safety/test_provider_factory.py": {
     "mtime": 1786167262.1821423,

@@ -259,6 +259,13 @@ def speak_trusted_text(conn: "ConnectionHandler", text: str) -> None:
     speak_txt(conn, text)
 
 
+def _output_block_message(conn: "ConnectionHandler", gate: OutputSafetyGate) -> str:
+    # 危机上下文中播危机专用兜底话术，避免"换个话题"式敷衍造成二次伤害
+    if getattr(conn, "crisis_context", False):
+        return conn.content_safety_gate.crisis_output_fallback()
+    return gate.output_block_message()
+
+
 def speak_generated_llm_text(
     conn: "ConnectionHandler", reply: IntentReply
 ) -> None:
@@ -276,11 +283,11 @@ def speak_generated_llm_text(
     )
     first = gate.feed(reply.text)
     if first.blocked:
-        speak_trusted_text(conn, gate.output_block_message())
+        speak_trusted_text(conn, _output_block_message(conn, gate))
         return
     final = gate.finish()
     if final.blocked:
-        speak_trusted_text(conn, gate.output_block_message())
+        speak_trusted_text(conn, _output_block_message(conn, gate))
         return
     released_text = "".join((*first.released_parts, *final.released_parts))
     if released_text:

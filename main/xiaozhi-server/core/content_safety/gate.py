@@ -28,6 +28,8 @@ class GateResult:
     released_parts: tuple[str, ...]
     blocked: bool
     audit: SafetyResult | None
+    # crisis=True 表示内容命中危机标签（如轻生），即使被判定 block 也放行给 LLM 共情回复
+    crisis: bool = False
 
     @property
     def allowed(self) -> bool:
@@ -57,9 +59,16 @@ class ContentSafetyGate:
         self._output_messages = self._trusted_messages(
             safety_config.get("output_block_message"), fallback
         )
+        # 危机标签（如轻生 inappropriate_suicide）：命中后输入不拦截，放行给 LLM
+        self._crisis_labels = self._normalize_labels(safety_config.get("crisis_labels"))
+        # 危机上下文下 LLM 输出被出口护栏拦截时的专用兜底话术
+        self._crisis_fallback_messages = self._trusted_messages(
+            safety_config.get("crisis_output_fallback_message"), fallback
+        )
 
     def check_input(self, text: str, context: ContentSafetyContext) -> GateResult:
         last_audit: SafetyResult | None = None
+        crisis = False
         for offset in range(0, len(text), self._max_request_chars):
             chunk = text[offset : offset + self._max_request_chars]
             if not chunk:
@@ -73,15 +82,41 @@ class ContentSafetyGate:
                 time.perf_counter() - started_at,
             )
             last_audit = result
-            if self._enforces_block(result):
+            # 危机内容不拦截：标记 crisis 后继续检测剩余分片，非危机 block 仍然拦截
+            crisis = crisis or self._is_crisis(result)
+            if self._enforces_block(result) and not self._is_crisis(result):
                 return GateResult((), True, result)
-        return GateResult((), False, last_audit)
+        return GateResult((), False, last_audit, crisis)
+
+    def is_crisis(self, result: SafetyResult | None) -> bool:
+        return result is not None and self._is_crisis(result)
 
     def output_block_message(self) -> str:
         return random.choice(self._output_messages)
 
     def input_block_message(self) -> str:
         return random.choice(self._input_messages)
+
+    def crisis_output_fallback(self) -> str:
+        return random.choice(self._crisis_fallback_messages)
+
+    def _is_crisis(self, result: SafetyResult) -> bool:
+        if not self._crisis_labels:
+            return False
+        return any(label in self._crisis_labels for label in result.labels)
+
+    @staticmethod
+    def _normalize_labels(value: object) -> frozenset[str]:
+        # 兼容数组(["a","b"])与分号分隔字符串("a;b")两种配置形态
+        if isinstance(value, str):
+            items: Sequence = value.split(";")
+        elif isinstance(value, Sequence):
+            items = value
+        else:
+            return frozenset()
+        return frozenset(
+            item.strip() for item in items if isinstance(item, str) and item.strip()
+        )
 
     def _enforces_block(self, result: SafetyResult) -> bool:
         return self._mode == "enforce" and result.decision in {
@@ -102,6 +137,7 @@ class ContentSafetyGate:
             f"decision={result.decision.value}",
             f"chars={character_count}",
             f"elapsed_ms={round(elapsed_seconds * 1000)}",
+            f"crisis={'true' if self._is_crisis(result) else 'false'}",
         ]
         fields.extend(
             (

@@ -415,6 +415,156 @@ def test_string_message_config_falls_back_to_system_error_response():
     assert gate.output_block_message() == "系统繁忙"
 
 
+def crisis_blocked():
+    return SafetyResult(
+        decision=SafetyDecision.BLOCK,
+        suggestion="block",
+        labels=("nonLabel", "inappropriate_suicide"),
+        levels=("none", "high"),
+    )
+
+
+def crisis_watched():
+    return SafetyResult(
+        decision=SafetyDecision.ALLOW,
+        suggestion="watch",
+        labels=("inappropriate_suicide",),
+        levels=("medium",),
+    )
+
+
+def test_crisis_labeled_block_is_released_with_crisis_flag():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    result = ContentSafetyGate(
+        RecordingProvider(results=[crisis_blocked()]),
+        config(crisis_labels=["inappropriate_suicide"]),
+    ).check_input("我不想活了", ContentSafetyContext("turn-1"))
+
+    assert result.blocked is False
+    assert result.crisis is True
+    assert result.audit == crisis_blocked()
+
+
+def test_crisis_labeled_watch_carries_crisis_flag():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    result = ContentSafetyGate(
+        RecordingProvider(results=[crisis_watched()]),
+        config(crisis_labels=["inappropriate_suicide"]),
+    ).check_input("活着真没意思", ContentSafetyContext("turn-1"))
+
+    assert result.blocked is False
+    assert result.crisis is True
+
+
+def test_non_crisis_block_still_blocked_and_not_flagged():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    result = ContentSafetyGate(
+        RecordingProvider(results=[blocked()]),
+        config(crisis_labels=["inappropriate_suicide"]),
+    ).check_input("危险", ContentSafetyContext("turn-1"))
+
+    assert result.blocked is True
+    assert result.crisis is False
+
+
+def test_missing_crisis_labels_config_keeps_legacy_block_behavior():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    result = ContentSafetyGate(
+        RecordingProvider(results=[crisis_blocked()]), config()
+    ).check_input("我不想活了", ContentSafetyContext("turn-1"))
+
+    assert result.blocked is True
+    assert result.crisis is False
+
+
+def test_crisis_block_in_later_chunk_still_releases_but_marks_crisis():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    provider = RecordingProvider(results=[allowed(), crisis_blocked()])
+    result = ContentSafetyGate(
+        provider,
+        config(max_request_chars=2, output_chunk_chars=2,
+               crisis_labels=["inappropriate_suicide"]),
+    ).check_input("甲乙丙丁", ContentSafetyContext("turn-1"))
+
+    assert result.blocked is False
+    assert result.crisis is True
+    assert [call.content for call in provider.calls] == ["甲乙", "丙丁"]
+
+
+def test_audit_log_marks_crisis_without_leaking_label_names():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    audit_logs: list[str] = []
+    ContentSafetyGate(
+        RecordingProvider(results=[crisis_blocked()]),
+        config(crisis_labels=["inappropriate_suicide"]),
+        audit_log=audit_logs.append,
+    ).check_input("我不想活了", ContentSafetyContext("turn-1"))
+
+    assert "crisis=true" in audit_logs[0]
+    assert "inappropriate_suicide" not in audit_logs[0]
+
+
+def test_audit_log_marks_non_crisis_as_false():
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    audit_logs: list[str] = []
+    ContentSafetyGate(
+        RecordingProvider(results=[blocked()]),
+        config(crisis_labels=["inappropriate_suicide"]),
+        audit_log=audit_logs.append,
+    ).check_input("危险", ContentSafetyContext("turn-1"))
+
+    assert "crisis=false" in audit_logs[0]
+
+
+def test_crisis_output_fallback_uses_configured_message(monkeypatch):
+    from core.content_safety import ContentSafetyGate
+
+    gate = ContentSafetyGate(
+        RecordingProvider(allow=True),
+        config(crisis_output_fallback_message=["危机兜底甲", "危机兜底乙"]),
+    )
+    monkeypatch.setattr("core.content_safety.gate.random.choice", lambda values: values[1])
+
+    assert gate.crisis_output_fallback() == "危机兜底乙"
+
+
+@pytest.mark.parametrize("messages", [None, [], ["", "  "], "错误"])
+def test_blank_crisis_fallback_falls_back_to_system_error_response(messages):
+    from core.content_safety import ContentSafetyGate
+
+    gate = ContentSafetyGate(
+        RecordingProvider(allow=True),
+        config(crisis_output_fallback_message=messages),
+    )
+
+    assert gate.crisis_output_fallback() == "系统繁忙"
+
+
+@pytest.mark.parametrize("labels", [None, [], "", "inappropriate_suicide; suicide "])
+def test_crisis_labels_config_is_normalized(labels):
+    from core.content_safety import ContentSafetyContext, ContentSafetyGate
+
+    gate = ContentSafetyGate(
+        RecordingProvider(results=[crisis_blocked()]),
+        config(crisis_labels=labels),
+    )
+
+    result = gate.check_input("我不想活了", ContentSafetyContext("turn-1"))
+    if isinstance(labels, str) and labels.strip():
+        assert result.crisis is True
+        assert result.blocked is False
+    else:
+        assert result.crisis is False
+        assert result.blocked is True
+
+
 @pytest.mark.parametrize(
     "overrides",
     [

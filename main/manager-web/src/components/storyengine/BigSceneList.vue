@@ -97,6 +97,11 @@
       @confirm="handleImport"
       @cancel="closeImport"
     >
+      <div class="template-download">
+        <a :href="templateUrl" download="图片文案模版.xlsx">
+          <i class="el-icon-download"></i> 下载文案模版
+        </a>
+      </div>
       <el-upload
         ref="captionsUpload"
         action="#"
@@ -158,6 +163,12 @@ export default {
   },
   created() {
     this.fetchList();
+  },
+  computed: {
+    templateUrl() {
+      const base = process.env.BASE_URL || "/";
+      return base + "templates/" + encodeURIComponent("图片文案模版.xlsx");
+    }
   },
   methods: {
     fetchList() {
@@ -418,6 +429,21 @@ export default {
   padding: 12px;
   border-radius: 8px;
   background: #f5f7fd;
+}
+
+.template-download {
+  margin-bottom: 12px;
+
+  a {
+    font-size: 13px;
+    color: #5a64b5;
+    text-decoration: none;
+
+    &:hover {
+      color: #7079aa;
+      text-decoration: underline;
+    }
+  }
 }
 
 .import-result-summary {

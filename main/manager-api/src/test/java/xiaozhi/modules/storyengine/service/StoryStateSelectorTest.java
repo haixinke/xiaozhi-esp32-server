@@ -3,6 +3,7 @@ package xiaozhi.modules.storyengine.service;
 import org.junit.jupiter.api.Test;
 import xiaozhi.modules.storyengine.model.StoryActionCandidate;
 import xiaozhi.modules.storyengine.model.StoryImageCandidate;
+import xiaozhi.modules.storyengine.model.StoryPeriodImageSelection;
 import xiaozhi.modules.storyengine.model.StorySceneCandidate;
 import xiaozhi.modules.storyengine.model.StorySelectionResult;
 import xiaozhi.modules.storyengine.model.StorySelectionResultType;
@@ -276,6 +277,57 @@ class StoryStateSelectorTest {
         assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
         assertThat(result.state().imageUrl()).isEqualTo("https://example.com/window.png");
         assertThat(result.state().tagImageUrl()).isNull();
+    }
+
+    @Test
+    void periodImagePicksRandomMainAndCaptionOutsideSpecialRule() {
+        // 未命中特殊标签规则：所有图参与主图等概率，配文从新图选取，tagImageUrl 为 null
+        StoryStateSelector selector = selectorWithRolls(draw(0, 2, 1), draw(0, 2, 1));
+        List<StoryImageCandidate> images = List.of(
+                image("first-id", "白天", "https://example.com/first.png"),
+                image("second-id", " 早安 | 晚安 ", "https://example.com/second.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "大场景", "公园")
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("second-id");
+        assertThat(result.imageUrl()).isEqualTo("https://example.com/second.png");
+        assertThat(result.caption()).isEqualTo("晚安");
+        assertThat(result.tagImageUrl()).isNull();
+    }
+
+    @Test
+    void periodImageInBedroomExcludesWindowFromMainAndSnapshotsTagUrl() {
+        // 在家+卧室：主图从非窗户图选，tagImageUrl 取窗户标签图首张
+        StoryStateSelector selector = selectorWithRolls(draw(0, 1, 0));
+        List<StoryImageCandidate> images = List.of(
+                image("normal-id", "落日睡觉", "https://example.com/normal.png"),
+                taggedImage("window-id", "窗户", "https://example.com/window.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "在家", "卧室")
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("normal-id");
+        assertThat(result.tagImageUrl()).isEqualTo("https://example.com/window.png");
+    }
+
+    @Test
+    void periodImageInBedroomWithoutWindowImageReturnsEmpty() {
+        // 原子性：命中标签规则但新时段缺标签图，整体不换
+        StoryStateSelector selector = selectorWithRolls();
+        List<StoryImageCandidate> images = List.of(
+                image("normal-id", "落日睡觉", "https://example.com/normal.png"));
+
+        assertThat(selector.selectPeriodImage(images, "在家", "卧室")).isEmpty();
+    }
+
+    @Test
+    void periodImageReturnsEmptyWithoutCandidates() {
+        StoryStateSelector selector = selectorWithRolls();
+
+        assertThat(selector.selectPeriodImage(List.of(), "大场景", "公园")).isEmpty();
     }
 
     private StoryStateSelector selectorWithRolls(ExpectedDraw... draws) {

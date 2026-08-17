@@ -10,7 +10,9 @@ import xiaozhi.modules.storyengine.entity.PetStoryHistoryEntity;
 import xiaozhi.modules.storyengine.entity.PetStoryStateEntity;
 import xiaozhi.modules.storyengine.model.SelectedStoryState;
 import xiaozhi.modules.storyengine.model.StoryEvaluationResult;
+import xiaozhi.modules.storyengine.model.StoryImageCandidate;
 import xiaozhi.modules.storyengine.model.StoryPeriodContext;
+import xiaozhi.modules.storyengine.model.StoryPeriodImageSelection;
 import xiaozhi.modules.storyengine.model.StorySceneCandidate;
 import xiaozhi.modules.storyengine.model.StorySelectionResult;
 import xiaozhi.modules.storyengine.model.StorySelectionResultType;
@@ -23,6 +25,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 原型级共享故事状态服务实现。
@@ -86,7 +89,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         Date now = Date.from(evaluatedAt.toInstant());
         // 动作未到期则保持，不加载候选内容
         if (runtimeStatus == StoryRuntimeStatus.ACTIVE && current.getExpectedEndAt().after(now)) {
-            return StoryEvaluationResult.KEPT_NOT_DUE;
+            return refreshPeriodImageIfMismatch(current, period, prototype);
         }
 
         List<StorySceneCandidate> candidates = contentLoader.load(prototype, period);
@@ -95,6 +98,32 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
             case ACTIVE -> selector.selectTransition(candidates);
         };
         return applySelection(current, runtimeStatus, selection, prototype, period, now);
+    }
+
+    /**
+     * 动作未到期但图片时段（白天/落日/黑夜）已切换时，仅换同时段背景图：
+     * 动作、场景、时长、weightPeriod 保持，不写历史；新时段取不到图（含特殊标签图缺失）则整体不变。
+     */
+    private StoryEvaluationResult refreshPeriodImageIfMismatch(PetStoryStateEntity current,
+                                                               StoryPeriodContext period, String prototype) {
+        String newTimeOfDay = period.imageTimeOfDay().databaseValue();
+        if (newTimeOfDay.equals(current.getImageTimeOfDay())) {
+            return StoryEvaluationResult.KEPT_NOT_DUE;
+        }
+        List<StoryImageCandidate> images = contentLoader.loadPeriodImages(prototype, current.getActionId(),
+                newTimeOfDay);
+        Optional<StoryPeriodImageSelection> selection = selector.selectPeriodImage(images,
+                current.getBigSceneName(), current.getSmallSceneName());
+        if (selection.isEmpty()) {
+            return StoryEvaluationResult.KEPT_NOT_DUE;
+        }
+        StoryPeriodImageSelection chosen = selection.get();
+        current.setActionImageId(chosen.imageId());
+        current.setImageUrl(chosen.imageUrl());
+        current.setTagImageUrl(chosen.tagImageUrl());
+        current.setCaption(chosen.caption());
+        current.setImageTimeOfDay(newTimeOfDay);
+        return StoryEvaluationResult.REFRESHED_PERIOD_IMAGE;
     }
 
     private StoryEvaluationResult applySelection(PetStoryStateEntity current, StoryRuntimeStatus runtimeStatus,

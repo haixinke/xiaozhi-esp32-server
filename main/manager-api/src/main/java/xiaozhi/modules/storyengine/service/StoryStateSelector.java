@@ -5,11 +5,13 @@ import org.springframework.stereotype.Component;
 import xiaozhi.modules.storyengine.model.SelectedStoryState;
 import xiaozhi.modules.storyengine.model.StoryActionCandidate;
 import xiaozhi.modules.storyengine.model.StoryImageCandidate;
+import xiaozhi.modules.storyengine.model.StoryPeriodImageSelection;
 import xiaozhi.modules.storyengine.model.StorySceneCandidate;
 import xiaozhi.modules.storyengine.model.StorySelectionResult;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 纯领域故事选择器。负责首次初始化与普通切换的随机选择，不涉及事务与数据库写入。
@@ -60,6 +62,35 @@ public class StoryStateSelector {
             return StorySelectionResult.remain();
         }
         return chooseSceneByRoll(scenes, roll);
+    }
+
+    /**
+     * 图片时段换图：在动作的新时段候选图中等概率选主图，命中特殊标签规则时同步取标签图快照。
+     * 原子性：主图缺失，或命中规则但标签图缺失，均返回 empty，调用方保持原状态不变。
+     */
+    public Optional<StoryPeriodImageSelection> selectPeriodImage(List<StoryImageCandidate> images,
+                                                                 String bigSceneName, String smallSceneName) {
+        String specialTag = tagRegistry.specialTagOf(bigSceneName, smallSceneName).orElse(null);
+        List<StoryImageCandidate> mainImages = images.stream()
+                .filter(candidate -> !isSpecialTag(candidate, specialTag))
+                .toList();
+        if (mainImages.isEmpty()) {
+            return Optional.empty();
+        }
+        String tagImageUrl = null;
+        if (specialTag != null) {
+            tagImageUrl = images.stream()
+                    .filter(candidate -> isSpecialTag(candidate, specialTag))
+                    .map(StoryImageCandidate::imageUrl)
+                    .findFirst()
+                    .orElse(null);
+            if (tagImageUrl == null) {
+                return Optional.empty();
+            }
+        }
+        StoryImageCandidate image = mainImages.get(random.nextInt(0, mainImages.size()));
+        return Optional.of(new StoryPeriodImageSelection(image.id(), image.imageUrl(),
+                selectCaption(image.captions()), tagImageUrl));
     }
 
     /** 按累计权重区间定位命中的小场景 */

@@ -19,7 +19,9 @@ import xiaozhi.modules.storyengine.entity.PetStoryHistoryEntity;
 import xiaozhi.modules.storyengine.entity.PetStoryStateEntity;
 import xiaozhi.modules.storyengine.model.SelectedStoryState;
 import xiaozhi.modules.storyengine.model.StoryEvaluationResult;
+import xiaozhi.modules.storyengine.model.StoryImageCandidate;
 import xiaozhi.modules.storyengine.model.StoryPeriodContext;
+import xiaozhi.modules.storyengine.model.StoryPeriodImageSelection;
 import xiaozhi.modules.storyengine.model.StorySceneCandidate;
 import xiaozhi.modules.storyengine.model.StorySelectionResult;
 import xiaozhi.modules.storyengine.service.StoryContentLoader;
@@ -29,6 +31,7 @@ import xiaozhi.modules.storyengine.service.StoryStateSelector;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,6 +50,8 @@ class PrototypeStoryStateServiceImplTest {
     private static final String PROTOTYPE = "锦鲤";
     private static final StoryPeriodContext MORNING =
             new StoryPeriodContext(StoryWeightPeriod.MORNING, StoryImageTimeOfDay.DAY);
+    private static final StoryPeriodContext EVENING_SUNSET =
+            new StoryPeriodContext(StoryWeightPeriod.EVENING, StoryImageTimeOfDay.SUNSET);
 
     private PetStoryStateDao stateDao;
     private PetStoryHistoryDao historyDao;
@@ -214,6 +219,7 @@ class PrototypeStoryStateServiceImplTest {
     void futureExpectedEndKeepsCompleteSnapshotWithoutLoadingAndPersistsSlot() {
         ZonedDateTime evaluatedAt = at("2026-08-08T10:22:33+08:00");
         PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T10:22:34+08:00");
+        current.setImageTimeOfDay(StoryImageTimeOfDay.DAY.databaseValue());
         PetStoryStateEntity untouched = copy(current);
         when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
         when(periodResolver.resolve(evaluatedAt)).thenReturn(MORNING);
@@ -224,6 +230,90 @@ class PrototypeStoryStateServiceImplTest {
         verifyNoInteractions(contentLoader, selector, historyDao);
         verify(stateDao).updateById(current);
         verifyCommittedOnce();
+    }
+
+    @Test
+    void notDueWithImagePeriodMismatchRefreshesOnlyImageFields() {
+        ZonedDateTime evaluatedAt = at("2026-08-08T17:22:00+08:00");
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T23:00:00+08:00");
+        current.setImageTimeOfDay(StoryImageTimeOfDay.DAY.databaseValue());
+        PetStoryStateEntity untouched = copy(current);
+        List<StoryImageCandidate> periodImages = List.of(
+                new StoryImageCandidate("sunset-image-id", "https://example.com/sunset.png", "落日文案", null));
+        when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
+        when(periodResolver.resolve(evaluatedAt)).thenReturn(EVENING_SUNSET);
+        when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "落日")).thenReturn(periodImages);
+        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景"))
+                .thenReturn(Optional.of(new StoryPeriodImageSelection("sunset-image-id",
+                        "https://example.com/sunset.png", "落日文案", "https://example.com/sunset-window.png")));
+
+        assertThat(service.evaluate(PROTOTYPE, evaluatedAt))
+                .isEqualTo(StoryEvaluationResult.REFRESHED_PERIOD_IMAGE);
+
+        // 仅图片相关字段更新：动作、场景、时长、weightPeriod 全部保留抽取时原值
+        assertThat(current.getActionImageId()).isEqualTo("sunset-image-id");
+        assertThat(current.getImageUrl()).isEqualTo("https://example.com/sunset.png");
+        assertThat(current.getCaption()).isEqualTo("落日文案");
+        assertThat(current.getTagImageUrl()).isEqualTo("https://example.com/sunset-window.png");
+        assertThat(current.getImageTimeOfDay()).isEqualTo("落日");
+        assertThat(current.getActionId()).isEqualTo(untouched.getActionId());
+        assertThat(current.getBigSceneId()).isEqualTo(untouched.getBigSceneId());
+        assertThat(current.getSmallSceneId()).isEqualTo(untouched.getSmallSceneId());
+        assertThat(current.getWeightPeriod()).isEqualTo(untouched.getWeightPeriod());
+        assertThat(current.getDurationHours()).isEqualTo(untouched.getDurationHours());
+        assertThat(current.getStartedAt()).isEqualTo(untouched.getStartedAt());
+        assertThat(current.getExpectedEndAt()).isEqualTo(untouched.getExpectedEndAt());
+        assertThat(current.getLastEvaluatedHour()).isEqualTo(date("2026-08-08T17:00:00+08:00"));
+        verify(historyDao, never()).insert(any(PetStoryHistoryEntity.class));
+        verify(contentLoader, never()).load(any(), any());
+        verify(selector, never()).selectTransition(any());
+        verify(selector, never()).selectInitial(any());
+        verify(stateDao).updateById(current);
+        verifyCommittedOnce();
+    }
+
+    @Test
+    void notDueWithImagePeriodMismatchKeepsEverythingWhenNoPeriodImage() {
+        ZonedDateTime evaluatedAt = at("2026-08-08T17:22:00+08:00");
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T23:00:00+08:00");
+        current.setImageTimeOfDay(StoryImageTimeOfDay.DAY.databaseValue());
+        PetStoryStateEntity untouched = copy(current);
+        when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
+        when(periodResolver.resolve(evaluatedAt)).thenReturn(EVENING_SUNSET);
+        when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "落日")).thenReturn(List.of());
+        when(selector.selectPeriodImage(List.of(), "旧大场景", "旧小场景")).thenReturn(Optional.empty());
+
+        assertThat(service.evaluate(PROTOTYPE, evaluatedAt)).isEqualTo(StoryEvaluationResult.KEPT_NOT_DUE);
+
+        assertSnapshotUnchangedExceptSlot(current, untouched, "2026-08-08T17:00:00+08:00");
+        verify(historyDao, never()).insert(any(PetStoryHistoryEntity.class));
+        verify(stateDao).updateById(current);
+        verifyCommittedOnce();
+    }
+
+    @Test
+    void refreshedImageIsNotRefreshedAgainWithinSameImagePeriod() {
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T23:00:00+08:00");
+        current.setImageTimeOfDay(StoryImageTimeOfDay.DAY.databaseValue());
+        ZonedDateTime firstEvaluation = at("2026-08-08T17:22:00+08:00");
+        ZonedDateTime secondEvaluation = at("2026-08-08T18:10:00+08:00");
+        List<StoryImageCandidate> periodImages = List.of(
+                new StoryImageCandidate("sunset-image-id", "https://example.com/sunset.png", "落日文案", null));
+        when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
+        when(periodResolver.resolve(any(ZonedDateTime.class))).thenReturn(EVENING_SUNSET);
+        when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "落日")).thenReturn(periodImages);
+        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景"))
+                .thenReturn(Optional.of(new StoryPeriodImageSelection("sunset-image-id",
+                        "https://example.com/sunset.png", "落日文案", null)));
+
+        assertThat(service.evaluate(PROTOTYPE, firstEvaluation))
+                .isEqualTo(StoryEvaluationResult.REFRESHED_PERIOD_IMAGE);
+        assertThat(service.evaluate(PROTOTYPE, secondEvaluation))
+                .isEqualTo(StoryEvaluationResult.KEPT_NOT_DUE);
+
+        verify(contentLoader, times(1)).loadPeriodImages(any(), any(), any());
+        verify(selector, times(1)).selectPeriodImage(any(), any(), any());
+        verify(transactionManager, times(2)).commit(transactionStatus);
     }
 
     @Test

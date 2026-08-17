@@ -17,16 +17,16 @@ public class SmallSceneVO {
     @Schema(description = "小场景名称(如:卧室、北京-故宫、快餐厅)")
     private String name;
 
-    @Schema(description = "深夜时段(00:00~05:59)权重百分比")
+    @Schema(description = "深夜时段(19:00~06:59)权重百分比")
     private Integer weightNight;
 
-    @Schema(description = "上午时段(06:00~11:59)权重百分比")
+    @Schema(description = "上午时段(07:00~11:59)权重百分比")
     private Integer weightMorning;
 
-    @Schema(description = "下午时段(12:00~17:59)权重百分比")
+    @Schema(description = "下午时段(12:00~16:59)权重百分比")
     private Integer weightAfternoon;
 
-    @Schema(description = "傍晚时段(18:00~23:59)权重百分比")
+    @Schema(description = "傍晚时段(17:00~18:59)权重百分比")
     private Integer weightEvening;
 
     @Schema(description = "排序序号")

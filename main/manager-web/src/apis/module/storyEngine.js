@@ -347,6 +347,29 @@ export default {
                 })
             }).send()
     },
+    // Excel批量导入图片文案，formData 需包含 file(.xlsx，表头: 大场景/小场景/动作/时段/宠物类型/图片文案)
+    importActionImageCaptions(formData, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/storyEngine/actionImage/importCaptions`)
+            .method('POST')
+            .data(formData)
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((err) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(err)
+                }
+            })
+            .networkFail((err) => {
+                console.error('批量导入图片文案失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.importActionImageCaptions(formData, callback, failCallback)
+                })
+            }).send()
+    },
     // 删除动作图片
     deleteActionImage(id, callback, failCallback) {
         RequestService.sendRequest()

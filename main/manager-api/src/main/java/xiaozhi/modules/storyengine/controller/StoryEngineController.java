@@ -27,6 +27,7 @@ import xiaozhi.modules.storyengine.service.StoryBigSceneService;
 import xiaozhi.modules.storyengine.service.StorySmallSceneService;
 import xiaozhi.modules.storyengine.vo.ActionVO;
 import xiaozhi.modules.storyengine.vo.BigSceneVO;
+import xiaozhi.modules.storyengine.vo.CaptionsImportVO;
 import xiaozhi.modules.storyengine.vo.SmallSceneVO;
 import xiaozhi.modules.storyengine.vo.WeightSummaryVO;
 
@@ -170,6 +171,13 @@ public class StoryEngineController {
     public Result<Void> updateActionImage(@Valid @RequestBody ActionImageUpdateDTO dto) {
         actionImageService.updateInfo(dto.getId(), dto.getCaptions(), dto.getTag());
         return new Result<>();
+    }
+
+    @PostMapping("/actionImage/importCaptions")
+    @Operation(summary = "通过Excel模版批量更新图片配文(大场景/小场景/动作/时段/宠物类型/图片文案)")
+    @RequiresPermissions("sys:role:superAdmin")
+    public Result<CaptionsImportVO> importCaptions(@RequestParam("file") MultipartFile file) {
+        return new Result<CaptionsImportVO>().ok(actionImageService.importCaptions(file));
     }
 
     @DeleteMapping("/actionImage/{id}")

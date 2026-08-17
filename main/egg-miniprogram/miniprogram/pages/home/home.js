@@ -20,7 +20,16 @@ const STORY_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 const STORY_WINDOW_BIG_SCENE = '在家';
 const STORY_WINDOW_SMALL_SCENE = '卧室';
 // 故事背景轨道宽 200vw，可横向拖拽查看左半屏；位移超过阈值才判定为拖拽，避免误伤点击
-const STORY_DRAG_THRESHOLD_PX = 12;
+const STORY_DRAG_THRESHOLD_PX = 6;
+// 拖拽增益：手指位移放大倍数，让全景背景一次滑屏扫过更多轨道，体感更跟手
+const STORY_DRAG_GAIN = 1.8;
+// 松手惯性滚动：帧间隔 / 每帧速度衰减系数 / 最小启动速度(px/ms) / 停止速度(px/ms)；
+// 松手前静止超过该窗口（ms）则不启动惯性，避免"停住后又滑出去"
+const STORY_INERTIA_FRAME_MS = 16;
+const STORY_INERTIA_DECAY = 0.94;
+const STORY_INERTIA_MIN_VELOCITY = 0.08;
+const STORY_INERTIA_STOP_VELOCITY = 0.02;
+const STORY_INERTIA_STALE_MS = 80;
 // 故事状态 caption 提示条：对齐静态项目 system toast，1800ms 展示 + 180ms 淡出
 const STORY_CAPTION_TOAST_DURATION_MS = 1800;
 const STORY_CAPTION_TOAST_FADE_MS = 180;
@@ -246,12 +255,14 @@ Page({
     this.clearEnvironmentTimer();
     this.clearStoryTimer();
     this.clearStoryCaptionToast();
+    this._stopStoryInertia();
   },
 
   onUnload() {
     this.clearEnvironmentTimer();
     this.clearStoryTimer();
     this.clearStoryCaptionToast();
+    this._stopStoryInertia();
     clearTimeout(this.cuddleTimer);
     clearTimeout(this.feedbackTimer);
     clearInterval(this.cuddleTicker);
@@ -591,14 +602,24 @@ Page({
     });
   },
 
-  // 故事背景横向拖拽：页面级手势，轨道 200vw 通过 transform 平移；
+  // 故事背景横向拖拽：页面级手势，轨道通过 transform 平移；
   // 位移超过阈值才进入拖拽，小幅移动不拦截，保证按钮与窗户热区的 tap 正常触发
   onStoryDragStart(event) {
     if (!this.data.storyImageUrl) return;
     const touch = event && event.touches && event.touches[0];
     if (!touch) return;
+    // 新拖拽开始时停掉未结束的惯性，避免惯性定时器与手势互相打架
+    this._stopStoryInertia();
     this._storyDragMoved = false;
-    this._storyDrag = { startX: Number(touch.clientX || 0), baseX: this.data.storyScrollX, moved: false };
+    this._storyDrag = {
+      startX: Number(touch.clientX || 0),
+      baseX: this.data.storyScrollX,
+      moved: false,
+      // 速度采样：最近一次的轨道位置与时间戳，供松手惯性计算初速度
+      lastScrollX: this.data.storyScrollX,
+      lastT: this._storyEventTime(event),
+      velocity: 0
+    };
   },
 
   onStoryDragMove(event) {
@@ -610,13 +631,55 @@ Page({
     if (!drag.moved && Math.abs(delta) < STORY_DRAG_THRESHOLD_PX) return;
     drag.moved = true;
     const maxShift = this._storyMaxScrollPx();
-    const next = Math.max(-maxShift, Math.min(0, drag.baseX + delta));
+    const next = Math.max(-maxShift, Math.min(0, drag.baseX + delta * STORY_DRAG_GAIN));
+    // 采样瞬时速度（轨道位移/时间）；同毫秒的多条 move 事件不更新，避免除零
+    const now = this._storyEventTime(event);
+    if (now > drag.lastT) {
+      drag.velocity = (next - drag.lastScrollX) / (now - drag.lastT);
+      drag.lastScrollX = next;
+      drag.lastT = now;
+    }
     this.setData({ storyScrollX: next });
   },
 
-  onStoryDragEnd() {
-    if (this._storyDrag) this._storyDragMoved = this._storyDrag.moved;
+  onStoryDragEnd(event) {
+    const drag = this._storyDrag;
+    if (!drag) return;
+    this._storyDragMoved = drag.moved;
     this._storyDrag = null;
+    if (!drag.moved) return;
+    // 松手前手指已停住一段时间，说明用户主动停稳，不启动惯性
+    if (this._storyEventTime(event) - drag.lastT > STORY_INERTIA_STALE_MS) return;
+    if (Math.abs(drag.velocity) < STORY_INERTIA_MIN_VELOCITY) return;
+    this._startStoryInertia(drag.velocity);
+  },
+
+  // 事件时间戳：优先用 touch 事件自带 timeStamp，缺失时退回 Date.now（单测环境）
+  _storyEventTime(event) {
+    const t = event && event.timeStamp;
+    return typeof t === 'number' && t > 0 ? t : Date.now();
+  },
+
+  // 松手惯性：按初速度逐帧衰减平移轨道，撞边界或速度低于阈值即停
+  _startStoryInertia(velocity) {
+    this._stopStoryInertia();
+    let v = velocity;
+    this._storyInertiaTimer = setInterval(() => {
+      v *= STORY_INERTIA_DECAY;
+      const maxShift = this._storyMaxScrollPx();
+      const next = Math.max(-maxShift, Math.min(0, this.data.storyScrollX + v * STORY_INERTIA_FRAME_MS));
+      this.setData({ storyScrollX: next });
+      if (Math.abs(v) < STORY_INERTIA_STOP_VELOCITY || next === -maxShift || next === 0) {
+        this._stopStoryInertia();
+      }
+    }, STORY_INERTIA_FRAME_MS);
+  },
+
+  _stopStoryInertia() {
+    if (this._storyInertiaTimer) {
+      clearInterval(this._storyInertiaTimer);
+      this._storyInertiaTimer = null;
+    }
   },
 
   // 视口尺寸惰性读取并缓存；windowHeight 缺失时兜底 667
@@ -659,7 +722,9 @@ Page({
       storyTrackWidthPx: trackWidth,
       storyTrackWidthStyle: `width:${trackWidth}px;`,
       storyWindowHotspotStyle: `left:${hotspotLeft}px;width:${hotspotWidth}px;`,
-      storyScrollX: Math.max(-maxShift, Math.min(0, this.data.storyScrollX))
+      // 初始居中：新轨道宽出现（首进或换到不同宽高比的图）时默认展示图片中间位置；
+      // 同尺寸换图走上面的 early return，保留用户当前拖拽位置；不可拖时取 0（避免 -0）
+      storyScrollX: maxShift > 0 ? -Math.round(maxShift / 2) : 0
     });
   },
 

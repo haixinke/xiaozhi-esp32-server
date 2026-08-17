@@ -1252,7 +1252,7 @@ async function run() {
   assert.strictEqual(pageStoryFail.data.storyImageUrl, 'https://oss.eggbabe.com/story/old.png',
     'a failed story refresh keeps the previous scene');
 
-  // 30. 背景横向拖拽：超过阈值才平移，范围钳制在 [-屏宽, 0]
+  // 30. 背景横向拖拽：超过阈值才平移，位移按增益 1.8 放大，范围钳制在 [-屏宽, 0]
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatched');
@@ -1264,7 +1264,7 @@ async function run() {
   pageDrag.onStoryDragMove({ touches: [{ clientX: 295 }] });
   assert.strictEqual(pageDrag.data.storyScrollX, 0, 'movement below the threshold does not drag the background');
   pageDrag.onStoryDragMove({ touches: [{ clientX: 100 }] });
-  assert.strictEqual(pageDrag.data.storyScrollX, -200, 'drag translates the track by the gesture delta');
+  assert.strictEqual(pageDrag.data.storyScrollX, -360, 'drag translates the track by the gesture delta times the 1.8 gain');
   pageDrag.onStoryDragMove({ touches: [{ clientX: -500 }] });
   assert.strictEqual(pageDrag.data.storyScrollX, -375, 'drag is clamped to one screen width (mock windowWidth 375)');
   pageDrag.onStoryDragMove({ touches: [{ clientX: 900 }] });
@@ -1313,7 +1313,7 @@ async function run() {
   pageEggIcon.onShow();
   assert.ok(pageEggIcon.data.storyChatIcon.includes('find_home_egg'), 'unknown prototype falls back to the egg icon');
 
-  // 33. 背景图加载后按真实宽高比扩展轨道，整张图任何区域都能拖到
+  // 33. 背景图加载后按真实宽高比扩展轨道，初始居中，整张图任何区域都能拖到
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatched');
@@ -1326,12 +1326,18 @@ async function run() {
   assert.strictEqual(pagePano.data.storyTrackWidthPx, 1126, 'track width follows the image aspect ratio');
   assert.ok(pagePano.data.storyTrackWidthStyle.includes('width:1126px'), 'track width style written');
   assert.ok(pagePano.data.storyWindowHotspotStyle.includes('left:631px'), 'window hotspot repositioned to 56% of the track');
+  assert.strictEqual(pagePano.data.storyScrollX, -376, 'initial scroll position centers the track (-round((1126-375)/2))');
   pagePano.onStoryDragStart({ touches: [{ clientX: 800 }] });
   pagePano.onStoryDragMove({ touches: [{ clientX: 0 }] });
   assert.strictEqual(pagePano.data.storyScrollX, -751, 'drag range extends to track width minus one screen (1126-375)');
+  pagePano.onStoryDragEnd();
+  // 同尺寸图重复加载：保留用户当前拖拽位置，不重新居中
+  pagePano.onStoryBgLoad({ detail: { width: 2823, height: 1672 } });
+  assert.strictEqual(pagePano.data.storyScrollX, -751, 'reloading a same-size image keeps the dragged position');
   // 竖图（宽<高）：轨道不窄于屏宽，不可拖
   pagePano.onStoryBgLoad({ detail: { width: 600, height: 1200 } });
   assert.strictEqual(pagePano.data.storyTrackWidthPx, 375, 'portrait image falls back to one screen width without drag');
+  assert.strictEqual(pagePano.data.storyScrollX, 0, 'portrait image has no scroll offset');
 
   // 34. 故事状态 caption toast：首弹 1800ms 后淡出；相同 caption 轮询不重弹；caption 变化再弹
   resetScenario();
@@ -1370,6 +1376,48 @@ async function run() {
   await Promise.resolve();
   assert.strictEqual(pageCaption.data.storyCaptionToastText, '有点困了，想小憩一下', 'changed caption re-shows the toast');
   assert.strictEqual(pageCaption.data.storyCaptionToastVisible, true, 'changed caption toast fades in again');
+
+  // 35. 松手惯性：快速甩动松手后继续衰减滚动并撞边界停住；停稳后松手不启动惯性
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageInertia = makePage();
+  pageInertia.onLoad();
+  pageInertia.onShow();
+  pageInertia.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/pano.png' });
+  // 轨道宽 1126，初始居中 -376，可平移范围 [-751, 0]
+  pageInertia.onStoryBgLoad({ detail: { width: 2823, height: 1672 } });
+  // 快速甩动：200px/16ms，经增益后速度约 -22.5 px/ms
+  pageInertia.onStoryDragStart({ touches: [{ clientX: 700 }], timeStamp: 1000 });
+  pageInertia.onStoryDragMove({ touches: [{ clientX: 500 }], timeStamp: 1016 });
+  assert.strictEqual(pageInertia.data.storyScrollX, -736, 'gain-amplified flick lands at base + delta * 1.8');
+  pageInertia.onStoryDragEnd({ timeStamp: 1032 });
+  assert.ok(pageInertia._storyInertiaTimer, 'a fast flick starts the inertia timer on release');
+  // 手动推进一帧：速度衰减后单帧位移约 -338px，直接撞到左边界并停止
+  intervalCallback();
+  assert.strictEqual(pageInertia.data.storyScrollX, -751, 'inertia frame clamps at the left edge');
+  assert.strictEqual(pageInertia._storyInertiaTimer, null, 'inertia stops after hitting the boundary');
+  // 停稳后松手（采样已过期）：不启动惯性
+  pageInertia.onStoryDragStart({ touches: [{ clientX: 700 }], timeStamp: 2000 });
+  pageInertia.onStoryDragMove({ touches: [{ clientX: 600 }], timeStamp: 2016 });
+  pageInertia.onStoryDragEnd({ timeStamp: 2200 });
+  assert.strictEqual(pageInertia._storyInertiaTimer, null, 'a settled finger does not start inertia');
+  // 先向右拖离左边界，再慢速拖动：速度低于启动阈值，不启动惯性
+  pageInertia.onStoryDragStart({ touches: [{ clientX: 100 }], timeStamp: 2500 });
+  pageInertia.onStoryDragMove({ touches: [{ clientX: 200 }], timeStamp: 3000 });
+  pageInertia.onStoryDragEnd({ timeStamp: 3100 });
+  assert.strictEqual(pageInertia._storyInertiaTimer, null, 'stale release after the reposition drag does not start inertia');
+  pageInertia.onStoryDragStart({ touches: [{ clientX: 700 }], timeStamp: 4000 });
+  pageInertia.onStoryDragMove({ touches: [{ clientX: 690 }], timeStamp: 4500 });
+  pageInertia.onStoryDragEnd({ timeStamp: 4510 });
+  assert.strictEqual(pageInertia._storyInertiaTimer, null, 'a slow drag below the velocity floor does not start inertia');
+  // onHide 清理进行中的惯性定时器
+  pageInertia._startStoryInertia(-1);
+  const inertiaTimerId = pageInertia._storyInertiaTimer;
+  assert.ok(inertiaTimerId, 'inertia timer is running before hide');
+  pageInertia.onHide();
+  assert.strictEqual(pageInertia._storyInertiaTimer, null, 'onHide stops the inertia timer');
+  assert.ok(clearedIntervals.includes(inertiaTimerId), 'onHide clears the inertia interval');
 
   console.log('home.test.js: ALL PASS');
 }

@@ -31,10 +31,11 @@ public class PrototypeStoryStateRefreshTask {
         this.clock = clock;
     }
 
-    // 每 10 分钟刷新一次原型故事状态，让时段切换与配置修复更快生效
-    @Scheduled(cron = "0 */10 * * * ?", zone = "Asia/Shanghai")
+    // 每小时整点刷新一次原型故事状态，与图片/权重时段的整点边界对齐
+    @Scheduled(cron = "0 0 * * * ?", zone = "Asia/Shanghai")
     public void refreshStates() {
         ZonedDateTime evaluatedAt = ZonedDateTime.ofInstant(clock.instant(), clock.getZone());
+        log.info("宠物原型故事状态刷新开始 hour={}", evaluatedAt.truncatedTo(ChronoUnit.HOURS));
         Map<StoryEvaluationResult, Integer> counts = new EnumMap<>(StoryEvaluationResult.class);
         int failures = 0;
         for (StoryPetPrototype prototype : StoryPetPrototype.values()) {

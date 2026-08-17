@@ -178,3 +178,13 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Agent skills
+
+### Issue tracker
+
+Issues 跟踪在 GitHub Issues（origin: haixinke/xiaozhi-esp32-server），用 gh CLI 操作。See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+单上下文布局：根 `CONTEXT.md` + `docs/adr/`（按需懒创建）。See `docs/agents/domain.md`.

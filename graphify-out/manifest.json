@@ -5280,8 +5280,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1786857422.2144074,
-    "ast_hash": "ad06b487f29c13eb5bb0181833fbe76a",
+    "mtime": 1786965467.3580108,
+    "ast_hash": "34898cefabcee1ae377c9ae141456022",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5910,8 +5910,8 @@
     "semantic_hash": "80a0732f87a244731b6b8d4e103b61c9"
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1786861673.450107,
-    "ast_hash": "57cea62bc91b514816425aaec79f98ab",
+    "mtime": 1786975016.8982668,
+    "ast_hash": "fefc4ea9d62a17d852663a34a357c24f",
     "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/_common.sh": {
@@ -6450,9 +6450,9 @@
     "semantic_hash": ""
   },
   "main/manager-api/pom.xml": {
-    "mtime": 1786265894.2358325,
-    "ast_hash": "9c4cf6267f546116ea04ee32f97e2d1e",
-    "semantic_hash": "9c4cf6267f546116ea04ee32f97e2d1e"
+    "mtime": 1786947592.587842,
+    "ast_hash": "99033373bb2738346701cb535898583b",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/annotation/OperationLog.java": {
     "mtime": 1786167262.1471045,
@@ -6550,13 +6550,13 @@
     "semantic_hash": "7b5a8cb00bcef77bfbfc3507846b718d"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/constant/StoryWeightPeriod.java": {
-    "mtime": 1786264077.6880734,
-    "ast_hash": "81e790cd67207f8a1c704907123989de",
-    "semantic_hash": "81e790cd67207f8a1c704907123989de"
+    "mtime": 1786974901.328316,
+    "ast_hash": "3ffd2f05d005e0bdf7046eb6106cb362",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/controller/StoryEngineController.java": {
-    "mtime": 1786794201.953445,
-    "ast_hash": "ed8126d75534be77e8b74c4f093c17e6",
+    "mtime": 1786947703.0242887,
+    "ast_hash": "801a3175fd635e2471b53618a5f47b68",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/dao/ActionDao.java": {
@@ -6600,9 +6600,9 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/dto/BatchWeightUpdateDTO.java": {
-    "mtime": 1786167262.152725,
-    "ast_hash": "6d121c00622c9d532f0a240b626927ce",
-    "semantic_hash": "6d121c00622c9d532f0a240b626927ce"
+    "mtime": 1786974935.5390947,
+    "ast_hash": "448705a01c4c17170c039ab619837acd",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/dto/BigSceneDTO.java": {
     "mtime": 1786167262.1529858,
@@ -6610,9 +6610,9 @@
     "semantic_hash": "8f121408411fbb2c2b4535de5ef0abb1"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/dto/SmallSceneDTO.java": {
-    "mtime": 1786167262.153218,
-    "ast_hash": "379ade0b3bf96af3113a0ddbbdd518a5",
-    "semantic_hash": "379ade0b3bf96af3113a0ddbbdd518a5"
+    "mtime": 1786974935.538333,
+    "ast_hash": "bed8d556f1d80085904d5d4c8167c9b0",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/ActionEntity.java": {
     "mtime": 1786167262.1534035,
@@ -6640,9 +6640,9 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/entity/SmallSceneEntity.java": {
-    "mtime": 1786167262.1539392,
-    "ast_hash": "ba544d7b0124b3c7f61cc3a0f70f9652",
-    "semantic_hash": "ba544d7b0124b3c7f61cc3a0f70f9652"
+    "mtime": 1786974914.9698565,
+    "ast_hash": "b8a1608d5b660b04a92f6892a6d02f09",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/model/SelectedStoryState.java": {
     "mtime": 1786849542.7764292,
@@ -6695,8 +6695,8 @@
     "semantic_hash": "2c4025bd12069cf3a03f5c26b0478826"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/StoryActionImageService.java": {
-    "mtime": 1786794201.9547038,
-    "ast_hash": "32bebbb866ccd9463387fdefc01ef1ea",
+    "mtime": 1786947633.4267852,
+    "ast_hash": "47d1480ecb4904d61c759b745b26bbcc",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/StoryActionService.java": {
@@ -6715,9 +6715,9 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/StoryPeriodResolver.java": {
-    "mtime": 1786264077.6905785,
-    "ast_hash": "acad3291734a44ad92465906c0e185dc",
-    "semantic_hash": "acad3291734a44ad92465906c0e185dc"
+    "mtime": 1786974898.6112828,
+    "ast_hash": "9eaad259f50ad9fea2bf03b38198ed84",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/StoryRandomSource.java": {
     "mtime": 1786264077.690721,
@@ -6745,8 +6745,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/impl/StoryActionImageServiceImpl.java": {
-    "mtime": 1786794201.955947,
-    "ast_hash": "cb678deade795be868e10b2289ac9e65",
+    "mtime": 1786947895.0861502,
+    "ast_hash": "29f6a70741a300504792192573a06b50",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/impl/StoryActionServiceImpl.java": {
@@ -6800,9 +6800,9 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/vo/SmallSceneVO.java": {
-    "mtime": 1786167262.156801,
-    "ast_hash": "944ee48216198e728288edbae8a68f29",
-    "semantic_hash": "944ee48216198e728288edbae8a68f29"
+    "mtime": 1786974935.538701,
+    "ast_hash": "695cd107605542cdace46c9013e3f891",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/vo/WeightSummaryVO.java": {
     "mtime": 1786167262.1569467,
@@ -6915,9 +6915,9 @@
     "semantic_hash": "f1b16397df1858fe8e7407ce73e6de48"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/StoryPeriodResolverTest.java": {
-    "mtime": 1786264077.6934226,
-    "ast_hash": "d49b70b7eb368ee71a550b29020aaa20",
-    "semantic_hash": "d49b70b7eb368ee71a550b29020aaa20"
+    "mtime": 1786974956.444946,
+    "ast_hash": "70d8d7537d783196cdc136a33810412f",
+    "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/StoryStateSelectorTest.java": {
     "mtime": 1786849343.979847,
@@ -6980,8 +6980,8 @@
     "semantic_hash": "bead76e665077162ce880157f37f9969"
   },
   "main/manager-web/src/apis/module/storyEngine.js": {
-    "mtime": 1786794201.9588342,
-    "ast_hash": "3377ab4fbf617e3671a296dee998f2b2",
+    "mtime": 1786948099.4533567,
+    "ast_hash": "da93159c05d41b262af11d4cb6be3276",
     "semantic_hash": ""
   },
   "main/manager-web/src/components/storyengine/ActionList.vue": {
@@ -6990,9 +6990,9 @@
     "semantic_hash": ""
   },
   "main/manager-web/src/components/storyengine/BigSceneList.vue": {
-    "mtime": 1786167262.1694963,
-    "ast_hash": "36096f9b38944ad69d337942a5cf9d6c",
-    "semantic_hash": "36096f9b38944ad69d337942a5cf9d6c"
+    "mtime": 1786950505.3233166,
+    "ast_hash": "968f2c750572552c95c5f59791610886",
+    "semantic_hash": ""
   },
   "main/manager-web/src/components/storyengine/SmallSceneList.vue": {
     "mtime": 1786167262.1697078,
@@ -7455,8 +7455,8 @@
     "semantic_hash": "16c0b9aae2810fb8f3e4584545176e60"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/impl/StoryActionImageServiceImplTest.java": {
-    "mtime": 1786794201.9583037,
-    "ast_hash": "c442a7377650690114b6fceaf194e0e7",
+    "mtime": 1786948033.221058,
+    "ast_hash": "dc3164389f3a2339d3c95e568e73e158",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/story-api.js": {
@@ -7492,6 +7492,11 @@
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/SpecialSceneTagRegistryTest.java": {
     "mtime": 1786849355.5449996,
     "ast_hash": "740ea8ab9e3d6de2e1f6ac196d90b125",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/storyengine/vo/CaptionsImportVO.java": {
+    "mtime": 1786947620.6890373,
+    "ast_hash": "7391d63bfe57419344ea4ee9321adb84",
     "semantic_hash": ""
   }
 }

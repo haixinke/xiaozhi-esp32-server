@@ -260,22 +260,24 @@ async function updateNickname(name) {
   if (Array.from(value).length > 10) return { ok: false, message: '昵称最多 10 个字符' };
   if (['违法', '诈骗', '赌博'].some(word => value.includes(word))) return { ok: false, message: '昵称含有不适合的内容，请换一个' };
   try {
-    const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
     let updated;
-    if (result.alreadyDone) {
-      // 后端 HatchActionService 仅在首次提交时持久化 nickname；二次提交走 PUT /pet/update 兜底。
-      try {
+    if (pet.hatchStatus === 'HATCHED') {
+      // 破壳后 NICKNAME 修炼动作不再合法(后端抛 10209)，改名直接走 PUT /pet/update
+      const vo = await petApi.updateNickname(pet.id, value);
+      updated = savePetFromVO(vo);
+    } else {
+      const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
+      if (result.alreadyDone) {
+        // 后端 HatchActionService 仅在首次提交时持久化 nickname；二次提交走 PUT /pet/update 兜底。
         const vo = await petApi.updateNickname(pet.id, value);
         updated = savePetFromVO(vo);
-      } catch (putError) {
-        return { ok: false, message: (putError && putError.userMessage) || '昵称保存失败，请稍后重试' };
+      } else {
+        updated = savePetFromVO(result.pet);
       }
-    } else {
-      updated = savePetFromVO(result.pet);
     }
     updated.name = value;
     savePet(updated);
-    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
+    return { ok: true, alreadyDone: pet.hatchStatus === 'HATCHED', pet: updated };
   } catch (error) {
     return { ok: false, message: (error && error.userMessage) || '提交失败，请稍后重试' };
   }

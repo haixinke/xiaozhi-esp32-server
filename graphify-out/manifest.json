@@ -4435,9 +4435,9 @@
     "semantic_hash": "aa5dd3307a0cfae76f13e6620f9e52e3"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/util/PetSystemPromptTemplate.java": {
-    "mtime": 1784964358.357489,
-    "ast_hash": "d8cd7600e6263711ed89306e45d26d66",
-    "semantic_hash": "d8cd7600e6263711ed89306e45d26d66"
+    "mtime": 1787035779.670121,
+    "ast_hash": "eeeb97bb303c64df50a69d04879bb3cd",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/util/MbtiParser.java": {
     "mtime": 1781660547.5434818,
@@ -5280,8 +5280,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1786978005.451789,
-    "ast_hash": "34898cefabcee1ae377c9ae141456022",
+    "mtime": 1787034643.315362,
+    "ast_hash": "ad06b487f29c13eb5bb0181833fbe76a",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5455,9 +5455,9 @@
     "semantic_hash": "cf4b6485d84001afc7bc951fe7303811"
   },
   "main/egg-miniprogram/miniprogram/pages/chat/chat.js": {
-    "mtime": 1786167262.1420279,
-    "ast_hash": "144473720d80f434b652a5a4f2c55cf6",
-    "semantic_hash": "144473720d80f434b652a5a4f2c55cf6"
+    "mtime": 1787047569.7914746,
+    "ast_hash": "be6720bb34fdc25fe70d302eb18cf8ff",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/wish/wish.js": {
     "mtime": 1784964358.3364565,

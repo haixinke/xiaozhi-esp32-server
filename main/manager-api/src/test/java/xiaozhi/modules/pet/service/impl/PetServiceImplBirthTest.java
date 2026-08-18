@@ -80,7 +80,7 @@ class PetServiceImplBirthTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 new PetAvatarProperties(), new PetCollectionCardProperties(), petCollectionCardService,
-                petSceneProperties, null);
+                petSceneProperties, null, null);
         when(llmService.isAvailable()).thenReturn(false);
     }
 

@@ -1,16 +1,16 @@
-# Graph Report - xiaozhi-esp32-server  (2026-08-17)
+# Graph Report - xiaozhi-esp32-server  (2026-08-18)
 
 ## Corpus Check
-- 1426 files · ~614,007 words
+- 1427 files · ~614,836 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 12457 nodes · 32365 edges · 596 communities (377 shown, 219 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 2205 edges (avg confidence: 0.73)
+- 12477 nodes · 32463 edges · 600 communities (378 shown, 222 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 2221 edges (avg confidence: 0.73)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0f1b0bf2`
+- Built from commit: `d7f8f3d9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,55 +19,55 @@
 - index-Guo1hQ-y.js
 - ASRProvider
 - ConnectionHandler
-- org.apache.ibatis.annotations.Mapper
+- com.baomidou.mybatisplus.annotation.TableName
 - getServiceUrl
-- ToolExecutor
+- ActionResponse
 - TTSProvider
 - lombok.Data
 - CompanionServiceImplTest
 - BaseService
-- lombok.AllArgsConstructor
+- PetServiceImplTodayMoodTest
 - AgentSnapshotPanel.vue
 - intentHandler.py
-- .isEnabled
-- .get
+- MCPClient
+- lI
 - aA
 - AgentService
-- *.vue
+- httpRequest.js
 - VoiceCloneServiceImpl
-- StoryContentLoaderTest
+- MoodDeciderTest
 - edit.vue
-- com.baomidou.mybatisplus.annotation.TableName
+- *.vue
 - .push
-- AgentServiceImpl
-- org.springframework.stereotype.Component
-- lI
+- AgentEntity
+- DateConverter
 - i
+- nQ
 - settings/index.vue
-- AgentTemplateController.java
+- AgentTemplateEntity
 - kl
 - pet-store.js
-- com.fasterxml.jackson.annotation.JsonIgnoreProperties
+- Builder
 - add-device.js
 - egg-miniprogram/miniprogram/utils/auth.js
 - index/index.js
-- CompanionVO
+- MenstrualPhase
 - TTSProviderBase
 - TokenServiceImpl.java
 - TextMessageType
 - agent.ts
 - test_chat_integration.py
 - devDependencies
-- post
-- .analyzeSensitiveUrlPath
+- change-soul.js
+- doodle-api.js
 - register/index.vue
 - home.js
 - InviteServiceImplTest
-- speedPitch.vue
+- store/index.ts
 - get
 - fishspeech.py
 - tools.vue
-- applyTheme
+- get
 - t
 - Alova HTTP Client
 - DeviceServiceImpl
@@ -78,17 +78,17 @@
 - check_model_key
 - is
 - SubscriptionServiceImpl
-- AgentSnapshotRedactionRunner
+- AgentSnapshotService
 - device/index.vue
-- JA
+- KA
 - roleConfig.vue
 - voice-call.js
-- KnowledgeFilesDTO
+- ChunkDTO
 - WebSocketClientManager
 - AgentSnapshotDialog.vue
-- CorrectWordFileServiceImpl
+- org.apache.ibatis.annotations.Mapper
 - scripts
-- ManualAddDeviceDialog.vue
+- CustomDialog.vue
 - manage_api_client.py
 - util.py
 - TestRuntimeApplication
@@ -103,7 +103,7 @@
 - error
 - home.vue
 - pet-store.test.js
-- ItemSkuEntity
+- ItemServiceImpl.java
 - PrototypeStoryStateServiceImplTest
 - main/miniprogram/app.js
 - Constant.java
@@ -114,29 +114,29 @@
 - KnowledgeBaseAdapter
 - ultrasonic-config.vue
 - home.test.js
-- PetStoryStateEntity
+- PrototypeStoryStateServiceImplTest.java
 - KnowledgeBaseManagement.vue
 - SafetyResult
 - PetStoryQueryServiceImplTest
 - compilerOptions
 - le
 - AgentSnapshotField
-- .register
+- .decide
 - RAGFlowAdapter
 - MCPEndpointClient
 - pages
 - ReplacementWordManagement.vue
 - org.junit.jupiter.api.Test
-- SysParamsServiceImpl
+- BigSceneList.vue
 - GIFEncoder
 - index.test.js
 - DatasetDTO
 - StorySmallSceneServiceImpl
 - ya
-- SysDictTypeServiceImpl
-- get
+- .sourceToTarget
+- backpack.js
 - WebSocketManager
-- org.junit.jupiter.params.ParameterizedTest
+- MqttGatewayAuthorizationTest
 - lombok.Getter
 - my.js
 - StoryRandomSource
@@ -149,21 +149,21 @@
 - DeviceManagement.vue
 - pages
 - login/index.vue
-- WechatServiceImpl
+- SysUserService
 - StoryStateSelectorTest
 - ft_render-ByO_jG18.js
 - AudioPlayer.vue
 - agent/index.vue
 - org.springframework.context.annotation.Configuration
-- PrototypeStoryStateService
+- WechatPayV3Client
 - voice-call.test.js
 - GlobalCacheManager
 - XssHttpServletRequestWrapper
-- StoryActionImageServiceImplTest
-- org.springframework.web.socket.WebSocketSession
-- SysParamsController
+- StoryActionImageServiceImpl.java
+- WebSocketClientManager.java
+- java.util.regex.Pattern
 - HeaderBar.vue
-- RuntimeError
+- WakewordDetector
 - ZA
 - ModelEditDialog.vue
 - VoiceCloneDialog.vue
@@ -187,7 +187,7 @@
 - org.springframework.context.annotation.Bean
 - doodle-canvas.test.js
 - AgentTagEntity
-- OssService
+- org.springframework.stereotype.Component
 - audio.test.js
 - 核心能力提供商适配层（ASR/TTS/LLM/Memory/Intent/VAD/VLLM）
 - devDependencies
@@ -199,17 +199,17 @@
 - ProviderManagement.vue
 - ServerSecretFilter
 - AgentVoicePrintServiceImpl
-- RenExceptionHandler.java
-- CustomDialog.vue
+- PaymentOrderServiceImpl
+- ParamsManagement.vue
 - UserManagement.vue
 - room-clock.js
 - TTSProvider
 - fg-tabbar.vue
-- PaymentController.java
+- PaymentOrderService
 - as
-- .sourceToTarget
-- AudioManager
-- KnowledgeFilesController
+- HatchActionServiceImplTest
+- BCrypt
+- KnowledgeFilesDTO
 - manifest.json
 - FeatureManager
 - buildDiffs
@@ -217,19 +217,19 @@
 - DateUtils
 - AudioManager
 - lombok.NoArgsConstructor
-- WechatUserEntity
-- orders.js
-- UnifiedToolHandler
+- PetServiceImplAdoptTest
+- applyTheme
+- MenstrualCycleUtilTest
 - permissions
 - ChatHistoryDialog.vue
 - subscription.js
-- AudioRateController
-- PetCollectionCardServiceImpl
+- IntimacyRule
+- PetCollectionCardEntity
 - WakewordEventBridge
 - RedisUtils
 - AgentContextProviderEntity
 - OpusEncoderUtils
-- PetStoryControllerTest.java
+- FeatureManagement.vue
 - registerType
 - pages/profile/profile.js
 - TTSProvider
@@ -244,60 +244,60 @@
 - EventEmitter
 - Selected Module Pipeline
 - WakeupWordsConfig
-- ContextProviderListTypeHandler.java
+- .parseObject
 - StreamTTSPerformanceTester
 - app.test.js
 - KnowledgeBaseItem.vue
 - account.test.js
 - time-service.js
-- play_music.py
+- get_system_prompt_for_function
 - Vue CLI Build Configuration
 - ASRProvider
-- main/miniprogram/utils/request.js
+- post
 - AddModelDialog.vue
 - add-device.test.js
 - window-weather-canvas.js
 - CompanionMood
 - mp-weixin
 - buildSavedVersionDiffSnapshot
-- org.springframework.web.multipart.MultipartFile
+- OtaEntity
 - PetSystemPromptTemplate
 - Multi-Level Memory
-- AgentChatHistoryService
+- AgentChatHistoryServiceImpl
 - _common.sh
 - invite-codes.test.js
 - profile.test.js
 - TimbreServiceImpl
-- Builder
+- com.fasterxml.jackson.annotation.JsonIgnoreProperties
 - PetMood
 - WechatPhoneGate
-- MemoryProvider
+- captureTtsDraft
 - GIF
 - .encrypt
 - Agent Base Prompt Template
 - ASRProvider
 - chat_integration_review_cases.py
-- .toStringObjectMap
+- BCryptPasswordEncoder
 - HatchActionType
-- SubscriptionFulfillmentServiceImpl.java
+- ChatHistoryExportServiceImpl
 - DeviceOtaVO
 - alova.ts
 - LLMPerformanceTester
-- AgentMcpAccessPointServiceImpl
+- CompanionController
 - app-plus
 - createWasm
-- ChatHistoryExportServiceImpl
+- AliyunDirectMailService
 - TtsAdvancedSettings.vue
-- ASRProvider
-- t
+- WechatPayClientStartupGuard.java
+- wifi-selector.vue
 - SmallSceneList.vue
-- TTSRecorder
+- ChatHistoryDeleteServiceImplTest
 - ShiroConfig.java
 - chat.test.js
 - welcome.test.js
 - wish.js
-- jakarta.servlet.http.HttpServletRequest
-- PageData
+- HttpContextUtils
+- OrderVO
 - manager-web/package.json
 - ProviderDialog.vue
 - floating-call-ball.js
@@ -307,31 +307,31 @@
 - collection-card.test.js
 - my.test.js
 - ipad
-- sI
+- chat-settings.js
 - voice-call-manager.js
 - auth.test.js
 - pet-store-actions.test.js
 - pet-mood-tab.js
 - egg-miniprogram/miniprogram/pages/settings/settings.js
 - doodle-save.test.js
-- OutputSafetyGate
+- invite-api.test.js
 - distribute
 - iphone
 - ccall
 - check-i18n.js
-- formatDisplayValue
+- functionParamRows
 - date.js
-- .deleteDatasetWithFiles
-- StorySelectionResultType
-- .get
+- CompanionVO
+- StoryStateSelector
+- jakarta.servlet.http.HttpServletRequest
 - ASRProvider
 - android
 - vue.config.js
 - TemplateQuickConfig.vue
-- ProfileValidator
+- fetchAgentConfig
 - websocket Utility
 - SAE Startup Wrapper Script
-- ChatHistoryDeleteService
+- .sendVerificationCodeSms
 - UploadScene.java
 - fetchSnapshots
 - scripts
@@ -342,17 +342,17 @@
 - help.js
 - OpenAIStyleLLMServiceImpl
 - TestRuntimeHttpServer
-- dotenv
-- java.lang.annotation.Documented
-- element-ui
+- .handleNotify
+- OperationType
+- reloadAgentPage
 - wechat-api.js
 - Result.java
 - callRuntimeCallbacks
-- normalizeFunctionMap
-- ConfigServiceImpl
+- normalizeValueForField
 - DeviceService
+- .doSyncPromptToAgent
 - ServerActionResponseEnum
-- WechatServiceImplTest
+- WechatPayProperties
 - service-worker.js
 - p3.py
 - performance_tester.py
@@ -360,7 +360,7 @@
 - egg-avatar.js
 - ASRProvider
 - AdminApplication
-- AgentVoicePrintVO
+- .getDefaultLanguageById
 - postupgrade.js
 - typings.d.ts
 - emscripten_realloc_buffer
@@ -384,11 +384,11 @@
 - Gemini LLMProvider._generate
 - submitRestoreSnapshot
 - docs/docker/start.sh
-- VoiceResourceDialog.vue
-- normalize.css
+- apis/api.js
+- TTSProvider
 - eslint-plugin-format
 - postcss-html
-- vuex
+- CompanionBirthCalculator
 - @uni-helper/vite-plugin-uni-components
 - @uni-helper/vite-plugin-uni-pages
 - @uni-helper/vite-plugin-uni-platform
@@ -398,7 +398,9 @@
 - vite-plugin-restart
 - vue-tsc
 - default.vue
-- tts/aliyun.py
+- XiaoZhiMcpJsonRpcJson.java
+- CharacterAge
+- dg
 - Frontend App Mount
 - DeepSeek Charset
 - GB2312 Charset
@@ -425,14 +427,17 @@
 - run-build-web.sh
 - run-build-xiaozhi.sh
 - run-mirror-funasr.sh
-- SysEmailParam
+- ImmediateFuture
 - wechat avatar upload endpoint
-- DeviceAddressBookService
+- cross-env
+- flyio
 - Subscription Page (我的契约)
+- opus-recorder
 - AgentChatSummaryServiceImpl
 - Prototype
 - da
 - .enabledAutoUpdateChecksFirmware
+- sm-crypto
 - AgentChatAudioService
 - AgentChatHistoryBizService
 - AgentChatHistoryService
@@ -475,6 +480,7 @@
 - IntentProviderBase
 - InviteService
 - ItemFulfillmentService
+- vue-i18n
 - ItemService
 - KnowledgeBaseAdapter
 - KnowledgeBaseService
@@ -513,7 +519,6 @@
 - VLLMProviderBase
 - VoiceCloneService
 - WechatService
-- DialogueRecorder
 - localizedSnapshotDisplayValue
 - ASRProvider
 - XssUtils
@@ -598,10 +603,9 @@
   main/digital-human/wakeword_runtime/core/detector_assets.py → main/digital-human/wakeword_runtime/runtime/http_server.py
 
 ## Import Cycles
-- 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/storyEngine.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
-- 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/voiceClone.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
-- 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/admin.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
+- 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/timbre.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/addressBook.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
+- 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/admin.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/agent.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/correctWord.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/device.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
@@ -609,8 +613,9 @@
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/knowledgeBase.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/model.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/ota.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
-- 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/timbre.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
+- 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/storyEngine.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/user.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
+- 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/voiceClone.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 - 4-file cycle: `main/manager-web/src/apis/api.js -> main/manager-web/src/apis/module/voiceResource.js -> main/manager-web/src/apis/httpRequest.js -> main/manager-web/src/store/index.js -> main/manager-web/src/apis/api.js`
 
 ## Hyperedges (group relationships)
@@ -627,135 +632,135 @@
 - **Default Selected Modules** — main_xiaozhi_server_config_selected_module, main_xiaozhi_server_config_funasr, main_xiaozhi_server_config_chatglm_llm, main_xiaozhi_server_config_edge_tts, main_xiaozhi_server_config_nomem, main_xiaozhi_server_config_plugins [EXTRACTED 1.00]
 - **Three Level Memory Architecture** — main_xiaozhi_server_docs_architecture_memory_system_architecture_semantic_memory, main_xiaozhi_server_docs_architecture_memory_system_architecture_episodic_memory, main_xiaozhi_server_docs_architecture_memory_system_architecture_user_profile_memory [EXTRACTED 1.00]
 
-## Communities (596 total, 219 thin omitted)
+## Communities (600 total, 222 thin omitted)
 
 ### Community 0 - "Result"
-Cohesion: 0.04
-Nodes (16): io.swagger.v3.oas.annotations.Operation, io.swagger.v3.oas.annotations.Parameter, LogOperation, Result, AgentController, GetMapping, CorrectWordFileCreateDTO, DeviceController (+8 more)
+Cohesion: 0.03
+Nodes (60): io.swagger.v3.oas.annotations.Operation, io.swagger.v3.oas.annotations.Parameter, io.swagger.v3.oas.annotations.Parameters, io.swagger.v3.oas.annotations.tags.Tag, lombok.AllArgsConstructor, PageData, ImageUploadController, Result (+52 more)
 
 ### Community 1 - "index-Guo1hQ-y.js"
 Cohesion: 0.01
-Nodes (238): _0, A0, Ab(), Ad, Ag(), Ah, Al(), Am (+230 more)
+Nodes (236): _0, A0, Ab(), Ad, Ag(), Ah, Al(), Am (+228 more)
 
 ### Community 3 - "ConnectionHandler"
-Cohesion: 0.05
-Nodes (18): ConnectionHandler, ServerConnection, 重置所有音频相关状态(VAD + ASR), Chat with the user and then close the connection, 从 direct_answer 的参数中提取 response 值。 优先使用 json.loads 标准解析，流式阶段 fallback 到字符串提取。, 清理 response 中可能泄漏的 JSON 闭合符号。 模型有时会在 response 内容中生成 JSON 闭合字符（如 ）"}} 或 '})，…, 合并工具调用列表 Args: tool_calls_list: 已收集的工具调用列表 tools_call: 新的工具调用, 处理来自MQTT网关的音频消息，解析16字节头部并提取音频数据，在入队前进行AEC处理 Args: message: 包含头部的音频消息 Returns:… (+10 more)
+Cohesion: 0.04
+Nodes (29): ConnectionHandler, ServerConnection, 重置所有音频相关状态(VAD + ASR), Chat with the user and then close the connection, 从 direct_answer 的参数中提取 response 值。 优先使用 json.loads 标准解析，流式阶段 fallback 到字符串提取。, 清理 response 中可能泄漏的 JSON 闭合符号。 模型有时会在 response 内容中生成 JSON 闭合字符（如 ）"}} 或 '})，…, 合并工具调用列表 Args: tool_calls_list: 已收集的工具调用列表 tools_call: 新的工具调用, 处理来自MQTT网关的音频消息，解析16字节头部并提取音频数据，在入队前进行AEC处理 Args: message: 包含头部的音频消息 Returns:… (+21 more)
 
-### Community 4 - "org.apache.ibatis.annotations.Mapper"
+### Community 4 - "com.baomidou.mybatisplus.annotation.TableName"
 Cohesion: 0.05
-Nodes (37): com.baomidou.mybatisplus.core.mapper.BaseMapper, BaseDao, AgentPluginMappingMapper, AgentVoicePrintDao, AiAgentChatAudioDao, AgentVoicePrintEntity, CompanionDao, CorrectWordItemDao (+29 more)
+Nodes (26): com.baomidou.mybatisplus.annotation.TableName, com.baomidou.mybatisplus.core.mapper.BaseMapper, lombok.EqualsAndHashCode, BaseEntity, AgentPluginMappingMapper, AiAgentChatAudioDao, AgentChatAudioEntity, AgentPluginMapping (+18 more)
 
 ### Community 5 - "getServiceUrl"
 Cohesion: 0.02
 Nodes (154): getServiceUrl(), getAddressBookList(), updateAlias(), updatePermission(), addParam(), deleteParam(), deleteUser(), getParamsList() (+146 more)
 
-### Community 6 - "ToolExecutor"
-Cohesion: 0.04
-Nodes (34): ABC, Any, ToolExecutor, Enum, ToolDefinition, ToolType, DeviceIoTExecutor, Any (+26 more)
+### Community 6 - "ActionResponse"
+Cohesion: 0.05
+Nodes (30): send_display_message(), ABC, Any, ToolExecutor, Enum, ToolDefinition, ToolType, DeviceIoTExecutor (+22 more)
 
 ### Community 7 - "TTSProvider"
-Cohesion: 0.11
-Nodes (10): Header, Optional, Any, 建立新的WebSocket连接，并启动监听任务（仅第一次）, 发送 FinishConnection 事件，等待服务端返回 EVENT_ConnectionFinished, 重写父类方法：使用独立的临时编码器处理音频文件，避免与TTS流式编码器并发冲突。 双流式TTS中，monitor任务在event…, 非流式生成音频数据，用于生成音频及测试场景 Args: text: 要转换的文本 Returns: list: 音频数据列表, Response (+2 more)
+Cohesion: 0.12
+Nodes (9): Header, Optional, Any, 建立新的WebSocket连接，并启动监听任务（仅第一次）, 发送 FinishConnection 事件，等待服务端返回 EVENT_ConnectionFinished, 重写父类方法：使用独立的临时编码器处理音频文件，避免与TTS流式编码器并发冲突。 双流式TTS中，monitor任务在event…, 非流式生成音频数据，用于生成音频及测试场景 Args: text: 要转换的文本 Returns: list: 音频数据列表, TTSProvider (+1 more)
 
 ### Community 8 - "lombok.Data"
 Cohesion: 0.03
-Nodes (48): io.swagger.v3.oas.annotations.media.Schema, lombok.Data, JsonRpcTwo, TreeNode, AgentChatSummaryDTO, AgentMemoryDTO, AgentSnapshotRestoreDTO, IdentifyVoicePrintResponse (+40 more)
-
-### Community 9 - "CompanionServiceImplTest"
-Cohesion: 0.13
-Nodes (3): CompanionService, CompanionServiceImplTest, CompanionMoodRefreshTaskTest
+Nodes (41): io.swagger.v3.oas.annotations.media.Schema, lombok.Data, TreeNode, AgentChatHistoryReportDTO, AgentChatSummaryDTO, AgentSnapshotRestoreDTO, AgentSnapshotTagDTO, IdentifyVoicePrintResponse (+33 more)
 
 ### Community 10 - "BaseService"
 Cohesion: 0.07
-Nodes (12): com.baomidou.mybatisplus.core.conditions.Wrapper, BaseService, GetMapping, PostMapping, PutMapping, RequestMapping, RestController, PetController (+4 more)
+Nodes (11): com.baomidou.mybatisplus.core.conditions.Wrapper, BaseService, AgentContextProviderService, LlmModelBasicInfoDTO, ModelBasicInfoDTO, BigSceneDTO, Override, StoryBigSceneServiceImpl (+3 more)
 
-### Community 11 - "lombok.AllArgsConstructor"
-Cohesion: 0.11
-Nodes (34): io.swagger.v3.oas.annotations.Hidden, io.swagger.v3.oas.annotations.tags.Tag, lombok.AllArgsConstructor, lombok.SneakyThrows, ImageUploadController, AgentMcpAccessPointController, AgentSnapshotController, AgentVoicePrintController (+26 more)
+### Community 11 - "PetServiceImplTodayMoodTest"
+Cohesion: 0.06
+Nodes (5): BirthResult, Override, PetNicknameGenerator, PetServiceImplTodayMoodTest, PetServiceImplUpdatePetTest
 
 ### Community 12 - "AgentSnapshotPanel.vue"
 Cohesion: 0.04
-Nodes (98): deleteAgentSnapshot(), getAgentSnapshot(), getAgentSnapshots(), getCorrectWordFiles(), getModelOptions(), getTTSVoices(), restoreAgentSnapshot(), AgentSnapshotData (+90 more)
+Nodes (106): deleteAgentSnapshot(), getAgentSnapshot(), getAgentSnapshots(), getCorrectWordFiles(), getTTSVoices(), restoreAgentSnapshot(), AgentSnapshotData, t() (+98 more)
 
 ### Community 13 - "intentHandler.py"
+Cohesion: 0.05
+Nodes (64): report(), handleAbortMessage(), checkWakeupWords(), wakeupWordsResponse(), analyze_intent_with_llm(), check_direct_exit(), handle_user_intent(), _output_block_message() (+56 more)
+
+### Community 14 - "MCPClient"
 Cohesion: 0.04
-Nodes (65): report(), Any, handleAbortMessage(), checkWakeupWords(), wakeupWordsResponse(), analyze_intent_with_llm(), check_direct_exit(), handle_user_intent() (+57 more)
+Nodes (31): MCPClient, any, Exception, Future, 设备端MCP客户端，用于管理MCP状态和工具, call_mcp_tool(), call_mcp_tool, handle_mcp_message() (+23 more)
 
-### Community 14 - ".isEnabled"
-Cohesion: 0.06
-Nodes (4): TreeUtils, Override, OssServiceTest, AgentChatAudioServiceImplTest
-
-### Community 15 - ".get"
-Cohesion: 0.06
-Nodes (46): Ao, Bu, CB(), ce(), co(), dn(), eg(), fB() (+38 more)
+### Community 15 - "lI"
+Cohesion: 0.05
+Nodes (31): Ao, CI, dn(), EI(), fn(), gI(), Ir(), JB (+23 more)
 
 ### Community 16 - "aA"
-Cohesion: 0.05
-Nodes (53): _A, aA(), Au(), BE(), Bg(), bo(), Bs(), $c() (+45 more)
+Cohesion: 0.06
+Nodes (45): aA(), Au(), BE(), Bg(), bo(), Bs(), $c(), Cg() (+37 more)
 
 ### Community 17 - "AgentService"
-Cohesion: 0.04
-Nodes (54): com.fasterxml.jackson.databind.JsonNode, Override, SpringContextUtils, AiAgentChatHistoryDao, AgentCreateDTO, AgentChatHistoryType, AGENT, USER (+46 more)
+Cohesion: 0.03
+Nodes (84): java.lang.reflect.Method, Override, SpringContextUtils, AiAgentChatHistoryDao, AgentCreateDTO, AgentDTO, AgentChatHistoryEntity, AgentChatHistoryType (+76 more)
 
-### Community 18 - "*.vue"
-Cohesion: 0.04
-Nodes (54): ImportMeta, ImportMetaEnv, *.vue, IUseRequestOptions, IUseRequestReturn, GlobalComponents, TypedGlobalComponent, vue (+46 more)
+### Community 18 - "httpRequest.js"
+Cohesion: 0.05
+Nodes (45): fly, httpHandlerError(), reAjaxFun(), sendRequest(), changeLanguage(), i18n, register(), protectedRoutes (+37 more)
 
 ### Community 19 - "VoiceCloneServiceImpl"
-Cohesion: 0.09
-Nodes (10): VoiceCloneController, VoiceResourceController, VoiceCloneDTO, VoiceCloneResponseDTO, VoiceCloneEntity, Override, PageData, QueryWrapper (+2 more)
+Cohesion: 0.11
+Nodes (11): SysOperationLogDTO, QueryWrapper, VoiceCloneDao, VoiceCloneDTO, VoiceCloneResponseDTO, VoiceCloneEntity, Override, PageData (+3 more)
 
-### Community 20 - "StoryContentLoaderTest"
-Cohesion: 0.25
-Nodes (4): Arguments, SuppressWarnings, StoryContentLoaderTest, org.junit.jupiter.params.provider.MethodSource
+### Community 20 - "MoodDeciderTest"
+Cohesion: 0.07
+Nodes (12): MoodActingGuide, MoodLinePool, fromLabel(), TodayMood, CALM, EXCITED, HAPPY, LOW (+4 more)
 
 ### Community 21 - "edit.vue"
 Cohesion: 0.03
-Nodes (87): getAgentDetail(), getAgentTags(), getAllLanguage(), getPluginFunctions(), getRoleTemplates(), updateAgent(), agentId, allFunctions (+79 more)
+Nodes (90): getAgentDetail(), getAgentTags(), getAllLanguage(), getModelOptions(), getPluginFunctions(), getRoleTemplates(), updateAgent(), ensureMetadata() (+82 more)
 
-### Community 22 - "com.baomidou.mybatisplus.annotation.TableName"
+### Community 22 - "*.vue"
 Cohesion: 0.06
-Nodes (19): com.baomidou.mybatisplus.annotation.TableName, lombok.EqualsAndHashCode, BaseEntity, AgentTemplateVO, InviteCodeCreateDTO, InviteUsageEntity, HatchActionEntity, PetCollectionCardEntity (+11 more)
+Nodes (24): ImportMeta, ImportMetaEnv, *.vue, IUseRequestOptions, IUseRequestReturn, canSubmit, checkESP32Connection(), configuring (+16 more)
 
 ### Community 23 - ".push"
 Cohesion: 0.03
-Nodes (62): Ba(), Bd, bt(), Cd, Ck(), cs(), dv(), ev() (+54 more)
+Nodes (70): Ba(), Bd, bt(), Bu, cA(), Cd, Ck(), cs() (+62 more)
 
-### Community 24 - "AgentServiceImpl"
+### Community 24 - "AgentEntity"
 Cohesion: 0.07
-Nodes (5): AgentSnapshotService, AgentServiceImpl, Override, PageData, CorrectWordFileService
+Nodes (10): AgentDao, AgentUpdateDTO, AgentEntity, applyTo(), snapshotValue(), updateValue(), AgentServiceImpl, Override (+2 more)
 
-### Community 25 - "org.springframework.stereotype.Component"
-Cohesion: 0.08
-Nodes (17): com.baomidou.mybatisplus.core.handlers.MetaObjectHandler, DateConverter, Override, FieldMetaObjectHandler, Override, PropertiesUtils, CompanionMoodRefreshTask, DocumentStatusSyncTask (+9 more)
+### Community 25 - "DateConverter"
+Cohesion: 0.47
+Nodes (3): DateConverter, Override, org.springframework.core.convert.converter.Converter
 
-### Community 26 - "lI"
-Cohesion: 0.09
-Nodes (11): CI, EI(), fn(), Ir(), lI, Mg(), pv(), Qv() (+3 more)
+### Community 26 - "i"
+Cohesion: 0.07
+Nodes (35): Ak(), Av(), Bc(), Bn(), Bv(), Cc(), Cu, Cv() (+27 more)
 
-### Community 27 - "i"
+### Community 27 - "nQ"
 Cohesion: 0.04
-Nodes (91): AC(), Ar(), Av(), _B(), Bc(), bI(), Bn(), Bv() (+83 more)
+Nodes (81): _A, AC(), AQ(), _B(), ce(), CQ(), Cr, Ct() (+73 more)
 
 ### Community 28 - "settings/index.vue"
-Cohesion: 0.05
-Nodes (54): isLogined(), usePageAuth(), TFile, TfileType, TImage, TOptions, uploadFile(), useUpload() (+46 more)
+Cohesion: 0.06
+Nodes (47): TFile, TfileType, TImage, TOptions, uploadFile(), useUpload(), getSupportedLanguages(), baseUrlInput (+39 more)
 
-### Community 29 - "AgentTemplateController.java"
-Cohesion: 0.16
-Nodes (7): ResultUtils, AgentTemplateController, AgentTemplateDao, AgentTemplateEntity, AgentTemplateService, AgentTemplateServiceImpl, Override
+### Community 29 - "AgentTemplateEntity"
+Cohesion: 0.29
+Nodes (5): AgentTemplateDao, AgentTemplateEntity, AgentTemplateServiceImpl, Override, AgentTemplateVO
+
+### Community 30 - "kl"
+Cohesion: 0.05
+Nodes (4): kl(), ns, os(), sI()
 
 ### Community 31 - "pet-store.js"
 Cohesion: 0.05
-Nodes (58): onLogout(), petStore, onShow(), petStore, onShow(), petApi, petStore, onSubmit() (+50 more)
+Nodes (57): onLogout(), petStore, onValidate(), onShow(), petStore, onShow(), petApi, petStore (+49 more)
 
-### Community 32 - "com.fasterxml.jackson.annotation.JsonIgnoreProperties"
-Cohesion: 0.20
-Nodes (25): com.fasterxml.jackson.annotation.JsonIgnoreProperties, com.fasterxml.jackson.annotation.JsonInclude, AddReq, ChunkDTO, InfoVO, AllArgsConstructor, Data, NoArgsConstructor (+17 more)
+### Community 32 - "Builder"
+Cohesion: 0.23
+Nodes (14): DeleteItem, DocAggVO, HitVO, AllArgsConstructor, Data, NoArgsConstructor, MetaBatchReq, MetaSummaryVO (+6 more)
 
 ### Community 33 - "add-device.js"
-Cohesion: 0.10
-Nodes (23): activationCodeCells(), auth, onCodeInput(), onLoad(), onValidate(), petStore, { post }, shareInvite (+15 more)
+Cohesion: 0.11
+Nodes (19): activationCodeCells(), auth, onCodeInput(), onLoad(), petStore, { post }, shareInvite, syncPendingInvite() (+11 more)
 
 ### Community 34 - "egg-miniprogram/miniprogram/utils/auth.js"
 Cohesion: 0.11
@@ -763,15 +768,15 @@ Nodes (32): applySession(), auth, AUTH_FIELDS, clearLoginState(), ensureLogin(),
 
 ### Community 35 - "index/index.js"
 Cohesion: 0.05
-Nodes (58): DELETE /agent/chat-history/{id} API, GET /agent/chat-history/list API, _addMessage(), app, _appendStreamingText(), _applyFeatures(), AudioManager, _bootstrap() (+50 more)
+Nodes (58): DELETE /agent/chat-history/{id} API, GET /agent/chat-history/list API, _addMessage(), app, _appendStreamingText(), AudioManager, _bootstrap(), _calcScrollViewHeight() (+50 more)
 
-### Community 36 - "CompanionVO"
-Cohesion: 0.10
-Nodes (17): CompanionController, PostMapping, RequestMapping, RestController, CompanionCreateDTO, CompanionSetupDTO, CompanionSyncPromptDTO, CompanionUpdateDTO (+9 more)
+### Community 36 - "MenstrualPhase"
+Cohesion: 0.22
+Nodes (6): MenstrualCycleUtil, MenstrualPhase, FOLLICULAR, LUTEAL, MENSTRUATION, OVULATION
 
 ### Community 37 - "TTSProviderBase"
 Cohesion: 0.02
-Nodes (58): AccessToken, ABC, Any, 存储指定 sentence_id 对应的文本，用于流式TTS获取正确的字幕文本 Args: sentence_id: 会话ID text: 要存储的文本, 获取指定 sentence_id 对应的文本 Args: sentence_id: 会话ID Returns: str: 对应的文本，如果不存在返回 None, 清除指定 sentence_id 的文本 Args: sentence_id: 会话ID, 处理音频文件并转换为指定格式 Args: tts_file: 音频文件路径 callback: 文件处理函数, 处理剩余的文本并生成语音 Returns: bool: 是否成功处理了文本 (+50 more)
+Nodes (64): AccessToken, AccessToken, Aliyun TTSProvider.text_to_speak, TTSProvider, ABC, Any, 存储指定 sentence_id 对应的文本，用于流式TTS获取正确的字幕文本 Args: sentence_id: 会话ID text: 要存储的文本, 获取指定 sentence_id 对应的文本 Args: sentence_id: 会话ID Returns: str: 对应的文本，如果不存在返回 None (+56 more)
 
 ### Community 38 - "TokenServiceImpl.java"
 Cohesion: 0.27
@@ -786,56 +791,56 @@ Cohesion: 0.06
 Nodes (40): createAgent(), deleteAgent(), getAgentList(), Agent, AgentCreateData, AgentDetail, AgentFunction, AgentSnapshot (+32 more)
 
 ### Community 41 - "test_chat_integration.py"
-Cohesion: 0.05
-Nodes (45): Enum, fixture, _async_false(), _async_none(), chat_connection(), connection_module(), crisis_input_connection(), direct_answer_connection() (+37 more)
+Cohesion: 0.04
+Nodes (48): Enum, fixture, _async_false(), _async_none(), chat_connection(), connection_module(), crisis_input_connection(), DialogueRecorder (+40 more)
 
 ### Community 42 - "devDependencies"
 Cohesion: 0.03
 Nodes (71): @alova/wormhole, @antfu/eslint-config, autoprefixer, @commitlint/cli, @commitlint/config-conventional, @dcloudio/types, @dcloudio/uni-automator, @dcloudio/uni-cli-shared (+63 more)
 
-### Community 43 - "post"
+### Community 43 - "change-soul.js"
 Cohesion: 0.05
-Nodes (56): POST /companion/setup API, needReconnectAfterReshape global flag, App globalData, getLabel(), companion-codes config, OCCUPATIONS, QUIRKS, ROLES (+48 more)
+Nodes (43): getLabel(), companion-codes config, OCCUPATIONS, QUIRKS, ROLES, SOUL_TRAITS, codes, { get, post } (+35 more)
 
-### Community 44 - ".analyzeSensitiveUrlPath"
+### Community 44 - "doodle-api.js"
 Cohesion: 0.07
-Nodes (5): SensitivePathAnalysis, SensitivePathSlot, SensitiveUrlParts, UrlParameter, UrlPathParts
+Nodes (21): API_BASE_URL, { API_BASE_URL }, auth, { post, get }, assert, doodleApi, Module, requestResponses (+13 more)
 
 ### Community 45 - "register/index.vue"
 Cohesion: 0.04
-Nodes (65): CaptchaResponse, ForgotPasswordData, getCaptcha(), getPublicConfig(), getUserInfo(), LoginData, LoginResponse, PublicConfig (+57 more)
+Nodes (51): CaptchaResponse, ForgotPasswordData, getCaptcha(), getPublicConfig(), LoginData, LoginResponse, PublicConfig, register() (+43 more)
 
 ### Community 46 - "home.js"
 Cohesion: 0.04
 Nodes (76): auth, buildCompanionActions(), buildShareQuery(), CHAT_ENTRY_ICONS, chatEntryIcon(), clearEnvironmentTimer(), clearStoryCaptionToast(), clearStoryTimer() (+68 more)
 
 ### Community 47 - "InviteServiceImplTest"
-Cohesion: 0.10
-Nodes (9): InviteCodeDao, InviteCodeUpdateDTO, InviteCodeEntity, InviteServiceImpl, Override, PageData, InviteCodeVO, InviteUsageVO (+1 more)
+Cohesion: 0.11
+Nodes (7): InviteCodeDao, InviteCodeUpdateDTO, InviteCodeEntity, InviteServiceImpl, Override, PageData, InviteServiceImplTest
 
-### Community 48 - "speedPitch.vue"
-Cohesion: 0.20
-Nodes (10): goBack(), handleConfirm(), localSettings, SPEED_PITCH_FIELDS, speedPitchStore, SPEED_PITCH_FIELDS, SpeedPitchField, SpeedPitchSettings (+2 more)
+### Community 48 - "store/index.ts"
+Cohesion: 0.07
+Nodes (37): getUserInfo(), UserInfo, configStore, langStore, updateTabBarText(), usePageAuth, isLogined(), usePageAuth() (+29 more)
 
 ### Community 49 - "get"
-Cohesion: 0.03
-Nodes (57): API_BASE_URL, API_BASE_URL, confirmDelete(), onDelete(), onExport(), request, { API_BASE_URL }, auth (+49 more)
+Cohesion: 0.06
+Nodes (35): API_BASE_URL, adoptPet(), { get, post, put }, getPet(), hatchPet(), listChatHistory(), listHatchActions(), listPets() (+27 more)
 
 ### Community 50 - "fishspeech.py"
-Cohesion: 0.13
-Nodes (12): BaseModel, audio_to_bytes(), read_ref_text(), ServeReferenceAudio, ServeTTSRequest, FishSpeech TTSProvider.text_to_speak, TTSProvider, TTSProvider (+4 more)
+Cohesion: 0.21
+Nodes (9): BaseModel, audio_to_bytes(), Config, read_ref_text(), ServeReferenceAudio, ServeTTSRequest, FishSpeech TTSProvider.text_to_speak, TTSProvider (+1 more)
 
 ### Community 51 - "tools.vue"
 Cohesion: 0.07
 Nodes (25): getMcpAddress(), getMcpTools(), agentId, allFunctions, arrayTextCache, copyMcpAddress(), currentFunction, currentSegmented (+17 more)
 
-### Community 52 - "applyTheme"
-Cohesion: 0.04
-Nodes (61): GET /companion/detail API, GET /companion/intimacy API, GET /item/inventory API, GET /subscription/entitlements API, ReshapeConfirm Component, all(), DEFAULT_VOICES, findById() (+53 more)
+### Community 52 - "get"
+Cohesion: 0.06
+Nodes (38): GET /companion/detail API, GET /companion/intimacy API, GET /item/inventory API, all(), DEFAULT_VOICES, findById(), assert, cat (+30 more)
 
 ### Community 53 - "t"
 Cohesion: 0.05
-Nodes (32): ae(), Ak(), Bk(), cn(), Dl(), Do(), ek(), eu() (+24 more)
+Nodes (41): ae(), bI(), Bk(), CB(), cn(), co(), Dl(), eu() (+33 more)
 
 ### Community 54 - "Alova HTTP Client"
 Cohesion: 0.06
@@ -855,7 +860,7 @@ Nodes (59): abortcontroller-polyfill, alova, @alova/adapter-uniapp, @alova/share
 
 ### Community 58 - "ASRProvider"
 Cohesion: 0.07
-Nodes (12): ASRProvider, create_instance(), ASRPerformanceTester, main(), 从 data 目录加载所有 .config.yaml 文件的配置, ASRPerformanceSuite, BaseASRTester, DoubaoStreamASRTester (+4 more)
+Nodes (11): ASRProvider, ASRPerformanceTester, main(), 从 data 目录加载所有 .config.yaml 文件的配置, ASRPerformanceSuite, BaseASRTester, DoubaoStreamASRTester, main() (+3 more)
 
 ### Community 59 - "J"
 Cohesion: 0.10
@@ -863,74 +868,74 @@ Nodes (21): Af, Bf, Cf, _d, dd, df, el(), fd (+13 more)
 
 ### Community 60 - "check_model_key"
 Cohesion: 0.03
-Nodes (36): GenerateContentResponse, LLMProvider, LLMProvider, Coze LLMProvider.response, Coze LLMProvider.response_with_functions, LLMProvider, Dify LLMProvider.response, Dify LLMProvider.response_with_functions (+28 more)
+Nodes (42): GenerateContentResponse, generate_and_save_chat_summary(), LLMProvider, LLMProviderBase.response_no_stream, LLMProvider, LLMProvider, Any, 分别测试 HTTP 和 HTTPS 代理是否可用，并设置环境变量。 如果 HTTPS 代理不可用但 HTTP 可用，会将 HTTPS_PROXY 也指向… (+34 more)
 
 ### Community 61 - "is"
-Cohesion: 0.07
-Nodes (5): aI(), es, F(), is(), Ts()
+Cohesion: 0.08
+Nodes (3): es, is(), Ts()
 
 ### Community 62 - "SubscriptionServiceImpl"
-Cohesion: 0.16
-Nodes (8): SubscriptionPlanEntity, UserSubscriptionEntity, Override, SubscriptionServiceImpl, EntitlementVO, BonusItem, SubscriptionPlanVO, UserSubscriptionVO
+Cohesion: 0.17
+Nodes (7): SubscriptionPlanDao, SubscriptionPlanEntity, UserSubscriptionEntity, Override, SubscriptionServiceImpl, BonusItem, SubscriptionPlanVO
 
-### Community 63 - "AgentSnapshotRedactionRunner"
-Cohesion: 0.21
-Nodes (6): java.lang.reflect.Method, AgentSnapshotRedactionRunner, Override, AgentSnapshotRedactionRunnerTest, org.springframework.beans.factory.SmartInitializingSingleton, org.springframework.boot.test.system.CapturedOutput
+### Community 63 - "AgentSnapshotService"
+Cohesion: 0.09
+Nodes (11): AgentSnapshotPageDTO, AgentSnapshotService, AgentSnapshotRedactionRunner, Override, PageData, AgentSnapshotVO, AgentSnapshotRedactionRunnerTest, PrototypeStoryStateRefreshTaskTest (+3 more)
 
 ### Community 64 - "device/index.vue"
 Cohesion: 0.08
 Nodes (35): bindDevice(), bindDeviceManual(), getBindDevices(), getFirmwareTypes(), unbindDevice(), updateDeviceAutoUpdate(), Device, FirmwareType (+27 more)
 
-### Community 65 - "JA"
-Cohesion: 0.10
-Nodes (25): AQ(), Cr, En, fQ(), fr(), gg(), gI(), Hg() (+17 more)
+### Community 65 - "KA"
+Cohesion: 0.11
+Nodes (20): aI(), Ar(), dI, dQ, eg(), F(), Jk(), KA() (+12 more)
 
 ### Community 66 - "roleConfig.vue"
-Cohesion: 0.07
-Nodes (36): applyTemplateData(), applyTtsDraft(), buildCurrentFunctions(), buildTtsDraft(), captureTtsDraft(), cloneTtsDraft(), enrichCurrentFunctionsWithMetadata(), fetchAgentConfig() (+28 more)
+Cohesion: 0.09
+Nodes (6): fetchModelOptions(), fetchTemplates(), loadFeatureStatus(), mounted(), playVoicePreview(), toggleAudioPlayback()
 
 ### Community 67 - "voice-call.js"
-Cohesion: 0.10
-Nodes (31): _initAudio(), app, AudioManager, _cleanup(), _cleanupResources(), _computeStatusText(), formatDuration(), { getTheme, applyTheme } (+23 more)
+Cohesion: 0.11
+Nodes (27): app, AudioManager, _cleanup(), _cleanupResources(), _computeStatusText(), formatDuration(), { getTheme, applyTheme }, _handleWSMessage() (+19 more)
 
-### Community 68 - "KnowledgeFilesDTO"
-Cohesion: 0.10
-Nodes (13): DocumentDao, KnowledgeFilesDTO, DocumentEntity, ListReq, BatchIdReq, InfoVO, ListReq, Override (+5 more)
+### Community 68 - "ChunkDTO"
+Cohesion: 0.41
+Nodes (11): AddReq, ChunkDTO, InfoVO, AllArgsConstructor, Data, NoArgsConstructor, ListReq, ListVO (+3 more)
 
 ### Community 69 - "WebSocketClientManager"
-Cohesion: 0.16
-Nodes (3): BinaryMessage, WebSocketClientManager, TextMessage
+Cohesion: 0.13
+Nodes (4): BinaryMessage, WebSocketClientManager, StopWatch, TextMessage
 
 ### Community 70 - "AgentSnapshotDialog.vue"
 Cohesion: 0.08
 Nodes (31): beforeDestroy(), cancelPendingSnapshotRequests(), canRestoreSnapshot(), canViewSnapshot(), CHAT_HISTORY_CONF_LABEL_KEYS, close(), detailDialogTitle(), ensureCorrectWordMetadata() (+23 more)
 
-### Community 71 - "CorrectWordFileServiceImpl"
-Cohesion: 0.12
-Nodes (9): AgentCorrectWordMappingDao, AgentCorrectWordMappingEntity, CorrectWordFileDao, CorrectWordFileEntity, CorrectWordItemEntity, CorrectWordFileServiceImpl, Override, PageData (+1 more)
+### Community 71 - "org.apache.ibatis.annotations.Mapper"
+Cohesion: 0.08
+Nodes (19): BaseDao, AgentCorrectWordMappingDao, AgentCorrectWordMappingEntity, CorrectWordFileDao, CorrectWordItemDao, CorrectWordFileEntity, CorrectWordItemEntity, CorrectWordFileServiceImpl (+11 more)
 
 ### Community 72 - "scripts"
 Cohesion: 0.04
 Nodes (51): scripts, build, build:app, build:app-android, build:app-ios, build:custom, build:h5, build:h5:ssr (+43 more)
 
-### Community 73 - "ManualAddDeviceDialog.vue"
-Cohesion: 0.43
-Nodes (5): addDevice(), closeDialog(), created(), getFirmwareTypes(), submitForm()
+### Community 73 - "CustomDialog.vue"
+Cohesion: 0.07
+Nodes (10): addDevice(), closeDialog(), created(), getFirmwareTypes(), submitForm(), data(), getValidLines(), handleFileChange() (+2 more)
 
 ### Community 74 - "manage_api_client.py"
-Cohesion: 0.07
-Nodes (31): ensure_directories(), get_config_from_api_async(), get_private_config_from_api(), get_project_dir(), load_config(), merge_configs(), 递归合并配置，custom_config优先级更高 Args: default_config: 默认配置 custom_config: 用户自定义配置…, read_config() (+23 more)
+Cohesion: 0.08
+Nodes (26): ensure_directories(), get_config_from_api_async(), get_private_config_from_api(), get_project_dir(), load_config(), merge_configs(), 递归合并配置，custom_config优先级更高 Args: default_config: 默认配置 custom_config: 用户自定义配置…, read_config() (+18 more)
 
 ### Community 75 - "util.py"
 Cohesion: 0.03
-Nodes (62): main(), monitor_stdin(), 阻塞直到收到 Ctrl‑C / SIGTERM。 - Unix: 使用 add_signal_handler - Windows: 依赖…, wait_for_exit(), BaseHandler, 处理OPTIONS请求，添加CORS头信息, _is_higher_version(), OTAHandler (+54 more)
+Nodes (54): main(), monitor_stdin(), 阻塞直到收到 Ctrl‑C / SIGTERM。 - Unix: 使用 add_signal_handler - Windows: 依赖…, wait_for_exit(), BaseHandler, 处理OPTIONS请求，添加CORS头信息, _is_higher_version(), OTAHandler (+46 more)
 
 ### Community 76 - "TestRuntimeApplication"
 Cohesion: 0.10
 Nodes (6): AudioPlugin, Exception, WakeWordPlugin, EventPublisher, Protocol, TestRuntimeApplication
 
 ### Community 77 - "DictManagement.vue"
-Cohesion: 0.07
+Cohesion: 0.10
 Nodes (13): batchDeleteDictData(), batchDeleteDictType(), created(), deleteDictData(), goToPage(), handleDictTypeRowClick(), handlePageSizeChange(), handleSearch() (+5 more)
 
 ### Community 78 - "detail.vue"
@@ -938,32 +943,32 @@ Cohesion: 0.06
 Nodes (35): getAudioId(), getChatHistory(), getChatSessions(), AudioResponse, ChatMessage, ChatSession, ChatSessionsResponse, GetSessionsParams (+27 more)
 
 ### Community 79 - "ModelConfigServiceImpl"
-Cohesion: 0.08
-Nodes (10): ModelController, LlmModelBasicInfoDTO, ModelBasicInfoDTO, ModelConfigBodyDTO, ModelConfigDTO, ModelConfigEntity, JSONObject, Override (+2 more)
+Cohesion: 0.05
+Nodes (15): cn.hutool.json.JSONObject, JSONObject, SensitiveDataUtils, SM2Utils, ModelConfigBodyDTO, ModelConfigDTO, JSONObject, Override (+7 more)
 
 ### Community 80 - "AgentSnapshotServiceImpl"
-Cohesion: 0.05
-Nodes (23): AgentDao, AgentSnapshotDao, AgentSnapshotDataDTO, AgentSnapshotPageDTO, AgentSnapshotTagDTO, AgentUpdateDTO, FunctionInfo, ContextProviderDTO (+15 more)
+Cohesion: 0.04
+Nodes (16): AgentSnapshotDao, AgentSnapshotDataDTO, FunctionInfo, ContextProviderDTO, AgentSnapshotEntity, AgentSnapshotServiceImpl, Override, SuppressWarnings (+8 more)
 
 ### Community 81 - "OtaManagement.vue"
-Cohesion: 0.05
-Nodes (21): formatDate(), formatFileSize(), created(), deleteParam(), deleteSelectedParams(), fetchFirmwareList(), getFirmwareTypes(), goToPage() (+13 more)
+Cohesion: 0.06
+Nodes (23): formatDate(), formatFileSize(), created(), deleteParam(), deleteSelectedParams(), fetchFirmwareList(), getFirmwareTypes(), goToPage() (+15 more)
 
 ### Community 82 - "manager-api"
 Cohesion: 0.05
 Nodes (45): ESP32 设备, manager-api, manager-web 与 manager-mobile, MySQL Redis OceanBase PowerMem, Provider 模式, OAuth2 服务密钥 XSS SQL 注入 HTTPS, 小智ESP32服务器系统架构, ASR LLM TTS 语音流水线 (+37 more)
 
 ### Community 83 - "ContentSafetyContext"
-Cohesion: 0.16
-Nodes (42): ContentSafetyContext, allowed(), blocked(), config(), crisis_blocked(), crisis_watched(), errored(), ProviderCall (+34 more)
+Cohesion: 0.13
+Nodes (44): ContentSafetyContext, GateResult, OutputSafetyGate, allowed(), blocked(), config(), crisis_blocked(), crisis_watched() (+36 more)
 
 ### Community 84 - "utils_vad.py"
 Cohesion: 0.12
 Nodes (19): Silero Voice Activity Detector Returns a model with a set of utils Please see…, silero_vad(), versiontuple(), load_silero_vad(), collect_chunks(), drop_chunks(), get_speech_timestamps(), init_jit_model() (+11 more)
 
 ### Community 85 - "error"
-Cohesion: 0.10
-Nodes (22): checkServiceWorkerStatus(), isMobileDevice(), mounted(), clearCache(), loadCacheData(), refreshCache(), visible(), checkCdnCacheStatus() (+14 more)
+Cohesion: 0.18
+Nodes (14): checkServiceWorkerStatus(), isMobileDevice(), mounted(), clearCache(), loadCacheData(), refreshCache(), visible(), checkCdnCacheStatus() (+6 more)
 
 ### Community 86 - "home.vue"
 Cohesion: 0.07
@@ -971,43 +976,43 @@ Nodes (12): clearSearchHistory(), confirmDeleteAgent(), fetchAgentList(), handle
 
 ### Community 87 - "pet-store.test.js"
 Cohesion: 0.05
-Nodes (36): accountKeys, assert, cardsPet, cardsVO, coldHatched, coldHatchedVO, daily, dateKey() (+28 more)
+Nodes (37): accountKeys, assert, cardsPet, cardsVO, coldHatched, coldHatchedVO, daily, dateKey() (+29 more)
 
-### Community 88 - "ItemSkuEntity"
-Cohesion: 0.12
-Nodes (6): ItemConsumeLogEntity, ItemSkuEntity, UserItemEntity, Override, ItemSkuVO, UserItemVO
+### Community 88 - "ItemServiceImpl.java"
+Cohesion: 0.11
+Nodes (13): ItemConsumeLogDao, ItemGrantLogDao, ItemSkuDao, UserItemDao, ItemConsumeLogEntity, ItemGrantLogEntity, ItemSkuEntity, UserItemEntity (+5 more)
 
 ### Community 89 - "PrototypeStoryStateServiceImplTest"
-Cohesion: 0.16
-Nodes (3): Override, StoryContentLoader, PrototypeStoryStateServiceImplTest
+Cohesion: 0.19
+Nodes (3): PetStoryStateEntity, Override, PrototypeStoryStateServiceImplTest
 
 ### Community 90 - "main/miniprogram/app.js"
 Cohesion: 0.13
 Nodes (21): { applyGlobalTheme }, checkDeviceStatus(), { checkOrRegisterDevice, completeDeviceBinding }, clearLoginState(), ensureAgentExists(), fetchCompanionData(), fetchSubscription(), initInBackground() (+13 more)
 
 ### Community 91 - "Constant.java"
-Cohesion: 0.07
-Nodes (26): ChatHistoryConfEnum, IGNORE, RECORD_TEXT, RECORD_TEXT_AUDIO, DataOperation, DELETE, INSERT, UPDATE (+18 more)
+Cohesion: 0.06
+Nodes (33): ChatHistoryConfEnum, IGNORE, RECORD_TEXT, RECORD_TEXT_AUDIO, DataOperation, DELETE, INSERT, UPDATE (+25 more)
 
 ### Community 92 - "MicrophoneListener"
-Cohesion: 0.19
+Cohesion: 0.18
 Nodes (5): AudioListener, MicrophoneListener, ndarray, Protocol, Any
 
 ### Community 93 - "chat.js"
 Cohesion: 0.11
-Nodes (30): _addMessage(), _appendStreamingText(), _appendWithSeparator(), AudioManager, _calcScrollViewHeight(), _finalizeStreaming(), _flushStreaming(), _formatTimeLabel() (+22 more)
+Nodes (31): _addMessage(), _appendStreamingText(), _appendWithSeparator(), AudioManager, _calcScrollViewHeight(), _finalizeStreaming(), _flushStreaming(), _formatTimeLabel() (+23 more)
 
 ### Community 94 - "collection-card.js"
-Cohesion: 0.07
-Nodes (29): birthdayLabel(), _drawPetAvatar(), drawShareCard(), _ellipse(), genderClass(), genderLabel(), inviteApi, isUsableShareInvite() (+21 more)
+Cohesion: 0.10
+Nodes (24): birthdayLabel(), _drawPetAvatar(), drawShareCard(), _ellipse(), genderClass(), genderLabel(), inviteApi, isUsableShareInvite() (+16 more)
 
 ### Community 95 - "PromptManager"
-Cohesion: 0.11
-Nodes (17): ContextDataProvider, Any, 获取 manager-api 基址与服务密钥，用于解析内部相对上下文源。 优先取本地合并配置的 manager-api 段，缺失时回退到已初始化的…, 数据上下文填充，负责从配置的API获取数据, get_current_date(), get_current_lunar_date(), get_current_time(), get_current_time_info() (+9 more)
+Cohesion: 0.06
+Nodes (28): Any, AudioRateController, 音频速率控制器 - 按照60ms帧时长精确控制音频发送 解决高并发下的时间累积误差问题, 启动异步发送任务 Args: send_audio_callback: 发送音频的回调函数 Returns: asyncio.Task: 发送任务, Args: frame_duration: 单个音频帧时长（毫秒），默认60ms, 检查队列并按时发送音频/消息 Args: send_audio_callback: 发送音频的回调函数 async def(opus_packet), ContextDataProvider, Any (+20 more)
 
 ### Community 96 - "KnowledgeBaseAdapter"
-Cohesion: 0.08
-Nodes (5): BatchIdReq, InfoVO, UpdateReq, KnowledgeBaseAdapter, KnowledgeBaseAdapterFactory
+Cohesion: 0.06
+Nodes (11): BatchIdReq, InfoVO, ListReq, UpdateReq, KnowledgeBaseAdapter, KnowledgeBaseAdapterFactory, BatchIdReq, InfoVO (+3 more)
 
 ### Community 97 - "ultrasonic-config.vue"
 Cohesion: 0.11
@@ -1017,21 +1022,21 @@ Nodes (24): arrayBufferToBase64(), audioContext, audioFilePath, audioGenerated, 
 Cohesion: 0.05
 Nodes (31): app, assert, authMock, clearedIntervals, clearedTimers, createCollectionCardResult, cuddleResult, doodleApiMock (+23 more)
 
-### Community 99 - "PetStoryStateEntity"
-Cohesion: 0.07
-Nodes (34): StoryImageTimeOfDay, DAY, NIGHT, SUNSET, StoryRuntimeStatus, ACTIVE, UNINITIALIZED, StoryWeightPeriod (+26 more)
+### Community 99 - "PrototypeStoryStateServiceImplTest.java"
+Cohesion: 0.06
+Nodes (30): StoryImageTimeOfDay, DAY, NIGHT, SUNSET, StoryPetPrototype, KOI, RABBIT, StoryRuntimeStatus (+22 more)
 
 ### Community 100 - "KnowledgeBaseManagement.vue"
 Cohesion: 0.07
 Nodes (15): loadRAGModels(), visible(), created(), deleteKnowledgeBase(), fetchKnowledgeBases(), fetchSlices(), handleBatchUploadSubmit(), handleSearchKb() (+7 more)
 
 ### Community 101 - "SafetyResult"
-Cohesion: 0.11
-Nodes (23): AliyunContentSafetyProvider, Any, ContentSafetyProviderBase, ABC, Enum, Evaluate one user input or generated output chunk., SafetyDecision, SafetyDirection (+15 more)
+Cohesion: 0.14
+Nodes (21): AliyunContentSafetyProvider, Any, ContentSafetyProviderBase, ABC, Enum, Evaluate one user input or generated output chunk., SafetyDecision, SafetyDirection (+13 more)
 
 ### Community 102 - "PetStoryQueryServiceImplTest"
-Cohesion: 0.15
-Nodes (6): Override, PageData, PetStoryQueryServiceImpl, SuppressWarnings, PetStoryQueryServiceImplTest, org.mockito.ArgumentCaptor
+Cohesion: 0.10
+Nodes (11): Override, PageData, PetStoryQueryServiceImpl, PetStoryHistoryVO, PetStoryStateVO, SuppressWarnings, PetStoryQueryServiceImplTest, org.junit.jupiter.params.ParameterizedTest (+3 more)
 
 ### Community 103 - "compilerOptions"
 Cohesion: 0.05
@@ -1045,29 +1050,33 @@ Nodes (13): Jv(), kv(), le(), Ll(), mv(), Pt(), Ru(), tf (+5 more)
 Cohesion: 0.08
 Nodes (26): AgentSnapshotField, AGENT_CODE, AGENT_NAME, ASR_MODEL_ID, CHAT_HISTORY_CONF, CONTEXT_PROVIDERS, CORRECT_WORD_FILE_IDS, FUNCTIONS (+18 more)
 
+### Community 106 - ".decide"
+Cohesion: 0.23
+Nodes (3): After, ReshapeVoucherRule, ReshapeVoucherRuleTest
+
 ### Community 107 - "RAGFlowAdapter"
 Cohesion: 0.12
 Nodes (10): BatchIdReq, InfoVO, ListReq, ObjectMapper, Override, PageData, UpdateReq, MultipartFileResource (+2 more)
 
 ### Community 108 - "MCPEndpointClient"
-Cohesion: 0.04
-Nodes (36): MCPClient, any, Exception, Future, 设备端MCP客户端，用于管理MCP状态和工具, call_mcp_tool, handle_mcp_message, send_mcp_initialize_message (+28 more)
+Cohesion: 0.07
+Nodes (23): ASRProvider, MCPEndpointClient, any, Exception, Future, MCP接入点客户端，用于管理MCP接入点状态和工具, call_mcp_endpoint_tool(), call_mcp_endpoint_tool (+15 more)
 
 ### Community 109 - "pages"
 Cohesion: 0.06
 Nodes (35): app.json pages, app.json tabBar, pages/settings/settings, pages/welcome/welcome, pages, sitemapLocation, style, tabBar (+27 more)
 
 ### Community 110 - "ReplacementWordManagement.vue"
-Cohesion: 0.08
-Nodes (13): data(), getValidLines(), handleFileChange(), submit(), wordCount(), created(), fetchFileList(), goToPage() (+5 more)
+Cohesion: 0.13
+Nodes (8): created(), fetchFileList(), goToPage(), handleBatchDelete(), handleDelete(), handlePageSizeChange(), handleSubmit(), initTableColumns()
 
 ### Community 111 - "org.junit.jupiter.api.Test"
 Cohesion: 0.02
-Nodes (38): jakarta.validation.Validator, MenstrualCycleUtil.computePhase, MenstrualCycleUtil.cycleDay, MenstrualCycleUtil.daysUntilNextPeriod, HatchActionServiceImpl, Override, MbtiParser, MoodDecider (+30 more)
+Nodes (31): com.fasterxml.jackson.databind.JsonNode, jakarta.validation.Validator, TreeUtils, Override, Override, MbtiParser, BirthResult, PetBirthCalculator (+23 more)
 
-### Community 112 - "SysParamsServiceImpl"
-Cohesion: 0.09
-Nodes (10): com.baomidou.mybatisplus.extension.repository.IRepository, SM2Utils, AgentPluginMappingService, SecureRandom, SysParamsDao, SysParamsDTO, Override, QueryWrapper (+2 more)
+### Community 112 - "BigSceneList.vue"
+Cohesion: 0.11
+Nodes (6): created(), fetchList(), handleDelete(), handleSubmit(), openCreate(), resetForm()
 
 ### Community 113 - "GIFEncoder"
 Cohesion: 0.09
@@ -1082,48 +1091,48 @@ Cohesion: 0.39
 Nodes (18): BatchIdReq, BatchOperationVO, CreateReq, DatasetDTO, Edge, GraphVO, InfoVO, AllArgsConstructor (+10 more)
 
 ### Community 116 - "StorySmallSceneServiceImpl"
-Cohesion: 0.08
-Nodes (12): ActionDTO, BatchWeightUpdateDTO, SmallSceneWeightItem, SmallSceneDTO, Override, Override, StorySmallSceneServiceImpl, StoryActionService (+4 more)
+Cohesion: 0.19
+Nodes (5): SmallSceneDTO, Override, StorySmallSceneServiceImpl, SmallSceneVO, WeightSummaryVO
 
 ### Community 117 - "ya"
 Cohesion: 0.09
 Nodes (3): ow, ya(), ze()
 
-### Community 118 - "SysDictTypeServiceImpl"
-Cohesion: 0.15
-Nodes (6): SysDictTypeDTO, Override, QueryWrapper, SysDictTypeServiceImpl, SysDictTypeService, SysDictTypeVO
+### Community 118 - ".sourceToTarget"
+Cohesion: 0.09
+Nodes (12): com.baomidou.mybatisplus.core.metadata.IPage, PageData, ModelProviderDTO, Override, ModelProviderServiceImpl, ModelProviderService, SysDictTypeDTO, Override (+4 more)
 
-### Community 119 - "get"
+### Community 119 - "backpack.js"
 Cohesion: 0.12
-Nodes (30): _changeQty(), _decorate(), _emoji(), { get, post }, { getTheme, applyTheme }, loadAll(), logic, onBuyAgain() (+22 more)
+Nodes (29): _changeQty(), _decorate(), _emoji(), { get, post }, { getTheme, applyTheme }, loadAll(), logic, onBuyAgain() (+21 more)
 
 ### Community 120 - "WebSocketManager"
-Cohesion: 0.11
-Nodes (11): connect, disconnect, _handleMessage, WebSocket Protocol Dispatcher, RECONNECT_DELAYS, _scheduleReconnect, sendAudioFrame, sendHello (+3 more)
+Cohesion: 0.13
+Nodes (10): connect, disconnect, _handleMessage, WebSocket Protocol Dispatcher, _scheduleReconnect, sendAudioFrame, sendHello, sendListenStart (+2 more)
 
-### Community 121 - "org.junit.jupiter.params.ParameterizedTest"
-Cohesion: 0.11
-Nodes (11): com.sun.net.httpserver.HttpExchange, com.sun.net.httpserver.HttpHandler, com.sun.net.httpserver.HttpServer, GatewayRequestException, GatewayResponse, MqttGatewayAuthorization, MqttGatewayAuthorizationTest, org.junit.jupiter.params.ParameterizedTest (+3 more)
+### Community 121 - "MqttGatewayAuthorizationTest"
+Cohesion: 0.14
+Nodes (9): com.sun.net.httpserver.HttpExchange, com.sun.net.httpserver.HttpHandler, com.sun.net.httpserver.HttpServer, GatewayRequestException, GatewayResponse, MqttGatewayAuthorization, MqttGatewayAuthorizationTest, org.junit.jupiter.params.provider.Arguments (+1 more)
 
 ### Community 122 - "lombok.Getter"
-Cohesion: 0.23
-Nodes (15): lombok.Getter, lombok.Setter, DeviceRegisterDTO, Application, BoardInfo, ChipInfo, DeviceReportReqDTO, OtaInfo (+7 more)
+Cohesion: 0.18
+Nodes (16): lombok.Getter, lombok.Setter, lombok.SneakyThrows, DeviceRegisterDTO, Application, BoardInfo, ChipInfo, DeviceReportReqDTO (+8 more)
 
 ### Community 123 - "my.js"
 Cohesion: 0.09
-Nodes (27): applyUserData(), inviteApi, isUsableShareInvite(), loadPetStatus(), loadShareInviteCode(), onNavAccount(), onNavAlbum(), onNavCodes() (+19 more)
+Nodes (27): inviteApi, isUsableShareInvite(), loadPetStatus(), loadShareInviteCode(), loadUserProfile(), onNavAccount(), onNavAlbum(), onNavCodes() (+19 more)
 
 ### Community 124 - "StoryRandomSource"
 Cohesion: 0.33
 Nodes (4): FunctionalInterface, Override, ThreadLocalStoryRandomSource, StoryRandomSource
 
 ### Community 126 - "KnowledgeBaseServiceImpl"
-Cohesion: 0.13
-Nodes (5): KnowledgeBaseDTO, Override, SuppressWarnings, KnowledgeBaseServiceImpl, KnowledgeBaseService
+Cohesion: 0.19
+Nodes (4): KnowledgeBaseDTO, Override, SuppressWarnings, KnowledgeBaseServiceImpl
 
 ### Community 127 - "CompanionServiceImpl"
-Cohesion: 0.05
-Nodes (12): CompanionEntity, CompanionServiceImpl, Override, SetupPhase1Result, BirthResult, CompanionBirthCalculator, CompanionLabels, IntimacyRule (+4 more)
+Cohesion: 0.16
+Nodes (3): CompanionEntity, CompanionServiceImpl, SetupPhase1Result
 
 ### Community 128 - "VoiceCloneManagement.vue"
 Cohesion: 0.16
@@ -1134,12 +1143,12 @@ Cohesion: 0.09
 Nodes (22): beforeDestroy(), captionList(), closeCaptionEditor(), closeUpload(), created(), fetchList(), handleDelete(), handleDeleteImage() (+14 more)
 
 ### Community 130 - "BaseServiceImplTest"
-Cohesion: 0.12
-Nodes (14): BatchResult, com.baomidou.mybatisplus.core.enums.SqlMethod, com.baomidou.mybatisplus.extension.toolkit.SqlHelper, BaseServiceImplTest, CallbackCapturingTestService, Override, SuppressWarnings, TestEntity (+6 more)
+Cohesion: 0.07
+Nodes (18): BatchResult, com.baomidou.mybatisplus.extension.toolkit.SqlHelper, CrudService, SuppressWarnings, CrudServiceImpl, Override, SuppressWarnings, BaseServiceImplTest (+10 more)
 
 ### Community 131 - "DeviceManagement.vue"
-Cohesion: 0.04
-Nodes (32): closeDialog(), confirm(), compareTimestamps(), formatCreateDate(), formatTimestamp(), hasTimestampValue(), parseLegacyDate(), parseTimestamp() (+24 more)
+Cohesion: 0.05
+Nodes (30): compareTimestamps(), formatCreateDate(), formatTimestamp(), hasTimestampValue(), parseLegacyDate(), parseTimestamp(), created(), fetchAgentList() (+22 more)
 
 ### Community 132 - "pages"
 Cohesion: 0.06
@@ -1147,15 +1156,15 @@ Nodes (30): getLocation, pages/settings/settings, pages/welcome/welcome, pages, 
 
 ### Community 133 - "login/index.vue"
 Cohesion: 0.04
-Nodes (41): i18n, login(), configStore, langStore, updateTabBarText(), changeLanguage(), currentLang, getCurrentLanguage() (+33 more)
+Nodes (35): i18n, login(), changeLanguage(), currentLang, getCurrentLanguage(), messages, Main Entry, formatTime() (+27 more)
 
-### Community 134 - "WechatServiceImpl"
+### Community 134 - "SysUserService"
 Cohesion: 0.04
-Nodes (27): TokenDTO, CharacterAge, SysUserTokenDao, SysUserTokenEntity, PasswordEncoder, PasswordUtils, Override, ShiroServiceImpl (+19 more)
+Nodes (28): TokenDTO, LoginController, SysUserTokenDao, LoginDTO, SysUserTokenEntity, CaptchaService, Override, ShiroServiceImpl (+20 more)
 
 ### Community 135 - "StoryStateSelectorTest"
-Cohesion: 0.10
-Nodes (13): java.util.Queue, StoryActionCandidate, StoryImageCandidate, StorySceneCandidate, StorySelectionResult, Rule, SpecialSceneTagRegistry, StoryStateSelector (+5 more)
+Cohesion: 0.16
+Nodes (6): Rule, SpecialSceneTagRegistry, ExpectedDraw, Override, QueueRandomSource, StoryStateSelectorTest
 
 ### Community 136 - "ft_render-ByO_jG18.js"
 Cohesion: 0.10
@@ -1173,9 +1182,9 @@ Nodes (15): activeValue, emit, Emits, handleTabClick(), Props, TabItem, chatRef,
 Cohesion: 0.11
 Nodes (16): AsyncConfig, RestTemplate, RestTemplateConfig, RedisTemplate, RedisConfig, CompanionTaskConfig, KnowledgeBaseConfig, RAGTaskConfig (+8 more)
 
-### Community 140 - "PrototypeStoryStateService"
-Cohesion: 0.21
-Nodes (6): StoryPetPrototype, KOI, RABBIT, PrototypeStoryStateService, PrototypeStoryStateRefreshTask, org.springframework.scheduling.annotation.Scheduled
+### Community 140 - "WechatPayV3Client"
+Cohesion: 0.16
+Nodes (9): com.wechat.pay.java.core.notification.NotificationParser, com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension, com.wechat.pay.java.service.refund.RefundService, jakarta.annotation.PostConstruct, PrepayResult, Override, WechatPayV3Client, NotificationParser (+1 more)
 
 ### Community 141 - "voice-call.test.js"
 Cohesion: 0.08
@@ -1189,21 +1198,25 @@ Nodes (10): CacheConfig, CacheType, Enum, GlobalCacheManager, Any, CacheEntry, C
 Cohesion: 0.29
 Nodes (5): jakarta.servlet.http.HttpServletRequestWrapper, jakarta.servlet.ServletInputStream, Override, XssHttpServletRequestWrapper, ServletInputStream
 
-### Community 144 - "StoryActionImageServiceImplTest"
-Cohesion: 0.18
-Nodes (4): DataFormatter, StoryActionImageServiceImplTest, org.apache.poi.ss.usermodel.DataFormatter, org.apache.poi.ss.usermodel.Row
+### Community 144 - "StoryActionImageServiceImpl.java"
+Cohesion: 0.05
+Nodes (31): DataFormatter, StoryWeightPeriod, AFTERNOON, EVENING, MORNING, NIGHT, ActionDao, ActionImageDao (+23 more)
 
-### Community 145 - "org.springframework.web.socket.WebSocketSession"
-Cohesion: 0.13
-Nodes (13): InternalHandler, Override, Override, WebSocketTestHandler, org.springframework.util.StopWatch, org.springframework.web.socket.BinaryMessage, org.springframework.web.socket.CloseStatus, org.springframework.web.socket.handler.AbstractWebSocketHandler (+5 more)
+### Community 145 - "WebSocketClientManager.java"
+Cohesion: 0.14
+Nodes (13): Closeable, InternalHandler, Override, Override, WebSocketTestHandler, org.springframework.util.StopWatch, org.springframework.web.socket.BinaryMessage, org.springframework.web.socket.CloseStatus (+5 more)
+
+### Community 146 - "java.util.regex.Pattern"
+Cohesion: 0.36
+Nodes (3): java.util.regex.Pattern, WebSocketValidator, org.springframework.web.socket.WebSocketHttpHeaders
 
 ### Community 147 - "HeaderBar.vue"
 Cohesion: 0.10
 Nodes (11): cancel(), resetForm(), changeLanguage(), completeResetCascader(), handleAvatarClick(), handleCascaderChange(), handleLogout(), handleUserMenuVisibleChange() (+3 more)
 
-### Community 148 - "RuntimeError"
-Cohesion: 0.12
-Nodes (7): DetectorAssets, DetectorAssetsBuilder, Path, ndarray, WakewordDetector, Any, RuntimeError
+### Community 148 - "WakewordDetector"
+Cohesion: 0.15
+Nodes (6): DetectorAssets, DetectorAssetsBuilder, Path, ndarray, WakewordDetector, Any
 
 ### Community 149 - "ZA"
 Cohesion: 0.13
@@ -1278,8 +1291,8 @@ Cohesion: 0.18
 Nodes (9): Override, WebMvcConfig, DeviceTimeSerializationTest, MappingJackson2HttpMessageConverter, org.springframework.http.converter.HttpMessageConverter, org.springframework.http.converter.json.MappingJackson2HttpMessageConverter, org.springframework.web.servlet.config.annotation.CorsRegistry, org.springframework.web.servlet.config.annotation.WebMvcConfigurer (+1 more)
 
 ### Community 167 - "PaymentOrderEntity"
-Cohesion: 0.05
-Nodes (20): PaymentOrderDao, CreateOrderDTO, PaymentCallbackLogEntity, PaymentOrderEntity, OrderStatus, ProductType, FulfillmentDispatcher, Override (+12 more)
+Cohesion: 0.13
+Nodes (7): Override, ItemFulfillmentService, PaymentOrderDao, PaymentOrderEntity, Override, org.apache.ibatis.annotations.Select, org.apache.ibatis.annotations.Update
 
 ### Community 168 - "test_aliyun_provider.py"
 Cohesion: 0.13
@@ -1294,16 +1307,16 @@ Cohesion: 0.08
 Nodes (22): afterNew, art, assert, base, clampedSticker, cleaned, cleanExport, ended (+14 more)
 
 ### Community 171 - "AgentTagEntity"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (8): AgentTagDao, AgentTagRelationDao, AgentTagDTO, AgentTagEntity, AgentTagRelationEntity, AgentTagService, AgentTagServiceImpl, Override
 
-### Community 172 - "OssService"
-Cohesion: 0.10
-Nodes (14): com.aliyun.oss.OSS, com.volcengine.ark.runtime.service.ArkService, jakarta.annotation.PreDestroy, AliyunOssConfig, AliyunOssProperties, OssService, SeedreamArkConfig, SeedreamProperties (+6 more)
+### Community 172 - "org.springframework.stereotype.Component"
+Cohesion: 0.09
+Nodes (23): com.aliyun.oss.model.CannedAccessControlList, com.aliyun.oss.OSS, com.baomidou.mybatisplus.core.handlers.MetaObjectHandler, com.volcengine.ark.runtime.service.ArkService, jakarta.annotation.PreDestroy, AliyunOssConfig, AliyunOssProperties, FieldMetaObjectHandler (+15 more)
 
 ### Community 173 - "audio.test.js"
-Cohesion: 0.09
-Nodes (13): OpusDecoder, OpusEncoder, assert, AudioManager, createdContexts, destroy(), makeRecorderStub(), Module (+5 more)
+Cohesion: 0.07
+Nodes (14): AudioManager, OpusDecoder, OpusEncoder, assert, AudioManager, createdContexts, destroy(), makeRecorderStub() (+6 more)
 
 ### Community 174 - "核心能力提供商适配层（ASR/TTS/LLM/Memory/Intent/VAD/VLLM）"
 Cohesion: 0.11
@@ -1322,8 +1335,8 @@ Cohesion: 0.18
 Nodes (12): main(), AudioSettings, DEFAULT_WAKE_WORDS, DetectorSettings, load_config(), _load_wake_words_from_keywords_file(), LoggingSettings, Path (+4 more)
 
 ### Community 178 - "dependencies"
-Cohesion: 0.09
-Nodes (23): core-js, cross-env, flyio, dependencies, core-js, cross-env, flyio, opus-decoder (+15 more)
+Cohesion: 0.10
+Nodes (21): core-js, dotenv, element-ui, dependencies, core-js, dotenv, element-ui, normalize.css (+13 more)
 
 ### Community 179 - "Plugin"
 Cohesion: 0.16
@@ -1338,20 +1351,20 @@ Cohesion: 0.13
 Nodes (10): created(), deleteProvider(), deleteSelectedProviders(), fetchProviders(), goToPage(), handlePageSizeChange(), handleSearch(), handleSelectModelType() (+2 more)
 
 ### Community 182 - "ServerSecretFilter"
-Cohesion: 0.27
+Cohesion: 0.28
 Nodes (6): jakarta.servlet.ServletRequest, jakarta.servlet.ServletResponse, Override, Oauth2Filter, Override, ServerSecretFilter
 
 ### Community 183 - "AgentVoicePrintServiceImpl"
-Cohesion: 0.28
-Nodes (5): ByteArrayResource, AgentVoicePrintServiceImpl, Override, URI, org.springframework.core.io.ByteArrayResource
+Cohesion: 0.07
+Nodes (17): ByteArrayResource, java.net.URI, HashEncryptionUtil, AgentVoicePrintDao, AgentVoicePrintSaveDTO, AgentVoicePrintUpdateDTO, AgentVoicePrintEntity, AgentMcpAccessPointService (+9 more)
 
-### Community 184 - "RenExceptionHandler.java"
-Cohesion: 0.20
-Nodes (6): RenExceptionHandler, org.apache.shiro.authz.UnauthorizedException, org.springframework.web.bind.annotation.ExceptionHandler, org.springframework.web.bind.annotation.RestControllerAdvice, org.springframework.web.bind.MethodArgumentNotValidException, org.springframework.web.servlet.resource.NoResourceFoundException
+### Community 184 - "PaymentOrderServiceImpl"
+Cohesion: 0.17
+Nodes (4): PaymentOrderServiceImpl, PrepayRequest, QueryResult, org.springframework.data.redis.core.StringRedisTemplate
 
-### Community 185 - "CustomDialog.vue"
-Cohesion: 0.04
-Nodes (18): created(), fetchList(), handleDelete(), handleSubmit(), openCreate(), resetForm(), created(), deleteParam() (+10 more)
+### Community 185 - "ParamsManagement.vue"
+Cohesion: 0.12
+Nodes (10): created(), deleteParam(), deleteParams(), deleteSelectedParams(), fetchParams(), goToPage(), handlePageSizeChange(), handleSearch() (+2 more)
 
 ### Community 186 - "UserManagement.vue"
 Cohesion: 0.17
@@ -1369,21 +1382,17 @@ Nodes (4): Any, 重写父类方法：使用独立的临时编码器处理音频�
 Cohesion: 0.13
 Nodes (12): tabbarList, tabbarStore, cacheTabbarEnable, FgTabBarItem, selectedTabbarStrategy, _tabbar, TABBAR_MAP, tabbarList (+4 more)
 
-### Community 192 - ".sourceToTarget"
-Cohesion: 0.10
-Nodes (8): CrudService, CrudServiceImpl, Override, SuppressWarnings, ModelProviderDTO, Override, ModelProviderServiceImpl, ModelProviderService
-
-### Community 194 - "KnowledgeFilesController"
-Cohesion: 0.22
-Nodes (7): BatchIdReq, DeleteMapping, PostMapping, RequestMapping, RestController, KnowledgeFilesController, BatchIdReq
+### Community 194 - "KnowledgeFilesDTO"
+Cohesion: 0.16
+Nodes (9): BatchIdReq, DeleteMapping, GetMapping, PostMapping, RequestMapping, RestController, KnowledgeFilesController, KnowledgeFilesDTO (+1 more)
 
 ### Community 195 - "manifest.json"
 Cohesion: 0.10
 Nodes (19): appid, description, h5, router, mp-alipay, styleIsolation, usingComponents, mp-baidu (+11 more)
 
 ### Community 197 - "buildDiffs"
-Cohesion: 0.20
-Nodes (15): buildDiffs(), buildSingleConfigItems(), buildSingleFunctionStates(), canonicalField(), displayType(), fieldLabel(), formatPaneTitle(), formatValue() (+7 more)
+Cohesion: 0.16
+Nodes (20): buildDiffs(), buildSingleConfigItems(), buildSingleFunctionStates(), canonicalField(), correctWordDisplayNames(), displayType(), fieldLabel(), formatDisplayValue() (+12 more)
 
 ### Community 198 - "AgentTemplateManagement.vue"
 Cohesion: 0.17
@@ -1398,20 +1407,20 @@ Cohesion: 0.11
 Nodes (10): { getOpusRuntime }, OpusDecoder, buildStubRuntime(), buildWasmRuntime(), createWasmImports(), getOpusRuntime(), loadWasmRuntime(), normalizeExports() (+2 more)
 
 ### Community 201 - "lombok.NoArgsConstructor"
-Cohesion: 0.25
-Nodes (7): lombok.Builder, lombok.NoArgsConstructor, AgentChatTitleEntity, CompanionIntimacyVO, MemoryEntity, UserProfileEntity, MemoryVO
+Cohesion: 0.12
+Nodes (14): lombok.Builder, lombok.NoArgsConstructor, AgentChatTitleDao, AgentChatTitleEntity, AgentChatTitleServiceImpl, Override, CompanionIntimacyVO, MemoryEntity (+6 more)
 
-### Community 202 - "WechatUserEntity"
-Cohesion: 0.28
-Nodes (4): WechatUserDao, WechatUserEntity, WechatPhoneGate, WechatPhoneGateTest
+### Community 202 - "PetServiceImplAdoptTest"
+Cohesion: 0.14
+Nodes (4): PetAdoptDTO, InviteConsumeConcurrencyTest, PetServiceImplAdoptTest, WechatPhoneGateTest
 
-### Community 203 - "orders.js"
-Cohesion: 0.22
-Nodes (13): GET /payment/orders API, _applyFilter(), _decorate(), _formatTime(), { get }, { getTheme, applyTheme }, loadOrders(), onLoad() (+5 more)
+### Community 203 - "applyTheme"
+Cohesion: 0.07
+Nodes (37): GET /payment/orders API, GET /subscription/entitlements API, ReshapeConfirm Component, Backpack Page, ChangeOccupation Page, ChangeRole Page, ChangeSoul Page, _applyFilter() (+29 more)
 
-### Community 204 - "UnifiedToolHandler"
-Cohesion: 0.19
-Nodes (3): send_display_message(), Any, UnifiedToolHandler
+### Community 204 - "MenstrualCycleUtilTest"
+Cohesion: 0.18
+Nodes (4): MenstrualCycleUtil.computePhase, MenstrualCycleUtil.cycleDay, MenstrualCycleUtil.daysUntilNextPeriod, MenstrualCycleUtilTest
 
 ### Community 205 - "permissions"
 Cohesion: 0.11
@@ -1422,48 +1431,44 @@ Cohesion: 0.07
 Nodes (18): assert, componentPath, context(), deferred(), fs, Module, path, run() (+10 more)
 
 ### Community 207 - "subscription.js"
-Cohesion: 0.21
-Nodes (17): buildFeatureTable(), _createSubscriptionOrder(), _doSignContract(), featureLabel(), _finalizePurchase(), getActionInfo(), loadPageData(), normalizePlan() (+9 more)
-
-### Community 208 - "AudioRateController"
 Cohesion: 0.16
-Nodes (5): AudioRateController, 音频速率控制器 - 按照60ms帧时长精确控制音频发送 解决高并发下的时间累积误差问题, 启动异步发送任务 Args: send_audio_callback: 发送音频的回调函数 Returns: asyncio.Task: 发送任务, Args: frame_duration: 单个音频帧时长（毫秒），默认60ms, 检查队列并按时发送音频/消息 Args: send_audio_callback: 发送音频的回调函数 async def(opus_packet)
+Nodes (21): buildFeatureTable(), _createSubscriptionOrder(), _doSignContract(), featureLabel(), _finalizePurchase(), getActionInfo(), loadPageData(), normalizePlan() (+13 more)
 
-### Community 209 - "PetCollectionCardServiceImpl"
-Cohesion: 0.21
-Nodes (4): Override, Prototype, PetCollectionCardServiceImpl, PetCollectionCardServiceImplTest
+### Community 209 - "PetCollectionCardEntity"
+Cohesion: 0.16
+Nodes (5): PetCollectionCardDao, PetCollectionCardEntity, Override, Prototype, CollectionCardVO
 
 ### Community 211 - "RedisUtils"
-Cohesion: 0.06
-Nodes (17): com.aliyun.dysmsapi20170525.Client, com.google.common.cache.Cache, jakarta.annotation.PostConstruct, RedisUtils, ResourcesUtils, SystemInitConfig, CaptchaServiceImpl, Override (+9 more)
+Cohesion: 0.03
+Nodes (27): com.google.common.cache.Cache, jakarta.servlet.http.HttpServletResponse, RedisUtils, ResourcesUtils, AgentChatHistoryController, AgentChatHistoryBizService, SystemInitConfig, DeviceAddressBookService (+19 more)
 
 ### Community 212 - "AgentContextProviderEntity"
-Cohesion: 0.33
-Nodes (5): AgentContextProviderDao, AgentContextProviderEntity, AgentContextProviderService, AgentContextProviderServiceImpl, Override
+Cohesion: 0.47
+Nodes (4): AgentContextProviderDao, AgentContextProviderEntity, AgentContextProviderServiceImpl, Override
 
 ### Community 213 - "OpusEncoderUtils"
 Cohesion: 0.18
 Nodes (7): OpusEncoderUtils, Any, ndarray, Opus编码工具类 将PCM音频数据编码为Opus格式, 将字节数组转换为short数组 (16位PCM), 初始化Opus编码器 Args: sample_rate: 采样率 (Hz) channels: 通道数 (1=单声道, 2=立体声)…, 将PCM数据编码为Opus格式，以流式方式进行处理 Args: pcm_data: PCM字节数据 end_of_stream: 是否为流的结束,…
 
-### Community 214 - "PetStoryControllerTest.java"
-Cohesion: 0.35
-Nodes (3): PetStoryController, PetStoryQueryService, PetStoryControllerTest
+### Community 214 - "FeatureManagement.vue"
+Cohesion: 0.19
+Nodes (8): beforeDestroy(), created(), getFeaturesByIds(), handleReset(), handleSave(), loadFeatures(), removeConfigChangeListener(), setupConfigChangeListener()
 
 ### Community 215 - "registerType"
 Cohesion: 0.21
 Nodes (17): __embind_register_bool(), __embind_register_emval(), __embind_register_float(), __embind_register_integer(), __embind_register_memory_view(), __embind_register_std_string(), __embind_register_std_wstring(), __embind_register_void() (+9 more)
 
 ### Community 216 - "pages/profile/profile.js"
-Cohesion: 0.12
-Nodes (25): loadUserProfile(), { API_BASE_URL }, auth, formatDisplay(), GENDER_LIST, GENDER_MAP, GENDER_REVERSE, loadProfile() (+17 more)
+Cohesion: 0.14
+Nodes (23): { API_BASE_URL }, auth, formatDisplay(), GENDER_LIST, GENDER_MAP, GENDER_REVERSE, loadProfile(), maskUserId() (+15 more)
 
 ### Community 217 - "TTSProvider"
 Cohesion: 0.20
 Nodes (5): Any, 重写父类方法：使用独立的临时编码器处理音频文件，避免与TTS流式编码器并发冲突。 双流式TTS中，monitor任务在event…, 非流式生成音频数据，用于生成音频及测试场景, 确保WebSocket连接可用，支持60秒内连接复用, TTSProvider
 
 ### Community 218 - "ServerMCPClient"
-Cohesion: 0.07
-Nodes (21): ElicitationFnT, Implementation, ListRootsFnT, LoggingFnT, LoggingMessageNotificationParams, Any, 调用指定工具 Args: name: 工具名称 arguments: 工具参数 read_timeout_seconds:…, 检查MCP客户端是否连接正常 Returns: bool: 如果客户端已连接并正常工作，返回True，否则返回False (+13 more)
+Cohesion: 0.08
+Nodes (19): ElicitationFnT, Implementation, ListRootsFnT, LoggingFnT, LoggingMessageNotificationParams, Any, 调用指定工具 Args: name: 工具名称 arguments: 工具参数 read_timeout_seconds:…, 检查MCP客户端是否连接正常 Returns: bool: 如果客户端已连接并正常工作，返回True，否则返回False (+11 more)
 
 ### Community 219 - "SimpleHttpServer.start"
 Cohesion: 0.13
@@ -1475,7 +1480,7 @@ Nodes (11): isPlainObject(), isSensitiveSnapshotKey(), isSnapshotUrlValue(), isW
 
 ### Community 221 - "setup_logging"
 Cohesion: 0.02
-Nodes (90): ABC, build_module_string(), create_connection_logger(), formatter(), get_module_abbreviation(), 为连接创建独立的日志器，绑定特定的模块字符串, 获取模块名称的缩写，如果为空则返回00 如果名称中包含下划线，则返回下划线后面的前两个字符, 为没有 tag 的日志添加默认值，并处理动态模块字符串 (+82 more)
+Nodes (96): ABC, build_module_string(), create_connection_logger(), formatter(), get_module_abbreviation(), 为连接创建独立的日志器，绑定特定的模块字符串, 获取模块名称的缩写，如果为空则返回00 如果名称中包含下划线，则返回下划线后面的前两个字符, 为没有 tag 的日志添加默认值，并处理动态模块字符串 (+88 more)
 
 ### Community 222 - "verify-project.js"
 Cohesion: 0.20
@@ -1490,8 +1495,8 @@ Cohesion: 0.31
 Nodes (3): ObjectMapper, RestTemplate, RAGFlowClient
 
 ### Community 225 - "WechatPayClient"
-Cohesion: 0.07
-Nodes (22): com.wechat.pay.java.core.notification.NotificationParser, com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension, com.wechat.pay.java.service.refund.RefundService, Override, MockWechatPayClient, NotifyResult, PrepayRequest, PrepayResult (+14 more)
+Cohesion: 0.19
+Nodes (6): Override, MockWechatPayClient, NotifyResult, RefundRequest, RefundResult, WechatPayClient
 
 ### Community 226 - "EventEmitter"
 Cohesion: 0.25
@@ -1505,20 +1510,20 @@ Nodes (16): ChatGLM LLM, Edge TTS, FunASR Local ASR, No Memory Module, Configure
 Cohesion: 0.22
 Nodes (3): FileLock, 生成音频文件路径，使用voice的哈希值作为文件名, WakeupWordsConfig
 
-### Community 229 - "ContextProviderListTypeHandler.java"
-Cohesion: 0.19
-Nodes (8): java.sql.CallableStatement, java.sql.PreparedStatement, java.sql.ResultSet, ContextProviderListTypeHandler, Override, ContextProviderListTypeHandlerTest, org.apache.ibatis.type.BaseTypeHandler, org.apache.ibatis.type.JdbcType
+### Community 229 - ".parseObject"
+Cohesion: 0.07
+Nodes (14): com.fasterxml.jackson.core.type.TypeReference, java.sql.CallableStatement, java.sql.PreparedStatement, java.sql.ResultSet, XiaoZhiMcpJsonRpcJson, Override, ContextProviderListTypeHandler, Override (+6 more)
 
 ### Community 231 - "StreamTTSPerformanceTester"
-Cohesion: 0.10
-Nodes (14): create_instance(), main(), 测试火山引擎流式TTS首词延迟（测试多次取平均）, 测试阿里云流式TTS首词延迟（测试多次取平均）, 测试PaddleSpeech流式TTS首词延迟（测试多次取平均）, 测试IndexStream流式TTS首词延迟（测试多次取平均）, 测试Linkerai流式TTS首词延迟（测试多次取平均）, 测试讯飞流式TTS首词延迟（测试多次取平均） (+6 more)
+Cohesion: 0.14
+Nodes (11): main(), 测试火山引擎流式TTS首词延迟（测试多次取平均）, 测试阿里云流式TTS首词延迟（测试多次取平均）, 测试PaddleSpeech流式TTS首词延迟（测试多次取平均）, 测试IndexStream流式TTS首词延迟（测试多次取平均）, 测试Linkerai流式TTS首词延迟（测试多次取平均）, 测试讯飞流式TTS首词延迟（测试多次取平均）, 计算测试结果（正确处理None值，剔除失败测试） (+3 more)
 
 ### Community 232 - "app.test.js"
 Cohesion: 0.13
 Nodes (9): appPath, assert, auth, Module, parsedEntryOptions, request, savedPendingContexts, shareInvite (+1 more)
 
 ### Community 233 - "KnowledgeBaseItem.vue"
-Cohesion: 0.13
+Cohesion: 0.11
 Nodes (11): fetchDocuments(), fetchSliceCountForSingleDocument(), fetchSliceCountsForDocuments(), handleDelete(), handlePageChange(), handleParse(), handler(), handleSearch() (+3 more)
 
 ### Community 234 - "account.test.js"
@@ -1529,17 +1534,17 @@ Nodes (9): accountPath, app, assert, callOrder, makePage(), modalResult, Module,
 Cohesion: 0.48
 Nodes (5): beijingDateKey(), formatBeijingDate(), now(), requireAuthoritative(), sync()
 
-### Community 236 - "play_music.py"
-Cohesion: 0.09
-Nodes (20): IntentProviderBase, ABC, 检测用户最后一句话的意图 Args: dialogue_history: 对话历史记录列表，每条记录包含role和content Returns:…, IntentProvider, 默认的意图识别实现，始终返回继续聊天 Args: dialogue_history: 对话历史记录列表 text: 本次对话记录 Returns:…, IntentProvider, 使用 asyncio.to_thread 避免阻塞事件循环, 根据配置的意图选项和可用函数动态生成系统提示词 Args: functions: 可用的函数列表，JSON格式字符串 Returns: 格式化后的系统提示词 (+12 more)
+### Community 236 - "get_system_prompt_for_function"
+Cohesion: 0.16
+Nodes (8): LLMProvider, Coze LLMProvider.response, Coze LLMProvider.response_with_functions, LLMProvider, Dify LLMProvider.response, Dify LLMProvider.response_with_functions, get_system_prompt_for_function(), 生成系统提示信息 :param functions: 可用的函数列表 :return: 系统提示信息
 
 ### Community 237 - "Vue CLI Build Configuration"
 Cohesion: 0.14
 Nodes (15): Element UI Component Library, flyio HTTP Client, Vue.js 2 Framework, vue-i18n Internationalization, xiaozhi Web Manager Project, CacheViewer Component, CDN Enabled Runtime Flag, App Root Component (+7 more)
 
-### Community 239 - "main/miniprogram/utils/request.js"
-Cohesion: 0.30
-Nodes (9): _onPlayTap(), _playAudio(), _playLocalFile(), { post, getBaseUrl }, _stopAudio(), del(), getBaseUrl(), put() (+1 more)
+### Community 239 - "post"
+Cohesion: 0.14
+Nodes (26): POST /companion/setup API, needReconnectAfterReshape global flag, App globalData, post(), _onPlayTap(), _playAudio(), _playLocalFile(), { post, getBaseUrl } (+18 more)
 
 ### Community 240 - "AddModelDialog.vue"
 Cohesion: 0.23
@@ -1565,17 +1570,17 @@ Nodes (14): getLocation, mp-weixin, appid, optimization, permission, requiredPri
 Cohesion: 0.24
 Nodes (11): buildSavedVersionDiffSnapshot(), buildSingleSnapshotDetail(), buildVersionDiffSnapshot(), fetchNearestPreviousSnapshotDetail(), fetchPreviousSnapshotDetail(), fetchPreviousSnapshotDetailWithoutId(), fetchSnapshotDetail(), fetchSnapshotDetailByVersion() (+3 more)
 
-### Community 246 - "org.springframework.web.multipart.MultipartFile"
-Cohesion: 0.09
-Nodes (11): OTAMagController, OtaDao, OtaEntity, Override, PageData, QueryWrapper, OtaServiceImpl, OtaService (+3 more)
+### Community 246 - "OtaEntity"
+Cohesion: 0.25
+Nodes (6): OtaEntity, Override, PageData, QueryWrapper, OtaServiceImpl, OtaService
 
 ### Community 248 - "Multi-Level Memory"
 Cohesion: 0.16
 Nodes (14): Cognitive Memory System Architecture, Episodic Memory, MemoryProviderFactory, Cognitive Memory Framework, Knowledge Graph Store, Hybrid Retrieval Engine, Multi-Level Memory, OceanBase Database (+6 more)
 
-### Community 249 - "AgentChatHistoryService"
-Cohesion: 0.05
-Nodes (24): AgentChatTitleDao, AgentChatHistoryReportDTO, AgentDTO, AgentChatAudioEntity, AgentChatHistoryEntity, AgentChatAudioService, AgentChatHistoryService, AgentChatSummaryService (+16 more)
+### Community 249 - "AgentChatHistoryServiceImpl"
+Cohesion: 0.11
+Nodes (5): AgentChatTitleService, AgentChatHistoryServiceImpl, Override, PageData, AgentChatHistoryServiceImplTest
 
 ### Community 250 - "_common.sh"
 Cohesion: 0.23
@@ -1590,20 +1595,20 @@ Cohesion: 0.17
 Nodes (10): api, assert, auth, modalCalls, Module, petStore, profilePath, putCalls (+2 more)
 
 ### Community 253 - "TimbreServiceImpl"
-Cohesion: 0.13
-Nodes (8): VoiceDTO, TimbreDataDTO, TimbrePageDTO, TimbreEntity, Override, TimbreServiceImpl, TimbreDetailsVO, TimbreServiceImplTest
-
-### Community 254 - "Builder"
 Cohesion: 0.08
-Nodes (37): BatchIdReq, ChunkMethod, BOOK, EMAIL, KNOWLEDGE_GRAPH, LAWS, MANUAL, NAIVE (+29 more)
+Nodes (13): RenExceptionHandler, VoiceDTO, TimbreDataDTO, TimbrePageDTO, Override, TimbreServiceImpl, TimbreService, TimbreDetailsVO (+5 more)
+
+### Community 254 - "com.fasterxml.jackson.annotation.JsonIgnoreProperties"
+Cohesion: 0.10
+Nodes (37): com.fasterxml.jackson.annotation.JsonIgnoreProperties, com.fasterxml.jackson.annotation.JsonInclude, BatchIdReq, ChunkMethod, BOOK, EMAIL, KNOWLEDGE_GRAPH, LAWS (+29 more)
 
 ### Community 255 - "PetMood"
 Cohesion: 0.18
 Nodes (10): PetMood, ANXIETY, CALM, CARE, CURIOSITY, EXCITEMENT, FATIGUE, FRUSTRATION (+2 more)
 
-### Community 257 - "MemoryProvider"
-Cohesion: 0.20
-Nodes (6): MemoryProvider, Any, Save conversation messages to PowerMem. Args: msgs: List of message objects…, PowerMem memory provider implementation. PowerMem is an open-source agent…, Query memories from PowerMem based on similarity search. Args: query: The…, Get user profile from PowerMem (only available in UserMemory mode). Uses a…
+### Community 257 - "captureTtsDraft"
+Cohesion: 0.19
+Nodes (14): applyTemplateData(), applyTtsDraft(), buildTtsDraft(), captureTtsDraft(), cloneTtsDraft(), fetchVoiceOptions(), filterVoicesByLanguage(), handleLanguageChange() (+6 more)
 
 ### Community 260 - "Agent Base Prompt Template"
 Cohesion: 0.15
@@ -1617,13 +1622,17 @@ Nodes (4): ASRProvider, CaptureOutput, ndarray, Args: wave_filename: Path to a w
 Cohesion: 0.27
 Nodes (8): _base(), RecursiveResponseCreationFailureLLM, ResponseCreationFailureLLM, SingleToolCallLLM, test_blocked_input_clears_stale_abort_before_trusted_speech(), test_chat_debug_logs_only_redacted_operational_metadata(), test_recursive_response_creation_error_discards_parent_gate_buffer(), test_top_level_response_creation_error_uses_trusted_fallback_and_ends_once()
 
+### Community 263 - "BCryptPasswordEncoder"
+Cohesion: 0.21
+Nodes (5): java.security.SecureRandom, InviteCodeGenerator, BCryptPasswordEncoder, PasswordEncoder, org.apache.commons.logging.Log
+
 ### Community 264 - "HatchActionType"
 Cohesion: 0.18
 Nodes (8): from(), HatchActionType, CUDDLE, DOODLE, LESSON, NICKNAME, WISH, SuppressWarnings
 
-### Community 265 - "SubscriptionFulfillmentServiceImpl.java"
-Cohesion: 0.08
-Nodes (19): cn.hutool.json.JSONObject, JSONObject, SensitiveDataUtils, ItemGrantSource, ItemFulfillmentServiceImpl, JSONObject, Override, ItemFulfillmentService (+11 more)
+### Community 265 - "ChatHistoryExportServiceImpl"
+Cohesion: 0.29
+Nodes (3): AgentSessions, ChatHistoryExportServiceImpl, Override
 
 ### Community 266 - "DeviceOtaVO"
 Cohesion: 0.22
@@ -1637,9 +1646,9 @@ Nodes (18): alovaInstance, langMap, { onAuthRequired, onResponseRefreshToken }, 
 Cohesion: 0.29
 Nodes (3): create_instance(), LLMPerformanceTester, main()
 
-### Community 269 - "AgentMcpAccessPointServiceImpl"
-Cohesion: 0.25
-Nodes (5): java.net.URI, XiaoZhiMcpJsonRpcJson, AgentMcpAccessPointServiceImpl, Override, URI
+### Community 269 - "CompanionController"
+Cohesion: 0.24
+Nodes (5): CompanionController, GetMapping, PostMapping, RequestMapping, RestController
 
 ### Community 270 - "app-plus"
 Cohesion: 0.17
@@ -1649,17 +1658,21 @@ Nodes (12): app-plus, compatible, compilerVersion, modules, nvueStyleCompiler, s
 Cohesion: 0.21
 Nodes (12): abort(), addOnInit(), addRunDependency(), createWasm(), getBinary(), getBinaryPromise(), getValue(), intArrayFromBase64() (+4 more)
 
-### Community 272 - "ChatHistoryExportServiceImpl"
-Cohesion: 0.12
-Nodes (13): com.aliyun.dm20151123.Client, com.aliyun.dm20151123.models.SingleSendMailResponse, com.aliyun.teautil.models.RuntimeOptions, com.baomidou.mybatisplus.core.metadata.IPage, PageData, AgentSessions, ChatHistoryExportServiceImpl, Override (+5 more)
+### Community 272 - "AliyunDirectMailService"
+Cohesion: 0.24
+Nodes (8): com.aliyun.dm20151123.Client, com.aliyun.dm20151123.models.SingleSendMailResponse, com.aliyun.teautil.models.RuntimeOptions, EmailSendDTO, EmailService, AliyunDirectMailService, Client, Override
 
 ### Community 273 - "TtsAdvancedSettings.vue"
 Cohesion: 0.21
 Nodes (5): fetchReplacementWordList(), handleCancel(), handleClose(), handleSave(), visible()
 
-### Community 275 - "t"
-Cohesion: 0.06
-Nodes (42): t(), formatArrayValue(), formatContextProviders(), formatCorrectWordFileIds(), formatDisplayValue(), formatFunctions(), formatLocalizedList(), formatStringList() (+34 more)
+### Community 274 - "WechatPayClientStartupGuard.java"
+Cohesion: 0.25
+Nodes (7): Override, WechatPayClientStartupGuard, Mock mode guard rationale, org.springframework.boot.ApplicationArguments, org.springframework.boot.ApplicationRunner, org.springframework.core.env.Environment, WechatPayClient
+
+### Community 275 - "wifi-selector.vue"
+Cohesion: 0.12
+Nodes (19): checkESP32Connection(), checkingConnection, emit, getSignalStrength(), isConnectedToESP32, networkDisplayText, onPasswordChange(), password (+11 more)
 
 ### Community 276 - "SmallSceneList.vue"
 Cohesion: 0.14
@@ -1678,20 +1691,12 @@ Cohesion: 0.22
 Nodes (9): app, assert, authMock, makePage(), Module, resetScenario(), run(), shareInvite (+1 more)
 
 ### Community 281 - "wish.js"
-Cohesion: 0.36
-Nodes (4): _countTotalWishes(), _hasWishedToday(), _loadQuestion(), onShow()
-
-### Community 282 - "jakarta.servlet.http.HttpServletRequest"
-Cohesion: 0.09
-Nodes (17): jakarta.servlet.http.HttpServletRequest, OperationLogAspect, RedisAspect, HttpContextUtils, SysOperationLogDao, SysOperationLogEntity, OperationType, CHAT_HISTORY_DELETE (+9 more)
-
-### Community 283 - "PageData"
-Cohesion: 0.06
-Nodes (18): io.swagger.v3.oas.annotations.Parameters, PageData, ValidatorUtils, PageData, UserShowDeviceListVO, PageData, ChatHistoryVO, SysDictDataController (+10 more)
+Cohesion: 0.31
+Nodes (5): _countTotalWishes(), _hasWishedToday(), _loadQuestion(), onShow(), onSubmit()
 
 ### Community 284 - "manager-web/package.json"
-Cohesion: 0.18
-Nodes (10): browserslist, name, private, sideEffects, version, > 1%, *.css, last 2 versions (+2 more)
+Cohesion: 0.25
+Nodes (7): browserslist, name, private, version, > 1%, last 2 versions, not dead
 
 ### Community 285 - "ProviderDialog.vue"
 Cohesion: 0.17
@@ -1721,9 +1726,9 @@ Nodes (4): assert, inviteMineQueue, Module, pagePath
 Cohesion: 0.20
 Nodes (10): ipad, app, app@2x, notification, notification@2x, proapp@2x, settings, settings@2x (+2 more)
 
-### Community 293 - "sI"
-Cohesion: 0.12
-Nodes (3): ns, os(), sI()
+### Community 293 - "chat-settings.js"
+Cohesion: 0.25
+Nodes (4): confirmDelete(), onDelete(), onExport(), request
 
 ### Community 295 - "voice-call-manager.js"
 Cohesion: 0.25
@@ -1749,6 +1754,10 @@ Nodes (6): DEFAULTS, onToggleBday(), onToggleDaily(), onToggleGrowth(), onToggle
 Cohesion: 0.22
 Nodes (6): assert, calls, doodleApi, Module, petStore, saveResult
 
+### Community 301 - "invite-api.test.js"
+Cohesion: 0.22
+Nodes (5): assert, calls, inviteApi, Module, responses
+
 ### Community 302 - "distribute"
 Cohesion: 0.22
 Nodes (9): abiFilters, minSdkVersion, targetSdkVersion, distribute, android, ios, sdkConfigs, arm64-v8a (+1 more)
@@ -1765,21 +1774,25 @@ Nodes (9): ccall(), cwrap(), _emscripten_run_script(), getCFunc(), stringToUTF8(
 Cohesion: 0.31
 Nodes (8): diffKeys(), formatKeyList(), fs, locales, main(), path, readLocale(), rootDir
 
-### Community 306 - "formatDisplayValue"
-Cohesion: 0.24
-Nodes (12): buildFunctionState(), correctWordDisplayNames(), createFunctionChange(), formatDisplayValue(), functionDisplayName(), functionFields(), functionParamLabel(), functionParamRows() (+4 more)
+### Community 306 - "functionParamRows"
+Cohesion: 0.21
+Nodes (13): buildFunctionChanges(), buildFunctionState(), changedFunctionParamKeys(), createFunctionChange(), functionDisplayName(), functionFields(), functionParamLabel(), functionParamRows() (+5 more)
 
 ### Community 307 - "date.js"
 Cohesion: 0.39
 Nodes (7): formatTime(), formatAddDate(), formatDate(), formatDateTool(), isDate(), padLeftZero(), toDate()
 
-### Community 309 - "StorySelectionResultType"
-Cohesion: 0.40
-Nodes (4): StorySelectionResultType, INVALID_CONFIGURATION, REMAIN, SELECTED
+### Community 308 - "CompanionVO"
+Cohesion: 0.44
+Nodes (3): Override, CompanionVO, MenstrualStatusVO
 
-### Community 310 - ".get"
-Cohesion: 0.09
-Nodes (11): jakarta.servlet.http.HttpServletResponse, AgentChatHistoryController, MockPaymentNotifyController, PaymentNotifyController, PayChannel, PaymentNotifyService, Override, QueryWrapper (+3 more)
+### Community 309 - "StoryStateSelector"
+Cohesion: 0.12
+Nodes (13): java.util.Queue, SelectedStoryState, StoryActionCandidate, StoryImageCandidate, StoryPeriodImageSelection, StorySceneCandidate, StorySelectionResult, StorySelectionResultType (+5 more)
+
+### Community 310 - "jakarta.servlet.http.HttpServletRequest"
+Cohesion: 0.15
+Nodes (7): jakarta.servlet.http.HttpServletRequest, OperationLogAspect, MockPaymentNotifyController, PaymentNotifyController, PayChannel, PaymentNotifyService, PaymentNotifyService
 
 ### Community 311 - "ASRProvider"
 Cohesion: 0.21
@@ -1797,6 +1810,10 @@ Nodes (7): cdnResources, CompressionPlugin, { defineConfig }, dotenv, { InjectMa
 Cohesion: 0.22
 Nodes (10): applyTemplateData(), createNewTemplate(), DEFAULT_MODEL_CONFIG, fetchTemplateById(), fetchTemplateListForSort(), goToHome(), mounted(), prepareConfigData() (+2 more)
 
+### Community 315 - "fetchAgentConfig"
+Cohesion: 0.33
+Nodes (9): buildCurrentFunctions(), enrichCurrentFunctionsWithMetadata(), fetchAgentConfig(), fetchAllFunctions(), handleModelChange(), normalizeFunctionParams(), openFunctionDialog(), parsePluginFields() (+1 more)
+
 ### Community 316 - "websocket Utility"
 Cohesion: 0.29
 Nodes (7): config/api 配置, xiaozhi-server 聊天服务, opus-decoder 库, audio Utility, ota Utility, request Utility, websocket Utility
@@ -1804,6 +1821,10 @@ Nodes (7): config/api 配置, xiaozhi-server 聊天服务, opus-decoder 库, aud
 ### Community 317 - "SAE Startup Wrapper Script"
 Cohesion: 0.29
 Nodes (7): app.py Entry Point, FunASR Pipeline, SenseVoiceSmall ASR Model Configuration, ConfigMap Fallback Configuration, NAS Mount Configuration Source, SAE Startup Wrapper Script, VAD Model Presence Check
+
+### Community 318 - ".sendVerificationCodeSms"
+Cohesion: 0.29
+Nodes (4): com.aliyun.dysmsapi20170525.Client, Client, Override, RuntimeOptions
 
 ### Community 319 - "UploadScene.java"
 Cohesion: 0.33
@@ -1837,9 +1858,13 @@ Nodes (3): HttpEntity, Override, OpenAIStyleLLMServiceImpl
 Cohesion: 0.20
 Nodes (3): Path, TestRuntimeHttpServer, ThreadingHTTPServer
 
-### Community 331 - "java.lang.annotation.Documented"
-Cohesion: 0.61
-Nodes (5): java.lang.annotation.Documented, java.lang.annotation.Retention, java.lang.annotation.Target, DataFilter, OperationLog
+### Community 331 - "OperationType"
+Cohesion: 0.27
+Nodes (9): java.lang.annotation.Documented, java.lang.annotation.Retention, java.lang.annotation.Target, DataFilter, LogOperation, OperationLog, OperationType, CHAT_HISTORY_DELETE (+1 more)
+
+### Community 332 - "reloadAgentPage"
+Cohesion: 0.29
+Nodes (7): fetchCurrentVersion(), getAgentTags(), handleSnapshotRestored(), isSameStringList(), reloadAgentPage(), saveConfig(), shouldSubmitTtsLanguage()
 
 ### Community 333 - "wechat-api.js"
 Cohesion: 0.20
@@ -1853,17 +1878,13 @@ Nodes (8): API Response Envelope Pattern, i18n Message Resolution, RenExceptionH
 Cohesion: 0.22
 Nodes (11): addOnPostRun(), addOnPreRun(), callRuntimeCallbacks(), getWasmTableEntry(), initRuntime(), invoke_iii(), invoke_iiii(), invoke_iiiii() (+3 more)
 
-### Community 336 - "normalizeFunctionMap"
-Cohesion: 0.18
-Nodes (13): buildFunctionChanges(), changedFunctionParamKeys(), isEquivalentValue(), isPlainObject(), isSameFieldValue(), isSameValue(), normalizeDefaultTtsNumber(), normalizeFunctionList() (+5 more)
+### Community 336 - "normalizeValueForField"
+Cohesion: 0.33
+Nodes (7): isEquivalentValue(), isPlainObject(), isSameFieldValue(), isSameValue(), normalizeDefaultTtsNumber(), normalizeValue(), normalizeValueForField()
 
-### Community 338 - "ConfigServiceImpl"
-Cohesion: 0.07
-Nodes (6): ConfigService, ConfigServiceImpl, Override, ChatQuotaResultVO, SubscriptionService, TimbreService
-
-### Community 339 - "DeviceService"
-Cohesion: 0.10
-Nodes (7): DeviceManualAddDTO, DeviceService, EmitSeverActionDTO, ServerActionPayloadDTO, ServerActionEnum, RESTART, UPDATE_CONFIG
+### Community 338 - "DeviceService"
+Cohesion: 0.04
+Nodes (20): io.swagger.v3.oas.annotations.Hidden, AgentChatHistoryBizServiceImpl, Override, ConfigServiceImpl, Override, CorrectWordFileCreateDTO, CorrectWordFileService, PageData (+12 more)
 
 ### Community 340 - "ServerActionResponseEnum"
 Cohesion: 0.22
@@ -1888,10 +1909,6 @@ Nodes (5): 阿里云 ACR 镜像构建与推送执行脚本, scripts/, docs/, 项
 ### Community 348 - "egg-avatar.js"
 Cohesion: 0.83
 Nodes (3): attached(), compute(), size()
-
-### Community 351 - "AgentVoicePrintVO"
-Cohesion: 0.21
-Nodes (4): AgentVoicePrintSaveDTO, AgentVoicePrintUpdateDTO, AgentVoicePrintService, AgentVoicePrintVO
 
 ### Community 352 - "postupgrade.js"
 Cohesion: 0.50
@@ -1942,8 +1959,8 @@ Cohesion: 0.67
 Nodes (3): manager-web CDN 注入, manager-web Vue 应用壳, 小智控制台离线模式
 
 ### Community 373 - "lombok.extern.slf4j.Slf4j"
-Cohesion: 0.05
-Nodes (54): Closeable, com.aliyun.oss.model.CannedAccessControlList, com.baomidou.mybatisplus.core.conditions.query.QueryWrapper, com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper, com.baomidou.mybatisplus.extension.plugins.pagination.Page, com.baomidou.mybatisplus.spring.repository.CrudRepository, com.fasterxml.jackson.core.type.TypeReference, com.fasterxml.jackson.databind.ObjectMapper (+46 more)
+Cohesion: 0.03
+Nodes (91): com.baomidou.mybatisplus.core.conditions.query.QueryWrapper, com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper, com.baomidou.mybatisplus.core.enums.SqlMethod, com.baomidou.mybatisplus.extension.plugins.pagination.Page, com.baomidou.mybatisplus.extension.repository.IRepository, com.baomidou.mybatisplus.spring.repository.CrudRepository, com.fasterxml.jackson.databind.ObjectMapper, lombok.extern.slf4j.Slf4j (+83 more)
 
 ### Community 375 - "Gemini LLMProvider._generate"
 Cohesion: 0.67
@@ -1953,21 +1970,17 @@ Nodes (3): Gemini LLMProvider._generate, Gemini LLMProvider.response, Gemini LLM
 Cohesion: 0.60
 Nodes (5): confirmRestoreSnapshot(), invalidateRestorePreview(), restoreFailedMessage(), submitRestoreSnapshot(), hasValidCurrentStateToken()
 
-### Community 398 - "tts/aliyun.py"
-Cohesion: 0.24
-Nodes (3): AccessToken, Aliyun TTSProvider.text_to_speak, TTSProvider
-
-### Community 428 - "SysEmailParam"
-Cohesion: 0.29
-Nodes (7): SysEmailParam, ALIYUN_DM_ACCESS_KEY_ID, ALIYUN_DM_ACCESS_KEY_SECRET, ALIYUN_DM_ACCOUNT_NAME, ALIYUN_DM_FROM_ALIAS, ALIYUN_DM_REPLY_TO_ADDRESS, ALIYUN_DM_TAG_NAME
+### Community 378 - "apis/api.js"
+Cohesion: 0.06
+Nodes (4): closeDialog(), confirm(), fetchPlatformList(), handleOpen()
 
 ### Community 432 - "Subscription Page (我的契约)"
 Cohesion: 0.29
 Nodes (7): Bond Panel (羁绊面板), Subscription Page (我的契约), Subscription Payment Flow, Plan Comparison Table, 401 Silent Re-login, HTTP Request Utility, Manager API Base URL
 
 ### Community 434 - "AgentChatSummaryServiceImpl"
-Cohesion: 0.07
-Nodes (10): java.security.SecureRandom, java.util.regex.Pattern, AgentChatHistoryDTO, AgentChatSummaryServiceImpl, Override, InviteCodeGenerator, BCrypt, BCryptPasswordEncoder (+2 more)
+Cohesion: 0.16
+Nodes (3): AgentChatHistoryDTO, AgentChatSummaryServiceImpl, Override
 
 ### Community 435 - "Prototype"
 Cohesion: 0.50
@@ -1982,24 +1995,24 @@ Cohesion: 0.53
 Nodes (3): XssUtils, org.jsoup.safety.Safelist, Safelist
 
 ## Knowledge Gaps
-- **1706 isolated node(s):** `_common.sh script`, `start.sh script`, `auth`, `{ post }`, `shareInvite` (+1701 more)
+- **1707 isolated node(s):** `_common.sh script`, `start.sh script`, `auth`, `{ post }`, `shareInvite` (+1702 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **219 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **222 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `error()` connect `error` to `VoiceCloneManagement.vue`, `DeviceManagement.vue`, `login/index.vue`, `agent/index.vue`, `AgentSnapshotPanel.vue`, `*.vue`, `t`, `HeaderBar.vue`, `edit.vue`, `VoiceCloneDialog.vue`, `settings/index.vue`, `pet-store.js`, `index/index.js`, `TtsModel.vue`, `agent.ts`, `register/index.vue`, `tools.vue`, `Alova HTTP Client`, `device/index.vue`, `roleConfig.vue`, `voice-call.js`, `FeatureManager`, `ManualAddDeviceDialog.vue`, `detail.vue`, `OtaManagement.vue`, `home.vue`, `ultrasonic-config.vue`, `KnowledgeBaseManagement.vue`?**
-  _High betweenness centrality (0.066) - this node is a cross-community bridge._
-- **Why does `saveArtwork()` connect `pet-store.js` to `doodle-editor.js`, `error`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
+- **Why does `error()` connect `error` to `VoiceCloneManagement.vue`, `captureTtsDraft`, `DeviceManagement.vue`, `login/index.vue`, `agent/index.vue`, `AgentSnapshotPanel.vue`, `httpRequest.js`, `wifi-selector.vue`, `HeaderBar.vue`, `edit.vue`, `*.vue`, `VoiceCloneDialog.vue`, `settings/index.vue`, `index/index.js`, `TtsModel.vue`, `agent.ts`, `doodle-api.js`, `register/index.vue`, `store/index.ts`, `tools.vue`, `Alova HTTP Client`, `fetchAgentConfig`, `device/index.vue`, `roleConfig.vue`, `voice-call.js`, `FeatureManager`, `CustomDialog.vue`, `reloadAgentPage`, `detail.vue`, `subscription.js`, `OtaManagement.vue`, `FeatureManagement.vue`, `home.vue`, `ultrasonic-config.vue`, `KnowledgeBaseManagement.vue`?**
+  _High betweenness centrality (0.072) - this node is a cross-community bridge._
+- **Why does `saveArtwork()` connect `doodle-api.js` to `doodle-editor.js`, `error`, `pet-store.js`?**
+  _High betweenness centrality (0.050) - this node is a cross-community bridge._
 - **Why does `createEngine()` connect `doodle-canvas.js` to `GIF`, `incubation-scene.js`?**
-  _High betweenness centrality (0.042) - this node is a cross-community bridge._
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `Result` (e.g. with `.onAccessDenied()` and `.onLoginFailure()`) actually correct?**
   _`Result` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `_common.sh script`, `start.sh script`, `auth` to the rest of the system?**
-  _1706 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1707 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Result` be split into smaller, more focused modules?**
-  _Cohesion score 0.039540657976412166 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.03118452100047192 - nodes in this community are weakly interconnected._
 - **Should `index-Guo1hQ-y.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.008670353727387947 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.00882090882090882 - nodes in this community are weakly interconnected._

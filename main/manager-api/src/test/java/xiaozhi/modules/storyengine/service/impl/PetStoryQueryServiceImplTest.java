@@ -257,6 +257,38 @@ class PetStoryQueryServiceImplTest {
         assertThat(page.getValue().getSize()).isEqualTo(Long.parseLong(limit));
     }
 
+    @Test
+    void getCurrentByPrototypeReturnsActiveStateWithoutPetLookup() {
+        PetStoryStateEntity state = activeState("锦鲤");
+        when(stateDao.selectOne(any())).thenReturn(state);
+
+        PetStoryStateVO result = service.getCurrentByPrototype("锦鲤");
+
+        assertStateSnapshot(result, state);
+        ArgumentCaptor<QueryWrapper<PetStoryStateEntity>> query = queryCaptor();
+        verify(stateDao).selectOne(query.capture());
+        assertQuery(query.getValue(), List.of("pet_prototype=", "runtime_status="), "锦鲤", "ACTIVE");
+        verifyNoInteractions(petDao, historyDao);
+    }
+
+    @Test
+    void getCurrentByPrototypeReturnsNullWhenAbsentOrUninitialized() {
+        PetStoryStateEntity uninitialized = activeState("锦鲤");
+        uninitialized.setRuntimeStatus("UNINITIALIZED");
+        when(stateDao.selectOne(any())).thenReturn(null, uninitialized);
+
+        assertThat(service.getCurrentByPrototype("锦鲤")).isNull();
+        assertThat(service.getCurrentByPrototype("锦鲤")).isNull();
+    }
+
+    @Test
+    void getCurrentByPrototypeSkipsQueryWhenPrototypeBlank() {
+        assertThat(service.getCurrentByPrototype(null)).isNull();
+        assertThat(service.getCurrentByPrototype(" ")).isNull();
+
+        verifyNoInteractions(petDao, stateDao, historyDao);
+    }
+
     private static PetEntity pet(String id, Long userId, String hatchStatus, String prototype) {
         PetEntity pet = new PetEntity();
         pet.setId(id);

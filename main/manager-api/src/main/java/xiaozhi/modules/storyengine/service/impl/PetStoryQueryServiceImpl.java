@@ -46,9 +46,17 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
         if (!isHatched(pet)) {
             return null;
         }
+        return getCurrentByPrototype(pet.getPrototype());
+    }
+
+    @Override
+    public PetStoryStateVO getCurrentByPrototype(String petPrototype) {
+        if (petPrototype == null || petPrototype.isBlank()) {
+            return null;
+        }
 
         QueryWrapper<PetStoryStateEntity> query = new QueryWrapper<>();
-        query.eq("pet_prototype", pet.getPrototype())
+        query.eq("pet_prototype", petPrototype)
                 .eq("runtime_status", StoryRuntimeStatus.ACTIVE.name());
         PetStoryStateEntity state = stateDao.selectOne(query);
         if (state == null || !StoryRuntimeStatus.ACTIVE.name().equals(state.getRuntimeStatus())) {

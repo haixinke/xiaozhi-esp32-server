@@ -114,6 +114,8 @@ Page({
     storyWindowAvailable: false,
     storyWindowVisible: false,
     storyWindowOriginStyle: '',
+    // 故事大场景是否为"在家"：控制左下角聊天入口显隐（非在家不显示）
+    storyAtHome: false,
     // 故事背景横向拖拽位移（px），轨道宽按图片真实宽高比自适应，范围 [屏宽-轨道宽, 0]
     storyScrollX: 0,
     // 故事轨道宽度样式（onStoryBgLoad 后按图片宽高比写入，空串时用 WXSS 的 200vw 兜底）
@@ -475,12 +477,13 @@ Page({
       this.clearStoryTimer();
       this.clearStoryCaptionToast();
       this.lastStoryCaption = '';
-      if (this.data.storyImageUrl || this.data.storyTagImageUrl || this.data.storyWindowAvailable) {
+      if (this.data.storyImageUrl || this.data.storyTagImageUrl || this.data.storyWindowAvailable || this.data.storyAtHome) {
         this.setData({
           storyImageUrl: '',
           storyTagImageUrl: '',
           storyWindowAvailable: false,
-          storyWindowVisible: false
+          storyWindowVisible: false,
+          storyAtHome: false
         });
       }
       return;
@@ -509,7 +512,9 @@ Page({
           storyImageUrl: imageUrl,
           storyTagImageUrl: tagImageUrl,
           storyWindowAvailable: windowAvailable,
-          storyWindowVisible: windowAvailable ? this.data.storyWindowVisible : false
+          storyWindowVisible: windowAvailable ? this.data.storyWindowVisible : false,
+          // 聊天入口仅"在家"大场景显示；轮询失败静默保留旧值
+          storyAtHome: !!(state && state.bigSceneName === STORY_WINDOW_BIG_SCENE)
         });
         // caption 变化（含首次进入）时弹 toast；10 分钟轮询到相同文案不重复弹
         const caption = state && typeof state.caption === 'string' ? state.caption.trim() : '';

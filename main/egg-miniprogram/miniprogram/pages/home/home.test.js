@@ -471,6 +471,8 @@ async function run() {
     'post-hatch home must not render the static stage text card');
   assert.ok(homeTemplate.includes('class="story-chat-entry"'),
     'post-hatch home must render the bottom-left chat entry icon');
+  assert.ok(homeTemplate.includes('wx:if="{{storyAtHome}}"'),
+    'chat entry must be gated on the at-home story scene');
   assert.ok(homeTemplate.includes('src="{{storyChatIcon}}"'),
     'chat entry icon must render the prototype-based image');
   assert.ok(!homeTemplate.includes('home-actions__chat'),
@@ -1157,6 +1159,7 @@ async function run() {
   assert.strictEqual(pageStory.data.storyImageUrl, 'https://oss.eggbabe.com/story/bedroom.png', 'story image url drives the background');
   assert.strictEqual(pageStory.data.storyTagImageUrl, 'https://oss.eggbabe.com/story/window.png', 'story tag image url stored');
   assert.strictEqual(pageStory.data.storyWindowAvailable, true, 'home bedroom with a tag image enables the window hotspot');
+  assert.strictEqual(pageStory.data.storyAtHome, true, 'at-home big scene enables the chat entry');
   assert.strictEqual(intervalDelay, 600000, 'story state refreshes every 10 minutes');
   assert.ok(pageStory.storyTimer, 'story refresh interval is active');
 
@@ -1192,6 +1195,22 @@ async function run() {
   await Promise.resolve();
   assert.strictEqual(pageStoryEmpty.data.storyImageUrl, '', 'null story state clears the background');
   assert.strictEqual(pageStoryEmpty.data.storyWindowAvailable, false, 'null story state disables the window hotspot');
+  assert.strictEqual(pageStoryEmpty.data.storyAtHome, false, 'null story state hides the chat entry');
+
+  // 24b. 非"在家"大场景：聊天入口隐藏
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  storyStateResult = {
+    bigSceneName: '户外', smallSceneName: '公园',
+    imageUrl: 'https://oss.eggbabe.com/story/park.png', tagImageUrl: ''
+  };
+  const pageOutdoor = makePage();
+  pageOutdoor.onLoad();
+  pageOutdoor.onShow();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(pageOutdoor.data.storyAtHome, false, 'non-home big scene hides the chat entry');
 
   // 25. 破壳前：不拉取故事状态
   resetScenario();

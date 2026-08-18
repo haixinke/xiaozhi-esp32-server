@@ -127,8 +127,8 @@
         </view>
       </view>
 
-      <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图 -->
-      <view class="story-chat-entry">
+      <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图；仅"在家"大场景显示 -->
+      <view wx:if="{{storyAtHome}}" class="story-chat-entry">
         <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
           <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFill" />
         </view>

@@ -30,8 +30,8 @@ const STORY_INERTIA_DECAY = 0.94;
 const STORY_INERTIA_MIN_VELOCITY = 0.08;
 const STORY_INERTIA_STOP_VELOCITY = 0.02;
 const STORY_INERTIA_STALE_MS = 80;
-// 故事状态 caption 提示条：对齐静态项目 system toast，1800ms 展示 + 180ms 淡出
-const STORY_CAPTION_TOAST_DURATION_MS = 1800;
+// 故事状态 caption 提示条：5000ms 展示 + 180ms 淡出
+const STORY_CAPTION_TOAST_DURATION_MS = 5000;
 const STORY_CAPTION_TOAST_FADE_MS = 180;
 // 左下角聊天入口 icon：按宠物原型选图，与静态项目 life-scene 页同一组素材
 // （玉兔/锦鲤为专用聊天 icon v02，未知原型兜底 find_home 蛋 p8 版）；
@@ -125,7 +125,7 @@ Page({
     storyWindowHotspotStyle: '',
     // 左下角聊天入口 icon（按原型选图）
     storyChatIcon: CHAT_ENTRY_ICON_FALLBACK,
-    // 故事状态 caption 提示条（toast）：状态变化时展示 1800ms 后淡出
+    // 故事状态 caption 提示条（toast）：状态变化时展示 5000ms 后淡出
     storyCaptionToastText: '',
     storyCaptionToastVisible: false,
     // 陪伴入口图标数据
@@ -526,7 +526,7 @@ Page({
       .catch(() => {});
   },
 
-  // 故事状态 caption toast：1800ms 展示后淡出，与静态项目 system toast 时长一致
+  // 故事状态 caption toast：5000ms 展示后淡出
   showStoryCaptionToast(text) {
     this.clearStoryCaptionToast();
     this.setData({ storyCaptionToastText: text, storyCaptionToastVisible: false }, () => {

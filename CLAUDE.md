@@ -185,6 +185,10 @@ Rules:
 
 Issues 跟踪在 GitHub Issues（origin: haixinke/xiaozhi-esp32-server），用 gh CLI 操作。See `docs/agents/issue-tracker.md`.
 
+### Triage labels
+
+默认五角色同名标签：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`。See `docs/agents/triage-labels.md`.
+
 ### Domain docs
 
 单上下文布局：根 `CONTEXT.md` + `docs/adr/`（按需懒创建）。See `docs/agents/domain.md`.

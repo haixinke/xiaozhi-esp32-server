@@ -12,6 +12,8 @@ public enum StoryEvaluationResult {
     KEPT_NOT_DUE,
     /** 动作未到期但图片时段已切换，仅刷新背景图相关字段，动作与时长不变 */
     REFRESHED_PERIOD_IMAGE,
+    /** 动作未到期且图片时段未变，在当前时段候选图中排除在用图后轮换背景图与配文，动作与时长不变 */
+    ROTATED_PERIOD_IMAGE,
     /** 随机数落入剩余概率，保持当前状态 */
     KEPT_REMAINDER,
     /** 配置不完整或非法，保持当前状态 */

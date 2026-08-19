@@ -89,7 +89,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         Date now = Date.from(evaluatedAt.toInstant());
         // 动作未到期则保持，不加载候选内容
         if (runtimeStatus == StoryRuntimeStatus.ACTIVE && current.getExpectedEndAt().after(now)) {
-            return refreshPeriodImageIfMismatch(current, period, prototype);
+            return refreshNotDueImage(current, period, prototype);
         }
 
         List<StorySceneCandidate> candidates = contentLoader.load(prototype, period);
@@ -101,19 +101,22 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
     }
 
     /**
-     * 动作未到期但图片时段（白天/落日/黑夜）已切换时，仅换同时段背景图：
-     * 动作、场景、时长、weightPeriod 保持，不写历史；新时段取不到图（含特殊标签图缺失）则整体不变。
+     * 动作未到期时的背景图维护：
+     * - 图片时段（白天/落日/黑夜）已切换：换新时段背景图（REFRESHED_PERIOD_IMAGE）；
+     * - 时段未变：在当前时段候选图中排除在用图后轮换（ROTATED_PERIOD_IMAGE），避免抽回同一张。
+     * 两条路径均仅更新图片相关字段：动作、场景、时长、weightPeriod 保持，不写历史；
+     * 取不到图（含排除后无可换目标、特殊标签图缺失）则整体不变。
      */
-    private StoryEvaluationResult refreshPeriodImageIfMismatch(PetStoryStateEntity current,
-                                                               StoryPeriodContext period, String prototype) {
+    private StoryEvaluationResult refreshNotDueImage(PetStoryStateEntity current,
+                                                     StoryPeriodContext period, String prototype) {
         String newTimeOfDay = period.imageTimeOfDay().databaseValue();
-        if (newTimeOfDay.equals(current.getImageTimeOfDay())) {
-            return StoryEvaluationResult.KEPT_NOT_DUE;
-        }
+        boolean periodChanged = !newTimeOfDay.equals(current.getImageTimeOfDay());
+        // 时段边界换图由查询的时段条件天然排除在用图；同时段轮换需显式排除
+        String excludeImageId = periodChanged ? null : current.getActionImageId();
         List<StoryImageCandidate> images = contentLoader.loadPeriodImages(prototype, current.getActionId(),
                 newTimeOfDay);
         Optional<StoryPeriodImageSelection> selection = selector.selectPeriodImage(images,
-                current.getBigSceneName(), current.getSmallSceneName());
+                current.getBigSceneName(), current.getSmallSceneName(), excludeImageId);
         if (selection.isEmpty()) {
             return StoryEvaluationResult.KEPT_NOT_DUE;
         }
@@ -123,7 +126,8 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         current.setTagImageUrl(chosen.tagImageUrl());
         current.setCaption(chosen.caption());
         current.setImageTimeOfDay(newTimeOfDay);
-        return StoryEvaluationResult.REFRESHED_PERIOD_IMAGE;
+        return periodChanged ? StoryEvaluationResult.REFRESHED_PERIOD_IMAGE
+                : StoryEvaluationResult.ROTATED_PERIOD_IMAGE;
     }
 
     private StoryEvaluationResult applySelection(PetStoryStateEntity current, StoryRuntimeStatus runtimeStatus,

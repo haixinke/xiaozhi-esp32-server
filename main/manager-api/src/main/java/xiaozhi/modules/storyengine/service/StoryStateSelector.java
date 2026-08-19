@@ -65,13 +65,16 @@ public class StoryStateSelector {
 
     /**
      * 图片时段换图：在动作的新时段候选图中等概率选主图，命中特殊标签规则时同步取标签图快照。
-     * 原子性：主图缺失，或命中规则但标签图缺失，均返回 empty，调用方保持原状态不变。
+     * excludeImageId 非空时将其排除出主图候选（同时段轮换避免抽回在用图；时段边界换图传 null，查询自带时段过滤）。
+     * 原子性：主图缺失（含排除后为空），或命中规则但标签图缺失，均返回 empty，调用方保持原状态不变。
      */
     public Optional<StoryPeriodImageSelection> selectPeriodImage(List<StoryImageCandidate> images,
-                                                                 String bigSceneName, String smallSceneName) {
+                                                                 String bigSceneName, String smallSceneName,
+                                                                 String excludeImageId) {
         String specialTag = tagRegistry.specialTagOf(bigSceneName, smallSceneName).orElse(null);
         List<StoryImageCandidate> mainImages = images.stream()
                 .filter(candidate -> !isSpecialTag(candidate, specialTag))
+                .filter(candidate -> excludeImageId == null || !excludeImageId.equals(candidate.id()))
                 .toList();
         if (mainImages.isEmpty()) {
             return Optional.empty();

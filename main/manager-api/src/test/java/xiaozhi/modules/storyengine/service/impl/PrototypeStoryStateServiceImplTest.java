@@ -216,18 +216,62 @@ class PrototypeStoryStateServiceImplTest {
     }
 
     @Test
-    void futureExpectedEndKeepsCompleteSnapshotWithoutLoadingAndPersistsSlot() {
+    void futureExpectedEndKeepsSnapshotWhenNoAlternativeImageAndPersistsSlot() {
+        // 动作未到期且时段未变：唯一候选图就是在用图，排除后无可换目标，保持原状
         ZonedDateTime evaluatedAt = at("2026-08-08T10:22:33+08:00");
         PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T10:22:34+08:00");
         current.setImageTimeOfDay(StoryImageTimeOfDay.DAY.databaseValue());
         PetStoryStateEntity untouched = copy(current);
+        List<StoryImageCandidate> periodImages = List.of(
+                new StoryImageCandidate("old-image-id", "https://example.com/old.png", "旧文案", null));
         when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
         when(periodResolver.resolve(evaluatedAt)).thenReturn(MORNING);
+        when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "白天")).thenReturn(periodImages);
+        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", "old-image-id"))
+                .thenReturn(Optional.empty());
 
         assertThat(service.evaluate(PROTOTYPE, evaluatedAt)).isEqualTo(StoryEvaluationResult.KEPT_NOT_DUE);
 
         assertSnapshotUnchangedExceptSlot(current, untouched, "2026-08-08T10:00:00+08:00");
-        verifyNoInteractions(contentLoader, selector, historyDao);
+        verifyNoInteractions(historyDao);
+        verify(stateDao).updateById(current);
+        verifyCommittedOnce();
+    }
+
+    @Test
+    void notDueWithSamePeriodRotatesToAnotherImage() {
+        // 动作未到期且时段未变：排除在用图后轮换到另一张，动作/场景/时长字段保持
+        ZonedDateTime evaluatedAt = at("2026-08-08T10:22:33+08:00");
+        PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T23:00:00+08:00");
+        current.setImageTimeOfDay(StoryImageTimeOfDay.DAY.databaseValue());
+        PetStoryStateEntity untouched = copy(current);
+        List<StoryImageCandidate> periodImages = List.of(
+                new StoryImageCandidate("old-image-id", "https://example.com/old.png", "旧文案", null),
+                new StoryImageCandidate("alt-image-id", "https://example.com/alt.png", "新文案", null));
+        when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
+        when(periodResolver.resolve(evaluatedAt)).thenReturn(MORNING);
+        when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "白天")).thenReturn(periodImages);
+        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", "old-image-id"))
+                .thenReturn(Optional.of(new StoryPeriodImageSelection("alt-image-id",
+                        "https://example.com/alt.png", "新文案", null)));
+
+        assertThat(service.evaluate(PROTOTYPE, evaluatedAt))
+                .isEqualTo(StoryEvaluationResult.ROTATED_PERIOD_IMAGE);
+
+        assertThat(current.getActionImageId()).isEqualTo("alt-image-id");
+        assertThat(current.getImageUrl()).isEqualTo("https://example.com/alt.png");
+        assertThat(current.getCaption()).isEqualTo("新文案");
+        assertThat(current.getTagImageUrl()).isNull();
+        // 时段未变
+        assertThat(current.getImageTimeOfDay()).isEqualTo(untouched.getImageTimeOfDay());
+        assertThat(current.getActionId()).isEqualTo(untouched.getActionId());
+        assertThat(current.getBigSceneId()).isEqualTo(untouched.getBigSceneId());
+        assertThat(current.getDurationHours()).isEqualTo(untouched.getDurationHours());
+        assertThat(current.getStartedAt()).isEqualTo(untouched.getStartedAt());
+        assertThat(current.getExpectedEndAt()).isEqualTo(untouched.getExpectedEndAt());
+        verify(historyDao, never()).insert(any(PetStoryHistoryEntity.class));
+        verify(contentLoader, never()).load(any(), any());
+        verify(selector, never()).selectTransition(any());
         verify(stateDao).updateById(current);
         verifyCommittedOnce();
     }
@@ -243,7 +287,7 @@ class PrototypeStoryStateServiceImplTest {
         when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
         when(periodResolver.resolve(evaluatedAt)).thenReturn(EVENING_SUNSET);
         when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "落日")).thenReturn(periodImages);
-        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景"))
+        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", null))
                 .thenReturn(Optional.of(new StoryPeriodImageSelection("sunset-image-id",
                         "https://example.com/sunset.png", "落日文案", "https://example.com/sunset-window.png")));
 
@@ -281,7 +325,7 @@ class PrototypeStoryStateServiceImplTest {
         when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
         when(periodResolver.resolve(evaluatedAt)).thenReturn(EVENING_SUNSET);
         when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "落日")).thenReturn(List.of());
-        when(selector.selectPeriodImage(List.of(), "旧大场景", "旧小场景")).thenReturn(Optional.empty());
+        when(selector.selectPeriodImage(List.of(), "旧大场景", "旧小场景", null)).thenReturn(Optional.empty());
 
         assertThat(service.evaluate(PROTOTYPE, evaluatedAt)).isEqualTo(StoryEvaluationResult.KEPT_NOT_DUE);
 
@@ -292,7 +336,8 @@ class PrototypeStoryStateServiceImplTest {
     }
 
     @Test
-    void refreshedImageIsNotRefreshedAgainWithinSameImagePeriod() {
+    void refreshedImageIsNotRotatedAgainWhenItIsTheOnlyCandidate() {
+        // 边界换图后再次评估：时段未变走同时段轮换，唯一候选图即在用图，排除后无可换目标
         PetStoryStateEntity current = active(PROTOTYPE, "2026-08-08T23:00:00+08:00");
         current.setImageTimeOfDay(StoryImageTimeOfDay.DAY.databaseValue());
         ZonedDateTime firstEvaluation = at("2026-08-08T17:22:00+08:00");
@@ -302,17 +347,21 @@ class PrototypeStoryStateServiceImplTest {
         when(stateDao.selectByPrototypeForUpdate(PROTOTYPE)).thenReturn(current);
         when(periodResolver.resolve(any(ZonedDateTime.class))).thenReturn(EVENING_SUNSET);
         when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "落日")).thenReturn(periodImages);
-        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景"))
+        // 首次：时段边界换图，不排除在用图
+        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", null))
                 .thenReturn(Optional.of(new StoryPeriodImageSelection("sunset-image-id",
                         "https://example.com/sunset.png", "落日文案", null)));
+        // 二次：同时段轮换，排除在用图后无可换目标
+        when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", "sunset-image-id"))
+                .thenReturn(Optional.empty());
 
         assertThat(service.evaluate(PROTOTYPE, firstEvaluation))
                 .isEqualTo(StoryEvaluationResult.REFRESHED_PERIOD_IMAGE);
         assertThat(service.evaluate(PROTOTYPE, secondEvaluation))
                 .isEqualTo(StoryEvaluationResult.KEPT_NOT_DUE);
 
-        verify(contentLoader, times(1)).loadPeriodImages(any(), any(), any());
-        verify(selector, times(1)).selectPeriodImage(any(), any(), any());
+        verify(contentLoader, times(2)).loadPeriodImages(any(), any(), any());
+        verify(selector, times(2)).selectPeriodImage(any(), any(), any(), any());
         verify(transactionManager, times(2)).commit(transactionStatus);
     }
 

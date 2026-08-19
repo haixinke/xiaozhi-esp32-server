@@ -290,13 +290,57 @@ class StoryStateSelectorTest {
                 image("second-id", " 早安 | 晚安 ", "https://example.com/second.png"));
 
         StoryPeriodImageSelection result = selector
-                .selectPeriodImage(images, "大场景", "公园")
+                .selectPeriodImage(images, "大场景", "公园", null)
                 .orElseThrow();
 
         assertThat(result.imageId()).isEqualTo("second-id");
         assertThat(result.imageUrl()).isEqualTo("https://example.com/second.png");
         assertThat(result.caption()).isEqualTo(" 早安 | 晚安 ");
         assertThat(result.tagImageUrl()).isNull();
+    }
+
+    @Test
+    void periodImageExcludesCurrentImageWhenRotating() {
+        // 同时段轮换：排除当前在用图，只在剩余主图中抽取
+        StoryStateSelector selector = selectorWithRolls(draw(0, 1, 0));
+        List<StoryImageCandidate> images = List.of(
+                image("current-id", "白天", "https://example.com/current.png"),
+                image("other-id", "夜晚", "https://example.com/other.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "大场景", "公园", "current-id")
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("other-id");
+        assertThat(result.imageUrl()).isEqualTo("https://example.com/other.png");
+        assertThat(result.caption()).isEqualTo("夜晚");
+    }
+
+    @Test
+    void periodImageReturnsEmptyWhenExclusionLeavesNoMainImage() {
+        // 唯一主图就是在用图：排除后无可换目标，不换
+        StoryStateSelector selector = selectorWithRolls();
+        List<StoryImageCandidate> images = List.of(
+                image("current-id", "白天", "https://example.com/current.png"));
+
+        assertThat(selector.selectPeriodImage(images, "大场景", "公园", "current-id")).isEmpty();
+    }
+
+    @Test
+    void periodImageExclusionDoesNotAffectTagImageSnapshot() {
+        // 排除的是在用主图：窗景标签图仍可作 tagImageUrl 快照
+        StoryStateSelector selector = selectorWithRolls(draw(0, 1, 0));
+        List<StoryImageCandidate> images = List.of(
+                image("current-id", "落日睡觉", "https://example.com/current.png"),
+                image("other-id", "落日醒来", "https://example.com/other.png"),
+                taggedImage("window-id", "窗户", "https://example.com/window.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "在家", "卧室", "current-id")
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("other-id");
+        assertThat(result.tagImageUrl()).isEqualTo("https://example.com/window.png");
     }
 
     @Test
@@ -308,7 +352,7 @@ class StoryStateSelectorTest {
                 taggedImage("window-id", "窗户", "https://example.com/window.png"));
 
         StoryPeriodImageSelection result = selector
-                .selectPeriodImage(images, "在家", "卧室")
+                .selectPeriodImage(images, "在家", "卧室", null)
                 .orElseThrow();
 
         assertThat(result.imageId()).isEqualTo("normal-id");
@@ -322,14 +366,14 @@ class StoryStateSelectorTest {
         List<StoryImageCandidate> images = List.of(
                 image("normal-id", "落日睡觉", "https://example.com/normal.png"));
 
-        assertThat(selector.selectPeriodImage(images, "在家", "卧室")).isEmpty();
+        assertThat(selector.selectPeriodImage(images, "在家", "卧室", null)).isEmpty();
     }
 
     @Test
     void periodImageReturnsEmptyWithoutCandidates() {
         StoryStateSelector selector = selectorWithRolls();
 
-        assertThat(selector.selectPeriodImage(List.of(), "大场景", "公园")).isEmpty();
+        assertThat(selector.selectPeriodImage(List.of(), "大场景", "公园", null)).isEmpty();
     }
 
     private StoryStateSelector selectorWithRolls(ExpectedDraw... draws) {

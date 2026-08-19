@@ -9,7 +9,6 @@ import xiaozhi.modules.storyengine.model.StoryPeriodImageSelection;
 import xiaozhi.modules.storyengine.model.StorySceneCandidate;
 import xiaozhi.modules.storyengine.model.StorySelectionResult;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -90,7 +89,7 @@ public class StoryStateSelector {
         }
         StoryImageCandidate image = mainImages.get(random.nextInt(0, mainImages.size()));
         return Optional.of(new StoryPeriodImageSelection(image.id(), image.imageUrl(),
-                selectCaption(image.captions()), tagImageUrl));
+                captionSnapshot(image.captions()), tagImageUrl));
     }
 
     /** 按累计权重区间定位命中的小场景 */
@@ -122,7 +121,7 @@ public class StoryStateSelector {
                 .filter(candidate -> !isSpecialTag(candidate, specialTag))
                 .toList();
         StoryImageCandidate image = mainImages.get(random.nextInt(0, mainImages.size()));
-        String caption = selectCaption(image.captions());
+        String caption = captionSnapshot(image.captions());
         // 有规则时取动作内特殊标签图（当前时段候选图首张）URL 快照，供客户端渲染（如窗景）
         String tagImageUrl = specialTag == null ? null : action.images().stream()
                 .filter(candidate -> isSpecialTag(candidate, specialTag))
@@ -137,22 +136,12 @@ public class StoryStateSelector {
                 action.id(), action.name(), image.id(), image.imageUrl(), caption, durationHours, tagImageUrl));
     }
 
-    /** 从 | 分隔的配文中去空白后等概率选一条；无非空配文时返回空串 */
-    private String selectCaption(String captions) {
-        if (captions == null || captions.isBlank()) {
+    /** 配文快照透传：整串（多条用 | 分隔）原样落库，由客户端拆分后随机展示；去掉分隔符后全空时归一为空串 */
+    private String captionSnapshot(String captions) {
+        if (captions == null) {
             return "";
         }
-        List<String> values = Arrays.stream(captions.split("\\|"))
-                .map(String::trim)
-                .filter(value -> !value.isEmpty())
-                .toList();
-        if (values.isEmpty()) {
-            return "";
-        }
-        if (values.size() == 1) {
-            return values.getFirst();
-        }
-        return values.get(random.nextInt(0, values.size()));
+        return captions.replace("|", "").replace("｜", "").isBlank() ? "" : captions;
     }
 
     private boolean hasEligibleAction(StorySceneCandidate scene) {

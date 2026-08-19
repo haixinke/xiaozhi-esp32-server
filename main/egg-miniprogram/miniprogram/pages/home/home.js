@@ -33,6 +33,8 @@ const STORY_INERTIA_STALE_MS = 80;
 // 故事状态 caption 提示条：5000ms 展示 + 180ms 淡出
 const STORY_CAPTION_TOAST_DURATION_MS = 5000;
 const STORY_CAPTION_TOAST_FADE_MS = 180;
+// caption 分钟轮换：后端下发整串配文（多条用 | 分隔），每 60s 本地随机抽一条展示
+const STORY_CAPTION_ROTATE_INTERVAL_MS = 60 * 1000;
 // 左下角聊天入口 icon：按宠物原型选图，与静态项目 life-scene 页同一组素材
 // （玉兔/锦鲤为专用聊天 icon v02，未知原型兜底 find_home 蛋 p8 版）；
 // 必须用 PNG：部分真机（尤其 iOS）image 组件无法解码 webp，icon 会空白
@@ -125,7 +127,7 @@ Page({
     storyWindowHotspotStyle: '',
     // 左下角聊天入口 icon（按原型选图）
     storyChatIcon: CHAT_ENTRY_ICON_FALLBACK,
-    // 故事状态 caption 提示条（toast）：状态变化时展示 5000ms 后淡出
+    // 故事状态 caption 提示条（toast）：进入/整串变化立即展示，之后每分钟轮换一条，每条展示 5000ms 后淡出
     storyCaptionToastText: '',
     storyCaptionToastVisible: false,
     // 陪伴入口图标数据
@@ -256,6 +258,7 @@ Page({
   onHide() {
     this.clearEnvironmentTimer();
     this.clearStoryTimer();
+    this.clearStoryCaptionRotation();
     this.clearStoryCaptionToast();
     this._stopStoryInertia();
   },
@@ -263,6 +266,7 @@ Page({
   onUnload() {
     this.clearEnvironmentTimer();
     this.clearStoryTimer();
+    this.clearStoryCaptionRotation();
     this.clearStoryCaptionToast();
     this._stopStoryInertia();
     clearTimeout(this.cuddleTimer);
@@ -475,8 +479,10 @@ Page({
   refreshStoryState(stage) {
     if (stage !== 'hatched') {
       this.clearStoryTimer();
+      this.clearStoryCaptionRotation();
       this.clearStoryCaptionToast();
       this.lastStoryCaption = '';
+      this.storyCaptionPool = [];
       if (this.data.storyImageUrl || this.data.storyTagImageUrl || this.data.storyWindowAvailable || this.data.storyAtHome) {
         this.setData({
           storyImageUrl: '',
@@ -490,6 +496,11 @@ Page({
     }
     this.loadStoryState();
     this.scheduleStoryRefresh();
+    // 从后台返回且轮换池仍在（整串未变）时：立即抽一条并重启分钟轮换
+    if ((this.storyCaptionPool || []).length) {
+      this.rotateStoryCaption();
+      this.scheduleStoryCaptionRotation();
+    }
   },
 
   // 拉取故事引擎当前状态；失败静默保留旧场景，宠物切换或回退到破壳前时丢弃过期结果
@@ -516,14 +527,50 @@ Page({
           // 聊天入口仅"在家"大场景显示；轮询失败静默保留旧值
           storyAtHome: !!(state && state.bigSceneName === STORY_WINDOW_BIG_SCENE)
         });
-        // caption 变化（含首次进入）时弹 toast；10 分钟轮询到相同文案不重复弹
+        // caption 整串变化（含首次进入）时重建轮换池并立即随机抽一条；
+        // 10 分钟轮询到相同整串不重置池，分钟轮换继续
         const caption = state && typeof state.caption === 'string' ? state.caption.trim() : '';
-        if (caption && caption !== this.lastStoryCaption) {
+        if (!caption) {
+          if (this.lastStoryCaption) {
+            this.lastStoryCaption = '';
+            this.storyCaptionPool = [];
+            this.clearStoryCaptionRotation();
+          }
+          return;
+        }
+        if (caption !== this.lastStoryCaption) {
           this.lastStoryCaption = caption;
-          this.showStoryCaptionToast(caption);
+          // 兼容半角 | 与全角 ｜ 分隔符，拆分后去空白、滤空段
+          this.storyCaptionPool = caption.split(/[|｜]/).map((item) => item.trim()).filter((item) => item);
+          this.lastCaptionIndex = -1;
+          this.rotateStoryCaption();
+          this.scheduleStoryCaptionRotation();
         }
       })
       .catch(() => {});
+  },
+
+  // caption 轮换：从池中随机抽一条弹 toast；多条时避免与上一条连续重复，单条重复弹
+  rotateStoryCaption() {
+    const pool = this.storyCaptionPool || [];
+    if (!pool.length) return;
+    let index = Math.floor(Math.random() * pool.length);
+    while (pool.length > 1 && index === this.lastCaptionIndex) {
+      index = Math.floor(Math.random() * pool.length);
+    }
+    this.lastCaptionIndex = index;
+    this.showStoryCaptionToast(pool[index]);
+  },
+
+  // 分钟轮换定时器：每 60s 抽一条
+  scheduleStoryCaptionRotation() {
+    this.clearStoryCaptionRotation();
+    this.storyCaptionRotateTimer = setInterval(() => this.rotateStoryCaption(), STORY_CAPTION_ROTATE_INTERVAL_MS);
+  },
+
+  clearStoryCaptionRotation() {
+    clearInterval(this.storyCaptionRotateTimer);
+    this.storyCaptionRotateTimer = null;
   },
 
   // 故事状态 caption toast：5000ms 展示后淡出

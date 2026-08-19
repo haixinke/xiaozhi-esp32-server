@@ -62,7 +62,7 @@ public class PetStoryStateEntity {
     @Schema(description = "场景特殊标签图URL快照(选中动作中命中场景特殊标签的图片,取当前时段首张;规则见SpecialSceneTagRegistry)")
     private String tagImageUrl;
 
-    @Schema(description = "选中的单条配文快照，可空")
+    @Schema(description = "配文快照（多条用|分隔，客户端拆分随机展示），可空")
     private String caption;
 
     @Schema(description = "本次随机生成的整数持续小时数")

@@ -45,7 +45,7 @@ public class PetStoryStateVO {
     @Schema(description = "窗户标签图URL")
     private String tagImageUrl;
 
-    @Schema(description = "已选配文")
+    @Schema(description = "配文快照（多条用|分隔，客户端拆分随机展示）")
     private String caption;
 
     @Schema(description = "持续时长（小时）")

@@ -128,7 +128,7 @@ class StoryStateSelectorTest {
     }
 
     @Test
-    void selectionSelectsImageAndNormalizesDelimitedCaption() {
+    void selectionSelectsImageAndPassesCaptionThrough() {
         StoryStateSelector selector = selectorWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
         StoryActionCandidate action = action("散步", 1, 1,
@@ -144,19 +144,21 @@ class StoryStateSelectorTest {
     }
 
     @Test
-    void selectionUsesTrimmedCaptionChoiceAndEmptyCaptionWhenNoneIsPresent() {
+    void selectionPassesWholeCaptionThroughAndEmptyCaptionWhenBlank() {
         StoryStateSelector withCaption = selectorWithRolls(
-                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
         StoryActionCandidate captioned = action("散步", 1, 1,
                 image("image", "  早安 |  | 晚安  ", "url"));
 
+        // 配文整串透传（多条用 | 分隔），由客户端拆分随机展示
         assertThat(withCaption.selectTransition(List.of(scene("公园", 100, captioned))).state().caption())
-                .isEqualTo("晚安");
+                .isEqualTo("  早安 |  | 晚安  ");
 
         StoryStateSelector emptyCaption = selectorWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
         StoryActionCandidate blank = action("休息", 1, 1, image("image", " |   | ", "url"));
 
+        // 空白配文归一为空串
         assertThat(emptyCaption.selectTransition(List.of(scene("卧室", 100, blank))).state().caption())
                 .isEmpty();
     }
@@ -280,9 +282,9 @@ class StoryStateSelectorTest {
     }
 
     @Test
-    void periodImagePicksRandomMainAndCaptionOutsideSpecialRule() {
-        // 未命中特殊标签规则：所有图参与主图等概率，配文从新图选取，tagImageUrl 为 null
-        StoryStateSelector selector = selectorWithRolls(draw(0, 2, 1), draw(0, 2, 1));
+    void periodImagePicksRandomMainAndPassesCaptionThroughOutsideSpecialRule() {
+        // 未命中特殊标签规则：所有图参与主图等概率，配文整串从新图透传，tagImageUrl 为 null
+        StoryStateSelector selector = selectorWithRolls(draw(0, 2, 1));
         List<StoryImageCandidate> images = List.of(
                 image("first-id", "白天", "https://example.com/first.png"),
                 image("second-id", " 早安 | 晚安 ", "https://example.com/second.png"));
@@ -293,7 +295,7 @@ class StoryStateSelectorTest {
 
         assertThat(result.imageId()).isEqualTo("second-id");
         assertThat(result.imageUrl()).isEqualTo("https://example.com/second.png");
-        assertThat(result.caption()).isEqualTo("晚安");
+        assertThat(result.caption()).isEqualTo(" 早安 | 晚安 ");
         assertThat(result.tagImageUrl()).isNull();
     }
 

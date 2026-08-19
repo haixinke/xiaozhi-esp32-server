@@ -496,8 +496,9 @@ Page({
     }
     this.loadStoryState();
     this.scheduleStoryRefresh();
-    // 从后台返回且轮换池仍在（整串未变）时：立即抽一条并重启分钟轮换
-    if ((this.storyCaptionPool || []).length) {
+    // 从后台返回且轮换池仍在（整串未变）时：立即抽一条并重启分钟轮换；
+    // 分钟轮换已在跑说明本次 onShow 已弹过（onShow 内 renderPet 会执行两次：缓存回显 + 服务端刷新），不重复弹
+    if ((this.storyCaptionPool || []).length && !this.storyCaptionRotateTimer) {
       this.rotateStoryCaption();
       this.scheduleStoryCaptionRotation();
     }

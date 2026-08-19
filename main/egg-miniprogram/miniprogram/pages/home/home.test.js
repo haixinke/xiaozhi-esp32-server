@@ -1358,7 +1358,7 @@ async function run() {
   assert.strictEqual(pagePano.data.storyTrackWidthPx, 375, 'portrait image falls back to one screen width without drag');
   assert.strictEqual(pagePano.data.storyScrollX, 0, 'portrait image has no scroll offset');
 
-  // 34. 故事状态 caption toast：首弹 1800ms 后淡出；相同 caption 轮询不重弹；caption 变化再弹
+  // 34. 故事状态 caption toast：首弹 5000ms 后淡出；相同 caption 轮询不重弹；caption 变化再弹
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatched');
@@ -1374,10 +1374,10 @@ async function run() {
   await Promise.resolve();
   assert.strictEqual(pageCaption.data.storyCaptionToastText, '阳光正好，我在卧室发呆', 'caption toast shows the story state caption');
   assert.strictEqual(pageCaption.data.storyCaptionToastVisible, true, 'caption toast fades in');
-  assert.strictEqual(timerDelay, 1800, 'caption toast displays for 1800ms');
+  assert.strictEqual(timerDelay, 5000, 'caption toast displays for 5000ms');
   // 展示结束：先淡出，180ms 后卸载文本
   timerCallback();
-  assert.strictEqual(pageCaption.data.storyCaptionToastVisible, false, 'caption toast fades out after 1800ms');
+  assert.strictEqual(pageCaption.data.storyCaptionToastVisible, false, 'caption toast fades out after 5000ms');
   assert.strictEqual(timerDelay, 180, 'caption toast fade lasts 180ms');
   timerCallback();
   assert.strictEqual(pageCaption.data.storyCaptionToastText, '', 'caption toast text unmounted after fade');
@@ -1396,7 +1396,36 @@ async function run() {
   assert.strictEqual(pageCaption.data.storyCaptionToastText, '有点困了，想小憩一下', 'changed caption re-shows the toast');
   assert.strictEqual(pageCaption.data.storyCaptionToastVisible, true, 'changed caption toast fades in again');
 
-  // 35. 松手惯性：快速甩动松手后继续衰减滚动并撞边界停住；停稳后松手不启动惯性
+  // 35. caption toast 去重：onShow 内 renderPet(缓存) + renderPet(服务端刷新) 各触发一次
+  // refreshStoryState，首开与返回主页都只能弹一条 caption（池长 1 时每次 rotate 恰好消费 1 次随机数）
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  // 服务端刷新返回相同宠物，使 onShow 内 renderPet 执行两次（缓存回显 + 服务端刷新）
+  requestGetResult = [{ id: 'pet-001', hatchStatus: 'HATCHED', prototype: '玉兔' }];
+  storyStateResult = {
+    bigSceneName: '在家', smallSceneName: '卧室',
+    imageUrl: 'u', tagImageUrl: 't',
+    caption: '只有一条配文'
+  };
+  const pageDup = makePage();
+  let randomCalls = 0;
+  const originalRandom = Math.random;
+  Math.random = () => { randomCalls += 1; return 0.42; };
+  pageDup.onLoad();
+  pageDup.onShow();
+  for (let i = 0; i < 6; i++) await Promise.resolve();
+  assert.strictEqual(pageDup.data.storyCaptionToastText, '只有一条配文', 'first open shows the caption toast');
+  assert.strictEqual(randomCalls, 1, 'first open rotates the caption exactly once');
+  // 模拟离开再返回：onHide 只清计时器不清轮换池，onShow 双次 refreshStoryState 不得重弹
+  pageDup.onHide();
+  randomCalls = 0;
+  pageDup.onShow();
+  for (let i = 0; i < 6; i++) await Promise.resolve();
+  Math.random = originalRandom;
+  assert.strictEqual(randomCalls, 1, 'returning home rotates the caption exactly once');
+
+  // 36. 松手惯性：快速甩动松手后继续衰减滚动并撞边界停住；停稳后松手不启动惯性
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatched');

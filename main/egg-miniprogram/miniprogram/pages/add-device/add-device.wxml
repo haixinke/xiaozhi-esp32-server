@@ -4,7 +4,7 @@
   <view class="content">
     <view class="intro">
       <text class="intro-title">输入激活码</text>
-      <text class="intro-desc">购买或受邀后获得的激活码都从这里输入。添加成功会告诉你原型，具体款式留到破壳时揭晓。</text>
+      <text class="intro-desc">购买或受邀后获得的激活码都从这里输入，具体款式会在破壳时揭晓。</text>
     </view>
 
     <view wx:if="{{sharedInvite}}" class="invite-note">
@@ -12,14 +12,31 @@
     </view>
 
     <view class="code-block">
-      <text class="label">激活码</text>
-      <input class="code-input" value="{{code}}" bindinput="onCodeInput"
-             placeholder="请输入激活码" />
+      <text class="label">5 位激活码</text>
+      <view class="activation-code {{codeFocused ? 'activation-code--focused' : ''}}" bindtap="onCodeTap">
+        <view class="activation-code-cells" aria-role="group" aria-label="5 位激活码输入框">
+          <view wx:for="{{codeCells}}" wx:key="index" class="activation-code-cell {{item.value ? 'activation-code-cell--filled' : ''}} {{codeFocused && item.active ? 'activation-code-cell--active' : ''}}">
+            <text>{{item.value}}</text>
+          </view>
+        </view>
+        <input
+          class="activation-code-native-input"
+          value="{{code}}"
+          maxlength="5"
+          type="text"
+          confirm-type="done"
+          focus="{{codeFocused}}"
+          aria-label="请输入 5 位激活码"
+          bindinput="onCodeInput"
+          bindfocus="onCodeFocus"
+          bindblur="onCodeBlur"
+          bindconfirm="onValidate"
+        />
+      </view>
+      <text class="code-hint">由 5 位英文或数字组成</text>
     </view>
 
     <text wx:if="{{error}}" class="error">{{error}}</text>
-
-    <view class="note">添加时会告诉你蛋宝宝的原型（例如锦鲤、玉兔），但具体款式要等破壳那一刻才会揭晓。</view>
 
     <view class="spacer"></view>
     <btn text="{{submitting ? '正在校验…' : '添加蛋宝宝'}}" disabled="{{!canSubmit || submitting}}" bind:tap="onValidate"></btn>

@@ -16,6 +16,7 @@
 - **数字人项目** → `main/digital-human/`
 - **女友小程序** → `main/miniprogram/`
 - **蛋宝宝小程序** → `main/egg-miniprogram/`
+- **蛋宝宝UI静态项目** → `main/eggbabe-miniprogram/`
 
 | 子项目 | 语言 / 技术栈 | 端口 | 用途 |
 |---|---|---|---|
@@ -25,7 +26,8 @@
 | `main/manager-mobile/` | Uni-app / Vue 3 / Vite | — | 移动端管理后台 (H5、微信小程序、iOS、Android) |
 | `main/digital-human/` | HTML / CSS / JS / Python |  | 数字人项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
 | `main/miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "笨笨女友"微信小程序：AI 伴侣聊天 |
-| main/egg-miniprogram/ | 微信小程序 (WXML/WXSS/JS) | — | "蛋宝宝"微信小程序：孵化类AI宠物 |
+| `main/egg-miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "蛋宝宝"微信小程序：孵化类AI宠物 |
+| `main/eggbabe-miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "蛋宝宝"微信小程序的UI静态设计项目，非实际运行 |
 
 每个子项目都有自己的 `CLAUDE.md`，包含详细的架构说明和常用命令。
 
@@ -169,11 +171,24 @@ Before ANY commit:
 
 ## graphify
 
-本项目在 `graphify-out/` 目录下构建了知识图谱，包含核心节点（God Nodes）、社区结构和跨文件关系。
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
-**使用规则**：
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 
-- 在阅读源代码文件、运行 grep/glob 搜索或回答代码库相关问题之前，**必须先读取** `graphify-out/GRAPH_REPORT.md`。知识图谱是你浏览代码库的首要地图。
-- 如果 `graphify-out/wiki/index.md` 存在，优先通过它导航而不是直接阅读原始文件
-- 对于跨模块的"X 如何与 Y 关联"这类问题，优先使用 `graphify query "<问题>"`、`graphify path "<A>" "<B>"` 或 `graphify explain "<概念>"` 而非 grep —— 这些命令会遍历图谱的**提取边（EXTRACTED）**和**推断边（INFERRED）**，而不是扫描文件内容
-- 修改代码后，运行 `graphify update .` 以保持图谱为最新状态（仅使用 AST，无 API 成本）
+## Agent skills
+
+### Issue tracker
+
+Issues 跟踪在 GitHub Issues（origin: haixinke/xiaozhi-esp32-server），用 gh CLI 操作。See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+默认五角色同名标签：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`。See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+单上下文布局：根 `CONTEXT.md` + `docs/adr/`（按需懒创建）。See `docs/agents/domain.md`.

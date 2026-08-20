@@ -34,11 +34,6 @@ function updateNickname(petId, nickname) {
   return put('/pet/update', { id: petId, nickname });
 }
 
-// 更换场景图：后端按原型随机生成新 URL 并持久化，返回更新后的 PetVO
-function changeScene(petId) {
-  return put(`/pet/${petId}/scene`);
-}
-
 function listChatHistory(agentId, deviceId, page, limit) {
   return get('/agent/chat-history/list', {
     agentId,
@@ -56,6 +51,5 @@ module.exports = {
   getPet,
   listPets,
   updateNickname,
-  changeScene,
   listChatHistory
 };

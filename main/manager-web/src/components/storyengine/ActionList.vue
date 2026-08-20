@@ -29,6 +29,13 @@
       <el-table-column type="expand" width="42">
         <template slot-scope="scope">
           <div class="image-manager">
+            <div v-if="tagOptions(scope.row).length > 0" class="tag-filter">
+              <span class="tag-filter-label">标签筛选</span>
+              <el-select v-model="tagFilter" size="mini" placeholder="全部" class="tag-filter-select">
+                <el-option label="全部" value=""></el-option>
+                <el-option v-for="tag in tagOptions(scope.row)" :key="tag" :label="tag" :value="tag"></el-option>
+              </el-select>
+            </div>
             <el-tabs v-model="activePrototype" class="prototype-tabs">
               <el-tab-pane
                 v-for="prototype in petPrototypes"
@@ -79,6 +86,13 @@
                         >
                           <div class="caption-editor">
                             <el-input
+                              v-model="tagDraft"
+                              class="tag-editor-input"
+                              maxlength="64"
+                              show-word-limit
+                              placeholder="标签（最长64字符），留空表示清除标签"
+                            />
+                            <el-input
                               v-model="captionDraft"
                               type="textarea"
                               :rows="3"
@@ -99,9 +113,10 @@
                           <div
                             slot="reference"
                             class="image-captions"
-                            title="点击编辑配文"
+                            title="点击编辑标签与配文"
                             @click="openCaptionEditor(image)"
                           >
+                            <span v-if="image.tag" class="tag-chip" :title="image.tag">{{ image.tag }}</span>
                             <template v-if="captionList(image.captions).length > 0">
                               <span
                                 v-for="(caption, index) in captionList(image.captions)"
@@ -110,7 +125,7 @@
                                 :title="caption"
                               >{{ caption }}</span>
                             </template>
-                            <span v-else class="caption-empty">点击添加配文</span>
+                            <span v-else-if="!image.tag" class="caption-empty">点击添加配文</span>
                           </div>
                         </el-popover>
                         <el-button
@@ -264,6 +279,18 @@
         <div class="el-upload__tip" slot="tip">支持 png / jpeg / webp / gif，建议不超过 5MB</div>
       </el-upload>
       <div class="captions-field">
+        <div class="captions-label">图片标签</div>
+        <el-input
+          v-model="uploadTag"
+          maxlength="64"
+          show-word-limit
+          placeholder="选填，单标签，如：摸鱼、吃饭"
+        />
+        <div class="captions-hint">
+          仅用于管理端分类标注与筛选，最长 64 字符，不参与故事运行时的图片匹配。
+        </div>
+      </div>
+      <div class="captions-field">
         <div class="captions-label">图片配文</div>
         <el-input
           v-model="uploadCaptions"
@@ -333,10 +360,14 @@ export default {
       uploadFile: null,
       uploadFileName: "",
       uploadCaptions: "",
+      uploadTag: "",
       previewUrl: "",
-      // 配文内联编辑
+      // 标签筛选（仅前端本地过滤，图片已随动作列表全量下发）
+      tagFilter: "",
+      // 配文/标签内联编辑
       captionEditingId: "",
       captionDraft: "",
+      tagDraft: "",
       captionSaving: false
     };
   },
@@ -359,6 +390,7 @@ export default {
       }
       this.loading = true;
       this.closeCaptionEditor();
+      this.tagFilter = "";
       Api.storyEngine.getActionList(this.smallSceneId, ({ data }) => {
         this.loading = false;
         if (data.code === 0) {
@@ -381,7 +413,8 @@ export default {
     },
     handleExpandChange(row, expandedRows) {
       this.closeCaptionEditor();
-      // 手风琴模式：同时只展开一行图片面板
+      // 手风琴模式：同时只展开一行图片面板；切换展开行时重置标签筛选（筛选范围为当前动作）
+      this.tagFilter = "";
       const expanded = Array.isArray(expandedRows)
         ? expandedRows.length > 0 && expandedRows.some(item => item.id === row.id)
         : !!expandedRows;
@@ -389,8 +422,16 @@ export default {
     },
     imagesOf(row, petPrototype, timeOfDay) {
       return (row.images || []).filter(
-        image => image.petPrototype === petPrototype && image.timeOfDay === timeOfDay
+        image =>
+          image.petPrototype === petPrototype &&
+          image.timeOfDay === timeOfDay &&
+          (!this.tagFilter || image.tag === this.tagFilter)
       );
+    },
+    // 当前动作下全部已用标签（去重），供筛选下拉使用
+    tagOptions(row) {
+      const tags = (row.images || []).map(image => image.tag).filter(tag => !!tag);
+      return [...new Set(tags)];
     },
     countByPrototype(row, petPrototype) {
       return (row.images || []).filter(image => image.petPrototype === petPrototype).length;
@@ -431,6 +472,7 @@ export default {
       };
       this.resetUploadFile();
       this.uploadCaptions = "";
+      this.uploadTag = "";
       this.uploadDialogVisible = true;
     },
     handleFileChange(file) {
@@ -478,6 +520,10 @@ export default {
       if (captions) {
         formData.append("captions", captions);
       }
+      const tag = this.uploadTag.trim();
+      if (tag) {
+        formData.append("tag", tag);
+      }
       this.uploading = true;
       Api.storyEngine.uploadActionImage(
         this.uploadContext.actionId,
@@ -498,42 +544,47 @@ export default {
         }
       );
     },
-    // ==================== 配文内联编辑 ====================
+    // ==================== 配文/标签内联编辑 ====================
     openCaptionEditor(image) {
       if (this.captionSaving) {
         return;
       }
-      // 同时只允许编辑一张图片的配文，重复点击则收起
+      // 同时只允许编辑一张图片，重复点击则收起
       if (this.captionEditingId === image.id) {
         this.closeCaptionEditor();
         return;
       }
       this.captionEditingId = image.id;
       this.captionDraft = image.captions || "";
+      this.tagDraft = image.tag || "";
     },
     closeCaptionEditor() {
       this.captionEditingId = "";
       this.captionDraft = "";
+      this.tagDraft = "";
     },
     saveCaptions(image) {
       // 以 | 分隔归一化，去除空白句与多余空格
       const captions = this.captionList(this.captionDraft).join("|");
+      // 后端为整体更新语义：标签需与配文一起提交，空串表示清除标签
+      const tag = this.tagDraft.trim();
       this.captionSaving = true;
       Api.storyEngine.updateActionImage(
-        { id: image.id, captions },
+        { id: image.id, captions, tag },
         ({ data }) => {
           this.captionSaving = false;
           if (data.code === 0) {
             this.$set(image, "captions", captions);
+            this.$set(image, "tag", tag);
             this.closeCaptionEditor();
-            this.$message.success({ message: "配文已更新", showClose: true });
+            this.$message.success({ message: "配文与标签已更新", showClose: true });
           } else {
-            this.$message.error({ message: data.msg || "配文更新失败", showClose: true });
+            this.$message.error({ message: data.msg || "更新失败", showClose: true });
           }
         },
         ({ data }) => {
           this.captionSaving = false;
-          this.$message.error({ message: (data && data.msg) || "配文更新失败", showClose: true });
+          this.$message.error({ message: (data && data.msg) || "更新失败", showClose: true });
         }
       );
     },
@@ -892,6 +943,39 @@ export default {
     font-size: 11px;
     color: #c8cde4;
   }
+
+  .tag-chip {
+    max-width: 100%;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: #efeaff;
+    color: #8154fc;
+    font-size: 11px;
+    line-height: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.tag-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .tag-filter-label {
+    font-size: 12px;
+    color: #5a6080;
+  }
+
+  .tag-filter-select {
+    width: 180px;
+  }
+}
+
+.tag-editor-input {
+  margin-bottom: 8px;
 }
 
 .caption-editor {

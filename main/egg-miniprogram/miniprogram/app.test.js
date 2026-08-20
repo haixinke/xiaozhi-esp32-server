@@ -147,8 +147,8 @@ async function run() {
   await appConfig.globalData.authReady;
   assert.strictEqual(captureCalls.length, 1, 'onLaunch must capture NFC intent');
   assert.strictEqual(captureCalls[0], launchOptions, 'onLaunch must pass launch options to capture');
-  assert.strictEqual(hideTabBarCalls, 2,
-    'home launch hides the native tab bar before the pet state is restored');
+  assert.strictEqual(hideTabBarCalls, 0,
+    'custom floating tab bar replaced the native tab bar, so launch never hides it');
   assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
     'unbound session should launch into welcome before claiming a pet');
   assert.strictEqual(relaunchCalls, 1,

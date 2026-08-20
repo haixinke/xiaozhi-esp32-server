@@ -8,7 +8,9 @@ source "${SCRIPT_DIR}/_common.sh"
 init
 
 echo "🔧 Building manager-web:${VERSION} for ${PLATFORM} ..."
+# 阿里云 ACR 不接受 provenance attestation 的 OCI empty manifest，必须关闭
 docker buildx build --platform "${PLATFORM}" \
+  --provenance=false \
   -t "${REGISTRY}/manager-web:${VERSION}" \
   -f "${PROJECT_ROOT}/main/manager-web/Dockerfile" "${PROJECT_ROOT}/main/manager-web/" \
   --push

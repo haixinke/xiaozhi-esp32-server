@@ -314,6 +314,7 @@ public interface ErrorCode {
     int INVALID_BIRTHDAY = 10219; // 生日格式错误
     int AVATAR_FILE_TYPE_ERROR = 10220; // 头像文件类型错误，仅支持jpg/png/webp
     int CITY_TOO_LONG = 10221; // 城市最多32个字符
+    int IMAGE_FILE_TYPE_ERROR = 10222; // 图片文件类型错误
 
     // PDC NFC 实物生产域错误码
     int PDC_NFC_FEATURE_DISABLED = 10500; // NFC 功能未开启

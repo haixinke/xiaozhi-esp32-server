@@ -3,6 +3,8 @@ const PET_KEY = 'eggbaby_mvp_pet_v1';
 const USER_KEY = 'eggbaby_mvp_user_v1';
 const IDENTITY_KEY = 'eggbaby_mvp_identity_v1';
 const ACTIVE_PET_KEY = 'eggbaby_active_pet_v1';
+// 涂鸦操作序列(shell)本地缓存：仅存操作 JSON，用于重开编辑器恢复画布继续编辑；云端只存合成 PNG
+const DOODLE_SHELL_KEY = 'eggbaby_doodle_shell_v1';
 
 const DAY = 24 * 60 * 60 * 1000;
 const HATCH_TOTAL_MINUTES = 7 * 24 * 60;
@@ -70,6 +72,7 @@ function getIdentityId() {
 // 后两个 key 分别由 pages/profile 与 pages/deregister 写入，这里统一纳入清理。
 const ACCOUNT_KEYS = [
   PET_KEY, USER_KEY, IDENTITY_KEY, ACTIVE_PET_KEY,
+  DOODLE_SHELL_KEY,
   'eggbaby_profile_v1',
   'eggbaby_deregister_request_v1'
 ];
@@ -257,22 +260,24 @@ async function updateNickname(name) {
   if (Array.from(value).length > 10) return { ok: false, message: '昵称最多 10 个字符' };
   if (['违法', '诈骗', '赌博'].some(word => value.includes(word))) return { ok: false, message: '昵称含有不适合的内容，请换一个' };
   try {
-    const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
     let updated;
-    if (result.alreadyDone) {
-      // 后端 HatchActionService 仅在首次提交时持久化 nickname；二次提交走 PUT /pet/update 兜底。
-      try {
+    if (pet.hatchStatus === 'HATCHED') {
+      // 破壳后 NICKNAME 修炼动作不再合法(后端抛 10209)，改名直接走 PUT /pet/update
+      const vo = await petApi.updateNickname(pet.id, value);
+      updated = savePetFromVO(vo);
+    } else {
+      const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
+      if (result.alreadyDone) {
+        // 后端 HatchActionService 仅在首次提交时持久化 nickname；二次提交走 PUT /pet/update 兜底。
         const vo = await petApi.updateNickname(pet.id, value);
         updated = savePetFromVO(vo);
-      } catch (putError) {
-        return { ok: false, message: (putError && putError.userMessage) || '昵称保存失败，请稍后重试' };
+      } else {
+        updated = savePetFromVO(result.pet);
       }
-    } else {
-      updated = savePetFromVO(result.pet);
     }
     updated.name = value;
     savePet(updated);
-    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
+    return { ok: true, alreadyDone: pet.hatchStatus === 'HATCHED', pet: updated };
   } catch (error) {
     return { ok: false, message: (error && error.userMessage) || '提交失败，请稍后重试' };
   }
@@ -321,18 +326,44 @@ function completeLesson(value) {
   return completeDailyTask('lesson', value);
 }
 
-async function saveDoodle(color, colorName, pattern) {
+async function saveDoodle(artUrl, petId) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
+  if (!petId || String(pet.id) !== String(petId)) {
+    return { ok: false, message: '蛋宝宝状态已变化，请返回后重试' };
+  }
   try {
-    const result = await petApi.submitHatchAction(pet.id, 'DOODLE', { color, colorName, pattern });
+    const result = await petApi.submitHatchAction(petId, 'DOODLE', { artUrl });
+    const currentPet = getPet();
+    const responsePet = result && result.pet;
+    if (!currentPet || String(currentPet.id) !== String(petId)
+      || !responsePet || String(responsePet.id) !== String(petId)) {
+      return { ok: false, message: '蛋宝宝状态已变化，请返回后重试' };
+    }
     const updated = savePetFromVO(result.pet);
-    updated.shell = { color, colorName, pattern };
     savePet(updated);
-    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
+    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated, petId: String(petId) };
   } catch (error) {
     return { ok: false, message: (error && error.userMessage) || '提交失败，请稍后重试' };
   }
+}
+
+// 涂鸦操作序列(shell)写入本地缓存，按 petId 关联；返回值用于保存事务确认本地记录已落盘
+function saveDoodleShell(petId, operations) {
+  if (!petId || !Array.isArray(operations)) return false;
+  try {
+    wx.setStorageSync(DOODLE_SHELL_KEY, { petId, operations, savedAt: Date.now() });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// 读取本地涂鸦操作序列；petId 不匹配(换了宠物/数据串号)视为无缓存返回 null
+function getDoodleShell(petId) {
+  const record = read(DOODLE_SHELL_KEY);
+  if (!record || record.petId !== petId || !Array.isArray(record.operations)) return null;
+  return record.operations;
 }
 
 // 修炼任务完成态：无 _hatchActions 缓存时从 pet.tasks 读取；有缓存则按当日派生。
@@ -500,18 +531,6 @@ async function createCollectionCard() {
   }
 }
 
-async function changeScene() {
-  const pet = getPet();
-  if (!pet) return { ok: false, message: '还没有蛋宝宝' };
-  try {
-    const vo = await petApi.changeScene(pet.id);
-    const updated = savePetFromVO(vo);
-    return { ok: true, sceneUrl: updated.sceneUrl, pet: updated };
-  } catch (error) {
-    return { ok: false, message: (error && error.userMessage) || '更换场景失败，请稍后重试' };
-  }
-}
-
 function getMessages(options) {
   const pet = getPet();
   if (!pet) return { list: [], total: 0, hasMore: false };
@@ -565,6 +584,8 @@ module.exports = {
   completeWish,
   completeLesson,
   saveDoodle,
+  saveDoodleShell,
+  getDoodleShell,
   getHatchActionState,
   getStage,
   getStagePresentation,
@@ -573,7 +594,6 @@ module.exports = {
   recordTouch,
   cardSerial,
   createCollectionCard,
-  changeScene,
   saveMessage,
   getMessages,
   todayKey

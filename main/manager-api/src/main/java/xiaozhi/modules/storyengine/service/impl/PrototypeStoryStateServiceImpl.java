@@ -10,7 +10,9 @@ import xiaozhi.modules.storyengine.entity.PetStoryHistoryEntity;
 import xiaozhi.modules.storyengine.entity.PetStoryStateEntity;
 import xiaozhi.modules.storyengine.model.SelectedStoryState;
 import xiaozhi.modules.storyengine.model.StoryEvaluationResult;
+import xiaozhi.modules.storyengine.model.StoryImageCandidate;
 import xiaozhi.modules.storyengine.model.StoryPeriodContext;
+import xiaozhi.modules.storyengine.model.StoryPeriodImageSelection;
 import xiaozhi.modules.storyengine.model.StorySceneCandidate;
 import xiaozhi.modules.storyengine.model.StorySelectionResult;
 import xiaozhi.modules.storyengine.model.StorySelectionResultType;
@@ -23,6 +25,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 原型级共享故事状态服务实现。
@@ -86,7 +89,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         Date now = Date.from(evaluatedAt.toInstant());
         // 动作未到期则保持，不加载候选内容
         if (runtimeStatus == StoryRuntimeStatus.ACTIVE && current.getExpectedEndAt().after(now)) {
-            return StoryEvaluationResult.KEPT_NOT_DUE;
+            return refreshNotDueImage(current, period, prototype);
         }
 
         List<StorySceneCandidate> candidates = contentLoader.load(prototype, period);
@@ -95,6 +98,36 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
             case ACTIVE -> selector.selectTransition(candidates);
         };
         return applySelection(current, runtimeStatus, selection, prototype, period, now);
+    }
+
+    /**
+     * 动作未到期时的背景图维护：
+     * - 图片时段（白天/落日/黑夜）已切换：换新时段背景图（REFRESHED_PERIOD_IMAGE）；
+     * - 时段未变：在当前时段候选图中排除在用图后轮换（ROTATED_PERIOD_IMAGE），避免抽回同一张。
+     * 两条路径均仅更新图片相关字段：动作、场景、时长、weightPeriod 保持，不写历史；
+     * 取不到图（含排除后无可换目标、特殊标签图缺失）则整体不变。
+     */
+    private StoryEvaluationResult refreshNotDueImage(PetStoryStateEntity current,
+                                                     StoryPeriodContext period, String prototype) {
+        String newTimeOfDay = period.imageTimeOfDay().databaseValue();
+        boolean periodChanged = !newTimeOfDay.equals(current.getImageTimeOfDay());
+        // 时段边界换图由查询的时段条件天然排除在用图；同时段轮换需显式排除
+        String excludeImageId = periodChanged ? null : current.getActionImageId();
+        List<StoryImageCandidate> images = contentLoader.loadPeriodImages(prototype, current.getActionId(),
+                newTimeOfDay);
+        Optional<StoryPeriodImageSelection> selection = selector.selectPeriodImage(images,
+                current.getBigSceneName(), current.getSmallSceneName(), excludeImageId);
+        if (selection.isEmpty()) {
+            return StoryEvaluationResult.KEPT_NOT_DUE;
+        }
+        StoryPeriodImageSelection chosen = selection.get();
+        current.setActionImageId(chosen.imageId());
+        current.setImageUrl(chosen.imageUrl());
+        current.setTagImageUrl(chosen.tagImageUrl());
+        current.setCaption(chosen.caption());
+        current.setImageTimeOfDay(newTimeOfDay);
+        return periodChanged ? StoryEvaluationResult.REFRESHED_PERIOD_IMAGE
+                : StoryEvaluationResult.ROTATED_PERIOD_IMAGE;
     }
 
     private StoryEvaluationResult applySelection(PetStoryStateEntity current, StoryRuntimeStatus runtimeStatus,
@@ -224,6 +257,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         target.setWeightPeriod(period.weightPeriod().name());
         target.setImageTimeOfDay(period.imageTimeOfDay().databaseValue());
         target.setImageUrl(selected.imageUrl());
+        target.setTagImageUrl(selected.tagImageUrl());
         target.setCaption(selected.caption());
         target.setDurationHours(selected.durationHours());
         target.setStartedAt(startedAt);

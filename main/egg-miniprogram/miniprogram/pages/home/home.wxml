@@ -1,8 +1,8 @@
 <view class="page">
   <block wx:if="{{authChecked && !petRestoreLoading}}">
-    <nav-bar title="蛋宝宝" show-back="{{false}}"></nav-bar>
+    <nav-bar wx:if="{{!pet}}" title="蛋宝宝" show-back="{{false}}"></nav-bar>
 
-    <scroll-view class="content" scroll-y>
+    <scroll-view class="content {{pet && stage !== 'hatched' ? 'content--incubating' : ''}} {{pet && stage === 'hatched' && storyImageUrl ? 'content--story' : ''}}" scroll-y="{{!(pet && (stage !== 'hatched' || storyImageUrl))}}">
       <view wx:if="{{petRestoreError}}" class="empty-state pet-restore-error">
         <view class="empty-orbit"><view class="empty-egg"></view></view>
         <text class="empty-title">暂时无法加载蛋宝宝</text>
@@ -23,47 +23,117 @@
         <text class="empty-note">当前版本每个账号只能绑定 1 只</text>
       </view>
 
-      <view wx:else class="pet-view">
-        <view class="top-row">
-          <view>
-            <text class="eyebrow">{{stage === 'hatched' ? pet.petType + ' · 已破壳' : '孵化记录'}}{{petCount > 1 ? ' · 共' + petCount + '只' : ''}}</text>
+      <!-- 孵化期：整屏场景 -->
+      <view wx:elif="{{stage !== 'hatched'}}" class="pet-view pet-view--incubating">
+        <view class="top-row" style="top:{{nameTopPx}}px;">
+          <view class="pet-name-row" bindtap="onPetNameTap" aria-role="button" aria-label="给蛋宝宝起名字">
             <text class="pet-name">{{pet.name || '还没有名字'}}</text>
           </view>
-          <view wx:if="{{stage !== 'hatched'}}" class="progress-ring"><text>{{pet.progress}}%</text></view>
         </view>
 
-        <view class="egg-zone" bindtap="onOpenProfile">
-          <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
-          <view class="egg-aura {{eggMotion}}"></view>
-          <image wx:if="{{stage === 'hatched' && pet.sceneUrl}}" class="life-home-scene" src="{{pet.sceneUrl}}" mode="aspectFill" catchtap="onOpenLifeScene"></image>
-          <pet-avatar wx:elif="{{stage === 'hatched'}}" pet-type="{{pet.prototype}}" size="{{270}}"></pet-avatar>
-          <view wx:else class="egg {{eggMotion}}" style="background: linear-gradient(155deg, #FFFDF0 6%, {{pet.shell.color}} 58%, #F4B9AE 125%);" catchtap="onEggTap" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd">
-            <view class="egg-pattern egg-pattern--one"></view>
-            <view class="egg-pattern egg-pattern--two"></view>
-            <view class="egg-shine"></view>
+        <!-- 临时测试：场景切换器（已隐藏，正式上线前删除整段；恢复时去掉外层注释即可） -->
+        <!--
+        <view wx:if="{{!doodleEditorVisible}}" class="scene-tester" style="top:{{nameTopPx}}px;">
+          <view class="scene-tester-button {{sceneTesterOpen ? 'scene-tester-button--open' : ''}}" aria-role="button" aria-label="切换场景，当前{{sceneTesterLabel}}" catchtap="onSceneTesterToggle">
+            <text class="scene-tester-tag">场景</text><text class="scene-tester-current">{{sceneTesterLabel}}</text><text class="scene-tester-chevron">⌄</text>
           </view>
-          <view class="egg-shadow"></view>
+          <scroll-view wx:if="{{sceneTesterOpen}}" class="scene-tester-menu" scroll-y="true">
+            <view
+              wx:for="{{sceneTesterOptions}}"
+              wx:key="key"
+              class="scene-tester-option {{sceneTesterKey === item.key ? 'scene-tester-option--active' : ''}}"
+              data-scene="{{item.key}}"
+              aria-role="button"
+              aria-label="切换到{{item.label}}"
+              catchtap="onSceneTesterSelect"
+            >
+              <text class="scene-tester-option-label">{{item.label}}</text><text wx:if="{{sceneTesterKey === item.key}}" class="scene-tester-option-check">✓</text>
+            </view>
+          </scroll-view>
+        </view>
+        -->
+
+        <view class="egg-zone egg-zone--incubating">
+          <view wx:if="{{feedback}}" class="feedback-bubble feedback-bubble--incubating" style="top:{{nameTopPx}}px;" catchtap="noop">{{feedback}}</view>
+          <incubation-scene
+            environment="{{environment}}"
+            egg-art-url="{{eggArtUrl}}"
+            lamp-on="{{lampOn}}"
+            bind:eggtap="onEggTap"
+            bind:eggcuddle="onEggCuddle"
+            bind:lamptap="onLampTap"
+            bind:windowtap="onWindowTap"
+            bind:retryscene="onRetryScene"
+          />
           <view wx:if="{{cuddleProgress > 0}}" class="cuddle-track"><view class="cuddle-fill" style="width: {{cuddleProgress}}%;"></view></view>
         </view>
 
-        <view class="state-card">
-          <view class="state-dot"></view>
-          <view class="state-copy">
-            <text class="state-title">{{stageText}}</text>
+        <view wx:if="{{stage !== 'ready'}}" class="companion-section companion-section--incubating">
+          <view class="companion-primary-dock">
+            <view class="companion-item companion-item--{{item.key}} {{item.locked ? 'companion-item--locked' : ''}}"
+                  wx:for="{{companionActions}}" wx:key="key"
+                  hover-class="companion-item--pressed"
+                  data-key="{{item.key}}"
+                  aria-role="button"
+                  aria-label="{{item.locked ? item.title + '，暂未开放' : item.title}}"
+                  bindtap="onCompanionTap">
+              <view class="companion-icon-wrap">
+                <image class="companion-icon" src="{{item.icon}}" mode="aspectFit" />
+                <text wx:if="{{item.key === 'draw'}}" class="draw-action-spark">✦</text>
+              </view>
+            </view>
           </view>
         </view>
 
-        <view wx:if="{{dailyStatus}}" class="status-daily">
-          <text class="status-meta">今日状态 · {{dailyStatus.mood}}</text>
-          <text class="status-line">{{dailyStatus.line}}</text>
+        <view wx:if="{{stage === 'ready'}}" class="hatch-entry">
+          <button class="primary-button" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
         </view>
+      </view>
 
-        <view class="home-actions">
-          <button class="primary-button home-actions__chat" bindtap="onPrimaryAction"><text class="button-label">{{actionLabel}}</text></button>
-          <button wx:if="{{stage === 'hatched'}}" class="primary-button home-actions__scene" bindtap="onChangeScene"><text class="button-label">更换场景</text></button>
+      <!-- 破壳后：名字与今日心情由 fixed 层 pet-mood-tab 卡片承载（见页面底部），此处只保留场景与拖拽 -->
+      <view wx:else class="pet-view {{storyImageUrl ? 'pet-view--story' : ''}}"
+            bindtouchstart="onStoryDragStart" bindtouchmove="onStoryDragMove" bindtouchend="onStoryDragEnd" bindtouchcancel="onStoryDragEnd">
+        <view class="egg-zone">
+          <view wx:if="{{feedback}}" class="feedback-bubble" catchtap="noop">{{feedback}}</view>
         </view>
       </view>
     </scroll-view>
+
+    <!-- 破壳后故事场景 fixed 层：移出 scroll-view，避免滚动容器裁剪/偏移造成白边 -->
+    <block wx:if="{{pet && stage === 'hatched'}}">
+      <view wx:if="{{storyImageUrl}}" class="story-track" style="{{storyTrackWidthStyle}}transform: translateX({{storyScrollX}}px);">
+        <image class="story-bg" src="{{storyImageUrl}}" mode="aspectFill" style="{{storyTrackWidthStyle}}" bindload="onStoryBgLoad"></image>
+        <view class="story-bg-mask" style="{{storyTrackWidthStyle}}"></view>
+      </view>
+      <view wx:if="{{storyWindowAvailable}}" class="story-window-hotspot" style="{{storyWindowHotspotStyle}}transform: translateX({{storyScrollX}}px);" aria-role="button" aria-label="看看窗外的风景" bindtap="onStoryWindowTap" bindtouchstart="onStoryDragStart" bindtouchmove="onStoryDragMove" bindtouchend="onStoryDragEnd" bindtouchcancel="onStoryDragEnd"></view>
+
+      <!-- 左上角状态栈：心情卡片 + 房间时钟（点击切换指针/数字），置于 scroll-view 外避免拖拽手势冲突 -->
+      <view class="story-status-stack" style="top:{{nameTopPx}}px;">
+        <pet-mood-tab
+          wx:if="{{dailyStatus}}"
+          pet-name="{{pet.name || '还没有名字'}}"
+          mood-label="{{dailyStatus.mood}}"
+          mood-text="{{dailyStatus.line}}"
+          name-interactive="{{true}}"
+          bindnametap="onPetNameTap"
+        />
+        <room-clock />
+      </view>
+
+      <!-- 故事状态 caption toast：状态文案变化时展示 1800ms 后淡出（静态项目 system toast 同款深色 pill） -->
+      <view wx:if="{{storyCaptionToastText}}" class="story-caption-toast">
+        <view class="story-caption-toast__pill {{storyCaptionToastVisible ? 'story-caption-toast__pill--visible' : ''}}" aria-role="status" aria-label="{{storyCaptionToastVisible ? storyCaptionToastText : ''}}" aria-hidden="{{!storyCaptionToastVisible}}">
+          <text class="story-caption-toast__text">{{storyCaptionToastText}}</text>
+        </view>
+      </view>
+
+      <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图；仅"在家"大场景显示 -->
+      <view wx:if="{{storyAtHome}}" class="story-chat-entry">
+        <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
+          <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFill" />
+        </view>
+      </view>
+    </block>
   </block>
 
   <view wx:if="{{showPhoneAuthorization}}" class="phone-auth-mask" catchtap="onClosePhoneAuthorization">
@@ -74,6 +144,57 @@
       <button class="phone-auth-cancel" disabled="{{authorizingPhone}}" bindtap="onClosePhoneAuthorization">暂不领取</button>
     </view>
   </view>
+
+  <!-- 命名弹层：点击左上角名字药丸打开 -->
+  <view wx:if="{{showNameSheet}}" class="name-mask" catchtouchmove="noop">
+    <view class="name-sheet">
+      <view class="name-handle"></view>
+      <view class="name-sheet-content">
+        <text class="name-sheet-title">{{pet && pet.name ? '修改名字' : '我还没有名字'}}</text>
+        <text class="name-sheet-copy">{{pet && pet.name ? '新名字保存后会继续留在这间房里。' : '给我起一个昵称吧，也可以以后再决定。'}}</text>
+        <view class="name-input-wrap">
+          <input class="name-input" value="{{nameDraft}}" maxlength="10" placeholder="最多 10 个字" bindinput="onNameInput" />
+          <text class="name-count">{{nameCount}}/10</text>
+        </view>
+        <text wx:if="{{nameError}}" class="name-error">{{nameError}}</text>
+        <view class="name-actions">
+          <button class="name-save" hover-class="button-press" disabled="{{savingName}}" bindtap="onSaveName"><text class="button-label">{{savingName ? '正在保存…' : '记住这个名字'}}</text></button>
+          <button class="name-skip" hover-class="button-press" bindtap="onCloseNameSheet"><text class="button-label">{{pet && pet.name ? '取消' : '暂不命名'}}</text></button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 每日窗景详情 -->
+  <daily-window-detail
+    visible="{{dailyWindowVisible}}"
+    image="{{environment.windowImage}}"
+    weather="{{environment.weather}}"
+    season="{{environment.season}}"
+    period="{{environment.period}}"
+    light-phase="{{environment.lightPhase}}"
+    origin-style="{{dailyWindowOriginStyle}}"
+    bind:close="onDailyWindowClosed"
+    bind:retry="onDailyWindowRetry"
+  />
+
+  <!-- 破壳后卧室窗景弹层：故事引擎“窗户”标签图 -->
+  <daily-window-detail
+    visible="{{storyWindowVisible}}"
+    image="{{storyTagImageUrl}}"
+    origin-style="{{storyWindowOriginStyle}}"
+    bind:close="onStoryWindowClosed"
+    bind:retry="onStoryWindowRetry"
+  />
+
+  <!-- 涂鸦编辑器（孵化期场景内嵌） -->
+  <doodle-editor
+    visible="{{doodleEditorVisible}}"
+    pet-id="{{pet.id}}"
+    initial-operations="{{doodleInitialOperations}}"
+    bind:saved="onDoodleSaved"
+    bind:close="onDoodleEditorClose"
+  />
 
   <!-- 破壳视频遮罩 -->
   <view wx:if="{{hatching}}" class="hatch-overlay">

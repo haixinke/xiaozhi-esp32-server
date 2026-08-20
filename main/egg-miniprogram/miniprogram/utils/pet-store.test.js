@@ -222,45 +222,74 @@ assert.strictEqual(merged.dailyStatus.mood, '开心', 'merge preserves existing 
 assert.strictEqual(merged.acceleratedMinutes, 780, 'merge takes acceleratedMinutes from vo');
 assert.strictEqual(merged.name, '小金', 'merge keeps name when backend nickname present');
 
-// --- changeScene: 调用后端更换场景并更新本地缓存 ---
+// --- updateNickname: 破壳后直接 PUT /pet/update，不再走 hatch-action(10209) ---
 const petApi = require('./pet-api');
-const originalChangeScene = petApi.changeScene;
 
-petStore.clearAccountData();
-petStore.saveUser({ id: 42, nickname: '蛋友' });
-const changeSceneVO = {
-  ...hatchedIdentityVO,
-  sceneUrl: 'https://oss.eggbabe.com/default-scenes/fish/scenes-fish-5.jpg'
-};
-petStore.savePetFromVO(hatchedIdentityVO);
+async function runUpdateNicknameTests() {
+  const origSubmit = petApi.submitHatchAction;
+  const origUpdate = petApi.updateNickname;
+  let submitCalls = 0;
+  let updateCalls = 0;
 
-// mock: 后端返回新场景 URL
-petApi.changeScene = async (petId) => {
-  assert.strictEqual(petId, 'pet-1', 'changeScene passes correct petId');
-  return changeSceneVO;
-};
+  try {
+    petApi.submitHatchAction = async () => { submitCalls += 1; throw new Error('should not be called'); };
+    petApi.updateNickname = async (petId, nickname) => {
+      updateCalls += 1;
+      return { ...hatchedIdentityVO, id: petId, nickname };
+    };
 
-(async () => {
-  const result = await petStore.changeScene();
-  assert.strictEqual(result.ok, true, 'changeScene returns ok');
-  assert.strictEqual(result.sceneUrl, 'https://oss.eggbabe.com/default-scenes/fish/scenes-fish-5.jpg', 'changeScene returns new sceneUrl');
-  const cached = petStore.getPet();
-  assert.strictEqual(cached.sceneUrl, 'https://oss.eggbabe.com/default-scenes/fish/scenes-fish-5.jpg', 'changeScene updates local cache');
+    // 破壳：跳过 hatch-action，直接 PUT
+    petStore.clearAccountData();
+    petStore.saveUser({ id: 42, nickname: '蛋友' });
+    petStore.savePetFromVO(hatchedIdentityVO);
+    const hatchedResult = await petStore.updateNickname('小白');
+    assert.strictEqual(hatchedResult.ok, true, 'hatched rename succeeds');
+    assert.strictEqual(submitCalls, 0, 'hatched pet must not call hatch-action (10209)');
+    assert.strictEqual(updateCalls, 1, 'hatched pet goes straight to PUT /pet/update');
+    assert.strictEqual(hatchedResult.pet.name, '小白', 'hatched rename updates local name');
+    assert.strictEqual(hatchedResult.alreadyDone, true, 'hatched rename reports alreadyDone');
 
-  // mock: 后端报错
-  petApi.changeScene = async () => { throw { userMessage: '服务异常' }; };
-  const failResult = await petStore.changeScene();
-  assert.strictEqual(failResult.ok, false, 'changeScene returns not ok on error');
-  assert.strictEqual(failResult.message, '服务异常', 'changeScene propagates error message');
+    // 孵化期首次：走 hatch-action，不调 PUT
+    submitCalls = 0;
+    updateCalls = 0;
+    petApi.submitHatchAction = async (petId, type, payload) => {
+      submitCalls += 1;
+      assert.strictEqual(type, 'NICKNAME', 'egg rename submits NICKNAME action');
+      return { alreadyDone: false, pet: { ...eggVO, id: petId, nickname: payload.nickname } };
+    };
+    petStore.clearAccountData();
+    petStore.saveUser({ id: 42, nickname: '蛋友' });
+    petStore.savePetFromVO(eggVO);
+    const eggResult = await petStore.updateNickname('小金');
+    assert.strictEqual(eggResult.ok, true, 'egg first rename succeeds');
+    assert.strictEqual(submitCalls, 1, 'egg rename calls hatch-action once');
+    assert.strictEqual(updateCalls, 0, 'egg first rename skips PUT');
+    assert.strictEqual(eggResult.alreadyDone, false, 'egg first rename not alreadyDone');
 
-  // 无宠物
-  petStore.clearAccountData();
-  petStore.saveUser({ id: 42, nickname: '蛋友' });
-  const noPetResult = await petStore.changeScene();
-  assert.strictEqual(noPetResult.ok, false, 'changeScene fails without pet');
-
-  // 恢复
-  petApi.changeScene = originalChangeScene;
+    // 孵化期重复：alreadyDone 兜底走 PUT
+    submitCalls = 0;
+    updateCalls = 0;
+    petApi.submitHatchAction = async () => { submitCalls += 1; return { alreadyDone: true, pet: null }; };
+    petApi.updateNickname = async (petId, nickname) => {
+      updateCalls += 1;
+      return { ...eggVO, id: petId, nickname };
+    };
+    petStore.clearAccountData();
+    petStore.saveUser({ id: 42, nickname: '蛋友' });
+    petStore.savePetFromVO(eggVO);
+    const redoResult = await petStore.updateNickname('小金2');
+    assert.strictEqual(redoResult.ok, true, 'egg rename redo succeeds');
+    assert.strictEqual(submitCalls, 1, 'redo still calls hatch-action first');
+    assert.strictEqual(updateCalls, 1, 'alreadyDone falls back to PUT /pet/update');
+  } finally {
+    petApi.submitHatchAction = origSubmit;
+    petApi.updateNickname = origUpdate;
+  }
 
   console.log('pet-store.test.js: ALL PASS');
-})();
+}
+
+runUpdateNicknameTests().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

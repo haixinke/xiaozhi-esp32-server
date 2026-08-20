@@ -29,22 +29,22 @@ public class BatchWeightUpdateDTO {
 
         @Min(value = 0, message = "深夜时段权重不能小于0")
         @Max(value = 100, message = "深夜时段权重不能大于100")
-        @Schema(description = "深夜时段(00:00~05:59)权重百分比")
+        @Schema(description = "深夜时段(19:00~06:59)权重百分比")
         private Integer weightNight;
 
         @Min(value = 0, message = "上午时段权重不能小于0")
         @Max(value = 100, message = "上午时段权重不能大于100")
-        @Schema(description = "上午时段(06:00~11:59)权重百分比")
+        @Schema(description = "上午时段(07:00~11:59)权重百分比")
         private Integer weightMorning;
 
         @Min(value = 0, message = "下午时段权重不能小于0")
         @Max(value = 100, message = "下午时段权重不能大于100")
-        @Schema(description = "下午时段(12:00~17:59)权重百分比")
+        @Schema(description = "下午时段(12:00~16:59)权重百分比")
         private Integer weightAfternoon;
 
         @Min(value = 0, message = "傍晚时段权重不能小于0")
         @Max(value = 100, message = "傍晚时段权重不能大于100")
-        @Schema(description = "傍晚时段(18:00~23:59)权重百分比")
+        @Schema(description = "傍晚时段(17:00~18:59)权重百分比")
         private Integer weightEvening;
     }
 }

@@ -1,0 +1,15 @@
+<view wx:if="{{!hidden}}" class="tab-bar">
+  <block wx:for="{{items}}" wx:key="pagePath">
+    <view
+      wx:if="{{selected !== index}}"
+      class="tab-item"
+      hover-class="tab-item--pressed"
+      data-index="{{index}}"
+      aria-role="button"
+      aria-label="{{item.text}}"
+      bindtap="onSwitch"
+    >
+      <image class="tab-icon" src="{{item.selectedIconPath}}" mode="aspectFit"></image>
+    </view>
+  </block>
+</view>

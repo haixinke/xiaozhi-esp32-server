@@ -90,6 +90,24 @@ public class StoryContentLoader {
                 .toList();
     }
 
+    /**
+     * 装载指定动作在某图片时段下的候选图，供时段换图使用。
+     * 与 loadMatchingImages 同一过滤口径：原型 + 图片时段，稳定排序。
+     */
+    public List<StoryImageCandidate> loadPeriodImages(String prototype, String actionId, String imageTimeOfDay) {
+        QueryWrapper<ActionImageEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("action_id", actionId)
+                .eq("pet_prototype", prototype)
+                .eq("time_of_day", imageTimeOfDay)
+                .orderByAsc("sort_order").orderByAsc("id");
+        return actionImageDao.selectList(wrapper).stream()
+                .filter(image -> prototype.equals(image.getPetPrototype()))
+                .filter(image -> imageTimeOfDay.equals(image.getTimeOfDay()))
+                .sorted(bySortOrderAndId(ActionImageEntity::getSortOrder, ActionImageEntity::getId))
+                .map(this::toCandidate)
+                .toList();
+    }
+
     private Map<String, List<ActionImageEntity>> loadMatchingImages(List<String> actionIds, String prototype,
                                                                       String imageTimeOfDay) {
         QueryWrapper<ActionImageEntity> wrapper = new QueryWrapper<>();
@@ -139,7 +157,7 @@ public class StoryContentLoader {
     }
 
     private StoryImageCandidate toCandidate(ActionImageEntity image) {
-        return new StoryImageCandidate(image.getId(), image.getImageUrl(), image.getCaptions());
+        return new StoryImageCandidate(image.getId(), image.getImageUrl(), image.getCaptions(), image.getTag());
     }
 
     /** 取小场景在当前权重时段的权重，null 视为 0 */

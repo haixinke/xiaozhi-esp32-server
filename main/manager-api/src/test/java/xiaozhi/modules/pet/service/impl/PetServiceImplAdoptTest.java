@@ -90,7 +90,7 @@ class PetServiceImplAdoptTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties,
-                wechatPhoneGate);
+                wechatPhoneGate, null);
         setQuickHatchCode(DEMO_QUICK_HATCH_CODE);
         when(wechatPhoneGate.canAccess(any())).thenReturn(true);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());

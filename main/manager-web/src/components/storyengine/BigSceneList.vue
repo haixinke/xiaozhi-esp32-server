@@ -7,6 +7,9 @@
         <span class="panel-count">共 {{ list.length }} 个</span>
       </div>
       <div class="panel-actions">
+        <CustomButton icon="el-icon-upload2" type="default" size="small" @click="openImport">
+          导入图片文案
+        </CustomButton>
         <CustomButton icon="el-icon-plus" type="add" size="small" @click="openCreate">
           新增大场景
         </CustomButton>
@@ -84,6 +87,47 @@
         </el-form-item>
       </el-form>
     </CustomDialog>
+
+    <CustomDialog
+      title="导入图片文案"
+      :visible.sync="importVisible"
+      width="560px"
+      confirm-text="开始导入"
+      :confirm-loading="importing"
+      @confirm="handleImport"
+      @cancel="closeImport"
+    >
+      <div class="template-download">
+        <a :href="templateUrl" download="图片文案模版.xlsx">
+          <i class="el-icon-download"></i> 下载文案模版
+        </a>
+      </div>
+      <el-upload
+        ref="captionsUpload"
+        action="#"
+        drag
+        :auto-upload="false"
+        :limit="1"
+        :on-change="handleImportFileChange"
+        :on-remove="handleImportFileRemove"
+        accept=".xlsx"
+      >
+        <i class="el-icon-upload"></i>
+        <div class="el-upload__text">将 Excel 文件拖到此处，或<em>点击选择</em></div>
+        <div class="el-upload__tip" slot="tip">
+          仅支持 .xlsx，表头须为：大场景 | 小场景 | 动作 | 时段 | 宠物类型 | 图片文案。
+          名称需与故事引擎中的命名完全一致，对不上的行不会更新；「在家/卧室」中带窗户标签的图片不更新。
+        </div>
+      </el-upload>
+      <div v-if="importResult" class="import-result">
+        <div class="import-result-summary">
+          已更新 {{ importResult.updatedImages }} 张图片，跳过 {{ importResult.skippedRows }} 行
+        </div>
+        <ul v-if="importResult.skippedDetails && importResult.skippedDetails.length" class="import-result-details">
+          <li v-for="(detail, index) in importResult.skippedDetails" :key="index">{{ detail }}</li>
+        </ul>
+      </div>
+    </CustomDialog>
   </div>
 </template>
 
@@ -102,6 +146,10 @@ export default {
       saving: false,
       dialogVisible: false,
       dialogTitle: "新增大场景",
+      importVisible: false,
+      importing: false,
+      importFile: null,
+      importResult: null,
       form: {
         id: null,
         name: "",
@@ -115,6 +163,12 @@ export default {
   },
   created() {
     this.fetchList();
+  },
+  computed: {
+    templateUrl() {
+      const base = process.env.BASE_URL || "/";
+      return base + "templates/" + encodeURIComponent("图片文案模版.xlsx");
+    }
   },
   methods: {
     fetchList() {
@@ -138,6 +192,60 @@ export default {
       this.dialogTitle = "新增大场景";
       this.resetForm();
       this.dialogVisible = true;
+    },
+    openImport() {
+      this.importFile = null;
+      this.importResult = null;
+      this.importVisible = true;
+      this.$nextTick(() => {
+        if (this.$refs.captionsUpload) {
+          this.$refs.captionsUpload.clearFiles();
+        }
+      });
+    },
+    closeImport() {
+      this.importVisible = false;
+      this.importFile = null;
+      this.importResult = null;
+    },
+    handleImportFileChange(file) {
+      const name = (file.name || "").toLowerCase();
+      if (!name.endsWith(".xlsx")) {
+        this.$refs.captionsUpload.clearFiles();
+        this.importFile = null;
+        this.$message.error({ message: "仅支持 .xlsx 格式的 Excel 文件", showClose: true });
+        return;
+      }
+      this.importFile = file.raw;
+      this.importResult = null;
+    },
+    handleImportFileRemove() {
+      this.importFile = null;
+    },
+    handleImport() {
+      if (!this.importFile) {
+        this.$message.warning({ message: "请先选择文案 Excel 文件", showClose: true });
+        return;
+      }
+      this.importing = true;
+      const formData = new FormData();
+      formData.append("file", this.importFile);
+      Api.storyEngine.importActionImageCaptions(
+        formData,
+        ({ data }) => {
+          this.importing = false;
+          if (data.code === 0) {
+            this.importResult = data.data || { updatedImages: 0, skippedRows: 0, skippedDetails: [] };
+            this.$message.success({ message: "导入完成", showClose: true });
+          } else {
+            this.$message.error({ message: data.msg || "导入失败", showClose: true });
+          }
+        },
+        ({ data }) => {
+          this.importing = false;
+          this.$message.error({ message: (data && data.msg) || "导入失败", showClose: true });
+        }
+      );
     },
     openEdit(row) {
       this.dialogTitle = "编辑大场景";
@@ -314,6 +422,44 @@ export default {
   margin-left: 10px;
   font-size: 12px;
   color: #a3a8c3;
+}
+
+.import-result {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f5f7fd;
+}
+
+.template-download {
+  margin-bottom: 12px;
+
+  a {
+    font-size: 13px;
+    color: #5a64b5;
+    text-decoration: none;
+
+    &:hover {
+      color: #7079aa;
+      text-decoration: underline;
+    }
+  }
+}
+
+.import-result-summary {
+  font-size: 13px;
+  font-weight: 500;
+  color: #342f45;
+}
+
+.import-result-details {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 12px;
+  color: #a3a8c3;
+  line-height: 1.8;
 }
 
 :deep(.el-table__header th) {

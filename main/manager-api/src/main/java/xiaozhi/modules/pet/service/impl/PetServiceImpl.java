@@ -58,6 +58,8 @@ import xiaozhi.modules.pet.vo.CollectionCardVO;
 import xiaozhi.modules.pet.vo.ChatHistoryVO;
 import xiaozhi.modules.pet.vo.MemoryVO;
 import xiaozhi.modules.pet.vo.PetVO;
+import xiaozhi.modules.storyengine.service.PetStoryQueryService;
+import xiaozhi.modules.storyengine.vo.PetStoryStateVO;
 import xiaozhi.modules.pet.vo.UserProfileVO;
 import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
@@ -94,6 +96,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final PetCollectionCardService petCollectionCardService;
     private final PetSceneProperties petSceneProperties;
     private final WechatPhoneGate wechatPhoneGate;
+    private final PetStoryQueryService petStoryQueryService;
 
     @Value("${pet.quick-hatch.code:}")
     private String quickHatchCode;
@@ -884,10 +887,31 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
                 // 注入带表演指引的文案，让 LLM 按心情调整语气，而非干巴巴的 label
                 ctx.put("今日心情", MoodActingGuide.of(pet.getTodayMood()));
             }
+            // 注入原型共享故事的当前状态(大场景·小场景：动作),仅 ACTIVE 状态返回非空
+            PetStoryStateVO storyState = petStoryQueryService.getCurrentByPrototype(pet.getPrototype());
+            String storyText = buildStoryContextText(storyState);
+            if (StringUtils.isNotBlank(storyText)) {
+                ctx.put("当前状态", storyText);
+            }
         } catch (Exception e) {
             log.warn("构建蛋宝宝实时上下文失败, deviceId={}: {}", deviceId, e.getMessage());
         }
         return ctx;
+    }
+
+    /**
+     * 拼接故事状态上下文文案: {大场景}·{小场景}：{动作}。
+     * 状态为空或任一名称快照为空时返回 null,由调用方跳过注入。
+     */
+    private String buildStoryContextText(PetStoryStateVO storyState) {
+        if (storyState == null
+                || StringUtils.isBlank(storyState.getBigSceneName())
+                || StringUtils.isBlank(storyState.getSmallSceneName())
+                || StringUtils.isBlank(storyState.getActionName())) {
+            return null;
+        }
+        return storyState.getBigSceneName() + "·" + storyState.getSmallSceneName()
+                + "：" + storyState.getActionName();
     }
 
     /**

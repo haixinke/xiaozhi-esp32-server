@@ -8,10 +8,21 @@
 
 .code-block { margin-bottom: 40rpx; }
 .label { display: block; font-size: 24rpx; color: #8C8C88; margin-bottom: 16rpx; }
-.code-input {
-  width: 100%; height: 96rpx; border-radius: 24rpx; border: 1rpx solid #CFCBC4;
-  padding: 0 32rpx; font-size: 28rpx; color: #1A1A1A; box-sizing: border-box; background: #FFFFFF;
+.activation-code { position: relative; width: 100%; }
+.activation-code-cells { display: flex; justify-content: space-between; gap: 14rpx; }
+.activation-code-cell {
+  flex: 1; height: 108rpx; border-radius: 18rpx; border: 2rpx solid transparent;
+  background: #EEF1F6; display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box; color: #1A1A1A; font-family: "SF Mono", "Menlo", monospace;
+  font-size: 48rpx; font-weight: 600; line-height: 1; transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
+.activation-code-cell--filled { background: #FFFFFF; border-color: #D8D6D0; }
+.activation-code-cell--active { border-color: #17472B; box-shadow: 0 0 0 5rpx rgba(23,71,43,0.10); }
+.activation-code-native-input {
+  position: absolute; inset: 0; width: 100%; height: 108rpx; opacity: 0.01;
+  color: transparent; caret-color: transparent; font-size: 1rpx;
+}
+.code-hint { display: block; margin-top: 18rpx; font-size: 22rpx; color: #9B9993; }
 
 .error { font-size: 24rpx; color: #D9463C; margin-bottom: 24rpx; }
 .note {

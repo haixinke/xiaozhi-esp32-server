@@ -182,10 +182,10 @@ import CustomDialog from "@/components/CustomDialog.vue";
 
 // 四个时段与后端权重字段、合计字段的映射
 const PERIODS = [
-  { key: "weightNight", label: "深夜", range: "00:00~05:59", totalKey: "totalNight" },
-  { key: "weightMorning", label: "上午", range: "06:00~11:59", totalKey: "totalMorning" },
-  { key: "weightAfternoon", label: "下午", range: "12:00~17:59", totalKey: "totalAfternoon" },
-  { key: "weightEvening", label: "傍晚", range: "18:00~23:59", totalKey: "totalEvening" }
+  { key: "weightNight", label: "深夜", range: "19:00~06:59", totalKey: "totalNight" },
+  { key: "weightMorning", label: "上午", range: "07:00~11:59", totalKey: "totalMorning" },
+  { key: "weightAfternoon", label: "下午", range: "12:00~16:59", totalKey: "totalAfternoon" },
+  { key: "weightEvening", label: "傍晚", range: "17:00~18:59", totalKey: "totalEvening" }
 ];
 
 export default {

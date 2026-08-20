@@ -301,7 +301,7 @@ export default {
     },
 
     // ==================== 动作图片 ====================
-    // 上传动作图片，formData 需包含 file、petPrototype、timeOfDay、captions
+    // 上传动作图片，formData 需包含 file、petPrototype、timeOfDay、captions(选填)、tag(选填,单标签最长64字符)
     uploadActionImage(actionId, formData, callback, failCallback) {
         RequestService.sendRequest()
             .url(`${getServiceUrl()}/storyEngine/action/${actionId}/image`)
@@ -324,7 +324,7 @@ export default {
                 })
             }).send()
     },
-    // 修改动作图片配文
+    // 修改动作图片配文与标签（整体更新语义，data 需包含 id、captions、tag）
     updateActionImage(data, callback, failCallback) {
         RequestService.sendRequest()
             .url(`${getServiceUrl()}/storyEngine/actionImage`)
@@ -341,9 +341,32 @@ export default {
                 }
             })
             .networkFail((err) => {
-                console.error('修改动作图片配文失败:', err)
+                console.error('修改动作图片配文与标签失败:', err)
                 RequestService.reAjaxFun(() => {
                     this.updateActionImage(data, callback, failCallback)
+                })
+            }).send()
+    },
+    // Excel批量导入图片文案，formData 需包含 file(.xlsx，表头: 大场景/小场景/动作/时段/宠物类型/图片文案)
+    importActionImageCaptions(formData, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/storyEngine/actionImage/importCaptions`)
+            .method('POST')
+            .data(formData)
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((err) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(err)
+                }
+            })
+            .networkFail((err) => {
+                console.error('批量导入图片文案失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.importActionImageCaptions(formData, callback, failCallback)
                 })
             }).send()
     },

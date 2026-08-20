@@ -1,7 +1,7 @@
-<view class="page">
-  <nav-bar title="{{card.name}}" bind:back="noop">
-    <!-- 右侧「⋯」菜单：如 nav-bar 支持右插槽则放这里；否则页面自绘 -->
-  </nav-bar>
+<view class="page {{reducedMotion ? 'page--reduced' : ''}}" style="{{chatViewportStyle}}">
+  <view class="chat-header">
+    <nav-bar title="{{title}}" bind:back="noop"></nav-bar>
+  </view>
 
   <!-- 心情状态条 -->
   <view class="mood-bar">
@@ -11,7 +11,7 @@
   </view>
 
   <!-- 消息区 -->
-  <scroll-view class="messages" style="height: {{scrollViewHeight}}px;" scroll-y scroll-into-view="{{scrollAnchor}}" scroll-top="{{scrollTop}}" scroll-with-animation="{{scrollWithAnimation}}" upper-threshold="100" bindscroll="_onConversationScroll" bindscrolltoupper="_onScrollToUpper">
+  <scroll-view class="messages" scroll-y enhanced show-scrollbar="{{false}}" scroll-into-view="{{scrollAnchor}}" scroll-top="{{scrollTop}}" scroll-with-animation="{{scrollWithAnimation}}" upper-threshold="100" bindscroll="_onConversationScroll" bindscrolltoupper="_onScrollToUpper">
     <view class="history-loader" wx:if="{{historyLoading}}">
       <view class="history-loader-dot"></view>
       <text class="history-loader-text">加载中...</text>
@@ -26,10 +26,8 @@
       <view wx:if="{{item.role === 'user'}}" class="row row--user">
         <view class="bubble bubble--user">{{item.content}}</view>
       </view>
-      <!-- 蛋宝宝气泡（左） -->
+      <!-- 蛋宝宝气泡（左，无头像） -->
       <view wx:else class="row row--egg">
-        <image wx:if="{{avatarUrl}}" class="egg-avatar egg-avatar--chat" src="{{avatarUrl}}" mode="aspectFill"></image>
-        <egg-avatar wx:else size="{{28}}" gradient-from="#EDE78E" gradient-to="#F4B9AE"></egg-avatar>
         <view class="bubble bubble--egg {{item.typing ? 'bubble--typing' : ''}} {{chatState === 'speaking' && index === messages.length - 1 ? 'bubble--speaking' : ''}}">
           <text>{{item.content}}</text>
           <view wx:if="{{chatState === 'speaking' && index === messages.length - 1 && !item.typing}}" class="speaking-indicator">
@@ -43,21 +41,28 @@
 
     <!-- 正在输入 -->
     <view wx:if="{{chatState === 'thinking'}}" class="row row--egg">
-      <image wx:if="{{avatarUrl}}" class="egg-avatar egg-avatar--chat" src="{{avatarUrl}}" mode="aspectFill"></image>
-      <egg-avatar wx:else size="{{28}}" gradient-from="#EDE78E" gradient-to="#F4B9AE"></egg-avatar>
       <view class="bubble bubble--egg typing">
         <view class="dot"></view><view class="dot"></view><view class="dot"></view>
       </view>
     </view>
+    <view class="thread-spacer"></view>
   </scroll-view>
 
   <!-- 输入栏 -->
   <view class="composer">
-    <input class="composer__input" value="{{draft}}" placeholder="说点什么…"
-           confirm-type="send" bindinput="onInput" bindconfirm="onSend"
-           disabled="{{chatState === 'thinking'}}" />
-    <view class="composer__send {{chatState === 'thinking' ? 'composer__send--disabled' : ''}}" hover-class="composer__send--pressed" bindtap="onSend">
-      <view class="composer__send-arrow"></view>
+    <view class="composer-row">
+      <view class="composer-field">
+        <textarea class="composer-input" value="{{draft}}" placeholder="在这里说一句…" placeholder-style="color:#8C8C88"
+                  auto-height maxlength="-1" adjust-position="{{false}}" disable-default-padding="{{true}}"
+                  cursor-color="#002900" cursor-spacing="24"
+                  confirm-type="send" disabled="{{chatState === 'thinking'}}"
+                  bindinput="onInput" bindconfirm="onSend" bindfocus="onInputFocus" bindblur="onInputBlur"
+                  bindkeyboardheightchange="onKeyboardHeightChange" />
+      </view>
+      <view class="send-button {{!canSend ? 'send-button--disabled' : ''}}"
+            hover-class="{{canSend ? 'pressable--pressed' : ''}}" hover-stay-time="80" bindtap="onSend">
+        <image class="send-button__icon" src="/assets/icons/send.svg" mode="aspectFit" />
+      </view>
     </view>
   </view>
 </view>

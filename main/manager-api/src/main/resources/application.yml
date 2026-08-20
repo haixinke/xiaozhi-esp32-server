@@ -69,6 +69,8 @@ aliyun:
     access-key-secret: ${EGG_ACCESS_KEY_SECRET:}
     bucket-name: ${EGG_BUCKET_NAME:}
     region: ${EGG_REGION:}
+    # OSS 公网访问域名，用于把 ossKey 拼接成可访问 URL；留空时由 OssService 兜底
+    public-url: ${EGG_OSS_PUBLIC_URL:}
 
 renren:
   redis:

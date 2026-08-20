@@ -225,3 +225,6 @@ graphify-out/**
 
 # Claude worktrees
 .worktrees/
+
+# 蛋宝宝静态 UI 参考项目（不入库）
+main/eggbabe-miniprogram/

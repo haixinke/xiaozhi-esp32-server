@@ -1,0 +1,21 @@
+<view
+  class="room-clock room-clock--{{clockMode}}"
+  aria-role="button"
+  aria-label="{{clockMode === 'analog' ? '当前时间 ' + clockTimeText + '，点击显示数字时间' : '当前时间 ' + clockTimeText + '，点击显示指针时钟'}}"
+  catchtap="onClockTap"
+>
+  <view wx:if="{{clockMode === 'analog'}}" class="clock-face">
+    <text class="clock-number clock-number--twelve">12</text>
+    <text class="clock-number clock-number--three">3</text>
+    <text class="clock-number clock-number--six">6</text>
+    <text class="clock-number clock-number--nine">9</text>
+    <view class="clock-hand clock-hand--hour" style="{{clockHourStyle}}"></view>
+    <view class="clock-hand clock-hand--minute" style="{{clockMinuteStyle}}"></view>
+    <view class="clock-hand clock-hand--second" style="{{clockSecondStyle}}"></view>
+    <view class="clock-pin"></view>
+  </view>
+  <view wx:else class="clock-digital">
+    <text class="clock-time">{{clockTimeText}}</text>
+    <text class="clock-date">{{clockDateText}}</text>
+  </view>
+</view>

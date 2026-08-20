@@ -2,4 +2,6 @@
 
 const API_BASE_URL = 'https://api.eggbabe.com/xiaozhi';
 
-module.exports = { API_BASE_URL };
+const OSS_SCENE_BASE = 'https://oss.eggbabe.com/scenes/pre-hatch';
+
+module.exports = { API_BASE_URL, OSS_SCENE_BASE };

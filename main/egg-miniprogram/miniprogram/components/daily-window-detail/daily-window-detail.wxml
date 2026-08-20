@@ -1,0 +1,61 @@
+<view
+  wx:if="{{rendered}}"
+  class="daily-window daily-window--{{phase}} daily-window--time-{{lightPhase}} daily-window--weather-{{weather}} daily-window--season-{{season}} {{reducedMotion ? 'daily-window--reduced' : ''}}"
+  style="{{originStyle}}--daily-window-duration:{{transitionDuration}}ms;--daily-window-feedback-duration:{{feedbackTransitionDuration}}ms;"
+  catchtouchmove="noop"
+>
+  <image
+    wx:if="{{displayImage}}"
+    class="daily-window__image"
+    src="{{displayImage}}"
+    mode="aspectFill"
+    bindload="onImageLoad"
+    binderror="onImageError"
+  ></image>
+  <view wx:if="{{!failed}}" class="daily-window__tone daily-window__tone--{{period}}"></view>
+  <view wx:if="{{!loading && !failed}}" class="daily-window__time-atmosphere">
+    <view class="daily-window__time-beam"></view>
+    <view class="daily-window__time-mote daily-window__time-mote--one"></view>
+    <view class="daily-window__time-mote daily-window__time-mote--two"></view>
+    <view class="daily-window__time-mote daily-window__time-mote--three"></view>
+    <view class="daily-window__time-mote daily-window__time-mote--four"></view>
+    <view class="daily-window__time-mote daily-window__time-mote--five"></view>
+    <view class="daily-window__time-mote daily-window__time-mote--six"></view>
+    <view class="daily-window__night-glint daily-window__night-glint--one"></view>
+    <view class="daily-window__night-glint daily-window__night-glint--two"></view>
+    <view class="daily-window__night-glint daily-window__night-glint--three"></view>
+    <view class="daily-window__night-glint daily-window__night-glint--four"></view>
+    <view class="daily-window__sunset-glint"></view>
+    <view class="daily-window__ambient-birds" aria-hidden="true">
+      <view class="daily-window__bird daily-window__ambient-bird daily-window__ambient-bird--one"></view>
+      <view class="daily-window__bird daily-window__ambient-bird daily-window__ambient-bird--two"></view>
+      <view class="daily-window__bird daily-window__ambient-bird daily-window__ambient-bird--three"></view>
+      <view class="daily-window__bird daily-window__ambient-bird daily-window__ambient-bird--four"></view>
+      <view class="daily-window__bird daily-window__ambient-bird daily-window__ambient-bird--five"></view>
+      <view class="daily-window__bird daily-window__ambient-bird daily-window__ambient-bird--six"></view>
+      <view class="daily-window__bird daily-window__ambient-bird daily-window__ambient-bird--seven"></view>
+    </view>
+  </view>
+  <canvas wx:if="{{!failed}}" type="2d" id="dailyWindowWeatherCanvas" class="daily-window__weather"></canvas>
+
+  <view wx:if="{{loading && !failed}}" class="daily-window__state">
+    <view class="daily-window__loader"></view>
+    <text>正在靠近窗外…</text>
+  </view>
+  <view wx:elif="{{failed}}" class="daily-window__state daily-window__state--error">
+    <text class="daily-window__state-title">窗外景色没有加载好</text>
+    <text>可以重试，也可以先回到房间。</text>
+    <view class="daily-window__retry" aria-role="button" aria-label="重新加载窗外景色" bindtap="onRetry">重新看看</view>
+  </view>
+
+  <view class="daily-window__topbar" style="top:{{topbarTopPx}}px;">
+    <view class="daily-window__back" aria-role="button" aria-label="返回房间" bindtap="requestClose"><view class="daily-window__back-icon"></view></view>
+  </view>
+  <view
+    wx:if="{{!loading && !failed}}"
+    class="daily-window__feedback-bubble daily-window__feedback-bubble--{{feedbackPhase}}"
+    aria-role="button"
+    aria-label="换一句蛋宝宝的陪伴话"
+    bindtap="onFeedbackTap"
+  ><text>{{feedbackText}}</text></view>
+</view>

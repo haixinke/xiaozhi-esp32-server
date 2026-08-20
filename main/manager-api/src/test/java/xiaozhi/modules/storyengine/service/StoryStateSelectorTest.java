@@ -3,6 +3,7 @@ package xiaozhi.modules.storyengine.service;
 import org.junit.jupiter.api.Test;
 import xiaozhi.modules.storyengine.model.StoryActionCandidate;
 import xiaozhi.modules.storyengine.model.StoryImageCandidate;
+import xiaozhi.modules.storyengine.model.StoryPeriodImageSelection;
 import xiaozhi.modules.storyengine.model.StorySceneCandidate;
 import xiaozhi.modules.storyengine.model.StorySelectionResult;
 import xiaozhi.modules.storyengine.model.StorySelectionResultType;
@@ -31,7 +32,7 @@ class StoryStateSelectorTest {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 101, 40), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0),
                 draw(1, 101, 41), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
-        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryStateSelector selector = new StoryStateSelector(random, new SpecialSceneTagRegistry());
         List<StorySceneCandidate> scenes = List.of(
                 scene("边界前", 40, validAction(1, 1)),
                 scene("边界后", 60, validAction(1, 1)));
@@ -45,7 +46,7 @@ class StoryStateSelectorTest {
     void initialSelectionNormalizesValidWeightsAndSelectsCompleteSnapshot() {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 71, 60), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 1));
-        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryStateSelector selector = new StoryStateSelector(random, new SpecialSceneTagRegistry());
 
         StorySelectionResult result = selector.selectInitial(List.of(
                 scene("卧室", 40, validAction(1, 2)),
@@ -104,7 +105,7 @@ class StoryStateSelectorTest {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 0),
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 1));
-        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryStateSelector selector = new StoryStateSelector(random, new SpecialSceneTagRegistry());
         StorySceneCandidate scene = scene("卧室", 100, validAction(1, 2));
 
         assertThat(selector.selectTransition(List.of(scene)).state().durationHours()).isEqualTo(1);
@@ -116,7 +117,7 @@ class StoryStateSelectorTest {
     void selectionExcludesInvalidActionsBeforeDrawingAnEligibleAction() {
         QueueRandomSource random = randomWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
-        StoryStateSelector selector = new StoryStateSelector(random);
+        StoryStateSelector selector = new StoryStateSelector(random, new SpecialSceneTagRegistry());
         StoryActionCandidate invalid = action("invalid", 0, 1, image("invalid-image", "", "invalid-url"));
         StoryActionCandidate valid = action("valid", 1, 1, image("valid-image", "", "valid-url"));
 
@@ -127,7 +128,7 @@ class StoryStateSelectorTest {
     }
 
     @Test
-    void selectionSelectsImageAndNormalizesDelimitedCaption() {
+    void selectionSelectsImageAndPassesCaptionThrough() {
         StoryStateSelector selector = selectorWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
         StoryActionCandidate action = action("散步", 1, 1,
@@ -143,19 +144,21 @@ class StoryStateSelectorTest {
     }
 
     @Test
-    void selectionUsesTrimmedCaptionChoiceAndEmptyCaptionWhenNoneIsPresent() {
+    void selectionPassesWholeCaptionThroughAndEmptyCaptionWhenBlank() {
         StoryStateSelector withCaption = selectorWithRolls(
-                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
         StoryActionCandidate captioned = action("散步", 1, 1,
                 image("image", "  早安 |  | 晚安  ", "url"));
 
+        // 配文整串透传（多条用 | 分隔），由客户端拆分随机展示
         assertThat(withCaption.selectTransition(List.of(scene("公园", 100, captioned))).state().caption())
-                .isEqualTo("晚安");
+                .isEqualTo("  早安 |  | 晚安  ");
 
         StoryStateSelector emptyCaption = selectorWithRolls(
                 draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
         StoryActionCandidate blank = action("休息", 1, 1, image("image", " |   | ", "url"));
 
+        // 空白配文归一为空串
         assertThat(emptyCaption.selectTransition(List.of(scene("卧室", 100, blank))).state().caption())
                 .isEmpty();
     }
@@ -191,8 +194,190 @@ class StoryStateSelectorTest {
         assertThatThrownBy(() -> action.images().clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
+    @Test
+    void selectedStateCarriesWindowTagImageUrlWhenActionHasWindowImage() {
+        // 在家+卧室场景下，动作含 tag=窗户 图：tagImageUrl 取该图 URL，主图只能是非窗户图
+        StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
+        StoryImageCandidate normalImage = image("image-id", "", "https://example.com/image.png");
+        StoryActionCandidate action = action("动作", 1, 1, normalImage, windowImage);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(bedroomScene(100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().imageUrl()).isEqualTo("https://example.com/image.png");
+        assertThat(result.state().tagImageUrl()).isEqualTo("https://example.com/window.png");
+    }
+
+    @Test
+    void mainImageNeverFallsBackToWindowTaggedImage() {
+        // 主图抽取范围不含窗户图：即使随机数指向窗户图原下标，主图也只能命中非窗户图
+        StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
+        StoryImageCandidate firstImage = image("first-id", "", "https://example.com/first.png");
+        StoryImageCandidate secondImage = image("second-id", "", "https://example.com/second.png");
+        StoryActionCandidate action = action("动作", 1, 1, firstImage, windowImage, secondImage);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(bedroomScene(100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().imageUrl()).isEqualTo("https://example.com/second.png");
+        assertThat(result.state().tagImageUrl()).isEqualTo("https://example.com/window.png");
+    }
+
+    @Test
+    void actionWithOnlyWindowTaggedImagesIsIneligible() {
+        // 卧室场景动作只有窗户图时没有主图可用，视为配置失败而不是把窗景当主场景
+        StoryActionCandidate action = action("动作", 1, 1,
+                taggedImage("window-id", "窗户", "https://example.com/window.png"));
+
+        StorySelectionResult result = selectorWithRolls().selectInitial(List.of(bedroomScene(100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.INVALID_CONFIGURATION);
+    }
+
+    @Test
+    void selectedStateHasNullTagImageUrlWhenActionHasNoWindowImage() {
+        StoryActionCandidate action = validAction(1, 1);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(bedroomScene(100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().tagImageUrl()).isNull();
+    }
+
+    @Test
+    void windowTaggedImageIsOrdinaryMainImageOutsideBedroomRule() {
+        // 未命中特殊标签规则的场景：tag=窗户 仅为运营备注，图片正常参与主图抽取且 tagImageUrl 为 null
+        StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
+        StoryImageCandidate normalImage = image("image-id", "", "https://example.com/image.png");
+        StoryActionCandidate action = action("动作", 1, 1, normalImage, windowImage);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 2, 1), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(scene("公园", 100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().imageUrl()).isEqualTo("https://example.com/window.png");
+        assertThat(result.state().tagImageUrl()).isNull();
+    }
+
+    @Test
+    void windowTaggedImageIsOrdinaryWhenBigSceneDoesNotMatchRule() {
+        // 小场景名为卧室但大场景不是"在家"，规则不生效
+        StoryActionCandidate action = action("动作", 1, 1,
+                taggedImage("window-id", "窗户", "https://example.com/window.png"));
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(scene("卧室", 100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().imageUrl()).isEqualTo("https://example.com/window.png");
+        assertThat(result.state().tagImageUrl()).isNull();
+    }
+
+    @Test
+    void periodImagePicksRandomMainAndPassesCaptionThroughOutsideSpecialRule() {
+        // 未命中特殊标签规则：所有图参与主图等概率，配文整串从新图透传，tagImageUrl 为 null
+        StoryStateSelector selector = selectorWithRolls(draw(0, 2, 1));
+        List<StoryImageCandidate> images = List.of(
+                image("first-id", "白天", "https://example.com/first.png"),
+                image("second-id", " 早安 | 晚安 ", "https://example.com/second.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "大场景", "公园", null)
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("second-id");
+        assertThat(result.imageUrl()).isEqualTo("https://example.com/second.png");
+        assertThat(result.caption()).isEqualTo(" 早安 | 晚安 ");
+        assertThat(result.tagImageUrl()).isNull();
+    }
+
+    @Test
+    void periodImageExcludesCurrentImageWhenRotating() {
+        // 同时段轮换：排除当前在用图，只在剩余主图中抽取
+        StoryStateSelector selector = selectorWithRolls(draw(0, 1, 0));
+        List<StoryImageCandidate> images = List.of(
+                image("current-id", "白天", "https://example.com/current.png"),
+                image("other-id", "夜晚", "https://example.com/other.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "大场景", "公园", "current-id")
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("other-id");
+        assertThat(result.imageUrl()).isEqualTo("https://example.com/other.png");
+        assertThat(result.caption()).isEqualTo("夜晚");
+    }
+
+    @Test
+    void periodImageReturnsEmptyWhenExclusionLeavesNoMainImage() {
+        // 唯一主图就是在用图：排除后无可换目标，不换
+        StoryStateSelector selector = selectorWithRolls();
+        List<StoryImageCandidate> images = List.of(
+                image("current-id", "白天", "https://example.com/current.png"));
+
+        assertThat(selector.selectPeriodImage(images, "大场景", "公园", "current-id")).isEmpty();
+    }
+
+    @Test
+    void periodImageExclusionDoesNotAffectTagImageSnapshot() {
+        // 排除的是在用主图：窗景标签图仍可作 tagImageUrl 快照
+        StoryStateSelector selector = selectorWithRolls(draw(0, 1, 0));
+        List<StoryImageCandidate> images = List.of(
+                image("current-id", "落日睡觉", "https://example.com/current.png"),
+                image("other-id", "落日醒来", "https://example.com/other.png"),
+                taggedImage("window-id", "窗户", "https://example.com/window.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "在家", "卧室", "current-id")
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("other-id");
+        assertThat(result.tagImageUrl()).isEqualTo("https://example.com/window.png");
+    }
+
+    @Test
+    void periodImageInBedroomExcludesWindowFromMainAndSnapshotsTagUrl() {
+        // 在家+卧室：主图从非窗户图选，tagImageUrl 取窗户标签图首张
+        StoryStateSelector selector = selectorWithRolls(draw(0, 1, 0));
+        List<StoryImageCandidate> images = List.of(
+                image("normal-id", "落日睡觉", "https://example.com/normal.png"),
+                taggedImage("window-id", "窗户", "https://example.com/window.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "在家", "卧室", null)
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("normal-id");
+        assertThat(result.tagImageUrl()).isEqualTo("https://example.com/window.png");
+    }
+
+    @Test
+    void periodImageInBedroomWithoutWindowImageReturnsEmpty() {
+        // 原子性：命中标签规则但新时段缺标签图，整体不换
+        StoryStateSelector selector = selectorWithRolls();
+        List<StoryImageCandidate> images = List.of(
+                image("normal-id", "落日睡觉", "https://example.com/normal.png"));
+
+        assertThat(selector.selectPeriodImage(images, "在家", "卧室", null)).isEmpty();
+    }
+
+    @Test
+    void periodImageReturnsEmptyWithoutCandidates() {
+        StoryStateSelector selector = selectorWithRolls();
+
+        assertThat(selector.selectPeriodImage(List.of(), "大场景", "公园", null)).isEmpty();
+    }
+
     private StoryStateSelector selectorWithRolls(ExpectedDraw... draws) {
-        return new StoryStateSelector(randomWithRolls(draws));
+        return new StoryStateSelector(randomWithRolls(draws), new SpecialSceneTagRegistry());
     }
 
     private QueueRandomSource randomWithRolls(ExpectedDraw... draws) {
@@ -207,6 +392,11 @@ class StoryStateSelectorTest {
         return new StorySceneCandidate("big-id", "大场景", name + "-id", name, weight, List.of(actions));
     }
 
+    // 命中窗户特殊标签规则的场景组合：大场景=在家 + 小场景=卧室
+    private static StorySceneCandidate bedroomScene(int weight, StoryActionCandidate... actions) {
+        return new StorySceneCandidate("home-id", "在家", "bedroom-id", "卧室", weight, List.of(actions));
+    }
+
     private static StoryActionCandidate validAction(int durationMin, int durationMax) {
         return action("动作", durationMin, durationMax, image("image-id", "", "image-url"));
     }
@@ -217,7 +407,11 @@ class StoryStateSelectorTest {
     }
 
     private static StoryImageCandidate image(String id, String captions, String imageUrl) {
-        return new StoryImageCandidate(id, imageUrl, captions);
+        return new StoryImageCandidate(id, imageUrl, captions, null);
+    }
+
+    private static StoryImageCandidate taggedImage(String id, String tag, String imageUrl) {
+        return new StoryImageCandidate(id, imageUrl, "", tag);
     }
 
     private record ExpectedDraw(int originInclusive, int boundExclusive, int value) {

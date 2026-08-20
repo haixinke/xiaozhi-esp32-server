@@ -108,6 +108,19 @@ public class HatchActionServiceImpl implements HatchActionService {
             hatchActionDao.insert(act);
 
             added = minutes;
+        } else if (type == HatchActionType.DOODLE) {
+            // 重复涂鸦：孵化加速仍只生效一次(720 分钟不重复累加)，但把已有记录的 payload
+            // 更新为最新 artUrl，保证云端/首页展示的蛋壳合成图是用户最近一次的涂鸦成果。
+            HatchActionEntity existing = hatchActionDao.selectOne(
+                    new QueryWrapper<HatchActionEntity>()
+                            .eq("pet_id", petId)
+                            .eq("action_type", type.name())
+                            .orderByDesc("create_date")
+                            .last("limit 1"));
+            if (existing != null) {
+                existing.setPayload(serializePayload(dto.getPayload()));
+                hatchActionDao.updateById(existing);
+            }
         }
 
         boolean readyToHatch = pet.getExpectedHatchTime() != null

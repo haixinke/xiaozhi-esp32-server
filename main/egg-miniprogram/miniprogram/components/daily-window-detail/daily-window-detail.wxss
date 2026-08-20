@@ -1,0 +1,78 @@
+.daily-window{position:fixed;z-index:320;left:0;top:0;width:100vw;height:100vh;overflow:hidden;background:#D6E0D9;color:#FFF;transform-origin:center;box-shadow:0 0 0 1rpx rgba(255,255,255,.08)}
+.daily-window--entering{animation:daily-window-fade-in var(--daily-window-duration,320ms) ease-out both}
+.daily-window--exiting{animation:daily-window-fade-out var(--daily-window-duration,320ms) ease-in both;pointer-events:none}
+.daily-window__image,.daily-window__tone,.daily-window__weather{position:absolute;inset:0;width:100%;height:100%}
+.daily-window__image{display:block}
+.daily-window__tone{top:55%;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(20,27,24,.28))}
+.daily-window__tone--night{background:linear-gradient(180deg,transparent,rgba(7,15,25,.34))}
+.daily-window__time-atmosphere{position:absolute;z-index:1;inset:0;overflow:hidden;pointer-events:none}
+.daily-window__time-beam{position:absolute;top:-18%;left:16%;width:38%;height:132%;border-radius:50%;opacity:0;filter:blur(22rpx);transform-origin:50% 0}
+.daily-window--time-morning .daily-window__time-beam{background:linear-gradient(180deg,rgba(255,246,202,.25),rgba(255,235,174,.06) 70%,transparent);animation:daily-window-beam-morning 14s ease-in-out infinite}
+.daily-window--time-midday .daily-window__time-beam{left:38%;width:24%;background:linear-gradient(180deg,rgba(255,253,230,.17),rgba(255,247,217,.03) 74%,transparent);animation:daily-window-beam-midday 18s ease-in-out infinite}
+.daily-window--time-afternoon .daily-window__time-beam{left:48%;width:40%;background:linear-gradient(180deg,rgba(255,230,174,.19),rgba(255,208,137,.045) 76%,transparent);animation:daily-window-beam-afternoon 16s ease-in-out infinite}
+.daily-window--time-sunset .daily-window__time-beam{left:56%;width:46%;background:linear-gradient(180deg,rgba(255,205,134,.25),rgba(255,162,87,.06) 75%,transparent);animation:daily-window-beam-sunset 14s ease-in-out infinite}
+.daily-window__time-mote{position:absolute;width:6rpx;height:6rpx;border-radius:50%;opacity:0}
+.daily-window__time-mote--one{left:13%;top:72%}.daily-window__time-mote--two{left:31%;top:48%}.daily-window__time-mote--three{left:47%;top:79%}
+.daily-window__time-mote--four{left:64%;top:37%}.daily-window__time-mote--five{left:79%;top:65%}.daily-window__time-mote--six{left:55%;top:22%}
+.daily-window--time-morning .daily-window__time-mote{background:rgba(255,249,218,.64);animation:daily-window-mote-morning 13s ease-in-out infinite}
+.daily-window--time-morning .daily-window__time-mote--two{animation-delay:-3s}.daily-window--time-morning .daily-window__time-mote--three{animation-delay:-7s}.daily-window--time-morning .daily-window__time-mote--four{animation-delay:-10s}
+.daily-window--time-midday .daily-window__time-mote--one,.daily-window--time-midday .daily-window__time-mote--four,.daily-window--time-midday .daily-window__time-mote--six{background:rgba(255,253,231,.5);animation:daily-window-mote-midday 18s ease-in-out infinite}
+.daily-window--time-midday .daily-window__time-mote--four{animation-delay:-6s}.daily-window--time-midday .daily-window__time-mote--six{animation-delay:-12s}
+.daily-window--time-afternoon .daily-window__time-mote{background:rgba(255,230,184,.52);animation:daily-window-mote-afternoon 15s ease-in-out infinite}
+.daily-window--time-afternoon .daily-window__time-mote--two{animation-delay:-4s}.daily-window--time-afternoon .daily-window__time-mote--four{animation-delay:-8s}.daily-window--time-afternoon .daily-window__time-mote--six{animation-delay:-12s}
+.daily-window--time-sunset .daily-window__time-mote{background:rgba(255,211,147,.6);animation:daily-window-mote-sunset 14s ease-in-out infinite}
+.daily-window--time-sunset .daily-window__time-mote--two{animation-delay:-3s}.daily-window--time-sunset .daily-window__time-mote--three{animation-delay:-6s}.daily-window--time-sunset .daily-window__time-mote--five{animation-delay:-10s}
+.daily-window__night-glint{position:absolute;width:6rpx;height:6rpx;border-radius:50%;opacity:0;background:rgba(224,238,255,.78);box-shadow:0 0 14rpx rgba(196,220,250,.58)}
+.daily-window__night-glint--one{left:18%;top:24%}.daily-window__night-glint--two{left:46%;top:37%}.daily-window__night-glint--three{left:72%;top:19%}.daily-window__night-glint--four{left:86%;top:46%}
+.daily-window--time-night.daily-window--weather-sunny .daily-window__night-glint,.daily-window--time-night.daily-window--weather-postSnow .daily-window__night-glint{animation:daily-window-night-glint 12s ease-in-out infinite}
+.daily-window__night-glint--two{animation-delay:-3s!important}.daily-window__night-glint--three{animation-delay:-6s!important}.daily-window__night-glint--four{animation-delay:-9s!important}
+.daily-window__sunset-glint{position:absolute;top:-12%;left:-46%;width:32%;height:122%;opacity:0;filter:blur(15rpx);transform:rotate(9deg);background:linear-gradient(90deg,transparent,rgba(255,224,166,.23),transparent)}
+.daily-window--time-sunset.daily-window--weather-sunny .daily-window__sunset-glint,.daily-window--time-sunset.daily-window--weather-afterRain .daily-window__sunset-glint{animation:daily-window-sunset-glint 14s ease-in-out infinite}
+.daily-window--weather-cloudy .daily-window__time-beam,.daily-window--weather-rain .daily-window__time-beam,.daily-window--weather-storm .daily-window__time-beam,.daily-window--weather-fog .daily-window__time-beam,.daily-window--weather-snow .daily-window__time-beam,
+.daily-window--weather-cloudy .daily-window__time-mote,.daily-window--weather-rain .daily-window__time-mote,.daily-window--weather-storm .daily-window__time-mote,.daily-window--weather-fog .daily-window__time-mote,.daily-window--weather-snow .daily-window__time-mote,
+.daily-window--weather-cloudy .daily-window__sunset-glint,.daily-window--weather-rain .daily-window__sunset-glint,.daily-window--weather-storm .daily-window__sunset-glint,.daily-window--weather-fog .daily-window__sunset-glint,.daily-window--weather-snow .daily-window__sunset-glint{display:none}
+.daily-window--weather-wind .daily-window__time-atmosphere{opacity:.72}
+.daily-window--weather-postSnow .daily-window__time-atmosphere{opacity:.7}
+.daily-window__ambient-birds{position:absolute;inset:0;opacity:1}
+.daily-window__bird{position:absolute;width:36rpx;height:18rpx;color:rgba(33,49,47,.54);pointer-events:none}
+.daily-window__bird::before,.daily-window__bird::after{position:absolute;top:5rpx;width:19rpx;height:10rpx;content:"";border-top:3rpx solid currentColor;border-radius:55% 55% 0 0}
+.daily-window__bird::before{left:0;transform:rotate(-12deg)}.daily-window__bird::after{right:0;transform:rotate(12deg)}
+.daily-window__ambient-bird{opacity:0}
+.daily-window__ambient-bird--one{--ambient-bird-scale:.72;left:11%;top:22%;transform:scale(var(--ambient-bird-scale))}.daily-window__ambient-bird--two{--ambient-bird-scale:.5;left:25%;top:31%;transform:scale(var(--ambient-bird-scale))}.daily-window__ambient-bird--three{--ambient-bird-scale:.82;left:42%;top:18%;transform:scale(var(--ambient-bird-scale))}
+.daily-window__ambient-bird--four{--ambient-bird-scale:.58;left:57%;top:36%;transform:scale(var(--ambient-bird-scale))}.daily-window__ambient-bird--five{--ambient-bird-scale:.68;left:70%;top:25%;transform:scale(var(--ambient-bird-scale))}.daily-window__ambient-bird--six{--ambient-bird-scale:.46;left:82%;top:42%;transform:scale(var(--ambient-bird-scale))}.daily-window__ambient-bird--seven{--ambient-bird-scale:.44;left:34%;top:45%;transform:scale(var(--ambient-bird-scale))}
+.daily-window--time-morning .daily-window__ambient-bird{animation:daily-window-ambient-bird 12s ease-in-out infinite}
+.daily-window--time-morning .daily-window__ambient-bird--two{animation-delay:-2s}.daily-window--time-morning .daily-window__ambient-bird--three{animation-delay:-4s}.daily-window--time-morning .daily-window__ambient-bird--four{animation-delay:-6s}.daily-window--time-morning .daily-window__ambient-bird--five{animation-delay:-8s}.daily-window--time-morning .daily-window__ambient-bird--six{animation-delay:-10s}.daily-window--time-morning .daily-window__ambient-bird--seven{animation-delay:-5s}
+.daily-window--weather-cloudy .daily-window__ambient-birds{opacity:.48}
+.daily-window--weather-rain .daily-window__ambient-birds,.daily-window--weather-storm .daily-window__ambient-birds,.daily-window--weather-fog .daily-window__ambient-birds,.daily-window--weather-snow .daily-window__ambient-birds,.daily-window--weather-postSnow .daily-window__ambient-birds{display:none}
+.daily-window__weather{z-index:2;pointer-events:none}
+.daily-window__topbar{position:absolute;z-index:8;left:24rpx;right:24rpx;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.daily-window__back,.daily-window__meta{pointer-events:auto;backdrop-filter:blur(12rpx);-webkit-backdrop-filter:blur(12rpx)}
+.daily-window__back{width:112rpx;height:112rpx;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(25,35,31,.46);box-shadow:0 8rpx 22rpx rgba(13,22,20,.14)}
+.daily-window__back:active{transform:scale(.98)}
+.daily-window__back-icon{width:19rpx;height:19rpx;margin-left:7rpx;border-left:4rpx solid #FFF;border-bottom:4rpx solid #FFF;transform:rotate(45deg)}
+.daily-window__meta{padding:14rpx 22rpx;border-radius:999rpx;background:rgba(255,253,247,.84);color:#415047;font-size:20rpx;letter-spacing:1rpx}
+.daily-window__state{position:absolute;z-index:5;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20rpx;padding:90rpx;box-sizing:border-box;background:linear-gradient(165deg,#E7ECE5,#B9CBC2);color:#536158;font-size:23rpx;line-height:1.55;text-align:center}
+.daily-window__state--error{background:linear-gradient(165deg,#EEF1EA,#CCD8D0)}
+.daily-window__state-title{color:#35443A;font-size:31rpx;font-weight:600}
+.daily-window__loader{width:50rpx;height:50rpx;border:5rpx solid rgba(255,255,255,.62);border-top-color:#667E6E;border-radius:50%;animation:daily-window-spin .8s linear infinite}
+.daily-window__retry{min-width:180rpx;height:96rpx;display:flex;align-items:center;justify-content:center;margin-top:8rpx;padding:0 28rpx;border-radius:999rpx;background:#002900;color:#FFF;font-size:22rpx}
+.daily-window__feedback-bubble{position:absolute;z-index:7;left:50%;bottom:calc(56rpx + env(safe-area-inset-bottom));max-width:calc(100vw - 80rpx);padding:18rpx 26rpx;border-radius:28rpx 28rpx 28rpx 8rpx;background:rgba(255,255,255,.80);box-shadow:0 12rpx 36rpx rgba(0,41,0,.10);color:#3D4930;font-size:25rpx;line-height:1.5;text-align:center;transform:translateX(-50%);transition:opacity var(--daily-window-feedback-duration,220ms) ease;white-space:nowrap}
+.daily-window__feedback-bubble--out{opacity:0;pointer-events:none}
+.daily-window__feedback-bubble--in{opacity:1}
+@keyframes daily-window-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes daily-window-fade-out{from{opacity:1}to{opacity:0}}
+@keyframes daily-window-spin{to{transform:rotate(360deg)}}
+@keyframes daily-window-beam-morning{0%,100%{transform:translateX(-18rpx) rotate(7deg);opacity:.08}50%{transform:translateX(22rpx) rotate(7deg);opacity:.25}}
+@keyframes daily-window-beam-midday{0%,100%{transform:translateX(-5rpx) rotate(3deg);opacity:.06}50%{transform:translateX(6rpx) rotate(3deg);opacity:.15}}
+@keyframes daily-window-beam-afternoon{0%,100%{transform:translate(-18rpx,-5rpx) rotate(10deg);opacity:.07}50%{transform:translate(26rpx,12rpx) rotate(10deg);opacity:.2}}
+@keyframes daily-window-beam-sunset{0%,100%{transform:translate(-22rpx,-5rpx) rotate(12deg);opacity:.09}50%{transform:translate(28rpx,14rpx) rotate(12deg);opacity:.26}}
+@keyframes daily-window-mote-morning{0%,100%{transform:translate(0,14rpx) scale(.72);opacity:0}34%{opacity:.32}70%{opacity:.17}86%{transform:translate(8rpx,-34rpx) scale(1);opacity:0}}
+@keyframes daily-window-mote-midday{0%,100%{transform:translate(0,0) scale(.8);opacity:.04}50%{transform:translate(4rpx,-8rpx) scale(1);opacity:.2}}
+@keyframes daily-window-mote-afternoon{0%,100%{transform:translate(-7rpx,5rpx) scale(.8);opacity:0}35%{opacity:.25}78%{transform:translate(25rpx,-17rpx) scale(1);opacity:.12}}
+@keyframes daily-window-mote-sunset{0%,100%{transform:translate(-9rpx,6rpx) scale(.8);opacity:0}38%{opacity:.32}76%{transform:translate(29rpx,-11rpx) scale(1.08);opacity:.14}}
+@keyframes daily-window-night-glint{0%,68%,100%{transform:scale(.65);opacity:0}80%{transform:scale(1.2);opacity:.42}90%{transform:scale(.9);opacity:.09}}
+@keyframes daily-window-sunset-glint{0%,72%,100%{transform:translateX(0) rotate(9deg);opacity:0}78%{opacity:.1}92%{transform:translateX(510%) rotate(9deg);opacity:.22}96%{opacity:0}}
+@keyframes daily-window-ambient-bird{0%,100%{transform:translate(-12rpx,4rpx) scale(var(--ambient-bird-scale));opacity:.04}28%{opacity:.28}62%{transform:translate(22rpx,-8rpx) scale(var(--ambient-bird-scale));opacity:.2}82%{opacity:.04}}
+.daily-window--reduced .daily-window__time-beam,.daily-window--reduced .daily-window__time-mote,.daily-window--reduced .daily-window__night-glint,.daily-window--reduced .daily-window__sunset-glint,.daily-window--reduced .daily-window__ambient-bird{animation:none}
+.daily-window--reduced.daily-window--time-morning .daily-window__ambient-bird{opacity:.15}
+@media (prefers-reduced-motion:reduce){.daily-window__loader,.daily-window__time-beam,.daily-window__time-mote,.daily-window__night-glint,.daily-window__sunset-glint,.daily-window__ambient-bird{animation:none}.daily-window--time-morning .daily-window__ambient-bird{opacity:.15}.daily-window--entering,.daily-window--exiting{animation-duration:20ms}.daily-window__feedback-bubble{transition-duration:20ms}}

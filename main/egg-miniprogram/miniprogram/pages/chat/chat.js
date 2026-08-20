@@ -11,23 +11,63 @@ const STATE_SPEAKING = 'speaking';
 // 两条消息间隔超过该阈值才显示居中时间分隔条
 const TIME_GAP_MS = 5 * 60 * 1000;
 
+// 连接状态文案（导航栏下方胶囊，仅非连接态显示）
+const CONN_LABELS = {
+  connected: '已连接',
+  connecting: '连接中',
+  disconnected: '未连接',
+};
+
+// 当前窗口高度（px），失败时返回 0
+function windowHeight() {
+  try {
+    const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const height = Number(info && info.windowHeight);
+    return Number.isFinite(height) && height > 0 ? Math.round(height) : 0;
+  } catch (error) {
+    return 0;
+  }
+}
+
+// 页面根节点内联高度：窗口高减去键盘高，键盘弹出时压缩页面而非被顶起
+function viewportStyle(windowHeightValue, keyboardHeight) {
+  const availableHeight = Math.round(Number(windowHeightValue) || 0) - Math.max(0, Math.round(Number(keyboardHeight) || 0));
+  return availableHeight > 0 ? `height:${availableHeight}px;` : '';
+}
+
+// 系统「减弱动画」开关
+function reducedMotionEnabled() {
+  try {
+    const system = wx.getSystemSetting
+      ? wx.getSystemSetting()
+      : (wx.getSystemInfoSync ? wx.getSystemInfoSync() : {});
+    return Boolean(system.reducedMotion || system.enableReduceMotion);
+  } catch (error) {
+    return false;
+  }
+}
+
 Page({
   data: {
     pet: null,
-    card: null,
+    title: '和蛋宝宝说说话',
     dailyStatus: null,
     messages: [],
     draft: '',
+    canSend: false,
     booting: true,
-    avatarUrl: '',
     connectionState: 'disconnected',
+    connLabel: CONN_LABELS.disconnected,
     chatState: STATE_IDLE,
     scrollAnchor: '',
     scrollTop: 0,
     scrollWithAnimation: true,
     historyLoading: false,
     historyNoMore: false,
-    scrollViewHeight: 0,
+    chatViewportStyle: '',
+    keyboardHeight: 0,
+    inputFocused: false,
+    reducedMotion: false,
   },
 
   _msgIdSeed: 1,
@@ -63,8 +103,7 @@ Page({
 
     this.setData({
       pet,
-      card: (pet.collectionCards && pet.collectionCards[0]) || null,
-      avatarUrl: pet.avatarUrl || '',
+      title: `和${pet.name || '蛋宝宝'}说说话`,
       dailyStatus: petStore.getDailyStatus(),
     });
 
@@ -73,10 +112,22 @@ Page({
     this._initWebSocketManager();
     this._otaAndConnect();
 
-    setTimeout(() => this._calcScrollViewHeight(), 100);
+    // 键盘适配基准：记录未弹键盘时的窗口高度，配合 chatViewportStyle 压缩页面
+    this.chatWindowHeight = windowHeight();
+    this.updateChatViewport(0);
+    this.windowResizeHandler = (event) => {
+      const resizedHeight = Number(event && event.size && event.size.windowHeight);
+      if (!Number.isFinite(resizedHeight) || resizedHeight <= 0) return;
+      // 输入框聚焦时，部分机型会先回报「键盘缩小后的窗口」，不能当作新基准，否则会双重缩短页面
+      if (this.data.inputFocused || this.data.keyboardHeight) return;
+      this.chatWindowHeight = Math.round(resizedHeight);
+      this.updateChatViewport();
+    };
+    if (wx.onWindowResize) wx.onWindowResize(this.windowResizeHandler);
   },
 
   onShow() {
+    this.setData({ reducedMotion: reducedMotionEnabled() });
     if (this.audioManager && this.data.connectionState === 'connected') {
       this.audioManager.resetAudioContext();
     }
@@ -113,6 +164,10 @@ Page({
       clearTimeout(this._flushTimer);
       this._flushTimer = null;
     }
+    if (wx.offWindowResize && this.windowResizeHandler) {
+      wx.offWindowResize(this.windowResizeHandler);
+      this.windowResizeHandler = null;
+    }
   },
 
   // -------------------------------------------------------------------------
@@ -137,7 +192,7 @@ Page({
   _initWebSocketManager() {
     this.wsManager = new WebSocketManager({
       onStateChange: (state) => {
-        this.setData({ connectionState: state });
+        this.setData({ connectionState: state, connLabel: CONN_LABELS[state] || state });
         if (state === 'disconnected' && this.data.chatState !== STATE_IDLE) {
           this.setData({ chatState: STATE_IDLE });
           try {
@@ -178,19 +233,43 @@ Page({
     this._loadHistoryMessages(this._historyPage + 1, false);
   },
 
-  _calcScrollViewHeight() {
-    const query = wx.createSelectorQuery().in(this);
-    query.select('.mood-bar').boundingClientRect();
-    query.select('.composer').boundingClientRect();
-    query.select('.navbar-root').boundingClientRect();
-    query.exec((res) => {
-      const windowHeight = wx.getWindowInfo().windowHeight;
-      const moodBarHeight = (res[0] && res[0].height) || 0;
-      const composerHeight = (res[1] && res[1].height) || 0;
-      const navBarHeight = (res[2] && res[2].height) || 0;
-      const scrollViewHeight = windowHeight - navBarHeight - moodBarHeight - composerHeight;
-      const finalHeight = scrollViewHeight > 0 ? scrollViewHeight : windowHeight * 0.6;
-      this.setData({ scrollViewHeight: finalHeight });
+  // 键盘弹出时用「窗口高 - 键盘高」压缩页面根节点，输入栏随之上移且消息区不被遮挡
+  updateChatViewport(keyboardHeight, afterUpdate) {
+    const currentWindowHeight = this.chatWindowHeight || windowHeight();
+    if (!this.chatWindowHeight && currentWindowHeight) this.chatWindowHeight = currentWindowHeight;
+    const nextKeyboardHeight = keyboardHeight === undefined ? this.data.keyboardHeight : keyboardHeight;
+    this.setData({
+      keyboardHeight: Math.max(0, Number(nextKeyboardHeight) || 0),
+      chatViewportStyle: viewportStyle(currentWindowHeight, nextKeyboardHeight),
+    }, afterUpdate);
+  },
+
+  resetChatViewport() {
+    this.updateChatViewport(0);
+  },
+
+  onInputFocus() {
+    this.setData({ inputFocused: true });
+  },
+
+  onInputBlur() {
+    this.setData({ inputFocused: false }, () => {
+      // 键盘仍在收起动画时等待高度回调，避免页面先于键盘突然拉伸
+      if (!this.data.keyboardHeight) this.resetChatViewport();
+    });
+  },
+
+  onKeyboardHeightChange(event) {
+    const keyboardHeight = Math.max(0, Number(event && event.detail && event.detail.height) || 0);
+    const openingKeyboard = keyboardHeight > 0 && !this.data.keyboardHeight;
+    if (!keyboardHeight) {
+      const measuredHeight = windowHeight();
+      // 某些机型先回报高度 0，再恢复完整窗口；不得用尚未恢复的小窗口覆盖基准
+      if (measuredHeight >= (this.chatWindowHeight || 0)) this.chatWindowHeight = measuredHeight;
+    }
+    this.updateChatViewport(keyboardHeight, () => {
+      // 键盘首次出现时滚到对话末尾；收起键盘时不动用户正在阅读的历史位置
+      if (openingKeyboard) this._scrollToBottom();
     });
   },
 
@@ -596,7 +675,8 @@ Page({
   // -------------------------------------------------------------------------
 
   onInput(e) {
-    this.setData({ draft: e.detail.value });
+    const draft = e.detail.value;
+    this.setData({ draft, canSend: Boolean(draft.trim()) });
   },
 
   onSend() {
@@ -605,7 +685,7 @@ Page({
 
     if (this.data.connectionState !== 'connected') {
       this._pendingText = text;
-      this.setData({ draft: '', chatState: STATE_THINKING }, () => {
+      this.setData({ draft: '', canSend: false, chatState: STATE_THINKING }, () => {
         this._scrollToBottom();
       });
       if (this.data.connectionState === 'disconnected') {
@@ -622,7 +702,7 @@ Page({
       return;
     }
 
-    this.setData({ draft: '', chatState: STATE_THINKING }, () => {
+    this.setData({ draft: '', canSend: false, chatState: STATE_THINKING }, () => {
       this._scrollToBottom();
     });
   },

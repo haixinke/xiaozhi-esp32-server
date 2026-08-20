@@ -10,7 +10,8 @@ spring:
     druid:
       #OceanBase (MySQL 兼容模式)
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true
+      # socketTimeout/connectTimeout 让失效连接快速失败，避免 OBProxy 静默关闭后写入挂起 10s
+      url: jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true&socketTimeout=5000&connectTimeout=5000
       username: root
       password: 123456
       initial-size: 10
@@ -22,7 +23,12 @@ spring:
       time-between-eviction-runs-millis: 60000
       min-evictable-idle-time-millis: 300000
       test-while-idle: true
-      test-on-borrow: false
+      # OceanBase OBProxy 会静默关闭空闲服务端连接，borrow 时校验 + 主动保活，防止给业务发放半开连接
+      test-on-borrow: true
+      validation-query: SELECT 1
+      validation-query-timeout: 2
+      keep-alive: true
+      keep-alive-between-time-millis: 90000
       test-on-return: false
       stat-view-servlet:
         enabled: false

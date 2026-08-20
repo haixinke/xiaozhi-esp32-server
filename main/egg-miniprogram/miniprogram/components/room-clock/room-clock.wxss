@@ -1,0 +1,19 @@
+/* 房间时钟：移植自 eggbabe-miniprogram 静态项目 home 页 room-clock 样式 */
+.room-clock { position: relative; width: 176rpx; height: 116rpx; display: flex; align-items: center; justify-content: flex-start; box-sizing: border-box; transform-origin: 50% 50%; transition: transform .16s ease; pointer-events: auto; }
+.room-clock:active { transform: scale(.98); }
+.clock-face { position: relative; width: 112rpx; height: 112rpx; box-sizing: border-box; border: 5rpx solid rgba(107,86,59,.72); border-radius: 50%; background: rgba(250,246,231,.93); box-shadow: 0 9rpx 22rpx rgba(43,32,21,.18), inset 0 0 0 3rpx rgba(255,255,255,.66); color: #5A513F; }
+.clock-number { position: absolute; color: rgba(82,73,56,.75); font-size: 20rpx; font-weight: 600; line-height: 1; }
+.clock-number--twelve { top: 8rpx; left: 50%; transform: translateX(-50%); }
+.clock-number--three { top: 50%; right: 8rpx; transform: translateY(-50%); }
+.clock-number--six { bottom: 7rpx; left: 50%; transform: translateX(-50%); }
+.clock-number--nine { top: 50%; left: 8rpx; transform: translateY(-50%); }
+/* 指针以表盘中心为旋转原点，角度由 device-clock.snapshot 按秒连续计算 */
+.clock-hand { position: absolute; z-index: 2; left: 50%; bottom: 50%; border-radius: 999rpx; transform-origin: 50% 100%; }
+.clock-hand--hour { width: 5rpx; height: 27rpx; margin-left: -2.5rpx; background: #4D493D; }
+.clock-hand--minute { width: 4rpx; height: 36rpx; margin-left: -2rpx; background: #4D493D; }
+.clock-hand--second { width: 2rpx; height: 39rpx; margin-left: -1rpx; background: #819A54; }
+.clock-pin { position: absolute; z-index: 3; left: 50%; top: 50%; width: 9rpx; height: 9rpx; margin: -4.5rpx 0 0 -4.5rpx; border-radius: 50%; background: #819A54; box-shadow: 0 0 0 2rpx rgba(255,255,255,.85); }
+.clock-digital { width: 176rpx; height: 92rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; border: 2rpx solid rgba(107,86,59,.42); border-radius: 22rpx; background: rgba(250,246,231,.93); box-shadow: 0 9rpx 22rpx rgba(43,32,21,.16), inset 0 0 0 2rpx rgba(255,255,255,.55); color: #4D493D; }
+.clock-time { font-size: 34rpx; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: 1rpx; }
+.clock-date { margin-top: 7rpx; color: rgba(82,73,56,.72); font-size: 20rpx; line-height: 1; }
+@media (prefers-reduced-motion: reduce) { .room-clock { transition: none; } }

@@ -14,19 +14,19 @@ import java.time.ZonedDateTime;
 public class StoryPeriodResolver {
     public StoryPeriodContext resolve(ZonedDateTime time) {
         int hour = time.getHour();
-        // 00:00~05:59 深夜，配黑夜图
-        if (hour < 6) {
+        // 19:00~06:59 深夜（跨零点），配黑夜图
+        if (hour >= 19 || hour < 7) {
             return new StoryPeriodContext(StoryWeightPeriod.NIGHT, StoryImageTimeOfDay.NIGHT);
         }
-        // 06:00~11:59 上午，配白天图
+        // 07:00~11:59 上午，配白天图
         if (hour < 12) {
             return new StoryPeriodContext(StoryWeightPeriod.MORNING, StoryImageTimeOfDay.DAY);
         }
-        // 12:00~17:59 下午，配白天图
-        if (hour < 18) {
+        // 12:00~16:59 下午，配白天图
+        if (hour < 17) {
             return new StoryPeriodContext(StoryWeightPeriod.AFTERNOON, StoryImageTimeOfDay.DAY);
         }
-        // 18:00~23:59 傍晚，配落日图
+        // 17:00~18:59 傍晚，配落日图
         return new StoryPeriodContext(StoryWeightPeriod.EVENING, StoryImageTimeOfDay.SUNSET);
     }
 }

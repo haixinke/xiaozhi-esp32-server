@@ -87,11 +87,20 @@ async def startToChat(conn: "ConnectionHandler", text):
         checked_user_content,
         safety_context,
     )
+    # turn 级危机上下文：命中危机标签的输入放行给 LLM 共情回复（提示词含危机干预指令），
+    # 出口兜底据此分级。每轮处理开头先复位
+    conn.crisis_context = False
     if input_result.blocked:
         conn.client_abort = False
         conn.sentence_id = uuid.uuid4().hex
         speak_trusted_text(conn, conn.content_safety_gate.input_block_message())
         return
+    if input_result.crisis:
+        conn.crisis_context = True
+        # 危机事件只记标识便于运营跟进，不落聊天内容与风险标签
+        conn.logger.bind(tag=TAG).warning(
+            f"检测到危机内容放行LLM: device_id={conn.headers.get('device-id')}"
+        )
 
     # 只在放行后消耗说话人的首次轮次；阻断内容从未到达模型，不应改变后续负载。
     if speaker_name is not None:

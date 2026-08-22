@@ -10,18 +10,18 @@
     mode="aspectFill"
   ></image>
   <image
-    wx:if="{{environment.fullSceneImage && !fullSceneImageFailed}}"
+    wx:if="{{localFullSceneImage && !fullSceneImageFailed}}"
     class="incubation-full-scene-image {{sceneCrossfadeActive ? 'incubation-full-scene-image--revealing' : ''}}"
-    src="{{environment.fullSceneImage}}"
+    src="{{localFullSceneImage}}"
     mode="aspectFill"
     bindload="onFullSceneImageLoad"
     binderror="onFullSceneImageError"
   ></image>
 
   <image
-    wx:if="{{environment.nestImage && !fullSceneImageFailed}}"
+    wx:if="{{localNestImage && !fullSceneImageFailed}}"
     class="incubation-nest-image"
-    src="{{environment.nestImage}}"
+    src="{{localNestImage}}"
     mode="aspectFit"
     data-asset="窝垫"
     binderror="onIncubationAssetError"
@@ -99,7 +99,7 @@
   </view>
 
   <view wx:if="{{!fullSceneImageFailed}}" class="egg egg-shell {{eggCuddling ? 'egg--warming' : ''}} {{eggWobbling ? 'egg--wobble' : ''}}" aria-role="button" aria-label="轻触蛋宝宝" catchtap="onEggTap" bindlongpress="onEggCuddle">
-    <image class="egg-shell-preview egg-shell-preview--base" src="{{eggArtUrl || environment.eggImage}}" mode="aspectFit" data-layer="base"></image>
+    <image class="egg-shell-preview egg-shell-preview--base" src="{{localEggArt || localEggImage}}" mode="aspectFit" data-layer="base"></image>
     <image
       class="egg-shell-depth"
       src="{{depthOverlay}}"

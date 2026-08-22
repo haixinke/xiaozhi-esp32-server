@@ -87,11 +87,60 @@ componentConfig.methods.onSceneLoadTimeout.call(loadedInstance);
 assert.strictEqual(loadedInstance.data.fullSceneImageFailed, false, 'previous loaded image stays as fallback, no error page');
 clearTimeout(loadedInstance.sceneLoadTimer);
 
+// downloadFile 通道：成功落地本地路径、会话内缓存复用、失败分级、乱序防护
+function makeInstance(environment) {
+  return {
+    data: { ...componentConfig.data },
+    properties: { environment: environment || null, eggArtUrl: '', lampOn: false },
+    setData(changes) { this.data = { ...this.data, ...changes }; },
+    triggerEvent(name, detail) { events.push({ name, detail }); },
+    ...componentConfig.methods
+  };
+}
+const deferredDownloads = {};
+const downloadCalls = [];
+global.wx = {
+  downloadFile(opts) {
+    downloadCalls.push(opts.url);
+    if (opts.url.includes('deferred')) {
+      deferredDownloads[opts.url] = opts;
+      return;
+    }
+    if (opts.url.includes('fail')) {
+      opts.fail({ errMsg: 'mock fail' });
+      return;
+    }
+    opts.success({ statusCode: 200, tempFilePath: 'wxfile://tmp/' + opts.url.split('/').pop() });
+  }
+};
+const remoteInstance = makeInstance(null);
+remoteInstance.loadRemoteImage('https://oss.example/bg.webp', 'localFullSceneImage');
+assert.strictEqual(remoteInstance.data.localFullSceneImage, 'wxfile://tmp/bg.webp', 'downloadFile success feeds the local temp path');
+remoteInstance.loadRemoteImage('https://oss.example/bg.webp', 'localFullSceneImage');
+assert.strictEqual(downloadCalls.filter(u => u === 'https://oss.example/bg.webp').length, 1, 'second load of same URL hits the session cache');
+// 失败分级：整幅背景进错误态，辅助素材静默
+remoteInstance.loadRemoteImage('https://oss.example/fail_bg.webp', 'localFullSceneImage');
+assert.strictEqual(remoteInstance.data.fullSceneImageFailed, true, 'full scene download failure enters the error state');
+const quietInstance = makeInstance(null);
+quietInstance.loadRemoteImage('https://oss.example/fail_nest.webp', 'localNestImage');
+assert.strictEqual(quietInstance.data.fullSceneImageFailed, false, 'aux asset failure stays silent');
+// 乱序防护：旧 URL 的迟到回调不得覆盖槽位
+const raceInstance = makeInstance(null);
+raceInstance.loadRemoteImage('https://oss.example/deferred_a.webp', 'localFullSceneImage');
+raceInstance.loadRemoteImage('https://oss.example/deferred_b.webp', 'localFullSceneImage');
+deferredDownloads['https://oss.example/deferred_a.webp'].success({ statusCode: 200, tempFilePath: 'wxfile://tmp/a.webp' });
+assert.strictEqual(raceInstance.data.localFullSceneImage, '', 'stale callback for the old URL is discarded');
+deferredDownloads['https://oss.example/deferred_b.webp'].success({ statusCode: 200, tempFilePath: 'wxfile://tmp/b.webp' });
+assert.strictEqual(raceInstance.data.localFullSceneImage, 'wxfile://tmp/b.webp', 'latest URL callback wins');
+delete global.wx;
+
 // wxml 蛋元素绑定 wobble 类
 const fs = require('fs');
 const sceneWxml = fs.readFileSync(path.join(__dirname, 'incubation-scene.wxml'), 'utf8');
 assert.ok(sceneWxml.includes("eggWobbling ? 'egg--wobble' : ''"), 'egg element binds the egg--wobble class');
-assert.ok(sceneWxml.includes('src="{{eggArtUrl || environment.eggImage}}"'), 'committed artwork replaces the environment egg image');
+assert.ok(sceneWxml.includes('src="{{localEggArt || localEggImage}}"'), 'egg binds the downloaded local artwork over the local egg image');
+assert.ok(sceneWxml.includes('src="{{localFullSceneImage}}"'), 'full scene image binds the downloaded local path');
+assert.ok(sceneWxml.includes('src="{{localNestImage}}"'), 'nest image binds the downloaded local path');
 assert.ok(!sceneWxml.includes('wx:if="{{eggArtUrl}}"'), 'scene does not render a second full egg image on top of the base egg');
 const sceneWxss = fs.readFileSync(path.join(__dirname, 'incubation-scene.wxss'), 'utf8');
 assert.ok(sceneWxss.includes('@keyframes wobble'), 'wobble keyframes defined');

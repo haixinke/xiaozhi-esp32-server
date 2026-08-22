@@ -8,6 +8,7 @@ const incubationEnv = require('../../utils/incubation-environment');
 const envState = require('../../utils/environment-state');
 const doodleApi = require('../../utils/doodle-api');
 const storyApi = require('../../utils/story-api');
+const remoteImage = require('../../utils/remote-image');
 const { INTERACTION_ICONS, SCENE_OPTIONS } = require('../../config/pre-hatch-assets');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
@@ -483,6 +484,7 @@ Page({
       this.clearStoryCaptionToast();
       this.lastStoryCaption = '';
       this.storyCaptionPool = [];
+      this._pendingStoryImage = '';
       if (this.data.storyImageUrl || this.data.storyTagImageUrl || this.data.storyWindowAvailable || this.data.storyAtHome) {
         this.setData({
           storyImageUrl: '',
@@ -521,13 +523,14 @@ Page({
           && state.smallSceneName === STORY_WINDOW_SMALL_SCENE
           && tagImageUrl);
         this.setData({
-          storyImageUrl: imageUrl,
           storyTagImageUrl: tagImageUrl,
           storyWindowAvailable: windowAvailable,
           storyWindowVisible: windowAvailable ? this.data.storyWindowVisible : false,
           // 聊天入口仅"在家"大场景显示；轮询失败静默保留旧值
           storyAtHome: !!(state && state.bigSceneName === STORY_WINDOW_BIG_SCENE)
         });
+        // 故事背景走共享 downloadFile 通道：绕开 <image> 内置加载器挂起问题；成功才换图，失败保留旧背景
+        this.resolveStoryBackground(petId, imageUrl);
         // caption 整串变化（含首次进入）时重建轮换池并立即随机抽一条；
         // 10 分钟轮询到相同整串不重置池，分钟轮换继续
         const caption = state && typeof state.caption === 'string' ? state.caption.trim() : '';
@@ -549,6 +552,23 @@ Page({
         }
       })
       .catch(() => {});
+  },
+
+  // 故事背景远程图下载：成功才替换 storyImageUrl，失败/宠物切换/过期结果静默保留旧背景
+  resolveStoryBackground(petId, imageUrl) {
+    this._pendingStoryImage = imageUrl;
+    if (!imageUrl) {
+      this.setData({ storyImageUrl: '' });
+      return;
+    }
+    remoteImage.loadRemoteImage(imageUrl, (localPath) => {
+      const currentPet = this.data.pet;
+      if (!currentPet || String(currentPet.id) !== petId || this.data.stage !== 'hatched') return;
+      if (this._pendingStoryImage !== imageUrl) return;
+      // 下载失败保留旧背景，与轮询失败的静默策略一致
+      if (!localPath) return;
+      this.setData({ storyImageUrl: localPath });
+    });
   },
 
   // caption 轮换：从池中随机抽一条弹 toast；多条时避免与上一条连续重复，单条重复弹

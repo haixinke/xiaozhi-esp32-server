@@ -13,6 +13,7 @@ import knowledgeBase from './module/knowledgeBase.js'
 import correctWord from './module/correctWord.js'
 import addressBook from './module/addressBook.js'
 import storyEngine from './module/storyEngine.js'
+import feedback from './module/feedback.js'
 
 
 
@@ -47,5 +48,6 @@ export default {
     knowledgeBase,
     correctWord,
     addressBook,
-    storyEngine
+    storyEngine,
+    feedback
   }

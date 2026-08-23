@@ -78,6 +78,7 @@ Page({
   onNavCodes() { wx.navigateTo({ url: '/pages/invite-codes/invite-codes' }); },
   onNavSettings() { wx.navigateTo({ url: '/pages/settings/settings' }); },
   onNavChatSettings() { wx.navigateTo({ url: '/pages/chat-settings/chat-settings' }); },
+  onNavFeedback() { wx.navigateTo({ url: '/pages/feedback/feedback' }); },
   onNavAccount() { wx.navigateTo({ url: '/pages/account/account' }); },
   onNavPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); },
   onNavHelp() { wx.navigateTo({ url: '/pages/help/help' }); },

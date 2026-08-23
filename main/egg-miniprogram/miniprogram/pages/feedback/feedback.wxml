@@ -1,0 +1,46 @@
+<view class="page">
+  <nav-bar title="用户反馈" fallback-url="/pages/my/my"></nav-bar>
+  <scroll-view scroll-y class="content">
+    <view wx:if="{{receiptNumber}}" class="success">
+      <text class="success__title">反馈已提交</text>
+      <text class="success__receipt">受理编号：{{receiptNumber}}</text>
+    </view>
+
+    <text class="label">诉求类型</text>
+    <view
+      class="picker-field {{type ? '' : 'picker-field--placeholder'}} {{typePanelOpen ? 'picker-field--open' : ''}}"
+      bindtap="onToggleTypePanel"
+    >
+      <text class="picker-field__label">{{typeOptions[typeIndex].label}}</text>
+      <text class="picker-field__chevron">{{typePanelOpen ? '⌃' : '⌄'}}</text>
+    </view>
+    <view wx:if="{{typePanelOpen}}" class="type-options">
+      <block wx:for="{{typeOptions}}" wx:key="value">
+        <view
+          wx:if="{{index > 0}}"
+          class="type-option {{typeIndex === index ? 'type-option--selected' : ''}}"
+          data-index="{{index}}"
+          bindtap="onSelectType"
+        >
+          <text class="type-option__label">{{item.label}}</text>
+          <text wx:if="{{typeIndex === index}}" class="type-option__check">✓</text>
+        </view>
+      </block>
+    </view>
+
+    <text class="label">问题详细描述</text>
+    <view class="description-wrap">
+      <textarea class="description" value="{{description}}" maxlength="500" disabled="{{submitting}}" placeholder="请清晰说明发生时间、对话内容和遇到的问题。
+请勿填写银行卡号、身份证号、密码或验证码等隐私信息。" bindinput="onDescriptionInput"></textarea>
+      <text class="count">{{description.length}}/500</text>
+    </view>
+
+    <view class="consent" bindtap="onToggleConsent">
+      <view class="checkbox {{consent ? 'checkbox--checked' : ''}}">{{consent ? '✓' : ''}}</view>
+      <text class="consent-copy">我已阅读<text class="policy-link" catchtap="onPrivacy">《隐私政策》</text>，同意平台仅为受理和处理本次反馈收集、使用上述信息。</text>
+    </view>
+
+    <text wx:if="{{submitError}}" class="submit-error">{{submitError}}</text>
+    <view class="submit {{canSubmit ? '' : 'submit--disabled'}}" bindtap="onSubmit">{{submitting ? '提交中' : '提交'}}</view>
+  </scroll-view>
+</view>

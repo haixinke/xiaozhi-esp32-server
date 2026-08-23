@@ -18,7 +18,8 @@
     "pages/help/help",
     "pages/deregister/deregister",
     "pages/privacy/privacy",
-    "pages/chat-settings/chat-settings"
+    "pages/chat-settings/chat-settings",
+    "pages/feedback/feedback"
   ],
   "tabBar": {
     "custom": true,

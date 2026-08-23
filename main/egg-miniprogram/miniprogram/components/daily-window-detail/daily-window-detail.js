@@ -1,4 +1,5 @@
 const weatherCanvas = require('../../utils/window-weather-canvas');
+const remoteImage = require('../../utils/remote-image');
 
 const FEEDBACK_MESSAGES = [
   '我陪你一起看窗外',
@@ -119,13 +120,29 @@ Component({
       const source = String(image || '');
       this.stopAnimation();
       this.setData({
-        displayImage: source,
+        displayImage: '',
         loading: Boolean(source),
         empty: false,
         failed: false
       }, () => {
-        if (wx.nextTick) wx.nextTick(() => this.setupCanvas());
+        if (typeof wx !== 'undefined' && wx.nextTick) wx.nextTick(() => this.setupCanvas());
         else setTimeout(() => this.setupCanvas(), 0);
+      });
+      this.resolveWindowImage(source);
+    },
+
+    // 窗景远程图经共享 downloadFile 通道落本地再喂 <image>，组件只保留乱序防护
+    resolveWindowImage(source) {
+      if (!source) return;
+      this._pendingWindowImage = source;
+      remoteImage.loadRemoteImage(source, (localPath) => {
+        // 乱序防护：已有更新的请求在飞则丢弃迟到回调
+        if (this._pendingWindowImage !== source) return;
+        if (localPath) {
+          this.setData({ displayImage: localPath });
+          return;
+        }
+        this.onImageError();
       });
     },
 
@@ -149,8 +166,10 @@ Component({
       }
       this.setData({ displayImage: '', loading: true, empty: false, failed: false }, () => {
         if (!this.properties.visible) return;
-        this.setData({ displayImage: source }, () => this.setupCanvas());
+        this.setupCanvas();
       });
+      // 重试走同一条 downloadFile 通道重新拉取
+      this.resolveWindowImage(source);
     },
 
     setupCanvas() {

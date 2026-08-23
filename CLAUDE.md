@@ -192,3 +192,4 @@ Issues 跟踪在 GitHub Issues（origin: haixinke/xiaozhi-esp32-server），用 
 ### Domain docs
 
 单上下文布局：根 `CONTEXT.md` + `docs/adr/`（按需懒创建）。See `docs/agents/domain.md`.
+

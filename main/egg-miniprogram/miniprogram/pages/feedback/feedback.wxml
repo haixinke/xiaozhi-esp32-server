@@ -1,6 +1,6 @@
 <view class="page">
   <nav-bar title="用户反馈" fallback-url="/pages/my/my"></nav-bar>
-  <scroll-view scroll-y class="content">
+  <view class="content">
     <view wx:if="{{receiptNumber}}" class="success">
       <text class="success__title">反馈已提交</text>
       <text class="success__receipt">受理编号：{{receiptNumber}}</text>
@@ -42,5 +42,5 @@
 
     <text wx:if="{{submitError}}" class="submit-error">{{submitError}}</text>
     <view class="submit {{canSubmit ? '' : 'submit--disabled'}}" bindtap="onSubmit">{{submitting ? '提交中' : '提交'}}</view>
-  </scroll-view>
+  </view>
 </view>

@@ -17,6 +17,9 @@
       <text class="history-loader-text">加载中...</text>
     </view>
 
+    <!-- AI 内容标识（合规要求），位于消息列表顶部、「已显示全部对话」上方，样式参考静态项目 ai-content-timeline-label -->
+    <view class="ai-content-label" wx:if="{{!historyLoading}}">AI 虚拟宠物 · 内容由 AI 生成</view>
+
     <view class="tip" wx:if="{{!historyLoading}}">{{historyNoMore ? '已显示全部对话' : '上滑查看更多 · 仅保留最近几个月的记录'}}</view>
 
     <view wx:for="{{messages}}" wx:key="id" id="msg-{{item.id}}">

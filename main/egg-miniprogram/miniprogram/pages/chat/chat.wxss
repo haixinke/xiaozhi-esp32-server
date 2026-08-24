@@ -6,6 +6,12 @@
 
 .chat-header { flex: none; min-height: 0; background: rgba(255, 255, 255, 0.9); }
 
+/* AI 内容标识：对齐静态项目 ai-content-timeline-label，位于消息列表顶部 */
+.ai-content-label {
+  padding: 12rpx 0 4rpx;
+  color: rgba(92, 92, 92, 0.48); font-size: 18rpx; line-height: 1.45; text-align: center;
+}
+
 /* 心情状态条 */
 .mood-bar {
   flex: none;

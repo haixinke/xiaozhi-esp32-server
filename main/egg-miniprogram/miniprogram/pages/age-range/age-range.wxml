@@ -23,6 +23,6 @@
     <text wx:if="{{saveError}}" class="save-error" aria-live="polite">{{saveError}}</text>
     <view class="confirm {{!selected || saving || leaving ? 'confirm--disabled' : ''}}" aria-role="button" aria-disabled="{{!selected || saving || leaving}}" bindtap="onConfirm">{{saving ? '保存中' : (leaving ? '已保存' : '确定')}}</view>
     <text class="boundary-note">60 周岁请选择“36-60 周岁”；“60 周岁以上”从 61 周岁起算。</text>
-    <text class="boundary-note">年龄区间由你自行选择，仅用于年龄分组。我们不采集完整生日、身份证、监护人手机号，也不进行短信或监护关系验证。</text>
+    <text class="boundary-note">年龄区间由你自行选择，仅用于年龄分组。</text>
   </scroll-view>
 </view>

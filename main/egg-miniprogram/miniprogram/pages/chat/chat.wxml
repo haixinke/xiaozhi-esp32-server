@@ -25,13 +25,14 @@
     <view wx:for="{{messages}}" wx:key="id" id="msg-{{item.id}}">
       <!-- 时间分隔条：首条 / 间隔≥5分钟 / 跨天 -->
       <view wx:if="{{item.showTime}}" class="time-sep"><text class="time-sep-text" user-select="none">{{item.timeLabel}}</text></view>
-      <!-- 用户气泡（右） -->
+      <!-- 用户气泡（右），长按可复制 -->
       <view wx:if="{{item.role === 'user'}}" class="row row--user">
-        <view class="bubble bubble--user">{{item.content}}</view>
+        <view class="bubble bubble--user" data-message-id="{{item.id}}" bindlongpress="onMessageLongPress">{{item.content}}</view>
       </view>
-      <!-- 蛋宝宝气泡（左，无头像） -->
+      <!-- 蛋宝宝气泡（左，无头像），长按可复制 -->
       <view wx:else class="row row--egg">
-        <view class="bubble bubble--egg {{item.typing ? 'bubble--typing' : ''}} {{chatState === 'speaking' && index === messages.length - 1 ? 'bubble--speaking' : ''}}">
+        <view class="bubble bubble--egg {{item.typing ? 'bubble--typing' : ''}} {{chatState === 'speaking' && index === messages.length - 1 ? 'bubble--speaking' : ''}}"
+              data-message-id="{{item.id}}" bindlongpress="onMessageLongPress">
           <text>{{item.content}}</text>
           <view wx:if="{{chatState === 'speaking' && index === messages.length - 1 && !item.typing}}" class="speaking-indicator">
             <view class="speaking-bar"></view>

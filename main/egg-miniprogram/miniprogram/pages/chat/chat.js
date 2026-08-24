@@ -744,5 +744,24 @@ Page({
     });
   },
 
+  /**
+   * 长按消息气泡复制单条消息（交互照搬蛋宝宝UI静态项目）。
+   * 打字中的 AI 消息与空内容消息不可复制，避免复制到半截文本；
+   * 复制内容为消息原文，不加署名；成功反馈依赖 wx.setClipboardData 系统提示。
+   */
+  onMessageLongPress(e) {
+    const messageId = e.currentTarget.dataset.messageId;
+    const target = this.data.messages.find((m) => m.id === messageId);
+    if (!target || target.typing || !target.content) return;
+
+    wx.showActionSheet({
+      itemList: ['复制'],
+      success: (res) => {
+        if (res.tapIndex !== 0) return;
+        wx.setClipboardData({ data: target.content });
+      },
+    });
+  },
+
   noop() {},
 });

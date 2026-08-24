@@ -292,6 +292,17 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         baseDao.update(null, wrapper);
     }
 
+    @Override
+    public String getAgeRange(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        // 只读查询，不抛"非微信账号"异常：调用方（依赖提醒等）只需 null 表示未设置
+        WechatUserEntity entity = baseDao.selectOne(
+                new QueryWrapper<WechatUserEntity>().eq("user_id", userId));
+        return entity == null ? null : entity.getAgeRange();
+    }
+
     private static final long MAX_AVATAR_SIZE = 2 * 1024 * 1024;
     private static final Set<String> ALLOWED_AVATAR_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp");

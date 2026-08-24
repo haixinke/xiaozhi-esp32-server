@@ -43,7 +43,18 @@
   </update>
 
   <delete id="deleteHistoryByAgentId">
-    DELETE FROM ai_agent_chat_history 
+    DELETE FROM ai_agent_chat_history
     WHERE agent_id = #{agentId}
   </delete>
+
+  <!-- 统计用户当日发送的用户消息数（chat_type=1）：通过 ai_device.mac_address 关联用户，
+       同一用户多台设备合并计数；日界由 Java 侧按 Asia/Shanghai 计算后传入 startAt，避免依赖 DB 时区 -->
+  <select id="countTodayUserMessages" resultType="long">
+    SELECT COUNT(1)
+    FROM ai_agent_chat_history h
+    INNER JOIN ai_device d ON h.mac_address = d.mac_address
+    WHERE d.user_id = #{userId}
+      AND h.chat_type = 1
+      AND h.created_at &gt;= #{startAt}
+  </select>
 </mapper>

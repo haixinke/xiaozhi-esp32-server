@@ -45,6 +45,7 @@ import xiaozhi.modules.agent.service.AgentChatHistoryService;
 import xiaozhi.modules.agent.vo.AgentChatHistoryListVO;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.agent.service.biz.AgentChatHistoryBizService;
+import xiaozhi.modules.agent.vo.DailyUserChatCountVO;
 import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.subscription.enums.FeatureCode;
 import xiaozhi.modules.subscription.service.SubscriptionService;
@@ -122,6 +123,22 @@ public class AgentChatHistoryController {
         subscriptionService.requireFeature(user.getId(), FeatureCode.MESSAGE_DELETE);
         agentChatHistoryService.recall(messageId, user.getId());
         return new Result<Boolean>().ok(true);
+    }
+
+    /**
+     * 查询当前用户当日聊天依赖提醒状态
+     * <p>
+     * 蛋宝小程序轮询调用：统计当日用户发送消息数（chat_type=1，Asia/Shanghai 日界），
+     * 并返回是否触发未成年人保护分支（≤14 周岁当日超 300 条后 chatLimited=true）。
+     * 成年人分支仅由前端单次提醒，不在此接口设限。
+     */
+    @Operation(summary = "查询当前用户当日聊天依赖提醒状态")
+    @RequiresPermissions("sys:role:normal")
+    @GetMapping("/daily-user-count")
+    public Result<DailyUserChatCountVO> getDailyUserChatCount() {
+        UserDetail user = SecurityUser.getUser();
+        DailyUserChatCountVO vo = agentChatHistoryService.getDailyUserChatCount(user.getId());
+        return new Result<DailyUserChatCountVO>().ok(vo);
     }
 
     /**

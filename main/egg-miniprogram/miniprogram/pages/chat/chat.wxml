@@ -68,5 +68,13 @@
         <image class="send-button__icon" src="/assets/icons/send.svg" mode="aspectFit" />
       </view>
     </view>
+  <!-- 依赖提醒弹窗（合规要求）：当日用户消息超阈值时弹出，UI 照搬静态项目 health-dialog -->
+  <view wx:if="{{healthReminderVisible}}" class="health-mask" catchtap="noop" catchtouchmove="noop">
+    <view class="health-dialog" catchtap="noop" role="dialog" aria-modal="true">
+      <text class="health-message">{{healthReminderMessage}}</text>
+      <view class="health-actions">
+        <view class="health-button" hover-class="pressable--pressed" hover-stay-time="80" bindtap="onAcknowledgeHealthReminder">我知道了</view>
+      </view>
+    </view>
   </view>
 </view>

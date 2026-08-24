@@ -41,6 +41,7 @@ import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.agent.service.AgentChatAudioService;
 import xiaozhi.modules.agent.service.AgentChatTitleService;
 import xiaozhi.modules.agent.service.AgentService;
+import xiaozhi.modules.wechat.service.WechatService;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AgentChatHistoryServiceImpl 测试")
@@ -64,6 +65,9 @@ class AgentChatHistoryServiceImplTest {
     @Mock
     private AgentChatAudioService agentChatAudioService;
 
+    @Mock
+    private WechatService wechatService;
+
     private AgentChatHistoryServiceImpl historyService;
 
     @BeforeAll
@@ -79,7 +83,7 @@ class AgentChatHistoryServiceImplTest {
     @BeforeEach
     void setUp() throws Exception {
         historyService = new AgentChatHistoryServiceImpl(agentChatTitleService, ossService,
-                aiAgentChatAudioDao, agentService, agentChatAudioService);
+                aiAgentChatAudioDao, agentService, agentChatAudioService, wechatService);
         Field baseMapperField = CrudRepository.class.getDeclaredField("baseMapper");
         baseMapperField.setAccessible(true);
         baseMapperField.set(historyService, baseMapper);
@@ -262,5 +266,60 @@ class AgentChatHistoryServiceImplTest {
 
         verify(agentChatAudioService, never()).deleteAudioWithOss(anyString());
         verify(baseMapper).deleteById((Serializable) messageId);
+    }
+
+    // ==================== getDailyUserChatCount ====================
+
+    @Test
+    @DisplayName("getDailyUserChatCount - 未成年人当日超 300 条触发限制")
+    void getDailyUserChatCount_minorOverThreshold_chatLimited() {
+        Long userId = 10L;
+        when(baseMapper.countTodayUserMessages(eq(userId), any())).thenReturn(301L);
+        when(wechatService.getAgeRange(userId)).thenReturn("AGE_0_14");
+
+        var vo = historyService.getDailyUserChatCount(userId);
+
+        assertThat(vo.getTodayCount()).isEqualTo(301L);
+        assertThat(vo.isMinor()).isTrue();
+        assertThat(vo.isChatLimited()).isTrue();
+    }
+
+    @Test
+    @DisplayName("getDailyUserChatCount - 未成年人恰好 300 条不触发限制（超过才限制）")
+    void getDailyUserChatCount_minorAtThreshold_notLimited() {
+        Long userId = 11L;
+        when(baseMapper.countTodayUserMessages(eq(userId), any())).thenReturn(300L);
+        when(wechatService.getAgeRange(userId)).thenReturn("AGE_0_14");
+
+        var vo = historyService.getDailyUserChatCount(userId);
+
+        assertThat(vo.isMinor()).isTrue();
+        assertThat(vo.isChatLimited()).isFalse();
+    }
+
+    @Test
+    @DisplayName("getDailyUserChatCount - 成年人即使超阈值也不限制")
+    void getDailyUserChatCount_adultOverThreshold_notLimited() {
+        Long userId = 12L;
+        when(baseMapper.countTodayUserMessages(eq(userId), any())).thenReturn(500L);
+        when(wechatService.getAgeRange(userId)).thenReturn("AGE_15_35");
+
+        var vo = historyService.getDailyUserChatCount(userId);
+
+        assertThat(vo.isMinor()).isFalse();
+        assertThat(vo.isChatLimited()).isFalse();
+    }
+
+    @Test
+    @DisplayName("getDailyUserChatCount - 未设置年龄区间按成年人处理")
+    void getDailyUserChatCount_nullAgeRange_treatedAsAdult() {
+        Long userId = 13L;
+        when(baseMapper.countTodayUserMessages(eq(userId), any())).thenReturn(400L);
+        when(wechatService.getAgeRange(userId)).thenReturn(null);
+
+        var vo = historyService.getDailyUserChatCount(userId);
+
+        assertThat(vo.isMinor()).isFalse();
+        assertThat(vo.isChatLimited()).isFalse();
     }
 }

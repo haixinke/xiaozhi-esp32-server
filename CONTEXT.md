@@ -45,3 +45,7 @@
 ### 年龄区间 (Age Range)
 
 用户自报的年龄段分组，取值由字典 `EGG_AGE_RANGE` 驱动（`AGE_0_14` / `AGE_15_35` / `AGE_36_60` / `AGE_61_PLUS`），记录于 `ai_wechat_user.age_range`，与生日字段相互独立。仅用于年龄分组，不采集完整生日，不参与宠物养成或 LLM 逻辑。进入聊天页前必须已设置，未设置则强制跳转年龄区间页选择；可随时在我的页面修改，不可清除。
+
+### 每日聊天依赖提醒 (Daily Chat Dependency Reminder)
+
+当用户当日发送的聊天消息数（`ai_agent_chat_history` 中 `chat_type=1` 的记录，按用户跨设备合并，Asia/Shanghai 日界）超过 300 条时触发的合规提醒。弹窗文案"长时间 AI 陪伴易产生依赖，请多参与线下户外活动。"；年龄区间为 `AGE_0_14`（≤14 周岁）的用户弹窗后退出聊天页、当日禁聊，成年人可继续使用且当日仅提示一次。计数由后端 `GET /agent/chat-history/daily-user-count` 只读查询，前端每分钟轮询触发；`chatLimited` 表示未成年人当日已超阈值。与订阅制聊天配额（`freeDailyChatLimit`）是两套独立机制，互不覆盖。详见 ADR 0002。

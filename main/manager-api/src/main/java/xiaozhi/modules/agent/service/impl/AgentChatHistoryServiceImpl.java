@@ -1,6 +1,8 @@
 package xiaozhi.modules.agent.service.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,6 +40,8 @@ import xiaozhi.modules.agent.service.AgentChatTitleService;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.agent.vo.AgentChatHistoryListVO;
 import xiaozhi.modules.agent.vo.AgentChatHistoryUserVO;
+import xiaozhi.modules.agent.vo.DailyUserChatCountVO;
+import xiaozhi.modules.wechat.service.WechatService;
 
 /**
  * 智能体聊天记录表处理service {@link AgentChatHistoryService} impl
@@ -57,15 +61,17 @@ public class AgentChatHistoryServiceImpl extends CrudRepository<AiAgentChatHisto
     // @Lazy 代理注入，打破与 AgentServiceImpl 的循环依赖（AgentService -> 本类 -> AgentService）
     private final AgentService agentService;
     private final AgentChatAudioService agentChatAudioService;
+    private final WechatService wechatService;
 
     public AgentChatHistoryServiceImpl(AgentChatTitleService agentChatTitleService, OssService ossService,
             AiAgentChatAudioDao aiAgentChatAudioDao, @Lazy AgentService agentService,
-            AgentChatAudioService agentChatAudioService) {
+            AgentChatAudioService agentChatAudioService, @Lazy WechatService wechatService) {
         this.agentChatTitleService = agentChatTitleService;
         this.ossService = ossService;
         this.aiAgentChatAudioDao = aiAgentChatAudioDao;
         this.agentService = agentService;
         this.agentChatAudioService = agentChatAudioService;
+        this.wechatService = wechatService;
     }
 
     @Override
@@ -299,5 +305,26 @@ public class AgentChatHistoryServiceImpl extends CrudRepository<AiAgentChatHisto
         }
         // 删除历史行（直接走 baseMapper，避免 ServiceImpl.removeById 触发 TableInfo 逻辑删除检查）
         this.baseMapper.deleteById(messageId);
+    }
+
+    /** 未成年人保护：当日用户消息数超过此阈值后触发依赖提醒（≤14 周岁额外禁聊） */
+    private static final long DAILY_CHAT_DEPENDENCY_THRESHOLD = 300;
+    /** 日界时区：与孵化动作、每日心情保持一致，不依赖数据库服务器时区 */
+    private static final ZoneId DAY_ZONE = ZoneId.of("Asia/Shanghai");
+
+    @Override
+    public DailyUserChatCountVO getDailyUserChatCount(Long userId) {
+        // 今日 00:00（Asia/Shanghai）作为计数起点，避免依赖 DB 服务器时区导致前后端"今天"错位
+        LocalDateTime startAt = LocalDate.now(DAY_ZONE).atStartOfDay();
+        long todayCount = baseMapper.countTodayUserMessages(userId, startAt);
+
+        DailyUserChatCountVO vo = new DailyUserChatCountVO();
+        vo.setTodayCount(todayCount);
+        // 仅 AGE_0_14（≤14 周岁）为未成年人分支；未设置年龄区间按成年人处理（防御性，聊天门槛已挡住未设置用户）
+        boolean minor = "AGE_0_14".equals(wechatService.getAgeRange(userId));
+        vo.setMinor(minor);
+        // 未成年人当日超过阈值即限制当日继续聊天；成年人仅前端单次提醒，不限制
+        vo.setChatLimited(minor && todayCount > DAILY_CHAT_DEPENDENCY_THRESHOLD);
+        return vo;
     }
 }

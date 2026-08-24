@@ -114,3 +114,10 @@
 }
 .page--reduced .send-button { transition: none; }
 .page--reduced .history-loader-dot, .page--reduced .dot, .page--reduced .speaking-bar { animation: none; }
+
+/* 依赖提醒弹窗：样式参考蛋宝宝 UI 静态项目 pages/chat/chat.wxss 的 health-mask/health-dialog */
+.health-mask{position:fixed;z-index:300;inset:0;display:flex;align-items:center;justify-content:center;padding:40rpx;background:rgba(13,22,16,.48);box-sizing:border-box}
+.health-dialog{width:100%;max-width:620rpx;padding:42rpx 34rpx 30rpx;border-radius:34rpx;background:#FFF;box-sizing:border-box}
+.health-message{display:block;color:#26362B;font-size:30rpx;font-weight:600;line-height:1.65;text-align:center}
+.health-actions{display:flex;margin-top:36rpx}
+.health-button{min-height:96rpx;display:flex;align-items:center;justify-content:center;flex:1;border-radius:999rpx;background:#002900;color:#FFF;font-size:26rpx;font-weight:600}

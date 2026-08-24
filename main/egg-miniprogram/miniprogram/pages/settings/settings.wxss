@@ -30,17 +30,3 @@
   border: 1rpx solid #E5E3DF;
   box-shadow: 0rpx 2rpx 4rpx rgba(0, 41, 0, 0.06), 0rpx 4rpx 8rpx rgba(0, 41, 0, 0.04);
 }
-
-.hint-box {
-  margin: 24rpx 40rpx 0;
-  padding: 24rpx 28rpx;
-  background: #E5EBE5; /* --ink-surface */
-  border-radius: 24rpx;
-}
-
-.hint-text {
-  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
-  font-size: 24rpx;
-  line-height: 1.55;
-  color: #5C5C5C;
-}

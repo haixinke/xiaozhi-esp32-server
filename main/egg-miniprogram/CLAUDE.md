@@ -46,7 +46,7 @@ main/egg-miniprogram/
         └── *.test.js            # 单元测试
 ```
 
-页面清单见 `app.json`（20 个页面，tabBar 为 `home` + `my`）。自定义组件：`nav-bar`、`egg-avatar`、`pet-avatar`、`button`、`card`、`list-row`、`switch-row`、`collapse-item`、`mood-badge`、`signal-bars`。
+页面清单见 `app.json`（20 个页面，tabBar 为 `home` + `my`）。自定义组件：`nav-bar`、`egg-avatar`、`pet-avatar`、`button`、`card`、`list-row`、`collapse-item`、`mood-badge`、`signal-bars`。
 
 ## 当前实现状态
 

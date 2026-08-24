@@ -78,10 +78,7 @@ Page({
   onNavCodes() { wx.navigateTo({ url: '/pages/invite-codes/invite-codes' }); },
   onNavSettings() { wx.navigateTo({ url: '/pages/settings/settings' }); },
   onNavChatSettings() { wx.navigateTo({ url: '/pages/chat-settings/chat-settings' }); },
-  onNavAgeRange() { wx.navigateTo({ url: '/pages/age-range/age-range' }); },
-  onNavFeedback() { wx.navigateTo({ url: '/pages/feedback/feedback' }); },
   onNavAccount() { wx.navigateTo({ url: '/pages/account/account' }); },
-  onNavPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); },
   onNavHelp() { wx.navigateTo({ url: '/pages/help/help' }); },
 
   onShareAppMessage() {

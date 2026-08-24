@@ -3,38 +3,19 @@
 
   <view class="content">
 
-    <text class="section-label">通知设置</text>
-
+    <text class="section-label">个人信息</text>
     <view class="panel">
-      <switch-row
-        title="每日心情推送"
-        desc="每天 09:00，收到蛋宝宝的心情"
-        checked="{{notifs.daily}}"
-        bind:change="onToggleDaily"
-      ></switch-row>
-      <switch-row
-        title="破壳提醒"
-        desc="蛋宝宝即将破壳时第一时间通知你"
-        checked="{{notifs.hatch}}"
-        bind:change="onToggleHatch"
-      ></switch-row>
-      <switch-row
-        title="成长阶段提醒"
-        desc="羁绊升级时告诉你"
-        checked="{{notifs.growth}}"
-        bind:change="onToggleGrowth"
-      ></switch-row>
-      <switch-row
-        title="生日祝福"
-        desc="生日当天 08:00，蛋宝宝亲口祝你"
-        checked="{{notifs.bday}}"
-        show-border="{{false}}"
-        bind:change="onToggleBday"
-      ></switch-row>
+      <list-row label="年龄区间" value="{{ageRangeLoading ? '读取中…' : ageRangeLabel}}" bind:rowtap="onNavAgeRange"></list-row>
     </view>
 
-    <view class="hint-box">
-      <text class="hint-text">当前预览版会在本机保存你的偏好。正式消息推送仍需接入微信订阅消息并由服务端发送。</text>
+    <text class="section-label">帮助与支持</text>
+    <view class="panel">
+      <list-row label="用户反馈" bind:rowtap="onNavFeedback"></list-row>
+    </view>
+
+    <text class="section-label">协议与政策</text>
+    <view class="panel">
+      <list-row label="隐私协议" bind:rowtap="onNavPrivacy"></list-row>
     </view>
 
   </view>

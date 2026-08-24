@@ -1990,19 +1990,19 @@
     "semantic_hash": "67bf19df44f3edcd50066a3ee661f8ce"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/wechat/service/impl/WechatServiceImplProfileTest.java": {
-    "mtime": 1787487469.5364206,
-    "ast_hash": "ac1e11562e8b927bf6238a8bb559ef0b",
-    "semantic_hash": "ac1e11562e8b927bf6238a8bb559ef0b"
+    "mtime": 1787534094.1770067,
+    "ast_hash": "49cbcee876acf413d67f96fb2a6985f9",
+    "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/wechat/service/impl/WechatServiceImplLoginTest.java": {
-    "mtime": 1787487469.5361738,
-    "ast_hash": "630ffa94bf9ac87a8a34e7443a02285e",
-    "semantic_hash": "630ffa94bf9ac87a8a34e7443a02285e"
+    "mtime": 1787534111.0078597,
+    "ast_hash": "58d3883fbfc623531f794c666d5cad61",
+    "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/wechat/service/impl/WechatServiceImplTest.java": {
-    "mtime": 1787487469.5366893,
-    "ast_hash": "e3d7148b329ce6a6175815bece1f5412",
-    "semantic_hash": "e3d7148b329ce6a6175815bece1f5412"
+    "mtime": 1787534110.4876647,
+    "ast_hash": "f0952864dcf41611d822c1aef1f59203",
+    "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/invite/InviteConsumeConcurrencyTest.java": {
     "mtime": 1784964358.36465,
@@ -3095,8 +3095,8 @@
     "semantic_hash": "2f593a2563dc25cde134d224f3f885a6"
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/ErrorCode.java": {
-    "mtime": 1787492211.952808,
-    "ast_hash": "ec07d76bec46a4d483dc846c9d00b527",
+    "mtime": 1787533943.844122,
+    "ast_hash": "8fd0252c4b1dd95f491b8e661c9baa52",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/RenException.java": {
@@ -3990,9 +3990,9 @@
     "semantic_hash": "88a53789ff2f76545fca0bf94fa8563a"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/dto/WechatProfileUpdateDTO.java": {
-    "mtime": 1784964358.3597991,
-    "ast_hash": "544fc89abb9ffd565710ba2f216a9c8f",
-    "semantic_hash": "544fc89abb9ffd565710ba2f216a9c8f"
+    "mtime": 1787533881.3371274,
+    "ast_hash": "4bd1a5b8277aadd1453ca51b6f2c0a0b",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/dto/WechatBindAccountReqDTO.java": {
     "mtime": 1784487790.1139922,
@@ -4020,9 +4020,9 @@
     "semantic_hash": "29f4997339c570e8be70c10d5a27229b"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/vo/WechatProfileVO.java": {
-    "mtime": 1784964358.3623445,
-    "ast_hash": "9208d9df58f245373c1d9e1526465eb6",
-    "semantic_hash": "9208d9df58f245373c1d9e1526465eb6"
+    "mtime": 1787533859.8582745,
+    "ast_hash": "c0d24eb43b10c6c786f0cf740969c820",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/util/ProfileValidator.java": {
     "mtime": 1784964358.362271,
@@ -4030,9 +4030,9 @@
     "semantic_hash": "03701b2b2c63659d4ab2f21e335ef734"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/entity/WechatUserEntity.java": {
-    "mtime": 1784964358.3600113,
-    "ast_hash": "788c5436b7e7ea0aa394e1d610fde43e",
-    "semantic_hash": "788c5436b7e7ea0aa394e1d610fde43e"
+    "mtime": 1787533840.6513658,
+    "ast_hash": "0066e974fc066d433f3571caac157dd0",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/dao/WechatUserDao.java": {
     "mtime": 1784487790.1139143,
@@ -4055,9 +4055,9 @@
     "semantic_hash": "5afe8ea28e2c1beed8cc63bd1a2e9ee2"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/service/impl/WechatServiceImpl.java": {
-    "mtime": 1787487469.53471,
-    "ast_hash": "3e1160c250f3852ea74dc916eae2d936",
-    "semantic_hash": "3e1160c250f3852ea74dc916eae2d936"
+    "mtime": 1787534006.6385398,
+    "ast_hash": "b1d0165e489c89a1991a3d9c80f52f7b",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/invite/dto/InviteCodeCreateDTO.java": {
     "mtime": 1784964358.3458166,
@@ -5280,8 +5280,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1787390326.3086975,
-    "ast_hash": "34898cefabcee1ae377c9ae141456022",
+    "mtime": 1787493523.7630224,
+    "ast_hash": "ad06b487f29c13eb5bb0181833fbe76a",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5305,8 +5305,8 @@
     "semantic_hash": "f93043828dd68c996c6888b9c9fde406"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.js": {
-    "mtime": 1787188207.0893555,
-    "ast_hash": "ea97b1a30416666897a023d0d8fa74c8",
+    "mtime": 1787534554.2755516,
+    "ast_hash": "031bc359d7be2a03ff92434c9b0412a9",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store-actions.test.js": {
@@ -5455,8 +5455,8 @@
     "semantic_hash": "cf4b6485d84001afc7bc951fe7303811"
   },
   "main/egg-miniprogram/miniprogram/pages/chat/chat.js": {
-    "mtime": 1787188207.083749,
-    "ast_hash": "0f4ed6a7ab007dc5f4d025a97c143202",
+    "mtime": 1787534489.534087,
+    "ast_hash": "27de6c9996146d6912e0f39b9e8def1a",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/wish/wish.js": {
@@ -5500,8 +5500,8 @@
     "semantic_hash": "bbdf2f124b0a49b1e3ad0f51c85415d7"
   },
   "main/egg-miniprogram/miniprogram/pages/my/my.js": {
-    "mtime": 1787492388.0772943,
-    "ast_hash": "193df8a989de31a1f7b12cf1a360e32f",
+    "mtime": 1787534447.412419,
+    "ast_hash": "c251f042b3a28a73be34d4a156d3356a",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/hatch-guide/hatch-guide.js": {
@@ -5910,8 +5910,8 @@
     "semantic_hash": "80a0732f87a244731b6b8d4e103b61c9"
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1787492106.8022313,
-    "ast_hash": "3b85cdef351d8a29e1c73e633a437940",
+    "mtime": 1787533823.1354287,
+    "ast_hash": "f03f6b7820c4fa4a2a46183cb579d30a",
     "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/_common.sh": {
@@ -6135,8 +6135,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/app.json": {
-    "mtime": 1787492387.7779233,
-    "ast_hash": "b7076f64f0d4435af4c4ec48b7c40fb7",
+    "mtime": 1787534417.1950557,
+    "ast_hash": "249de9f2ae4966b79469391fd2244410",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/components/button/button.json": {
@@ -7617,6 +7617,21 @@
   "main/manager-web/src/views/FeedbackManagement.vue": {
     "mtime": 1787492538.543122,
     "ast_hash": "594903adafd385526c91c994884a74d2",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/config/age-ranges.js": {
+    "mtime": 1787534324.7015483,
+    "ast_hash": "30f381c1580d749ab4ccc31d2b1f3e37",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/pages/age-range/age-range.js": {
+    "mtime": 1787534351.5324981,
+    "ast_hash": "e8627c56e4b7e75f28ff5ccb8d627c6d",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/age-range-api.js": {
+    "mtime": 1787534324.969237,
+    "ast_hash": "69eb6b25883f59aa78de9fac3a9e2505",
     "semantic_hash": ""
   }
 }

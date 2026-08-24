@@ -315,6 +315,7 @@ public interface ErrorCode {
     int AVATAR_FILE_TYPE_ERROR = 10220; // 头像文件类型错误，仅支持jpg/png/webp
     int CITY_TOO_LONG = 10221; // 城市最多32个字符
     int IMAGE_FILE_TYPE_ERROR = 10222; // 图片文件类型错误
+    int INVALID_AGE_RANGE = 10223; // 年龄区间错误
 
     // 用户反馈相关错误码
     int FEEDBACK_SUBMIT_TOO_FREQUENTLY = 10330; // 反馈提交过于频繁，请稍后再试

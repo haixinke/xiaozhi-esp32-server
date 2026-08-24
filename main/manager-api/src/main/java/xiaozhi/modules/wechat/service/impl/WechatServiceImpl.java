@@ -36,6 +36,7 @@ import xiaozhi.modules.security.service.SysUserTokenService;
 import xiaozhi.modules.sys.dao.SysUserDao;
 import xiaozhi.modules.sys.entity.SysUserEntity;
 import xiaozhi.modules.sys.enums.SuperAdminEnum;
+import xiaozhi.modules.sys.service.SysDictDataService;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
 import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
@@ -61,6 +62,8 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private static final String DEFAULT_NICKNAME_PREFIX = "蛋友";
     private static final int DEFAULT_NICKNAME_RANDOM_LENGTH = 5;
     private static final java.util.random.RandomGenerator DEFAULT_NICKNAME_RANDOM = new java.util.Random();
+    /** 年龄区间字典类型编码 */
+    private static final String AGE_RANGE_DICT_TYPE = "EGG_AGE_RANGE";
 
     private final SysUserDao sysUserDao;
     private final SysUserTokenService sysUserTokenService;
@@ -68,6 +71,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
     private final xiaozhi.modules.invite.service.InviteService inviteService;
     private final RedisUtils redisUtils;
     private final OssService ossService;
+    private final SysDictDataService sysDictDataService;
 
     @Value("${eggbaby.miniprogram.appid:${wechat.miniprogram.appid:}}")
     private String appid;
@@ -242,6 +246,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         vo.setBirthday(entity.getBirthday());
         vo.setCity(entity.getCity());
         vo.setMbti(entity.getMbti());
+        vo.setAgeRange(entity.getAgeRange());
         vo.setZodiac(PetBirthCalculator.zodiacOf(entity.getBirthday()));
         vo.setPhone(maskPhone(entity.getPhone()));
         return vo;
@@ -274,6 +279,15 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         }
         if (StringUtils.isNotBlank(dto.getMbti())) {
             wrapper.set("mbti", dto.getMbti());
+        }
+        if (StringUtils.isNotBlank(dto.getAgeRange())) {
+            // 年龄区间必须是字典 EGG_AGE_RANGE 的合法 dict_value，防止脏数据入库
+            boolean valid = sysDictDataService.getDictDataByType(AGE_RANGE_DICT_TYPE).stream()
+                    .anyMatch(item -> dto.getAgeRange().equals(item.getKey()));
+            if (!valid) {
+                throw new RenException(ErrorCode.INVALID_AGE_RANGE);
+            }
+            wrapper.set("age_range", dto.getAgeRange());
         }
         baseDao.update(null, wrapper);
     }

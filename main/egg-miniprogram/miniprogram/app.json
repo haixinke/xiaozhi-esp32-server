@@ -19,7 +19,8 @@
     "pages/deregister/deregister",
     "pages/privacy/privacy",
     "pages/chat-settings/chat-settings",
-    "pages/feedback/feedback"
+    "pages/feedback/feedback",
+    "pages/age-range/age-range"
   ],
   "tabBar": {
     "custom": true,

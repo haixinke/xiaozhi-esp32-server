@@ -1,6 +1,7 @@
 const petStore = require('../../utils/pet-store');
 const petApi = require('../../utils/pet-api');
 const ota = require('../../utils/ota');
+const ageRangeApi = require('../../utils/age-range-api');
 const WebSocketManager = require('../../utils/websocket');
 const AudioManager = require('../../utils/audio');
 
@@ -107,10 +108,10 @@ Page({
       dailyStatus: petStore.getDailyStatus(),
     });
 
-    this._loadHistoryMessages(1, true);
-    this._initAudio();
-    this._initWebSocketManager();
-    this._otaAndConnect();
+    // 年龄区间强制门槛：未设置的用户先去选择，通过后才初始化聊天
+    this._ensureAgeRange().then((ok) => {
+      if (ok) this._startChat();
+    });
 
     // 键盘适配基准：记录未弹键盘时的窗口高度，配合 chatViewportStyle 压缩页面
     this.chatWindowHeight = windowHeight();
@@ -124,6 +125,42 @@ Page({
       this.updateChatViewport();
     };
     if (wx.onWindowResize) wx.onWindowResize(this.windowResizeHandler);
+  },
+
+  // 年龄区间强制门槛（合规要求）：未设置年龄区间的用户无法使用聊天功能。
+  // 缓存优先，缓存缺失时实时拉取资料兜底；接口失败阻断并提供重试。
+  _ensureAgeRange() {
+    const cached = petStore.getUser();
+    if (cached && cached.ageRange) return Promise.resolve(true);
+    return ageRangeApi.getProfile().then((profile) => {
+      petStore.syncUserProfile(profile);
+      if (profile && profile.ageRange) return true;
+      wx.redirectTo({ url: '/pages/age-range/age-range?force=1' });
+      return false;
+    }).catch(() => {
+      wx.showModal({
+        title: '提示',
+        content: '网络异常，无法读取账号设置',
+        confirmText: '重试',
+        showCancel: false,
+        success: () => {
+          this._ensureAgeRange().then((ok) => {
+            if (ok) this._startChat();
+          });
+        }
+      });
+      return false;
+    });
+  },
+
+  // 年龄门槛通过后的聊天初始化入口
+  _startChat() {
+    if (this._chatStarted) return;
+    this._chatStarted = true;
+    this._loadHistoryMessages(1, true);
+    this._initAudio();
+    this._initWebSocketManager();
+    this._otaAndConnect();
   },
 
   onShow() {

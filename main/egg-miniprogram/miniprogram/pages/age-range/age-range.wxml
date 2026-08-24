@@ -1,0 +1,28 @@
+<view class="page">
+  <view class="age-header">
+    <nav-bar title="年龄区间" show-back="{{!force}}" fallback-url="/pages/my/my"></nav-bar>
+    <view wx:if="{{saveSuccessVisible}}" class="save-success-toast" aria-live="polite">
+      <view class="save-success-toast__icon" aria-hidden="true">
+        <view class="save-success-toast__check"></view>
+      </view>
+      <text>已保存</text>
+    </view>
+  </view>
+  <scroll-view scroll-y class="content">
+    <text class="prompt">依据相关规定，请选择您的年龄区间：</text>
+
+    <view wx:if="{{loading}}" class="state">正在读取账号设置…</view>
+
+    <view class="options">
+      <view wx:for="{{options}}" wx:key="value" class="option {{selected === item.value ? 'option--selected' : ''}} {{saving || leaving ? 'option--disabled' : ''}}" aria-role="radio" aria-checked="{{selected === item.value}}" data-value="{{item.value}}" bindtap="onSelect">
+        <view class="radio"><view wx:if="{{selected === item.value}}" class="radio__dot"></view></view>
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+
+    <text wx:if="{{saveError}}" class="save-error" aria-live="polite">{{saveError}}</text>
+    <view class="confirm {{!selected || saving || leaving ? 'confirm--disabled' : ''}}" aria-role="button" aria-disabled="{{!selected || saving || leaving}}" bindtap="onConfirm">{{saving ? '保存中' : (leaving ? '已保存' : '确定')}}</view>
+    <text class="boundary-note">60 周岁请选择“36-60 周岁”；“60 周岁以上”从 61 周岁起算。</text>
+    <text class="boundary-note">年龄区间由你自行选择，仅用于年龄分组。我们不采集完整生日、身份证、监护人手机号，也不进行短信或监护关系验证。</text>
+  </scroll-view>
+</view>

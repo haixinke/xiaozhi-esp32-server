@@ -12,7 +12,6 @@ Page({
     loading: true,
     saving: false,
     leaving: false,
-    saveSuccessVisible: false,
     saveError: '',
     // force 模式：从聊天页强制进入，隐藏返回，保存前不允许离开
     force: false
@@ -64,7 +63,9 @@ Page({
         wx.redirectTo({ url: '/pages/chat/chat' });
         return;
       }
-      this.setData({ saving: false, leaving: true, saveSuccessVisible: true, confirmed });
+      this.setData({ saving: false, leaving: true, confirmed });
+      // 保存成功提示与其他页面统一使用原生 toast
+      wx.showToast({ title: '保存成功', icon: 'success', duration: SAVE_SUCCESS_RETURN_DELAY_MS });
       this.returnTimer = setTimeout(() => {
         this.returnTimer = null;
         wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/my/my' }) });

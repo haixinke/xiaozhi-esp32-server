@@ -37,10 +37,29 @@
 
     <view class="consent" bindtap="onToggleConsent">
       <view class="checkbox {{consent ? 'checkbox--checked' : ''}}">{{consent ? '✓' : ''}}</view>
-      <text class="consent-copy">我已阅读<text class="policy-link" catchtap="onPrivacy">《隐私政策》</text>，同意平台仅为受理和处理本次反馈收集、使用上述信息。</text>
+      <text class="consent-copy">我已阅读<text class="policy-link" catchtap="onOpenConsent">《知情同意书》</text>，同意平台仅为受理和处理本次反馈收集、使用上述信息。</text>
     </view>
 
     <text wx:if="{{submitError}}" class="submit-error">{{submitError}}</text>
     <view class="submit {{canSubmit ? '' : 'submit--disabled'}}" bindtap="onSubmit">{{submitting ? '提交中' : '提交'}}</view>
+  </view>
+
+  <!-- 知情同意书弹窗：查看不自动勾选，仅点底部按钮视为同意 -->
+  <view wx:if="{{consentVisible}}" class="consent-mask" catchtouchmove="noop" catchtap="onCloseConsent">
+    <view class="consent-dialog" catchtap="noop">
+      <view class="consent-dialog__close" catchtap="onCloseConsent">✕</view>
+      <text class="consent-dialog__title">知情同意书</text>
+      <scroll-view class="consent-dialog__body" scroll-y>
+        <text class="consent-section__title">个人信息收集告知</text>
+        <text class="consent-section__text">温馨告知：您填写的手机号、联系信息仅用于本次投诉反馈处理，仅留存 6 个月，到期自动脱敏删除；不会用于 AI 模型训练、营销推送，不会向第三方泄露、出售。</text>
+        <text class="consent-section__title">AI 拟人服务专项提示</text>
+        <text class="consent-section__text">如您反馈 AI 虚拟宠物对话存在违规内容，平台将调取对应时段对话记录开展安全复核，相关对话数据仅用于本次风险核查，核查完毕统一归档留存。</text>
+        <text class="consent-section__title">未成年人专项提示</text>
+        <text class="consent-section__text">未满 14 周岁用户提交反馈，平台处理后将同步风险提醒至您填写的监护人手机号；涉及心理、极端情绪问题会优先联系监护人介入。</text>
+        <text class="consent-section__title">老年人友好提示</text>
+        <text class="consent-section__text">老年用户如不会操作表单，可直接拨打客服热线 <text class="consent-hotline" catchtap="onCallHotline">{{hotline}}</text> 人工反馈，无需填写线上表单。</text>
+      </scroll-view>
+      <view class="consent-dialog__agree" bindtap="onAgreeConsent">我已阅读并同意</view>
+    </view>
   </view>
 </view>

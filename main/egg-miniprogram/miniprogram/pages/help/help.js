@@ -5,6 +5,9 @@ Page({
   data: {
     supportEmail: SUPPORT_EMAIL,
     cats: { device: true, account: true, chat: true, other: true },
+    // 搜索关键词与命中结果；为空串时展示分类列表
+    searchQuery: '',
+    searchResults: [],
     // 现实求助热线：静态内容（心理援助 12356 / 报警 110 / 急救 120）
     support: { psychologicalHotline: '12356', police: '110', medicalEmergency: '120' },
 
@@ -84,6 +87,20 @@ Page({
   onToggleFaq(e) {
     const { group, index } = e.currentTarget.dataset;
     this.setData({ [`${group}[${index}].open`]: !this.data[group][index].open });
+  },
+
+  // 搜索：跨四组 FAQ 做问题+答案的子串匹配；11 条短文本，量小无需防抖
+  onSearchInput(e) {
+    const searchQuery = String(e.detail.value || '').trim();
+    if (!searchQuery) {
+      this.setData({ searchQuery: '', searchResults: [] });
+      return;
+    }
+    const groups = ['deviceFaqs', 'accountFaqs', 'chatFaqs', 'otherFaqs'];
+    const searchResults = groups
+      .flatMap(group => this.data[group] || [])
+      .filter(item => `${item.q} ${item.a}`.includes(searchQuery));
+    this.setData({ searchQuery, searchResults });
   },
 
   // 复制客服邮箱；失败时弹窗展示邮箱地址兜底

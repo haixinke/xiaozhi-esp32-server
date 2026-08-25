@@ -16,7 +16,7 @@
     <text class="section-label">协议与政策</text>
     <view class="panel">
       <list-row label="用户服务协议" bind:rowtap="onNavTerms"></list-row>
-      <list-row label="隐私协议" bind:rowtap="onNavPrivacy"></list-row>
+      <list-row label="隐私政策" bind:rowtap="onNavPrivacy"></list-row>
     </view>
 
   </view>

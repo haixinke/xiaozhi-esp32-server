@@ -21,6 +21,9 @@ const HEALTH_MSG_ADULT = '长时间 AI 陪伴易产生依赖，请多参与线�
 // 未成年人提醒文案：追加今日已结束，避免孩子困惑为何被退出
 const HEALTH_MSG_MINOR = '长时间 AI 陪伴易产生依赖，请多参与线下户外活动。今日聊天已结束，明天再来吧。';
 
+// 年龄区间字典值（对应 config/age-ranges.js）：60 周岁以上用户在消息列表顶部追加防诈骗提示
+const AGE_RANGE_61_PLUS = 'AGE_61_PLUS';
+
 // 连接状态文案（导航栏下方胶囊，仅非连接态显示）
 const CONN_LABELS = {
   connected: '已连接',
@@ -82,6 +85,8 @@ Page({
     healthReminderVisible: false,
     healthReminderMessage: HEALTH_MSG_ADULT,
     healthReminderMinor: false,
+    // 防诈骗提示（60 周岁以上常驻显示）：年龄未知或其他区间不显示
+    showFraudWarning: false,
   },
 
   _msgIdSeed: 1,
@@ -149,10 +154,16 @@ Page({
   // 缓存优先，缓存缺失时实时拉取资料兜底；接口失败阻断并提供重试。
   _ensureAgeRange() {
     const cached = petStore.getUser();
-    if (cached && cached.ageRange) return Promise.resolve(true);
+    if (cached && cached.ageRange) {
+      this.setData({ showFraudWarning: cached.ageRange === AGE_RANGE_61_PLUS });
+      return Promise.resolve(true);
+    }
     return ageRangeApi.getProfile().then((profile) => {
       petStore.syncUserProfile(profile);
-      if (profile && profile.ageRange) return true;
+      if (profile && profile.ageRange) {
+        this.setData({ showFraudWarning: profile.ageRange === AGE_RANGE_61_PLUS });
+        return true;
+      }
       wx.redirectTo({ url: '/pages/age-range/age-range?force=1' });
       return false;
     }).catch(() => {

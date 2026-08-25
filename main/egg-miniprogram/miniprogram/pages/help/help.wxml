@@ -1,14 +1,25 @@
 <view class="page">
   <nav-bar title="帮助中心"></nav-bar>
 
-  <view class="search-bar" bindtap="onSearchTap">
-    <view class="search-input">
-      <view class="search-icon"></view>
-      <text class="search-placeholder">搜索问题关键词</text>
-    </view>
-  </view>
-
   <scroll-view scroll-y class="faq-scroll">
+
+    <!-- 首屏：用户反馈入口 + 客服邮箱 + 现实求助信息（静态内容，来自 UI 设计稿） -->
+    <view class="help-first-screen">
+      <text class="help-heading">遇到问题</text>
+      <view class="help-action" aria-role="button" bindtap="onFeedback"><text>用户反馈</text><text>›</text></view>
+      <view class="support-config" aria-role="button" aria-label="复制客服邮箱 {{supportEmail}}" bindtap="onCopySupportEmail">
+        <view>
+          <text class="support-config__label">客服邮箱</text>
+          <text class="support-config__value">{{supportEmail}}</text>
+        </view>
+        <text class="support-config__copy">复制</text>
+      </view>
+      <text class="help-heading help-heading--reality">需要现实帮助</text>
+      <view class="reality-card">
+        <text>心理援助热线：{{support.psychologicalHotline}}</text>
+        <text>紧急危险：{{support.police}} / {{support.medicalEmergency}}</text>
+      </view>
+    </view>
 
     <collapse-item
       title="设备问题"
@@ -111,11 +122,15 @@
 
   </scroll-view>
 
-  <view class="cs-bar">
-    <text class="cs-hint">没找到答案？</text>
-    <view class="cs-link" bindtap="onContactCS">
-      <text class="cs-link-text">联系客服</text>
-      <view class="cs-arrow"></view>
+  <!-- 底部邮件支持条：点击复制客服邮箱 -->
+  <view class="support-bar">
+    <text class="support-hint">没找到答案？</text>
+    <view class="support-link" aria-role="button" aria-label="复制邮件支持邮箱 {{supportEmail}}" bindtap="onCopySupportEmail">
+      <view class="support-copy">
+        <text class="support-label">邮件支持</text>
+        <text class="support-email">{{supportEmail}}</text>
+      </view>
+      <text class="support-action">复制</text>
     </view>
   </view>
 

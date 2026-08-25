@@ -1965,9 +1965,9 @@
     "semantic_hash": "b9c8fbacd4878fd6d3630cdbff944638"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/agent/service/impl/AgentChatHistoryServiceImplTest.java": {
-    "mtime": 1784964522.8535035,
-    "ast_hash": "6669769bb2ad7c287aacbc5c1a0e2b99",
-    "semantic_hash": "6669769bb2ad7c287aacbc5c1a0e2b99"
+    "mtime": 1787567534.3562748,
+    "ast_hash": "9b6c0f9f3579586177cfbc8430e2aa29",
+    "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/agent/service/impl/AgentSnapshotRedactionRunnerTest.java": {
     "mtime": 1784964522.8535578,
@@ -3700,9 +3700,9 @@
     "semantic_hash": "f9cc2d42d6626c0c0aa0e41669cc2e33"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/dao/AiAgentChatHistoryDao.java": {
-    "mtime": 1776309435.4595747,
-    "ast_hash": "4afbf9fdbd7f858cccd287374c77f723",
-    "semantic_hash": "4afbf9fdbd7f858cccd287374c77f723"
+    "mtime": 1787559147.0296695,
+    "ast_hash": "473af9591c8291972bbf7dad9bd87e97",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/controller/AgentController.java": {
     "mtime": 1784964522.8445296,
@@ -3710,9 +3710,9 @@
     "semantic_hash": "02785a093187777eb5ac65f7baf6555c"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/controller/AgentChatHistoryController.java": {
-    "mtime": 1784487790.0973873,
-    "ast_hash": "ab7e6084497110d19dfca3e862dd91e4",
-    "semantic_hash": "ab7e6084497110d19dfca3e862dd91e4"
+    "mtime": 1787559147.0294306,
+    "ast_hash": "7659c1b4996060723b00067763aced13",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/controller/AgentVoicePrintController.java": {
     "mtime": 1776309435.4589217,
@@ -3765,9 +3765,9 @@
     "semantic_hash": "f120d34fd6e181f0a84d3de9e98d03fd"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/service/AgentChatHistoryService.java": {
-    "mtime": 1784964522.8460329,
-    "ast_hash": "42fcc8cd9a5c4c0b90e22346b465e44f",
-    "semantic_hash": "42fcc8cd9a5c4c0b90e22346b465e44f"
+    "mtime": 1787559147.0298717,
+    "ast_hash": "52008d854dadb4b8d21323c5475166f3",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/service/AgentSnapshotService.java": {
     "mtime": 1784964522.846278,
@@ -3825,9 +3825,9 @@
     "semantic_hash": "7f5ca43c0e284ffd1261e4a9b2c915f1"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/service/impl/AgentChatHistoryServiceImpl.java": {
-    "mtime": 1784964522.8466964,
-    "ast_hash": "cf455e7ba5e8e0882d61c2cfe8f30332",
-    "semantic_hash": "cf455e7ba5e8e0882d61c2cfe8f30332"
+    "mtime": 1787567520.7823577,
+    "ast_hash": "4545e89b5cb7405fa3a62b543ac376dd",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/service/impl/AgentContextProviderServiceImpl.java": {
     "mtime": 1776309435.4627223,
@@ -4050,13 +4050,13 @@
     "semantic_hash": "570f4ce1f054175a4d8873eaa9e39577"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/service/WechatService.java": {
-    "mtime": 1784964358.3617246,
-    "ast_hash": "5afe8ea28e2c1beed8cc63bd1a2e9ee2",
-    "semantic_hash": "5afe8ea28e2c1beed8cc63bd1a2e9ee2"
+    "mtime": 1787559147.0304189,
+    "ast_hash": "309d8694d00472e10c2b5d0894d67d9f",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/wechat/service/impl/WechatServiceImpl.java": {
-    "mtime": 1787534006.6385398,
-    "ast_hash": "b1d0165e489c89a1991a3d9c80f52f7b",
+    "mtime": 1787559147.030664,
+    "ast_hash": "7fa8ccea7ff5a90dc2d1b764f8404f81",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/invite/dto/InviteCodeCreateDTO.java": {
@@ -5280,8 +5280,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1787493523.7630224,
-    "ast_hash": "ad06b487f29c13eb5bb0181833fbe76a",
+    "mtime": 1787620460.2293077,
+    "ast_hash": "ea063cf26c2283c6f0207ea1db2e4efc",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5340,8 +5340,8 @@
     "semantic_hash": "7cc11677593e89348fdd8de52818c1b2"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-api.js": {
-    "mtime": 1787188207.0887969,
-    "ast_hash": "524ad50ae8c5a4c2506b0af41d53ebd2",
+    "mtime": 1787559147.02911,
+    "ast_hash": "a81fab4639a5609f75d131f7b8707b4e",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/wechat-api.test.js": {
@@ -5414,20 +5414,15 @@
     "ast_hash": "49ebe21e36f0c91a36ea496f7323d5ec",
     "semantic_hash": "49ebe21e36f0c91a36ea496f7323d5ec"
   },
-  "main/egg-miniprogram/miniprogram/components/switch-row/switch-row.js": {
-    "mtime": 1784964358.3208833,
-    "ast_hash": "9f72bfd68414e4e111167cd8e76c16c0",
-    "semantic_hash": "9f72bfd68414e4e111167cd8e76c16c0"
-  },
   "main/egg-miniprogram/miniprogram/components/pet-avatar/pet-avatar.js": {
     "mtime": 1784964358.3203144,
     "ast_hash": "7ce7a799deb41333d447e0c3e9747d4c",
     "semantic_hash": "7ce7a799deb41333d447e0c3e9747d4c"
   },
   "main/egg-miniprogram/miniprogram/pages/settings/settings.js": {
-    "mtime": 1784964358.3344727,
-    "ast_hash": "6b420f51b109c3af164bcdd8821df1c0",
-    "semantic_hash": "6b420f51b109c3af164bcdd8821df1c0"
+    "mtime": 1787625191.1335423,
+    "ast_hash": "ff9b1cc0ebfb99b922ca18f02d98d50c",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
     "mtime": 1787188207.0855713,
@@ -5455,8 +5450,8 @@
     "semantic_hash": "cf4b6485d84001afc7bc951fe7303811"
   },
   "main/egg-miniprogram/miniprogram/pages/chat/chat.js": {
-    "mtime": 1787534489.534087,
-    "ast_hash": "27de6c9996146d6912e0f39b9e8def1a",
+    "mtime": 1787567528.382426,
+    "ast_hash": "cceee7137d0048b43c2c69649cdc26d9",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/wish/wish.js": {
@@ -5500,8 +5495,8 @@
     "semantic_hash": "bbdf2f124b0a49b1e3ad0f51c85415d7"
   },
   "main/egg-miniprogram/miniprogram/pages/my/my.js": {
-    "mtime": 1787534447.412419,
-    "ast_hash": "c251f042b3a28a73be34d4a156d3356a",
+    "mtime": 1787568262.773402,
+    "ast_hash": "4c059997f8b427dc8a12e6fdfe272476",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/hatch-guide/hatch-guide.js": {
@@ -5545,9 +5540,9 @@
     "semantic_hash": "f66f715bb6171aa58994d5824832c949"
   },
   "main/egg-miniprogram/miniprogram/pages/help/help.js": {
-    "mtime": 1784964358.3286722,
-    "ast_hash": "9b4d03c2658017e3ed2b2fe7388f30bd",
-    "semantic_hash": "9b4d03c2658017e3ed2b2fe7388f30bd"
+    "mtime": 1787622106.6900158,
+    "ast_hash": "2bb7aa064a4b8403faf5ebab2e3cc650",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/services/analytics.js": {
     "mtime": 1784964358.337125,
@@ -6135,8 +6130,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/app.json": {
-    "mtime": 1787534417.1950557,
-    "ast_hash": "249de9f2ae4966b79469391fd2244410",
+    "mtime": 1787625190.766425,
+    "ast_hash": "b7c1b005b3ea3eb22936d54cf6d70db0",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/components/button/button.json": {
@@ -6231,11 +6226,6 @@
   },
   "main/egg-miniprogram/miniprogram/components/signal-bars/signal-bars.json": {
     "mtime": 1784964358.32059,
-    "ast_hash": "",
-    "semantic_hash": ""
-  },
-  "main/egg-miniprogram/miniprogram/components/switch-row/switch-row.json": {
-    "mtime": 1784964358.32096,
     "ast_hash": "",
     "semantic_hash": ""
   },
@@ -7632,6 +7622,16 @@
   "main/egg-miniprogram/miniprogram/utils/age-range-api.js": {
     "mtime": 1787534324.969237,
     "ast_hash": "69eb6b25883f59aa78de9fac3a9e2505",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/agent/vo/DailyUserChatCountVO.java": {
+    "mtime": 1787558655.0067885,
+    "ast_hash": "d4b4c1d3354475c992499b8e4b807496",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/pages/terms/terms.js": {
+    "mtime": 1787625086.0756803,
+    "ast_hash": "4bf3c806d0ff2f2a19f35981c8c337e9",
     "semantic_hash": ""
   }
 }

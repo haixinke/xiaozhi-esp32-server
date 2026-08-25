@@ -18,6 +18,7 @@
     "pages/help/help",
     "pages/deregister/deregister",
     "pages/privacy/privacy",
+    "pages/terms/terms",
     "pages/chat-settings/chat-settings",
     "pages/feedback/feedback",
     "pages/age-range/age-range"

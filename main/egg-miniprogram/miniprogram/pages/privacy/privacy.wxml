@@ -1,122 +1,82 @@
 <view class="page">
   <nav-bar title="隐私协议"></nav-bar>
-
-  <scroll-view
-    scroll-y
-    class="content"
-    scroll-into-view="{{scrollTarget}}"
-    scroll-with-animation="{{true}}"
-  >
-
+  <scroll-view scroll-y class="content" scroll-into-view="{{scrollTarget}}" scroll-with-animation="{{true}}">
     <text class="doc-title">蛋宝宝隐私政策</text>
-    <text class="doc-meta">生效日期：2026年7月3日 · 版本 v1.0</text>
-
-    <text class="doc-intro">
-      欢迎使用蛋宝宝小程序（以下简称"本产品"）。本产品由蛋宝宝运营方（以下简称"我们"）提供。我们深知个人信息对你的重要性，将按照《中华人民共和国个人信息保护法》《中华人民共和国网络安全法》等法律法规的要求，说明我们如何收集、使用、存储和保护你的信息，以及你享有的权利。<text class="strong">请在使用本产品前完整阅读本政策，尤其是加粗内容。</text>
-    </text>
+    <text class="doc-meta">更新日期：2026年8月9日 · 适用版本 v3.7</text>
+    <text class="doc-intro">本政策说明上海爱予慧科技有限责任公司如何在 eggbabe 普通小程序中处理个人信息。我们会处理实体蛋绑定、孵化互动、安全对话、收藏卡和账户服务所必需的信息。正式发布文本须以法务审核并部署在 eggbabe.com 的版本为准。</text>
 
     <view class="toc">
       <text class="toc-title">目录</text>
       <view class="toc-list">
-        <text class="toc-link" bindtap="onTocTap" data-target="s1"># 一、我们收集哪些信息</text>
-        <text class="toc-link" bindtap="onTocTap" data-target="s2"># 二、我们如何使用你的信息</text>
-        <text class="toc-link" bindtap="onTocTap" data-target="s3"># 三、信息的存储</text>
-        <text class="toc-link" bindtap="onTocTap" data-target="s4"># 四、信息的对外提供</text>
+        <text class="toc-link" bindtap="onTocTap" data-target="s1"># 一、我们处理的信息</text>
+        <text class="toc-link" bindtap="onTocTap" data-target="s2"># 二、处理目的</text>
+        <text class="toc-link" bindtap="onTocTap" data-target="s3"># 三、保存与存储</text>
+        <text class="toc-link" bindtap="onTocTap" data-target="s4"># 四、第三方处理</text>
         <text class="toc-link" bindtap="onTocTap" data-target="s5"># 五、你的权利</text>
-        <text class="toc-link" bindtap="onTocTap" data-target="s6"># 六、账号注销与数据删除</text>
-        <text class="toc-link" bindtap="onTocTap" data-target="s7"># 七、信息安全</text>
-        <text class="toc-link" bindtap="onTocTap" data-target="s8"># 八、未成年人信息保护</text>
-        <text class="toc-link" bindtap="onTocTap" data-target="s9"># 九、政策的更新</text>
+        <text class="toc-link" bindtap="onTocTap" data-target="s6"># 六、注销与删除</text>
+        <text class="toc-link" bindtap="onTocTap" data-target="s7"># 七、安全措施</text>
+        <text class="toc-link" bindtap="onTocTap" data-target="s8"># 八、未成年人保护</text>
+        <text class="toc-link" bindtap="onTocTap" data-target="s9"># 九、演示数据边界</text>
         <text class="toc-link" bindtap="onTocTap" data-target="s10"># 十、联系我们</text>
       </view>
     </view>
 
     <view id="s1" class="section">
-      <text class="h2">一、我们收集哪些信息</text>
-      <text class="p">我们仅收集为你提供产品功能所必需的信息，具体如下：</text>
-
-      <text class="h3">1.1 账号与登录信息</text>
-      <text class="p">当你打开本产品时，我们会通过微信 wx.login 静默获取你的登录凭证（code），并据此生成 unionid / openid，用于建立与维护你的账号。此过程无需你手动授权，不会获取你的微信昵称、头像等资料。</text>
-
-      <text class="h3">1.2 手机号</text>
-      <text class="p">完成静默注册后，我们会在欢迎页请求获取你的手机号，用于账号验证与找回。<text class="strong">该项仅在你主动点击授权后采集，是使用蛋宝宝服务的必要信息；拒绝授权时无法进入和使用产品功能。</text></text>
-
-      <text class="h3">1.3 头像与昵称</text>
-      <text class="p">你可通过微信官方"头像昵称填写能力"组件选择头像（含微信头像 / 相册）与填写昵称。所选图片、昵称将由微信侧内容安全能力自动审核后，上传至我们的服务器用于展示。</text>
-
-      <text class="h3">1.4 你主动填写的资料</text>
-      <text class="p">性别、生日、常驻城市、MBTI 等字段均由你自愿填写，用于个性化你的蛋宝宝陪伴体验（如星座计算、生日祝福）。<text class="strong">这些字段并非使用产品的必要条件，不填写不影响核心功能。</text>其中性别、生日仅可设置一次，设置前会向你二次确认。</text>
-
-      <text class="h3">1.5 设备绑定信息</text>
-      <text class="p">当你扫码激活实体蛋宝宝时，我们会记录设备唯一标识与你的账号的绑定关系，用于识别"这只蛋宝宝属于哪个账号"。</text>
-
-      <text class="h3">1.6 对话与互动记录</text>
-      <text class="p">你与蛋宝宝的对话内容、互动记录、成长与心情数据会被保存，作为蛋宝宝"记住你"、持续陪伴的基础。这部分信息仅用于为你提供服务，不会用于训练面向其他用户的公开模型。</text>
-
-      <text class="h3">1.7 设备信息与日志</text>
-      <text class="p">为保障服务稳定与安全，我们会自动收集必要的日志信息，包括操作时间、小程序版本、网络状态、崩溃日志等，不包含可直接识别你个人身份的内容。</text>
+      <text class="h2">一、我们处理的信息</text>
+      <text class="p">账号服务会处理微信登录凭证及服务端生成的用户编号；实体服务会处理激活码状态、实体蛋编号、绑定关系、原型、实体款式、生命周期和必要售后状态。</text>
+      <text class="p">你主动选择时，我们会处理昵称、头像、蛋壳颜色、预设图样、贴纸和归一化手绘轨迹；你使用说话或对话功能时，我们会处理必要消息、内容安全结果、保存期限和删除状态。</text>
+      <text class="p">收藏卡会处理实体蛋身份编号、原型、款式、显示名称、服务端破壳时间、来源批次和固定插画配置。技术诊断仅处理必要的功能结果、错误码、服务端时间和设备运行信息。</text>
+      <text class="p">许愿池会处理题目编号、选项编号和答题日期；孵化互动会处理动作类型、服务端日期和本次增加的修炼值。许愿池答案仅用于当日回顾与固定回应，不用于用户画像或蛋宝宝性格生成。普通版不处理关系等级、系列集卡、虚拟资源、商品库存或交易数据。</text>
     </view>
 
     <view id="s2" class="section">
-      <text class="h2">二、我们如何使用你的信息</text>
-      <text class="p">我们仅将收集的信息用于以下目的：提供并维护账号与登录服务；识别并同步你与实体蛋宝宝的绑定关系；实现对话、成长、心情等核心陪伴功能；在你授权的前提下，向你推送每日心情、破壳提醒、成长阶段提醒、生日祝福等订阅消息；保障账号与交易安全，进行风控与异常行为识别；根据法律法规要求处理你的申诉、投诉与监管查询。我们不会将你的信息用于本政策未说明的其他目的。</text>
+      <text class="h2">二、处理目的</text>
+      <text class="p">上述信息只用于建立账号、核验并绑定实体蛋、同步生命周期、保存免费蛋壳创作、提供即时互动和安全对话、生成同一枚实体蛋的收藏卡、处理售后与注销，以及保障服务稳定和安全。</text>
+      <text class="p"><text class="strong">愿望内容用途：</text>许愿池答案只用于展示当日选择、生成对应固定回应和孵化回顾；不映射作息、性格、感官偏好或角色设定，也不参与蛋宝宝人格生成。</text>
+      <text class="p">对话正文与具体手绘轨迹不会直接写入分析平台。已保存数据的查询、更正或删除可通过帮助中心提出。</text>
     </view>
 
     <view id="s3" class="section">
-      <text class="h2">三、信息的存储</text>
-      <text class="p">我们收集的信息存储于中华人民共和国境内的服务器，不会跨境传输，法律法规另有规定的除外。</text>
-      <text class="p">我们仅在实现本政策所述目的所必需的期限内保留你的信息：登录凭证与设备绑定关系持续保留至你解绑或注销账号；对话与成长记录持续保留，作为陪伴体验的一部分，直至账号被注销并完成数据删除；操作日志一般保留不超过 6 个月。</text>
+      <text class="h2">三、保存与存储</text>
+      <text class="p">正式数据存储于中华人民共和国境内，并在实现对应目的所必需的最短期限内保存。各类数据的具体期限、存储地域和例外保留规则以 eggbabe.com 上经法务审核的正式政策为准。</text>
     </view>
 
     <view id="s4" class="section">
-      <text class="h2">四、信息的对外提供</text>
-      <text class="p"><text class="strong">我们不会出售你的个人信息。</text>除以下情形外，我们不会与任何第三方共享你的个人信息：</text>
-      <text class="p">· 获得你的明确同意后；</text>
-      <text class="p">· 与提供必要技术支撑的服务商共享必要信息，如云存储、消息推送服务商，我们会与其签署数据保护协议，要求其仅在授权范围内处理信息；</text>
-      <text class="p">· 向实体蛋宝宝硬件侧同步设备绑定 / 解绑状态指令，不涉及对话内容等隐私信息；</text>
-      <text class="p">· 根据法律法规、法律程序、诉讼或政府主管部门的强制性要求。</text>
+      <text class="h2">四、第三方处理</text>
+      <text class="p">在必要范围内，我们可能使用微信登录与内容安全能力、受控云存储、对象存储和模型服务。我们会在正式政策中列明实际第三方处理者、处理目的和信息范围，并要求其按约定保护信息。未经法律依据或你的授权，我们不会出售个人信息。</text>
     </view>
 
     <view id="s5" class="section">
       <text class="h2">五、你的权利</text>
-      <text class="p">依照法律法规，你对自己的个人信息享有以下权利，可在「我的」→「个人信息」「系统设置」「账号」中行使，或联系客服协助处理：</text>
-      <text class="p"><text class="strong">查询与更正</text>——在个人信息页查看并更正昵称、头像、常驻城市、MBTI 等字段；性别与生日为一次性设置字段，设置后不支持自行更正，如确有需要请联系客服。</text>
-      <text class="p"><text class="strong">撤回授权</text>——在系统设置页随时关闭各类通知开关；关闭微信订阅授权可在微信的服务通知管理中操作。</text>
-      <text class="p"><text class="strong">删除与注销</text>——在账号页申请注销账号，详见下一节。</text>
-      <text class="p"><text class="strong">投诉与举报</text>——如认为我们的处理方式侵害了你的合法权益，可通过第十节的联系方式向我们反馈，我们将在 15 个工作日内响应。</text>
+      <text class="p">你可以在“我的”中查询或更正昵称和头像，并在“对话记录”中申请导出或删除聊天记录。其他访问、更正或删除个人信息的申请，可发送邮件至 hello@eggbabe.com 提交。</text>
     </view>
 
     <view id="s6" class="section">
-      <text class="h2">六、账号注销与数据删除</text>
-      <text class="p">你可以在「我的」→「账号」→「注销账号」发起注销申请。申请提交后账号进入 <text class="strong">15 天冷静期</text>：冷静期内你可正常登录使用蛋宝宝，且可随时撤销注销申请；冷静期届满后，我们将永久删除你的账号信息、对话记录、设备绑定关系及成长数据，并向关联的实体蛋宝宝设备下发解绑指令，使其恢复为未激活状态、可被其他账号重新扫码激活（重新激活后为全新蛋宝宝，原有记忆不会保留）。</text>
-      <text class="p">为满足法律法规的审计要求，我们会保留注销操作的时间与账号 ID 记录 6 个月，该记录不含你的个人信息内容。</text>
+      <text class="h2">六、删除与例外保留</text>
+      <text class="p">聊天记录删除由服务端执行，服务端明确确认后页面才会显示删除成功。售后、审计或法定义务要求保留的最小记录，将按正式政策另行说明并限制用途。</text>
     </view>
 
     <view id="s7" class="section">
-      <text class="h2">七、信息安全</text>
-      <text class="p">我们采用加密传输、访问权限控制、安全审计等业界通行的安全措施保护你的信息，并为员工设置数据访问的最小权限与保密义务。尽管如此，互联网环境并非绝对安全，如发生个人信息安全事件，我们将按照法律法规要求及时告知你事件的基本情况、可能的影响及我们已采取或将要采取的处置措施。</text>
+      <text class="h2">七、安全措施</text>
+      <text class="p">我们采用加密传输、最小权限、访问控制、签名地址和安全审计等措施。头像、蛋壳创作和收藏卡使用受控存储与必要的访问权限；发生个人信息安全事件时，将依法处理和告知。</text>
     </view>
 
     <view id="s8" class="section">
-      <text class="h2">八、未成年人信息保护</text>
-      <text class="p">我们非常重视对未成年人个人信息的保护。若你是未满 18 周岁的未成年人，请在监护人的陪同下阅读本政策，并在监护人同意后使用本产品。若我们发现在未事先获得监护人同意的情况下收集了未成年人的个人信息，会尽快删除相关数据。监护人如发现其未成年子女在使用产品过程中的信息被我们收集，可通过第十节的联系方式与我们联系。</text>
+      <text class="h2">八、未成年人保护</text>
+      <text class="p">全部可见内容按未成年人可见标准处理。我们不主动索取住址、学校、手机号等敏感信息；用户主动输入的敏感信息不会转化为画像。未成年人应在监护人指导下阅读并使用本产品。</text>
     </view>
 
     <view id="s9" class="section">
-      <text class="h2">九、政策的更新</text>
-      <text class="p">我们可能适时修订本政策条款，修订内容将在小程序内公示，重大变更（如收集信息的目的、范围发生实质性变化）将以弹窗、系统通知等更显著的方式告知你。若你在本政策更新后继续使用本产品，即视为同意更新后的内容。</text>
+      <text class="h2">九、演示数据边界</text>
+      <text class="p">内部演示环境使用独立构建、接口、命名空间、对象存储和统计项目。演示账号、卡片、时间和内容不会写入普通版正式账号、收藏卡或业务看板；普通版生产包不提供切换到演示环境的入口。</text>
     </view>
 
     <view id="s10" class="section section-last">
       <text class="h2">十、联系我们</text>
-      <text class="p">如你对本政策或个人信息处理事宜有任何疑问、意见或投诉，可通过以下方式与我们联系：</text>
-      <text class="p">· 企业微信客服：见小程序「帮助中心」页底部「联系客服」入口</text>
-      <text class="p">· 客服工作时间：工作日 9:00–21:00</text>
-      <text class="p">我们将在收到你的意见反馈后 15 个工作日内予以答复。</text>
+      <text class="p">如对个人信息处理有疑问、意见、投诉或权利申请，请发送邮件至 hello@eggbabe.com 联系上海爱予慧科技有限责任公司。我们可能在处理前核验申请人与相关账号的关系。</text>
     </view>
 
     <view class="footer-line"></view>
-    <text class="footer-note">蛋宝宝隐私政策 · 本文档为设计交付演示内容，正式发布前请交由法务审阅确认。</text>
-
+    <text class="footer-note">蛋宝宝隐私政策 · 正式发布前须完成法务审核与备案域名部署</text>
   </scroll-view>
 </view>

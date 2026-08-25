@@ -26,5 +26,6 @@ Page({
 
   onNavAgeRange() { wx.navigateTo({ url: '/pages/age-range/age-range' }); },
   onNavFeedback() { wx.navigateTo({ url: '/pages/feedback/feedback' }); },
+  onNavTerms() { wx.navigateTo({ url: '/pages/terms/terms' }); },
   onNavPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); }
 });

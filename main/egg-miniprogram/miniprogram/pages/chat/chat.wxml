@@ -7,7 +7,8 @@
   <view class="mood-bar">
     <mood-badge mood="{{dailyStatus.mood}}"></mood-badge>
     <text class="mood-line">{{dailyStatus.line}}</text>
-    <text class="conn-state conn-state--{{connectionState}}">{{connLabel}}</text>
+    <!-- 连接状态胶囊：隐藏不渲染，保留元素便于日后恢复（配套 CONN_LABELS / .conn-state 样式保留） -->
+    <text wx:if="{{false}}" class="conn-state conn-state--{{connectionState}}">{{connLabel}}</text>
   </view>
 
   <!-- 消息区 -->

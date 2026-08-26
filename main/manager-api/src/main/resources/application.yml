@@ -160,6 +160,8 @@ pdc:
     release-ready: ${PDC_NFC_RELEASE_READY:false}
     # Scheme 生成任务开关（生产环节灰度/熔断）
     scheme-generation-enabled: ${PDC_NFC_SCHEME_GENERATION_ENABLED:false}
+    # generatenfcscheme 的 env_version：release/trial/develop；小程序正式版上线前可切 trial 验证真实链路
+    scheme-env-version: ${PDC_NFC_SCHEME_ENV_VERSION:release}
     # 出库激活开关（激活环节灰度/熔断）：控制资产能否从 IN_STOCK 推进到 ACTIVE
     activation-enabled: ${PDC_NFC_ACTIVATION_ENABLED:false}
     # 用户领取开关（领取环节灰度/熔断）：控制小程序 preview/confirm 接口可用性

@@ -35,6 +35,9 @@ import xiaozhi.modules.pdc.nfc.vo.PdcNfcBatchVO;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -130,7 +133,7 @@ public class PdcNfcBatchServiceImpl implements PdcNfcBatchService {
         log.info("批次创建成功 batchNo={}, plannedQuantity={}, operatorId={}",
                 dto.getBatchNo(), dto.getPlannedQuantity(), operatorId);
 
-        return toVO(batch, dto.getPlannedQuantity());
+        return toVO(batch, dto.getPlannedQuantity(), null, null, productType);
     }
 
     @Override
@@ -144,11 +147,23 @@ public class PdcNfcBatchServiceImpl implements PdcNfcBatchService {
         }
         qw.orderByDesc("create_date");
         List<PdcNfcBatchEntity> batches = batchDao.selectList(qw);
+        if (batches.isEmpty()) {
+            return List.of();
+        }
+
+        // 批量加载关联商品类型，避免列表逐条查询产生 N+1；前端商品类型列靠 name/code 展示
+        Set<Long> productTypeIds = batches.stream()
+                .map(PdcNfcBatchEntity::getProductTypeId)
+                .collect(Collectors.toSet());
+        Map<Long, PdcNfcProductTypeEntity> productTypeMap = productTypeDao.selectBatchIds(productTypeIds).stream()
+                .collect(Collectors.toMap(PdcNfcProductTypeEntity::getId, Function.identity()));
+
         return batches.stream().map(b -> {
             int assetCount = countAssetsByBatchId(b.getId());
             PdcNfcSchemeJobEntity schemeJob = schemeJobDao.selectLatestByBatchId(b.getId());
             PdcNfcWriteJobEntity writeJob = selectLatestWriteJob(b.getId());
-            return toVO(b, assetCount, schemeJob, writeJob);
+            PdcNfcProductTypeEntity productType = productTypeMap.get(b.getProductTypeId());
+            return toVO(b, assetCount, schemeJob, writeJob, productType);
         }).collect(Collectors.toList());
     }
 
@@ -192,16 +207,15 @@ public class PdcNfcBatchServiceImpl implements PdcNfcBatchService {
         return writeJobDao.selectOne(qw);
     }
 
-    private PdcNfcBatchVO toVO(PdcNfcBatchEntity batch, int assetCount) {
-        return toVO(batch, assetCount, null, null);
-    }
-
     private PdcNfcBatchVO toVO(PdcNfcBatchEntity batch, int assetCount,
-                               PdcNfcSchemeJobEntity schemeJob, PdcNfcWriteJobEntity writeJob) {
+                               PdcNfcSchemeJobEntity schemeJob, PdcNfcWriteJobEntity writeJob,
+                               PdcNfcProductTypeEntity productType) {
         return new PdcNfcBatchVO(
                 batch.getId(),
                 batch.getBatchNo(),
                 batch.getProductTypeId(),
+                productType != null ? productType.getTypeName() : null,
+                productType != null ? productType.getTypeCode() : null,
                 batch.getSkuCode(),
                 batch.getPrototype(),
                 batch.getPlannedQuantity(),

@@ -31,6 +31,13 @@ public class PdcNfcProperties {
     /** Scheme 生成任务开关（生产环节灰度/熔断） */
     private boolean schemeGenerationEnabled = false;
 
+    /**
+     * generatenfcscheme 请求的 env_version：
+     * release（正式版）/ trial（体验版）/ develop（开发版）。
+     * 默认 release；小程序正式版上线前可切 trial 验证真实链路，正式投放前须切回 release。
+     */
+    private String schemeEnvVersion = "release";
+
     /** 出库激活开关（激活环节灰度/熔断）：控制资产能否从 IN_STOCK 推进到 ACTIVE */
     private boolean activationEnabled = false;
 

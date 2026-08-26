@@ -35,8 +35,8 @@ public class WechatNfcSchemeClient {
     public WechatNfcSchemeResult generate(String wechatSn, String claimRef) {
         requireClientConfiguration(properties.getModelId(), wechatSn, claimRef);
 
-        WechatNfcSchemeRequest request = WechatNfcSchemeRequest.release(
-                properties.getModelId(), wechatSn, claimRef);
+        WechatNfcSchemeRequest request = WechatNfcSchemeRequest.of(
+                properties.getModelId(), wechatSn, claimRef, properties.getSchemeEnvVersion());
 
         String accessToken = accessTokens.getAccessToken();
         return transport.post(accessToken, request);

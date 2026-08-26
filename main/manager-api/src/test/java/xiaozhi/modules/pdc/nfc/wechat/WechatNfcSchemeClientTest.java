@@ -99,6 +99,17 @@ class WechatNfcSchemeClientTest {
     }
 
     @Test
+    @DisplayName("schemeEnvVersion=trial 时 env_version 走体验版")
+    void respectsTrialEnvVersion() {
+        properties.setSchemeEnvVersion("trial");
+
+        client.generate("EBSN001", "AbCdEfGhIjKlMnOpQrStUv");
+
+        JSONObject body = JSONUtil.parseObj(transport.lastBody);
+        assertThat(body.getJSONObject("jump_wxa").getStr("env_version")).isEqualTo("trial");
+    }
+
+    @Test
     @DisplayName("微信返回 errcode!=0 - 返回 fail result")
     void wechatErrorReturnsFailResult() {
         transport.responseBody = "{\"errcode\":44990,\"errmsg\":\"api frequency control\"}";

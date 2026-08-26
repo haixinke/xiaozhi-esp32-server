@@ -39,6 +39,7 @@ import java.util.Locale;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -274,5 +275,36 @@ class PdcNfcBatchServiceTest {
         assertThat(vo.schemeJobId()).isNull();
         assertThat(vo.writeJobId()).isNull();
         assertThat(vo.writeJobStatus()).isNull();
+    }
+
+    @Test
+    @DisplayName("批次列表填充商品类型名称与编码，避免前端只显示 ID")
+    void listPopulatesProductTypeNameAndCode() {
+        PdcNfcProductTypeEntity pt = new PdcNfcProductTypeEntity();
+        pt.setId(1L);
+        pt.setTypeCode("EGG_BABY_NFC");
+        pt.setTypeName("蛋宝宝NFC");
+        when(productTypeDao.selectBatchIds(anyCollection())).thenReturn(List.of(pt));
+
+        PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
+        batch.setId(12L);
+        batch.setBatchNo("B-NAME");
+        batch.setProductTypeId(1L);
+        batch.setStatus("DRAFT");
+        when(batchDao.selectList(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
+                .thenReturn(List.of(batch));
+        when(assetDao.selectCount(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
+                .thenReturn(0L);
+        when(schemeJobDao.selectLatestByBatchId(12L)).thenReturn(null);
+        when(writeJobDao.selectOne(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class)))
+                .thenReturn(null);
+
+        List<PdcNfcBatchVO> result = service.list(null);
+
+        assertThat(result).hasSize(1);
+        PdcNfcBatchVO vo = result.get(0);
+        assertThat(vo.productTypeId()).isEqualTo(1L);
+        assertThat(vo.productTypeName()).isEqualTo("蛋宝宝NFC");
+        assertThat(vo.typeCode()).isEqualTo("EGG_BABY_NFC");
     }
 }

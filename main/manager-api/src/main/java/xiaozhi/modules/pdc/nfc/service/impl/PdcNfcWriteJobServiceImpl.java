@@ -93,7 +93,8 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
                         .orderByAsc(PdcNfcAssetEntity::getItemNo));
 
         if (assets.isEmpty()) {
-            throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+            // 批次内没有 SCHEME_GENERATED 状态资产可写卡，与发布就绪无关
+            throw new RenException(ErrorCode.PDC_NFC_NO_AVAILABLE_ASSETS);
         }
 
         // 批量上限校验
@@ -290,7 +291,8 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
             Set<Long> expectedBatchIds = new HashSet<>(batchIds);
             List<PdcNfcAssetEntity> batchAssets = assetDao.selectBatchIds(batchIds);
             if (batchAssets == null) {
-                throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+                // selectBatchIds 不应返回 null，走到这里属于内部数据异常
+                throw new RenException(ErrorCode.PDC_NFC_ASSET_DATA_INCONSISTENT);
             }
             for (PdcNfcAssetEntity asset : batchAssets) {
                 if (asset == null
@@ -304,7 +306,8 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
 
         if (assetsById.size() != assetIds.size()
                 || !assetsById.keySet().containsAll(assetIds)) {
-            throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+            // 快照行引用的资产在库中缺失，数据不一致
+            throw new RenException(ErrorCode.PDC_NFC_ASSET_DATA_INCONSISTENT);
         }
         return Map.copyOf(assetsById);
     }
@@ -315,7 +318,8 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
                 || asset.getSchemeKeyVersion() == null
                 || asset.getSchemeNonce() == null
                 || asset.getSchemeCiphertext() == null) {
-            throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+            // Scheme 加密三要素缺失，资产数据不完整，无法解密导出
+            throw new RenException(ErrorCode.PDC_NFC_ASSET_DATA_INCONSISTENT);
         }
 
         EncryptedField schemeField = new EncryptedField(

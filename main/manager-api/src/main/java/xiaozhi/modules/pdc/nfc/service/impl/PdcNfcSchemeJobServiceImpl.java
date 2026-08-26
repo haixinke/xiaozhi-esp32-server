@@ -50,7 +50,9 @@ public class PdcNfcSchemeJobServiceImpl implements PdcNfcSchemeJobService {
 
         int totalCount = assetDao.countCreatedAssets(batchId);
         if (totalCount == 0) {
-            throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+            // 批次内没有 CREATED 状态资产可生成 Scheme，与发布就绪无关：
+            // 误用 RELEASE_NOT_READY 会误导运维去查发布配置，真实原因是资产不可用
+            throw new RenException(ErrorCode.PDC_NFC_NO_AVAILABLE_ASSETS);
         }
 
         // 批次状态转换 DRAFT → SCHEME_GENERATING

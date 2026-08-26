@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
+import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcBatchStatus;
@@ -111,6 +112,29 @@ class PdcNfcSchemeJobServiceTest {
 
         assertThatThrownBy(() -> service.retry(BATCH_ID, OPERATOR_ID))
                 .isInstanceOf(RenException.class);
+    }
+
+    @Test
+    @DisplayName("启动 - 批次无 CREATED 资产时抛无可用资产错误码")
+    void start_throwsWhenNoCreatedAssets() {
+        when(batchDao.selectById(BATCH_ID)).thenReturn(draftBatch());
+        when(assetDao.countCreatedAssets(BATCH_ID)).thenReturn(0);
+
+        // 历史误用 RELEASE_NOT_READY，会误导运维去查发布配置；真实原因是批次无可用资产
+        assertThatThrownBy(() -> service.start(BATCH_ID, OPERATOR_ID))
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(ErrorCode.PDC_NFC_NO_AVAILABLE_ASSETS);
+
+        verify(jobDao, never()).insert(any(PdcNfcSchemeJobEntity.class));
+    }
+
+    private PdcNfcBatchEntity draftBatch() {
+        PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
+        batch.setId(BATCH_ID);
+        batch.setBatchNo("B001");
+        batch.setStatus(PdcNfcBatchStatus.DRAFT.name());
+        return batch;
     }
 
     private PdcNfcSchemeJobEntity previousJob(String status, long cursor, int success, int failure) {

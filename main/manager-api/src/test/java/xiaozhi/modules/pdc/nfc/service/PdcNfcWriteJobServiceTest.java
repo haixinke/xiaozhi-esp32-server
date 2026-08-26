@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
+import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
@@ -172,6 +173,21 @@ class PdcNfcWriteJobServiceTest {
     }
 
     @Test
+    void createThrowsNoAvailableAssetsWhenNoSchemeGeneratedAssets() {
+        when(batchDao.selectById(10L)).thenReturn(batch());
+        when(jobDao.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(assetDao.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        // 无 SCHEME_GENERATED 资产：报无可用资产，而非误导性的「发布未就绪」
+        assertThatThrownBy(() -> service.create(10L, 99L))
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(ErrorCode.PDC_NFC_NO_AVAILABLE_ASSETS);
+
+        verify(jobDao, never()).insert(any(PdcNfcWriteJobEntity.class));
+    }
+
+    @Test
     void repeatedDownloadsDecryptImmutableAssetCiphertextIntoIdenticalCsv() {
         PdcNfcWriteJobEntity job = exportedJob();
         PdcNfcBatchEntity batch = batch();
@@ -246,8 +262,25 @@ class PdcNfcWriteJobServiceTest {
         stubSingleItemExport(asset);
         lenient().when(assetDao.selectBatchIds(anyCollection())).thenReturn(List.of());
 
+        // 快照行引用的资产在库中缺失：报数据不一致，而非误导性的「发布未就绪」
         assertThatThrownBy(() -> service.export(100L, 99L))
-                .isInstanceOf(RenException.class);
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(ErrorCode.PDC_NFC_ASSET_DATA_INCONSISTENT);
+    }
+
+    @Test
+    void exportThrowsAssetDataInconsistentWhenSchemeCiphertextMissing() {
+        PdcNfcAssetEntity asset = encryptedAsset();
+        asset.setSchemeCiphertext(null);
+        stubSingleItemExport(asset);
+        lenient().when(assetDao.selectBatchIds(anyCollection())).thenReturn(List.of(asset));
+
+        // Scheme 加密三要素缺失属于资产数据异常，不能误报为发布未就绪
+        assertThatThrownBy(() -> service.export(100L, 99L))
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(ErrorCode.PDC_NFC_ASSET_DATA_INCONSISTENT);
     }
 
     @Test

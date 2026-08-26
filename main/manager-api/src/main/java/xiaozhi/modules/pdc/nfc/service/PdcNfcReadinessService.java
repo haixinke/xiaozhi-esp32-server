@@ -23,6 +23,9 @@ public class PdcNfcReadinessService {
 
     /**
      * 要求 Scheme 生成就绪：功能开关、模型 ID 与当前发布证据均已就绪。
+     * <p>
+     * 发布就绪拆为两道独立检查，分别使用不同错误码，便于运维定位：
+     * release-ready 开关（环境变量）与发布证据（后台登记记录）。
      */
     public void requireSchemeGenerationReady() {
         if (!properties.isEnabled()) {
@@ -40,7 +43,8 @@ public class PdcNfcReadinessService {
             throw new RenException(ErrorCode.PDC_NFC_MODEL_ID_NOT_CONFIGURED);
         }
         if (!auditService.hasCurrentReleaseEvidence()) {
-            throw new RenException(ErrorCode.PDC_NFC_RELEASE_NOT_READY);
+            // 开关已开但没有版本匹配的登记记录，错误码与开关未开区分开，避免运维无法判断该做哪一步
+            throw new RenException(ErrorCode.PDC_NFC_RELEASE_EVIDENCE_MISSING);
         }
     }
 }

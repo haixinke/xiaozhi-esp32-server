@@ -324,7 +324,7 @@ public interface ErrorCode {
     // PDC NFC 实物生产域错误码
     int PDC_NFC_FEATURE_DISABLED = 10500; // NFC 功能未开启
     int PDC_NFC_MODEL_ID_NOT_CONFIGURED = 10501; // NFC 模型ID未配置
-    int PDC_NFC_RELEASE_NOT_READY = 10502; // NFC 尚未发布就绪
+    int PDC_NFC_RELEASE_NOT_READY = 10502; // NFC 发布就绪开关未开（release-ready）
     int PDC_NFC_CRYPTO_NOT_CONFIGURED = 10503; // NFC 密钥未配置
     int PDC_NFC_INVALID_STATE = 10504; // NFC 状态转换不合法
     int PDC_NFC_ASSET_NOT_FOUND = 10505; // NFC 资产不存在
@@ -343,4 +343,7 @@ public interface ErrorCode {
     int PDC_NFC_INVALID_PROTOTYPE = 10518; // 无效的原型编码
     int PDC_NFC_INVALID_MODEL_ID = 10519; // 无效的模型ID
     int PDC_NFC_WRITE_RESULT_CONFLICT = 10520; // 写卡结果冲突
+    int PDC_NFC_RELEASE_EVIDENCE_MISSING = 10521; // 缺少当前版本的发布证据（需在商品类型管理登记）
+    int PDC_NFC_NO_AVAILABLE_ASSETS = 10522; // 批次内没有可处理状态的资产
+    int PDC_NFC_ASSET_DATA_INCONSISTENT = 10523; // 资产数据不一致（记录缺失或 Scheme 加密字段不完整）
 }

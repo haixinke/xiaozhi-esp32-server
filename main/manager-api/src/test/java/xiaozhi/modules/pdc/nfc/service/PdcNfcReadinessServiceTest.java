@@ -19,6 +19,7 @@ import java.util.Locale;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static xiaozhi.common.exception.ErrorCode.PDC_NFC_MODEL_ID_NOT_CONFIGURED;
+import static xiaozhi.common.exception.ErrorCode.PDC_NFC_RELEASE_EVIDENCE_MISSING;
 import static xiaozhi.common.exception.ErrorCode.PDC_NFC_RELEASE_NOT_READY;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
@@ -148,7 +149,7 @@ class PdcNfcReadinessServiceTest {
     }
 
     @Test
-    @DisplayName("缺少当前发布证据 - 拒绝")
+    @DisplayName("缺少当前发布证据 - 拒绝并报证据缺失专用错误码")
     void rejectsMissingCurrentReleaseEvidence() {
         properties.setEnabled(true);
         properties.setSchemeGenerationEnabled(true);
@@ -156,6 +157,21 @@ class PdcNfcReadinessServiceTest {
         properties.setModelId("MODEL_001");
         when(auditService.hasCurrentReleaseEvidence()).thenReturn(false);
 
+        assertThatThrownBy(readiness::requireSchemeGenerationReady)
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(PDC_NFC_RELEASE_EVIDENCE_MISSING);
+    }
+
+    @Test
+    @DisplayName("发布就绪开关未开 - 错误码与证据缺失区分")
+    void rejectsReleaseNotReadyWithDistinctCode() {
+        properties.setEnabled(true);
+        properties.setSchemeGenerationEnabled(true);
+        properties.setReleaseReady(false);
+        properties.setModelId("MODEL_001");
+
+        // 开关未开时应报 10502，而非证据缺失的 10521；两者修复动作完全不同
         assertThatThrownBy(readiness::requireSchemeGenerationReady)
                 .isInstanceOf(RenException.class)
                 .extracting("code")

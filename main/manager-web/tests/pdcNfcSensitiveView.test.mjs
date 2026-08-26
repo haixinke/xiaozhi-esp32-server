@@ -30,7 +30,7 @@ describe('presentAsset', () => {
       batchNo: 'B001',
       itemNo: 1,
       skuCode: 'SKU01',
-      prototype: 'JINLI',
+      prototype: '锦鲤',
       wechatSn: 'SN123',
       status: 'IN_STOCK',
       schemeSha256: 'abc123',
@@ -45,7 +45,7 @@ describe('presentAsset', () => {
     assert.equal(view.batchNo, 'B001')
     assert.equal(view.itemNo, 1)
     assert.equal(view.skuCode, 'SKU01')
-    assert.equal(view.prototype, 'JINLI')
+    assert.equal(view.prototype, '锦鲤')
     assert.equal(view.wechatSn, 'SN123')
     assert.equal(view.status, 'IN_STOCK')
     assert.equal(view.schemeSha256, 'abc123')

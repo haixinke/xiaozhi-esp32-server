@@ -13,6 +13,14 @@
       label-width="100px"
       label-position="right"
     >
+      <el-form-item label="批次号" prop="batchNo">
+        <el-input
+          v-model="form.batchNo"
+          placeholder="全局唯一，资产编号将以此为前缀"
+          maxlength="64"
+        ></el-input>
+      </el-form-item>
+
       <el-form-item label="商品类型" prop="productTypeId">
         <el-select
           v-model="form.productTypeId"
@@ -43,9 +51,14 @@
           v-model="form.prototype"
           placeholder="请选择原型"
           style="width: 100%;"
+          :loading="prototypeLoading"
         >
-          <el-option label="锦鲤" value="JINLI"></el-option>
-          <el-option label="玉兔" value="YUTU"></el-option>
+          <el-option
+            v-for="item in prototypeOptions"
+            :key="item.key"
+            :label="item.name"
+            :value="item.key"
+          ></el-option>
         </el-select>
       </el-form-item>
 
@@ -95,7 +108,10 @@ export default {
       saving: false,
       productTypeLoading: false,
       productTypeOptions: [],
+      prototypeLoading: false,
+      prototypeOptions: [],
       form: {
+        batchNo: '',
         productTypeId: '',
         skuCode: '',
         prototype: '',
@@ -103,6 +119,10 @@ export default {
         remark: ''
       },
       rules: {
+        batchNo: [
+          { required: true, message: '请输入批次号', trigger: 'blur' },
+          { max: 64, message: '批次号长度不能超过 64 个字符', trigger: 'blur' }
+        ],
         productTypeId: [
           { required: true, message: '请选择商品类型', trigger: 'change' }
         ],
@@ -125,6 +145,7 @@ export default {
       this.dialogVisible = val
       if (val) {
         this.fetchProductTypes()
+        this.fetchPrototypes()
       }
     },
     dialogVisible(val) {
@@ -142,6 +163,21 @@ export default {
           this.$message.error(res.data?.msg || '获取商品类型列表失败')
         }
       })
+    },
+    // 原型选项来自字典 EGG_PET_PROTOTYPE，dict_value 为中文且与后端校验值一致
+    // 拉取失败时不做本地兜底：宁可下拉为空暴露异常，也不能用可能过期的硬编码值生产错误资产
+    fetchPrototypes() {
+      this.prototypeLoading = true
+      Api.dict.getDictDataByType('EGG_PET_PROTOTYPE')
+        .then((data) => {
+          this.prototypeLoading = false
+          this.prototypeOptions = Array.isArray(data) ? data : (data.data || [])
+        })
+        .catch(() => {
+          this.prototypeLoading = false
+          this.prototypeOptions = []
+          this.$message.error('获取原型字典失败，请稍后重试')
+        })
     },
     handleSubmit() {
       this.$refs.batchForm.validate((valid) => {
@@ -167,6 +203,7 @@ export default {
           this.$refs.batchForm.resetFields()
         }
         this.form = {
+          batchNo: '',
           productTypeId: '',
           skuCode: '',
           prototype: '',

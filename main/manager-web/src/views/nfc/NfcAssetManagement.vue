@@ -57,9 +57,14 @@
                 placeholder="原型"
                 clearable
                 class="filter-item"
+                :loading="prototypeLoading"
               >
-                <el-option label="锦鲤" value="JINLI"></el-option>
-                <el-option label="玉兔" value="YUTU"></el-option>
+                <el-option
+                  v-for="item in prototypeOptions"
+                  :key="item.key"
+                  :label="item.name"
+                  :value="item.key"
+                ></el-option>
               </el-select>
               <el-date-picker
                 v-model="filters.dateRange"
@@ -219,7 +224,10 @@ export default {
         { value: 'CLAIMED', label: '已领取' },
         { value: 'DISABLED', label: '已禁用' },
         { value: 'SCRAPPED', label: '已报废' }
-      ]
+      ],
+      // 原型选项（来自字典 EGG_PET_PROTOTYPE）
+      prototypeLoading: false,
+      prototypeOptions: []
     }
   },
   computed: {
@@ -229,10 +237,25 @@ export default {
   },
   created() {
     this.fetchAssets()
+    this.fetchPrototypes()
   },
   methods: {
     badgeType: statusBadgeType,
     statusText: statusLabel,
+    // 原型筛选选项来自字典 EGG_PET_PROTOTYPE，与创建批次共用同一数据源
+    // 筛选值需与后端 prototype 字段精确匹配，拼音值会导致查询恒为空结果
+    fetchPrototypes() {
+      this.prototypeLoading = true
+      Api.dict.getDictDataByType('EGG_PET_PROTOTYPE')
+        .then((data) => {
+          this.prototypeLoading = false
+          this.prototypeOptions = Array.isArray(data) ? data : (data.data || [])
+        })
+        .catch(() => {
+          this.prototypeLoading = false
+          this.prototypeOptions = []
+        })
+    },
     truncateHash(hash) {
       if (!hash) return '-'
       if (hash.length <= 16) return hash

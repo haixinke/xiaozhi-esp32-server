@@ -1,5 +1,6 @@
 package xiaozhi.modules.agent.dao;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -47,4 +48,17 @@ public interface AiAgentChatHistoryDao extends BaseMapper<AgentChatHistoryEntity
      * @param audioIds 音频ID列表
      */
     void deleteAudioByIds(@Param("audioIds") List<String> audioIds);
+
+    /**
+     * 统计某用户当日发送的用户消息数（chat_type=1）。
+     * <p>
+     * 通过 ai_device.mac_address 关联用户：同一用户的多台设备消息合并计数，
+     * 对应"用户当天"语义。日界由调用方按 Asia/Shanghai 计算后传入 startAt，
+     * 不依赖数据库服务器时区，保证前后端"今天"一致。
+     *
+     * @param userId  当前登录用户 ID（sys_user.id = ai_device.user_id）
+     * @param startAt 今日 00:00（Asia/Shanghai）
+     * @return 当日用户消息条数
+     */
+    long countTodayUserMessages(@Param("userId") Long userId, @Param("startAt") LocalDateTime startAt);
 }

@@ -36,6 +36,7 @@ import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.security.service.SysUserTokenService;
 import xiaozhi.modules.sys.dao.SysUserDao;
 import xiaozhi.modules.sys.entity.SysUserEntity;
+import xiaozhi.modules.sys.service.SysDictDataService;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.dto.WechatLoginRespDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
@@ -62,6 +63,8 @@ class WechatServiceImplLoginTest {
     private xiaozhi.common.redis.RedisUtils redisUtils;
     @Mock
     private xiaozhi.modules.wechat.service.WechatAccessTokenProvider wechatAccessTokenProvider;
+    @Mock
+    private SysDictDataService sysDictDataService;
 
     private WechatServiceImpl service;
 
@@ -78,7 +81,7 @@ class WechatServiceImplLoginTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, null, wechatAccessTokenProvider) {
+                inviteService, redisUtils, null, wechatAccessTokenProvider, sysDictDataService) {
             @Override
             JSONObject jscode2session(String code) {
                 return JSONUtil.parseObj(JSCODE_OK);

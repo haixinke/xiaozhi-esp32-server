@@ -306,6 +306,18 @@ const routes = [
       title: '故事引擎'
     }
   },
+  // 用户反馈管理页面路由
+  {
+    path: '/feedback-management',
+    name: 'FeedbackManagement',
+    component: function () {
+      return import('../views/FeedbackManagement.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      title: '反馈管理'
+    }
+  },
 ]
 const router = new VueRouter({
   base: process.env.VUE_APP_PUBLIC_PATH || '/',

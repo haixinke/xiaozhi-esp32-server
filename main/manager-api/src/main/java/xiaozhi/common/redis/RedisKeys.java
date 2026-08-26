@@ -147,6 +147,13 @@ public class RedisKeys {
     }
 
     /**
+     * 用户反馈提交限流计数的Key
+     */
+    public static String getFeedbackSubmitCountKey(String userId) {
+        return "feedback:submit:count:" + userId;
+    }
+
+    /**
      * 获取音色克隆音频ID的缓存key
      */
     public static String getVoiceCloneAudioIdKey(String uuid) {

@@ -1,0 +1,69 @@
+<view class="page">
+  <nav-bar title="用户反馈" fallback-url="/pages/my/my"></nav-bar>
+  <view class="content">
+    <view wx:if="{{receiptNumber}}" class="success">
+      <text class="success__title">反馈已提交</text>
+      <view class="success__detail">
+        <text class="success__line">受理编号：{{receiptNumber}}</text>
+        <text class="success__line">普通咨询 / 投诉：24 小时内完成核查并反馈结果</text>
+        <text class="success__line">涉及轻生、诈骗、隐私泄露等高风险诉求：2 小时内人工加急处置</text>
+      </view>
+    </view>
+
+    <text class="label">诉求类型</text>
+    <view
+      class="picker-field {{type ? '' : 'picker-field--placeholder'}} {{typePanelOpen ? 'picker-field--open' : ''}}"
+      bindtap="onToggleTypePanel"
+    >
+      <text class="picker-field__label">{{typeOptions[typeIndex].label}}</text>
+      <text class="picker-field__chevron">{{typePanelOpen ? '⌃' : '⌄'}}</text>
+    </view>
+    <view wx:if="{{typePanelOpen}}" class="type-options">
+      <block wx:for="{{typeOptions}}" wx:key="value">
+        <view
+          wx:if="{{index > 0}}"
+          class="type-option {{typeIndex === index ? 'type-option--selected' : ''}}"
+          data-index="{{index}}"
+          bindtap="onSelectType"
+        >
+          <text class="type-option__label">{{item.label}}</text>
+          <text wx:if="{{typeIndex === index}}" class="type-option__check">✓</text>
+        </view>
+      </block>
+    </view>
+
+    <text class="label">问题详细描述</text>
+    <view class="description-wrap">
+      <textarea class="description" value="{{description}}" maxlength="500" disabled="{{submitting}}" placeholder="请清晰说明发生时间、对话内容和遇到的问题。
+请勿填写银行卡号、身份证号、密码或验证码等隐私信息。" bindinput="onDescriptionInput"></textarea>
+      <text class="count">{{description.length}}/500</text>
+    </view>
+
+    <view class="consent" bindtap="onToggleConsent">
+      <view class="checkbox {{consent ? 'checkbox--checked' : ''}}">{{consent ? '✓' : ''}}</view>
+      <text class="consent-copy">我已阅读<text class="policy-link" catchtap="onOpenConsent">《知情同意书》</text>，同意平台仅为受理和处理本次反馈收集、使用上述信息。</text>
+    </view>
+
+    <text wx:if="{{submitError}}" class="submit-error">{{submitError}}</text>
+    <view class="submit {{canSubmit ? '' : 'submit--disabled'}}" bindtap="onSubmit">{{submitting ? '提交中' : '提交'}}</view>
+  </view>
+
+  <!-- 知情同意书弹窗：查看不自动勾选，仅点底部按钮视为同意 -->
+  <view wx:if="{{consentVisible}}" class="consent-mask" catchtouchmove="noop" catchtap="onCloseConsent">
+    <view class="consent-dialog" catchtap="noop">
+      <view class="consent-dialog__close" catchtap="onCloseConsent">✕</view>
+      <text class="consent-dialog__title">知情同意书</text>
+      <scroll-view class="consent-dialog__body" scroll-y>
+        <text class="consent-section__title">个人信息收集告知</text>
+        <text class="consent-section__text">温馨告知：您填写的手机号、联系信息仅用于本次投诉反馈处理，仅留存 6 个月，到期自动脱敏删除；不会用于 AI 模型训练、营销推送，不会向第三方泄露、出售。</text>
+        <text class="consent-section__title">AI 拟人服务专项提示</text>
+        <text class="consent-section__text">如您反馈 AI 虚拟宠物对话存在违规内容，平台将调取对应时段对话记录开展安全复核，相关对话数据仅用于本次风险核查，核查完毕统一归档留存。</text>
+        <text class="consent-section__title">未成年人专项提示</text>
+        <text class="consent-section__text">未满 14 周岁用户提交反馈，平台处理后将同步风险提醒至您填写的监护人手机号；涉及心理、极端情绪问题会优先联系监护人介入。</text>
+        <text class="consent-section__title">老年人友好提示</text>
+        <text class="consent-section__text">老年用户如不会操作表单，可直接拨打客服热线 <text class="consent-hotline" catchtap="onCallHotline">{{hotline}}</text> 人工反馈，无需填写线上表单。</text>
+      </scroll-view>
+      <view class="consent-dialog__agree" bindtap="onAgreeConsent">我已阅读并同意</view>
+    </view>
+  </view>
+</view>

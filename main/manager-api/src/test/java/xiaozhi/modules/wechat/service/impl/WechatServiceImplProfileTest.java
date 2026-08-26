@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Locale;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -37,6 +38,8 @@ import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.security.service.SysUserTokenService;
 import xiaozhi.modules.sys.dao.SysUserDao;
+import xiaozhi.modules.sys.service.SysDictDataService;
+import xiaozhi.modules.sys.vo.SysDictDataItem;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.dto.WechatProfileUpdateDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
@@ -63,6 +66,8 @@ class WechatServiceImplProfileTest {
     private OssService ossService;
     @Mock
     private xiaozhi.modules.wechat.service.WechatAccessTokenProvider wechatAccessTokenProvider;
+    @Mock
+    private SysDictDataService sysDictDataService;
 
     private WechatServiceImpl service;
 
@@ -79,7 +84,7 @@ class WechatServiceImplProfileTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, ossService, wechatAccessTokenProvider);
+                inviteService, redisUtils, ossService, wechatAccessTokenProvider, sysDictDataService);
         setField(BaseServiceImpl.class, service, "baseDao", wechatUserDao);
     }
 
@@ -146,6 +151,54 @@ class WechatServiceImplProfileTest {
         assertThatThrownBy(() -> service.updateProfile(7L, dto))
                 .isInstanceOf(RenException.class)
                 .extracting("code").isEqualTo(ErrorCode.INVALID_MBTI);
+    }
+
+    @Test
+    @DisplayName("updateProfile：合法年龄区间更新成功")
+    void updateProfile_validAgeRange_updates() {
+        WechatUserEntity entity = fullEntity();
+        when(wechatUserDao.selectOne(any())).thenReturn(entity);
+        when(wechatUserDao.update(any(), any())).thenReturn(1);
+        SysDictDataItem item = new SysDictDataItem();
+        item.setKey("AGE_15_35");
+        item.setName("15-35 周岁");
+        when(sysDictDataService.getDictDataByType("EGG_AGE_RANGE")).thenReturn(List.of(item));
+
+        WechatProfileUpdateDTO dto = new WechatProfileUpdateDTO();
+        dto.setAgeRange("AGE_15_35");
+        service.updateProfile(7L, dto);
+
+        verify(wechatUserDao).update(eq(null), any());
+    }
+
+    @Test
+    @DisplayName("updateProfile：年龄区间不在字典内抛 INVALID_AGE_RANGE")
+    void updateProfile_ageRangeNotInDict_throws() {
+        WechatUserEntity entity = fullEntity();
+        when(wechatUserDao.selectOne(any())).thenReturn(entity);
+        SysDictDataItem item = new SysDictDataItem();
+        item.setKey("AGE_15_35");
+        when(sysDictDataService.getDictDataByType("EGG_AGE_RANGE")).thenReturn(List.of(item));
+
+        WechatProfileUpdateDTO dto = new WechatProfileUpdateDTO();
+        dto.setAgeRange("AGE_999");
+
+        assertThatThrownBy(() -> service.updateProfile(7L, dto))
+                .isInstanceOf(RenException.class)
+                .extracting("code").isEqualTo(ErrorCode.INVALID_AGE_RANGE);
+        verify(wechatUserDao, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("getProfile：返回年龄区间")
+    void getProfile_success_returnsAgeRange() {
+        WechatUserEntity entity = fullEntity();
+        entity.setAgeRange("AGE_36_60");
+        when(wechatUserDao.selectOne(any())).thenReturn(entity);
+
+        WechatProfileVO vo = service.getProfile(7L);
+
+        assertThat(vo.getAgeRange()).isEqualTo("AGE_36_60");
     }
 
     @Test

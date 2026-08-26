@@ -30,6 +30,9 @@ public class WechatProfileVO {
     @Schema(description = "MBTI类型")
     private String mbti;
 
+    @Schema(description = "年龄区间（字典 EGG_AGE_RANGE 的 dict_value）")
+    private String ageRange;
+
     @Schema(description = "星座")
     private String zodiac;
 

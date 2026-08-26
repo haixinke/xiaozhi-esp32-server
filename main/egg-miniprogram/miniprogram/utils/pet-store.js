@@ -53,7 +53,8 @@ function saveUser(user) {
 }
 
 /**
- * 把后端用户资料的 nickname/avatarUrl 同步到本地 USER_KEY 缓存。
+ * 把后端用户资料的 nickname/avatarUrl/ageRange 同步到本地 USER_KEY 缓存。
+ * ageRange 供聊天页年龄区间强制门槛读取。
  * @param {Object} profile GET /wechat/profile 响应
  */
 function syncUserProfile(profile) {
@@ -61,6 +62,7 @@ function syncUserProfile(profile) {
   const user = getUser() || {};
   if (profile.nickname !== undefined) user.nickname = profile.nickname;
   if (profile.avatarUrl !== undefined) user.avatarUrl = profile.avatarUrl;
+  if (profile.ageRange !== undefined) user.ageRange = profile.ageRange;
   saveUser(user);
 }
 

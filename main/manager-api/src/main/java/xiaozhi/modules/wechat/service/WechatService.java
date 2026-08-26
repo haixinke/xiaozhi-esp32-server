@@ -62,4 +62,14 @@ public interface WechatService extends BaseService<WechatUserEntity> {
      * @return 公开 URL
      */
     String uploadAvatar(Long userId, org.springframework.web.multipart.MultipartFile file);
+
+    /**
+     * 查询当前用户的年龄区间（字典 EGG_AGE_RANGE 的 dict_value）。
+     * <p>
+     * 用于依赖提醒等需要按年龄分流的保护逻辑；未设置或非微信账号返回 null。
+     *
+     * @param userId 当前登录态对应的 sys_user.id
+     * @return 年龄区间 dict_value（如 {@code AGE_0_14}），可能为 null
+     */
+    String getAgeRange(Long userId);
 }

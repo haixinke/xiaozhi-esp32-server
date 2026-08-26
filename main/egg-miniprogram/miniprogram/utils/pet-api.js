@@ -43,6 +43,13 @@ function listChatHistory(agentId, deviceId, page, limit) {
   });
 }
 
+// 每日用户聊天依赖提醒状态：{ todayCount, minor, chatLimited }
+// todayCount 为当日用户发送消息数（chat_type=1，Asia/Shanghai 日界）；
+// chatLimited=true 表示未成年人（≤14 周岁）当日已超阈值，前端需弹窗并退出聊天页。
+function getDailyUserChatCount() {
+  return get('/agent/chat-history/daily-user-count');
+}
+
 module.exports = {
   adoptPet,
   submitHatchAction,
@@ -51,5 +58,6 @@ module.exports = {
   getPet,
   listPets,
   updateNickname,
-  listChatHistory
+  listChatHistory,
+  getDailyUserChatCount
 };

@@ -7,7 +7,8 @@
   <view class="mood-bar">
     <mood-badge mood="{{dailyStatus.mood}}"></mood-badge>
     <text class="mood-line">{{dailyStatus.line}}</text>
-    <text class="conn-state conn-state--{{connectionState}}">{{connLabel}}</text>
+    <!-- 连接状态胶囊：隐藏不渲染，保留元素便于日后恢复（配套 CONN_LABELS / .conn-state 样式保留） -->
+    <text wx:if="{{false}}" class="conn-state conn-state--{{connectionState}}">{{connLabel}}</text>
   </view>
 
   <!-- 消息区 -->
@@ -17,18 +18,25 @@
       <text class="history-loader-text">加载中...</text>
     </view>
 
+    <!-- AI 内容标识（合规要求），位于消息列表顶部、「已显示全部对话」上方，样式参考静态项目 ai-content-timeline-label -->
+    <view class="ai-content-label" wx:if="{{!historyLoading}}">内容由AI生成</view>
+
+    <!-- 防诈骗提示：仅 60 周岁以上用户常驻显示，样式同 AI 内容标识 -->
+    <view class="ai-content-label ai-content-label--tight" wx:if="{{showFraudWarning && !historyLoading}}">注意：请勿泄露银行卡、验证码隐私</view>
+
     <view class="tip" wx:if="{{!historyLoading}}">{{historyNoMore ? '已显示全部对话' : '上滑查看更多 · 仅保留最近几个月的记录'}}</view>
 
     <view wx:for="{{messages}}" wx:key="id" id="msg-{{item.id}}">
       <!-- 时间分隔条：首条 / 间隔≥5分钟 / 跨天 -->
       <view wx:if="{{item.showTime}}" class="time-sep"><text class="time-sep-text" user-select="none">{{item.timeLabel}}</text></view>
-      <!-- 用户气泡（右） -->
+      <!-- 用户气泡（右），长按可复制 -->
       <view wx:if="{{item.role === 'user'}}" class="row row--user">
-        <view class="bubble bubble--user">{{item.content}}</view>
+        <view class="bubble bubble--user" data-message-id="{{item.id}}" bindlongpress="onMessageLongPress">{{item.content}}</view>
       </view>
-      <!-- 蛋宝宝气泡（左，无头像） -->
+      <!-- 蛋宝宝气泡（左，无头像），长按可复制 -->
       <view wx:else class="row row--egg">
-        <view class="bubble bubble--egg {{item.typing ? 'bubble--typing' : ''}} {{chatState === 'speaking' && index === messages.length - 1 ? 'bubble--speaking' : ''}}">
+        <view class="bubble bubble--egg {{item.typing ? 'bubble--typing' : ''}} {{chatState === 'speaking' && index === messages.length - 1 ? 'bubble--speaking' : ''}}"
+              data-message-id="{{item.id}}" bindlongpress="onMessageLongPress">
           <text>{{item.content}}</text>
           <view wx:if="{{chatState === 'speaking' && index === messages.length - 1 && !item.typing}}" class="speaking-indicator">
             <view class="speaking-bar"></view>
@@ -62,6 +70,15 @@
       <view class="send-button {{!canSend ? 'send-button--disabled' : ''}}"
             hover-class="{{canSend ? 'pressable--pressed' : ''}}" hover-stay-time="80" bindtap="onSend">
         <image class="send-button__icon" src="/assets/icons/send.svg" mode="aspectFit" />
+      </view>
+    </view>
+  </view>
+  <!-- 依赖提醒弹窗（合规要求）：当日用户消息超阈值时弹出，UI 照搬静态项目 health-dialog -->
+  <view wx:if="{{healthReminderVisible}}" class="health-mask" catchtap="noop" catchtouchmove="noop">
+    <view class="health-dialog" catchtap="noop" role="dialog" aria-modal="true">
+      <text class="health-message">{{healthReminderMessage}}</text>
+      <view class="health-actions">
+        <view class="health-button" hover-class="pressable--pressed" hover-stay-time="80" bindtap="onAcknowledgeHealthReminder">我知道了</view>
       </view>
     </view>
   </view>

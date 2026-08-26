@@ -1,6 +1,7 @@
 const petStore = require('../../utils/pet-store');
 const petApi = require('../../utils/pet-api');
 const ota = require('../../utils/ota');
+const ageRangeApi = require('../../utils/age-range-api');
 const WebSocketManager = require('../../utils/websocket');
 const AudioManager = require('../../utils/audio');
 
@@ -10,6 +11,18 @@ const STATE_SPEAKING = 'speaking';
 
 // 两条消息间隔超过该阈值才显示居中时间分隔条
 const TIME_GAP_MS = 5 * 60 * 1000;
+
+// 依赖提醒轮询间隔：每分钟查一次后端当日用户消息数，超过阈值触发弹窗
+const HEALTH_POLL_INTERVAL_MS = 60 * 1000;
+// 本地存储键：记录成年人当日已弹过依赖提醒的日期（跨天后重新触发）
+const HEALTH_REMINDER_SHOWN_KEY = 'eggbaby_health_reminder_shown_date';
+// 成年人提醒文案
+const HEALTH_MSG_ADULT = '长时间 AI 陪伴易产生依赖，请多参与线下户外活动。';
+// 未成年人提醒文案：追加今日已结束，避免孩子困惑为何被退出
+const HEALTH_MSG_MINOR = '长时间 AI 陪伴易产生依赖，请多参与线下户外活动。今日聊天已结束，明天再来吧。';
+
+// 年龄区间字典值（对应 config/age-ranges.js）：60 周岁以上用户在消息列表顶部追加防诈骗提示
+const AGE_RANGE_61_PLUS = 'AGE_61_PLUS';
 
 // 连接状态文案（导航栏下方胶囊，仅非连接态显示）
 const CONN_LABELS = {
@@ -68,6 +81,12 @@ Page({
     keyboardHeight: 0,
     inputFocused: false,
     reducedMotion: false,
+    // 依赖提醒弹窗（合规要求）：当日用户消息超阈值时弹出
+    healthReminderVisible: false,
+    healthReminderMessage: HEALTH_MSG_ADULT,
+    healthReminderMinor: false,
+    // 防诈骗提示（60 周岁以上常驻显示）：年龄未知或其他区间不显示
+    showFraudWarning: false,
   },
 
   _msgIdSeed: 1,
@@ -82,6 +101,7 @@ Page({
   _suspendedByHide: false,
   wsManager: null,
   audioManager: null,
+  _healthPollTimer: null,
 
   onLoad() {
     const pet = petStore.getPet();
@@ -107,10 +127,14 @@ Page({
       dailyStatus: petStore.getDailyStatus(),
     });
 
-    this._loadHistoryMessages(1, true);
-    this._initAudio();
-    this._initWebSocketManager();
-    this._otaAndConnect();
+    // 年龄区间强制门槛：未设置的用户先去选择，通过后才初始化聊天
+    this._ensureAgeRange().then((ok) => {
+      if (!ok) return;
+      // 依赖提醒门禁：未成年人当日已超阈值则直接拦截，不进入聊天
+      this._checkDailyChatLimit().then((allowed) => {
+        if (allowed) this._startChat();
+      });
+    });
 
     // 键盘适配基准：记录未弹键盘时的窗口高度，配合 chatViewportStyle 压缩页面
     this.chatWindowHeight = windowHeight();
@@ -124,6 +148,139 @@ Page({
       this.updateChatViewport();
     };
     if (wx.onWindowResize) wx.onWindowResize(this.windowResizeHandler);
+  },
+
+  // 年龄区间强制门槛（合规要求）：未设置年龄区间的用户无法使用聊天功能。
+  // 缓存优先，缓存缺失时实时拉取资料兜底；接口失败阻断并提供重试。
+  _ensureAgeRange() {
+    const cached = petStore.getUser();
+    if (cached && cached.ageRange) {
+      this.setData({ showFraudWarning: cached.ageRange === AGE_RANGE_61_PLUS });
+      return Promise.resolve(true);
+    }
+    return ageRangeApi.getProfile().then((profile) => {
+      petStore.syncUserProfile(profile);
+      if (profile && profile.ageRange) {
+        this.setData({ showFraudWarning: profile.ageRange === AGE_RANGE_61_PLUS });
+        return true;
+      }
+      wx.redirectTo({ url: '/pages/age-range/age-range?force=1' });
+      return false;
+    }).catch(() => {
+      wx.showModal({
+        title: '提示',
+        content: '网络异常，无法读取账号设置',
+        confirmText: '重试',
+        showCancel: false,
+        success: () => {
+          this._ensureAgeRange().then((ok) => {
+            if (!ok) return;
+            this._checkDailyChatLimit().then((allowed) => {
+              if (allowed) this._startChat();
+            });
+          });
+        }
+      });
+      return false;
+    });
+  },
+
+  // 年龄门槛通过后的聊天初始化入口
+  _startChat() {
+    if (this._chatStarted) return;
+    this._chatStarted = true;
+    this._loadHistoryMessages(1, true);
+    this._initAudio();
+    this._initWebSocketManager();
+    this._otaAndConnect();
+    // 启动依赖提醒轮询：每分钟查一次当日用户消息数
+    this._startHealthPolling();
+  },
+
+  // 依赖提醒门禁与轮询共用：查询当日计数，判断是否弹窗/限制
+  _checkDailyChatLimit() {
+    return petApi.getDailyUserChatCount().then((res) => {
+      const data = (res && res.data) || res || {};
+      const todayCount = Number(data.todayCount) || 0;
+      const minor = Boolean(data.minor);
+      const chatLimited = Boolean(data.chatLimited);
+      // 未成年人当日超阈值：弹窗，退出后当日禁聊
+      if (chatLimited && minor) {
+        this._showHealthReminder(true);
+        return false;
+      }
+      // 成年人超阈值：当日仅弹一次，不限制继续聊天
+      if (todayCount > 0 && minor === false && todayCount > 300 && !this._healthReminderShownToday()) {
+        this._showHealthReminder(false);
+        this._markHealthReminderShownToday();
+      }
+      return true;
+    }).catch(() => {
+      // 接口失败不阻断聊天，保护逻辑降级为不提醒
+      return true;
+    });
+  },
+
+  _startHealthPolling() {
+    this._stopHealthPolling();
+    this._healthPollTimer = setInterval(() => {
+      // 页面不可见时由 onHide 停止，这里防御性跳过
+      if (this._suspendedByHide) return;
+      this._checkDailyChatLimit().catch(() => {});
+    }, HEALTH_POLL_INTERVAL_MS);
+  },
+
+  _stopHealthPolling() {
+    if (this._healthPollTimer) {
+      clearInterval(this._healthPollTimer);
+      this._healthPollTimer = null;
+    }
+  },
+
+  // 当日是否已弹过成年人依赖提醒（本地按日期标记，跨天后重置）
+  _healthReminderShownToday() {
+    try {
+      return wx.getStorageSync(HEALTH_REMINDER_SHOWN_KEY) === this._todayKeyLocal();
+    } catch (_) {
+      return false;
+    }
+  },
+
+  _markHealthReminderShownToday() {
+    try {
+      wx.setStorageSync(HEALTH_REMINDER_SHOWN_KEY, this._todayKeyLocal());
+    } catch (_) {}
+  },
+
+  // 本地日期键（设备时区）。仅用于"今日已弹过"标记，与后端 Asia/Shanghai 日界可能在凌晨临界有极小偏差，不影响保护语义
+  _todayKeyLocal() {
+    const d = new Date();
+    const pad = (n) => (n < 10 ? '0' + n : '' + n);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  },
+
+  // 弹出依赖提醒弹窗：minor=true 走未成年人文案并在确认后退出聊天页
+  _showHealthReminder(minor) {
+    if (minor) {
+      // 未成年人即将退出聊天页，停止轮询避免重复请求
+      this._stopHealthPolling();
+    }
+    this.setData({
+      healthReminderVisible: true,
+      healthReminderMinor: minor,
+      healthReminderMessage: minor ? HEALTH_MSG_MINOR : HEALTH_MSG_ADULT,
+    });
+  },
+
+  // 弹窗"我知道了"：未成年人退出聊天页回首页并当日禁聊；成年人仅关闭弹窗继续聊天
+  onAcknowledgeHealthReminder() {
+    if (this.data.healthReminderMinor) {
+      this.setData({ healthReminderVisible: false });
+      this._stopHealthPolling();
+      wx.switchTab({ url: '/pages/home/home' });
+      return;
+    }
+    this.setData({ healthReminderVisible: false });
   },
 
   onShow() {
@@ -145,12 +302,14 @@ Page({
     // 避免僵尸连接占用服务端连接名额（否则要等服务端约3分钟超时回收）。
     // chatState 重置与停止播放由 onStateChange('disconnected') 回调统一处理。
     this._suspendedByHide = true;
+    this._stopHealthPolling();
     if (this.wsManager) {
       this.wsManager.disconnect();
     }
   },
 
   onUnload() {
+    this._stopHealthPolling();
     if (this.wsManager) {
       this.wsManager.disconnect();
       this.wsManager.destroy();
@@ -704,6 +863,25 @@ Page({
 
     this.setData({ draft: '', canSend: false, chatState: STATE_THINKING }, () => {
       this._scrollToBottom();
+    });
+  },
+
+  /**
+   * 长按消息气泡复制单条消息（交互照搬蛋宝宝UI静态项目）。
+   * 打字中的 AI 消息与空内容消息不可复制，避免复制到半截文本；
+   * 复制内容为消息原文，不加署名；成功反馈依赖 wx.setClipboardData 系统提示。
+   */
+  onMessageLongPress(e) {
+    const messageId = e.currentTarget.dataset.messageId;
+    const target = this.data.messages.find((m) => m.id === messageId);
+    if (!target || target.typing || !target.content) return;
+
+    wx.showActionSheet({
+      itemList: ['复制'],
+      success: (res) => {
+        if (res.tapIndex !== 0) return;
+        wx.setClipboardData({ data: target.content });
+      },
     });
   },
 

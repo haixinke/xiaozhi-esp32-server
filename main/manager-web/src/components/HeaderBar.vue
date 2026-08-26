@@ -190,23 +190,26 @@
           </el-dropdown-menu>
         </el-dropdown>
 
-        <!-- 内容运营 -->
+        <!-- 运营管理 -->
         <el-dropdown v-if="userInfo.superAdmin" trigger="click" class="equipment-management more-dropdown" :class="{
-          'active-tab': $route.path === '/story-engine-management'
+          'active-tab': $route.path === '/story-engine-management' || $route.path === '/feedback-management'
         }" @visible-change="handleContentDropdownVisibleChange">
           <span class="el-dropdown-link">
             <img loading="lazy" alt="" src="@/assets/header/param_management.png" :style="{
               filter:
-                $route.path === '/story-engine-management'
+                $route.path === '/story-engine-management' || $route.path === '/feedback-management'
                   ? 'brightness(0) invert(1)'
                   : 'None',
             }" />
-            <span class="nav-text">内容运营</span>
+            <span class="nav-text">运营管理</span>
             <i class="el-icon-arrow-down" :class="{ 'rotate-down': contentDropdownVisible }"></i>
           </span>
           <el-dropdown-menu slot="dropdown">
             <el-dropdown-item @click.native="handleRouter('storyEngineManagement')">
               故事引擎
+            </el-dropdown-item>
+            <el-dropdown-item @click.native="handleRouter('feedbackManagement')">
+              反馈管理
             </el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
@@ -287,6 +290,7 @@ export default {
         nfcAssets: "/pdc-nfc/assets",
         nfcAudit: "/pdc-nfc/audit",
         storyEngineManagement: "/story-engine-management",
+        feedbackManagement: "/feedback-management",
       }
     };
   },

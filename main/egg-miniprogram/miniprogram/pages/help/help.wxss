@@ -5,6 +5,12 @@
   background: #FFFFFF;
 }
 
+.faq-scroll {
+  flex: 1;
+  background: #FFFFFF;
+}
+
+/* 顶部搜索框 */
 .search-bar {
   padding: 24rpx 40rpx;
   background: #FFFFFF;
@@ -42,28 +48,53 @@
   bottom: -1rpx;
 }
 
-.search-placeholder {
+.search-field {
+  flex: 1;
+  min-width: 0;
+  height: 72rpx;
   font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
   font-size: 28rpx;
+  color: #1A1A1A;
+}
+
+/* 占位符保持灰，与已输入文字区分 */
+.search-ph {
   color: #8C8C88;
 }
 
-.faq-scroll {
-  flex: 1;
-  background: #FFFFFF;
-}
+/* 搜索结果 */
+.search-results { padding: 24rpx 40rpx 48rpx; }
+.search-result { padding: 26rpx 0; border-bottom: 1rpx solid #ECEBE7; }
+.search-result-q, .search-result-a { display: block; }
+.search-result-q { color: #26372C; font-size: 28rpx; font-weight: 600; }
+.search-result-a { margin-top: 12rpx; color: #737771; font-size: 24rpx; line-height: 1.65; }
+.search-empty { padding: 90rpx 20rpx; color: #8C8C88; font-size: 25rpx; text-align: center; }
 
 .qa-group {
   background: #FFFFFF;
 }
 
+/* 首屏区块：用户反馈入口、客服邮箱、现实求助（对齐 UI 设计稿） */
+.help-first-screen { padding: 28rpx 40rpx 18rpx; background: #FAFAF8; }
+.help-heading { display: block; margin: 4rpx 0 14rpx; color: #5C5C5C; font-size: 22rpx; font-weight: 600; letter-spacing: 1.4rpx; }
+.help-heading--reality { margin-top: 28rpx; }
+.help-action, .support-config, .reality-card { padding: 24rpx 28rpx; border: 1rpx solid #E5E3DF; background: #FFF; box-sizing: border-box; }
+.help-action { min-height: 96rpx; display: flex; align-items: center; justify-content: space-between; border-radius: 26rpx 26rpx 0 0; color: #1A1A1A; font-size: 27rpx; }
+.support-config { min-height: 112rpx; display: flex; align-items: center; justify-content: space-between; gap: 24rpx; border-top: 0; border-radius: 0 0 26rpx 26rpx; }
+.support-config__label, .support-config__value { display: block; }
+.support-config__label { color: #5C5C5C; font-size: 22rpx; }
+.support-config__value { margin-top: 8rpx; color: #1A1A1A; font-size: 27rpx; font-weight: 600; }
+.support-config__copy { flex: none; padding: 12rpx 18rpx; border-radius: 18rpx; background: #E5EBE5; color: #002900; font-size: 24rpx; font-weight: 600; }
+.reality-card { display: flex; flex-direction: column; gap: 14rpx; border-radius: 26rpx; color: #26372C; font-size: 26rpx; line-height: 1.5; }
+
 .bottom-space {
   height: 24rpx;
 }
 
-.cs-bar {
+/* 底部邮件支持条 */
+.support-bar {
   border-top: 1rpx solid #E5E3DF;
-  padding: 26rpx 40rpx;
+  padding: 26rpx 40rpx calc(26rpx + env(safe-area-inset-bottom));
   background: #FFFFFF;
   display: flex;
   align-items: center;
@@ -71,29 +102,41 @@
   flex-shrink: 0;
 }
 
-.cs-hint {
+.support-hint {
   font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
   font-size: 28rpx;
   color: #8C8C88;
 }
 
-.cs-link {
+.support-link {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  gap: 20rpx;
 }
 
-.cs-link-text {
+.support-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4rpx;
+}
+
+.support-label,
+.support-action {
   font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
-  font-size: 28rpx;
+  font-size: 24rpx;
   font-weight: 600;
   color: #002900; /* --ink */
 }
 
-.cs-arrow {
-  width: 14rpx;
-  height: 14rpx;
-  border-top: 3rpx solid #002900;
-  border-right: 3rpx solid #002900;
-  transform: rotate(45deg);
+.support-email {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 22rpx;
+  color: #737771;
+}
+
+.support-action {
+  padding: 12rpx 18rpx;
+  border-radius: 18rpx;
+  background: #E5EBE5;
 }

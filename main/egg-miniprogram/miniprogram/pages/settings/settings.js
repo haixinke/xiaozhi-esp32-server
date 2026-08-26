@@ -1,19 +1,31 @@
-const STORAGE_KEY = 'eggbaby_notification_preferences_v1';
-const DEFAULTS = { daily: true, hatch: true, growth: true, bday: false };
+const ageRangeApi = require('../../utils/age-range-api');
+const { FALLBACK_AGE_RANGES } = require('../../config/age-ranges');
 
 Page({
-  data: { notifs: DEFAULTS },
-
-  onLoad() {
-    this.setData({ notifs: wx.getStorageSync(STORAGE_KEY) || DEFAULTS });
+  data: {
+    ageRangeLabel: '',
+    ageRangeLoading: true
   },
 
-  update(key, value) {
-    this.setData({ [`notifs.${key}`]: value }, () => wx.setStorageSync(STORAGE_KEY, this.data.notifs));
+  onShow() {
+    this.loadAgeRange();
   },
 
-  onToggleDaily(e) { this.update('daily', e.detail.value); },
-  onToggleHatch(e) { this.update('hatch', e.detail.value); },
-  onToggleGrowth(e) { this.update('growth', e.detail.value); },
-  onToggleBday(e) { this.update('bday', e.detail.value); }
+  // 并行拉取字典选项与用户资料，把 ageRange value 映射为展示文案；
+  // 任一接口失败时静默降级：字典失败用本地兜底，资料失败则不显示当前值，均不阻塞页面
+  loadAgeRange() {
+    this.setData({ ageRangeLoading: true });
+    const optionsPromise = ageRangeApi.listAgeRanges().catch(() => []);
+    const profilePromise = ageRangeApi.getProfile().catch(() => null);
+    Promise.all([optionsPromise, profilePromise]).then(([options, profile]) => {
+      const dict = options.length ? options : FALLBACK_AGE_RANGES;
+      const hit = dict.find((item) => item.value === (profile && profile.ageRange));
+      this.setData({ ageRangeLabel: hit ? hit.label : '', ageRangeLoading: false });
+    });
+  },
+
+  onNavAgeRange() { wx.navigateTo({ url: '/pages/age-range/age-range' }); },
+  onNavFeedback() { wx.navigateTo({ url: '/pages/feedback/feedback' }); },
+  onNavTerms() { wx.navigateTo({ url: '/pages/terms/terms' }); },
+  onNavPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); }
 });

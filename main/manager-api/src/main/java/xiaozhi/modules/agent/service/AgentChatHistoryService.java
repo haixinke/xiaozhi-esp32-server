@@ -11,6 +11,7 @@ import xiaozhi.modules.agent.dto.AgentChatSessionDTO;
 import xiaozhi.modules.agent.entity.AgentChatHistoryEntity;
 import xiaozhi.modules.agent.vo.AgentChatHistoryListVO;
 import xiaozhi.modules.agent.vo.AgentChatHistoryUserVO;
+import xiaozhi.modules.agent.vo.DailyUserChatCountVO;
 
 /**
  * 智能体聊天记录表处理service
@@ -109,4 +110,16 @@ public interface AgentChatHistoryService extends IRepository<AgentChatHistoryEnt
      * @param userId    当前用户ID
      */
     void recall(Long messageId, Long userId);
+
+    /**
+     * 查询当前用户当日聊天依赖提醒状态。
+     * <p>
+     * 统计用户当日发送的用户消息数（chat_type=1，Asia/Shanghai 日界），并按年龄区间
+     * 判断是否触发未成年人保护分支：年龄区间为 {@code AGE_0_14}（≤14 周岁）且当日
+     * 消息数超过阈值时 {@code chatLimited=true}，前端据此弹窗并退出聊天页、当日禁聊。
+     *
+     * @param userId 当前登录用户ID
+     * @return 当日计数与是否限制聊天的视图
+     */
+    DailyUserChatCountVO getDailyUserChatCount(Long userId);
 }

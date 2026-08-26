@@ -14,6 +14,7 @@ import correctWord from './module/correctWord.js'
 import addressBook from './module/addressBook.js'
 import pdcNfc from './module/pdcNfc.js'
 import storyEngine from './module/storyEngine.js'
+import feedback from './module/feedback.js'
 
 
 
@@ -49,5 +50,6 @@ export default {
     correctWord,
     addressBook,
     pdcNfc,
-    storyEngine
+    storyEngine,
+    feedback
   }

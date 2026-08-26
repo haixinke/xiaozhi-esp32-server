@@ -33,6 +33,7 @@ import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.security.service.SysUserTokenService;
 import xiaozhi.modules.sys.dao.SysUserDao;
+import xiaozhi.modules.sys.service.SysDictDataService;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.dto.WechatBindPhoneRespDTO;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
@@ -62,6 +63,8 @@ class WechatServiceImplTest {
     private xiaozhi.common.redis.RedisUtils redisUtils;
     @Mock
     private WechatAccessTokenProvider wechatAccessTokenProvider;
+    @Mock
+    private SysDictDataService sysDictDataService;
 
     private List<String> postedUrls;
     private String phoneBody;
@@ -84,7 +87,7 @@ class WechatServiceImplTest {
         phoneBody = PHONE_OK;
 
         service = new WechatServiceImpl(sysUserDao, sysUserTokenService, agentService,
-                inviteService, redisUtils, null, wechatAccessTokenProvider) {
+                inviteService, redisUtils, null, wechatAccessTokenProvider, sysDictDataService) {
             @Override
             String httpPost(String url, String jsonBody) {
                 postedUrls.add(url);

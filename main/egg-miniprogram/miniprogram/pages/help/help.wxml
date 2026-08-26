@@ -1,16 +1,46 @@
 <view class="page">
   <nav-bar title="帮助中心"></nav-bar>
 
-  <view class="search-bar" bindtap="onSearchTap">
+  <!-- 顶部搜索框：本地过滤 FAQ 关键词 -->
+  <view class="search-bar">
     <view class="search-input">
       <view class="search-icon"></view>
-      <text class="search-placeholder">搜索问题关键词</text>
+      <input class="search-field" value="{{searchQuery}}" placeholder="搜索问题关键词" placeholder-class="search-ph" bindinput="onSearchInput" />
     </view>
   </view>
 
   <scroll-view scroll-y class="faq-scroll">
 
-    <collapse-item
+    <!-- 首屏：用户反馈入口 + 客服邮箱 + 现实求助信息（静态内容，来自 UI 设计稿）；搜索时隐藏 -->
+    <view wx:if="{{!searchQuery}}" class="help-first-screen">
+      <text class="help-heading">遇到问题</text>
+      <view class="help-action" aria-role="button" bindtap="onFeedback"><text>用户反馈</text><text>›</text></view>
+      <view class="support-config" aria-role="button" aria-label="复制客服邮箱 {{supportEmail}}" bindtap="onCopySupportEmail">
+        <view>
+          <text class="support-config__label">客服邮箱</text>
+          <text class="support-config__value">{{supportEmail}}</text>
+        </view>
+        <text class="support-config__copy">复制</text>
+      </view>
+      <text class="help-heading help-heading--reality">需要现实帮助</text>
+      <view class="reality-card">
+        <text>心理援助热线：{{support.psychologicalHotline}}</text>
+        <text>紧急危险：{{support.police}} / {{support.medicalEmergency}}</text>
+      </view>
+    </view>
+
+    <!-- 搜索结果：命中即定位，搜索时替换分类列表 -->
+    <view wx:if="{{searchQuery}}" class="search-results">
+      <view wx:if="{{searchResults.length}}">
+        <view wx:for="{{searchResults}}" wx:key="q" class="search-result">
+          <text class="search-result-q">{{item.q}}</text>
+          <text class="search-result-a">{{item.a}}</text>
+        </view>
+      </view>
+      <view wx:else class="search-empty">没有找到相关问题，试试其他关键词。</view>
+    </view>
+
+    <collapse-item wx:if="{{!searchQuery}}"
       title="设备问题"
       variant="category"
       expanded="{{cats.device}}"
@@ -34,7 +64,7 @@
       </view>
     </collapse-item>
 
-    <collapse-item
+    <collapse-item wx:if="{{!searchQuery}}"
       title="账号"
       variant="category"
       expanded="{{cats.account}}"
@@ -58,7 +88,7 @@
       </view>
     </collapse-item>
 
-    <collapse-item
+    <collapse-item wx:if="{{!searchQuery}}"
       title="对话功能"
       variant="category"
       expanded="{{cats.chat}}"
@@ -82,7 +112,7 @@
       </view>
     </collapse-item>
 
-    <collapse-item
+    <collapse-item wx:if="{{!searchQuery}}"
       title="其他"
       variant="category"
       expanded="{{cats.other}}"
@@ -111,11 +141,15 @@
 
   </scroll-view>
 
-  <view class="cs-bar">
-    <text class="cs-hint">没找到答案？</text>
-    <view class="cs-link" bindtap="onContactCS">
-      <text class="cs-link-text">联系客服</text>
-      <view class="cs-arrow"></view>
+  <!-- 底部邮件支持条：点击复制客服邮箱 -->
+  <view class="support-bar">
+    <text class="support-hint">没找到答案？</text>
+    <view class="support-link" aria-role="button" aria-label="复制邮件支持邮箱 {{supportEmail}}" bindtap="onCopySupportEmail">
+      <view class="support-copy">
+        <text class="support-label">邮件支持</text>
+        <text class="support-email">{{supportEmail}}</text>
+      </view>
+      <text class="support-action">复制</text>
     </view>
   </view>
 

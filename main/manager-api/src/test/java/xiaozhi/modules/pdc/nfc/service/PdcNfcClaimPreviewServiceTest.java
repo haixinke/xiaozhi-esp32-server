@@ -84,7 +84,6 @@ class PdcNfcClaimPreviewServiceTest {
     @Test
     void previewNeverCreatesPetOrClaimRecord() {
         setupAllGatesEnabled();
-        lenient().when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         lenient().when(claimRefProtection.lookupHashes(anyString())).thenReturn(List.of("hash1"));
         lenient().when(assetDao.selectList(any(Wrapper.class))).thenReturn(Collections.emptyList());
 
@@ -95,18 +94,37 @@ class PdcNfcClaimPreviewServiceTest {
     }
 
     @Test
-    void noPhoneBindingReturnsUnavailable() {
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(false);
+    void previewWithoutPhoneStillReturnsProductInfo() {
+        // ADR 0003 复验链路：preview 不再校验手机号，未授权用户也可预览（先看货再授权）；
+        // 手机号门禁只在 confirm 领取时校验
+        setupAllGatesEnabled();
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setBatchId(10L);
+        asset.setPrototype("jade_rabbit");
+        asset.setStatus("ACTIVE");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
+        batch.setId(10L);
+        batch.setProductTypeId(100L);
+        when(batchDao.selectById(10L)).thenReturn(batch);
+        PdcNfcProductTypeEntity productType = new PdcNfcProductTypeEntity();
+        productType.setId(100L);
+        productType.setTypeName("翡翠玉兔");
+        when(productTypeDao.selectById(100L)).thenReturn(productType);
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
-        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_UNAVAILABLE);
+        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_CLAIMABLE);
+        assertThat(result.productName()).isEqualTo("翡翠玉兔");
     }
 
     @Test
     void featureDisabledReturnsUnavailable() {
         when(properties.isEnabled()).thenReturn(false);
-        lenient().when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
@@ -117,7 +135,6 @@ class PdcNfcClaimPreviewServiceTest {
     void claimDisabledReturnsUnavailable() {
         when(properties.isEnabled()).thenReturn(true);
         when(properties.isClaimEnabled()).thenReturn(false);
-        lenient().when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
@@ -129,7 +146,6 @@ class PdcNfcClaimPreviewServiceTest {
         when(properties.isEnabled()).thenReturn(true);
         when(properties.isClaimEnabled()).thenReturn(true);
         when(properties.isReleaseReady()).thenReturn(false);
-        lenient().when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
@@ -154,7 +170,6 @@ class PdcNfcClaimPreviewServiceTest {
     void previewTriggersTouchVerificationForFoundAsset() {
         // ADR 0003：preview 命中资产即触发触碰自验证，不核销、不改变返回
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -175,7 +190,6 @@ class PdcNfcClaimPreviewServiceTest {
     @Test
     void previewSkipsTouchVerificationWhenNoAssetFound() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
         when(assetDao.selectList(any(Wrapper.class))).thenReturn(Collections.emptyList());
 
@@ -185,9 +199,62 @@ class PdcNfcClaimPreviewServiceTest {
     }
 
     @Test
+    void touchVerifyFiresEvenWithoutPhoneBinding() {
+        // ADR 0003 锁后复验：手机号授权门禁不得挡在复验之前，
+        // 未授权用户（含操作员）触碰命中资产同样触发 touchVerify
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setStatus("VERIFIED");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        verify(manualWriteService).touchVerify(asset);
+        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_UNAVAILABLE);
+    }
+
+    @Test
+    void touchVerifyFiresBeforeAssetRateLimit() {
+        // 复验是无害幂等推进，不应被防刷限流误杀：
+        // 资产限流抛异常时 touchVerify 必须已经执行过
+        setupAllGatesEnabled();
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setStatus("VERIFIED");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+        org.mockito.Mockito.doThrow(new RenException(10517))
+                .when(rateLimiter).checkPreviewAssetRate(1L);
+
+        assertThatThrownBy(() -> claimService.preview(USER_ID, VALID_CLAIM_REF))
+                .isInstanceOf(RenException.class);
+        verify(manualWriteService).touchVerify(asset);
+    }
+
+    @Test
+    void touchVerifyFiresWhenReleaseNotReady() {
+        // 写卡验证阶段 release 通常未就绪，功能开关不得挡住触碰自验证/复验
+        when(properties.isEnabled()).thenReturn(true);
+        when(properties.isClaimEnabled()).thenReturn(true);
+        when(properties.isReleaseReady()).thenReturn(false);
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setStatus("WRITTEN");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        verify(manualWriteService).touchVerify(asset);
+    }
+
+    @Test
     void activeAssetReturnsClaimable() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -219,7 +286,6 @@ class PdcNfcClaimPreviewServiceTest {
     @Test
     void claimedBySelfReturnsPetInfo() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -255,7 +321,6 @@ class PdcNfcClaimPreviewServiceTest {
     @Test
     void claimedByOtherReturnsNoPet() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -286,7 +351,6 @@ class PdcNfcClaimPreviewServiceTest {
     @Test
     void scrappedAssetReturnsUnavailable() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -303,7 +367,6 @@ class PdcNfcClaimPreviewServiceTest {
     @Test
     void nonActiveAssetReturnsUnavailable() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -320,7 +383,6 @@ class PdcNfcClaimPreviewServiceTest {
     @Test
     void rateLimitExceededThrowsException() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
 
         org.mockito.Mockito.doThrow(new RenException(10517))
                 .when(rateLimiter).checkPreviewUserRate(USER_ID);

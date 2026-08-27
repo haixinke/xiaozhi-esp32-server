@@ -86,13 +86,26 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             return unavailable();
         }
 
-        // 2. Check phone binding
-        if (!wechatPhoneGate.hasBoundWechatPhone(userId)) {
-            log.debug("[NFC-CLAIM] userId={} has no bound wechat phone", userId);
-            return unavailable();
+        // 2. Lookup asset by claimRef hash（提前到所有门禁之前，见下）
+        List<String> hashes = claimRefProtection.lookupHashes(claimRef);
+        List<PdcNfcAssetEntity> assets = assetDao.selectList(
+                new QueryWrapper<PdcNfcAssetEntity>()
+                        .in("claim_ref_hash", hashes)
+                        .last("LIMIT 1"));
+
+        // ADR 0003 手动写卡模式：触碰自验证 + 锁后复验。
+        // 只要资产被查到了就触发，必须在手机号门禁、功能开关、限流之前——
+        // 复验证据价值在"卡可读"本身，未授权用户的触碰同样有效；
+        // 且写卡验证阶段 release 通常未就绪，功能开关不得挡住验证链路。
+        // 无副作用的幂等推进，不核销领取资格，不影响下方状态分支的返回。
+        if (assets != null && !assets.isEmpty()) {
+            manualWriteService.touchVerify(assets.get(0));
         }
 
-        // 3. Feature gates: enabled → claimEnabled → releaseReady
+        // 3. 手机号门禁不在 preview 校验：未授权用户也可预览产品信息（先看货再授权），
+        // claimRef 只有物理碰卡才能拿到，预览不泄露额外信息；领取确认仍在 confirm 校验。
+
+        // 4. Feature gates: enabled → claimEnabled → releaseReady
         if (!properties.isEnabled()) {
             log.debug("[NFC-CLAIM] NFC feature disabled");
             return unavailable();
@@ -106,15 +119,8 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             return unavailable();
         }
 
-        // 4. Rate limit check
+        // 5. Rate limit check
         rateLimiter.checkPreviewUserRate(userId);
-
-        // 5. Lookup asset by claimRef hash
-        List<String> hashes = claimRefProtection.lookupHashes(claimRef);
-        List<PdcNfcAssetEntity> assets = assetDao.selectList(
-                new QueryWrapper<PdcNfcAssetEntity>()
-                        .in("claim_ref_hash", hashes)
-                        .last("LIMIT 1"));
 
         // 6. No asset found → UNAVAILABLE (don't reveal existence)
         if (assets == null || assets.isEmpty()) {
@@ -126,10 +132,6 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
 
         // Rate limit on asset
         rateLimiter.checkPreviewAssetRate(asset.getId());
-
-        // ADR 0003 手动写卡模式：触碰自验证 + 锁后复验。
-        // 无副作用的幂等推进，不核销领取资格，不影响下方状态分支的返回。
-        manualWriteService.touchVerify(asset);
 
         // 7. Check asset status
         String status = asset.getStatus();

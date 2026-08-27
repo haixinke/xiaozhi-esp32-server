@@ -83,23 +83,53 @@ export default {
       })
     },
     copyScheme(asset) {
-      Api.pdcNfc.revealManualScheme(this.jobId, asset.assetId, (res) => {
-        if (res.data && res.data.code === 0 && res.data.data && res.data.data.scheme) {
-          const scheme = res.data.data.scheme
-          navigator.clipboard.writeText(scheme).then(() => {
+      // Scheme 按需单条解密（后端记审计），但剪贴板要求用户手势同步调用。
+      // 解法：点击瞬间构造含 Promise 的 ClipboardItem 交给剪贴板，
+      // 响应到达后由剪贴板异步取值，规避手势失效导致的 NotAllowedError。
+      const schemePromise = new Promise((resolve, reject) => {
+        Api.pdcNfc.revealManualScheme(this.jobId, asset.assetId, (res) => {
+          if (res.data && res.data.code === 0 && res.data.data && res.data.data.scheme) {
+            resolve(res.data.data.scheme)
+          } else {
+            reject(new Error((res.data && res.data.msg) || '获取 Scheme 失败'))
+          }
+        })
+      })
+      // clipboard API 仅在安全上下文（HTTPS 或 localhost）可用；
+      // 手机经 http://局域网IP 访问时不可用，直接走手动复制兜底
+      const canAsyncCopy = window.isSecureContext && navigator.clipboard && window.ClipboardItem
+      if (canAsyncCopy) {
+        const item = new ClipboardItem({
+          'text/plain': schemePromise.then(s => new Blob([s], { type: 'text/plain' }))
+        })
+        navigator.clipboard.write([item])
+          .then(() => {
             this.$set(asset, '_schemeCopied', true)
             this.$message.success('Scheme 已复制，请到 NFC 工具写入')
-          }).catch(() => {
-            this.$prompt('复制失败，请手动长按全选复制', 'Scheme', {
-              inputValue: scheme,
-              inputType: 'textarea',
-              showCancelButton: false,
-              closeOnClickModal: false
-            }).catch(() => {})
           })
-        } else {
-          this.$message.error(res.data?.msg || '获取 Scheme 失败')
-        }
+          .catch(() => {
+            // 失败可能是权限拒绝，也可能是解密请求失败，按有无 Scheme 分流
+            schemePromise
+              .then(scheme => this.showSchemeForManualCopy(asset, scheme))
+              .catch(err => this.$message.error(err.message))
+          })
+      } else {
+        schemePromise
+          .then(scheme => this.showSchemeForManualCopy(asset, scheme))
+          .catch(err => this.$message.error(err.message))
+      }
+    },
+    showSchemeForManualCopy(asset, scheme) {
+      this.$prompt('自动复制不可用，请长按全选复制', 'Scheme', {
+        inputValue: scheme,
+        inputType: 'textarea',
+        showCancelButton: false,
+        closeOnClickModal: false
+      }).then(() => {
+        this.$set(asset, '_schemeCopied', true)
+      }).catch(() => {
+        // 弹窗关闭即视为已看到 Scheme，解锁「已写入」按钮
+        this.$set(asset, '_schemeCopied', true)
       })
     },
     mark(asset, action) {

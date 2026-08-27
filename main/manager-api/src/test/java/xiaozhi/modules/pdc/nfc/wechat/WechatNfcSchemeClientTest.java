@@ -37,7 +37,8 @@ class WechatNfcSchemeClientTest {
         properties = new PdcNfcProperties();
         properties.setModelId("model-actual");
         transport = new RecordingTransport();
-        transport.responseBody = "{\"errcode\":0,\"scheme\":\"weixin://nfc/xxx\"}";
+        // 微信 generatenfcscheme 成功响应的链接字段名是 openlink（非 scheme）
+        transport.responseBody = "{\"errcode\":0,\"openlink\":\"weixin://nfc/xxx\"}";
         lenient().when(accessTokens.getAccessToken()).thenReturn("access-token");
 
         client = new WechatNfcSchemeClient(accessTokens, transport, properties);
@@ -130,6 +131,56 @@ class WechatNfcSchemeClientTest {
 
         assertThat(result.success()).isFalse();
         assertThat(result.action()).isEqualTo(WechatNfcErrorAction.RETRYABLE);
+    }
+
+    @Test
+    @DisplayName("仅读 openlink 字段 - 旧的 scheme 字段不再被识别")
+    void onlyOpenlinkFieldIsRead() {
+        // 历史 bug：代码读 \"scheme\" 导致拿到 null，加密时 NPE，微信侧 sn 已被消耗
+        transport.responseBody = "{\"errcode\":0,\"scheme\":\"weixin://nfc/legacy\"}";
+
+        WechatNfcSchemeResult result = client.generate("EBSN001", "AbCdEfGhIjKlMnOpQrStUv");
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.errcode())
+                .isEqualTo(WechatNfcSchemeResult.MISSING_OPENLINK_ERRCODE);
+        assertThat(result.action()).isEqualTo(WechatNfcErrorAction.TASK_FATAL);
+    }
+
+    @Test
+    @DisplayName("errcode=0 但 openlink 缺失 - 不抛 NPE，归为 TASK_FATAL")
+    void missingOpenlinkFailsClosedInsteadOfNpe() {
+        transport.responseBody = "{\"errcode\":0}";
+
+        WechatNfcSchemeResult result = client.generate("EBSN001", "AbCdEfGhIjKlMnOpQrStUv");
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.scheme()).isNull();
+        assertThat(result.action()).isEqualTo(WechatNfcErrorAction.TASK_FATAL);
+    }
+
+    @Test
+    @DisplayName("openlink 为空白字符串 - 同样归为 TASK_FATAL")
+    void blankOpenlinkFailsClosed() {
+        transport.responseBody = "{\"errcode\":0,\"openlink\":\"   \"}";
+
+        WechatNfcSchemeResult result = client.generate("EBSN001", "AbCdEfGhIjKlMnOpQrStUv");
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.action()).isEqualTo(WechatNfcErrorAction.TASK_FATAL);
+    }
+
+    @Test
+    @DisplayName("9800010 schema 已存在 - TASK_FATAL 且识别为 sn 已占用")
+    void snOccupiedReturnsFatalAndIsRecognized() {
+        transport.responseBody =
+                "{\"errcode\":9800010,\"errmsg\":\"schema已存在\"}";
+
+        WechatNfcSchemeResult result = client.generate("EBSN001", "AbCdEfGhIjKlMnOpQrStUv");
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.action()).isEqualTo(WechatNfcErrorAction.TASK_FATAL);
+        assertThat(WechatNfcErrorPolicy.isSnOccupied(result.errcode())).isTrue();
     }
 
     /**

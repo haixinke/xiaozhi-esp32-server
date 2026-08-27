@@ -17,6 +17,7 @@ import xiaozhi.modules.pdc.nfc.entity.PdcNfcBatchEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcSchemeJobEntity;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcBatchStateMachine;
 import xiaozhi.modules.pdc.nfc.wechat.WechatNfcErrorAction;
+import xiaozhi.modules.pdc.nfc.wechat.WechatNfcErrorPolicy;
 import xiaozhi.modules.pdc.nfc.wechat.WechatNfcSchemeClient;
 import xiaozhi.modules.pdc.nfc.wechat.WechatNfcSchemeResult;
 
@@ -224,8 +225,14 @@ public class PdcNfcSchemeJobWorker {
             }
 
             if (result.action() == WechatNfcErrorAction.TASK_FATAL) {
-                log.error("Scheme job {} asset {} FATAL: {} {}",
-                        jobId, asset.getId(), result.errcode(), result.errmsg());
+                if (WechatNfcErrorPolicy.isSnOccupied(result.errcode())) {
+                    // 同一 sn 只能生成一次 Scheme，重试永远失败，只能换 sn 重建资产
+                    log.error("Scheme job {} asset {} sn 已被微信占用（需更换 sn 重建资产）: {} {}",
+                            jobId, asset.getId(), result.errcode(), result.errmsg());
+                } else {
+                    log.error("Scheme job {} asset {} FATAL: {} {}",
+                            jobId, asset.getId(), result.errcode(), result.errmsg());
+                }
                 return ProcessingOutcome.FATAL;
             }
 

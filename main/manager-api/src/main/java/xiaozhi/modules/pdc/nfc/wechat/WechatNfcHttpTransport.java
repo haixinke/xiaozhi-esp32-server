@@ -44,8 +44,16 @@ public class WechatNfcHttpTransport {
             JSONObject json = JSONUtil.parseObj(respBody);
             Integer errcode = json.getInt("errcode");
             if (errcode == null || errcode == 0) {
-                String scheme = json.getStr("scheme");
-                return WechatNfcSchemeResult.ok(scheme);
+                // 成功响应的链接字段是 openlink，不是 scheme
+                // （见 main/docs/egg-nfc-feature-spec.md 6.2；读错字段会拿到 null）
+                String openlink = json.getStr("openlink");
+                if (StringUtils.isBlank(openlink)) {
+                    // errcode=0 说明微信已消耗该 sn，重试必得 9800010。
+                    // 必须 fail-closed 停掉任务，不能让 null 流到加密环节抛 NPE。
+                    log.error("微信NFC Scheme响应缺少 openlink errcode={}", errcode);
+                    return WechatNfcSchemeResult.missingOpenlink();
+                }
+                return WechatNfcSchemeResult.ok(openlink);
             }
             String errmsg = json.getStr("errmsg");
             WechatNfcErrorAction action = WechatNfcErrorPolicy.classify(errcode);

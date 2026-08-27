@@ -37,6 +37,7 @@ import xiaozhi.modules.pdc.nfc.dao.PdcNfcProductTypeDao;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAssetEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcBatchEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcProductTypeEntity;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcManualWriteService;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcClaimServiceImpl;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimPreviewVO;
 import xiaozhi.modules.pet.service.PetService;
@@ -58,6 +59,7 @@ class PdcNfcClaimPreviewServiceTest {
     @Mock private PdcNfcClaimRateLimiter rateLimiter;
     @Mock private PetService petService;
     @Mock private PdcNfcClaimRecordDao claimRecordDao;
+    @Mock private PdcNfcManualWriteService manualWriteService;
 
     private PdcNfcClaimServiceImpl claimService;
 
@@ -75,7 +77,8 @@ class PdcNfcClaimPreviewServiceTest {
     void setUp() {
         claimService = new PdcNfcClaimServiceImpl(
                 properties, wechatPhoneGate, claimRefProtection,
-                assetDao, batchDao, productTypeDao, rateLimiter, petService, claimRecordDao);
+                assetDao, batchDao, productTypeDao, rateLimiter, petService, claimRecordDao,
+                manualWriteService);
     }
 
     @Test
@@ -145,6 +148,40 @@ class PdcNfcClaimPreviewServiceTest {
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, null);
 
         assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_UNAVAILABLE);
+    }
+
+    @Test
+    void previewTriggersTouchVerificationForFoundAsset() {
+        // ADR 0003：preview 命中资产即触发触碰自验证，不核销、不改变返回
+        setupAllGatesEnabled();
+        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setBatchId(10L);
+        asset.setPrototype("jade_rabbit");
+        asset.setStatus("WRITTEN");
+        asset.setActiveWriteJobId(100L);
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        verify(manualWriteService).touchVerify(asset);
+        // WRITTEN 状态 preview 仍返回不可用，触碰验证不影响领取语义
+        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_UNAVAILABLE);
+    }
+
+    @Test
+    void previewSkipsTouchVerificationWhenNoAssetFound() {
+        setupAllGatesEnabled();
+        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(Collections.emptyList());
+
+        claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        verifyNoInteractions(manualWriteService);
     }
 
     @Test

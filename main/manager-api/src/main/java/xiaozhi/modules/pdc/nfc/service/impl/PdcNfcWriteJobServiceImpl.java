@@ -9,6 +9,7 @@ import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcBatchStatus;
+import xiaozhi.modules.pdc.nfc.constant.PdcNfcWriteJobMode;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcWriteJobStatus;
 import xiaozhi.modules.pdc.nfc.crypto.ClaimRefProtection;
 import xiaozhi.modules.pdc.nfc.crypto.EncryptedField;
@@ -61,8 +62,17 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PdcNfcWriteJobVO create(Long batchId, Long operatorId) {
+    public PdcNfcWriteJobVO create(Long batchId, String mode, Long operatorId) {
         readiness.requireSchemeGenerationReady();
+
+        // 模式创建时选定不可变更（ADR 0003）；为空默认工厂 CSV，保持存量调用兼容
+        String jobMode = mode == null || mode.isBlank()
+                ? PdcNfcWriteJobMode.FACTORY_CSV.name() : mode.trim().toUpperCase();
+        try {
+            PdcNfcWriteJobMode.valueOf(jobMode);
+        } catch (IllegalArgumentException e) {
+            throw new RenException(ErrorCode.PDC_NFC_INVALID_JOB_MODE);
+        }
 
         PdcNfcBatchEntity batch = batchDao.selectById(batchId);
         if (batch == null) {
@@ -124,6 +134,7 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
         job.setJobNo("WRT-" + batchId + "-" + now.getTime());
         job.setBatchId(batchId);
         job.setFormatVersion(PdcNfcWriteCsvExporter.FORMAT_VERSION);
+        job.setMode(jobMode);
         job.setStatus(PdcNfcWriteJobStatus.CREATED.name());
         job.setTotalCount(assets.size());
         job.setSuccessCount(0);
@@ -174,6 +185,10 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
         PdcNfcWriteJobEntity job = jobDao.selectById(jobId);
         if (job == null) {
             throw new RenException(ErrorCode.PDC_NFC_JOB_NOT_FOUND);
+        }
+        // 手动模式任务不走 CSV 导出通道（ADR 0003，两模式互斥）；mode 为空视为工厂模式
+        if (PdcNfcWriteJobMode.MANUAL.name().equals(job.getMode())) {
+            throw new RenException(ErrorCode.PDC_NFC_JOB_MODE_MISMATCH);
         }
 
         PdcNfcBatchEntity batch = batchDao.selectById(job.getBatchId());
@@ -349,6 +364,7 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
                 job.getBatchId(),
                 batchNo,
                 job.getFormatVersion(),
+                job.getMode() != null ? job.getMode() : PdcNfcWriteJobMode.FACTORY_CSV.name(),
                 job.getStatus(),
                 job.getTotalCount() != null ? job.getTotalCount() : 0,
                 job.getSuccessCount() != null ? job.getSuccessCount() : 0,

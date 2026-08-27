@@ -94,6 +94,15 @@ public class PdcNfcAssetEntity {
     /** 校验通过时间 */
     private Date verifiedAt;
 
+    /** 验证来源（TOUCH 触碰自验证 / MANUAL 人工验证；工厂 CSV 模式为空） */
+    private String verifySource;
+
+    /** 锁卡确认时间（手动模式），为空表示未锁卡 */
+    private Date lockedAt;
+
+    /** 锁后触碰复验时间（手动模式） */
+    private Date lockVerifiedAt;
+
     /** 入库时间 */
     private Date stockedAt;
 

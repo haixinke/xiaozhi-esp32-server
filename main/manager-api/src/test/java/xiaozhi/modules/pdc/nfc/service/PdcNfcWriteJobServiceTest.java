@@ -118,7 +118,7 @@ class PdcNfcWriteJobServiceTest {
         });
         when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
                 .thenReturn(1);
-        service.create(10L, 99L);
+        service.create(10L, null, 99L);
 
         ArgumentCaptor<PdcNfcWriteJobItemEntity> savedItemCaptor =
                 ArgumentCaptor.forClass(PdcNfcWriteJobItemEntity.class);
@@ -126,6 +126,75 @@ class PdcNfcWriteJobServiceTest {
         PdcNfcWriteJobItemEntity savedItem = savedItemCaptor.getValue();
         assertThat(savedItem.getUriSha256()).isEqualTo(asset.getSchemeSha256());
         verify(claimRefProtection, never()).decrypt(any(), any(EncryptedField.class));
+    }
+
+    @Test
+    void createWithManualModeStoresModeOnJob() {
+        PdcNfcBatchEntity batch = batch();
+        PdcNfcAssetEntity asset = encryptedAsset();
+        when(batchDao.selectById(10L)).thenReturn(batch);
+        when(jobDao.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(assetDao.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(asset));
+        when(jobDao.insert(any(PdcNfcWriteJobEntity.class))).thenAnswer(invocation -> {
+            PdcNfcWriteJobEntity job = invocation.getArgument(0);
+            job.setId(100L);
+            return 1;
+        });
+        when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(1);
+
+        service.create(10L, "MANUAL", 99L);
+
+        ArgumentCaptor<PdcNfcWriteJobEntity> jobCaptor =
+                ArgumentCaptor.forClass(PdcNfcWriteJobEntity.class);
+        verify(jobDao).insert(jobCaptor.capture());
+        assertThat(jobCaptor.getValue().getMode()).isEqualTo("MANUAL");
+    }
+
+    @Test
+    void createDefaultsToFactoryCsvModeWhenModeAbsent() {
+        PdcNfcBatchEntity batch = batch();
+        PdcNfcAssetEntity asset = encryptedAsset();
+        when(batchDao.selectById(10L)).thenReturn(batch);
+        when(jobDao.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(assetDao.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(asset));
+        when(jobDao.insert(any(PdcNfcWriteJobEntity.class))).thenAnswer(invocation -> {
+            PdcNfcWriteJobEntity job = invocation.getArgument(0);
+            job.setId(100L);
+            return 1;
+        });
+        when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(1);
+
+        service.create(10L, null, 99L);
+
+        ArgumentCaptor<PdcNfcWriteJobEntity> jobCaptor =
+                ArgumentCaptor.forClass(PdcNfcWriteJobEntity.class);
+        verify(jobDao).insert(jobCaptor.capture());
+        assertThat(jobCaptor.getValue().getMode()).isEqualTo("FACTORY_CSV");
+    }
+
+    @Test
+    void createRejectsInvalidMode() {
+        assertThatThrownBy(() -> service.create(10L, "BOGUS", 99L))
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(ErrorCode.PDC_NFC_INVALID_JOB_MODE);
+
+        verify(jobDao, never()).insert(any(PdcNfcWriteJobEntity.class));
+    }
+
+    @Test
+    void exportRejectsManualModeJob() {
+        PdcNfcWriteJobEntity job = exportedJob();
+        job.setMode("MANUAL");
+        when(jobDao.selectById(100L)).thenReturn(job);
+
+        // 手动任务不走 CSV 导出通道（ADR 0003，两模式互斥）
+        assertThatThrownBy(() -> service.export(100L, 99L))
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(ErrorCode.PDC_NFC_JOB_MODE_MISMATCH);
     }
 
     @Test
@@ -143,7 +212,7 @@ class PdcNfcWriteJobServiceTest {
         when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
                 .thenReturn(1);
 
-        service.create(10L, 99L);
+        service.create(10L, null, 99L);
 
         // 原子状态翻转：READY_FOR_WRITE -> WRITING
         verify(batchDao).transitionStatus(
@@ -165,7 +234,7 @@ class PdcNfcWriteJobServiceTest {
         when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
                 .thenReturn(0);
 
-        assertThatThrownBy(() -> service.create(10L, 99L))
+        assertThatThrownBy(() -> service.create(10L, null, 99L))
                 .isInstanceOf(RenException.class);
 
         // 冲突时不得创建任务
@@ -179,7 +248,7 @@ class PdcNfcWriteJobServiceTest {
         when(assetDao.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
         // 无 SCHEME_GENERATED 资产：报无可用资产，而非误导性的「发布未就绪」
-        assertThatThrownBy(() -> service.create(10L, 99L))
+        assertThatThrownBy(() -> service.create(10L, null, 99L))
                 .isInstanceOf(RenException.class)
                 .extracting("code")
                 .isEqualTo(ErrorCode.PDC_NFC_NO_AVAILABLE_ASSETS);

@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
+import xiaozhi.modules.pdc.nfc.constant.PdcNfcWriteJobMode;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcWriteJobStatus;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcAssetDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcWriteJobDao;
@@ -279,6 +280,10 @@ public class PdcNfcWriteResultImporterImpl implements PdcNfcWriteResultImporter 
         PdcNfcWriteJobEntity job = jobDao.selectById(jobId);
         if (job == null) {
             throw new RenException(ErrorCode.PDC_NFC_JOB_NOT_FOUND);
+        }
+        // 手动模式任务不走 CSV 导入通道（ADR 0003，两模式互斥）；mode 为空视为工厂模式
+        if (PdcNfcWriteJobMode.MANUAL.name().equals(job.getMode())) {
+            throw new RenException(ErrorCode.PDC_NFC_JOB_MODE_MISMATCH);
         }
         if (!PdcNfcWriteJobStatus.EXPORTED.name().equals(job.getStatus())
                 && !PdcNfcWriteJobStatus.RESULT_IMPORTED.name().equals(job.getStatus())) {

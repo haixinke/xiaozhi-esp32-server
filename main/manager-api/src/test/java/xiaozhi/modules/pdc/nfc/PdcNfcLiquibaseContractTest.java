@@ -14,6 +14,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PdcNfcLiquibaseContractTest {
 
     @Test
+    void manualWriteModeMigrationAddsModeAndLockColumns() throws Exception {
+        String migration = Files.readString(Path.of(
+                "src/main/resources/db/changelog/202608271000.sql"));
+        String master = Files.readString(Path.of(
+                "src/main/resources/db/changelog/db.changelog-master.yaml"));
+
+        // 手动写卡模式（ADR 0003）：写卡任务加 mode，资产加验证来源与锁卡字段。
+        assertThat(master).contains("202608271000");
+        assertThat(migration)
+                .contains("pdc_nfc_write_job")
+                .contains("mode")
+                .contains("FACTORY_CSV")
+                .contains("pdc_nfc_asset")
+                .contains("verify_source")
+                .contains("locked_at")
+                .contains("lock_verified_at");
+        // 存量写卡任务必须默认归为工厂 CSV 模式，保证旧行为不变。
+        assertThat(migration).containsPattern("mode[^;]*DEFAULT 'FACTORY_CSV'");
+    }
+
+    @Test
     void baselineWriteJobItemTableUsesSchemeDigestColumn() throws Exception {
         String sql = Files.readString(Path.of(
                 "src/main/resources/db/changelog/202607291000.sql"));

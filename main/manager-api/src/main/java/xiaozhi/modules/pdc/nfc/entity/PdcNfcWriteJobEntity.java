@@ -32,6 +32,9 @@ public class PdcNfcWriteJobEntity {
     /** CSV 格式版本号（如 "1.0"） */
     private String formatVersion;
 
+    /** 写卡模式（FACTORY_CSV 工厂CSV模式 / MANUAL 手动模式），创建时选定不可变更 */
+    private String mode;
+
     /** 任务状态（CREATED / EXPORTED / RESULT_IMPORTED / COMPLETED / CANCELLED） */
     private String status;
 

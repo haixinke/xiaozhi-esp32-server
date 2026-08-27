@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
+import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
@@ -29,6 +30,7 @@ import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcInventoryServiceImpl;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcBulkOperationVO;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -134,6 +136,79 @@ class PdcNfcInventoryServiceTest {
         verify(assetDao, times(2)).updateById(captor.capture());
         assertThat(captor.getAllValues()).allSatisfy(a ->
                 assertThat(a.getStatus()).isEqualTo("IN_STOCK"));
+    }
+
+    @Test
+    @DisplayName("stockIn: 手动模式资产未锁卡拒绝入库")
+    void stockInRejectsUnlockedManualAsset() {
+        // ADR 0003：verify_source 非空 = 手动模式验证的资产，入库前必须已锁卡
+        PdcNfcAssetEntity asset = createAsset(1L, "A001", "VERIFIED");
+        asset.setVerifySource("TOUCH");
+
+        stubIdempotencyFirstCall();
+        when(assetDao.selectByIdsForUpdate(any())).thenReturn(List.of(asset));
+
+        PdcNfcBulkAssetOperationDTO request = createRequest(
+                List.of(1L), "BN001", UUID.randomUUID());
+        assertThatThrownBy(() -> inventoryService.stockIn(request, 100L))
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(ErrorCode.PDC_NFC_ASSET_NOT_LOCKED);
+
+        verify(assetDao, never()).updateById(any(PdcNfcAssetEntity.class));
+    }
+
+    @Test
+    @DisplayName("stockIn: 手动模式资产锁后未复验拒绝入库")
+    void stockInRejectsManualAssetWithoutLockVerification() {
+        PdcNfcAssetEntity asset = createAsset(1L, "A001", "VERIFIED");
+        asset.setVerifySource("MANUAL");
+        asset.setLockedAt(new Date());
+
+        stubIdempotencyFirstCall();
+        when(assetDao.selectByIdsForUpdate(any())).thenReturn(List.of(asset));
+
+        PdcNfcBulkAssetOperationDTO request = createRequest(
+                List.of(1L), "BN001", UUID.randomUUID());
+        assertThatThrownBy(() -> inventoryService.stockIn(request, 100L))
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(ErrorCode.PDC_NFC_LOCK_NOT_VERIFIED);
+
+        verify(assetDao, never()).updateById(any(PdcNfcAssetEntity.class));
+    }
+
+    @Test
+    @DisplayName("stockIn: 手动模式资产锁卡且复验通过后允许入库")
+    void stockInAllowsLockedAndReverifiedManualAsset() {
+        PdcNfcAssetEntity asset = createAsset(1L, "A001", "VERIFIED");
+        asset.setVerifySource("TOUCH");
+        asset.setLockedAt(new Date());
+        asset.setLockVerifiedAt(new Date());
+
+        stubIdempotencyFirstCall();
+        when(assetDao.selectByIdsForUpdate(any())).thenReturn(List.of(asset));
+
+        PdcNfcBulkAssetOperationDTO request = createRequest(
+                List.of(1L), "BN001", UUID.randomUUID());
+        PdcNfcBulkOperationVO result = inventoryService.stockIn(request, 100L);
+
+        assertThat(result.successCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("stockIn: 工厂模式资产（verify_source 为空）不受锁卡门禁影响")
+    void stockInFactoryAssetBypassesLockGate() {
+        PdcNfcAssetEntity asset = createAsset(1L, "A001", "VERIFIED");
+
+        stubIdempotencyFirstCall();
+        when(assetDao.selectByIdsForUpdate(any())).thenReturn(List.of(asset));
+
+        PdcNfcBulkAssetOperationDTO request = createRequest(
+                List.of(1L), "BN001", UUID.randomUUID());
+        PdcNfcBulkOperationVO result = inventoryService.stockIn(request, 100L);
+
+        assertThat(result.successCount()).isEqualTo(1);
     }
 
     @Test

@@ -14,9 +14,11 @@ public interface PdcNfcWriteJobService {
     /**
      * 创建写卡任务：选取批次内 SCHEME_GENERATED 资产，拍摄快照，绑定 active_write_job_id。
      *
+     * @param mode 写卡模式：FACTORY_CSV（工厂 CSV 通道）或 MANUAL（手动模式，ADR 0003），
+     *             创建后不可变更，两模式通道互斥
      * @return 写卡任务视图
      */
-    PdcNfcWriteJobVO create(Long batchId, Long operatorId);
+    PdcNfcWriteJobVO create(Long batchId, String mode, Long operatorId);
 
     /**
      * 导出写卡 CSV：从快照 + 解密 Scheme 生成字节稳定的文件。

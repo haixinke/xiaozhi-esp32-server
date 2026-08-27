@@ -346,4 +346,8 @@ public interface ErrorCode {
     int PDC_NFC_RELEASE_EVIDENCE_MISSING = 10521; // 缺少当前版本的发布证据（需在商品类型管理登记）
     int PDC_NFC_NO_AVAILABLE_ASSETS = 10522; // 批次内没有可处理状态的资产
     int PDC_NFC_ASSET_DATA_INCONSISTENT = 10523; // 资产数据不一致（记录缺失或 Scheme 加密字段不完整）
+    int PDC_NFC_INVALID_JOB_MODE = 10524; // 写卡任务模式无效
+    int PDC_NFC_JOB_MODE_MISMATCH = 10525; // 操作与写卡任务模式不符（工厂CSV/手动通道互斥）
+    int PDC_NFC_ASSET_NOT_LOCKED = 10526; // 手动模式资产未锁卡，禁止入库
+    int PDC_NFC_LOCK_NOT_VERIFIED = 10527; // 手动模式资产锁后未完成触碰复验，禁止入库
 }

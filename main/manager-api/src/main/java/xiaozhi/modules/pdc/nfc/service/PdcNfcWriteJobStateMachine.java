@@ -18,7 +18,8 @@ public final class PdcNfcWriteJobStateMachine {
 
     private static final Map<PdcNfcWriteJobStatus, Set<PdcNfcWriteJobStatus>> ALLOWED =
         Map.of(
-            CREATED, Set.of(EXPORTED, CANCELLED),
+            // CREATED -> COMPLETED：手动模式不经过导出/导入，全部资产验证通过后直接完成（ADR 0003）
+            CREATED, Set.of(EXPORTED, COMPLETED, CANCELLED),
             EXPORTED, Set.of(RESULT_IMPORTED, CANCELLED),
             RESULT_IMPORTED, Set.of(COMPLETED)
         );

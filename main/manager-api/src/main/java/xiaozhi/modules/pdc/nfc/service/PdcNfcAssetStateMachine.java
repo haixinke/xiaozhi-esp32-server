@@ -19,7 +19,8 @@ public final class PdcNfcAssetStateMachine {
     private static final Map<PdcNfcAssetStatus, Set<PdcNfcAssetStatus>> ALLOWED = Map.of(
         CREATED, Set.of(SCHEME_GENERATED, SCRAPPED),
         SCHEME_GENERATED, Set.of(WRITTEN, SCRAPPED),
-        WRITTEN, Set.of(VERIFIED, SCRAPPED),
+        // WRITTEN -> SCHEME_GENERATED：手动模式写坏回退重写（ADR 0003）
+        WRITTEN, Set.of(VERIFIED, SCHEME_GENERATED, SCRAPPED),
         VERIFIED, Set.of(IN_STOCK, SCRAPPED),
         IN_STOCK, Set.of(ACTIVE, DISABLED),
         ACTIVE, Set.of(CLAIMED, DISABLED),

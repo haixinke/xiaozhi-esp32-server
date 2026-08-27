@@ -10,6 +10,7 @@ import java.util.Date;
  * @param batchId        关联批次 ID
  * @param batchNo        批次编号
  * @param formatVersion  CSV 格式版本号
+ * @param mode           写卡模式（FACTORY_CSV / MANUAL）
  * @param status         任务状态
  * @param totalCount     待处理总数
  * @param successCount   成功数
@@ -25,6 +26,7 @@ public record PdcNfcWriteJobVO(
         Long batchId,
         String batchNo,
         String formatVersion,
+        String mode,
         String status,
         int totalCount,
         int successCount,

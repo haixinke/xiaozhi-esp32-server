@@ -162,10 +162,14 @@ class PdcNfcJobStateMachineTest {
                 PdcNfcWriteJobStatus.CREATED, PdcNfcWriteJobStatus.RESULT_IMPORTED))
                 .isInstanceOf(RenException.class);
         assertThatThrownBy(() -> writeJobStateMachine.requireTransition(
-                PdcNfcWriteJobStatus.CREATED, PdcNfcWriteJobStatus.COMPLETED))
-                .isInstanceOf(RenException.class);
-        assertThatThrownBy(() -> writeJobStateMachine.requireTransition(
                 PdcNfcWriteJobStatus.EXPORTED, PdcNfcWriteJobStatus.COMPLETED))
                 .isInstanceOf(RenException.class);
+    }
+
+    @Test
+    void writeJobAllowsCreatedToCompletedForManualMode() {
+        // ADR 0003：手动模式不经过导出/导入，全部资产验证通过后 CREATED 直达 COMPLETED
+        assertThatCode(() -> writeJobStateMachine.requireTransition(
+                PdcNfcWriteJobStatus.CREATED, PdcNfcWriteJobStatus.COMPLETED)).doesNotThrowAnyException();
     }
 }

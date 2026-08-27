@@ -224,6 +224,17 @@ public class PdcNfcInventoryServiceImpl implements PdcNfcInventoryService {
                 throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
             }
             assetStateMachine.requireTransition(currentStatus, targetState);
+            // ADR 0003 手动模式入库门禁：verify_source 非空 = 手动模式验证的资产，
+            // 发真实用户前必须已锁卡且完成锁后触碰复验；
+            // 工厂模式资产（verify_source 为空）已由结果 CSV 的 is_read_only 硬校验覆盖。
+            if (targetState == IN_STOCK && asset.getVerifySource() != null) {
+                if (asset.getLockedAt() == null) {
+                    throw new RenException(ErrorCode.PDC_NFC_ASSET_NOT_LOCKED);
+                }
+                if (asset.getLockVerifiedAt() == null) {
+                    throw new RenException(ErrorCode.PDC_NFC_LOCK_NOT_VERIFIED);
+                }
+            }
         }
 
         // 4. 批量更新状态、时间戳、业务单号

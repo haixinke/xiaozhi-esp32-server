@@ -20,6 +20,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcAdminIdempotencyService;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcManualWriteService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteJobService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImporter;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteFile;
@@ -59,12 +60,15 @@ class PdcNfcWriteJobDownloadTest {
     private PdcNfcWriteResultImporter writeResultImporter;
     @Mock
     private PdcNfcAdminIdempotencyService idempotencyService;
+    @Mock
+    private PdcNfcManualWriteService manualWriteService;
 
     private PdcNfcWriteJobAdminController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new PdcNfcWriteJobAdminController(writeJobService, writeResultImporter, idempotencyService);
+        controller = new PdcNfcWriteJobAdminController(
+                writeJobService, writeResultImporter, idempotencyService, manualWriteService);
     }
 
     // --- helpers ---
@@ -109,7 +113,7 @@ class PdcNfcWriteJobDownloadTest {
     @DisplayName("Controller 提供 create 方法")
     void hasCreateMethod() throws NoSuchMethodException {
         assertThat(PdcNfcWriteJobAdminController.class
-                .getDeclaredMethod("create", Long.class))
+                .getDeclaredMethod("create", Long.class, String.class))
                 .isNotNull();
     }
 
@@ -149,10 +153,10 @@ class PdcNfcWriteJobDownloadTest {
     void nonSchemeGeneratedBatchRejected() {
         // 预先创建异常，避免在 when() stubbing 上下文中触发 Mockito 嵌套问题
         RenException ex = new RenException(10504);
-        when(writeJobService.create(100L, 99L))
+        when(writeJobService.create(100L, null, 99L))
                 .thenThrow(ex);
 
-        assertThatThrownBy(() -> writeJobService.create(100L, 99L))
+        assertThatThrownBy(() -> writeJobService.create(100L, null, 99L))
                 .isInstanceOf(RenException.class);
     }
 
@@ -160,10 +164,10 @@ class PdcNfcWriteJobDownloadTest {
     @DisplayName("活跃写卡任务冲突 - 创建被拒绝")
     void activeJobConflictRejected() {
         RenException ex = new RenException(10511);
-        when(writeJobService.create(200L, 99L))
+        when(writeJobService.create(200L, null, 99L))
                 .thenThrow(ex);
 
-        assertThatThrownBy(() -> writeJobService.create(200L, 99L))
+        assertThatThrownBy(() -> writeJobService.create(200L, null, 99L))
                 .isInstanceOf(RenException.class);
     }
 
@@ -182,11 +186,11 @@ class PdcNfcWriteJobDownloadTest {
     @DisplayName("Create 返回正确的 VO 结构")
     void createReturnsCorrectVO() {
         PdcNfcWriteJobVO expected = new PdcNfcWriteJobVO(
-                1L, "WRT-100-1", 100L, "B20260729001", "V1", "CREATED",
+                1L, "WRT-100-1", 100L, "B20260729001", "V1", "FACTORY_CSV", "CREATED",
                 5, 0, 0, null, 5, null, new Date());
-        when(writeJobService.create(100L, 99L)).thenReturn(expected);
+        when(writeJobService.create(100L, null, 99L)).thenReturn(expected);
 
-        PdcNfcWriteJobVO result = writeJobService.create(100L, 99L);
+        PdcNfcWriteJobVO result = writeJobService.create(100L, null, 99L);
         assertThat(result.jobNo()).isEqualTo("WRT-100-1");
         assertThat(result.formatVersion()).isEqualTo("V1");
         assertThat(result.status()).isEqualTo("CREATED");

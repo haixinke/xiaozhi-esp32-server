@@ -170,7 +170,7 @@ env_version = release
 
 ## 7. 模块五：工厂写卡流程
 
-这一步解决“怎么把微信返回的 Scheme 真正写进 NFC 芯片”。
+这一步解决“怎么把微信返回的 Scheme 真正写进 NFC 芯片”。写卡任务创建时二选一模式：**工厂 CSV 模式**（量产，本节主流程）或**手动模式**（小批量验证，见 7.1），同一任务内互斥不混用。
 
 ```mermaid
 flowchart TD
@@ -213,6 +213,49 @@ NFC 标签里写两条记录：
 | Android Application Record | Android 系统辅助定位 App | `com.tencent.mm` |
 
 写卡结果导入时，服务端不会“导入一半成功一半失败”。它会先检查整个文件，确认没有缺行、重复行、串任务、`sn` 不匹配、摘要不一致等问题，全部通过后才统一推进状态。
+
+### 7.1 手动写卡模式（小批量验证）
+
+小批量验证阶段没有专业写卡设备，用手机 NFC App（如 NFC Tools）逐张写入，不走 CSV 导出导入。决策依据见 ADR 0003。
+
+```mermaid
+flowchart TD
+    A["创建写卡任务<br/>选择手动模式"] --> B["手动写卡页列出任务内资产"]
+    B --> C["逐张操作<br/>复制该条 Scheme"]
+    C --> D["NFC Tools 写入 URI Record<br/>Android 加写 AAR"]
+    D --> E{"写入成功?"}
+    E -->|写坏| E1["点写坏了<br/>资产回 SCHEME_GENERATED 重写"]
+    E1 --> C
+    E -->|成功| F["点已写入<br/>资产进入 WRITTEN"]
+    F --> G["手机触碰刚写的标签"]
+    G --> H["微信打开领取页调 preview"]
+    H --> I{"preview 命中?"}
+    I -->|是| J["自动 WRITTEN -> VERIFIED<br/>记 verify_source=TOUCH"]
+    I -->|碰不了| I1["NFC Tools 回读比对后<br/>人工点验证通过<br/>记 verify_source=MANUAL"]
+    I1 --> J
+    J --> K["NFC Tools 锁卡<br/>页面点已锁卡"]
+    K --> L["再触碰一次确认仍可读"]
+    L --> M["允许入库"]
+```
+
+与工厂 CSV 模式的差异：
+
+| 环节 | 工厂 CSV 模式 | 手动模式 |
+|---|---|---|
+| 写入方式 | 批量写卡设备 | 手机 NFC App 逐张写 |
+| 结果回传 | 结果 CSV 导入，全量校验 | 单资产接口逐张标记，不用 CSV |
+| 验证方式 | 设备回读 + sha256 比对 | 触碰自验证（preview 命中），人工回读兜底 |
+| 锁卡时机 | 写入后立即锁，导入时硬校验 | 验证通过后才锁，入库时强制校验 |
+| 写坏处理 | 记录失败原因 | 回 `SCHEME_GENERATED` 留任务内重写 |
+
+手动模式的安全边界：
+
+| 边界 | 说明 |
+|---|---|
+| 触碰自验证生效范围 | 只对“已标记已写入且在手动任务中”的资产推进状态，野生触碰不动状态，不核销 |
+| 锁卡顺序 | `VERIFIED` 之后才允许锁卡；锁卡不可逆，锁过的卡写错只能报废补新 |
+| 入库门禁 | 手动模式资产必须 `is_read_only=true` 且锁后触碰复验通过，才允许 `VERIFIED -> IN_STOCK` |
+| iPhone 缺口 | iOS 写不了标准 AAR 记录，接受缺口：URI Record 双端通用，AAR 仅 Android 辅助定位 |
 
 ## 8. 模块六：入库、出库和激活流程
 

@@ -30,6 +30,7 @@ import xiaozhi.modules.pdc.nfc.entity.PdcNfcClaimRecordEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcProductTypeEntity;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcClaimRateLimiter;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcClaimService;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcManualWriteService;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimPreviewVO;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.service.PetService;
@@ -51,6 +52,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
     private final PdcNfcClaimRateLimiter rateLimiter;
     private final PetService petService;
     private final PdcNfcClaimRecordDao claimRecordDao;
+    private final PdcNfcManualWriteService manualWriteService;
 
     public PdcNfcClaimServiceImpl(
             PdcNfcProperties properties,
@@ -61,7 +63,8 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             PdcNfcProductTypeDao productTypeDao,
             PdcNfcClaimRateLimiter rateLimiter,
             PetService petService,
-            PdcNfcClaimRecordDao claimRecordDao) {
+            PdcNfcClaimRecordDao claimRecordDao,
+            PdcNfcManualWriteService manualWriteService) {
         this.properties = properties;
         this.wechatPhoneGate = wechatPhoneGate;
         this.claimRefProtection = claimRefProtection;
@@ -71,6 +74,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
         this.rateLimiter = rateLimiter;
         this.petService = petService;
         this.claimRecordDao = claimRecordDao;
+        this.manualWriteService = manualWriteService;
     }
 
     @Override
@@ -122,6 +126,10 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
 
         // Rate limit on asset
         rateLimiter.checkPreviewAssetRate(asset.getId());
+
+        // ADR 0003 手动写卡模式：触碰自验证 + 锁后复验。
+        // 无副作用的幂等推进，不核销领取资格，不影响下方状态分支的返回。
+        manualWriteService.touchVerify(asset);
 
         // 7. Check asset status
         String status = asset.getStatus();

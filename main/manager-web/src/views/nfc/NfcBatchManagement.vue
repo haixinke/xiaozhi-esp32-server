@@ -344,7 +344,8 @@ export default {
         cancelButtonText: '取消',
         type: 'info'
       }).then(() => {
-        Api.pdcNfc.createWriteJob(row.id, (res) => {
+        // 批次页快捷创建默认工厂 CSV 模式；手动模式请到写卡任务页选择创建（ADR 0003）
+        Api.pdcNfc.createWriteJob(row.id, null, (res) => {
           if (res.data && res.data.code === 0) {
             this.$message.success('写卡任务已创建')
             this.fetchBatches()

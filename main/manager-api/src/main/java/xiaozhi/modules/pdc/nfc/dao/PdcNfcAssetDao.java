@@ -84,4 +84,43 @@ public interface PdcNfcAssetDao extends BaseMapper<PdcNfcAssetEntity> {
                           @Param("jobId") Long jobId,
                           @Param("operatorId") Long operatorId,
                           @Param("now") Date now);
+
+    // --- 手动写卡模式（ADR 0003）：全部 CAS 更新，状态不符影响 0 行 ---
+
+    @Update("UPDATE pdc_nfc_asset SET status = 'WRITTEN', written_at = #{now}, " +
+            "updater = #{operatorId}, update_date = #{now}, version = version + 1 " +
+            "WHERE id = #{assetId} AND status = 'SCHEME_GENERATED' AND active_write_job_id = #{jobId}")
+    int markWritten(@Param("assetId") Long assetId,
+                    @Param("jobId") Long jobId,
+                    @Param("operatorId") Long operatorId,
+                    @Param("now") Date now);
+
+    @Update("UPDATE pdc_nfc_asset SET status = 'SCHEME_GENERATED', written_at = NULL, " +
+            "updater = #{operatorId}, update_date = #{now}, version = version + 1 " +
+            "WHERE id = #{assetId} AND status = 'WRITTEN' AND active_write_job_id = #{jobId}")
+    int revertWrittenToSchemeGenerated(@Param("assetId") Long assetId,
+                                       @Param("jobId") Long jobId,
+                                       @Param("operatorId") Long operatorId,
+                                       @Param("now") Date now);
+
+    @Update("UPDATE pdc_nfc_asset SET status = 'VERIFIED', verified_at = #{now}, verify_source = #{verifySource}, " +
+            "updater = #{operatorId}, update_date = #{now}, version = version + 1 " +
+            "WHERE id = #{assetId} AND status = 'WRITTEN' AND active_write_job_id = #{jobId}")
+    int markVerified(@Param("assetId") Long assetId,
+                     @Param("jobId") Long jobId,
+                     @Param("verifySource") String verifySource,
+                     @Param("operatorId") Long operatorId,
+                     @Param("now") Date now);
+
+    @Update("UPDATE pdc_nfc_asset SET locked_at = #{now}, " +
+            "updater = #{operatorId}, update_date = #{now}, version = version + 1 " +
+            "WHERE id = #{assetId} AND status = 'VERIFIED' AND locked_at IS NULL")
+    int markLocked(@Param("assetId") Long assetId,
+                   @Param("operatorId") Long operatorId,
+                   @Param("now") Date now);
+
+    @Update("UPDATE pdc_nfc_asset SET lock_verified_at = #{now}, update_date = #{now}, version = version + 1 " +
+            "WHERE id = #{assetId} AND status = 'VERIFIED' AND locked_at IS NOT NULL AND lock_verified_at IS NULL")
+    int markLockVerified(@Param("assetId") Long assetId,
+                         @Param("now") Date now);
 }

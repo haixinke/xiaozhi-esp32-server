@@ -171,10 +171,12 @@ export default {
 
   /**
    * 为指定批次创建写卡任务
+   * @param mode 写卡模式：FACTORY_CSV（默认，工厂 CSV 通道）或 MANUAL（手动写卡，ADR 0003）
    */
-  createWriteJob(batchId, callback) {
+  createWriteJob(batchId, mode, callback) {
+    const query = mode ? `?mode=${encodeURIComponent(mode)}` : '';
     RequestService.sendRequest()
-      .url(`${getServiceUrl()}/pdc/nfc/write/create/${batchId}`)
+      .url(`${getServiceUrl()}/pdc/nfc/write/create/${batchId}${query}`)
       .method('POST')
       .success((res) => {
         RequestService.clearRequestTime();
@@ -265,6 +267,65 @@ export default {
         RequestService.reAjaxFun(() => {
           this.getWriteJob(jobId, callback);
         });
+      }).send();
+  },
+
+  // ==================== 手动写卡模式（ADR 0003） ====================
+
+  /**
+   * 手动写卡任务内资产列表（不含 Scheme 明文）
+   */
+  getManualWriteAssets(jobId, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/pdc/nfc/write/manual/${jobId}/assets`)
+      .method('GET')
+      .success((res) => {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail((err) => {
+        console.error('获取手动写卡资产列表失败:', err);
+        RequestService.reAjaxFun(() => {
+          this.getManualWriteAssets(jobId, callback);
+        });
+      }).send();
+  },
+
+  /**
+   * 单条解密查看 Scheme（每次调用后端记审计）
+   */
+  revealManualScheme(jobId, assetId, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/pdc/nfc/write/manual/${jobId}/assets/${assetId}/scheme`)
+      .method('GET')
+      .success((res) => {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail((err) => {
+        console.error('获取 Scheme 失败:', err);
+        RequestService.reAjaxFun(() => {
+          this.revealManualScheme(jobId, assetId, callback);
+        });
+      }).send();
+  },
+
+  /**
+   * 手动写卡单资产标记：MARK_WRITTEN / MARK_WRITE_FAILED / MARK_VERIFIED / MARK_LOCKED
+   */
+  markManualAsset(jobId, assetId, action, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/pdc/nfc/write/manual/${jobId}/assets/${assetId}/mark`)
+      .method('POST')
+      .data({ action })
+      .success((res) => {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail((err) => {
+        console.error('标记资产失败:', err);
+        // 标记类 POST 不做自动重试，由用户确认状态后再操作
+        callback({ data: { code: -1, msg: '标记网络请求失败，请刷新确认资产状态后再重试' } });
       }).send();
   },
 

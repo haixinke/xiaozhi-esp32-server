@@ -40,6 +40,7 @@ import xiaozhi.modules.pdc.nfc.dao.PdcNfcClaimRecordDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcProductTypeDao;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAssetEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcClaimRecordEntity;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcManualWriteService;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcClaimServiceImpl;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.service.PetService;
@@ -64,6 +65,7 @@ class PdcNfcClaimServiceTest {
     @Mock private PdcNfcClaimRateLimiter rateLimiter;
     @Mock private PetService petService;
     @Mock private PdcNfcClaimRecordDao claimRecordDao;
+    @Mock private PdcNfcManualWriteService manualWriteService;
 
     private PdcNfcClaimServiceImpl claimService;
 
@@ -81,7 +83,8 @@ class PdcNfcClaimServiceTest {
     void setUp() {
         claimService = new PdcNfcClaimServiceImpl(
                 properties, wechatPhoneGate, claimRefProtection,
-                assetDao, batchDao, productTypeDao, rateLimiter, petService, claimRecordDao);
+                assetDao, batchDao, productTypeDao, rateLimiter, petService, claimRecordDao,
+                manualWriteService);
     }
 
     @Test

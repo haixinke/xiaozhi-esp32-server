@@ -259,6 +259,18 @@ const routes = [
     }
   },
   {
+    path: '/pdc-nfc/manual-write/:jobId',
+    name: 'NfcManualWrite',
+    component: function () {
+      return import('../views/nfc/NfcManualWrite.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: 'NFC 手动写卡'
+    }
+  },
+  {
     path: '/pdc-nfc/assets',
     name: 'NfcAssets',
     component: function () {

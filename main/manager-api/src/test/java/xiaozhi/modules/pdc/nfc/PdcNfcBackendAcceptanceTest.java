@@ -31,7 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PdcNfcBackendAcceptanceTest {
 
     private static final int FIRST_CODE = 10500;
-    private static final int LAST_CODE = 10520;
+    // 覆盖手动写卡模式新增错误码（10524-10527，ADR 0003）
+    private static final int LAST_CODE = 10527;
 
     private static final Properties EN_PROPS = new Properties();
     private static final Properties ZH_PROPS = new Properties();

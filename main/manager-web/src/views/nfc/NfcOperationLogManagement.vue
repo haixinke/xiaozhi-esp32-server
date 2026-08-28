@@ -24,13 +24,19 @@
                   :value="opt.value"
                 ></el-option>
               </el-select>
-              <el-input
+              <el-select
                 v-model="filters.operationType"
                 placeholder="操作类型"
                 clearable
                 class="filter-item"
-                @keyup.enter.native="handleSearch"
-              />
+              >
+                <el-option
+                  v-for="opt in operationTypeOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                ></el-option>
+              </el-select>
               <el-date-picker
                 v-model="filters.dateRange"
                 type="daterange"
@@ -113,7 +119,7 @@
 <script>
 import Api from '@/apis/api'
 import HeaderBar from '@/components/HeaderBar.vue'
-import { formatDate, operationTypeLabel } from '@/utils/pdcNfcState.mjs'
+import { formatDate, operationTypeLabel, operationTypeOptions } from '@/utils/pdcNfcState.mjs'
 
 export default {
   name: 'NfcOperationLogManagement',
@@ -131,6 +137,8 @@ export default {
         dateRange: null
       },
       activeFilters: {},
+      // 操作类型筛选选项与列显示共用 pdcNfcState 的同一映射，文案不漂移
+      operationTypeOptions: operationTypeOptions(),
       objectTypeOptions: [
         { value: 'PRODUCT_TYPE', label: '商品类型' },
         { value: 'BATCH', label: '批次' },

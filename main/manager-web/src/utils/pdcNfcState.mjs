@@ -101,34 +101,46 @@ export function statusLabel(status) {
 }
 
 /**
- * 返回后台操作类型的中文显示文本。
+ * 操作类型 -> 中文文案映射（模块级常量，label 函数与下拉选项共用，避免两处漂移）。
  * 取值来源两类：PdcNfcAdminOperationType 后台管理操作 +
  * 手动写卡链路的审计动作（PdcNfcManualWriteServiceImpl.logOperation：
  * SCHEME_REVEAL / PdcNfcManualMarkAction 各值 / TOUCH_VERIFY）。
+ */
+const OPERATION_TYPE_LABELS = {
+  'WRITE_RESULT_IMPORT': '写卡结果导入',
+  // 结果 CSV 导入事务实际落库的值（PdcNfcWriteResultTransactionServiceImpl），
+  // 与幂等通道的 WRITE_RESULT_IMPORT 并存，同文案
+  'IMPORT_RESULT': '写卡结果导入',
+  'EXPORT': '导出写卡文件',
+  'RELEASE_EVIDENCE': '登记发布证据',
+  'STOCK_IN': '入库',
+  'ACTIVATE': '激活',
+  'DISABLE': '禁用',
+  'SCRAP': '报废',
+  // 手动写卡模式（ADR 0003）审计动作
+  'SCHEME_REVEAL': '查看 Scheme',
+  'MARK_WRITTEN': '标记已写入',
+  'MARK_WRITE_FAILED': '标记写入失败',
+  'MARK_VERIFIED': '标记验证通过',
+  'MARK_LOCKED': '标记已锁卡',
+  'TOUCH_VERIFY': '触碰自验证'
+}
+
+/**
+ * 返回后台操作类型的中文显示文本
  * @param {string} operationType
  * @returns {string}
  */
 export function operationTypeLabel(operationType) {
-  const map = {
-    'WRITE_RESULT_IMPORT': '写卡结果导入',
-    // 结果 CSV 导入事务实际落库的值（PdcNfcWriteResultTransactionServiceImpl），
-    // 与幂等通道的 WRITE_RESULT_IMPORT 并存，同文案
-    'IMPORT_RESULT': '写卡结果导入',
-    'EXPORT': '导出写卡文件',
-    'RELEASE_EVIDENCE': '登记发布证据',
-    'STOCK_IN': '入库',
-    'ACTIVATE': '激活',
-    'DISABLE': '禁用',
-    'SCRAP': '报废',
-    // 手动写卡模式（ADR 0003）审计动作
-    'SCHEME_REVEAL': '查看 Scheme',
-    'MARK_WRITTEN': '标记已写入',
-    'MARK_WRITE_FAILED': '标记写入失败',
-    'MARK_VERIFIED': '标记验证通过',
-    'MARK_LOCKED': '标记已锁卡',
-    'TOUCH_VERIFY': '触碰自验证'
-  }
-  return map[operationType] ?? operationType
+  return OPERATION_TYPE_LABELS[operationType] ?? operationType
+}
+
+/**
+ * 操作类型筛选下拉选项（value 为后端英文原值，label 为中文）
+ * @returns {{ value: string, label: string }[]}
+ */
+export function operationTypeOptions() {
+  return Object.entries(OPERATION_TYPE_LABELS).map(([value, label]) => ({ value, label }))
 }
 
 /**

@@ -6,6 +6,7 @@ import {
   statusBadgeType,
   statusLabel,
   operationTypeLabel,
+  operationTypeOptions,
   capabilityModeLabel,
   manualWriteStatusLabel,
   manualWriteStatusTagType,
@@ -166,6 +167,14 @@ describe('operationTypeLabel', () => {
     assert.equal(operationTypeLabel('IMPORT_RESULT'), '写卡结果导入')
     assert.equal(operationTypeLabel('EXPORT'), '导出写卡文件')
     assert.equal(operationTypeLabel('RELEASE_EVIDENCE'), '登记发布证据')
+  })
+
+  it('operationTypeOptions returns value/label pairs covering every mapped type', () => {
+    const options = operationTypeOptions()
+    assert.ok(options.length >= 14)
+    for (const opt of options) {
+      assert.equal(operationTypeLabel(opt.value), opt.label)
+    }
   })
 
   it('unknown operation type returns the raw string', () => {

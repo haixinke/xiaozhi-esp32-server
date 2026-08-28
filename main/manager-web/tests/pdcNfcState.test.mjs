@@ -162,6 +162,12 @@ describe('operationTypeLabel', () => {
     assert.equal(operationTypeLabel('TOUCH_VERIFY'), '触碰自验证')
   })
 
+  it('maps import/export/release-evidence log values to Chinese labels', () => {
+    assert.equal(operationTypeLabel('IMPORT_RESULT'), '写卡结果导入')
+    assert.equal(operationTypeLabel('EXPORT'), '导出写卡文件')
+    assert.equal(operationTypeLabel('RELEASE_EVIDENCE'), '登记发布证据')
+  })
+
   it('unknown operation type returns the raw string', () => {
     assert.equal(operationTypeLabel('SOME_NEW_OP'), 'SOME_NEW_OP')
   })

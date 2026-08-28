@@ -111,6 +111,11 @@ export function statusLabel(status) {
 export function operationTypeLabel(operationType) {
   const map = {
     'WRITE_RESULT_IMPORT': '写卡结果导入',
+    // 结果 CSV 导入事务实际落库的值（PdcNfcWriteResultTransactionServiceImpl），
+    // 与幂等通道的 WRITE_RESULT_IMPORT 并存，同文案
+    'IMPORT_RESULT': '写卡结果导入',
+    'EXPORT': '导出写卡文件',
+    'RELEASE_EVIDENCE': '登记发布证据',
     'STOCK_IN': '入库',
     'ACTIVATE': '激活',
     'DISABLE': '禁用',

@@ -156,9 +156,10 @@
             手动模式（小批量验证）
             <div class="create-mode-hint">手机 NFC App 逐张写卡，触碰自验证，验证通过后锁卡再入库</div>
           </el-radio>
-          <el-radio label="FACTORY_CSV" class="create-mode-option">
+          <!-- 工厂 CSV 模式暂不可用：验证阶段仅支持手动模式，恢复时去掉 disabled 即可（后端能力保留） -->
+          <el-radio label="FACTORY_CSV" class="create-mode-option" disabled>
             工厂 CSV 模式
-            <div class="create-mode-hint">量产：导出 CSV 给工厂设备批量写卡，回传结果导入</div>
+            <div class="create-mode-hint">量产：导出 CSV 给工厂设备批量写卡，回传结果导入（暂不可用，验证阶段仅支持手动模式）</div>
           </el-radio>
         </el-radio-group>
       </div>

@@ -202,9 +202,10 @@
       <div v-if="createTargetRow" class="create-mode-dialog">
         <p class="create-mode-batch">批次：{{ createTargetRow.batchNo }}</p>
         <el-radio-group v-model="createMode">
-          <el-radio label="FACTORY_CSV" class="create-mode-option">
+          <!-- 工厂 CSV 模式暂不可用：验证阶段仅支持手动模式，恢复时去掉 disabled 即可（后端能力保留） -->
+          <el-radio label="FACTORY_CSV" class="create-mode-option" disabled>
             工厂 CSV 模式
-            <div class="create-mode-hint">量产：导出 CSV 给工厂设备批量写卡，回传结果导入</div>
+            <div class="create-mode-hint">量产：导出 CSV 给工厂设备批量写卡，回传结果导入（暂不可用，验证阶段仅支持手动模式）</div>
           </el-radio>
           <el-radio label="MANUAL" class="create-mode-option">
             手动模式（小批量验证）
@@ -248,7 +249,8 @@ export default {
       showImportDialog: false,
       importJobId: '',
       createDialogVisible: false,
-      createMode: 'FACTORY_CSV',
+      // 默认手动模式：工厂 CSV 暂不可用（验证阶段）
+      createMode: 'MANUAL',
       createTargetRow: null
     }
   },
@@ -430,7 +432,7 @@ export default {
 
     handleCreate(row) {
       this.createTargetRow = row
-      this.createMode = 'FACTORY_CSV'
+      this.createMode = 'MANUAL'
       this.createDialogVisible = true
     },
 

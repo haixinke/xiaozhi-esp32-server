@@ -80,7 +80,9 @@
                 <template slot-scope="{ row }">{{ objectTypeLabel(row.objectType) }}</template>
               </el-table-column>
               <el-table-column prop="objectId" label="对象 ID" min-width="120" align="center"></el-table-column>
-              <el-table-column prop="operationType" label="操作类型" min-width="120" align="center"></el-table-column>
+              <el-table-column prop="operationType" label="操作类型" min-width="120" align="center">
+                <template slot-scope="{ row }">{{ operationTypeLabel(row.operationType) }}</template>
+              </el-table-column>
               <el-table-column prop="operatorId" label="操作人" min-width="100" align="center"></el-table-column>
               <el-table-column label="操作详情" min-width="280" align="center">
                 <template slot-scope="{ row }">
@@ -111,7 +113,7 @@
 <script>
 import Api from '@/apis/api'
 import HeaderBar from '@/components/HeaderBar.vue'
-import { formatDate } from '@/utils/pdcNfcState.mjs'
+import { formatDate, operationTypeLabel } from '@/utils/pdcNfcState.mjs'
 
 export default {
   name: 'NfcOperationLogManagement',
@@ -143,6 +145,7 @@ export default {
   },
   methods: {
     formatTime: formatDate,
+    operationTypeLabel,
     objectTypeLabel(type) {
       const found = this.objectTypeOptions.find(o => o.value === type)
       return found ? found.label : (type || '-')

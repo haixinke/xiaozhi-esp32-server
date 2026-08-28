@@ -31,7 +31,7 @@
               <el-table-column prop="typeName" label="类型名称" min-width="160" align="center"></el-table-column>
               <el-table-column prop="capabilityMode" label="能力模式" min-width="100" align="center">
                 <template slot-scope="{ row }">
-                  {{ row.capabilityMode || '-' }}
+                  {{ row.capabilityMode ? capabilityModeLabel(row.capabilityMode) : '-' }}
                 </template>
               </el-table-column>
               <el-table-column label="Model ID" min-width="180" align="center">
@@ -118,7 +118,7 @@
 <script>
 import Api from '@/apis/api'
 import HeaderBar from '@/components/HeaderBar.vue'
-import { modelIdLabel, formatDate } from '@/utils/pdcNfcState.mjs'
+import { modelIdLabel, formatDate, capabilityModeLabel } from '@/utils/pdcNfcState.mjs'
 import {
   buildReleaseEvidencePayload,
   buildReleaseEvidenceViewModel
@@ -163,6 +163,7 @@ export default {
   },
   methods: {
     modelIdLabel,
+    capabilityModeLabel,
     formatDate,
     releaseEvidenceView(row) {
       return buildReleaseEvidenceViewModel(row.latestEvidence)

@@ -57,7 +57,9 @@
           <el-table-column prop="operateTime" label="操作时间" min-width="160" align="center">
             <template slot-scope="{ row }">{{ formatTime(row.operateTime) }}</template>
           </el-table-column>
-          <el-table-column prop="operationType" label="操作类型" min-width="120" align="center"></el-table-column>
+          <el-table-column prop="operationType" label="操作类型" min-width="120" align="center">
+            <template slot-scope="{ row }">{{ operationTypeLabel(row.operationType) }}</template>
+          </el-table-column>
           <el-table-column prop="operatorId" label="操作人" min-width="100" align="center"></el-table-column>
         </el-table>
         <div v-if="logsTotal > logsPageSize" class="logs-pagination">
@@ -82,7 +84,7 @@
 
 <script>
 import Api from '@/apis/api'
-import { statusBadgeType, statusLabel, formatDate, presentAsset } from '@/utils/pdcNfcState.mjs'
+import { statusBadgeType, statusLabel, formatDate, presentAsset, operationTypeLabel } from '@/utils/pdcNfcState.mjs'
 
 export default {
   name: 'NfcAssetDetailDialog',
@@ -134,6 +136,7 @@ export default {
   methods: {
     badgeType: statusBadgeType,
     statusText: statusLabel,
+    operationTypeLabel,
     formatTime: formatDate,
     truncateHash(hash) {
       if (!hash) return '-'

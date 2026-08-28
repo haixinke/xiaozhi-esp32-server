@@ -52,6 +52,7 @@
 <script>
 import Api from '@/apis/api'
 import HeaderBar from '@/components/HeaderBar.vue'
+import { manualWriteStatusLabel, manualWriteStatusTagType } from '@/utils/pdcNfcState.mjs'
 
 /**
  * 手动写卡页（ADR 0003）：小批量验证阶段用手机 NFC App 逐张写卡。
@@ -156,20 +157,10 @@ export default {
       }).catch(() => {})
     },
     statusText(asset) {
-      const map = {
-        SCHEME_GENERATED: '待写入',
-        WRITTEN: '已写入待验证',
-        VERIFIED: '已验证'
-      }
-      return map[asset.status] || asset.status
+      return manualWriteStatusLabel(asset.status)
     },
     statusTagType(asset) {
-      const map = {
-        SCHEME_GENERATED: 'info',
-        WRITTEN: 'warning',
-        VERIFIED: 'success'
-      }
-      return map[asset.status] || 'info'
+      return manualWriteStatusTagType(asset.status)
     }
   }
 }

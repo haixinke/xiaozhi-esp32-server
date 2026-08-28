@@ -66,16 +66,20 @@ export function statusBadgeType(status) {
  */
 export function statusLabel(status) {
   const map = {
+    'DRAFT': '草稿',
     'CREATED': '已创建',
     'SCHEME_GENERATING': 'Scheme生成中',
     'READY_FOR_WRITE': '就绪',
+    'READY_FOR_STOCK': '待入库',
     'STOCKED': '已入库',
     'COMPLETED': '已完成',
+    'CLOSED': '已关闭',
     'CANCELLED': '已取消',
     'PENDING': '等待中',
     'RUNNING': '运行中',
     'SUCCEEDED': '成功',
     'FAILED': '失败',
+    'PARTIAL_SUCCESS': '部分成功',
     'EXPORTED': '已导出',
     'RESULT_IMPORTED': '已导入',
     'SCHEME_GENERATED': 'Scheme已生成',
@@ -85,9 +89,70 @@ export function statusLabel(status) {
     'ACTIVE': '已激活',
     'CLAIMED': '已领取',
     'DISABLED': '已禁用',
-    'SCRAPPED': '已报废'
+    'SCRAPPED': '已报废',
+    // 伪状态：扫码查询的资产不在库 / 后端返回了映射外状态
+    'NOT_FOUND': '未找到',
+    'UNKNOWN': '未知状态'
+  }
+  // 未命中映射时原样返回，暴露后端新增枚举的漏配而非吞掉
+  return map[status] ?? status
+}
+
+/**
+ * 返回后台操作类型的中文显示文本（PdcNfcAdminOperationType）
+ * @param {string} operationType
+ * @returns {string}
+ */
+export function operationTypeLabel(operationType) {
+  const map = {
+    'WRITE_RESULT_IMPORT': '写卡结果导入',
+    'STOCK_IN': '入库',
+    'ACTIVATE': '激活',
+    'DISABLE': '禁用',
+    'SCRAP': '报废'
+  }
+  return map[operationType] ?? operationType
+}
+
+/**
+ * 返回商品类型能力模式的中文显示文本（capabilityMode 为普通字符串，非枚举）
+ * @param {string} capabilityMode
+ * @returns {string}
+ */
+export function capabilityModeLabel(capabilityMode) {
+  const map = {
+    'ONE_DEVICE_ONE_CODE': '一机一码'
+  }
+  return map[capabilityMode] ?? capabilityMode
+}
+
+/**
+ * 手动写卡页的资产状态中文文案（语境化措辞，与全局 statusLabel 不同：
+ * 操作员视角关注"下一步做什么"）
+ * @param {string} status
+ * @returns {string}
+ */
+export function manualWriteStatusLabel(status) {
+  const map = {
+    'SCHEME_GENERATED': '待写入',
+    'WRITTEN': '已写入待验证',
+    'VERIFIED': '已验证'
   }
   return map[status] ?? status
+}
+
+/**
+ * 手动写卡页的资产状态 el-tag type
+ * @param {string} status
+ * @returns {string}
+ */
+export function manualWriteStatusTagType(status) {
+  const map = {
+    'SCHEME_GENERATED': 'info',
+    'WRITTEN': 'warning',
+    'VERIFIED': 'success'
+  }
+  return map[status] ?? 'info'
 }
 
 /**

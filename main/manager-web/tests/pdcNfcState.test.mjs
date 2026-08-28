@@ -5,6 +5,10 @@ import {
   modelIdLabel,
   statusBadgeType,
   statusLabel,
+  operationTypeLabel,
+  capabilityModeLabel,
+  manualWriteStatusLabel,
+  manualWriteStatusTagType,
   formatDate
 } from '../src/utils/pdcNfcState.mjs'
 
@@ -122,8 +126,65 @@ describe('statusLabel', () => {
     assert.equal(statusLabel('SCRAPPED'), '已报废')
   })
 
+  it('maps remaining batch and scheme statuses to Chinese labels', () => {
+    assert.equal(statusLabel('DRAFT'), '草稿')
+    assert.equal(statusLabel('READY_FOR_STOCK'), '待入库')
+    assert.equal(statusLabel('CLOSED'), '已关闭')
+    assert.equal(statusLabel('PARTIAL_SUCCESS'), '部分成功')
+  })
+
+  it('maps pseudo statuses from asset scanning to Chinese labels', () => {
+    assert.equal(statusLabel('NOT_FOUND'), '未找到')
+    assert.equal(statusLabel('UNKNOWN'), '未知状态')
+  })
+
   it('unknown status returns the raw status string', () => {
     assert.equal(statusLabel('UNKNOWN_STATUS'), 'UNKNOWN_STATUS')
+  })
+})
+
+describe('operationTypeLabel', () => {
+  it('maps admin operation types to Chinese labels', () => {
+    assert.equal(operationTypeLabel('WRITE_RESULT_IMPORT'), '写卡结果导入')
+    assert.equal(operationTypeLabel('STOCK_IN'), '入库')
+    assert.equal(operationTypeLabel('ACTIVATE'), '激活')
+    assert.equal(operationTypeLabel('DISABLE'), '禁用')
+    assert.equal(operationTypeLabel('SCRAP'), '报废')
+  })
+
+  it('unknown operation type returns the raw string', () => {
+    assert.equal(operationTypeLabel('SOME_NEW_OP'), 'SOME_NEW_OP')
+  })
+})
+
+describe('capabilityModeLabel', () => {
+  it('maps known capability mode to Chinese label', () => {
+    assert.equal(capabilityModeLabel('ONE_DEVICE_ONE_CODE'), '一机一码')
+  })
+
+  it('unknown capability mode returns the raw string', () => {
+    assert.equal(capabilityModeLabel('NEW_MODE'), 'NEW_MODE')
+  })
+})
+
+describe('manualWriteStatusLabel', () => {
+  it('maps manual write statuses to operator-facing Chinese labels', () => {
+    assert.equal(manualWriteStatusLabel('SCHEME_GENERATED'), '待写入')
+    assert.equal(manualWriteStatusLabel('WRITTEN'), '已写入待验证')
+    assert.equal(manualWriteStatusLabel('VERIFIED'), '已验证')
+  })
+
+  it('unknown status returns the raw string', () => {
+    assert.equal(manualWriteStatusLabel('IN_STOCK'), 'IN_STOCK')
+  })
+})
+
+describe('manualWriteStatusTagType', () => {
+  it('maps manual write statuses to el-tag types', () => {
+    assert.equal(manualWriteStatusTagType('SCHEME_GENERATED'), 'info')
+    assert.equal(manualWriteStatusTagType('WRITTEN'), 'warning')
+    assert.equal(manualWriteStatusTagType('VERIFIED'), 'success')
+    assert.equal(manualWriteStatusTagType('OTHER'), 'info')
   })
 })
 

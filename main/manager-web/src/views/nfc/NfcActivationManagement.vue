@@ -17,7 +17,7 @@
               class="info-alert"
             >
               <template>
-                扫码或输入资产编号后按回车添加。系统会自动查询资产状态，仅状态为"已入库(IN_STOCK)"的资产可激活。最多可扫 500 条。
+                扫码或输入资产编号后按回车添加。系统会自动查询资产状态，仅状态为"已入库"的资产可激活。最多可扫 500 条。
               </template>
             </el-alert>
 
@@ -96,6 +96,7 @@
 import Api from '@/apis/api'
 import HeaderBar from '@/components/HeaderBar.vue'
 import NfcActivationScanner from '@/components/nfc/NfcActivationScanner.vue'
+import { statusLabel } from '@/utils/pdcNfcState.mjs'
 
 export default {
   name: 'NfcActivationManagement',
@@ -162,7 +163,7 @@ export default {
             // 使用 $set 确保 Vue 响应式更新
             this.$set(this.assetStatusMap, assetNo, asset.status || 'UNKNOWN')
             if (asset.status !== 'IN_STOCK') {
-              this.$message.warning(`资产 ${assetNo} 状态为 ${asset.status || '未知'}，不可激活`)
+              this.$message.warning(`资产 ${assetNo} 状态为「${statusLabel(asset.status || 'UNKNOWN')}」，不可激活`)
             }
           } else {
             this.$set(this.assetStatusMap, assetNo, 'NOT_FOUND')

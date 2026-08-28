@@ -105,6 +105,8 @@ export default {
     return {
       // assetNo -> status 映射
       assetStatusMap: {},
+      // assetNo -> 资产 ID 映射（提交激活时后端只收 assetIds）
+      assetIdMap: {},
       activateForm: {
         businessNo: ''
       },
@@ -162,6 +164,7 @@ export default {
             const asset = list[0]
             // 使用 $set 确保 Vue 响应式更新
             this.$set(this.assetStatusMap, assetNo, asset.status || 'UNKNOWN')
+            this.$set(this.assetIdMap, assetNo, asset.id)
             if (asset.status !== 'IN_STOCK') {
               this.$message.warning(`资产 ${assetNo} 状态为「${statusLabel(asset.status || 'UNKNOWN')}」，不可激活`)
             }
@@ -174,6 +177,7 @@ export default {
     },
     handleCleared() {
       this.assetStatusMap = {}
+      this.assetIdMap = {}
     },
     handleActivate() {
       const scanner = this.$refs.scanner
@@ -199,8 +203,14 @@ export default {
       })
     },
     doActivate(assetNos) {
+      // 后端只收 assetIds：由扫码查询时缓存的 assetNo -> id 映射转换
+      const assetIds = assetNos.map(no => this.assetIdMap[no]).filter(id => id != null)
+      if (assetIds.length !== assetNos.length) {
+        this.$message.warning('部分资产缺少 ID，请重新扫码后再试')
+        return
+      }
       const payload = {
-        assetNos: assetNos,
+        assetIds: assetIds,
         businessNo: this.activateForm.businessNo,
         requestId: this.generateUUID()
       }
@@ -220,6 +230,7 @@ export default {
         this.$refs.scanner.reset()
       }
       this.assetStatusMap = {}
+      this.assetIdMap = {}
       this.activateForm.businessNo = ''
       this.activateResult = null
     }

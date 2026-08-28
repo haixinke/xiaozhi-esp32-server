@@ -107,9 +107,9 @@ export function statusLabel(status) {
  * SCHEME_REVEAL / PdcNfcManualMarkAction 各值 / TOUCH_VERIFY）。
  */
 const OPERATION_TYPE_LABELS = {
-  'WRITE_RESULT_IMPORT': '写卡结果导入',
-  // 结果 CSV 导入事务实际落库的值（PdcNfcWriteResultTransactionServiceImpl），
-  // 与幂等通道的 WRITE_RESULT_IMPORT 并存，同文案
+  // 结果 CSV 导入落库值（PdcNfcWriteResultTransactionServiceImpl）。
+  // 注意：WRITE_RESULT_IMPORT 只是幂等通道的键（pdc_nfc_admin_request），
+  // 从不写入操作日志，故不在此映射中
   'IMPORT_RESULT': '写卡结果导入',
   'EXPORT': '导出写卡文件',
   'RELEASE_EVIDENCE': '登记发布证据',

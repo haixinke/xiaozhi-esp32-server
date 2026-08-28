@@ -147,7 +147,7 @@ describe('statusLabel', () => {
 
 describe('operationTypeLabel', () => {
   it('maps admin operation types to Chinese labels', () => {
-    assert.equal(operationTypeLabel('WRITE_RESULT_IMPORT'), '写卡结果导入')
+    assert.equal(operationTypeLabel('IMPORT_RESULT'), '写卡结果导入')
     assert.equal(operationTypeLabel('STOCK_IN'), '入库')
     assert.equal(operationTypeLabel('ACTIVATE'), '激活')
     assert.equal(operationTypeLabel('DISABLE'), '禁用')
@@ -164,14 +164,16 @@ describe('operationTypeLabel', () => {
   })
 
   it('maps import/export/release-evidence log values to Chinese labels', () => {
-    assert.equal(operationTypeLabel('IMPORT_RESULT'), '写卡结果导入')
     assert.equal(operationTypeLabel('EXPORT'), '导出写卡文件')
     assert.equal(operationTypeLabel('RELEASE_EVIDENCE'), '登记发布证据')
   })
 
   it('operationTypeOptions returns value/label pairs covering every mapped type', () => {
     const options = operationTypeOptions()
-    assert.ok(options.length >= 14)
+    assert.ok(options.length >= 13)
+    // 下拉选项 label 不得重名，否则操作员无法区分
+    const labels = options.map(o => o.label)
+    assert.equal(new Set(labels).size, labels.length)
     for (const opt of options) {
       assert.equal(operationTypeLabel(opt.value), opt.label)
     }

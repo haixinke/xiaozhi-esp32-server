@@ -128,6 +128,7 @@ describe('statusLabel', () => {
 
   it('maps remaining batch and scheme statuses to Chinese labels', () => {
     assert.equal(statusLabel('DRAFT'), '草稿')
+    assert.equal(statusLabel('WRITING'), '写卡中')
     assert.equal(statusLabel('READY_FOR_STOCK'), '待入库')
     assert.equal(statusLabel('CLOSED'), '已关闭')
     assert.equal(statusLabel('PARTIAL_SUCCESS'), '部分成功')

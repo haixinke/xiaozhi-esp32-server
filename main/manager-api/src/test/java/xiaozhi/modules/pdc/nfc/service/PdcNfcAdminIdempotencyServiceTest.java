@@ -184,4 +184,36 @@ class PdcNfcAdminIdempotencyServiceTest {
                 () -> new TestResponse("success", 1)
         )).isInstanceOf(RuntimeException.class).hasMessageContaining("DB error");
     }
+
+    @Test
+    @DisplayName("幂等记录必须携带操作人 ID：pdc_nfc_admin_request.operator_user_id 为 NOT NULL")
+    void storedRecordCarriesOperatorUserId() {
+        // 模拟 Shiro 登录上下文：管理后台操作必经 oauth2 过滤器，SecurityUser 能取到当前用户
+        org.apache.shiro.subject.Subject subject = mock(org.apache.shiro.subject.Subject.class);
+        xiaozhi.common.user.UserDetail user = new xiaozhi.common.user.UserDetail();
+        user.setId(100L);
+        when(subject.getPrincipal()).thenReturn(user);
+        org.apache.shiro.util.ThreadContext.bind(subject);
+        try {
+            UUID requestId = UUID.randomUUID();
+            when(adminRequestDao.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+            when(adminRequestDao.insert(any(PdcNfcAdminRequestEntity.class))).thenReturn(1);
+
+            idempotencyService.execute(
+                    PdcNfcAdminOperationType.STOCK_IN,
+                    requestId,
+                    "test-request",
+                    TestResponse.class,
+                    () -> new TestResponse("ok", 1)
+            );
+
+            org.mockito.ArgumentCaptor<PdcNfcAdminRequestEntity> captor =
+                    org.mockito.ArgumentCaptor.forClass(PdcNfcAdminRequestEntity.class);
+            verify(adminRequestDao).insert(captor.capture());
+            // 缺该字段时 INSERT 报 Field 'operator_user_id' doesn't have a default value
+            assertThat(captor.getValue().getOperatorUserId()).isEqualTo(100L);
+        } finally {
+            org.apache.shiro.util.ThreadContext.unbindSubject();
+        }
+    }
 }

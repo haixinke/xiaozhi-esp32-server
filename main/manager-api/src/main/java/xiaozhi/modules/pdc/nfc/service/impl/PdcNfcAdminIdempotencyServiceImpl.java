@@ -14,6 +14,7 @@ import xiaozhi.modules.pdc.nfc.crypto.RequestFingerprint;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcAdminRequestDao;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAdminRequestEntity;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcAdminIdempotencyService;
+import xiaozhi.modules.security.user.SecurityUser;
 
 import java.util.Date;
 import java.util.UUID;
@@ -64,6 +65,9 @@ public class PdcNfcAdminIdempotencyServiceImpl implements PdcNfcAdminIdempotency
             entity.setRequestFingerprint(fingerprint);
             entity.setResponseJson(responseJson);
             entity.setStatus("SUCCESS");
+            // pdc_nfc_admin_request.operator_user_id 为 NOT NULL，
+            // 管理操作必经 oauth2 过滤器，从 Shiro 上下文取当前操作人
+            entity.setOperatorUserId(SecurityUser.getUserId());
             entity.setCreateDate(new Date());
             adminRequestDao.insert(entity);
         } catch (DuplicateKeyException e) {

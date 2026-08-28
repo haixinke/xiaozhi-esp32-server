@@ -101,7 +101,10 @@ export function statusLabel(status) {
 }
 
 /**
- * 返回后台操作类型的中文显示文本（PdcNfcAdminOperationType）
+ * 返回后台操作类型的中文显示文本。
+ * 取值来源两类：PdcNfcAdminOperationType 后台管理操作 +
+ * 手动写卡链路的审计动作（PdcNfcManualWriteServiceImpl.logOperation：
+ * SCHEME_REVEAL / PdcNfcManualMarkAction 各值 / TOUCH_VERIFY）。
  * @param {string} operationType
  * @returns {string}
  */
@@ -111,7 +114,14 @@ export function operationTypeLabel(operationType) {
     'STOCK_IN': '入库',
     'ACTIVATE': '激活',
     'DISABLE': '禁用',
-    'SCRAP': '报废'
+    'SCRAP': '报废',
+    // 手动写卡模式（ADR 0003）审计动作
+    'SCHEME_REVEAL': '查看 Scheme',
+    'MARK_WRITTEN': '标记已写入',
+    'MARK_WRITE_FAILED': '标记写入失败',
+    'MARK_VERIFIED': '标记验证通过',
+    'MARK_LOCKED': '标记已锁卡',
+    'TOUCH_VERIFY': '触碰自验证'
   }
   return map[operationType] ?? operationType
 }

@@ -153,6 +153,15 @@ describe('operationTypeLabel', () => {
     assert.equal(operationTypeLabel('SCRAP'), '报废')
   })
 
+  it('maps manual write audit actions to Chinese labels', () => {
+    assert.equal(operationTypeLabel('SCHEME_REVEAL'), '查看 Scheme')
+    assert.equal(operationTypeLabel('MARK_WRITTEN'), '标记已写入')
+    assert.equal(operationTypeLabel('MARK_WRITE_FAILED'), '标记写入失败')
+    assert.equal(operationTypeLabel('MARK_VERIFIED'), '标记验证通过')
+    assert.equal(operationTypeLabel('MARK_LOCKED'), '标记已锁卡')
+    assert.equal(operationTypeLabel('TOUCH_VERIFY'), '触碰自验证')
+  })
+
   it('unknown operation type returns the raw string', () => {
     assert.equal(operationTypeLabel('SOME_NEW_OP'), 'SOME_NEW_OP')
   })

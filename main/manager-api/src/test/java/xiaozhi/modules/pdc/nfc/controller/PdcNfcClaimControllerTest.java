@@ -12,12 +12,52 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import xiaozhi.common.utils.Result;
+import xiaozhi.modules.pdc.nfc.dto.PdcNfcClaimConfirmDTO;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcClaimService;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimPreviewVO;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.vo.PetVO;
 
 class PdcNfcClaimControllerTest {
+
+    @Test
+    @DisplayName("preview wraps VO in Result envelope (code=0)")
+    void previewWrapsResultEnvelope() {
+        PdcNfcClaimService mockService = mock(PdcNfcClaimService.class);
+        PdcNfcClaimController controller = new PdcNfcClaimController(mockService);
+
+        // 无 Shiro 上下文时 SecurityUser.getUserId() 返回 null，service 入参按 null 匹配
+        PdcNfcClaimPreviewVO vo = new PdcNfcClaimPreviewVO(
+                "翡翠玉兔", "jade_rabbit", PdcNfcClaimPreviewVO.STATUS_CLAIMABLE, null);
+        when(mockService.preview(null, "abcdefghij1234567890_-")).thenReturn(vo);
+
+        Result<PdcNfcClaimPreviewVO> result = controller.preview("abcdefghij1234567890_-");
+        // 小程序 request.js 依赖 code 字段判断成败，必须为标准信封
+        assertThat(result.getCode()).isZero();
+        assertThat(result.getData()).isEqualTo(vo);
+    }
+
+    @Test
+    @DisplayName("confirm wraps VO in Result envelope (code=0)")
+    void confirmWrapsResultEnvelope() {
+        PdcNfcClaimService mockService = mock(PdcNfcClaimService.class);
+        PdcNfcClaimController controller = new PdcNfcClaimController(mockService);
+
+        PetVO petVO = new PetVO();
+        petVO.setId("pet-123");
+        PdcNfcClaimResultVO vo = PdcNfcClaimResultVO.claimed(petVO);
+        UUID requestId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+        when(mockService.confirm(null, "abcdefghij1234567890_-", requestId)).thenReturn(vo);
+
+        PdcNfcClaimConfirmDTO dto = new PdcNfcClaimConfirmDTO();
+        dto.setClaimRef("abcdefghij1234567890_-");
+        dto.setRequestId(requestId.toString());
+        // 同 preview：必须返回标准信封，小程序 request.js 按 code 判断成败
+        Result<PdcNfcClaimResultVO> result = controller.confirm(dto);
+        assertThat(result.getCode()).isZero();
+        assertThat(result.getData()).isEqualTo(vo);
+    }
 
     @Test
     @DisplayName("preview returns PreviewVO from service")

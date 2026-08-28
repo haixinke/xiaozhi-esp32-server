@@ -85,6 +85,11 @@ public class Oauth2Realm extends AuthorizingRealm {
 
         // 查询用户信息
         SysUserEntity userEntity = shiroService.getUser(tokenEntity.getUserId());
+        // 孤儿 token 防御：token 行存在但用户已被删除（如手动清库漏删 token），
+        // 按凭证失效处理走正常 401，不能放行 NPE
+        if (userEntity == null) {
+            throw new IncorrectCredentialsException(MessageUtils.getMessage(ErrorCode.TOKEN_INVALID));
+        }
 
         // 转换成UserDetail对象
         UserDetail userDetail = ConvertUtils.sourceToTarget(userEntity, UserDetail.class);

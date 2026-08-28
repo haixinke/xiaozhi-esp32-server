@@ -142,6 +142,32 @@
       </template>
     </el-dialog>
 
+    <!-- 创建写卡任务对话框：选择写卡模式（ADR 0003，创建后不可变更） -->
+    <el-dialog
+      title="创建写卡任务"
+      :visible.sync="createJobDialogVisible"
+      width="460px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="createJobTargetRow" class="create-mode-dialog">
+        <p class="create-mode-batch">批次：{{ createJobTargetRow.batchNo }}</p>
+        <el-radio-group v-model="createJobMode">
+          <el-radio label="MANUAL" class="create-mode-option">
+            手动模式（小批量验证）
+            <div class="create-mode-hint">手机 NFC App 逐张写卡，触碰自验证，验证通过后锁卡再入库</div>
+          </el-radio>
+          <el-radio label="FACTORY_CSV" class="create-mode-option">
+            工厂 CSV 模式
+            <div class="create-mode-hint">量产：导出 CSV 给工厂设备批量写卡，回传结果导入</div>
+          </el-radio>
+        </el-radio-group>
+      </div>
+      <span slot="footer">
+        <el-button size="small" @click="createJobDialogVisible = false">取消</el-button>
+        <el-button size="small" type="primary" @click="confirmCreateWriteJob">创建</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 写卡任务对话框 -->
     <NfcWriteJobDialog
       :visible.sync="writeJobDialogVisible"
@@ -180,7 +206,11 @@ export default {
       schemePollTimer: null,
       // Write job dialog
       writeJobDialogVisible: false,
-      currentWriteJobId: ''
+      currentWriteJobId: '',
+      // 创建写卡任务对话框：默认手动模式（当前小批量验证阶段手动为主路径，ADR 0003）
+      createJobDialogVisible: false,
+      createJobTargetRow: null,
+      createJobMode: 'MANUAL'
     }
   },
   computed: {
@@ -339,26 +369,27 @@ export default {
       }).catch(() => {})
     },
     handleCreateWriteJob(row) {
-      this.$confirm('确认为该批次创建写卡任务吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }).then(() => {
-        // 批次页快捷创建默认工厂 CSV 模式；手动模式请到写卡任务页选择创建（ADR 0003）
-        Api.pdcNfc.createWriteJob(row.id, null, (res) => {
-          if (res.data && res.data.code === 0) {
-            this.$message.success('写卡任务已创建')
-            this.fetchBatches()
-            const job = res.data.data
-            if (job && job.id) {
-              this.currentWriteJobId = job.id
-              this.writeJobDialogVisible = true
-            }
-          } else {
-            this.$message.error(res.data?.msg || '创建写卡任务失败')
+      this.createJobTargetRow = row
+      this.createJobMode = 'MANUAL'
+      this.createJobDialogVisible = true
+    },
+    confirmCreateWriteJob() {
+      const row = this.createJobTargetRow
+      if (!row) return
+      Api.pdcNfc.createWriteJob(row.id, this.createJobMode, (res) => {
+        if (res.data && res.data.code === 0) {
+          this.createJobDialogVisible = false
+          this.$message.success('写卡任务已创建')
+          this.fetchBatches()
+          const job = res.data.data
+          if (job && job.id) {
+            this.currentWriteJobId = job.id
+            this.writeJobDialogVisible = true
           }
-        })
-      }).catch(() => {})
+        } else {
+          this.$message.error(res.data?.msg || '创建写卡任务失败')
+        }
+      })
     },
     openWriteJobDialog(row) {
       this.currentWriteJobId = row.writeJobId
@@ -483,5 +514,23 @@ export default {
 
 :deep(.el-table .el-button--text:hover) {
   color: #5a64b5;
+}
+
+.create-mode-batch {
+  margin: 0 0 12px;
+  color: #606266;
+}
+
+.create-mode-option {
+  display: block;
+  margin-bottom: 14px;
+  white-space: normal;
+}
+
+.create-mode-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-left: 24px;
+  line-height: 1.5;
 }
 </style>

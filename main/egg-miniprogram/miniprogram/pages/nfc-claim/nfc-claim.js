@@ -5,7 +5,8 @@ const { getPendingNfcClaimIntent, clearPendingNfcClaimIntent } = require('../../
 const petStore = require('../../utils/pet-store');
 
 // States: BOOTSTRAPPING, NEED_PHONE, LOADING_PREVIEW, READY, SUBMITTING,
-//         SUCCESS, CLAIMED_BY_SELF, CLAIMED_BY_OTHER, UNAVAILABLE, NETWORK_ERROR
+//         SUCCESS, CLAIMED_BY_OTHER, UNAVAILABLE, NETWORK_ERROR
+// 注：CLAIMED_BY_SELF 不再是页面态——蛋已归本用户时跳过中间页，直接回首页
 const STATES = {
   BOOTSTRAPPING: 'BOOTSTRAPPING',
   NEED_PHONE: 'NEED_PHONE',
@@ -13,7 +14,6 @@ const STATES = {
   READY: 'READY',
   SUBMITTING: 'SUBMITTING',
   SUCCESS: 'SUCCESS',
-  CLAIMED_BY_SELF: 'CLAIMED_BY_SELF',
   CLAIMED_BY_OTHER: 'CLAIMED_BY_OTHER',
   UNAVAILABLE: 'UNAVAILABLE',
   NETWORK_ERROR: 'NETWORK_ERROR'
@@ -21,7 +21,6 @@ const STATES = {
 
 const STATUS_LABELS = {
   CLAIMABLE: '可以领取',
-  CLAIMED_BY_SELF: '你已经领取了这只蛋宝宝',
   CLAIMED_BY_OTHER: '这只蛋宝宝已被其他小伙伴领取',
   UNAVAILABLE: '暂时无法领取'
 };
@@ -118,7 +117,8 @@ Page({
       // 可领取但未授权手机号：先展示预览 + 授权按钮（NEED_PHONE），授权后重取 preview 转 READY
       this.setData({ ...data, state: this.data.hasPhoneBound ? STATES.READY : STATES.NEED_PHONE });
     } else if (status === 'CLAIMED_BY_SELF') {
-      this.setData({ ...data, state: STATES.CLAIMED_BY_SELF, pet: withPetType(result.pet) });
+      // 蛋已归本用户：不停留中间页，直接回首页
+      this.goHomeWithPet(result.pet);
     } else if (status === 'CLAIMED_BY_OTHER') {
       this.setData({ ...data, state: STATES.CLAIMED_BY_OTHER });
     } else {
@@ -181,10 +181,9 @@ Page({
       clearPendingNfcClaimIntent();
       getApp().globalData.welcomeCompleted = true;
       this.setData({ state: STATES.SUCCESS, pet: withPetType(result.pet), claimStatus: status });
-    } else if (status === 'CLAIMED_BY_SELF' && result.pet) {
-      petStore.savePetFromVO(result.pet);
-      clearPendingNfcClaimIntent();
-      this.setData({ state: STATES.CLAIMED_BY_SELF, pet: withPetType(result.pet) });
+    } else if (status === 'CLAIMED_BY_SELF') {
+      // 领取竞态：确认瞬间蛋已被本用户（另一设备/会话）领取，同样直接回首页
+      this.goHomeWithPet(result.pet);
     } else {
       this.setData({ state: STATES.UNAVAILABLE, errorMessage: '领取失败，请稍后重试。' });
     }
@@ -200,8 +199,16 @@ Page({
   },
 
   onGoHome() {
-    getApp().globalData.welcomeCompleted = true;
+    this.goHomeWithPet(null);
+  },
+
+  // 回首页的统一出口：有 pet 先落本地缓存（首页秒开），再清 intent、标记欢迎完成并跳转
+  goHomeWithPet(pet) {
+    if (pet) {
+      petStore.savePetFromVO(pet);
+    }
     clearPendingNfcClaimIntent();
+    getApp().globalData.welcomeCompleted = true;
     wx.switchTab({ url: '/pages/home/home' });
   },
 

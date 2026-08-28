@@ -130,11 +130,12 @@ async function run() {
   await new Promise((r) => setTimeout(r, 10));
   assert.strictEqual(p2.data.state, 'UNAVAILABLE', 'failed login shows UNAVAILABLE');
 
-  // 3. Intent + session without phone → NEED_PHONE
+  // 3. Intent + session without phone + CLAIMABLE preview → NEED_PHONE
   reset();
   intentResult = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
   sessionResult = { userId: 42, hasPhone: false, token: 't' };
   sessionExpired = false;
+  previewResult = { productName: '蛋宝宝NFC', prototype: '锦鲤', claimStatus: 'CLAIMABLE', pet: null };
   const p3 = makePage();
   await p3.onLoad();
   assert.strictEqual(p3.data.state, 'NEED_PHONE', 'no phone shows NEED_PHONE');
@@ -149,7 +150,7 @@ async function run() {
   await p4.onLoad();
   assert.strictEqual(p4.data.state, 'READY', 'claimable preview shows READY');
   assert.strictEqual(p4.data.productName, '蛋宝宝NFC');
-  assert.strictEqual(p4.data.prototype, '锦鲤');
+  assert.strictEqual(p4.data.petType, '锦鲤');
 
   // 5. Confirm claim SUCCESS → SUCCESS + saves pet + clears intent
   reset();
@@ -167,7 +168,7 @@ async function run() {
   assert.strictEqual(cleared, true, 'intent cleared after success');
   assert.strictEqual(app.globalData.welcomeCompleted, true, 'welcome marked completed');
 
-  // 6. Preview CLAIMED_BY_SELF → CLAIMED_BY_SELF with pet
+  // 6. Preview CLAIMED_BY_SELF → 直接回首页（无中间页）+ 存 pet + 清 intent
   reset();
   intentResult = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
   sessionResult = { userId: 42, hasPhone: true, token: 't' };
@@ -175,8 +176,26 @@ async function run() {
   previewResult = { productName: '蛋宝宝NFC', prototype: '玉兔', claimStatus: 'CLAIMED_BY_SELF', pet: { id: 88, prototype: '玉兔' } };
   const p6 = makePage();
   await p6.onLoad();
-  assert.strictEqual(p6.data.state, 'CLAIMED_BY_SELF', 'self-claimed shows CLAIMED_BY_SELF');
-  assert.strictEqual(p6.data.pet.id, 88);
+  assert.strictEqual(switchedTo, '/pages/home/home', 'self-claimed goes straight home');
+  assert.deepStrictEqual(savedPetVO, { id: 88, prototype: '玉兔' }, 'pet saved from VO');
+  assert.strictEqual(cleared, true, 'intent cleared on direct home');
+  assert.strictEqual(app.globalData.welcomeCompleted, true, 'welcome marked completed');
+
+  // 6b. Confirm 竞态 CLAIMED_BY_SELF → 同样直接回首页
+  reset();
+  intentResult = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
+  sessionResult = { userId: 42, hasPhone: true, token: 't' };
+  sessionExpired = false;
+  previewResult = { productName: '蛋宝宝NFC', prototype: '锦鲤', claimStatus: 'CLAIMABLE', pet: null };
+  confirmResult = { claimStatus: 'CLAIMED_BY_SELF', pet: { id: 66, prototype: '锦鲤' } };
+  const p6b = makePage();
+  await p6b.onLoad();
+  assert.strictEqual(p6b.data.state, 'READY');
+  await p6b.onConfirmClaim();
+  assert.strictEqual(switchedTo, '/pages/home/home', 'self-claimed race goes straight home');
+  assert.deepStrictEqual(savedPetVO, { id: 66, prototype: '锦鲤' }, 'pet saved from VO on race');
+  assert.strictEqual(cleared, true, 'intent cleared on race');
+  assert.strictEqual(app.globalData.welcomeCompleted, true, 'welcome marked completed on race');
 
   // 7. Preview CLAIMED_BY_OTHER → CLAIMED_BY_OTHER
   reset();

@@ -34,14 +34,6 @@
     <button class="primary-button" bindtap="onGoHome">去看看它</button>
   </view>
 
-  <!-- CLAIMED_BY_SELF -->
-  <view wx:elif="{{state === 'CLAIMED_BY_SELF'}}" class="center-panel">
-    <view class="icon-circle"><text class="icon-emoji">😊</text></view>
-    <text class="panel-title">你已经领取了这只蛋宝宝</text>
-    <text wx:if="{{pet}}" class="panel-desc">它的原型是{{pet.petType}}，正在家园等你。</text>
-    <button class="primary-button" bindtap="onGoHome">回到首页</button>
-  </view>
-
   <!-- CLAIMED_BY_OTHER -->
   <view wx:elif="{{state === 'CLAIMED_BY_OTHER'}}" class="center-panel">
     <view class="icon-circle"><text class="icon-emoji">😢</text></view>

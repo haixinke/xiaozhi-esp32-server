@@ -349,6 +349,56 @@ class PdcNfcClaimPreviewServiceTest {
     }
 
     @Test
+    void activeAssetUserAlreadyOwnsPetReturnsAlreadyOwned() {
+        // 一人一宠：用户已领养过蛋宝宝，触碰激活卡时 preview 直接返回 ALREADY_OWNED，
+        // 前端据此展示"已领取过"面板，不再展示领取按钮
+        setupAllGatesEnabled();
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setBatchId(10L);
+        asset.setPrototype("jade_rabbit");
+        asset.setStatus("ACTIVE");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        PetVO ownedPet = new PetVO();
+        ownedPet.setId("pet-owned");
+        when(petService.listByUserId(USER_ID)).thenReturn(List.of(ownedPet));
+
+        PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_ALREADY_OWNED);
+        assertThat(result.pet()).isNull();
+    }
+
+    @Test
+    void claimedBySelfTakesPrecedenceOverAlreadyOwned() {
+        // 触碰自己已领取的卡：CLAIMED_BY_SELF 优先于 ALREADY_OWNED（直达首页行为不变）
+        setupAllGatesEnabled();
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setBatchId(10L);
+        asset.setPrototype("jade_rabbit");
+        asset.setStatus("CLAIMED");
+        asset.setClaimedUserId(USER_ID);
+        asset.setPetId("pet-123");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        PetVO petVO = new PetVO();
+        petVO.setId("pet-123");
+        when(petService.getById(USER_ID, "pet-123")).thenReturn(petVO);
+
+        PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        // CLAIMED_BY_SELF 分支不经一人一宠检查，直达行为不变
+        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_CLAIMED_BY_SELF);
+        assertThat(result.pet()).isNotNull();
+    }
+
+    @Test
     void scrappedAssetReturnsUnavailable() {
         setupAllGatesEnabled();
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));

@@ -305,7 +305,20 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PetVO createEgg(Long userId, String prototype) {
-        PetEntity pet = buildAndInsertEgg(userId, prototype);
+        // 一人一宠（当前产品规则）：与 adopt() 同一约束同一错误码。
+        // 预检查拦截常规重复领养；catch 兜底预检查与插入之间的并发窗口（唯一索引冲突）。
+        requireCreatableEggInput(userId, prototype);
+        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
+        existWrapper.eq("user_id", userId);
+        if (petDao.exists(existWrapper)) {
+            throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
+        }
+        PetEntity pet;
+        try {
+            pet = buildAndInsertEgg(userId, prototype);
+        } catch (DuplicateKeyException e) {
+            throw new RenException(ErrorCode.PET_ALREADY_EXISTS, e);
+        }
         return toVO(pet);
     }
 
@@ -363,10 +376,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
      * 不发起任何外部调用，不刷新今日心情。加入调用方事务。
      */
     private PetEntity buildAndInsertEgg(Long userId, String prototype) {
-        if (userId == null) {
-            throw new RenException(ErrorCode.USER_NOT_LOGIN);
-        }
-        requireValidPrototype(prototype);
+        requireCreatableEggInput(userId, prototype);
         Date now = new Date();
         PetEntity pet = new PetEntity();
         pet.setUserId(userId);
@@ -378,6 +388,14 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         pet.setCreator(userId);
         petDao.insert(pet);
         return pet;
+    }
+
+    /** 建蛋入参校验：userId 必填、原型必须合法 */
+    private void requireCreatableEggInput(Long userId, String prototype) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        requireValidPrototype(prototype);
     }
 
     private void requireValidPrototype(String prototype) {

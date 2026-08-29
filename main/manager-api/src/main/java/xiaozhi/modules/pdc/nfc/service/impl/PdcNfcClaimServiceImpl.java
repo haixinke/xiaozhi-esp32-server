@@ -136,6 +136,12 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
         // 7. Check asset status
         String status = asset.getStatus();
         if (PdcNfcAssetStatus.ACTIVE.name().equals(status)) {
+            // 一人一宠：已领养用户再碰激活卡，提前返回 ALREADY_OWNED，
+            // 避免走到 confirm 才失败；CLAIMED_BY_SELF（碰自己的卡）不走此分支，直达行为不变
+            if (ownsPet(userId)) {
+                return new PdcNfcClaimPreviewVO(
+                        null, null, PdcNfcClaimPreviewVO.STATUS_ALREADY_OWNED, null);
+            }
             // 8. ACTIVE but release-ready already checked above
             String productName = resolveProductName(asset.getBatchId());
             return new PdcNfcClaimPreviewVO(
@@ -317,6 +323,20 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
         } catch (Exception e) {
             log.warn("[NFC-CLAIM-CONFIRM] Failed to load pet: userId={}, petId={}", userId, petId, e);
             return null;
+        }
+    }
+
+    /**
+     * 用户是否已领养蛋宝宝（一人一宠约束判定）。查询失败时按未持有处理并记 warn，
+     * 不阻断 preview 主链路——真正的并发兜底在 createEgg 的唯一索引转换。
+     */
+    private boolean ownsPet(Long userId) {
+        try {
+            List<PetVO> pets = petService.listByUserId(userId);
+            return pets != null && !pets.isEmpty();
+        } catch (Exception e) {
+            log.warn("[NFC-CLAIM] Failed to check owned pets for userId={}", userId, e);
+            return false;
         }
     }
 

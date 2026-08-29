@@ -5,7 +5,7 @@ const { getPendingNfcClaimIntent, clearPendingNfcClaimIntent } = require('../../
 const petStore = require('../../utils/pet-store');
 
 // States: BOOTSTRAPPING, NEED_PHONE, LOADING_PREVIEW, READY, SUBMITTING,
-//         SUCCESS, CLAIMED_BY_OTHER, UNAVAILABLE, NETWORK_ERROR
+//         SUCCESS, CLAIMED_BY_OTHER, ALREADY_OWNED, UNAVAILABLE, NETWORK_ERROR
 // 注：CLAIMED_BY_SELF 不再是页面态——蛋已归本用户时跳过中间页，直接回首页
 const STATES = {
   BOOTSTRAPPING: 'BOOTSTRAPPING',
@@ -15,9 +15,13 @@ const STATES = {
   SUBMITTING: 'SUBMITTING',
   SUCCESS: 'SUCCESS',
   CLAIMED_BY_OTHER: 'CLAIMED_BY_OTHER',
+  ALREADY_OWNED: 'ALREADY_OWNED',
   UNAVAILABLE: 'UNAVAILABLE',
   NETWORK_ERROR: 'NETWORK_ERROR'
 };
+
+// 后端错误码：该账号已创建过宠物（一人一宠约束，与邀请码领养同码）
+const ERR_PET_ALREADY_EXISTS = 10206;
 
 const STATUS_LABELS = {
   CLAIMABLE: '可以领取',
@@ -121,6 +125,9 @@ Page({
       this.goHomeWithPet(result.pet);
     } else if (status === 'CLAIMED_BY_OTHER') {
       this.setData({ ...data, state: STATES.CLAIMED_BY_OTHER });
+    } else if (status === 'ALREADY_OWNED') {
+      // 一人一宠：用户已领养过，preview 直接给出专属面板，不再展示领取按钮
+      this.setData({ ...data, state: STATES.ALREADY_OWNED });
     } else {
       this.setData({ ...data, state: STATES.UNAVAILABLE, statusLabel: STATUS_LABELS.UNAVAILABLE });
     }
@@ -167,6 +174,12 @@ Page({
       const result = await nfcClaimApi.confirm(this.data.claimRef, this._requestId);
       this.handleClaimResult(result);
     } catch (error) {
+      // 一人一宠约束：preview 后、confirm 前被并发领养等竞态场景，
+      // 后端抛 10206 时同样落到"已领取过"面板，而非误导性的网络错误
+      if (error && error.code === ERR_PET_ALREADY_EXISTS) {
+        this.setData({ state: STATES.ALREADY_OWNED, errorMessage: '' });
+        return;
+      }
       this.setData({
         state: STATES.NETWORK_ERROR,
         errorMessage: (error && error.userMessage) || '暂时无法连接服务，请稍后重试'

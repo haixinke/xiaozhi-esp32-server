@@ -180,6 +180,33 @@ class PetServiceImplCreateEggTest {
         verifyNoInteractions(llmService);
     }
 
+    @Test
+    @DisplayName("createEgg 用户已有宠物时抛 PET_ALREADY_EXISTS，不再插库")
+    void createEggWhenUserAlreadyHasPetThrows() {
+        // 一人一宠（当前产品规则）：预检查命中即拒绝
+        when(petDao.exists(any())).thenReturn(true);
+
+        assertThatThrownBy(() -> petService.createEgg(1008L, "锦鲤"))
+                .isInstanceOf(RenException.class)
+                .satisfies(ex -> assertThat(((RenException) ex).getCode())
+                        .isEqualTo(xiaozhi.common.exception.ErrorCode.PET_ALREADY_EXISTS));
+        verify(petDao, org.mockito.Mockito.never()).insert(any(PetEntity.class));
+    }
+
+    @Test
+    @DisplayName("createEgg 并发竞态撞唯一索引时抛 PET_ALREADY_EXISTS")
+    void createEggDuplicateKeyRaceThrows() {
+        // 预检查后、插入前的并发窗口：唯一索引冲突兜底转换为业务错误码
+        when(petDao.exists(any())).thenReturn(false);
+        when(petDao.insert(any(PetEntity.class)))
+                .thenThrow(new org.springframework.dao.DuplicateKeyException("uk_pet_user"));
+
+        assertThatThrownBy(() -> petService.createEgg(1009L, "锦鲤"))
+                .isInstanceOf(RenException.class)
+                .satisfies(ex -> assertThat(((RenException) ex).getCode())
+                        .isEqualTo(xiaozhi.common.exception.ErrorCode.PET_ALREADY_EXISTS));
+    }
+
     private PetAvatarProperties buildAvatarProperties() {
         PetAvatarProperties properties = new PetAvatarProperties();
         properties.setFallbackUrl("https://oss.eggbabe.com/default-avatar/fish/fish-0.png");

@@ -119,10 +119,10 @@ main/egg-miniprogram/
 
 ### 设备 / 宠物身份模型
 
-蛋宝宝是"一人多宠"，`openid` 不能当 device id。聊天身份下沉到宠物级：
+当前产品规则是**一人一宠**（临时约束，未来可能放开多宠）：一个微信用户同一时间只能领养一只蛋宝宝，由后端 `uk_ai_pet_user_id` 唯一索引 + `adopt()`/`createEgg()` 预检查双重保证，两条领养入口（邀请码、NFC 触碰）共用错误码 `PET_ALREADY_EXISTS`(10206)。`openid` 不能当 device id。聊天身份下沉到宠物级：
 
 ```
-微信用户(openid) ──1:N── 蛋宝宝(ai_pet) ──1:1── 虚拟设备(ai_device) ──1:1── agent(ai_agent)
+微信用户(openid) ──1:1（当前约束，模型保留 1:N 能力）── 蛋宝宝(ai_pet) ──1:1── 虚拟设备(ai_device) ──1:1── agent(ai_agent)
 ```
 
 - 领养只建 `ai_pet`（`deviceId=null`）；破壳时才建 `ai_device` + `agent`（懒创建）
@@ -154,7 +154,7 @@ find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 
 - 页面/组件保持四件套 `.js/.json/.wxml/.wxss`；新增页面在 `app.json` 注册；`navigationStyle: custom`，所有页面需自带 `nav-bar`。
 - **样式修改必读 [DESIGN.md](./DESIGN.md)**。孵化期只展示蛋形，不展示背景场景（PRD 红线，`verify-project.js` 会校验）。
-- 一个账号只能绑定 1 只蛋宝宝（后端 `uk_ai_pet_device_id` 唯一索引保证）。
+- 一个账号只能领养 1 只蛋宝宝（后端 `uk_ai_pet_user_id` 唯一索引保证；`uk_ai_pet_device_id` 另保证一设备一宠物）。
 - 昵称限制：最多 10 个字符（5 汉字），含敏感词拦截。
 - **不入库 / 不落日志**：AppSecret、token、openid、unionid、`wx.login` code 等。
 - 后端 schema 变更走 Liquibase：**新增 changeset + SQL 文件，不编辑已有 changeset**。

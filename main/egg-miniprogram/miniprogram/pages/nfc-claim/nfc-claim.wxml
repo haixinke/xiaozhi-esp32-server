@@ -42,6 +42,14 @@
     <button class="secondary-button" bindtap="onGoHome">回到首页</button>
   </view>
 
+  <!-- ALREADY_OWNED：一人一宠约束，用户已领养过蛋宝宝 -->
+  <view wx:elif="{{state === 'ALREADY_OWNED'}}" class="center-panel">
+    <view class="icon-circle"><text class="icon-emoji">🥚</text></view>
+    <text class="panel-title">领取失败</text>
+    <text class="panel-desc">您已经领取过蛋宝宝，一个用户暂时只支持领养一个蛋宝宝。</text>
+    <button class="secondary-button" bindtap="onGoHome">回到首页</button>
+  </view>
+
   <!-- UNAVAILABLE -->
   <view wx:elif="{{state === 'UNAVAILABLE'}}" class="center-panel">
     <view class="icon-circle"><text class="icon-emoji">⚠️</text></view>

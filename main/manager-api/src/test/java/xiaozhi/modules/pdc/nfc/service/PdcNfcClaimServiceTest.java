@@ -275,6 +275,31 @@ class PdcNfcClaimServiceTest {
     }
 
     @Test
+    void confirmUserAlreadyOwnsPetPropagatesPetAlreadyExists() {
+        // 一人一宠：用户已领养过蛋宝宝，再碰激活卡领取时 createEgg 抛 10206，
+        // 必须原样透出（前端据此展示"已领取过"面板），且不产生领取记录、不核销资产
+        setupAllGatesEnabled();
+        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = createActiveAsset();
+        when(assetDao.selectByClaimHashesForUpdate(any(Collection.class))).thenReturn(List.of(asset));
+        when(claimRecordDao.findByUserAndRequest(eq(USER_ID), anyString())).thenReturn(Optional.empty());
+        // 提前构造异常：RenException 构造会走 MessageUtils（mock），
+        // 放在 thenThrow 参数里会打断 Mockito stubbing 链
+        RenException alreadyExists = new RenException(ErrorCode.PET_ALREADY_EXISTS);
+        when(petService.createEgg(USER_ID, "jade_rabbit")).thenThrow(alreadyExists);
+
+        assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
+                .isInstanceOf(RenException.class)
+                .satisfies(ex -> assertThat(((RenException) ex).getCode())
+                        .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
+
+        verify(claimRecordDao, never()).insert(any(PdcNfcClaimRecordEntity.class));
+        verify(assetDao, never()).markClaimed(any(), any(), any(), anyString());
+    }
+
+    @Test
     void optimisticLockFailureThrowsInvalidState() {
         setupAllGatesEnabled();
         when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);

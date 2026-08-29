@@ -55,6 +55,9 @@ class PdcNfcJobStateMachineTest {
                 PdcNfcBatchStatus.READY_FOR_WRITE, PdcNfcBatchStatus.WRITING)).doesNotThrowAnyException();
         assertThatCode(() -> batchStateMachine.requireTransition(
                 PdcNfcBatchStatus.WRITING, PdcNfcBatchStatus.READY_FOR_STOCK)).doesNotThrowAnyException();
+        // 写卡任务取消时，批次允许从 WRITING 回退 READY_FOR_WRITE 以便重建任务
+        assertThatCode(() -> batchStateMachine.requireTransition(
+                PdcNfcBatchStatus.WRITING, PdcNfcBatchStatus.READY_FOR_WRITE)).doesNotThrowAnyException();
         assertThatCode(() -> batchStateMachine.requireTransition(
                 PdcNfcBatchStatus.READY_FOR_STOCK, PdcNfcBatchStatus.COMPLETED)).doesNotThrowAnyException();
         assertThatCode(() -> batchStateMachine.requireTransition(

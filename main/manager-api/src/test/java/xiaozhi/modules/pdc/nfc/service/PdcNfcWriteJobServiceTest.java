@@ -406,6 +406,61 @@ class PdcNfcWriteJobServiceTest {
                 .isInstanceOf(RenException.class);
     }
 
+    @Test
+    void cancelRevertsBatchToReadyForWrite() {
+        PdcNfcWriteJobEntity job = exportedJob();
+        PdcNfcWriteJobItemEntity item = writeJobItem();
+        when(jobDao.selectByIdForUpdate(100L)).thenReturn(job);
+        when(jobDao.updateById(any(PdcNfcWriteJobEntity.class))).thenReturn(1);
+        when(jobItemDao.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(item));
+        when(assetDao.releaseWriteLease(
+                org.mockito.ArgumentMatchers.eq(501L),
+                org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq(99L),
+                any(java.util.Date.class)))
+                .thenReturn(1);
+        when(batchDao.transitionStatus(
+                org.mockito.ArgumentMatchers.eq(10L),
+                org.mockito.ArgumentMatchers.eq(PdcNfcBatchStatus.WRITING.name()),
+                org.mockito.ArgumentMatchers.eq(PdcNfcBatchStatus.READY_FOR_WRITE.name()),
+                org.mockito.ArgumentMatchers.eq(99L),
+                any(java.util.Date.class)))
+                .thenReturn(1);
+
+        service.cancel(100L, 99L);
+
+        // 取消成功后批次必须回退 WRITING → READY_FOR_WRITE，否则批次无法重建写卡任务
+        verify(batchDao).transitionStatus(
+                org.mockito.ArgumentMatchers.eq(10L),
+                org.mockito.ArgumentMatchers.eq(PdcNfcBatchStatus.WRITING.name()),
+                org.mockito.ArgumentMatchers.eq(PdcNfcBatchStatus.READY_FOR_WRITE.name()),
+                org.mockito.ArgumentMatchers.eq(99L),
+                any(java.util.Date.class));
+    }
+
+    @Test
+    void cancelFailsClosedWhenBatchTransitionAffectsNoRows() {
+        PdcNfcWriteJobEntity job = exportedJob();
+        PdcNfcWriteJobItemEntity item = writeJobItem();
+        when(jobDao.selectByIdForUpdate(100L)).thenReturn(job);
+        when(jobDao.updateById(any(PdcNfcWriteJobEntity.class))).thenReturn(1);
+        when(jobItemDao.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(item));
+        when(assetDao.releaseWriteLease(
+                org.mockito.ArgumentMatchers.eq(501L),
+                org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq(99L),
+                any(java.util.Date.class)))
+                .thenReturn(1);
+        when(batchDao.transitionStatus(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(0);
+
+        // 批次不在 WRITING（并发已被其他流程推进）时必须整体回滚，不允许任务已取消但批次仍挂 WRITING
+        assertThatThrownBy(() -> service.cancel(100L, 99L))
+                .isInstanceOf(RenException.class);
+    }
+
     private static PdcNfcBatchEntity batch() {
         PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
         batch.setId(10L);

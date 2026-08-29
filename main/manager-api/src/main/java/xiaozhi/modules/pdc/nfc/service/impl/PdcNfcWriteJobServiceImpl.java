@@ -273,6 +273,21 @@ public class PdcNfcWriteJobServiceImpl implements PdcNfcWriteJobService {
             }
         }
 
+        // 批次 WRITING -> READY_FOR_WRITE，与取消同事务。
+        // 取消仅在无写卡结果时允许，资产租约已释放，批次必须回到可建任务状态，
+        // 否则批次会卡在 WRITING 既无活跃任务也无法新建任务。
+        // 用条件 UPDATE 原子翻转：批次若已被其他流程推进，影响 0 行 → 整体回滚。
+        batchStateMachine.requireTransition(
+                PdcNfcBatchStatus.WRITING, PdcNfcBatchStatus.READY_FOR_WRITE);
+        if (batchDao.transitionStatus(
+                job.getBatchId(),
+                PdcNfcBatchStatus.WRITING.name(),
+                PdcNfcBatchStatus.READY_FOR_WRITE.name(),
+                operatorId,
+                now) != 1) {
+            throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
+        }
+
         log.info("Write job {} cancelled by {}", jobId, operatorId);
     }
 

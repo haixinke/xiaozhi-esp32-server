@@ -20,7 +20,8 @@ public final class PdcNfcBatchStateMachine {
         DRAFT, Set.of(SCHEME_GENERATING, CANCELLED),
         SCHEME_GENERATING, Set.of(READY_FOR_WRITE, CANCELLED),
         READY_FOR_WRITE, Set.of(WRITING, CANCELLED),
-        WRITING, Set.of(READY_FOR_STOCK, CANCELLED),
+        // 写卡任务取消时允许回退 READY_FOR_WRITE：取消只在无写卡结果时发生，资产已释放可重建任务
+        WRITING, Set.of(READY_FOR_STOCK, READY_FOR_WRITE, CANCELLED),
         READY_FOR_STOCK, Set.of(COMPLETED, CANCELLED),
         COMPLETED, Set.of(CLOSED)
     );

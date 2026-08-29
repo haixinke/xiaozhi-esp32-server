@@ -65,11 +65,11 @@
                     <el-row :gutter="20">
                       <el-col :span="12">
                         <h4 class="detail-title">变更前状态</h4>
-                        <pre class="detail-json">{{ formatJson(row.beforeStatus) }}</pre>
+                        <pre class="detail-json">{{ statusText(row.beforeStatus) }}</pre>
                       </el-col>
                       <el-col :span="12">
                         <h4 class="detail-title">变更后状态</h4>
-                        <pre class="detail-json">{{ formatJson(row.afterStatus) }}</pre>
+                        <pre class="detail-json">{{ statusText(row.afterStatus) }}</pre>
                       </el-col>
                     </el-row>
                     <el-divider></el-divider>
@@ -121,7 +121,7 @@
 <script>
 import Api from '@/apis/api'
 import HeaderBar from '@/components/HeaderBar.vue'
-import { formatDate, operationTypeLabel, operationTypeOptions } from '@/utils/pdcNfcState.mjs'
+import { formatDate, operationTypeLabel, operationTypeOptions, statusLabel } from '@/utils/pdcNfcState.mjs'
 
 export default {
   name: 'NfcOperationLogManagement',
@@ -156,6 +156,10 @@ export default {
   methods: {
     formatTime: formatDate,
     operationTypeLabel,
+    // 变更前后状态走 pdcNfcState 统一中文映射，与其他页面状态列文案一致
+    statusText(value) {
+      return value ? statusLabel(value) : '-'
+    },
     objectTypeLabel(type) {
       const found = this.objectTypeOptions.find(o => o.value === type)
       return found ? found.label : (type || '-')

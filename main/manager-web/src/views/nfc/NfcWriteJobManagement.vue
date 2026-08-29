@@ -35,6 +35,7 @@
             </div>
 
             <el-table
+              ref="writeJobTable"
               v-loading="loading"
               :data="filteredData"
               border
@@ -42,6 +43,7 @@
               style="width: 100%;"
               :header-cell-style="{ background: '#f5f7fa' }"
               row-key="id"
+              @expand-change="handleExpandChange"
             >
               <el-table-column prop="batchNo" label="批次号" min-width="160" align="center"></el-table-column>
               <el-table-column label="商品类型" min-width="140" align="center">
@@ -131,14 +133,14 @@
                     size="mini"
                     type="text"
                     @click="toggleDetail(row)"
-                  >{{ row._showDetail ? '收起' : '详情' }}</el-button>
+                  >{{ row._expanded ? '收起' : '详情' }}</el-button>
                 </template>
               </el-table-column>
 
-              <!-- 展开行：详细信息 -->
-              <el-table-column type="expand">
+              <!-- 展开行：详细信息（列宽压到 1px 隐藏占位，仅保留 expand 机制） -->
+              <el-table-column type="expand" width="1">
                 <template slot-scope="{ row }">
-                  <div v-if="row._showDetail && row._writeJob" class="expand-detail">
+                  <div v-if="row._writeJob" class="expand-detail">
                     <el-descriptions :column="2" border size="small">
                       <el-descriptions-item label="任务ID">{{ row._writeJob.id }}</el-descriptions-item>
                       <el-descriptions-item label="任务编号">{{ row._writeJob.jobNo }}</el-descriptions-item>
@@ -322,7 +324,12 @@ export default {
       return !!row._writeJob
     },
     toggleDetail(row) {
-      this.$set(row, '_showDetail', !row._showDetail)
+      // 展开状态由 el-table 统一管理，按钮与原生展开箭头共用同一状态，避免两边失同步
+      this.$refs.writeJobTable.toggleRowExpansion(row)
+    },
+    handleExpandChange(row, expandedRows) {
+      // 原生箭头展开/收起时回写状态，保证“详情/收起”按钮文案一致
+      this.$set(row, '_expanded', expandedRows.indexOf(row) !== -1)
     },
     goManualWrite(row) {
       const job = row._writeJob
@@ -347,7 +354,7 @@ export default {
           this.tableData = list.map(b => ({
             ...b,
             _writeJob: null,
-            _showDetail: false,
+            _expanded: false,
             _creating: false,
             _downloading: false
           }))
@@ -546,6 +553,21 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+/* 隐藏 expand 列原生箭头，展开入口统一走“详情/收起”按钮 */
+::v-deep .el-table__expand-icon {
+  display: none;
+}
+
+/* 压缩 expand 列占位：清 padding、去边框，视觉上不再是一列 */
+::v-deep .el-table__expand-column {
+  padding: 0;
+  border-right: none;
+}
+::v-deep .el-table__expand-column .cell {
+  display: none;
+  padding: 0;
+}
+
 .nfc-write-page {
   min-width: 900px;
   min-height: 506px;

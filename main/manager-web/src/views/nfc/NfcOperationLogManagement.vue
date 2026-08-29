@@ -50,14 +50,15 @@
               <el-button icon="el-icon-refresh" @click="handleResetFilters">重置</el-button>
             </div>
 
-            <el-table
-              v-loading="loading"
-              :data="tableData"
-              border
-              stripe
-              style="width: 100%;"
-              :header-cell-style="{ background: '#f5f7fa' }"
-            >
+            <div class="table-scroll">
+              <el-table
+                v-loading="loading"
+                :data="tableData"
+                border
+                stripe
+                style="width: 100%;"
+                :header-cell-style="{ background: '#f5f7fa' }"
+              >
               <el-table-column type="expand">
                 <template slot-scope="{ row }">
                   <div class="expand-detail">
@@ -95,7 +96,8 @@
                   <span class="detail-preview">{{ truncateDetail(row.detailJson) }}</span>
                 </template>
               </el-table-column>
-            </el-table>
+              </el-table>
+            </div>
 
             <div class="pagination-wrapper">
               <el-pagination
@@ -320,6 +322,14 @@ export default {
     flex: 1;
     overflow: hidden;
   }
+}
+
+/* 表格区域占满卡片剩余空间并内部滚动：祖先链全是定高 + overflow:hidden，
+   不加这一层时超屏行会被直接裁掉且无滚动条 */
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .pagination-wrapper {

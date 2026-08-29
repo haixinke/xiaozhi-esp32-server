@@ -122,8 +122,8 @@
                 </template>
               </el-table-column>
 
-              <!-- 展开行：详细信息 -->
-              <el-table-column type="expand">
+              <!-- 展开行：详细信息（列宽压到 1px 隐藏占位，仅保留 expand 机制） -->
+              <el-table-column type="expand" width="1">
                 <template slot-scope="{ row }">
                   <div v-if="row._schemeProgress" class="expand-detail">
                     <el-descriptions :column="2" border size="small">
@@ -437,6 +437,16 @@ export default {
 /* 隐藏 expand 列原生箭头，展开入口统一走“详情/收起”按钮 */
 ::v-deep .el-table__expand-icon {
   display: none;
+}
+
+/* 压缩 expand 列占位：清 padding、去边框，视觉上不再是一列 */
+::v-deep .el-table__expand-column {
+  padding: 0;
+  border-right: none;
+}
+::v-deep .el-table__expand-column .cell {
+  display: none;
+  padding: 0;
 }
 
 .nfc-scheme-page {

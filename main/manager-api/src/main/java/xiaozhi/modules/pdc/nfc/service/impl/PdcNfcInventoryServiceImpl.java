@@ -503,6 +503,8 @@ public class PdcNfcInventoryServiceImpl implements PdcNfcInventoryService {
                 entity.getOperationType(),
                 entity.getOperatorUserId(),
                 entity.getCreateDate(),
+                entity.getBeforeStatus(),
+                entity.getAfterStatus(),
                 filterDetailJson(entity.getDetailJson())
         );
     }

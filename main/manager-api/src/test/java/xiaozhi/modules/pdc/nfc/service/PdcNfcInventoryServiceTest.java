@@ -1,5 +1,6 @@
 package xiaozhi.modules.pdc.nfc.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
+import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 import xiaozhi.modules.pdc.nfc.crypto.RequestFingerprint;
@@ -21,6 +23,7 @@ import xiaozhi.modules.pdc.nfc.dao.PdcNfcAssetDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcBatchDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcOperationLogDao;
 import xiaozhi.modules.pdc.nfc.dto.PdcNfcBulkAssetOperationDTO;
+import xiaozhi.modules.pdc.nfc.dto.PdcNfcOperationLogQueryDTO;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAdminRequestEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAssetEntity;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcBatchEntity;
@@ -28,6 +31,7 @@ import xiaozhi.modules.pdc.nfc.entity.PdcNfcOperationLogEntity;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcAdminIdempotencyServiceImpl;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcInventoryServiceImpl;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcBulkOperationVO;
+import xiaozhi.modules.pdc.nfc.vo.PdcNfcOperationLogVO;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -429,5 +433,35 @@ class PdcNfcInventoryServiceTest {
                 createRequest(List.of(1L), "BN010", UUID.randomUUID()), 100L);
 
         verify(batchDao, never()).updateById(any(PdcNfcBatchEntity.class));
+    }
+
+    @Test
+    @DisplayName("queryOperationLogs: VO 携带变更前后状态（前端展开面板依赖）")
+    void queryOperationLogsMapsBeforeAfterStatus() {
+        // Arrange
+        PdcNfcOperationLogEntity entity = new PdcNfcOperationLogEntity();
+        entity.setId(1L);
+        entity.setObjectType("ASSET");
+        entity.setObjectId(10L);
+        entity.setOperationType("ACTIVATE");
+        entity.setOperatorUserId(100L);
+        entity.setBeforeStatus("IN_STOCK");
+        entity.setAfterStatus("ACTIVE");
+        entity.setCreateDate(new Date());
+
+        Page<PdcNfcOperationLogEntity> page = new Page<>(1, 20);
+        page.setRecords(List.of(entity));
+        page.setTotal(1);
+        when(operationLogDao.selectPage(any(), any())).thenReturn(page);
+
+        // Act
+        PageData<PdcNfcOperationLogVO> result =
+                inventoryService.queryOperationLogs(new PdcNfcOperationLogQueryDTO());
+
+        // Assert
+        assertThat(result.getList()).hasSize(1);
+        PdcNfcOperationLogVO vo = result.getList().get(0);
+        assertThat(vo.beforeStatus()).isEqualTo("IN_STOCK");
+        assertThat(vo.afterStatus()).isEqualTo("ACTIVE");
     }
 }

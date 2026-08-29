@@ -65,11 +65,11 @@
                     <el-row :gutter="20">
                       <el-col :span="12">
                         <h4 class="detail-title">变更前状态</h4>
-                        <pre class="detail-json">{{ formatJson(row.beforeState) }}</pre>
+                        <pre class="detail-json">{{ formatJson(row.beforeStatus) }}</pre>
                       </el-col>
                       <el-col :span="12">
                         <h4 class="detail-title">变更后状态</h4>
-                        <pre class="detail-json">{{ formatJson(row.afterState) }}</pre>
+                        <pre class="detail-json">{{ formatJson(row.afterStatus) }}</pre>
                       </el-col>
                     </el-row>
                     <el-divider></el-divider>

@@ -36,6 +36,7 @@
             </div>
 
             <el-table
+              ref="batchTable"
               v-loading="loading"
               :data="filteredData"
               border
@@ -43,6 +44,7 @@
               style="width: 100%;"
               :header-cell-style="{ background: '#f5f7fa' }"
               row-key="id"
+              @expand-change="handleExpandChange"
             >
               <el-table-column prop="batchNo" label="批次号" min-width="160" align="center"></el-table-column>
               <el-table-column label="商品类型" min-width="140" align="center">
@@ -116,14 +118,14 @@
                     size="mini"
                     type="text"
                     @click="toggleDetail(row)"
-                  >{{ row._showDetail ? '收起' : '详情' }}</el-button>
+                  >{{ row._expanded ? '收起' : '详情' }}</el-button>
                 </template>
               </el-table-column>
 
               <!-- 展开行：详细信息 -->
               <el-table-column type="expand">
                 <template slot-scope="{ row }">
-                  <div v-if="row._showDetail && row._schemeProgress" class="expand-detail">
+                  <div v-if="row._schemeProgress" class="expand-detail">
                     <el-descriptions :column="2" border size="small">
                       <el-descriptions-item label="任务ID">{{ row._schemeProgress.jobId }}</el-descriptions-item>
                       <el-descriptions-item label="任务编号">{{ row._schemeProgress.jobNo }}</el-descriptions-item>
@@ -246,7 +248,12 @@ export default {
       return !!row._schemeProgress
     },
     toggleDetail(row) {
-      this.$set(row, '_showDetail', !row._showDetail)
+      // 展开状态由 el-table 统一管理，按钮与原生展开箭头共用同一状态，避免两边失同步
+      this.$refs.batchTable.toggleRowExpansion(row)
+    },
+    handleExpandChange(row, expandedRows) {
+      // 原生箭头展开/收起时回写状态，保证“详情/收起”按钮文案一致
+      this.$set(row, '_expanded', expandedRows.indexOf(row) !== -1)
     },
 
     fetchBatches() {
@@ -263,7 +270,7 @@ export default {
           this.tableData = list.map(b => ({
             ...b,
             _schemeProgress: null,
-            _showDetail: false,
+            _expanded: false,
             _generating: false
           }))
           this.total = data?.total || list.length

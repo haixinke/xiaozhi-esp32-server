@@ -434,6 +434,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+/* 隐藏 expand 列原生箭头，展开入口统一走“详情/收起”按钮 */
+::v-deep .el-table__expand-icon {
+  display: none;
+}
+
 .nfc-scheme-page {
   min-width: 900px;
   min-height: 506px;

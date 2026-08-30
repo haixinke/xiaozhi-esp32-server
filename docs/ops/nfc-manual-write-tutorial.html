@@ -1,0 +1,548 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>蛋宝宝 NFC 手动写卡教程</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --paper: #F7F8F6;
+  --paper-raised: #FFFFFF;
+  --ink: #1F2A3D;
+  --ink-soft: #4A5872;
+  --ink-faint: #8A96AB;
+  --line: #DDE3EA;
+  --accent: #2456D6;
+  --accent-soft: #E8EEFB;
+  --warn: #B97A0F;
+  --warn-soft: #FBF2DF;
+  --ok: #0E7C66;
+  --ok-soft: #E3F2EE;
+  --danger: #B93A2B;
+  --danger-soft: #FAE9E6;
+  --chip-idle: #EDF0F4;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141920;
+    --paper-raised: #1C232E;
+    --ink: #E6EAF1;
+    --ink-soft: #A9B4C6;
+    --ink-faint: #6E7B8F;
+    --line: #2C3644;
+    --accent: #7FA3F5;
+    --accent-soft: #22304D;
+    --warn: #E0A94E;
+    --warn-soft: #3A2F18;
+    --ok: #4FBCA2;
+    --ok-soft: #17332C;
+    --danger: #E07A6A;
+    --danger-soft: #3A201C;
+    --chip-idle: #232B38;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141920;
+  --paper-raised: #1C232E;
+  --ink: #E6EAF1;
+  --ink-soft: #A9B4C6;
+  --ink-faint: #6E7B8F;
+  --line: #2C3644;
+  --accent: #7FA3F5;
+  --accent-soft: #22304D;
+  --warn: #E0A94E;
+  --warn-soft: #3A2F18;
+  --ok: #4FBCA2;
+  --ok-soft: #17332C;
+  --danger: #E07A6A;
+  --danger-soft: #3A201C;
+  --chip-idle: #232B38;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Noto Sans SC", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+h1, h2, h3 { font-family: "Noto Serif SC", serif; text-wrap: balance; }
+code, .mono {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--chip-idle);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 48px); }
+
+/* ===== 顶部 ===== */
+.hero {
+  border-bottom: 3px double var(--line);
+  padding: clamp(40px, 7vw, 80px) 0 clamp(28px, 4vw, 44px);
+}
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+.hero h1 {
+  font-size: clamp(30px, 4.6vw, 52px);
+  font-weight: 900;
+  line-height: 1.25;
+  margin: 0 0 16px;
+}
+.hero .sub { color: var(--ink-soft); max-width: 62ch; margin: 0 0 24px; font-size: 17px; }
+.hero-meta {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+}
+.hero-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; background: var(--paper-raised); }
+
+/* ===== 布局 ===== */
+.layout { display: grid; grid-template-columns: 220px 1fr; gap: clamp(24px, 4vw, 56px); padding: 48px 0 96px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .rail { display: none; } }
+.rail { position: sticky; top: 24px; align-self: start; }
+.rail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.rail a {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 7px 10px; border-radius: 6px;
+  color: var(--ink-soft); text-decoration: none; font-size: 13.5px;
+  border-left: 2px solid transparent;
+}
+.rail a:hover { background: var(--chip-idle); color: var(--ink); }
+.rail .no { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+.rail .rail-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-faint); padding: 0 10px 10px; text-transform: uppercase; }
+
+/* ===== 步骤卡 ===== */
+.step {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: clamp(20px, 3vw, 36px);
+  margin-bottom: 28px;
+  scroll-margin-top: 24px;
+}
+.step-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 6px; flex-wrap: wrap; }
+.step-no {
+  font-family: var(--mono); font-weight: 600; font-size: 13px;
+  color: var(--accent); background: var(--accent-soft);
+  border-radius: 6px; padding: 3px 10px; white-space: nowrap;
+}
+.step h2 { font-size: clamp(20px, 2.4vw, 26px); margin: 0; font-weight: 700; }
+.step .goal { color: var(--ink-soft); margin: 4px 0 18px; font-size: 15px; }
+
+.lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.lanes.single { grid-template-columns: 1fr; }
+@media (max-width: 700px) { .lanes { grid-template-columns: 1fr; } }
+.lane { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.lane-title {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em;
+  color: var(--ink-faint); text-transform: uppercase; margin-bottom: 8px;
+}
+.lane ol, .lane ul { margin: 0; padding-left: 20px; }
+.lane li { margin-bottom: 6px; font-size: 14.5px; }
+.lane li:last-child { margin-bottom: 0; }
+
+.btn {
+  display: inline-block; font-size: 13.5px; font-weight: 500;
+  border: 1px solid var(--accent); color: var(--accent);
+  border-radius: 6px; padding: 1px 9px; white-space: nowrap;
+  background: transparent;
+}
+.btn.solid { background: var(--accent); color: #fff; }
+.field { font-family: var(--mono); font-size: 12.5px; background: var(--chip-idle); border-radius: 4px; padding: 1px 7px; white-space: nowrap; }
+
+/* 状态流 */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 4px; }
+.flow .arrow { color: var(--ink-faint); font-family: var(--mono); }
+.chip {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  border-radius: 999px; padding: 3px 12px; white-space: nowrap;
+  background: var(--chip-idle); color: var(--ink-soft);
+}
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.accent { background: var(--accent-soft); color: var(--accent); }
+
+.note {
+  border-left: 3px solid var(--warn); background: var(--warn-soft);
+  border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 16px 0;
+  font-size: 14.5px;
+}
+.note.danger { border-left-color: var(--danger); background: var(--danger-soft); }
+.note.ok { border-left-color: var(--ok); background: var(--ok-soft); }
+.note .note-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; display: block; margin-bottom: 4px; font-weight: 600; }
+.note p { margin: 0; }
+
+/* 表格 */
+.tablebox { overflow-x: auto; margin: 16px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; color: var(--ink-faint); text-transform: uppercase; font-weight: 600; }
+td { font-variant-numeric: tabular-nums; }
+
+.section-gap { margin-top: 56px; }
+.section-title { font-size: clamp(22px, 3vw, 30px); font-weight: 900; margin: 0 0 8px; }
+.section-sub { color: var(--ink-soft); margin: 0 0 24px; max-width: 64ch; }
+
+.checkline { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 15px; }
+.checkline .box {
+  flex: none; width: 18px; height: 18px; margin-top: 4px;
+  border: 2px solid var(--accent); border-radius: 4px;
+}
+footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--ink-faint); font-size: 13px; font-family: var(--mono); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">蛋宝宝 · NFC 生产操作手册 · 手动模式</p>
+  <h1>从创建批次到真机领取：<br>NFC 蛋宝宝全生命周期实操</h1>
+  <p class="sub">面向第一次操作的生产/运营同学。全程只用管理后台 + 一部装了 NFC Tools 的手机，不写代码、不用工厂设备。照着步骤点，就能把一张空白 NFC 标签变成用户可以触碰领取的蛋宝宝。</p>
+  <div class="hero-meta">
+    <span>预计 30–60 分钟</span>
+    <span>需要 superAdmin 账号</span>
+    <span>需要 NFC 手机 + NFC Tools App</span>
+    <span>小批量验证专用</span>
+  </div>
+</header>
+
+<div class="layout">
+
+<nav class="rail" aria-label="步骤导航">
+  <div class="rail-title">工序目录</div>
+  <ol>
+    <li><a href="#prep"><span class="no">00</span>开工前检查</a></li>
+    <li><a href="#s1"><span class="no">01</span>创建批次</a></li>
+    <li><a href="#s2"><span class="no">02</span>生成 Scheme</a></li>
+    <li><a href="#s3"><span class="no">03</span>创建写卡任务</a></li>
+    <li><a href="#s4"><span class="no">04</span>逐张写卡</a></li>
+    <li><a href="#s5"><span class="no">05</span>验证卡</a></li>
+    <li><a href="#s6"><span class="no">06</span>锁卡</a></li>
+    <li><a href="#s7"><span class="no">07</span>锁后复验</a></li>
+    <li><a href="#s8"><span class="no">08</span>入库</a></li>
+    <li><a href="#s9"><span class="no">09</span>出库激活</a></li>
+    <li><a href="#s10"><span class="no">10</span>真机领取测试</a></li>
+    <li><a href="#trouble"><span class="no">附</span>排障速查</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- 00 -->
+<section class="step" id="prep">
+  <div class="step-head"><span class="step-no">00</span><h2>开工前检查</h2></div>
+  <p class="goal">三样东西没准备好，后面每一步都会卡住。先逐项确认。</p>
+  <div class="checkline"><span class="box"></span><div><strong>账号权限</strong>：你的管理后台账号是 superAdmin，顶部导航能看到「NFC 生产管理」下拉菜单。看不到就不是超管，找管理员提权。</div></div>
+  <div class="checkline"><span class="box"></span><div><strong>微信侧已就绪</strong>：进入「NFC 生产管理 → 商品类型」，确认唯一商品类型的「发布就绪」列显示已就绪。若未就绪，点「登记发布证据」填入发布版本、发布时间、冒烟证据。这一步没做，第 02 步生成 Scheme 会被服务端拒绝。</div></div>
+  <div class="checkline"><span class="box"></span><div><strong>手机与工具</strong>：一部支持 NFC 的手机，安装 NFC Tools（或同类 NFC 写入 App）。Android 和 iPhone 都可以；Android 多一步写 AAR 记录，教程里会标注。</div></div>
+  <div class="checkline"><span class="box"></span><div><strong>空白 NFC 标签若干</strong>：NTAG 系列即可。小批量验证建议 5–10 张，预留写坏的损耗。</div></div>
+  <div class="note">
+    <span class="note-tag">环境说明</span>
+    <p>管理后台默认地址 <code>http://localhost:8001</code>（开发环境）。本教程对应手动模式（小批量验证）；工厂 CSV 模式在弹窗中标注「暂不可用，验证阶段仅支持手动模式」，本教程不使用。</p>
+  </div>
+</section>
+
+<!-- 01 -->
+<section class="step" id="s1">
+  <div class="step-head"><span class="step-no">01</span><h2>创建批次</h2></div>
+  <p class="goal">批次 = 同一 SKU、同一原型的一窝蛋。建批次时服务端会为每个资产生成唯一的 asset_no、wechat_sn、claimRef。</p>
+  <div class="lanes single">
+    <div class="lane">
+      <div class="lane-title">电脑端 · 管理后台</div>
+      <ol>
+        <li>顶部菜单「NFC 生产管理 → 批次管理」。</li>
+        <li>点右上角 <span class="btn solid">创建批次</span>。</li>
+        <li>填写弹窗字段：<span class="field">批次号</span>（自定义，如 B20260830-01）、<span class="field">商品类型</span>（固定蛋宝宝 NFC）、<span class="field">SKU 编码</span>、<span class="field">原型</span>（如 锦鲤）、<span class="field">计划数量</span>（1–10000，小批量填 5–10）、<span class="field">备注</span>（可空）。</li>
+        <li>点 <span class="btn solid">确定</span>。列表出现新批次，状态为 <span class="chip">草稿</span>。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="flow"><span class="chip">批次：无</span><span class="arrow">→</span><span class="chip accent">草稿</span></div>
+</section>
+
+<!-- 02 -->
+<section class="step" id="s2">
+  <div class="step-head"><span class="step-no">02</span><h2>生成 Scheme</h2></div>
+  <p class="goal">Scheme 是微信返回的 openlink——最终写进 NFC 芯片的内容。每件资产生成一个，后台异步逐件调用微信接口。</p>
+  <div class="lanes single">
+    <div class="lane">
+      <div class="lane-title">电脑端 · 管理后台</div>
+      <ol>
+        <li>「批次管理」列表里，找到状态为 <span class="chip">草稿</span> 的批次，点行内 <span class="btn">生成Scheme</span>（只有草稿状态才显示这个按钮）。</li>
+        <li>批次状态变为 <span class="chip warn">Scheme生成中</span>。点 <span class="btn">查看Scheme进度</span> 打开进度弹窗，盯「进度 / 已处理 / 错误信息」。</li>
+        <li>全部成功后可看到批次状态变为 <span class="chip ok">就绪</span>。数量少时十几秒，上千件需要等几分钟。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="flow"><span class="chip">草稿</span><span class="arrow">→</span><span class="chip warn">Scheme生成中</span><span class="arrow">→</span><span class="chip ok">就绪</span></div>
+  <div class="note danger">
+    <span class="note-tag">失败怎么办</span>
+    <p>进度弹窗显示「失败 / 部分成功」时，先看错误信息：model_id 未配置、领取页未发布属于配置问题，修好再点 <span class="btn">重试</span>；微信临时超时可直接重试。任务卡住可点 <span class="btn">取消</span>，取消后批次回到 <span class="chip">草稿</span> 可重新发起。</p>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="step" id="s3">
+  <div class="step-head"><span class="step-no">03</span><h2>创建写卡任务（手动模式）</h2></div>
+  <p class="goal">写卡任务把这一批资产"锁定"为待写状态，并决定用哪种方式写。模式创建时选定，不可变更。</p>
+  <div class="lanes single">
+    <div class="lane">
+      <div class="lane-title">电脑端 · 管理后台</div>
+      <ol>
+        <li>批次状态为 <span class="chip ok">就绪</span> 时，行内出现 <span class="btn solid">创建写卡任务</span>，点击。</li>
+        <li>弹窗中保持默认选中 <span class="field">手动模式（小批量验证）</span>。「工厂 CSV 模式」为灰色不可选，属正常。</li>
+        <li>点 <span class="btn solid">创建</span>。批次状态变为 <span class="chip warn">写卡中</span>，写卡任务状态为 <span class="chip">已创建</span>。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="flow"><span class="chip ok">就绪</span><span class="arrow">→</span><span class="chip warn">写卡中</span><span class="arrow">＋</span><span class="chip">任务：已创建</span></div>
+  <div class="note">
+    <span class="note-tag">如果建错了</span>
+    <p>进入「NFC 生产管理 → 写卡任务」，对该任务点 <span class="btn">取消</span>。任务变为「已取消」，资产占用自动释放，批次回退到 <span class="chip ok">就绪</span>，可以重新创建任务。已导入过写卡结果的任务不能取消。</p>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="step" id="s4">
+  <div class="step-head"><span class="step-no">04</span><h2>逐张写卡</h2></div>
+  <p class="goal">核心工序。每张卡四个动作：复制 Scheme → 手机写入 → 标记已写入。逐张来，写完一张再碰下一张。</p>
+  <div class="lanes single">
+    <div class="lane">
+      <div class="lane-title">电脑端 · 进入手动写卡页</div>
+      <ol>
+        <li>「NFC 生产管理 → 写卡任务」，找到状态为 <span class="chip">已创建</span> 的手动任务，点 <span class="btn solid">手动写卡</span>。</li>
+        <li>「手动写卡」页，每张资产一张卡片，状态初始为 <span class="chip">待写入</span>，卡片上能看到 SN、原型和验证方式（触碰自验证 / 人工确认）。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="lanes">
+    <div class="lane">
+      <div class="lane-title">电脑端 · 每张卡</div>
+      <ol>
+        <li>点资产卡上的 <span class="btn">复制 Scheme</span>，该条明文 Scheme 进入剪贴板。<strong>每次查看都会记审计日志</strong>，属于正常留痕。</li>
+        <li>写入完成后回到这张卡，点 <span class="btn solid">已写入</span>（必须先复制过 Scheme 才能点）。</li>
+      </ol>
+    </div>
+    <div class="lane">
+      <div class="lane-title">手机端 · NFC Tools</div>
+      <ol>
+        <li>打开 NFC Tools，选择「写 → 添加记录 → URL/URI」，粘贴刚复制的 Scheme。</li>
+        <li><strong>仅 Android</strong>：再添加一条「应用记录（AAR）」，包名填 <code>com.tencent.mm</code>。iPhone 写不了 AAR，跳过即可，不影响使用。</li>
+        <li>把手机靠近空白标签，执行写入，等 App 提示成功。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="flow"><span class="chip">待写入</span><span class="arrow">→</span><span class="chip accent">已写入待验证</span></div>
+  <div class="note danger">
+    <span class="note-tag">写坏了</span>
+    <p>手机写入中断、写错内容：在该资产卡上点 <span class="btn">写坏了</span>，状态回退到 <span class="chip">待写入</span>，重新复制 Scheme 重写即可。资产留在任务内，不会丢。</p>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="step" id="s5">
+  <div class="step-head"><span class="step-no">05</span><h2>验证卡</h2></div>
+  <p class="goal">确认芯片里的内容和系统记录一致。首选"触碰自验证"：用手机真碰一次，系统自动完成验证。</p>
+  <div class="lanes">
+    <div class="lane">
+      <div class="lane-title">手机端 · 触碰自验证（首选）</div>
+      <ol>
+        <li>用手机直接触碰刚写好的标签。</li>
+        <li>微信自动拉起，打开蛋宝宝小程序领取页（此时商品未激活，页面提示无法领取，<strong>属正常</strong>）。</li>
+        <li>这一碰后台已命中 preview 接口，资产自动变为 <span class="chip ok">已验证</span>（验证来源记为 TOUCH）。</li>
+      </ol>
+    </div>
+    <div class="lane">
+      <div class="lane-title">电脑端 · 人工兜底</div>
+      <ol>
+        <li>手机碰不了（如 iPhone 刚写完无法当场碰）：用 NFC Tools「读」标签，比对读出的 URI 与后台 Scheme 一致。</li>
+        <li>确认无误后，在资产卡上点 <span class="btn solid">验证通过</span>，状态变为 <span class="chip ok">已验证</span>（验证来源记为 MANUAL）。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="flow"><span class="chip accent">已写入待验证</span><span class="arrow">→</span><span class="chip ok">已验证</span></div>
+  <div class="note ok">
+    <span class="note-tag">放心碰</span>
+    <p>触碰自验证只对"本任务内、已标记已写入"的资产生效。随手碰一张别的卡不会改变任何状态，也不会触发领取。</p>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="step" id="s6">
+  <div class="step-head"><span class="step-no">06</span><h2>锁卡</h2></div>
+  <p class="goal">把标签设为只读，内容再也无法改写。这是防篡改的最后闸门，顺序必须在验证通过之后。</p>
+  <div class="lanes">
+    <div class="lane">
+      <div class="lane-title">手机端 · NFC Tools</div>
+      <ol>
+        <li>用 NFC Tools 对标签执行「锁定 / 设为只读」操作，贴卡确认。</li>
+      </ol>
+    </div>
+    <div class="lane">
+      <div class="lane-title">电脑端 · 手动写卡页</div>
+      <ol>
+        <li>资产状态为 <span class="chip ok">已验证</span> 时，卡片出现 <span class="btn solid">已锁卡</span>，点击。</li>
+        <li>弹窗确认：「锁卡不可逆，锁错即废卡。确认已用手机 NFC 工具完成锁卡？」→ 点 <span class="btn solid">已锁卡，确认</span>。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="note danger">
+    <span class="note-tag">不可逆</span>
+    <p>锁卡是物理层面的只读熔断，后台无法解锁。锁过的卡发现内容写错，只能把资产报废、补写新卡。点确认前，确保手机端真的已经锁了。</p>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="step" id="s7">
+  <div class="step-head"><span class="step-no">07</span><h2>锁后复验</h2></div>
+  <p class="goal">锁完再碰一次，确认锁定后标签仍可读、内容没变。这是入库前的强制人工复核。</p>
+  <div class="lanes single">
+    <div class="lane">
+      <div class="lane-title">手机端 + 电脑端</div>
+      <ol>
+        <li>手机再次触碰已锁的标签，微信正常拉起领取页即通过。</li>
+        <li>回到手动写卡页，该资产卡片由「已锁卡（待复验）／请再触碰一次完成锁后复验」变为「已锁卡（复验通过）／<span class="chip ok">可入库</span>」。</li>
+        <li>全部资产都显示「可入库」后，本批次的写卡环节结束。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="note">
+    <span class="note-tag">入库门禁</span>
+    <p>手动模式的资产必须满足「已锁卡 + 锁后触碰复验通过」才允许入库，服务端硬校验，绕不过去。某张卡没复验就批量入库，会被整批拒绝并提示异常资产。</p>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="step" id="s8">
+  <div class="step-head"><span class="step-no">08</span><h2>入库</h2></div>
+  <p class="goal">实物进仓库，系统里资产从"已验证"变"已入库"。已入库 ≠ 可领取，还差最后一步激活。</p>
+  <div class="lanes single">
+    <div class="lane">
+      <div class="lane-title">电脑端 · 管理后台</div>
+      <ol>
+        <li>「NFC 生产管理 → 资产管理」，用筛选栏（批次 ID / 状态=已验证）圈出本批资产。</li>
+        <li>勾选要入库的资产（点表头全选本批），点 <span class="btn solid">批量入库</span>。</li>
+        <li>步骤 1：填 <span class="field">入库单号</span>（仓库单据号）和 <span class="field">备注</span>，点「下一步」。</li>
+        <li>步骤 2：核对入库资产数、单号、请求 ID，点 <span class="btn solid">确认入库</span>。</li>
+        <li>步骤 3：看到「入库成功」。资产状态变为 <span class="chip ok">已入库</span>。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="flow"><span class="chip ok">已验证</span><span class="arrow">→</span><span class="chip ok">已入库</span></div>
+  <div class="note">
+    <span class="note-tag">整批校验</span>
+    <p>入库是全量校验：只要勾选的资产里有一张状态不对（未验证、未锁卡），整批不入库并提示异常资产。修正后重新提交即可，同一次重试复用请求 ID 不会重复入库。</p>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="step" id="s9">
+  <div class="step-head"><span class="step-no">09</span><h2>出库激活</h2></div>
+  <p class="goal">商品卖出/发货时出库扫描激活。只有激活后，用户触碰才能真正领取——这是防止库存商品被提前领走的闸门。</p>
+  <div class="lanes single">
+    <div class="lane">
+      <div class="lane-title">电脑端 · 管理后台</div>
+      <ol>
+        <li>访问「扫码出库激活」页：地址栏直接输入 <code>/pdc-nfc/activation</code>（该页不在菜单里，属正常）。</li>
+        <li>扫码枪扫描或手动输入资产编号，按回车逐条添加。系统自动查询状态，<strong>只有"已入库"的资产显示可激活</strong>，最多 500 条。</li>
+        <li>填 <span class="field">激活单号</span>（出库业务单号）。</li>
+        <li>点 <span class="btn solid">激活 N 项资产</span>，结果弹窗显示「激活成功」。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="flow"><span class="chip ok">已入库</span><span class="arrow">→</span><span class="chip accent">已激活</span></div>
+  <div class="note">
+    <span class="note-tag">为什么要激活</span>
+    <p>已写卡、已入库的商品在仓库里被 NFC 手机碰到时，后端会提示"暂时无法领取"。只有出库激活（ACTIVE）的资产才允许领取，确保领取动作只发生在商品真正到达买家之后。</p>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="step" id="s10">
+  <div class="step-head"><span class="step-no">10</span><h2>真机领取测试</h2></div>
+  <p class="goal">全链路的最后一环：模拟真实买家，从触碰到领养一只蛋宝宝。</p>
+  <div class="lanes">
+    <div class="lane">
+      <div class="lane-title">手机端 · 用户视角</div>
+      <ol>
+        <li>手机触碰已激活的标签，微信拉起蛋宝宝小程序领取页。</li>
+        <li>按提示登录、绑定手机号。</li>
+        <li>看到蛋宝宝原型预览，点「立即领取」。</li>
+        <li>领取成功，进入孵化流程。</li>
+      </ol>
+    </div>
+    <div class="lane">
+      <div class="lane-title">电脑端 · 核验</div>
+      <ol>
+        <li>「资产管理」找到该资产，状态应为 <span class="chip accent">已领取</span>。</li>
+        <li>点开资产详情，「状态时间线」应完整呈现：已创建 → Scheme已生成 → 已写入 → 已验证 → 已入库 → 已激活 → 已领取。</li>
+        <li>再用另一台手机碰同一张卡，应提示"已被领取"，不能重复领。</li>
+      </ol>
+    </div>
+  </div>
+  <div class="flow"><span class="chip accent">已激活</span><span class="arrow">→</span><span class="chip ok">已领取</span></div>
+  <div class="note ok">
+    <span class="note-tag">通关标准</span>
+    <p>同一台手机重复触碰返回同一只宠物；他人触碰提示已领取。两条都满足，说明幂等与防重复领取都工作正常，本教程全流程通过。</p>
+  </div>
+</section>
+
+<!-- 排障 -->
+<section class="section-gap" id="trouble">
+  <h2 class="section-title">排障速查</h2>
+  <p class="section-sub">按"看到的现象"查。所有状态名称与后台页面显示一致。</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>现象</th><th>原因</th><th>处理</th></tr></thead>
+      <tbody>
+        <tr><td>批次行内没有「生成Scheme」按钮</td><td>批次不在「草稿」状态</td><td>按钮仅草稿显示；若卡在「Scheme生成中」，点「查看Scheme进度」取消后重来</td></tr>
+        <tr><td>生成 Scheme 被拒</td><td>model_id 未配置 / 领取页未发布 / 发布证据未登记</td><td>到「商品类型」页登记发布证据；配置问题找研发</td></tr>
+        <tr><td>没有「创建写卡任务」按钮</td><td>批次不在「就绪」状态</td><td>等 Scheme 全部生成完；或写卡任务已存在（批次已是「写卡中」）</td></tr>
+        <tr><td>写卡任务取消后批次仍「写卡中」</td><td>旧版本缺陷，已修复</td><td>升级后端后取消会自动回退「就绪」，可重建任务</td></tr>
+        <tr><td>手动写卡页点不了「已写入」</td><td>还没复制过 Scheme</td><td>先点「复制 Scheme」，按钮才会解锁</td></tr>
+        <tr><td>触碰标签微信没反应</td><td>URI 未写入 / 写入失败</td><td>NFC Tools 读卡确认有 URI 记录；没有则点「写坏了」重写</td></tr>
+        <tr><td>领取页提示"暂时无法领取"</td><td>资产未激活</td><td>正常防提前领取；走第 09 步激活</td></tr>
+        <tr><td>批量入库被拒，提示「手动模式资产未锁卡，禁止入库」</td><td>勾选资产里有未走第 06 步锁卡的</td><td>回手动写卡页补锁卡</td></tr>
+        <tr><td>批量入库被拒，提示「锁后未完成触碰复验，禁止入库」</td><td>锁了卡但没做第 07 步复验</td><td>逐张再触碰一次，卡片变「可入库」再入库</td></tr>
+        <tr><td>锁卡后发现内容写错</td><td>锁卡物理不可逆</td><td>资产报废，补写新卡</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 状态速查 -->
+<section class="section-gap">
+  <h2 class="section-title">资产状态一页速查</h2>
+  <p class="section-sub">用户在什么阶段能领取，看这一张表就够。</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>状态</th><th>含义</th><th>能领取？</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip">已创建</span></td><td>批次建好了，还没生成微信 Scheme</td><td>否</td></tr>
+        <tr><td><span class="chip">Scheme已生成</span></td><td>链接已生成，等待写卡</td><td>否</td></tr>
+        <tr><td><span class="chip accent">已写入</span></td><td>芯片写过了，未验收</td><td>否</td></tr>
+        <tr><td><span class="chip ok">已验证</span></td><td>写卡、回读、锁卡合格</td><td>否</td></tr>
+        <tr><td><span class="chip ok">已入库</span></td><td>在仓库里等发货</td><td>否</td></tr>
+        <tr><td><span class="chip accent">已激活</span></td><td>已出库到买家手里</td><td><strong>是，唯一可领取状态</strong></td></tr>
+        <tr><td><span class="chip">已领取</span></td><td>已被领养</td><td>本人可重复查看，他人不可领</td></tr>
+        <tr><td><span class="chip">已报废 / 已禁用</span></td><td>生产报废或售后风控</td><td>否</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+</div>
+
+<footer>
+  蛋宝宝 NFC 手动写卡教程 · 对应 manager-web「NFC 生产管理」模块 · 状态机口径以后端 PdcNfcBatchStateMachine / PdcNfcAssetStatus 为准
+</footer>
+
+</div>

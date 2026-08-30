@@ -194,6 +194,8 @@ flowchart TD
     P -->|是| Q["资产进入 WRITTEN 或 VERIFIED"]
 ```
 
+写卡任务可以取消（仅限尚未导入写卡结果的任务）。取消后服务端在同一事务里做三件事：任务状态置为 `CANCELLED`、释放任务内所有资产的写卡占用、批次状态从 `WRITING` 原子回退到 `READY_FOR_WRITE`。回退成功后该批次可以重新创建写卡任务；若批次状态已被其他流程推进（并发冲突），整个取消操作回滚，不会出现“任务已取消但批次仍卡在写卡中”的死锁。
+
 写卡 CSV 给工厂看的核心列：
 
 | 列 | 说明 |
@@ -237,6 +239,29 @@ flowchart TD
     K --> L["再触碰一次确认仍可读"]
     L --> M["允许入库"]
 ```
+
+手动模式操作步骤（在管理后台手动写卡页逐张执行）：
+
+| 步骤 | 操作者动作 | 后台页面操作 | 资产状态变化 |
+|---|---|---|---|
+| 1 | 创建写卡任务时选择“手动模式” | 批次状态为 `READY_FOR_WRITE` 时创建任务，模式选定后不可变更 | 批次 `READY_FOR_WRITE → WRITING`，任务 `CREATED` |
+| 2 | 打开任务的手动写卡页 | 查看任务内资产列表 | 资产均为 `SCHEME_GENERATED` |
+| 3 | 对单张资产点“查看 Scheme” | 页面展示该条明文 Scheme（每次查看记审计日志） | 无状态变化 |
+| 4 | 用手机 NFC App（如 NFC Tools）把 Scheme 写入标签 URI Record；Android 手机加写 AAR `com.tencent.mm` | 无 | 无状态变化 |
+| 5a | 写入成功 | 点“已写入” | `SCHEME_GENERATED → WRITTEN` |
+| 5b | 写坏了 | 点“写坏了” | 若已标过 WRITTEN 则 `WRITTEN → SCHEME_GENERATED`，留在任务内重写，回到步骤 3 |
+| 6 | 用手机触碰刚写好的标签，微信拉起领取页调 preview | 无需操作 | preview 命中该任务内资产时自动 `WRITTEN → VERIFIED`，记 `verify_source=TOUCH` |
+| 6 兜底 | 手机碰不了（如 iPhone 写入后无法当场触碰验证） | NFC Tools 回读比对无误后，人工点“验证通过” | `WRITTEN → VERIFIED`，记 `verify_source=MANUAL` |
+| 7 | 验证通过后，用 NFC App 把标签设为只读（锁卡） | 点“已锁卡” | 记录 `locked_at`，不可逆；仅 `VERIFIED` 状态允许操作 |
+| 8 | 再触碰一次确认锁卡后仍可读 | 无 | 无状态变化，作为入库前人工复核 |
+| 9 | 全部资产完成 | 走入库流程 | 入库门禁：手动模式资产必须已锁卡（`is_read_only=true`）且锁后触碰复验通过，才允许 `VERIFIED → IN_STOCK` |
+
+操作要点：
+
+- 每个标记动作只影响单张资产，失败可逐张重来，不存在“整批作废”。
+- 步骤 6 的触碰自验证只对“该手动任务内、已标记已写入”的资产生效；随手碰一张不在任务里的卡不会改变任何状态，也不会触发领取。
+- 锁卡必须放在验证通过之后。锁过的卡写错内容只能报废补新，无法回退重写。
+- 取消手动写卡任务与 CSV 模式一致：任务置 `CANCELLED`、释放资产占用、批次回退 `READY_FOR_WRITE`，可重新建任务。
 
 与工厂 CSV 模式的差异：
 
@@ -371,6 +396,43 @@ flowchart TD
 
 ## 11. 模块九：状态机总图
 
+### 11.1 批次状态机
+
+批次（`pdc_nfc_batch`）的一生：
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT: 创建批次
+    DRAFT --> SCHEME_GENERATING: 发起 Scheme 生成任务
+    SCHEME_GENERATING --> READY_FOR_WRITE: 全部资产 Scheme 生成完成
+    READY_FOR_WRITE --> WRITING: 创建写卡任务
+    WRITING --> READY_FOR_WRITE: 取消写卡任务（未导入结果）<br/>资产租约同步释放，可重建任务
+    WRITING --> READY_FOR_STOCK: 写卡结果导入验收通过
+    READY_FOR_STOCK --> COMPLETED: 入库完成
+    COMPLETED --> CLOSED: 批次归档
+
+    DRAFT --> CANCELLED: 作废批次
+    SCHEME_GENERATING --> CANCELLED: 作废批次
+    READY_FOR_WRITE --> CANCELLED: 作废批次
+    WRITING --> CANCELLED: 作废批次
+    READY_FOR_STOCK --> CANCELLED: 作废批次
+```
+
+批次状态含义：
+
+| 状态 | 小白解释 |
+|---|---|
+| `DRAFT` | 批次已建，资产已生成，还没生成微信 Scheme |
+| `SCHEME_GENERATING` | 正在逐件调用微信生成 Scheme |
+| `READY_FOR_WRITE` | Scheme 齐了，可以创建写卡任务 |
+| `WRITING` | 有活跃写卡任务；取消任务会回到 `READY_FOR_WRITE`，不会卡死 |
+| `READY_FOR_STOCK` | 写卡验收合格，等待入库 |
+| `COMPLETED` | 已入库 |
+| `CLOSED` | 批次归档，终态 |
+| `CANCELLED` | 批次作废，终态 |
+
+### 11.2 实物资产状态机
+
 下面这张图是实物资产的一生。
 
 ```mermaid
@@ -378,6 +440,7 @@ stateDiagram-v2
     [*] --> CREATED: 创建批次时生成资产
     CREATED --> SCHEME_GENERATED: 微信 Scheme 生成成功
     SCHEME_GENERATED --> WRITTEN: 工厂写入成功但未完全验证
+    WRITTEN --> SCHEME_GENERATED: 手动模式写坏，回退重写
     WRITTEN --> VERIFIED: 回读一致且锁为只读
     SCHEME_GENERATED --> VERIFIED: 写入、回读、锁卡一次性全部成功
     VERIFIED --> IN_STOCK: 仓库确认入库

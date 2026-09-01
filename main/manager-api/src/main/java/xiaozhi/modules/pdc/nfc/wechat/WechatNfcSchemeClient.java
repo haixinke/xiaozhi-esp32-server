@@ -35,6 +35,9 @@ public class WechatNfcSchemeClient {
     public WechatNfcSchemeResult generate(String wechatSn, String claimRef) {
         requireClientConfiguration(properties.getModelId(), wechatSn, claimRef);
 
+        // TODO 临时调试：打印明文 claimRef 供开发者工具模拟 NFC 拉起（v=1&ref=...），调完即删，严禁提交
+//        log.info("debug claimRef={}", claimRef);
+
         WechatNfcSchemeRequest request = WechatNfcSchemeRequest.of(
                 properties.getModelId(), wechatSn, claimRef, properties.getSchemeEnvVersion());
 

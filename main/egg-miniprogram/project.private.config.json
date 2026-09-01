@@ -18,5 +18,17 @@
     "checkInvalidKey": true,
     "bigPackageSizeSupport": false
   },
-  "condition": {}
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/nfc-claim/nfc-claim",
+          "pathName": "pages/nfc-claim/nfc-claim",
+          "query": "v=1&ref=u2jaUeBm5feeXdSoVmtLoA",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
 }

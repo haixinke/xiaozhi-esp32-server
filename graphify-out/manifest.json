@@ -3060,9 +3060,9 @@
     "semantic_hash": "7d08616eb142eb3a2fca3ee4dfc91a96"
   },
   "main/manager-api/src/main/java/xiaozhi/common/constant/Constant.java": {
-    "mtime": 1786167262.1475263,
-    "ast_hash": "e26930ba8ace2fe1266ffdd8d46aa772",
-    "semantic_hash": "e26930ba8ace2fe1266ffdd8d46aa772"
+    "mtime": 1788236511.444054,
+    "ast_hash": "cc8e0c79292a78a739ac7e5dc3b47e27",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/oss/OssService.java": {
     "mtime": 1787188207.0910308,
@@ -8210,8 +8210,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pdc/nfc/wechat/WechatNfcSchemeClient.java": {
-    "mtime": 1787926457.8957608,
-    "ast_hash": "9b2a819a6561b52a2efaf326e25b90b1",
+    "mtime": 1788063497.306383,
+    "ast_hash": "b578622afa579b5b87b1078f2d431f7a",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pdc/nfc/wechat/WechatNfcSchemeRequest.java": {
@@ -8612,6 +8612,76 @@
   ".playwright-mcp/page-2026-08-29T02-40-35-143Z.yml": {
     "mtime": 1787971235.1441088,
     "ast_hash": "0b36633c5a070449316973b1f8e29a44",
+    "semantic_hash": ""
+  },
+  "main/official-docs/tools/capture_screenshots.mjs": {
+    "mtime": 1788236649.1300936,
+    "ast_hash": "2281c44d43893bf67bbb13b7a22bae35",
+    "semantic_hash": ""
+  },
+  "main/official-docs/tools/gen_manual.py": {
+    "mtime": 1788233508.8505967,
+    "ast_hash": "6e1210a550080af99fd4a1c5bc72e764",
+    "semantic_hash": ""
+  },
+  "main/official-docs/tools/gen_source_pdf.py": {
+    "mtime": 1788232920.9707072,
+    "ast_hash": "c8e70aabd2ecbd1c411ef625c7875117",
+    "semantic_hash": ""
+  },
+  "main/official-docs/tools/package.json": {
+    "mtime": 1788233397.3649716,
+    "ast_hash": "4aea7333454ca4a9c298b82e2f788c8e",
+    "semantic_hash": ""
+  },
+  ".playwright-mcp/page-2026-08-30T12-33-27-886Z.yml": {
+    "mtime": 1788093207.8865576,
+    "ast_hash": "9a98edc0004a8759bda3ccfbc2e92638",
+    "semantic_hash": ""
+  },
+  ".playwright-mcp/page-2026-08-30T12-33-47-143Z.yml": {
+    "mtime": 1788093227.1442633,
+    "ast_hash": "5a4cf48808aa4aa30907aa9551b2fb11",
+    "semantic_hash": ""
+  },
+  ".playwright-mcp/page-2026-08-30T12-35-16-861Z.yml": {
+    "mtime": 1788093316.862216,
+    "ast_hash": "b890f8418f5d67f101a8b7ee9b13650e",
+    "semantic_hash": ""
+  },
+  "docs/ops/nfc-manual-write-tutorial.html": {
+    "mtime": 1788093221.226484,
+    "ast_hash": "ee6c9b30dbeb959afc98c789b9d07a3b",
+    "semantic_hash": ""
+  },
+  "main/official-docs/tools/.license.html": {
+    "mtime": 1788237534.8176959,
+    "ast_hash": "ef53cfa5ffee7ceb9008cc0946f79e2c",
+    "semantic_hash": ""
+  },
+  "main/official-docs/tools/.manual.html": {
+    "mtime": 1788237533.9755588,
+    "ast_hash": "849298b79a9286b0e5d34a077c5ea25e",
+    "semantic_hash": ""
+  },
+  "main/official-docs/tools/.source_code.html": {
+    "mtime": 1788232928.2505152,
+    "ast_hash": "f47bd475d8a4ffbe56f8f7d5e31ae2b3",
+    "semantic_hash": ""
+  },
+  "main/official-docs/\u4e0a\u6e38MIT\u8bb8\u53ef\u8bc1\u660e-LICENSE.pdf": {
+    "mtime": 1788237535.0332773,
+    "ast_hash": "a0a9f00f1b3006434f589db968387626",
+    "semantic_hash": ""
+  },
+  "main/official-docs/\u7231\u4e88\u6167AI\u667a\u80fd\u4f53\u7ba1\u7406\u5e73\u53f0V1.0-\u64cd\u4f5c\u624b\u518c.pdf": {
+    "mtime": 1788237534.7710607,
+    "ast_hash": "0e8660abdbe3ef4135ff16a324d21f33",
+    "semantic_hash": ""
+  },
+  "main/official-docs/\u7231\u4e88\u6167AI\u667a\u80fd\u4f53\u7ba1\u7406\u5e73\u53f0V1.0-\u6e90\u4ee3\u7801.pdf": {
+    "mtime": 1788232928.8909822,
+    "ast_hash": "1a42102336e7b1c23e50a0c1fd9d92ba",
     "semantic_hash": ""
   }
 }

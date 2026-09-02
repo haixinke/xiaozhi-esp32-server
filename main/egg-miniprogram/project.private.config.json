@@ -22,9 +22,9 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/nfc-claim/nfc-claim",
-          "pathName": "pages/nfc-claim/nfc-claim",
-          "query": "v=1&ref=u2jaUeBm5feeXdSoVmtLoA",
+          "name": "pages/home/home",
+          "pathName": "pages/home/home",
+          "query": "",
           "scene": null,
           "launchMode": "default"
         }

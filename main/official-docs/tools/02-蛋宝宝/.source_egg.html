@@ -1,0 +1,3625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+@page {
+  size: A4;
+  margin: 22mm 15mm 18mm 15mm;
+  @top-center { content: "爱予慧蛋宝宝AI宠物小程序软件 V1.0"; font-family: "Songti SC", "SimSun", serif; font-size: 10.5pt; }
+  @top-right { content: "第 " counter(page) " 页"; font-family: "Songti SC", "SimSun", serif; font-size: 9pt; }
+}
+body { margin: 0; }
+.src-page { page-break-after: always; }
+.src-page pre {
+  margin: 0;
+  font-family: "Songti SC", "Menlo", "Courier New", monospace;
+  font-size: 8pt;
+  line-height: 3.95mm;
+  white-space: pre;
+}
+</style>
+</head>
+<body>
+<div class="src-page"><pre>===== 文件: app.js =====
+const auth = require(&#x27;./utils/auth&#x27;);
+const { post } = require(&#x27;./utils/request&#x27;);
+const { captureNfcClaimIntent } = require(&#x27;./utils/nfc-claim-intent&#x27;);
+const shareInvite = require(&#x27;./utils/share-invite&#x27;);
+
+const AUTH_FIELDS = [&#x27;token&#x27;, &#x27;userId&#x27;, &#x27;openid&#x27;, &#x27;isNewUser&#x27;, &#x27;hasPhone&#x27;, &#x27;agentId&#x27;];
+
+function loginWithWechat() {
+  return new Promise((resolve, reject) =&gt; {
+    wx.login({
+      success: (result) =&gt; {
+        if (!result || !result.code) {
+          reject(new Error(&#x27;微信登录失败，请重试&#x27;));
+          return;
+        }
+        resolve(result.code);
+      },
+      fail: () =&gt; reject(new Error(&#x27;微信登录失败，请重试&#x27;))
+    });
+  }).then((code) =&gt; post(&#x27;/wechat/login&#x27;, { code }, { anonymous: true }));
+}
+
+function saveShareInviteContext(options) {
+  const context = shareInvite.parseEntryOptions(options);
+  if (context) shareInvite.savePending(context);
+}
+
+App({
+  globalData: {
+    version: &#x27;1.0.0-mvp&#x27;,
+    authReady: null,
+    token: null,
+    userId: null,
+    openid: null,
+    isNewUser: null,
+    hasPhone: null,
+    agentId: null,
+    welcomeCompleted: false,
+    launchPath: &#x27;pages/home/home&#x27;
+  },
+
+  onLaunch(options) {
+    captureNfcClaimIntent(options);
+    saveShareInviteContext(options);
+    this.globalData.launchPath = options &amp;&amp; options.path
+      ? options.path
+      : &#x27;pages/home/home&#x27;;
+    this.globalData.authReady = this.ensureLogin()
+      .then((session) =&gt; {
+        this.redirectUnboundToWelcome(this.globalData.launchPath);
+        return session;
+      })
+      .catch(() =&gt; {
+        this.applySession(null);
+        return null;
+      });
+  },
+
+  onShow(options) {</pre></div>
+<div class="src-page"><pre>    captureNfcClaimIntent(options);
+    saveShareInviteContext(options);
+    const session = auth.getSession();
+    if (session &amp;&amp; auth.isExpired()) {
+      this.clearLoginState();
+      return;
+    }
+    if (session &amp;&amp; auth.isExpiringSoon()) {
+      this.silentLogin().catch(() =&gt; null);
+    }
+    const pages = typeof getCurrentPages === &#x27;function&#x27; ? getCurrentPages() : [];
+    const currentRoute = pages.length ? pages[pages.length - 1].route : this.globalData.launchPath;
+    this.redirectUnboundToWelcome(currentRoute);
+  },
+
+  redirectUnboundToWelcome(route) {
+    if (route === &#x27;pages/welcome/welcome&#x27; || route === &#x27;/pages/welcome/welcome&#x27;) {
+      this._welcomeRedirecting = false;
+      return;
+    }
+    if (this.globalData.welcomeCompleted === true) return;
+    if (this._welcomeRedirecting === true) return;
+    if (!auth.getSession()) return;
+    if (this.globalData.hasPhone !== true) {
+      this._welcomeRedirecting = true;
+      const redirect = () =&gt; wx.reLaunch({ url: &#x27;/pages/welcome/welcome&#x27; });
+      if (typeof wx.nextTick === &#x27;function&#x27;) wx.nextTick(redirect);
+      else setTimeout(redirect, 0);
+    }
+  },
+
+  applySession(session) {
+    AUTH_FIELDS.forEach((field) =&gt; {
+      this.globalData[field] = session ? session[field] : null;
+    });
+  },
+
+  silentLogin() {
+    if (this._loginPromise) return this._loginPromise;
+    this._loginPromise = loginWithWechat()
+      .then((loginData) =&gt; {
+        const session = auth.saveSession(loginData);
+        this.applySession(session);
+        return session;
+      });
+    this._loginPromise.then(
+      () =&gt; { this._loginPromise = null; },
+      () =&gt; { this._loginPromise = null; }
+    );
+    return this._loginPromise;
+  },
+
+  ensureLogin() {
+    const session = auth.getSession();
+    if (session &amp;&amp; !auth.isExpired() &amp;&amp; !auth.isExpiringSoon()) {
+      this.applySession(session);
+      return Promise.resolve(session);
+    }
+    return this.silentLogin();
+  },</pre></div>
+<div class="src-page"><pre>
+  clearLoginState() {
+    auth.clearSession();
+    this.applySession(null);
+  }
+});
+===== 文件: config/age-ranges.js =====
+// 年龄区间本地兜底：仅在字典接口拉取失败时使用，正式数据以智控台字典管理（EGG_AGE_RANGE）为准
+const FALLBACK_AGE_RANGES = Object.freeze([
+  Object.freeze({ value: &#x27;AGE_0_14&#x27;, label: &#x27;14 周岁及以下&#x27; }),
+  Object.freeze({ value: &#x27;AGE_15_35&#x27;, label: &#x27;15-35 周岁&#x27; }),
+  Object.freeze({ value: &#x27;AGE_36_60&#x27;, label: &#x27;36-60 周岁&#x27; }),
+  Object.freeze({ value: &#x27;AGE_61_PLUS&#x27;, label: &#x27;60 周岁以上&#x27; })
+]);
+
+module.exports = { FALLBACK_AGE_RANGES };
+===== 文件: config/api.js =====
+// const API_BASE_URL = &#x27;http://192.168.3.75:8002/xiaozhi&#x27;;
+
+const API_BASE_URL = &#x27;https://api.eggbabe.com/xiaozhi&#x27;;
+const OSS_SCENE_BASE = &#x27;https://oss.eggbabe.com/scenes/pre-hatch&#x27;;
+
+module.exports = { API_BASE_URL, OSS_SCENE_BASE };
+===== 文件: config/feedback-types.js =====
+// 诉求类型本地兜底：仅在字典接口拉取失败时使用，正式数据以智控台字典管理（EGG_FEEDBACK_TYPE）为准
+const FALLBACK_FEEDBACK_TYPES = Object.freeze([
+  Object.freeze({ value: &#x27;AI_CONTENT_VIOLATION&#x27;, label: &#x27;AI 虚拟宠物对话违规（涉政、色情、暴力、轻生、暧
+    昧诱导）&#x27; }),
+  Object.freeze({ value: &#x27;AI_MISLEADING_ADVICE&#x27;, label: &#x27;AI 误导或给出不实医疗、理财建议&#x27; }),
+  Object.freeze({ value: &#x27;MINOR_USE&#x27;, label: &#x27;未成年人使用相关问题（时长、模式、内容限制）&#x27; }),
+  Object.freeze({ value: &#x27;SENIOR_SUPPORT&#x27;, label: &#x27;老年人操作、防诈骗或使用指引咨询&#x27; }),
+  Object.freeze({ value: &#x27;PRIVACY&#x27;, label: &#x27;账号或聊天记录隐私保护问题&#x27; }),
+  Object.freeze({ value: &#x27;CRISIS_INTERVENTION&#x27;, label: &#x27;极端情绪干预失效（自杀、抑郁、家暴未安抚）&#x27; }),
+  Object.freeze({ value: &#x27;FUNCTION_FAILURE&#x27;, label: &#x27;功能故障或无法打开宠物对话&#x27; }),
+  Object.freeze({ value: &#x27;REMINDER_OR_AI_LABEL&#x27;, label: &#x27;时长提醒或 AI 标识缺失&#x27; }),
+  Object.freeze({ value: &#x27;OTHER&#x27;, label: &#x27;其他申诉、意见建议&#x27; })
+]);
+
+module.exports = { FALLBACK_FEEDBACK_TYPES };
+===== 文件: config/pre-hatch-assets.js =====
+// 破壳前场景素材集中配置。整幅背景/窝垫/蛋/窗景均托管 OSS，本地只保留蛋壳 overlay 与入口图标。
+const { OSS_SCENE_BASE } = require(&#x27;./api&#x27;);
+const FULL_SCENE_ROOT = `${OSS_SCENE_BASE}/incubation-room/season-weather-full-scenes`;
+const NEST_SCENE_ROOT = `${OSS_SCENE_BASE}/nest/season-weather`;
+const EGG_SCENE_ROOT = `${OSS_SCENE_BASE}/egg/season-weather`;
+const WINDOW_SCENE_ROOT = `${OSS_SCENE_BASE}/window/window-weather`;
+
+const SCENE_TABLE = [
+  [&#x27;spring_clear_day&#x27;, &#x27;spring&#x27;, &#x27;sunny&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;spring_clear_sunset&#x27;, &#x27;spring&#x27;, &#x27;sunny&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;spring_clear_night&#x27;, &#x27;spring&#x27;, &#x27;sunny&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;spring_cloudy_day&#x27;, &#x27;spring&#x27;, &#x27;cloudy&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;spring_cloudy_sunset&#x27;, &#x27;spring&#x27;, &#x27;cloudy&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;spring_cloudy_night&#x27;, &#x27;spring&#x27;, &#x27;cloudy&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;spring_rain_day&#x27;, &#x27;spring&#x27;, &#x27;rain&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;spring_rain_sunset&#x27;, &#x27;spring&#x27;, &#x27;rain&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;spring_rain_night&#x27;, &#x27;spring&#x27;, &#x27;rain&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;summer_clear_day&#x27;, &#x27;summer&#x27;, &#x27;sunny&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;summer_clear_sunset&#x27;, &#x27;summer&#x27;, &#x27;sunny&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;summer_clear_night&#x27;, &#x27;summer&#x27;, &#x27;sunny&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],</pre></div>
+<div class="src-page"><pre>  [&#x27;summer_cloudy_day&#x27;, &#x27;summer&#x27;, &#x27;cloudy&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;summer_cloudy_sunset&#x27;, &#x27;summer&#x27;, &#x27;cloudy&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;summer_cloudy_night&#x27;, &#x27;summer&#x27;, &#x27;cloudy&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;summer_storm_day&#x27;, &#x27;summer&#x27;, &#x27;storm&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;summer_storm_sunset&#x27;, &#x27;summer&#x27;, &#x27;storm&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;summer_storm_night&#x27;, &#x27;summer&#x27;, &#x27;storm&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;autumn_clear_day&#x27;, &#x27;autumn&#x27;, &#x27;sunny&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;autumn_clear_sunset&#x27;, &#x27;autumn&#x27;, &#x27;sunny&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;autumn_clear_night&#x27;, &#x27;autumn&#x27;, &#x27;sunny&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;autumn_rain_day&#x27;, &#x27;autumn&#x27;, &#x27;rain&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;autumn_rain_sunset&#x27;, &#x27;autumn&#x27;, &#x27;rain&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;autumn_rain_night&#x27;, &#x27;autumn&#x27;, &#x27;rain&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;winter_clear_day&#x27;, &#x27;winter&#x27;, &#x27;sunny&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;winter_clear_sunset&#x27;, &#x27;winter&#x27;, &#x27;sunny&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;winter_clear_night&#x27;, &#x27;winter&#x27;, &#x27;sunny&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;winter_cloudy_day&#x27;, &#x27;winter&#x27;, &#x27;cloudy&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;winter_cloudy_sunset&#x27;, &#x27;winter&#x27;, &#x27;cloudy&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;winter_cloudy_night&#x27;, &#x27;winter&#x27;, &#x27;cloudy&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;winter_snow_day&#x27;, &#x27;winter&#x27;, &#x27;snow&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;winter_snow_sunset&#x27;, &#x27;winter&#x27;, &#x27;snow&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;winter_snow_night&#x27;, &#x27;winter&#x27;, &#x27;snow&#x27;, &#x27;night&#x27;, &#x27;night&#x27;],
+  [&#x27;winter_post_snow_day&#x27;, &#x27;winter&#x27;, &#x27;postSnow&#x27;, &#x27;day&#x27;, &#x27;midday&#x27;],
+  [&#x27;winter_post_snow_sunset&#x27;, &#x27;winter&#x27;, &#x27;postSnow&#x27;, &#x27;sunset&#x27;, &#x27;sunset&#x27;],
+  [&#x27;winter_post_snow_night&#x27;, &#x27;winter&#x27;, &#x27;postSnow&#x27;, &#x27;night&#x27;, &#x27;night&#x27;]
+];
+
+const SCENE_OPTIONS = SCENE_TABLE.map(([key, season, weather, period, lightPhase]) =&gt; ({
+  key, season, weather, period, lightPhase,
+  className: `season-${season} weather-${weather} period-${period} light-${lightPhase}`,
+  background: `${FULL_SCENE_ROOT}/${key}.webp`,
+  nest: `${NEST_SCENE_ROOT}/${key}_nest_pad.webp`,
+  egg: `${EGG_SCENE_ROOT}/${key}_egg_right45.webp`
+}));
+
+const WINDOW_WEATHER = {
+  clearDay: `${WINDOW_SCENE_ROOT}/w_01_clear_day.webp`,
+  clearSunset: `${WINDOW_SCENE_ROOT}/w_02_clear_sunset.webp`,
+  clearNight: `${WINDOW_SCENE_ROOT}/w_03_clear_night.webp`,
+  cloudyDay: `${WINDOW_SCENE_ROOT}/w_04_cloudy_day.webp`,
+  cloudyNight: `${WINDOW_SCENE_ROOT}/w_05_cloudy_night.webp`,
+  snowDay: `${WINDOW_SCENE_ROOT}/w_06_snow_day.webp`,
+  snowNight: `${WINDOW_SCENE_ROOT}/w_07_snow_night.webp`,
+  // 16 个环境键的精确窗景；优先于共享图。
+  bySceneKey: {
+    spring_cloudy_sunset: `${WINDOW_SCENE_ROOT}/window_spring_cloudy_sunset_v01.webp`,
+    spring_rain_day: `${WINDOW_SCENE_ROOT}/window_spring_rain_day_v01.webp`,
+    spring_rain_sunset: `${WINDOW_SCENE_ROOT}/window_spring_rain_sunset_v01.webp`,
+    spring_rain_night: `${WINDOW_SCENE_ROOT}/window_spring_rain_night_v01.webp`,
+    summer_cloudy_sunset: `${WINDOW_SCENE_ROOT}/window_summer_cloudy_sunset_v01.webp`,
+    summer_storm_day: `${WINDOW_SCENE_ROOT}/window_summer_storm_day_v01.webp`,
+    summer_storm_sunset: `${WINDOW_SCENE_ROOT}/window_summer_storm_sunset_v01.webp`,
+    summer_storm_night: `${WINDOW_SCENE_ROOT}/window_summer_storm_night_v01.webp`,
+    autumn_rain_day: `${WINDOW_SCENE_ROOT}/window_autumn_rain_day_v01.webp`,
+    autumn_rain_sunset: `${WINDOW_SCENE_ROOT}/window_autumn_rain_sunset_v01.webp`,
+    autumn_rain_night: `${WINDOW_SCENE_ROOT}/window_autumn_rain_night_v01.webp`,
+    winter_cloudy_sunset: `${WINDOW_SCENE_ROOT}/window_winter_cloudy_sunset_v01.webp`,
+    winter_snow_sunset: `${WINDOW_SCENE_ROOT}/window_winter_snow_sunset_v01.webp`,
+    winter_post_snow_day: `${WINDOW_SCENE_ROOT}/window_winter_post_snow_day_v01.webp`,
+    winter_post_snow_sunset: `${WINDOW_SCENE_ROOT}/window_winter_post_snow_sunset_v01.webp`,
+    winter_post_snow_night: `${WINDOW_SCENE_ROOT}/window_winter_post_snow_night_v01.webp`</pre></div>
+<div class="src-page"><pre>  }
+};
+
+const EGG_ASSET_ROOT = &#x27;/assets/scenes/egg&#x27;;
+
+module.exports = {
+  SCENE_OPTIONS,
+  WINDOW_WEATHER,
+  // 本地打包资源统一用 PNG：微信上传管线对 .webp 资源可能漏打包导致生产不显示，PNG 稳定
+  EGG_DEPTH_OVERLAY: `${EGG_ASSET_ROOT}/egg_shell_depth_overlay_512_v01.png`,
+  EGG_SPECULAR_OVERLAY: `${EGG_ASSET_ROOT}/egg_shell_specular_overlay_512_v01.png`,
+  INTERACTION_ICONS: {
+    wish: &#x27;/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.png&#x27;,
+    learn: &#x27;/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.png&#x27;,
+    draw: &#x27;/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.png&#x27;
+  }
+};
+===== 文件: config/wish-questions.js =====
+/**
+ * 许愿池题目静态配置（PRD 5.2.1）
+ * 共 7 道单选题，每道题选项带 emoji。
+ * 题目为产品文案，放在前端本地，不建后端表。
+ * 用 id 唯一标识题目，便于匹配已答记录。
+ */
+module.exports = [
+  {
+    id: &#x27;world-color&#x27;,
+    title: &#x27;你希望蛋宝宝破壳后，第一眼看到的&quot;世界&quot;是什么颜色？&#x27;,
+    options: [
+      { emoji: &#x27;🌿&#x27;, text: &#x27;森林绿&#x27; },
+      { emoji: &#x27;🌊&#x27;, text: &#x27;海洋蓝&#x27; },
+      { emoji: &#x27;🌸&#x27;, text: &#x27;樱花粉&#x27; },
+      { emoji: &#x27;🌅&#x27;, text: &#x27;夕阳橙&#x27; },
+      { emoji: &#x27;🌌&#x27;, text: &#x27;星空紫&#x27; }
+    ]
+  },
+  {
+    id: &#x27;sleep-type&#x27;,
+    title: &#x27;你希望蛋宝宝是早睡早起型，还是陪你熬夜型？&#x27;,
+    options: [
+      { emoji: &#x27;🐦&#x27;, text: &#x27;早鸟型&#x27; },
+      { emoji: &#x27;🦉&#x27;, text: &#x27;夜猫型&#x27; },
+      { emoji: &#x27;🌓&#x27;, text: &#x27;跟随型&#x27; }
+    ]
+  },
+  {
+    id: &#x27;gender&#x27;,
+    title: &#x27;你希望蛋宝宝破壳后，性别是？&#x27;,
+    options: [
+      { emoji: &#x27;🧢&#x27;, text: &#x27;小男孩&#x27; },
+      { emoji: &#x27;🎀&#x27;, text: &#x27;小女孩&#x27; },
+      { emoji: &#x27;🌈&#x27;, text: &#x27;让蛋宝宝自己选&#x27; }
+    ]
+  },
+  {
+    id: &#x27;life-type&#x27;,
+    title: &#x27;你更希望蛋宝宝像哪种小生命？&#x27;,
+    options: [
+      { emoji: &#x27;🌞&#x27;, text: &#x27;小太阳&#x27; },
+      { emoji: &#x27;🌙&#x27;, text: &#x27;小月亮&#x27; },</pre></div>
+<div class="src-page"><pre>      { emoji: &#x27;🌪️&#x27;, text: &#x27;小风&#x27; },
+      { emoji: &#x27;🪨&#x27;, text: &#x27;小石头&#x27; }
+    ]
+  },
+  {
+    id: &#x27;animal-soul&#x27;,
+    title: &#x27;你希望蛋宝宝是哪种小动物的灵魂？&#x27;,
+    options: [
+      { emoji: &#x27;🐶&#x27;, text: &#x27;小狗型&#x27; },
+      { emoji: &#x27;🐱&#x27;, text: &#x27;小猫型&#x27; },
+      { emoji: &#x27;🐰&#x27;, text: &#x27;小兔型&#x27; },
+      { emoji: &#x27;🦥&#x27;, text: &#x27;小树懒型&#x27; }
+    ]
+  },
+  {
+    id: &#x27;world-taste&#x27;,
+    title: &#x27;你希望蛋宝宝睁开眼睛时，这个世界是什么味道的？&#x27;,
+    options: [
+      { emoji: &#x27;🍃&#x27;, text: &#x27;雨后青草味&#x27; },
+      { emoji: &#x27;🍞&#x27;, text: &#x27;烤面包味&#x27; },
+      { emoji: &#x27;🌸&#x27;, text: &#x27;晒过的被子味&#x27; },
+      { emoji: &#x27;🍊&#x27;, text: &#x27;橘子汽水味&#x27; }
+    ]
+  },
+  {
+    id: &#x27;inner-weather&#x27;,
+    title: &#x27;如果蛋宝宝身体里住着一种天气，你希望是？&#x27;,
+    options: [
+      { emoji: &#x27;🌤️&#x27;, text: &#x27;晴天&#x27; },
+      { emoji: &#x27;🌧️&#x27;, text: &#x27;小雨&#x27; },
+      { emoji: &#x27;⛅&#x27;, text: &#x27;多云&#x27; },
+      { emoji: &#x27;🌈&#x27;, text: &#x27;彩虹&#x27; }
+    ]
+  }
+];
+===== 文件: services/analytics.js =====
+/**
+ * analytics stub — 轻量空实现
+ * life-scene 等页面调用 analytics.track() 时静默跳过，不报错。
+ */
+function track() {
+  return { ok: true };
+}
+
+function flush() {
+  return Promise.resolve({ ok: true, count: 0 });
+}
+
+module.exports = { track, flush };
+===== 文件: services/time-service.js =====
+/**
+ * time-service 轻量实现
+ * 直接使用本地时间，不含服务端时间同步逻辑。
+ */
+function now() {
+  return Date.now();
+}
+
+function beijingDateKey(timestamp) {
+  const date = new Date((timestamp === undefined ? now() : timestamp) + 8 * 60 * 60 * 1000);</pre></div>
+<div class="src-page"><pre>  return date.toISOString().slice(0, 10);
+}
+
+function formatBeijingDate(timestamp) {
+  const key = beijingDateKey(timestamp);
+  const parts = key.split(&#x27;-&#x27;).map(Number);
+  return parts[0] + &#x27;年&#x27; + parts[1] + &#x27;月&#x27; + parts[2] + &#x27;日&#x27;;
+}
+
+function sync() {
+  return Promise.resolve({ ok: true, now: now() });
+}
+
+function isAuthoritative() {
+  return true;
+}
+
+function requireAuthoritative() {
+  return { ok: true, now: now(), authoritative: true };
+}
+
+module.exports = { now, beijingDateKey, formatBeijingDate, sync, isAuthoritative, requireAuthoritative }
+    ;
+===== 文件: utils/age-range-api.js =====
+const { get, put } = require(&#x27;./request&#x27;);
+
+// 年龄区间字典类型编码，与后端 sys_dict_type 对应
+const AGE_RANGE_DICT = &#x27;EGG_AGE_RANGE&#x27;;
+
+// 从后端字典拉取年龄区间选项，SysDictDataItem: [{ name, key }] -&gt; [{ label, value }]
+function listAgeRanges() {
+  return get(`/admin/dict/data/type/${AGE_RANGE_DICT}`).then((items) =&gt; {
+    if (!Array.isArray(items)) return [];
+    return items
+      .filter((item) =&gt; item &amp;&amp; item.key &amp;&amp; item.name)
+      .map((item) =&gt; ({ label: item.name, value: item.key }));
+  });
+}
+
+// 读取用户资料（含 ageRange 字段）
+function getProfile() {
+  return get(&#x27;/wechat/profile&#x27;);
+}
+
+// 保存年龄区间，复用资料更新接口的部分字段更新能力
+function saveAgeRange(ageRange) {
+  return put(&#x27;/wechat/profile&#x27;, { ageRange });
+}
+
+module.exports = { listAgeRanges, getProfile, saveAgeRange };
+===== 文件: utils/audio.js =====
+/**
+ * utils/audio.js
+ * --------------------------------------------------------------------------
+ * AudioManager — playback-only variant for the egg-miniprogram chat.
+ *
+ * Receives Opus frames from the xiaozhi-server WebSocket, decodes them,
+ * and plays them gaplessly through wx.createWebAudioContext().
+ *
+ * Lifecycle:</pre></div>
+<div class="src-page"><pre> *   const audio = new AudioManager({ onPlayEnd, onError });
+ *   await audio.ready();
+ *   audio.appendOpusFrame(frame);
+ *   audio.stopPlayback();
+ *   audio.destroy();
+ *
+ * Notes:
+ *   - WebAudioContext requires base library &gt;= 2.19.0.
+ *   - Recording/encoding code is intentionally omitted; this file only handles
+ *     inbound audio playback.
+ * --------------------------------------------------------------------------
+ */
+
+const OpusDecoder = require(&#x27;../libs/opus/opus-decoder&#x27;);
+
+const SAMPLE_RATE = 24000;
+const CHANNELS = 1;
+const FRAME_DURATION_MS = 60;
+const FRAME_SAMPLES = SAMPLE_RATE * FRAME_DURATION_MS / 1000; // 1440
+
+class AudioManager {
+  /**
+   * @param {Object} options
+   * @param {() =&gt; void} [options.onPlayEnd] Fires when playback queue drains.
+   * @param {(err: Error, scope: string) =&gt; void} [options.onError]
+   */
+  constructor(options) {
+    this.options = options || {};
+
+    this.decoder = new OpusDecoder({
+      sampleRate: SAMPLE_RATE,
+      channels: CHANNELS,
+      frameDuration: FRAME_DURATION_MS,
+    });
+
+    this._readyPromise = this.decoder.ready()
+      .then(() =&gt; {
+        this._codecMode = this.decoder.mode;
+        if (this._codecMode === &#x27;stub&#x27;) {
+          this._emitError(new Error(&#x27;Opus 解码器回退到 stub，真 Opus 不可用&#x27;), &#x27;codec&#x27;);
+        }
+        return this;
+      });
+
+    // Playback state
+    this._audioCtx = null;
+    this._playQueue = [];
+    this._isPlaying = false;
+    this._nextStartTime = 0;
+    this._activeSources = new Set();
+
+    this._destroyed = false;
+    this._codecMode = null;
+  }
+
+  /** Resolves when the decoder runtime is loaded. */
+  ready() {
+    return this._readyPromise;
+  }
+</pre></div>
+<div class="src-page"><pre>  // -------------------------------------------------------------------------
+  // Playback
+  // -------------------------------------------------------------------------
+
+  /**
+   * Decode and enqueue an array of opus frames.
+   */
+  playOpusFrames(frames) {
+    if (!frames || !frames.length) return;
+    for (let i = 0; i &lt; frames.length; i++) {
+      this.appendOpusFrame(frames[i]);
+    }
+  }
+
+  /**
+   * Decode one frame and append it to the play queue.
+   */
+  appendOpusFrame(frame) {
+    if (this._destroyed || !frame) return;
+    let pcm;
+    try {
+      pcm = this.decoder.decode(frame);
+    } catch (e) {
+      this._emitError(e, &#x27;decode&#x27;);
+      return;
+    }
+    if (!pcm || pcm.length === 0) return;
+
+    this._playQueue.push(pcm);
+    this._scheduleQueued();
+  }
+
+  stopPlayback() {
+    this._playQueue.length = 0;
+    this._stopActiveSources();
+    this._isPlaying = false;
+    this._nextStartTime = 0;
+  }
+
+  /**
+   * Recreate the WebAudioContext so the next playback starts cleanly.
+   */
+  resetAudioContext() {
+    if (this._destroyed) return;
+    this._playQueue.length = 0;
+    this._stopActiveSources();
+    this._isPlaying = false;
+    this._nextStartTime = 0;
+
+    const oldCtx = this._audioCtx;
+    this._audioCtx = this._createAudioContext();
+
+    if (oldCtx &amp;&amp; typeof oldCtx.close === &#x27;function&#x27;) {
+      try { oldCtx.close(); } catch (_) {}
+    }
+  }
+
+  _stopActiveSources() {
+    if (!this._activeSources || this._activeSources.size === 0) return;
+    try {</pre></div>
+<div class="src-page"><pre>      this._activeSources.forEach((src) =&gt; {
+        try { src.stop(0); } catch (_) {}
+        try { src.disconnect(); } catch (_) {}
+      });
+    } finally {
+      this._activeSources.clear();
+    }
+  }
+
+  _createAudioContext() {
+    if (typeof wx === &#x27;undefined&#x27; || !wx.createWebAudioContext) {
+      this._emitError(new Error(&#x27;wx.createWebAudioContext requires base lib &gt;= 2.19.0&#x27;), &#x27;play&#x27;);
+      return null;
+    }
+    return wx.createWebAudioContext();
+  }
+
+  _ensureAudioContext() {
+    if (this._audioCtx) return this._audioCtx;
+    this._audioCtx = this._createAudioContext();
+    return this._audioCtx;
+  }
+
+  _scheduleQueued() {
+    const ctx = this._ensureAudioContext();
+    if (!ctx) return;
+
+    while (this._playQueue.length &gt; 0) {
+      const pcm = this._playQueue.shift();
+      const buffer = ctx.createBuffer(CHANNELS, pcm.length, SAMPLE_RATE);
+      const channelData = buffer.getChannelData(0);
+      for (let i = 0; i &lt; pcm.length; i++) {
+        channelData[i] = pcm[i] / 32768;
+      }
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      const startAt = Math.max(now, this._nextStartTime);
+      try {
+        source.start(startAt);
+      } catch (e) {
+        this._emitError(e, &#x27;play&#x27;);
+        continue;
+      }
+      this._nextStartTime = startAt + buffer.duration;
+      this._isPlaying = true;
+      this._activeSources.add(source);
+
+      source.onended = () =&gt; {
+        this._activeSources.delete(source);
+        try { source.disconnect(); } catch (_) {}
+        if (this._activeSources.size === 0 &amp;&amp; this._playQueue.length === 0) {
+          this._isPlaying = false;
+          this._nextStartTime = 0;
+          if (this.options.onPlayEnd) this.options.onPlayEnd();
+        }
+      };</pre></div>
+<div class="src-page"><pre>    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Lifecycle
+  // -------------------------------------------------------------------------
+
+  destroy() {
+    if (this._destroyed) return;
+    this._destroyed = true;
+    try { this.stopPlayback(); } catch (_) {}
+    if (this._audioCtx &amp;&amp; typeof this._audioCtx.close === &#x27;function&#x27;) {
+      try { this._audioCtx.close(); } catch (_) {}
+    }
+    this._audioCtx = null;
+    if (this.decoder) this.decoder.destroy();
+    this.decoder = null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------------------
+
+  _emitError(err, scope) {
+    if (this.options &amp;&amp; this.options.onError) {
+      try { this.options.onError(err, scope); } catch (_) {}
+    } else {
+      console.error(&#x27;[AudioManager:&#x27; + scope + &#x27;]&#x27;, err);
+    }
+  }
+}
+
+module.exports = AudioManager;
+module.exports.AudioManager = AudioManager;
+module.exports.SAMPLE_RATE = SAMPLE_RATE;
+module.exports.FRAME_SAMPLES = FRAME_SAMPLES;
+module.exports.FRAME_DURATION_MS = FRAME_DURATION_MS;
+===== 文件: utils/auth.js =====
+const PREFIX = &#x27;eggbaby_auth_&#x27;;
+const KEYS = {
+  token: `${PREFIX}token`, userId: `${PREFIX}user_id`, openid: `${PREFIX}openid`,
+  isNewUser: `${PREFIX}is_new_user`, hasPhone: `${PREFIX}has_phone`,
+  agentId: `${PREFIX}agent_id`, issuedAt: `${PREFIX}issued_at`, expire: `${PREFIX}expire`
+};
+const REQUIRED = [&#x27;token&#x27;, &#x27;userId&#x27;, &#x27;openid&#x27;, &#x27;expire&#x27;];
+
+function saveSession(session, issuedAt) {
+  if (!session || REQUIRED.some((key) =&gt; session[key] === undefined || session[key] === null || session[
+    key] === &#x27;&#x27;)) {
+    throw new Error(&#x27;登录响应缺少必要字段&#x27;);
+  }
+  const normalized = {
+    token: session.token, userId: session.userId, openid: session.openid,
+    isNewUser: !!session.isNewUser, hasPhone: !!session.hasPhone,
+    agentId: session.agentId || null, issuedAt: issuedAt || Date.now(), expire: Number(session.expire)
+  };
+  if (!Number.isFinite(normalized.expire) || normalized.expire &lt;= 0) throw new Error(&#x27;登录响应缺少必要字
+    段&#x27;);
+  Object.keys(KEYS).forEach((key) =&gt; wx.setStorageSync(KEYS[key], normalized[key]));
+  return normalized;</pre></div>
+<div class="src-page"><pre>}
+
+function getSession() {
+  const session = {};
+  Object.keys(KEYS).forEach((key) =&gt; { session[key] = wx.getStorageSync(KEYS[key]); });
+  if (REQUIRED.some((key) =&gt; session[key] === undefined || session[key] === null || session[key] === &#x27;&#x27;)
+    ) return null;
+  return session;
+}
+
+function expiresAt(session) { return session.issuedAt + session.expire * 1000; }
+function isExpired(now) { const s = getSession(); return !s || (now || Date.now()) &gt;= expiresAt(s); }
+function isExpiringSoon(now, bufferSeconds) {
+  const s = getSession();
+  return !s || (now || Date.now()) + (bufferSeconds === undefined ? 300 : bufferSeconds) * 1000 &gt;= expir
+    esAt(s);
+}
+function hasValidSession(now) { return !isExpired(now); }
+function clearSession() { Object.values(KEYS).forEach((key) =&gt; wx.removeStorageSync(key)); }
+function markPhoneBound() {
+  const session = getSession();
+  if (!session) return null;
+  return saveSession({ ...session, hasPhone: true }, session.issuedAt);
+}
+
+module.exports = { saveSession, getSession, clearSession, markPhoneBound, hasValidSession, isExpired, is
+    ExpiringSoon };
+===== 文件: utils/canvas-2d.js =====
+function createLayer(page, selector) {
+  return new Promise(resolve =&gt; {
+    wx.createSelectorQuery().in(page).select(selector).fields({ node: true, size: true, rect: true }).ex
+    ec(result =&gt; {
+      const target = result &amp;&amp; result[0];
+      if (!target || !target.node || !target.width || !target.height) {
+        resolve(null);
+        return;
+      }
+      const windowInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+      const pixelRatio = Number(windowInfo.pixelRatio || 1);
+      const canvas = target.node;
+      const context = canvas.getContext(&#x27;2d&#x27;);
+      canvas.width = Math.round(target.width * pixelRatio);
+      canvas.height = Math.round(target.height * pixelRatio);
+      context.scale(pixelRatio, pixelRatio);
+      resolve({
+        canvas,
+        context,
+        width: target.width,
+        height: target.height,
+        left: target.left || 0,
+        top: target.top || 0
+      });
+    });
+  });
+}
+
+function loadImage(layer, source) {
+  return new Promise(resolve =&gt; {
+    if (!layer || !layer.canvas || !layer.canvas.createImage) {
+      resolve(null);</pre></div>
+<div class="src-page"><pre>      return;
+    }
+    const image = layer.canvas.createImage();
+    image.onload = () =&gt; resolve(image);
+    image.onerror = () =&gt; resolve(null);
+    image.src = source;
+  });
+}
+
+function exportImage(layer) {
+  return new Promise(resolve =&gt; {
+    if (!layer || !layer.canvas || !wx.canvasToTempFilePath) {
+      resolve(&#x27;&#x27;);
+      return;
+    }
+    wx.canvasToTempFilePath({
+      canvas: layer.canvas,
+      x: 0,
+      y: 0,
+      width: layer.width,
+      height: layer.height,
+      destWidth: layer.canvas.width,
+      destHeight: layer.canvas.height,
+      fileType: &#x27;png&#x27;,
+      quality: 1,
+      success: result =&gt; resolve(result.tempFilePath || &#x27;&#x27;),
+      fail: () =&gt; resolve(&#x27;&#x27;)
+    });
+  });
+}
+
+module.exports = { createLayer, loadImage, exportImage };
+===== 文件: utils/device-clock.js =====
+// 设备时钟快照：为 room-clock 组件提供 文本时间/日期 与 指针角度
+// 移植自 eggbabe-miniprogram 静态项目 services/device-clock.js
+const WEEKDAYS = [&#x27;周日&#x27;, &#x27;周一&#x27;, &#x27;周二&#x27;, &#x27;周三&#x27;, &#x27;周四&#x27;, &#x27;周五&#x27;, &#x27;周六&#x27;];
+
+function pad(value) {
+  return String(value).padStart(2, &#x27;0&#x27;);
+}
+
+function snapshot(input) {
+  const candidate = input instanceof Date ? input : new Date(input === undefined ? Date.now() : input);
+  const date = Number.isFinite(candidate.getTime()) ? candidate : new Date();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+  const milliseconds = date.getMilliseconds();
+  const preciseSeconds = seconds + milliseconds / 1000;
+
+  return {
+    timeText: `${pad(hours)}:${pad(minutes)}`,
+    dateText: `${date.getMonth() + 1}月${date.getDate()}日 ${WEEKDAYS[date.getDay()]}`,
+    // 时针/分针随秒连续走，避免每秒跳一格的机械感
+    hourAngle: (hours % 12) * 30 + minutes * 0.5 + preciseSeconds / 120,
+    minuteAngle: minutes * 6 + preciseSeconds * 0.1,
+    secondAngle: preciseSeconds * 6
+  };
+}
+</pre></div>
+<div class="src-page"><pre>// 距下一秒边界的毫秒数，用于把 1s 定时器对齐到整秒，防止指针抖动
+function millisecondsUntilNextSecond(timestamp) {
+  const value = Number.isFinite(Number(timestamp)) ? Number(timestamp) : Date.now();
+  const remainder = ((value % 1000) + 1000) % 1000;
+  return remainder === 0 ? 1000 : 1000 - remainder;
+}
+
+module.exports = {
+  snapshot,
+  millisecondsUntilNextSecond
+};
+===== 文件: utils/doodle-api.js =====
+// 涂鸦图片上传与回显：图片经通用上传接口 /upload/image 传 OSS，画作出处存 hatch-action payload。
+const { post, get } = require(&#x27;./request&#x27;);
+const auth = require(&#x27;./auth&#x27;);
+const { API_BASE_URL } = require(&#x27;../config/api&#x27;);
+
+/**
+ * 上传涂鸦图片到 OSS。
+ * 调用通用上传接口 POST /upload/image（scene=doodle），接口返回通用 envelope { code, data, msg }。
+ * @param {string} tempFilePath 本地临时文件路径
+ * @returns {Promise&lt;string&gt;} OSS 图片 URL
+ */
+function uploadDoodleImage(tempFilePath) {
+  return new Promise((resolve, reject) =&gt; {
+    const session = auth.getSession();
+    if (!session || !session.token) {
+      reject({ userMessage: &#x27;登录状态已失效&#x27; });
+      return;
+    }
+    wx.uploadFile({
+      url: `${API_BASE_URL}/upload/image`,
+      filePath: tempFilePath,
+      name: &#x27;file&#x27;,
+      formData: { scene: &#x27;doodle&#x27; },
+      header: { Authorization: `Bearer ${session.token}` },
+      success: (res) =&gt; {
+        if (res.statusCode !== 200) {
+          reject({ userMessage: &#x27;画作上传失败&#x27; });
+          return;
+        }
+        try {
+          const envelope = JSON.parse(res.data);
+          if (envelope.code !== 0 || !envelope.data) {
+            reject({ userMessage: envelope.msg || &#x27;画作上传失败&#x27; });
+            return;
+          }
+          resolve(envelope.data);
+        } catch (error) {
+          reject({ userMessage: &#x27;画作上传失败&#x27; });
+        }
+      },
+      fail: () =&gt; reject({ userMessage: &#x27;画作上传失败&#x27; })
+    });
+  });
+}
+
+/**
+ * 查询某只宠物的最新涂鸦图片 URL。
+ * 兼容 HatchActionVO 的两种字段命名（actionType / action_type）以及两种 payload 类型（字符串 / 对象）。</pre></div>
+<div class="src-page"><pre> * @param {string} petId 宠物 id
+ * @returns {Promise&lt;string&gt;} 最新涂鸦 artUrl，无则返回空字符串
+ */
+async function getLatestDoodleArtUrl(petId) {
+  const actions = await get(`/pet/${petId}/hatch-actions`);
+  const doodles = (actions || []).filter((a) =&gt; (a.actionType || a.action_type) === &#x27;DOODLE&#x27;);
+  if (!doodles.length) return &#x27;&#x27;;
+  // 按动作日期排序后取最新一条，避免依赖后端返回顺序
+  const sorted = doodles.slice().sort((a, b) =&gt; {
+    const ta = Date.parse(a.actionDate || a.action_date || &#x27;&#x27;);
+    const tb = Date.parse(b.actionDate || b.action_date || &#x27;&#x27;);
+    return (Number.isFinite(ta) ? ta : 0) - (Number.isFinite(tb) ? tb : 0);
+  });
+  const latest = sorted[sorted.length - 1];
+  const payload = latest.payload;
+  if (!payload) return &#x27;&#x27;;
+  let parsed = payload;
+  if (typeof payload === &#x27;string&#x27;) {
+    try {
+      parsed = JSON.parse(payload);
+    } catch (error) {
+      // 后端返回非法 JSON 时按无画作处理，不抛原生异常破坏调用方
+      return &#x27;&#x27;;
+    }
+  }
+  return parsed.artUrl || &#x27;&#x27;;
+}
+
+module.exports = { uploadDoodleImage, getLatestDoodleArtUrl };
+===== 文件: utils/doodle-save.js =====
+const doodleApi = require(&#x27;./doodle-api&#x27;);
+const petStore = require(&#x27;./pet-store&#x27;);
+
+const DEFAULT_ERROR_MESSAGE = &#x27;画作没有保存好，请再试一次&#x27;;
+
+function errorMessage(error) {
+  return (error &amp;&amp; (error.userMessage || error.message)) || DEFAULT_ERROR_MESSAGE;
+}
+
+async function saveArtwork({ petId, operations, exportArtwork } = {}) {
+  let artUrl = &#x27;&#x27;;
+
+  try {
+    if (!petId || !Array.isArray(operations)) {
+      return { ok: false, message: DEFAULT_ERROR_MESSAGE };
+    }
+    const empty = operations.length === 0;
+    if (!empty) {
+      const tempFilePath = await exportArtwork();
+      artUrl = await doodleApi.uploadDoodleImage(tempFilePath);
+      if (typeof artUrl !== &#x27;string&#x27; || !artUrl.trim()) {
+        return { ok: false, message: DEFAULT_ERROR_MESSAGE };
+      }
+    }
+
+    const result = await petStore.saveDoodle(artUrl, petId);
+    if (!result || !result.ok) {
+      return { ok: false, message: (result &amp;&amp; result.message) || DEFAULT_ERROR_MESSAGE };
+    }
+</pre></div>
+<div class="src-page"><pre>    if (!petStore.saveDoodleShell(petId, operations)) {
+      return { ok: false, message: &#x27;画作已上传，但本地编辑记录保存失败，请重试&#x27; };
+    }
+    return { ok: true, petId: String(petId), artUrl, operations, empty };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
+module.exports = { saveArtwork };
+===== 文件: utils/environment-state.js =====
+// 应用内环境状态：不读取定位、不调用天气 API。
+// 环境以蛋宝宝身份、陪伴日和本机时段为种子，可复现也便于验收。
+const DAY_MS = 24 * 60 * 60 * 1000;
+const SEASONS = Object.freeze([&#x27;spring&#x27;, &#x27;summer&#x27;, &#x27;autumn&#x27;, &#x27;winter&#x27;]);
+const PERIODS = Object.freeze([&#x27;day&#x27;, &#x27;sunset&#x27;, &#x27;night&#x27;]);
+const WEATHER_POOLS = Object.freeze({
+  spring: Object.freeze([&#x27;sunny&#x27;, &#x27;cloudy&#x27;, &#x27;rain&#x27;]),
+  summer: Object.freeze([&#x27;sunny&#x27;, &#x27;cloudy&#x27;, &#x27;storm&#x27;]),
+  autumn: Object.freeze([&#x27;sunny&#x27;, &#x27;rain&#x27;]),
+  winter: Object.freeze([&#x27;sunny&#x27;, &#x27;cloudy&#x27;, &#x27;snow&#x27;, &#x27;postSnow&#x27;])
+});
+
+function timestampOf(value) {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) &amp;&amp; timestamp &gt; 0 ? timestamp : Date.now();
+}
+
+function localParts(value) {
+  const date = new Date(timestampOf(value));
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    hour: date.getHours(),
+    minute: date.getMinutes()
+  };
+}
+
+function localDateKey(value) {
+  const parts = localParts(value);
+  return [parts.year, String(parts.month).padStart(2, &#x27;0&#x27;), String(parts.day).padStart(2, &#x27;0&#x27;)].join(&#x27;-&#x27;
+    );
+}
+
+function localDaySerial(value) {
+  const parts = localParts(value);
+  return Math.floor(new Date(parts.year, parts.month - 1, parts.day).getTime() / DAY_MS);
+}
+
+function companionDay(companionStartedAt, value) {
+  const raw = companionStartedAt || &#x27;&#x27;;
+  const numeric = Number(raw);
+  const started = Number.isFinite(numeric) &amp;&amp; numeric &gt; 0 ? numeric : Date.parse(raw);
+  if (!Number.isFinite(started)) return 1;
+  return Math.max(1, localDaySerial(value) - localDaySerial(started) + 1);
+}
+
+function seasonBeforeHatch(companionStartedAt, value) {
+  return SEASONS[(companionDay(companionStartedAt, value) - 1) % SEASONS.length];</pre></div>
+<div class="src-page"><pre>}
+
+function periodFromLocalTime(value) {
+  const parts = localParts(value);
+  const minuteOfDay = parts.hour * 60 + parts.minute;
+  if (minuteOfDay &gt;= 17 * 60 &amp;&amp; minuteOfDay &lt; 19 * 60) return &#x27;sunset&#x27;;
+  if (minuteOfDay &gt;= 6 * 60 &amp;&amp; minuteOfDay &lt; 17 * 60) return &#x27;day&#x27;;
+  return &#x27;night&#x27;;
+}
+
+function lightPhaseFromPeriod(period) {
+  if (period === &#x27;sunset&#x27;) return &#x27;sunset&#x27;;
+  if (period === &#x27;night&#x27;) return &#x27;night&#x27;;
+  return &#x27;midday&#x27;;
+}
+
+function hash32(text) {
+  let hash = 2166136261;
+  const source = String(text || &#x27;&#x27;);
+  for (let index = 0; index &lt; source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash &gt;&gt;&gt; 0;
+}
+
+function weatherForSlot(options) {
+  const source = options || {};
+  const pool = WEATHER_POOLS[source.season] || WEATHER_POOLS.spring;
+  const seed = [
+    source.eggId || &#x27;legacy-egg&#x27;,
+    source.dateKey || localDateKey(source.timestamp),
+    source.period || periodFromLocalTime(source.timestamp)
+  ].join(&#x27;|&#x27;);
+  return pool[hash32(seed) % pool.length];
+}
+
+function weatherAssetName(weather) {
+  if (weather === &#x27;sunny&#x27;) return &#x27;clear&#x27;;
+  if (weather === &#x27;postSnow&#x27;) return &#x27;post_snow&#x27;;
+  return weather;
+}
+
+function sceneKey(season, weather, period) {
+  return `${season}_${weatherAssetName(weather)}_${period}`;
+}
+
+function nextEnvironmentBoundary(value) {
+  const timestamp = timestampOf(value);
+  const date = new Date(timestamp);
+  const candidates = [0, 6, 17, 19].map(hour =&gt; new Date(
+    date.getFullYear(), date.getMonth(), date.getDate(), hour, 0, 0, 0
+  ).getTime()).filter(candidate =&gt; candidate &gt; timestamp + 1000);
+  if (candidates.length) return Math.min.apply(null, candidates);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 0, 0, 0, 0).getTime();
+}
+
+function millisecondsUntilNextEnvironmentBoundary(value) {
+  const timestamp = timestampOf(value);
+  return Math.max(1000, nextEnvironmentBoundary(timestamp) - timestamp);</pre></div>
+<div class="src-page"><pre>}
+
+function resolve(options) {
+  const source = options || {};
+  const timestamp = timestampOf(source.timestamp);
+  const period = periodFromLocalTime(timestamp);
+  const dateKey = localDateKey(timestamp);
+  const incubationDay = companionDay(source.hatchStartTime, timestamp);
+  const season = seasonBeforeHatch(source.hatchStartTime, timestamp);
+  const weather = weatherForSlot({
+    eggId: source.petId,
+    season,
+    period,
+    dateKey,
+    timestamp
+  });
+  return {
+    season,
+    weather,
+    period,
+    lightPhase: lightPhaseFromPeriod(period),
+    dateKey,
+    incubationDay,
+    sceneKey: sceneKey(season, weather, period)
+  };
+}
+
+module.exports = {
+  resolve,
+  periodFromLocalTime,
+  seasonBeforeHatch,
+  sceneKey,
+  millisecondsUntilNextEnvironmentBoundary
+};
+===== 文件: utils/feedback-api.js =====
+const { get, post } = require(&#x27;./request&#x27;);
+
+// 诉求类型字典类型编码，与后端 sys_dict_type 对应
+const FEEDBACK_TYPE_DICT = &#x27;EGG_FEEDBACK_TYPE&#x27;;
+
+// 从后端字典拉取诉求类型，SysDictDataItem: [{ name, key }] -&gt; [{ label, value }]
+function listFeedbackTypes() {
+  return get(`/admin/dict/data/type/${FEEDBACK_TYPE_DICT}`).then((items) =&gt; {
+    if (!Array.isArray(items)) return [];
+    return items
+      .filter((item) =&gt; item &amp;&amp; item.key &amp;&amp; item.name)
+      .map((item) =&gt; ({ label: item.name, value: item.key }));
+  });
+}
+
+// 提交反馈，成功返回 { receiptNumber, createDate }
+function submitFeedback(payload) {
+  return post(&#x27;/feedback&#x27;, {
+    type: payload.type,
+    content: payload.content,
+    consent: payload.consent === true
+  });
+}
+
+module.exports = { listFeedbackTypes, submitFeedback };</pre></div>
+<div class="src-page"><pre>===== 文件: utils/incubation-environment.js =====
+// 破壳前环境解析：场景 key -&gt; OSS 图片 URL 与样式类名。
+// 窗景两级查找：sceneKey 精确图优先，其次 weather×period 共享图；
+// 未命中返回空串（窗户点击无响应），禁止跨天气/季节或用房间图回退。
+const state = require(&#x27;./environment-state&#x27;);
+const { SCENE_OPTIONS, WINDOW_WEATHER } = require(&#x27;../config/pre-hatch-assets&#x27;);
+
+const SCENE_BY_KEY = SCENE_OPTIONS.reduce((map, scene) =&gt; {
+  map[scene.key] = scene;
+  return map;
+}, {});
+
+function windowAssetPath(sceneKey, weather, period) {
+  const exact = WINDOW_WEATHER.bySceneKey[String(sceneKey || &#x27;&#x27;)];
+  if (exact) return exact;
+  const byWeather = {
+    sunny: { day: WINDOW_WEATHER.clearDay, sunset: WINDOW_WEATHER.clearSunset, night: WINDOW_WEATHER.cle
+    arNight },
+    cloudy: { day: WINDOW_WEATHER.cloudyDay, night: WINDOW_WEATHER.cloudyNight },
+    snow: { day: WINDOW_WEATHER.snowDay, night: WINDOW_WEATHER.snowNight }
+  };
+  return (byWeather[String(weather || &#x27;&#x27;)] || {})[String(period || &#x27;&#x27;)] || &#x27;&#x27;;
+}
+
+function resolveScene(environment) {
+  const scene = SCENE_BY_KEY[environment.sceneKey];
+  if (!scene) {
+    return Object.assign({}, environment, {
+      valid: false, fullSceneImage: &#x27;&#x27;, nestImage: &#x27;&#x27;, eggImage: &#x27;&#x27;, windowImage: &#x27;&#x27;,
+      className: `season-${environment.season} weather-${environment.weather} period-${environment.perio
+    d} light-${environment.lightPhase}`
+    });
+  }
+  return Object.assign({}, environment, {
+    valid: true,
+    fullSceneImage: scene.background,
+    nestImage: scene.nest,
+    eggImage: scene.egg,
+    windowImage: windowAssetPath(environment.sceneKey, environment.weather, environment.period),
+    className: scene.className
+  });
+}
+
+function resolveForPet(pet, timestamp) {
+  return resolveScene(state.resolve({
+    petId: pet &amp;&amp; pet.id,
+    hatchStartTime: pet &amp;&amp; pet.hatchStartTime,
+    timestamp
+  }));
+}
+
+module.exports = { resolveForPet, resolveScene, windowAssetPath };
+===== 文件: utils/invite-api.js =====
+const { get } = require(&#x27;./request&#x27;);
+
+// GET /invite/mine 返回 InviteCodeVO：
+// { code, quota, usedCount, remaining, status, expireTime, createDate }
+function getMine() {
+  return get(&#x27;/invite/mine&#x27;);
+}</pre></div>
+<div class="src-page"><pre>
+module.exports = { getMine };
+===== 文件: utils/nfc-claim-api.js =====
+const { get, post } = require(&#x27;./request&#x27;);
+
+function preview(claimRef) {
+  return get(&#x27;/pdc/nfc/claim/preview&#x27;, { claimRef });
+}
+
+function confirm(claimRef, requestId) {
+  return post(&#x27;/pdc/nfc/claim/confirm&#x27;, { claimRef, requestId });
+}
+
+module.exports = { preview, confirm };
+===== 文件: utils/nfc-claim-intent.js =====
+const STORAGE_KEY = &#x27;eggbaby_nfc_claim_intent_v1&#x27;;
+const TTL_MS = 30 * 60 * 1000;
+const NFC_CLAIM_PATH = &#x27;pages/nfc-claim/nfc-claim&#x27;;
+const CLAIM_REF_PATTERN = /^[A-Za-z0-9_-]{22}$/;
+
+function isNfcClaimPath(path) {
+  if (!path) return false;
+  const normalized = path.replace(/^\//, &#x27;&#x27;);
+  return normalized === NFC_CLAIM_PATH;
+}
+
+function captureNfcClaimIntent(options, now = Date.now()) {
+  if (!isNfcClaimPath(options &amp;&amp; options.path)) {
+    return getPendingNfcClaimIntent(now);
+  }
+  const query = options.query || {};
+  if (String(query.v) !== &#x27;1&#x27; || !CLAIM_REF_PATTERN.test(query.ref || &#x27;&#x27;)) {
+    clearPendingNfcClaimIntent();
+    return null;
+  }
+  const intent = {
+    type: &#x27;NFC_CLAIM&#x27;,
+    version: 1,
+    claimRef: query.ref,
+    capturedAt: now,
+    expiresAt: now + TTL_MS
+  };
+  wx.setStorageSync(STORAGE_KEY, intent);
+  return intent;
+}
+
+function getPendingNfcClaimIntent(now = Date.now()) {
+  try {
+    const intent = wx.getStorageSync(STORAGE_KEY);
+    if (!intent || intent.expiresAt &lt;= now) {
+      clearPendingNfcClaimIntent();
+      return null;
+    }
+    return intent;
+  } catch (e) {
+    clearPendingNfcClaimIntent();
+    return null;
+  }
+}
+</pre></div>
+<div class="src-page"><pre>function clearPendingNfcClaimIntent() {
+  try { wx.removeStorageSync(STORAGE_KEY); } catch (e) { /* ignore */ }
+}
+
+module.exports = {
+  captureNfcClaimIntent,
+  getPendingNfcClaimIntent,
+  clearPendingNfcClaimIntent,
+  isNfcClaimPath,
+  STORAGE_KEY,
+  TTL_MS
+};
+===== 文件: utils/ota.js =====
+/**
+ * utils/ota.js
+ * --------------------------------------------------------------------------
+ * OTA helper for the egg-miniprogram chat channel.
+ *
+ * Calls POST /xiaozhi/ota/ directly with raw wx.request, because the OTA
+ * endpoint returns a raw DeviceReportRespDTO (not the egg request.js
+ * {code,msg,data} envelope). Resolves the websocket url + token for the
+ * active pet&#x27;s ai_device.id.
+ * --------------------------------------------------------------------------
+ */
+
+const { API_BASE_URL } = require(&#x27;../config/api&#x27;);
+
+function createError(message) {
+  return { type: &#x27;ota&#x27;, message, userMessage: message };
+}
+
+/**
+ * Check OTA for the active pet&#x27;s device and return websocket credentials.
+ * @param {string} deviceId - active pet&#x27;s ai_device.id (macAddress)
+ * @returns {Promise&lt;{wsUrl:string, wsToken:string}&gt;}
+ */
+function checkOrRegisterDevice(deviceId) {
+  return new Promise((resolve, reject) =&gt; {
+    if (!deviceId) {
+      reject(createError(&#x27;缺少宠物设备标识&#x27;));
+      return;
+    }
+
+    const app = getApp();
+    const version = (app &amp;&amp; app.globalData &amp;&amp; app.globalData.version) || &#x27;1.0.0-mvp&#x27;;
+
+    wx.request({
+      url: `${API_BASE_URL}/ota/`,
+      method: &#x27;POST&#x27;,
+      data: {
+        application: {
+          name: &#x27;xiaozhi-egg-miniprogram&#x27;,
+          version,
+        },
+        board: {
+          type: &#x27;wechat-egg-miniprogram&#x27;,
+          mac: deviceId,
+        },
+        chip_model_name: &#x27;wechat-egg-miniprogram&#x27;,
+      },</pre></div>
+<div class="src-page"><pre>      header: {
+        &#x27;Device-ID&#x27;: deviceId,
+        &#x27;Client-ID&#x27;: &#x27;wechat-miniprogram&#x27;,
+      },
+      success: (response) =&gt; {
+        const statusCode = response &amp;&amp; response.statusCode;
+        const data = response &amp;&amp; response.data;
+
+        if (typeof statusCode !== &#x27;number&#x27; || statusCode &lt; 200 || statusCode &gt;= 300) {
+          reject(createError(&#x27;获取聊天配置失败：&#x27; + statusCode));
+          return;
+        }
+
+        if (!data || !data.websocket) {
+          reject(createError(&#x27;聊天配置不可用，请确认蛋宝宝已破壳&#x27;));
+          return;
+        }
+
+        resolve({
+          wsUrl: data.websocket.url,
+          wsToken: data.websocket.token,
+        });
+      },
+      fail: () =&gt; {
+        reject(createError(&#x27;网络异常，暂时无法获取聊天配置&#x27;));
+      },
+    });
+  });
+}
+
+module.exports = { checkOrRegisterDevice };
+===== 文件: utils/pet-api.js =====
+const { get, post, put } = require(&#x27;./request&#x27;);
+
+// 后端 PetVO 字段：id, userId, deviceId, nickname, birthDate, bazi, wuxing, zodiac,
+// mbti, personality, personalityBrief, todayMood, todayMoodDate, todayMoodSentence,
+// hatchStatus(EGG/HATCHED), hatchStartTime, expectedHatchTime, hatchedAt, acceleratedMinutes,
+// avatarUrl, prototype, gender, bloodType, createDate
+function adoptPet(inviteCode) {
+  return post(&#x27;/pet/adopt&#x27;, { inviteCode });
+}
+
+// HatchActionResultVO: { addedMinutes, alreadyDone, readyToHatch, pet }
+function submitHatchAction(petId, type, payload) {
+  return post(`/pet/${petId}/hatch-action`, { type, payload });
+}
+
+// HatchActionVO[]: [{ id, actionType, payload, actionDate, acceleratedMinutes, createDate }]
+function listHatchActions(petId) {
+  return get(`/pet/${petId}/hatch-actions`);
+}
+
+function hatchPet(petId) {
+  return post(`/pet/${petId}/hatch`);
+}
+
+function getPet(petId) {
+  return get(`/pet/${petId}`);
+}
+</pre></div>
+<div class="src-page"><pre>function listPets() {
+  return get(&#x27;/pet/list&#x27;);
+}
+
+function updateNickname(petId, nickname) {
+  return put(&#x27;/pet/update&#x27;, { id: petId, nickname });
+}
+
+function listChatHistory(agentId, deviceId, page, limit) {
+  return get(&#x27;/agent/chat-history/list&#x27;, {
+    agentId,
+    macAddress: deviceId,
+    page: page || 1,
+    limit: limit || 20
+  });
+}
+
+// 每日用户聊天依赖提醒状态：{ todayCount, minor, chatLimited }
+// todayCount 为当日用户发送消息数（chat_type=1，Asia/Shanghai 日界）；
+// chatLimited=true 表示未成年人（≤14 周岁）当日已超阈值，前端需弹窗并退出聊天页。
+function getDailyUserChatCount() {
+  return get(&#x27;/agent/chat-history/daily-user-count&#x27;);
+}
+
+module.exports = {
+  adoptPet,
+  submitHatchAction,
+  listHatchActions,
+  hatchPet,
+  getPet,
+  listPets,
+  updateNickname,
+  listChatHistory,
+  getDailyUserChatCount
+};
+===== 文件: utils/pet-store.js =====
+const petApi = require(&#x27;./pet-api&#x27;);
+const PET_KEY = &#x27;eggbaby_mvp_pet_v1&#x27;;
+const USER_KEY = &#x27;eggbaby_mvp_user_v1&#x27;;
+const IDENTITY_KEY = &#x27;eggbaby_mvp_identity_v1&#x27;;
+const ACTIVE_PET_KEY = &#x27;eggbaby_active_pet_v1&#x27;;
+// 涂鸦操作序列(shell)本地缓存：仅存操作 JSON，用于重开编辑器恢复画布继续编辑；云端只存合成 PNG
+const DOODLE_SHELL_KEY = &#x27;eggbaby_doodle_shell_v1&#x27;;
+
+const DAY = 24 * 60 * 60 * 1000;
+const HATCH_TOTAL_MINUTES = 7 * 24 * 60;
+
+const STATUS_LINES = {
+  egg: {
+    开心: [&#x27;蛋壳里传来轻轻的回应。&#x27;, &#x27;它把你的声音藏进了壳里。&#x27;],
+    平静: [&#x27;蛋壳里很安静，但很暖。&#x27;, &#x27;它今天睡得很踏实。&#x27;],
+    想念: [&#x27;它好像等了你很久。&#x27;, &#x27;它把想你藏在壳里。&#x27;],
+    兴奋: [&#x27;蛋壳里的动静变多了。&#x27;, &#x27;裂纹好像又亮了一点。&#x27;],
+    低落: [&#x27;它今天安静了很久。&#x27;, &#x27;蛋壳里的声音变小了。&#x27;]
+  },
+  pet: {
+    开心: [&#x27;它把快乐摆在了脸上。&#x27;, &#x27;它好像一直在等你来。&#x27;],
+    平静: [&#x27;它今天把日子过得很慢。&#x27;, &#x27;它安静地待在你身边。&#x27;],
+    想念: [&#x27;它偷偷练习了怎么叫你。&#x27;, &#x27;它把想你写进了今天。&#x27;],
+    兴奋: [&#x27;它好像准备了一个小秘密。&#x27;, &#x27;它今天比平时更坐不住。&#x27;],</pre></div>
+<div class="src-page"><pre>    低落: [&#x27;它今天有一点点没精神。&#x27;, &#x27;它安静了很久，像是在等你。&#x27;]
+  }
+};
+
+function todayKey(now) {
+  const date = now ? new Date(now) : new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, &#x27;0&#x27;);
+  const day = String(date.getDate()).padStart(2, &#x27;0&#x27;);
+  return `${year}-${month}-${day}`;
+}
+
+function read(key) {
+  try { return wx.getStorageSync(key) || null; } catch (error) { return null; }
+}
+
+function write(key, value) {
+  try { wx.setStorageSync(key, value); } catch (error) {}
+  return value;
+}
+
+function getUser() {
+  return read(USER_KEY);
+}
+
+function saveUser(user) {
+  if (user &amp;&amp; user.id) write(IDENTITY_KEY, user.id);
+  return write(USER_KEY, user);
+}
+
+/**
+ * 把后端用户资料的 nickname/avatarUrl/ageRange 同步到本地 USER_KEY 缓存。
+ * ageRange 供聊天页年龄区间强制门槛读取。
+ * @param {Object} profile GET /wechat/profile 响应
+ */
+function syncUserProfile(profile) {
+  if (!profile) return;
+  const user = getUser() || {};
+  if (profile.nickname !== undefined) user.nickname = profile.nickname;
+  if (profile.avatarUrl !== undefined) user.avatarUrl = profile.avatarUrl;
+  if (profile.ageRange !== undefined) user.ageRange = profile.ageRange;
+  saveUser(user);
+}
+
+function getIdentityId() {
+  return read(IDENTITY_KEY);
+}
+
+// 账号级缓存 key，登出/换账号时必须全部清除，防止上一个账号的数据泄漏给下一个账号。
+// 后两个 key 分别由 pages/profile 与 pages/deregister 写入，这里统一纳入清理。
+const ACCOUNT_KEYS = [
+  PET_KEY, USER_KEY, IDENTITY_KEY, ACTIVE_PET_KEY,
+  DOODLE_SHELL_KEY,
+  &#x27;eggbaby_profile_v1&#x27;,
+  &#x27;eggbaby_deregister_request_v1&#x27;
+];
+
+function clearAccountData() {
+  ACCOUNT_KEYS.forEach((key) =&gt; {
+    try { wx.removeStorageSync(key); } catch (error) {}</pre></div>
+<div class="src-page"><pre>  });
+}
+
+function clearUser() {
+  try { wx.removeStorageSync(USER_KEY); } catch (error) {}
+}
+
+function getPet() {
+  const pet = read(PET_KEY);
+  const user = getUser();
+  if (pet &amp;&amp; pet.ownerId &amp;&amp; user &amp;&amp; pet.ownerId !== user.id) return null;
+  return pet;
+}
+
+function savePet(pet) {
+  return write(PET_KEY, pet);
+}
+
+function isBound() {
+  return !!getPet();
+}
+
+function toTimestamp(value) {
+  if (!value) return null;
+  const normalized = typeof value === &#x27;string&#x27; ? value.trim().replace(&#x27; &#x27;, &#x27;T&#x27;) : value;
+  const ms = new Date(normalized).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+// 把后端 PetVO 映射成本地 pet 形状并缓存。
+// 非 demo 修炼动作已接后端：后端 PetVO 不返回前端独占字段(shell/tasks/preferences/messages/inviteCodes/
+    dailyStatus)，
+// 故这些字段从已缓存 pet 合并(首次领养无缓存时回退默认值)，避免每次 action 调用清空本地状态。
+// 后端派生字段(id/hatchStatus/acceleratedMinutes/时间戳/身份字段/todayMood/deviceId)以 vo 为唯一事实源
+    。
+// stage/进度/倒计时由 getStage/getCountdown 从 hatchStatus/hatchAt/acceleratedMinutes 派生。
+function savePetFromVO(vo) {
+  if (!vo || !vo.id) return null;
+  const user = getUser();
+  const existing = read(PET_KEY);
+  const accelerated = vo.acceleratedMinutes || 0;
+  const progress = Math.max(0, Math.min(100, Math.round((accelerated / HATCH_TOTAL_MINUTES) * 100)));
+  const hatchStartTime = toTimestamp(vo.hatchStartTime);
+  const hatchAt = toTimestamp(vo.expectedHatchTime)
+    || (hatchStartTime ? hatchStartTime + 7 * DAY : Date.now() + 7 * DAY);
+  const createdAt = toTimestamp(vo.createDate) || hatchStartTime || Date.now();
+  const isHatched = vo.hatchStatus === &#x27;HATCHED&#x27;;
+  const pet = {
+    id: vo.id,
+    ownerId: (user &amp;&amp; user.id) || null,
+    prototype: vo.prototype || &#x27;玉兔&#x27;,
+    name: vo.nickname || (existing ? existing.name : &#x27;&#x27;) || &#x27;&#x27;,
+    createdAt,
+    hatchAt,
+    progress,
+    stage: &#x27;waiting&#x27;,
+    // 保留本地 recordTouch 记录的互动时间，避免每次后端刷新都重置回 createdAt，
+    // 否则老宠物走本地 fallback 心情时 inactiveDays 恒为巨大值 → 永远&quot;低落&quot;
+    lastInteractionAt: Math.max((existing &amp;&amp; existing.lastInteractionAt) || 0, createdAt),
+    tasks: existing &amp;&amp; existing.tasks !== undefined ? existing.tasks : { nicknameDone: false, cuddleDate</pre></div>
+<div class="src-page"><pre>    : &#x27;&#x27;, wishDate: &#x27;&#x27;, lessonDate: &#x27;&#x27;, doodleDone: false },
+    preferences: existing &amp;&amp; existing.preferences !== undefined ? existing.preferences : { wishes: [], l
+    essons: [] },
+    shell: existing &amp;&amp; existing.shell !== undefined ? existing.shell : { color: &#x27;#EDE78E&#x27;, colorName: &#x27;
+    奶油白&#x27;, pattern: &#x27;星星&#x27; },
+    dailyStatus: existing &amp;&amp; existing.dailyStatus !== undefined ? existing.dailyStatus : null,
+    inviteCodes: existing &amp;&amp; existing.inviteCodes !== undefined ? existing.inviteCodes : [],
+    messages: existing &amp;&amp; existing.messages !== undefined ? existing.messages : [],
+    todayMood: vo.todayMood || &#x27;&#x27;,
+    todayMoodSentence: vo.todayMoodSentence || &#x27;&#x27;,
+    todayMoodDate: vo.todayMoodDate || &#x27;&#x27;,
+    hatchStatus: vo.hatchStatus || &#x27;EGG&#x27;,
+    acceleratedMinutes: accelerated,
+    hatchStartTime: toTimestamp(vo.hatchStartTime),
+    expectedHatchTime: toTimestamp(vo.expectedHatchTime),
+    hatchedAt: toTimestamp(vo.hatchedAt),
+    deviceId: vo.deviceId || null,
+    agentId: vo.agentId || null,
+    bazi: vo.bazi || &#x27;&#x27;,
+    wuxing: vo.wuxing || &#x27;&#x27;,
+    zodiac: translateZodiac(vo.zodiac) || &#x27;&#x27;,
+    mbti: vo.mbti || &#x27;&#x27;,
+    personality: vo.personality || &#x27;&#x27;,
+    personalityBrief: vo.personalityBrief || &#x27;&#x27;,
+    gender: vo.gender || &#x27;&#x27;,
+    bloodType: vo.bloodType || &#x27;&#x27;,
+    avatarUrl: vo.avatarUrl || &#x27;&#x27;,
+    collectionCards: vo.collectionCards || [],
+    sceneUrl: vo.sceneUrl || &#x27;&#x27;
+  };
+  if (existing &amp;&amp; Array.isArray(existing._hatchActions)) pet._hatchActions = existing._hatchActions;
+  savePet(pet);
+  setActivePetId(pet.id);
+  return pet;
+}
+
+function getActivePetId() {
+  return read(ACTIVE_PET_KEY);
+}
+
+function setActivePetId(id) {
+  return write(ACTIVE_PET_KEY, id);
+}
+
+function mockCodeError(code) {
+  const value = code.toUpperCase();
+  const errors = {
+    INVALID: &#x27;激活码无效，请检查后重试&#x27;,
+    USED: &#x27;该激活码已被使用&#x27;,
+    FULL: &#x27;该激活码名额已满&#x27;,
+    PAUSED: &#x27;该激活码暂不可用&#x27;
+  };
+  return errors[value] || &#x27;&#x27;;
+}
+
+function createInviteCode(seed) {
+  // 与后端 ai_invite_code 单码配额模型对齐：个人仅 1 个邀请码，有总配额/已用/剩余。
+  // 此处为 mock 演示值（1 已用 / 5 配额），真实数据由 GET /invite/mine 返回。
+  const suffix = String(seed).slice(-4);
+  const quota = 5;</pre></div>
+<div class="src-page"><pre>  const usedCount = 1;
+  return {
+    code: `EGG-${suffix}-X`,
+    quota,
+    usedCount,
+    remaining: quota - usedCount,
+    status: 1
+  };
+}
+
+function bindPet(code, now) {
+  if (isBound()) {
+    return { ok: false, reason: &#x27;BOUND&#x27;, message: &#x27;当前版本一个账号只能绑定 1 只蛋宝宝，本次激活码未被消
+    耗&#x27; };
+  }
+  const normalized = String(code || &#x27;&#x27;).trim().toUpperCase();
+  if (!normalized) return { ok: false, reason: &#x27;EMPTY&#x27;, message: &#x27;请输入激活码&#x27; };
+  const error = mockCodeError(normalized);
+  if (error) return { ok: false, reason: normalized, message: error };
+
+  const createdAt = now || Date.now();
+  const prototype = normalized.includes(&#x27;KOI&#x27;) ? &#x27;锦鲤&#x27; : &#x27;玉兔&#x27;;
+  const hatchAt = normalized === &#x27;HATCH-NOW&#x27; ? createdAt : createdAt + 7 * DAY;
+  const id = `egg-${createdAt}`;
+  const pet = {
+    id,
+    ownerId: (getUser() &amp;&amp; getUser().id) || &#x27;&#x27;,
+    prototype,
+    name: &#x27;&#x27;,
+    createdAt,
+    hatchAt,
+    progress: 0,
+    stage: &#x27;waiting&#x27;,
+    lastInteractionAt: createdAt,
+    tasks: {
+      nicknameDone: false,
+      cuddleDate: &#x27;&#x27;,
+      wishDate: &#x27;&#x27;,
+      lessonDate: &#x27;&#x27;,
+      doodleDone: false
+    },
+    preferences: { wishes: [], lessons: [] },
+    shell: { color: &#x27;#EDE78E&#x27;, colorName: &#x27;奶油白&#x27;, pattern: &#x27;星星&#x27; },
+    dailyStatus: null,
+    collectionCards: [],
+    inviteCode: createInviteCode(createdAt),
+    messages: []
+  };
+  savePet(pet);
+  return { ok: true, pet };
+}
+
+function addProgress(pet, amount) {
+  pet.progress = Math.min(100, pet.progress + amount);
+  pet.stage = pet.progress &gt; 0 ? &#x27;hatching&#x27; : &#x27;waiting&#x27;;
+  return pet;
+}
+
+async function updateNickname(name) {
+  const pet = getPet();</pre></div>
+<div class="src-page"><pre>  if (!pet) return { ok: false, message: &#x27;还没有蛋宝宝&#x27; };
+  const value = String(name || &#x27;&#x27;).trim();
+  if (!value) return { ok: false, message: &#x27;昵称不能为空&#x27; };
+  if (Array.from(value).length &gt; 10) return { ok: false, message: &#x27;昵称最多 10 个字符&#x27; };
+  if ([&#x27;违法&#x27;, &#x27;诈骗&#x27;, &#x27;赌博&#x27;].some(word =&gt; value.includes(word))) return { ok: false, message: &#x27;昵称含
+    有不适合的内容，请换一个&#x27; };
+  try {
+    let updated;
+    if (pet.hatchStatus === &#x27;HATCHED&#x27;) {
+      // 破壳后 NICKNAME 修炼动作不再合法(后端抛 10209)，改名直接走 PUT /pet/update
+      const vo = await petApi.updateNickname(pet.id, value);
+      updated = savePetFromVO(vo);
+    } else {
+      const result = await petApi.submitHatchAction(pet.id, &#x27;NICKNAME&#x27;, { nickname: value });
+      if (result.alreadyDone) {
+        // 后端 HatchActionService 仅在首次提交时持久化 nickname；二次提交走 PUT /pet/update 兜底。
+        const vo = await petApi.updateNickname(pet.id, value);
+        updated = savePetFromVO(vo);
+      } else {
+        updated = savePetFromVO(result.pet);
+      }
+    }
+    updated.name = value;
+    savePet(updated);
+    return { ok: true, alreadyDone: pet.hatchStatus === &#x27;HATCHED&#x27;, pet: updated };
+  } catch (error) {
+    return { ok: false, message: (error &amp;&amp; error.userMessage) || &#x27;提交失败，请稍后重试&#x27; };
+  }
+}
+
+const ACTION_TYPE = { cuddle: &#x27;CUDDLE&#x27;, wish: &#x27;WISH&#x27;, lesson: &#x27;LESSON&#x27; };
+
+async function completeDailyTask(task, value) {
+  const pet = getPet();
+  if (!pet) return { ok: false, message: &#x27;还没有蛋宝宝&#x27; };
+
+  // 许愿支持对象入参 { questionId, value }，兼容旧字符串入参
+  var wishData = null;
+  if (task === &#x27;wish&#x27;) {
+    if (typeof value === &#x27;object&#x27; &amp;&amp; value !== null) {
+      wishData = { questionId: value.questionId || &#x27;legacy&#x27;, value: value.value || &#x27;&#x27; };
+    } else {
+      wishData = { questionId: &#x27;legacy&#x27;, value: String(value || &#x27;&#x27;) };
+    }
+  }
+
+  try {
+    const payload = task === &#x27;cuddle&#x27; ? {} : (task === &#x27;wish&#x27; ? { questionId: wishData.questionId, value
+    : wishData.value } : { value });
+    const result = await petApi.submitHatchAction(pet.id, ACTION_TYPE[task], payload);
+    const updated = savePetFromVO(result.pet);
+    if (!result.alreadyDone) {
+      if (task === &#x27;wish&#x27;) updated.preferences.wishes.push({ date: todayKey(), questionId: wishData.ques
+    tionId, value: wishData.value });
+      if (task === &#x27;lesson&#x27;) updated.preferences.lessons.push({ date: todayKey(), value });
+    }
+    savePet(updated);
+    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
+  } catch (error) {
+    return { ok: false, message: (error &amp;&amp; error.userMessage) || &#x27;提交失败，请稍后重试&#x27; };</pre></div>
+<div class="src-page"><pre>  }
+}
+
+function completeCuddle() {
+  return completeDailyTask(&#x27;cuddle&#x27;, &#x27;贴贴&#x27;);
+}
+
+function completeWish(value) {
+  return completeDailyTask(&#x27;wish&#x27;, value);
+}
+
+function completeLesson(value) {
+  return completeDailyTask(&#x27;lesson&#x27;, value);
+}
+
+async function saveDoodle(artUrl, petId) {
+  const pet = getPet();
+  if (!pet) return { ok: false, message: &#x27;还没有蛋宝宝&#x27; };
+  if (!petId || String(pet.id) !== String(petId)) {
+    return { ok: false, message: &#x27;蛋宝宝状态已变化，请返回后重试&#x27; };
+  }
+  try {
+    const result = await petApi.submitHatchAction(petId, &#x27;DOODLE&#x27;, { artUrl });
+    const currentPet = getPet();
+    const responsePet = result &amp;&amp; result.pet;
+    if (!currentPet || String(currentPet.id) !== String(petId)
+      || !responsePet || String(responsePet.id) !== String(petId)) {
+      return { ok: false, message: &#x27;蛋宝宝状态已变化，请返回后重试&#x27; };
+    }
+    const updated = savePetFromVO(result.pet);
+    savePet(updated);
+    return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated, petId: String(petId) };
+  } catch (error) {
+    return { ok: false, message: (error &amp;&amp; error.userMessage) || &#x27;提交失败，请稍后重试&#x27; };
+  }
+}
+
+// 涂鸦操作序列(shell)写入本地缓存，按 petId 关联；返回值用于保存事务确认本地记录已落盘
+function saveDoodleShell(petId, operations) {
+  if (!petId || !Array.isArray(operations)) return false;
+  try {
+    wx.setStorageSync(DOODLE_SHELL_KEY, { petId, operations, savedAt: Date.now() });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// 读取本地涂鸦操作序列；petId 不匹配(换了宠物/数据串号)视为无缓存返回 null
+function getDoodleShell(petId) {
+  const record = read(DOODLE_SHELL_KEY);
+  if (!record || record.petId !== petId || !Array.isArray(record.operations)) return null;
+  return record.operations;
+}
+
+// 修炼任务完成态：无 _hatchActions 缓存时从 pet.tasks 读取；有缓存则按当日派生。
+function getHatchActionState(pet) {
+  if (!pet) return { nicknameDone: false, cuddleDone: false, wishDone: false, lessonDone: false, doodleD
+    one: false };
+  if (!Array.isArray(pet._hatchActions) || pet._hatchActions.length === 0) {</pre></div>
+<div class="src-page"><pre>    const today = todayKey();
+    return {
+      nicknameDone: !!(pet.tasks &amp;&amp; pet.tasks.nicknameDone),
+      cuddleDone: !!(pet.tasks &amp;&amp; pet.tasks.cuddleDate === today),
+      wishDone: !!(pet.tasks &amp;&amp; pet.tasks.wishDate === today),
+      lessonDone: !!(pet.tasks &amp;&amp; pet.tasks.lessonDate === today),
+      doodleDone: !!(pet.tasks &amp;&amp; pet.tasks.doodleDone)
+    };
+  }
+  const today = todayKey();
+  const done = {};
+  pet._hatchActions.forEach((a) =&gt; {
+    if (a.actionDate === today || a.actionType === &#x27;NICKNAME&#x27; || a.actionType === &#x27;DOODLE&#x27;) {
+      done[a.actionType] = true;
+    }
+  });
+  return {
+    nicknameDone: !!done.NICKNAME,
+    cuddleDone: !!done.CUDDLE,
+    wishDone: !!done.WISH,
+    lessonDone: !!done.LESSON,
+    doodleDone: !!done.DOODLE
+  };
+}
+
+function getStage(pet, now) {
+  if (!pet) return &#x27;empty&#x27;;
+  if (pet.hatchStatus === &#x27;HATCHED&#x27;) return &#x27;hatched&#x27;;
+  const current = now || Date.now();
+  if (current &gt;= pet.hatchAt) return &#x27;ready&#x27;;
+  if (pet.hatchAt - current &lt;= DAY) return &#x27;soon&#x27;;
+  // 单轨 Model X：进度满即时间到（落到 ready），不保留 prepared 中间态
+  return pet.acceleratedMinutes &gt; 0 || pet.progress &gt; 0 ? &#x27;hatching&#x27; : &#x27;waiting&#x27;;
+}
+
+const STAGE_PRESENTATION = {
+  waiting: { homeText: &#x27;它还在睡觉，试着叫醒它吧&#x27;, actionLabel: &#x27;孵化修炼手册&#x27;, myStage: &#x27;待激活&#x27; },
+  hatching: { homeText: &#x27;它正在慢慢长大&#x27;, actionLabel: &#x27;孵化修炼手册&#x27;, myStage: &#x27;孵化中&#x27; },
+  soon: { homeText: &#x27;蛋壳里传来了动静&#x27;, actionLabel: &#x27;孵化修炼手册&#x27;, myStage: &#x27;即将破壳&#x27; },
+  ready: { homeText: &#x27;它准备好见你了&#x27;, actionLabel: &#x27;查看破壳结果&#x27;, myStage: &#x27;待破壳&#x27; },
+  hatched: { homeText: &#x27;它终于来到你身边了&#x27;, actionLabel: &#x27;和它说说话&#x27;, myStage: &#x27;已破壳&#x27; }
+};
+
+function getStagePresentation(stage) {
+  return STAGE_PRESENTATION[stage] || STAGE_PRESENTATION.waiting;
+}
+
+function getCountdown(pet, now) {
+  if (!pet) return &#x27;&#x27;;
+  const remaining = pet.hatchAt - (now || Date.now());
+  if (remaining &lt;= 0) return &#x27;破壳时刻已到&#x27;;
+  const days = Math.floor(remaining / DAY);
+  const hours = Math.floor((remaining % DAY) / (60 * 60 * 1000));
+  return days &gt; 0 ? `还剩 ${days} 天 ${hours} 小时` : `还剩 ${hours} 小时`;
+}
+
+function simpleHash(value) {
+  return Array.from(String(value)).reduce((sum, char) =&gt; sum + char.charCodeAt(0), 0);
+}
+</pre></div>
+<div class="src-page"><pre>  _ellipse(ctx, x, y, rx, ry, rotation) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(rx, ry);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    ctx.restore();
+  },
+
+  _wrapText(ctx, text, maxWidth, maxLines) {
+    const chars = String(text || &#x27;&#x27;).split(&#x27;&#x27;);
+    const lines = [];
+    let line = &#x27;&#x27;;
+    for (const ch of chars) {
+      const test = line + ch;
+      if (ctx.measureText(test).width &gt; maxWidth &amp;&amp; line) {
+        lines.push(line);
+        line = ch;
+        if (lines.length &gt;= maxLines) break;
+      } else {
+        line = test;
+      }
+    }
+    if (line &amp;&amp; lines.length &lt; maxLines) lines.push(line);
+    return lines;
+  },
+
+  _drawPetAvatar(ctx, type, x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    const s = size;
+
+    if (type === &#x27;玉兔&#x27;) {
+      // 耳朵（z-index 在 face 之下，先绘制）
+      // 左耳
+      ctx.save();
+      ctx.translate(s * 0.28, s * 0.18);
+      ctx.rotate(-9 * Math.PI / 180);
+      ctx.beginPath();
+      this._ellipse(ctx, 0, 0, s * 0.12, s * 0.28, 0);
+      ctx.setFillStyle(&#x27;#FFF9E4&#x27;);
+      ctx.fill();
+      ctx.beginPath();
+      this._ellipse(ctx, 0, s * 0.04, s * 0.05, s * 0.18, 0);
+      ctx.setFillStyle(&#x27;rgba(244,185,174,0.7)&#x27;);
+      ctx.fill();
+      ctx.restore();
+
+      // 右耳
+      ctx.save();
+      ctx.translate(s * 0.72, s * 0.18);
+      ctx.rotate(9 * Math.PI / 180);
+      ctx.beginPath();
+      this._ellipse(ctx, 0, 0, s * 0.12, s * 0.28, 0);
+      ctx.setFillStyle(&#x27;#FFF9E4&#x27;);
+      ctx.fill();
+      ctx.beginPath();
+      this._ellipse(ctx, 0, s * 0.04, s * 0.05, s * 0.18, 0);
+      ctx.setFillStyle(&#x27;rgba(244,185,174,0.7)&#x27;);</pre></div>
+<div class="src-page"><pre>      ctx.fill();
+      ctx.restore();
+
+      // 脸部（z-index 在耳朵之上）
+      ctx.beginPath();
+      this._ellipse(ctx, s / 2, s * 0.55, s * 0.38, s * 0.32, 0);
+      ctx.setFillStyle(&#x27;#FFF9E4&#x27;);
+      ctx.fill();
+
+      // 眼睛
+      ctx.beginPath();
+      ctx.arc(s * 0.38, s * 0.52, s * 0.04, 0, Math.PI * 2);
+      ctx.arc(s * 0.62, s * 0.52, s * 0.04, 0, Math.PI * 2);
+      ctx.setFillStyle(&#x27;#002900&#x27;);
+      ctx.fill();
+
+      // 鼻子
+      ctx.beginPath();
+      this._ellipse(ctx, s / 2, s * 0.58, s * 0.04, s * 0.035, 0);
+      ctx.setFillStyle(&#x27;#D8908B&#x27;);
+      ctx.fill();
+
+      // 腮红
+      ctx.beginPath();
+      this._ellipse(ctx, s * 0.30, s * 0.62, s * 0.06, s * 0.04, 0);
+      this._ellipse(ctx, s * 0.70, s * 0.62, s * 0.06, s * 0.04, 0);
+      ctx.setFillStyle(&#x27;rgba(244,185,174,0.45)&#x27;);
+      ctx.fill();
+    } else {
+      // 锦鲤
+      ctx.save();
+      ctx.translate(s / 2, s / 2);
+      ctx.rotate(-7 * Math.PI / 180);
+      ctx.translate(-s / 2, -s / 2);
+
+      // 尾巴
+      ctx.save();
+      ctx.translate(s * 0.83, s * 0.50);
+      ctx.rotate(45 * Math.PI / 180);
+      ctx.beginPath();
+      this._ellipse(ctx, 0, 0, s * 0.17, s * 0.28, 0);
+      ctx.setFillStyle(&#x27;#F4B9AE&#x27;);
+      ctx.fill();
+      ctx.restore();
+
+      // 身体（z-index 在 tail 之上、fin 之下）
+      ctx.beginPath();
+      this._ellipse(ctx, s * 0.48, s * 0.54, s * 0.36, s * 0.31, 0);
+      ctx.setFillStyle(&#x27;#FFF9E4&#x27;);
+      ctx.fill();
+
+      // 鱼鳍（z-index 在身体之上）
+      ctx.save();
+      ctx.translate(s * 0.55, s * 0.74);
+      ctx.rotate(18 * Math.PI / 180);
+      ctx.beginPath();
+      this._ellipse(ctx, 0, 0, s * 0.15, s * 0.13, 0);
+      ctx.setFillStyle(&#x27;#EDE78E&#x27;);
+      ctx.fill();
+      ctx.restore();</pre></div>
+<div class="src-page"><pre>
+      // 眼睛
+      ctx.beginPath();
+      ctx.arc(s * 0.28, s * 0.46, s * 0.04, 0, Math.PI * 2);
+      ctx.setFillStyle(&#x27;#002900&#x27;);
+      ctx.fill();
+
+      // 斑点
+      ctx.save();
+      ctx.translate(s * 0.53, s * 0.30);
+      ctx.rotate(22 * Math.PI / 180);
+      ctx.beginPath();
+      this._ellipse(ctx, 0, 0, s * 0.15, s * 0.21, 0);
+      ctx.setFillStyle(&#x27;#E77E72&#x27;);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.beginPath();
+      this._ellipse(ctx, s * 0.72, s * 0.66, s * 0.115, s * 0.17, 0);
+      ctx.setFillStyle(&#x27;#E77E72&#x27;);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    ctx.restore();
+  },
+
+  onAlbum() { wx.navigateTo({ url: &#x27;/pages/album/album&#x27; }); },
+
+  onSave() {
+    wx.canvasToTempFilePath({
+      canvasId: &#x27;shareCanvas&#x27;,
+      width: 750,
+      height: 1280,
+      destWidth: 1500,
+      destHeight: 2560,
+      success: ({ tempFilePath }) =&gt; {
+        wx.saveImageToPhotosAlbum({
+          filePath: tempFilePath,
+          success: () =&gt; wx.showToast({ title: &#x27;收藏卡已保存&#x27;, icon: &#x27;success&#x27; }),
+          fail: () =&gt; wx.showToast({ title: &#x27;请允许保存到相册&#x27;, icon: &#x27;none&#x27; })
+        });
+      },
+      fail: () =&gt; wx.showToast({ title: &#x27;图片生成失败，请重试&#x27;, icon: &#x27;none&#x27; })
+    }, this);
+  },
+
+  onShareAppMessage() {
+    const card = this.data.card;
+    if (!card || !this.data.shareReady) return false;
+    const inviteCode = this._shareInviteCode;
+    return {
+      title: `我孵化了${card.name}，编号 ${card.serial}`,
+      path: inviteCode ? `${SHARE_HOME_PATH}&amp;inviteCode=${encodeURIComponent(inviteCode)}` : SHARE_HOME_
+    PATH
+    };
+  },
+
+  onShareTimeline() {</pre></div>
+<div class="src-page"><pre>    const card = this.data.card;
+    if (!card || !this.data.shareReady) return false;
+    return { title: `我孵化了${card.name}，编号 ${card.serial}` };
+  }
+});
+===== 文件: pages/collection-card/collection-card.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;收藏卡&quot;&gt;&lt;/nav-bar&gt;
+  &lt;scroll-view class=&quot;content&quot; scroll-y&gt;
+    &lt;view wx:if=&quot;{{isNew}}&quot; class=&quot;new-banner&quot;&gt;获得第一张破壳收藏卡 · 已自动收入卡册&lt;/view&gt;
+    &lt;view class=&quot;card&quot;&gt;
+      &lt;view class=&quot;card-title-section&quot;&gt;
+        &lt;view class=&quot;title-copy&quot;&gt;
+          &lt;text class=&quot;name&quot;&gt;{{card.name}}&lt;/text&gt;
+          &lt;text class=&quot;collect-context&quot;&gt;{{subtitle}}&lt;/text&gt;
+        &lt;/view&gt;
+      &lt;/view&gt;
+      &lt;view class=&quot;card-illustration-section&quot;&gt;
+        &lt;image wx:if=&quot;{{card.imageUrl}}&quot; class=&quot;illustration&quot; src=&quot;{{card.imageUrl}}&quot; mode=&quot;aspectFill&quot; 
+    show-menu-by-longpress&gt;&lt;/image&gt;
+        &lt;pet-avatar wx:else pet-type=&quot;{{card.petType}}&quot; size=&quot;{{250}}&quot;&gt;&lt;/pet-avatar&gt;
+      &lt;/view&gt;
+      &lt;view class=&quot;card-data-section&quot;&gt;
+        &lt;view class=&quot;stat-grid&quot;&gt;
+          &lt;view class=&quot;stat-cell&quot;&gt;&lt;text class=&quot;stat-label&quot;&gt;类型&lt;/text&gt;&lt;text class=&quot;stat-value&quot;&gt;{{card.pe
+    tType}}&lt;/text&gt;&lt;/view&gt;
+          &lt;view class=&quot;stat-cell&quot;&gt;&lt;text class=&quot;stat-label&quot;&gt;生日&lt;/text&gt;&lt;text class=&quot;stat-value&quot;&gt;{{birthda
+    yLabel}}&lt;/text&gt;&lt;/view&gt;
+          &lt;view class=&quot;stat-cell&quot;&gt;&lt;text class=&quot;stat-label&quot;&gt;星座&lt;/text&gt;&lt;text class=&quot;stat-value stat-value
+    --symbol&quot;&gt;{{card.zodiac}} {{zodiacSymbol}}&lt;/text&gt;&lt;/view&gt;
+          &lt;view class=&quot;stat-cell&quot;&gt;
+            &lt;text class=&quot;stat-label&quot;&gt;性别&lt;/text&gt;
+            &lt;view wx:if=&quot;{{genderClass}}&quot; class=&quot;gender-icon {{genderClass}}&quot; aria-label=&quot;{{genderLabel}
+    }&quot;&gt;&lt;/view&gt;
+            &lt;text wx:else class=&quot;stat-value&quot;&gt;{{genderLabel}}&lt;/text&gt;
+          &lt;/view&gt;
+          &lt;view class=&quot;stat-cell&quot;&gt;&lt;text class=&quot;stat-label&quot;&gt;血型&lt;/text&gt;&lt;text class=&quot;stat-value&quot;&gt;{{card.bl
+    oodType}} 型&lt;/text&gt;&lt;/view&gt;
+          &lt;view class=&quot;stat-cell&quot;&gt;&lt;text class=&quot;stat-label&quot;&gt;MBTI&lt;/text&gt;&lt;text class=&quot;stat-value&quot;&gt;{{card.mb
+    ti}}&lt;/text&gt;&lt;/view&gt;
+        &lt;/view&gt;
+        &lt;text class=&quot;card-signature {{signatureClass}}&quot;&gt;&quot;{{card.personality}}&quot;&lt;/text&gt;
+      &lt;/view&gt;
+    &lt;/view&gt;
+    &lt;view class=&quot;actions&quot;&gt;
+      &lt;view class=&quot;action-row&quot;&gt;
+        &lt;button class=&quot;secondary&quot; bindtap=&quot;onSave&quot;&gt;保存图片&lt;/button&gt;
+        &lt;button wx:if=&quot;{{shareReady}}&quot; class=&quot;secondary&quot; open-type=&quot;share&quot;&gt;分享给好友&lt;/button&gt;
+      &lt;/view&gt;
+    &lt;/view&gt;
+    &lt;canvas canvas-id=&quot;shareCanvas&quot; class=&quot;share-canvas&quot;&gt;&lt;/canvas&gt;
+  &lt;/scroll-view&gt;
+&lt;/view&gt;
+===== 文件: pages/welcome/welcome.js =====
+const auth = require(&#x27;../../utils/auth&#x27;);
+const { getPendingNfcClaimIntent } = require(&#x27;../../utils/nfc-claim-intent&#x27;);
+const shareInvite = require(&#x27;../../utils/share-invite&#x27;);
+
+Page({
+  data: {</pre></div>
+<div class="src-page"><pre>    ready: false,
+    hasPendingInvite: false
+  },
+
+  async onLoad() {
+    const hasPendingInvite = Boolean(shareInvite.getPending());
+    // 同步检查本地登录态：已绑定会话直接跳转首页
+    const cached = auth.getSession();
+    if (cached &amp;&amp; !auth.isExpired()) {
+      // 有 NFC 领取意图时优先进入领取页，不要求已绑定手机号
+      if (this.navigateNfcClaim()) return;
+      if (cached.hasPhone === true) {
+        wx.switchTab({ url: &#x27;/pages/home/home&#x27; });
+        return;
+      }
+      this.setData({ ready: true, hasPendingInvite });
+      return;
+    }
+    // 本地无有效登录态时渲染欢迎页内容并尝试静默登录
+    this.setData({ ready: true, hasPendingInvite });
+    const session = await getApp().ensureLogin().catch(() =&gt; null);
+    if (session &amp;&amp; session.userId) {
+      // 静默登录后同样先恢复 NFC 领取，再按手机号状态分流
+      if (this.navigateNfcClaim()) return;
+      if (session.hasPhone === true) {
+        wx.switchTab({ url: &#x27;/pages/home/home&#x27; });
+      }
+    }
+  },
+
+  navigateNfcClaim() {
+    const intent = getPendingNfcClaimIntent();
+    if (intent &amp;&amp; intent.claimRef) {
+      getApp().globalData.welcomeCompleted = true;
+      wx.redirectTo({ url: &#x27;/pages/nfc-claim/nfc-claim&#x27; });
+      return true;
+    }
+    return false;
+  },
+
+  onEnterIsland() {
+    // 进入小岛前先恢复 NFC 领取
+    if (this.navigateNfcClaim()) return;
+    getApp().globalData.welcomeCompleted = true;
+    wx.switchTab({ url: &#x27;/pages/home/home&#x27; });
+  }
+});
+===== 文件: pages/welcome/welcome.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;view wx:if=&quot;{{!ready}}&quot; class=&quot;loading&quot;&gt;
+    &lt;view class=&quot;loading-spinner&quot;&gt;&lt;/view&gt;
+  &lt;/view&gt;
+
+  &lt;block wx:if=&quot;{{ready}}&quot;&gt;
+    &lt;view class=&quot;halo halo--one&quot;&gt;&lt;/view&gt;
+    &lt;view class=&quot;halo halo--two&quot;&gt;&lt;/view&gt;
+
+    &lt;view class=&quot;brand&quot;&gt;
+      &lt;text class=&quot;brand-kicker&quot;&gt;EGGBABY&lt;/text&gt;
+      &lt;text class=&quot;brand-name&quot;&gt;蛋宝宝&lt;/text&gt;</pre></div>
+<div class="src-page"><pre>      &lt;text class=&quot;brand-slogan&quot;&gt;一颗蛋，一段只属于你的陪伴。&lt;/text&gt;
+      &lt;text wx:if=&quot;{{hasPendingInvite}}&quot; class=&quot;brand-slogan&quot;&gt;好友邀请你一起开启陪伴&lt;/text&gt;
+    &lt;/view&gt;
+
+    &lt;view class=&quot;egg-stage&quot;&gt;
+      &lt;view class=&quot;egg-shadow&quot;&gt;&lt;/view&gt;
+      &lt;view class=&quot;egg&quot;&gt;
+        &lt;view class=&quot;egg-speck egg-speck--one&quot;&gt;&lt;/view&gt;
+        &lt;view class=&quot;egg-speck egg-speck--two&quot;&gt;&lt;/view&gt;
+        &lt;view class=&quot;egg-shine&quot;&gt;&lt;/view&gt;
+      &lt;/view&gt;
+    &lt;/view&gt;
+
+    &lt;view class=&quot;bottom-panel page-safe-bottom&quot;&gt;
+      &lt;button class=&quot;auth-button&quot; bindtap=&quot;onEnterIsland&quot;&gt;进入快乐仙岛&lt;/button&gt;
+      &lt;text class=&quot;auth-note&quot;&gt;开启一段只属于你的陪伴&lt;/text&gt;
+    &lt;/view&gt;
+  &lt;/block&gt;
+&lt;/view&gt;
+===== 文件: pages/feedback/feedback.js =====
+const feedbackApi = require(&#x27;../../utils/feedback-api&#x27;);
+const { FALLBACK_FEEDBACK_TYPES } = require(&#x27;../../config/feedback-types&#x27;);
+
+const MIN_SUBMITTING_VISIBLE_MS = 600;
+// 客服热线：老年人人工反馈渠道，知情同意书弹窗展示与拨号共用
+const HOTLINE = &#x27;18201931204&#x27;;
+
+function buildTypeOptions(types) {
+  return [{ value: &#x27;&#x27;, label: &#x27;请选择诉求类型&#x27; }].concat(types);
+}
+
+Page({
+  data: {
+    typeOptions: buildTypeOptions(FALLBACK_FEEDBACK_TYPES),
+    typeIndex: 0,
+    type: &#x27;&#x27;,
+    description: &#x27;&#x27;,
+    consent: false,
+    typePanelOpen: false,
+    submitting: false,
+    submitError: &#x27;&#x27;,
+    receiptNumber: &#x27;&#x27;,
+    canSubmit: false,
+    consentVisible: false,
+    hotline: HOTLINE
+  },
+
+  onLoad() {
+    this.loadFeedbackTypes();
+  },
+
+  onUnload() {
+    this.submissionInFlight = false;
+    this.submitRequestToken = (Number(this.submitRequestToken) || 0) + 1;
+    clearTimeout(this.submitDelayTimer);
+    this.submitDelayTimer = null;
+  },
+
+  // 诉求类型来自后端字典；拉取失败沿用本地兜底列表
+  loadFeedbackTypes() {</pre></div>
+<div class="src-page"><pre>    feedbackApi.listFeedbackTypes()
+      .then((types) =&gt; {
+        if (types.length &gt; 0) {
+          this.setData({ typeOptions: buildTypeOptions(types) });
+        }
+      })
+      .catch(() =&gt; {});
+  },
+
+  refreshCanSubmit(fields) {
+    const next = Object.assign({}, this.data, fields || {});
+    this.setData(Object.assign({}, fields || {}, {
+      canSubmit: Boolean(next.type &amp;&amp; String(next.description || &#x27;&#x27;).trim() &amp;&amp; next.consent &amp;&amp; !next.sub
+    mitting)
+    }));
+  },
+
+  onToggleTypePanel() {
+    if (this.data.submitting) return;
+    this.setData({ typePanelOpen: !this.data.typePanelOpen, submitError: &#x27;&#x27; });
+  },
+
+  onSelectType(event) {
+    if (this.data.submitting) return;
+    const typeIndex = Number(event.currentTarget.dataset.index);
+    const option = this.data.typeOptions[typeIndex];
+    if (!option || !option.value) return;
+    this.refreshCanSubmit({ typeIndex, type: option.value, typePanelOpen: false, submitError: &#x27;&#x27; });
+  },
+
+  onDescriptionInput(event) {
+    this.refreshCanSubmit({ description: String(event.detail.value || &#x27;&#x27;), submitError: &#x27;&#x27; });
+  },
+
+  onToggleConsent() {
+    if (this.data.submitting) return;
+    this.refreshCanSubmit({ consent: !this.data.consent, submitError: &#x27;&#x27; });
+  },
+
+  onOpenConsent() {
+    this.setData({ consentVisible: true });
+  },
+
+  onCloseConsent() {
+    this.setData({ consentVisible: false });
+  },
+
+  // 弹窗内明确点击&quot;同意&quot;才勾选，查看行为本身不构成同意
+  onAgreeConsent() {
+    this.refreshCanSubmit({ consent: true, consentVisible: false, submitError: &#x27;&#x27; });
+  },
+
+  onCallHotline() {
+    wx.makePhoneCall({ phoneNumber: HOTLINE });
+  },
+
+  // 拦截弹窗遮罩的触摸穿透与点击冒泡，无实际逻辑
+  noop() {},
+
+  onSubmit() {</pre></div>
+<div class="src-page"><pre>    if (this.data.submitting || this.submissionInFlight) return;
+    if (!this.data.canSubmit) {
+      let submitError = &#x27;&#x27;;
+      if (!this.data.type) submitError = &#x27;请选择诉求类型&#x27;;
+      else if (!String(this.data.description || &#x27;&#x27;).trim()) submitError = &#x27;请填写问题详细描述&#x27;;
+      else if (!this.data.consent) submitError = &#x27;请勾选同意知情同意书&#x27;;
+      else submitError = &#x27;请完善必填信息后提交&#x27;;
+      this.setData({ submitError });
+      wx.showToast({ title: submitError, icon: &#x27;none&#x27; });
+      return;
+    }
+    const payload = {
+      type: this.data.type,
+      content: this.data.description.trim(),
+      consent: true
+    };
+    this.submissionInFlight = true;
+    this.refreshCanSubmit({ submitting: true, submitError: &#x27;&#x27; });
+    const requestToken = (Number(this.submitRequestToken) || 0) + 1;
+    this.submitRequestToken = requestToken;
+    const minimumVisibleDelay = new Promise(resolve =&gt; {
+      this.submitDelayTimer = setTimeout(() =&gt; {
+        this.submitDelayTimer = null;
+        resolve();
+      }, MIN_SUBMITTING_VISIBLE_MS);
+    });
+    const submission = feedbackApi.submitFeedback(payload)
+      .then((data) =&gt; ({ ok: true, receiptNumber: data &amp;&amp; data.receiptNumber }))
+      .catch((error) =&gt; ({ ok: false, message: (error &amp;&amp; error.userMessage) || &#x27;提交失败，请重试&#x27; }));
+    Promise.all([submission, minimumVisibleDelay]).then(([result]) =&gt; {
+      if (this.submitRequestToken !== requestToken) return;
+      this.submissionInFlight = false;
+      if (!result || !result.ok) {
+        this.refreshCanSubmit({ submitting: false, submitError: result &amp;&amp; result.message || &#x27;提交失败，
+    请重试&#x27; });
+        return;
+      }
+      this.setData({
+        typeIndex: 0,
+        type: &#x27;&#x27;,
+        description: &#x27;&#x27;,
+        consent: false,
+        typePanelOpen: false,
+        submitting: false,
+        submitError: &#x27;&#x27;,
+        receiptNumber: result.receiptNumber,
+        canSubmit: false
+      });
+    });
+  }
+});
+===== 文件: pages/feedback/feedback.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;用户反馈&quot; fallback-url=&quot;/pages/my/my&quot;&gt;&lt;/nav-bar&gt;
+  &lt;view class=&quot;content&quot;&gt;
+    &lt;view wx:if=&quot;{{receiptNumber}}&quot; class=&quot;success&quot;&gt;
+      &lt;text class=&quot;success__title&quot;&gt;反馈已提交&lt;/text&gt;
+      &lt;view class=&quot;success__detail&quot;&gt;
+        &lt;text class=&quot;success__line&quot;&gt;受理编号：{{receiptNumber}}&lt;/text&gt;
+        &lt;text class=&quot;success__line&quot;&gt;普通咨询 / 投诉：24 小时内完成核查并反馈结果&lt;/text&gt;</pre></div>
+<div class="src-page"><pre>        &lt;text class=&quot;success__line&quot;&gt;涉及轻生、诈骗、隐私泄露等高风险诉求：2 小时内人工加急处置&lt;/text&gt;
+      &lt;/view&gt;
+    &lt;/view&gt;
+
+    &lt;text class=&quot;label&quot;&gt;诉求类型&lt;/text&gt;
+    &lt;view
+      class=&quot;picker-field {{type ? &#x27;&#x27; : &#x27;picker-field--placeholder&#x27;}} {{typePanelOpen ? &#x27;picker-field--o
+    pen&#x27; : &#x27;&#x27;}}&quot;
+      bindtap=&quot;onToggleTypePanel&quot;
+    &gt;
+      &lt;text class=&quot;picker-field__label&quot;&gt;{{typeOptions[typeIndex].label}}&lt;/text&gt;
+      &lt;text class=&quot;picker-field__chevron&quot;&gt;{{typePanelOpen ? &#x27;⌃&#x27; : &#x27;⌄&#x27;}}&lt;/text&gt;
+    &lt;/view&gt;
+    &lt;view wx:if=&quot;{{typePanelOpen}}&quot; class=&quot;type-options&quot;&gt;
+      &lt;block wx:for=&quot;{{typeOptions}}&quot; wx:key=&quot;value&quot;&gt;
+        &lt;view
+          wx:if=&quot;{{index &gt; 0}}&quot;
+          class=&quot;type-option {{typeIndex === index ? &#x27;type-option--selected&#x27; : &#x27;&#x27;}}&quot;
+          data-index=&quot;{{index}}&quot;
+          bindtap=&quot;onSelectType&quot;
+        &gt;
+          &lt;text class=&quot;type-option__label&quot;&gt;{{item.label}}&lt;/text&gt;
+          &lt;text wx:if=&quot;{{typeIndex === index}}&quot; class=&quot;type-option__check&quot;&gt;✓&lt;/text&gt;
+        &lt;/view&gt;
+      &lt;/block&gt;
+    &lt;/view&gt;
+
+    &lt;text class=&quot;label&quot;&gt;问题详细描述&lt;/text&gt;
+    &lt;view class=&quot;description-wrap&quot;&gt;
+      &lt;textarea class=&quot;description&quot; value=&quot;{{description}}&quot; maxlength=&quot;500&quot; disabled=&quot;{{submitting}}&quot; pl
+    aceholder=&quot;请清晰说明发生时间、对话内容和遇到的问题。
+请勿填写银行卡号、身份证号、密码或验证码等隐私信息。&quot; bindinput=&quot;onDescriptionInput&quot;&gt;&lt;/textarea&gt;
+      &lt;text class=&quot;count&quot;&gt;{{description.length}}/500&lt;/text&gt;
+    &lt;/view&gt;
+
+    &lt;view class=&quot;consent&quot; bindtap=&quot;onToggleConsent&quot;&gt;
+      &lt;view class=&quot;checkbox {{consent ? &#x27;checkbox--checked&#x27; : &#x27;&#x27;}}&quot;&gt;{{consent ? &#x27;✓&#x27; : &#x27;&#x27;}}&lt;/view&gt;
+      &lt;text class=&quot;consent-copy&quot;&gt;我已阅读&lt;text class=&quot;policy-link&quot; catchtap=&quot;onOpenConsent&quot;&gt;《知情同意书
+    》&lt;/text&gt;，同意平台仅为受理和处理本次反馈收集、使用上述信息。&lt;/text&gt;
+    &lt;/view&gt;
+
+    &lt;text wx:if=&quot;{{submitError}}&quot; class=&quot;submit-error&quot;&gt;{{submitError}}&lt;/text&gt;
+    &lt;view class=&quot;submit {{canSubmit ? &#x27;&#x27; : &#x27;submit--disabled&#x27;}}&quot; bindtap=&quot;onSubmit&quot;&gt;{{submitting ? &#x27;提交
+    中&#x27; : &#x27;提交&#x27;}}&lt;/view&gt;
+  &lt;/view&gt;
+
+  &lt;!-- 知情同意书弹窗：查看不自动勾选，仅点底部按钮视为同意 --&gt;
+  &lt;view wx:if=&quot;{{consentVisible}}&quot; class=&quot;consent-mask&quot; catchtouchmove=&quot;noop&quot; catchtap=&quot;onCloseConsent&quot;&gt;
+    &lt;view class=&quot;consent-dialog&quot; catchtap=&quot;noop&quot;&gt;
+      &lt;view class=&quot;consent-dialog__close&quot; catchtap=&quot;onCloseConsent&quot;&gt;✕&lt;/view&gt;
+      &lt;text class=&quot;consent-dialog__title&quot;&gt;知情同意书&lt;/text&gt;
+      &lt;scroll-view class=&quot;consent-dialog__body&quot; scroll-y&gt;
+        &lt;text class=&quot;consent-section__title&quot;&gt;个人信息收集告知&lt;/text&gt;
+        &lt;text class=&quot;consent-section__text&quot;&gt;温馨告知：您填写的手机号、联系信息仅用于本次投诉反馈处理，仅
+    留存 6 个月，到期自动脱敏删除；不会用于 AI 模型训练、营销推送，不会向第三方泄露、出售。&lt;/text&gt;
+        &lt;text class=&quot;consent-section__title&quot;&gt;AI 拟人服务专项提示&lt;/text&gt;
+        &lt;text class=&quot;consent-section__text&quot;&gt;如您反馈 AI 虚拟宠物对话存在违规内容，平台将调取对应时段对话
+    记录开展安全复核，相关对话数据仅用于本次风险核查，核查完毕统一归档留存。&lt;/text&gt;
+        &lt;text class=&quot;consent-section__title&quot;&gt;未成年人专项提示&lt;/text&gt;
+        &lt;text class=&quot;consent-section__text&quot;&gt;未满 14 周岁用户提交反馈，平台处理后将同步风险提醒至您填写的</pre></div>
+<div class="src-page"><pre>    监护人手机号；涉及心理、极端情绪问题会优先联系监护人介入。&lt;/text&gt;
+        &lt;text class=&quot;consent-section__title&quot;&gt;老年人友好提示&lt;/text&gt;
+        &lt;text class=&quot;consent-section__text&quot;&gt;老年用户如不会操作表单，可直接拨打客服热线 &lt;text class=&quot;cons
+    ent-hotline&quot; catchtap=&quot;onCallHotline&quot;&gt;{{hotline}}&lt;/text&gt; 人工反馈，无需填写线上表单。&lt;/text&gt;
+      &lt;/scroll-view&gt;
+      &lt;view class=&quot;consent-dialog__agree&quot; bindtap=&quot;onAgreeConsent&quot;&gt;我已阅读并同意&lt;/view&gt;
+    &lt;/view&gt;
+  &lt;/view&gt;
+&lt;/view&gt;
+===== 文件: pages/profile/profile.js =====
+const petStore = require(&#x27;../../utils/pet-store&#x27;);
+const request = require(&#x27;../../utils/request&#x27;);
+const auth = require(&#x27;../../utils/auth&#x27;);
+const { API_BASE_URL } = require(&#x27;../../config/api&#x27;);
+
+const PROFILE_KEY = &#x27;eggbaby_profile_v1&#x27;;
+const MBTI_LIST = [&#x27;INFP&#x27;,&#x27;INFJ&#x27;,&#x27;INTJ&#x27;,&#x27;INTP&#x27;,&#x27;ENFP&#x27;,&#x27;ENFJ&#x27;,&#x27;ENTJ&#x27;,&#x27;ENTP&#x27;,&#x27;ISFP&#x27;,&#x27;ISFJ&#x27;,&#x27;ISTJ&#x27;,&#x27;ISTP&#x27;,&#x27;
+    ESFP&#x27;,&#x27;ESFJ&#x27;,&#x27;ESTJ&#x27;,&#x27;ESTP&#x27;];
+const GENDER_LIST = [&#x27;男&#x27;, &#x27;女&#x27;, &#x27;保密&#x27;];
+const GENDER_MAP = { &#x27;男&#x27;: &#x27;MALE&#x27;, &#x27;女&#x27;: &#x27;FEMALE&#x27;, &#x27;保密&#x27;: &#x27;OTHER&#x27; };
+const GENDER_REVERSE = { MALE: &#x27;男&#x27;, FEMALE: &#x27;女&#x27;, OTHER: &#x27;保密&#x27; };
+const CITY_MAX_LENGTH = 10;
+
+const ZODIAC_MAP = {
+  aries: &#x27;白羊座&#x27;, taurus: &#x27;金牛座&#x27;, gemini: &#x27;双子座&#x27;,
+  cancer: &#x27;巨蟹座&#x27;, leo: &#x27;狮子座&#x27;, virgo: &#x27;处女座&#x27;,
+  libra: &#x27;天秤座&#x27;, scorpio: &#x27;天蝎座&#x27;, sagittarius: &#x27;射手座&#x27;,
+  capricorn: &#x27;摩羯座&#x27;, aquarius: &#x27;水瓶座&#x27;, pisces: &#x27;双鱼座&#x27;
+};
+
+function translateZodiac(zodiac) {
+  if (!zodiac) return &#x27;&#x27;;
+  const code = String(zodiac).toLowerCase();
+  return ZODIAC_MAP[code] || zodiac;
+}
+
+function maskUserId(userId) {
+  const s = String(userId || &#x27;&#x27;);
+  return s.slice(0, 8);
+}
+
+function formatDisplay(profile) {
+  const user = petStore.getUser() || {};
+  const session = auth.getSession() || {};
+  const userId = user.id || session.userId || profile.userId || &#x27;&#x27;;
+  return {
+    nickname: profile.nickname || user.nickname || &#x27;蛋友&#x27;,
+    avatarUrl: profile.avatarUrl || user.avatarUrl || &#x27;&#x27;,
+    userId: maskUserId(userId),
+    gender: profile.gender ? (GENDER_REVERSE[profile.gender] || &#x27;未设置&#x27;) : &#x27;未设置&#x27;,
+    birthday: profile.birthday || &#x27;未设置&#x27;,
+    zodiac: translateZodiac(profile.zodiac) || &#x27;——&#x27;,
+    city: profile.city || &#x27;未设置&#x27;,
+    mbti: profile.mbti || &#x27;未设置&#x27;
+  };
+}
+
+Page({
+  data: {
+    nickname: &#x27;蛋友&#x27;,</pre></div>
+<div class="src-page"><pre>    userId: &#x27;&#x27;,
+    gender: &#x27;未设置&#x27;,
+    birthday: &#x27;未设置&#x27;,
+    zodiac: &#x27;——&#x27;,
+    mbti: &#x27;未设置&#x27;,
+    mbtiList: MBTI_LIST,
+    avatarUrl: &#x27;&#x27;
+  },
+
+  onLoad() {
+    this.loadProfile();
+  },
+
+  loadProfile() {
+    request.get(&#x27;/wechat/profile&#x27;)
+      .then((profile) =&gt; {
+        wx.setStorageSync(PROFILE_KEY, profile);
+        petStore.syncUserProfile(profile);
+        this.setData(formatDisplay(profile));
+      })
+      .catch(() =&gt; {
+        const cached = wx.getStorageSync(PROFILE_KEY) || {};
+        const user = petStore.getUser() || {};
+        const session = auth.getSession() || {};
+        this.setData(formatDisplay({ ...cached, userId: user.id || session.userId }));
+      });
+  },
+
+  refreshProfile() {
+    return request.get(&#x27;/wechat/profile&#x27;)
+      .then((profile) =&gt; {
+        wx.setStorageSync(PROFILE_KEY, profile);
+        petStore.syncUserProfile(profile);
+        this.setData(formatDisplay(profile));
+        return profile;
+      });
+  },
+
+  saveProfile(partial) {
+    return request.put(&#x27;/wechat/profile&#x27;, partial)
+      .then(() =&gt; {
+        const cached = wx.getStorageSync(PROFILE_KEY) || {};
+        const next = { ...cached, ...partial };
+        wx.setStorageSync(PROFILE_KEY, next);
+        petStore.syncUserProfile(next);
+        this.setData(formatDisplay(next));
+        wx.showToast({ title: &#x27;保存成功&#x27;, icon: &#x27;success&#x27; });
+      })
+      .catch((error) =&gt; {
+        wx.showToast({ title: (error &amp;&amp; error.userMessage) || &#x27;保存失败&#x27;, icon: &#x27;none&#x27; });
+        throw error;
+      });
+  },
+
+  onChooseAvatar(e) {
+    const tempPath = e.detail.avatarUrl;
+    if (!tempPath) return;
+    const session = auth.getSession();
+    if (!session || !session.token) {
+      wx.showToast({ title: &#x27;登录状态已失效&#x27;, icon: &#x27;none&#x27; });</pre></div>
+<div class="src-page"><pre>      return;
+    }
+    wx.uploadFile({
+      url: `${API_BASE_URL}/wechat/avatar`,
+      filePath: tempPath,
+      name: &#x27;file&#x27;,
+      header: { Authorization: `Bearer ${session.token}` },
+      success: (res) =&gt; {
+        if (res.statusCode !== 200) {
+          wx.showToast({ title: &#x27;头像上传失败&#x27;, icon: &#x27;none&#x27; });
+          return;
+        }
+        try {
+          const envelope = JSON.parse(res.data);
+          if (envelope.code !== 0 || !envelope.data) {
+            wx.showToast({ title: envelope.msg || &#x27;头像上传失败&#x27;, icon: &#x27;none&#x27; });
+            return;
+          }
+          const avatarUrl = envelope.data;
+          this.saveProfile({ avatarUrl });
+        } catch (error) {
+          wx.showToast({ title: &#x27;头像上传失败&#x27;, icon: &#x27;none&#x27; });
+        }
+      },
+      fail: () =&gt; wx.showToast({ title: &#x27;头像上传失败&#x27;, icon: &#x27;none&#x27; })
+    });
+  },
+
+  onEditNickname() {
+    wx.showModal({
+      title: &#x27;修改昵称&#x27;,
+      editable: true,
+      placeholderText: &#x27;最多 16 个字&#x27;,
+      content: this.data.nickname,
+      success: (res) =&gt; {
+        if (!res.confirm) return;
+        const value = String(res.content || &#x27;&#x27;).trim().slice(0, 16);
+        if (!value) return;
+        this.saveProfile({ nickname: value });
+      }
+    });
+  },
+
+  onEditGender() {
+    wx.showActionSheet({
+      itemList: GENDER_LIST,
+      success: (result) =&gt; {
+        const value = GENDER_MAP[GENDER_LIST[result.tapIndex]];
+        this.saveProfile({ gender: value });
+      }
+    });
+  },
+
+  onEditBirthday(e) {
+    const value = e.detail.value;
+    if (!value) return;
+    this.saveProfile({ birthday: value })
+      .then(() =&gt; this.refreshProfile());
+  },
+</pre></div>
+<div class="src-page"><pre>  onEditCity() {
+    wx.showModal({
+      title: &#x27;修改常驻城市&#x27;,
+      editable: true,
+      placeholderText: `最多 ${CITY_MAX_LENGTH} 个字`,
+      content: this.data.city === &#x27;未设置&#x27; ? &#x27;&#x27; : this.data.city,
+      success: (res) =&gt; {
+        if (!res.confirm) return;
+        const value = String(res.content || &#x27;&#x27;).trim().slice(0, CITY_MAX_LENGTH);
+        if (!value) return;
+        this.saveProfile({ city: value });
+      }
+    });
+  },
+
+  onMbtiChange(e) {
+    this.saveProfile({ mbti: MBTI_LIST[e.detail.value] });
+  }
+});
+===== 文件: pages/profile/profile.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;我的信息&quot;&gt;&lt;/nav-bar&gt;
+
+  &lt;scroll-view scroll-y class=&quot;content&quot;&gt;
+
+    &lt;view class=&quot;avatar-section&quot;&gt;
+      &lt;button class=&quot;avatar-btn&quot; open-type=&quot;chooseAvatar&quot; bindchooseavatar=&quot;onChooseAvatar&quot;&gt;
+        &lt;image wx:if=&quot;{{avatarUrl}}&quot; class=&quot;avatar-image&quot; src=&quot;{{avatarUrl}}&quot; mode=&quot;aspectFill&quot;&gt;&lt;/image&gt;
+        &lt;egg-avatar wx:else size=&quot;{{72}}&quot;&gt;&lt;/egg-avatar&gt;
+      &lt;/button&gt;
+
+      &lt;view class=&quot;nickname-row&quot; bindtap=&quot;onEditNickname&quot;&gt;
+        &lt;text class=&quot;nickname-text&quot;&gt;{{nickname}}&lt;/text&gt;
+        &lt;view class=&quot;chevron&quot;&gt;&lt;/view&gt;
+      &lt;/view&gt;
+      &lt;text class=&quot;user-id&quot;&gt;ID：{{userId}}&lt;/text&gt;
+    &lt;/view&gt;
+
+    &lt;view class=&quot;field-panel&quot;&gt;
+      &lt;list-row
+        label=&quot;性别&quot;
+        value=&quot;{{gender}}&quot;
+        bind:rowtap=&quot;onEditGender&quot;
+      &gt;&lt;/list-row&gt;
+      &lt;picker mode=&quot;date&quot; bindchange=&quot;onEditBirthday&quot;&gt;
+        &lt;list-row label=&quot;生日&quot; value=&quot;{{birthday}}&quot;&gt;&lt;/list-row&gt;
+      &lt;/picker&gt;
+      &lt;list-row label=&quot;星座&quot; value=&quot;{{zodiac}}&quot; show-chevron=&quot;{{false}}&quot;&gt;&lt;/list-row&gt;
+      &lt;list-row
+        label=&quot;常驻城市&quot;
+        value=&quot;{{city}}&quot;
+        bind:rowtap=&quot;onEditCity&quot;
+      &gt;&lt;/list-row&gt;
+      &lt;picker mode=&quot;selector&quot; range=&quot;{{mbtiList}}&quot; bindchange=&quot;onMbtiChange&quot;&gt;
+        &lt;list-row label=&quot;MBTI&quot; value=&quot;{{mbti}}&quot; show-border=&quot;{{false}}&quot;&gt;&lt;/list-row&gt;
+      &lt;/picker&gt;
+    &lt;/view&gt;
+
+  &lt;/scroll-view&gt;
+&lt;/view&gt;</pre></div>
+<div class="src-page"><pre>===== 文件: pages/nickname/nickname.js =====
+const petStore = require(&#x27;../../utils/pet-store&#x27;);
+
+Page({
+  data: { name: &#x27;&#x27;, count: 0, error: &#x27;&#x27; },
+  onLoad() {
+    const pet = petStore.getPet();
+    const name = pet ? pet.name : &#x27;&#x27;;
+    this.setData({ name, count: Array.from(name).length });
+  },
+  onInput(e) {
+    const name = e.detail.value;
+    this.setData({ name, count: Array.from(name).length, error: &#x27;&#x27; });
+  },
+  async onSave() {
+    const result = await petStore.updateNickname(this.data.name);
+    if (!result.ok) return this.setData({ error: result.message });
+    wx.showToast({ title: result.alreadyDone ? &#x27;昵称已更新&#x27; : &#x27;它记住了自己的名字&#x27;, icon: &#x27;none&#x27; });
+    setTimeout(() =&gt; wx.navigateBack(), 700);
+  }
+});
+===== 文件: pages/nickname/nickname.wxml =====
+&lt;view class=&quot;page&quot;&gt;&lt;nav-bar title=&quot;给它起名字&quot;&gt;&lt;/nav-bar&gt;&lt;view class=&quot;content&quot;&gt;&lt;view class=&quot;mini-egg&quot;&gt;&lt;/
+    view&gt;&lt;text class=&quot;title&quot;&gt;它以后该叫什么？&lt;/text&gt;&lt;text class=&quot;desc&quot;&gt;这个名字会一直陪它到破壳以后。&lt;/t
+    ext&gt;&lt;view class=&quot;input-wrap&quot;&gt;&lt;input class=&quot;name-input&quot; value=&quot;{{name}}&quot; maxlength=&quot;10&quot; placeholder=&quot;
+    最多 10 个字符&quot; bindinput=&quot;onInput&quot; focus/&gt;&lt;text class=&quot;counter&quot;&gt;{{count}} / 10&lt;/text&gt;&lt;/view&gt;&lt;text w
+    x:if=&quot;{{error}}&quot; class=&quot;error&quot;&gt;{{error}}&lt;/text&gt;&lt;view class=&quot;spacer&quot;&gt;&lt;/view&gt;&lt;button class=&quot;primary&quot; b
+    indtap=&quot;onSave&quot;&gt;确认这个名字&lt;/button&gt;&lt;/view&gt;&lt;/view&gt;
+===== 文件: pages/my/my.js =====
+const petStore = require(&#x27;../../utils/pet-store&#x27;);
+const request = require(&#x27;../../utils/request&#x27;);
+const inviteApi = require(&#x27;../../utils/invite-api&#x27;);
+
+const SHARE_TITLE = &#x27;一起来养蛋宝宝吧&#x27;;
+const SHARE_HOME_PATH = &#x27;/pages/home/home?v=1&amp;source=home_share&#x27;;
+
+Page({
+  data: { userName: &#x27;蛋友&#x27;, avatarUrl: &#x27;&#x27;, eggCount: 0, shareReady: false },
+
+  onShow() {
+    // 自定义悬浮 tabBar：标记当前 tab；在「我的」页不渲染任何圆形按钮
+    if (typeof this.getTabBar === &#x27;function&#x27;) {
+      const tabBar = this.getTabBar();
+      if (tabBar) tabBar.setData({ selected: 1, hidden: true });
+    }
+    this.loadUserProfile();
+    this.loadPetStatus();
+    this.prepareShare();
+  },
+
+  prepareShare() {
+    const requestId = (this._shareRequestId || 0) + 1;
+    this._shareRequestId = requestId;
+    this.setData({ shareReady: false });
+    if (typeof wx !== &#x27;undefined&#x27; &amp;&amp; wx.hideShareMenu) {
+      wx.hideShareMenu({ menus: [&#x27;shareAppMessage&#x27;, &#x27;shareTimeline&#x27;] });
+    }
+    this.loadShareInviteCode(requestId);
+  },
+</pre></div>
+<div class="src-page"><pre>  async loadShareInviteCode(requestId) {
+    const currentRequestId = requestId === undefined
+      ? (this._shareRequestId = (this._shareRequestId || 0) + 1)
+      : requestId;
+    this._shareInviteCode = null;
+    try {
+      const inviteCode = await inviteApi.getMine();
+      if (this._shareRequestId !== currentRequestId) return;
+      if (this.isUsableShareInvite(inviteCode)) this._shareInviteCode = inviteCode.code;
+    } catch (error) {
+      if (this._shareRequestId !== currentRequestId) return;
+      this._shareInviteCode = null;
+    } finally {
+      if (this._shareRequestId !== currentRequestId) return;
+      this.setData({ shareReady: true });
+      if (typeof wx !== &#x27;undefined&#x27; &amp;&amp; wx.showShareMenu) {
+        wx.showShareMenu({ menus: [&#x27;shareAppMessage&#x27;, &#x27;shareTimeline&#x27;] });
+      }
+    }
+  },
+
+  isUsableShareInvite(inviteCode) {
+    return !!(inviteCode &amp;&amp; inviteCode.code &amp;&amp; inviteCode.remaining &gt; 0 &amp;&amp; inviteCode.status === 1);
+  },
+
+  loadUserProfile() {
+    request.get(&#x27;/wechat/profile&#x27;)
+      .then((profile) =&gt; {
+        petStore.syncUserProfile(profile);
+        this.applyUserData();
+      })
+      .catch(() =&gt; this.applyUserData());
+  },
+
+  applyUserData() {
+    const user = petStore.getUser() || {};
+    this.setData({ userName: user.nickname || &#x27;蛋友&#x27;, avatarUrl: user.avatarUrl || &#x27;&#x27; });
+  },
+
+  loadPetStatus() {
+    const pet = petStore.getPet();
+    this.setData({ eggCount: pet ? 1 : 0 });
+  },
+
+  onTapUserCard() { wx.navigateTo({ url: &#x27;/pages/profile/profile&#x27; }); },
+  onNavAlbum() { wx.navigateTo({ url: &#x27;/pages/album/album&#x27; }); },
+  onNavCodes() { wx.navigateTo({ url: &#x27;/pages/invite-codes/invite-codes&#x27; }); },
+  onNavSettings() { wx.navigateTo({ url: &#x27;/pages/settings/settings&#x27; }); },
+  onNavChatSettings() { wx.navigateTo({ url: &#x27;/pages/chat-settings/chat-settings&#x27; }); },
+  onNavAccount() { wx.navigateTo({ url: &#x27;/pages/account/account&#x27; }); },
+  onNavHelp() { wx.navigateTo({ url: &#x27;/pages/help/help&#x27; }); },
+
+  onShareAppMessage() {
+    if (!this.data.shareReady) return false;
+    const inviteCode = this._shareInviteCode;
+    return {
+      title: SHARE_TITLE,
+      path: inviteCode ? `${SHARE_HOME_PATH}&amp;inviteCode=${encodeURIComponent(inviteCode)}` : SHARE_HOME_
+    PATH
+    };</pre></div>
+<div class="src-page"><pre>  },
+
+  onShareTimeline() {
+    if (!this.data.shareReady) return false;
+    return { title: SHARE_TITLE };
+  }
+});
+===== 文件: pages/my/my.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;我的&quot; fallback-url=&quot;/pages/home/home&quot;&gt;&lt;/nav-bar&gt;
+
+  &lt;view class=&quot;content&quot;&gt;
+
+    &lt;view class=&quot;user-card&quot; hover-class=&quot;user-card--pressed&quot; bindtap=&quot;onTapUserCard&quot;&gt;
+      &lt;image wx:if=&quot;{{avatarUrl}}&quot; class=&quot;user-avatar&quot; src=&quot;{{avatarUrl}}&quot; mode=&quot;aspectFill&quot;&gt;&lt;/image&gt;
+      &lt;egg-avatar wx:else size=&quot;{{56}}&quot; gradient-from=&quot;#9DB65B&quot; gradient-to=&quot;#EDE78E&quot;&gt;&lt;/egg-avatar&gt;
+      &lt;view class=&quot;user-info&quot;&gt;
+        &lt;text class=&quot;user-name&quot;&gt;{{userName}}&lt;/text&gt;
+        &lt;text class=&quot;user-sub&quot;&gt;{{eggCount}} 只蛋宝宝&lt;/text&gt;
+      &lt;/view&gt;
+      &lt;view class=&quot;chevron&quot;&gt;&lt;/view&gt;
+    &lt;/view&gt;
+
+    &lt;view class=&quot;menu-panel&quot;&gt;
+      &lt;list-row label=&quot;我的卡册&quot; bind:rowtap=&quot;onNavAlbum&quot;&gt;&lt;/list-row&gt;
+      &lt;list-row label=&quot;我的激活码&quot; bind:rowtap=&quot;onNavCodes&quot;&gt;&lt;/list-row&gt;
+      &lt;list-row label=&quot;对话记录&quot; bind:rowtap=&quot;onNavChatSettings&quot;&gt;&lt;/list-row&gt;
+      &lt;list-row label=&quot;系统设置&quot; bind:rowtap=&quot;onNavSettings&quot;&gt;&lt;/list-row&gt;
+      &lt;!-- 账号，后期打开 --&gt;
+      &lt;!-- &lt;list-row label=&quot;账号&quot; bind:rowtap=&quot;onNavAccount&quot;&gt;&lt;/list-row&gt; --&gt;
+      &lt;list-row label=&quot;帮助中心&quot; show-border=&quot;{{false}}&quot; bind:rowtap=&quot;onNavHelp&quot;&gt;&lt;/list-row&gt;
+    &lt;/view&gt;
+
+  &lt;/view&gt;
+&lt;/view&gt;
+===== 文件: pages/chat-settings/chat-settings.js =====
+const request = require(&#x27;../../utils/request&#x27;);
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EXPORT_EMAIL_KEY = &#x27;export_email&#x27;;
+
+Page({
+  data: {
+    email: &#x27;&#x27;,
+    emailFocus: false,
+    error: &#x27;&#x27;,
+    submitting: false,
+    deleting: false
+  },
+
+  onLoad() {
+    const savedEmail = wx.getStorageSync(EXPORT_EMAIL_KEY);
+    if (savedEmail) {
+      this.setData({ email: savedEmail });
+    }
+  },
+
+  onEmailInput(e) {
+    this.setData({ email: e.detail.value.trim(), error: &#x27;&#x27; });
+  },</pre></div>
+<div class="src-page"><pre>
+  onEmailFocus() {
+    this.setData({ emailFocus: true });
+  },
+
+  onEmailBlur() {
+    this.setData({ emailFocus: false });
+  },
+
+  onExport() {
+    const { email, submitting } = this.data;
+    if (submitting) return;
+
+    if (!email) {
+      this.setData({ error: &#x27;请输入接收邮箱&#x27; });
+      return;
+    }
+    if (!EMAIL_PATTERN.test(email)) {
+      this.setData({ error: &#x27;邮箱格式不正确&#x27; });
+      return;
+    }
+
+    this.setData({ submitting: true });
+    request.post(&#x27;/wechat/chat-history/export&#x27;, { email })
+      .then(() =&gt; {
+        wx.setStorageSync(EXPORT_EMAIL_KEY, email);
+        this.setData({ email: &#x27;&#x27; });
+        wx.showModal({
+          title: &#x27;导出成功&#x27;,
+          content: `聊天记录已开始导出，稍后将发送至 ${email}，请注意查收。`,
+          showCancel: false,
+          confirmText: &#x27;知道了&#x27;,
+          success: () =&gt; {
+            wx.navigateBack({ delta: 1 });
+          }
+        });
+      })
+      .catch((err) =&gt; {
+        const message = (err &amp;&amp; err.userMessage) || &#x27;导出失败，请稍后重试&#x27;;
+        wx.showToast({ title: message, icon: &#x27;none&#x27; });
+      })
+      .finally(() =&gt; {
+        this.setData({ submitting: false });
+      });
+  },
+
+  onDelete() {
+    if (this.data.deleting) return;
+
+    wx.showModal({
+      title: &#x27;删除聊天记录&#x27;,
+      content: &#x27;删除后将清空你的全部对话记录且无法恢复，确定删除吗？&#x27;,
+      confirmText: &#x27;仍要删除&#x27;,
+      confirmColor: &#x27;#C33F36&#x27;,
+      cancelText: &#x27;取消&#x27;,
+      success: (res) =&gt; {
+        if (res.confirm) {
+          this.confirmDelete();
+        }
+      }</pre></div>
+<div class="src-page"><pre>    });
+  },
+
+  confirmDelete() {
+    this.setData({ deleting: true });
+    request.post(&#x27;/wechat/chat-history/delete&#x27;)
+      .then(() =&gt; {
+        wx.showModal({
+          title: &#x27;删除成功&#x27;,
+          content: &#x27;你的全部聊天记录已删除。&#x27;,
+          showCancel: false,
+          confirmText: &#x27;知道了&#x27;,
+          success: () =&gt; {
+            wx.navigateBack({ delta: 1 });
+          }
+        });
+      })
+      .catch((err) =&gt; {
+        const message = (err &amp;&amp; err.userMessage) || &#x27;删除失败，请稍后重试&#x27;;
+        wx.showToast({ title: message, icon: &#x27;none&#x27; });
+      })
+      .finally(() =&gt; {
+        this.setData({ deleting: false });
+      });
+  }
+});
+===== 文件: pages/chat-settings/chat-settings.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;对话记录&quot;&gt;&lt;/nav-bar&gt;
+
+  &lt;view class=&quot;content&quot;&gt;
+
+    &lt;view class=&quot;section&quot;&gt;
+      &lt;text class=&quot;section-title&quot;&gt;导出聊天记录&lt;/text&gt;
+      &lt;text class=&quot;section-desc&quot;&gt;将你的全部对话整理成文件，发送到指定邮箱。&lt;/text&gt;
+
+      &lt;view class=&quot;input-wrap {{emailFocus ? &#x27;input-wrap--focus&#x27; : &#x27;&#x27;}} {{error ? &#x27;input-wrap--error&#x27; : 
+    &#x27;&#x27;}}&quot;&gt;
+        &lt;input
+          class=&quot;email-input&quot;
+          type=&quot;text&quot;
+          value=&quot;{{email}}&quot;
+          placeholder=&quot;请输入接收邮箱&quot;
+          placeholder-class=&quot;placeholder&quot;
+          bindinput=&quot;onEmailInput&quot;
+          bindfocus=&quot;onEmailFocus&quot;
+          bindblur=&quot;onEmailBlur&quot;
+        /&gt;
+      &lt;/view&gt;
+      &lt;text wx:if=&quot;{{error}}&quot; class=&quot;error&quot;&gt;{{error}}&lt;/text&gt;
+
+      &lt;button
+        class=&quot;primary&quot;
+        hover-class=&quot;primary--pressed&quot;
+        loading=&quot;{{submitting}}&quot;
+        disabled=&quot;{{submitting}}&quot;
+        bindtap=&quot;onExport&quot;
+      &gt;{{submitting ? &#x27;提交中…&#x27; : &#x27;导出并发送到邮箱&#x27;}}&lt;/button&gt;
+    &lt;/view&gt;
+</pre></div>
+<div class="src-page"><pre>    &lt;view class=&quot;section&quot;&gt;
+      &lt;text class=&quot;section-title&quot;&gt;删除聊天记录&lt;/text&gt;
+      &lt;text class=&quot;section-desc&quot;&gt;删除你的全部对话记录，删除后无法恢复。建议先导出备份。&lt;/text&gt;
+
+      &lt;button
+        class=&quot;danger&quot;
+        hover-class=&quot;danger--pressed&quot;
+        loading=&quot;{{deleting}}&quot;
+        disabled=&quot;{{deleting}}&quot;
+        bindtap=&quot;onDelete&quot;
+      &gt;{{deleting ? &#x27;删除中…&#x27; : &#x27;删除全部聊天记录&#x27;}}&lt;/button&gt;
+    &lt;/view&gt;
+
+  &lt;/view&gt;
+&lt;/view&gt;
+===== 文件: pages/hatch-guide/hatch-guide.js =====
+const petStore = require(&#x27;../../utils/pet-store&#x27;);
+const petApi = require(&#x27;../../utils/pet-api&#x27;);
+
+Page({
+  data: { pet: null, tasks: [] },
+
+  async onShow() {
+    const pet = petStore.getPet();
+    if (!pet) {
+      wx.switchTab({ url: &#x27;/pages/home/home&#x27; });
+      return;
+    }
+    // 从后端拉修炼动作列表，缓存到 pet._hatchActions 供 getHatchActionState 派生
+    if (pet.hatchStatus !== &#x27;HATCHED&#x27;) {
+      try {
+        const actions = await petApi.listHatchActions(pet.id);
+        pet._hatchActions = Array.isArray(actions) ? actions : [];
+        petStore.savePet(pet);
+      } catch (error) {
+        // 拉取失败则沿用旧缓存或 tasks 默认值，不阻塞渲染
+      }
+    }
+    const state = petStore.getHatchActionState(pet);
+    this.setData({
+      pet,
+      tasks: [
+        { key: &#x27;nickname&#x27;, title: &#x27;给蛋宝宝起昵称&#x27;, desc: &#x27;让它知道自己是谁&#x27;, done: state.nicknameDone, 
+    route: &#x27;/pages/nickname/nickname&#x27; },
+        { key: &#x27;cuddle&#x27;, title: &#x27;贴贴蛋宝宝&#x27;, desc: &#x27;回首页长按蛋壳 3 秒&#x27;, done: state.cuddleDone, route
+    : &#x27;home&#x27;, hint: &#x27;长按蛋壳 3 秒完成贴贴&#x27; },
+        { key: &#x27;wish&#x27;, title: &#x27;今日许愿&#x27;, desc: &#x27;告诉它你期待怎样的陪伴&#x27;, done: state.wishDone, route: &#x27;
+    /pages/wish/wish&#x27; },
+        { key: &#x27;lesson&#x27;, title: &#x27;蛋前教育&#x27;, desc: &#x27;今天想教它一件什么事&#x27;, done: state.lessonDone, route:
+     &#x27;/pages/lesson/lesson&#x27; },
+        { key: &#x27;doodle&#x27;, title: &#x27;彩蛋涂鸦&#x27;, desc: &#x27;回首页点「画画」画下记号&#x27;, done: state.doodleDone, ro
+    ute: &#x27;home&#x27;, hint: &#x27;在首页点「画画」开始涂鸦&#x27; }
+      ]
+    });
+  },
+
+  onTask(e) {
+    const route = e.currentTarget.dataset.route;
+    if (route === &#x27;home&#x27;) {
+      wx.switchTab({ url: &#x27;/pages/home/home&#x27; });</pre></div>
+<div class="src-page"><pre>      const hint = e.currentTarget.dataset.hint;
+      if (hint) setTimeout(() =&gt; wx.showToast({ title: hint, icon: &#x27;none&#x27; }), 300);
+      return;
+    }
+    wx.navigateTo({ url: route });
+  }
+});
+===== 文件: pages/hatch-guide/hatch-guide.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;孵化修炼手册&quot;&gt;&lt;/nav-bar&gt;
+  &lt;scroll-view class=&quot;content&quot; scroll-y&gt;
+    &lt;view class=&quot;progress-card&quot;&gt;
+      &lt;view class=&quot;progress-copy&quot;&gt;&lt;text class=&quot;progress-kicker&quot;&gt;HATCHING&lt;/text&gt;&lt;text class=&quot;progress-num
+    ber&quot;&gt;{{pet.progress}}%&lt;/text&gt;&lt;/view&gt;
+      &lt;view class=&quot;progress-track&quot;&gt;&lt;view class=&quot;progress-fill&quot; style=&quot;width: {{pet.progress}}%;&quot;&gt;&lt;/view&gt;
+    &lt;/view&gt;
+      &lt;text class=&quot;progress-note&quot;&gt;每天做一两件就好，不需要一次全部完成。&lt;/text&gt;
+    &lt;/view&gt;
+
+    &lt;text class=&quot;section-title&quot;&gt;今天可以做&lt;/text&gt;
+    &lt;view class=&quot;task-list&quot;&gt;
+      &lt;view class=&quot;task {{item.done ? &#x27;task--done&#x27; : &#x27;&#x27;}}&quot; wx:for=&quot;{{tasks}}&quot; wx:key=&quot;key&quot; data-route=&quot;{
+    {item.route}}&quot; data-hint=&quot;{{item.hint}}&quot; bindtap=&quot;onTask&quot; hover-class=&quot;pressable--pressed&quot;&gt;
+        &lt;view class=&quot;task-status&quot;&gt;&lt;text&gt;{{item.done ? &#x27;✓&#x27; : index + 1}}&lt;/text&gt;&lt;/view&gt;
+        &lt;view class=&quot;task-copy&quot;&gt;&lt;text class=&quot;task-title&quot;&gt;{{item.title}}&lt;/text&gt;&lt;text class=&quot;task-desc&quot;&gt;{{
+    item.desc}}&lt;/text&gt;&lt;/view&gt;
+        &lt;view class=&quot;task-side&quot;&gt;&lt;text class=&quot;task-arrow&quot;&gt;›&lt;/text&gt;&lt;/view&gt;
+      &lt;/view&gt;
+    &lt;/view&gt;
+    &lt;!-- &lt;view class=&quot;quiet-note&quot;&gt;孵化进度影响反馈、性格和收藏卡内容，不会改变物理装置的预设打开时间。&lt;/
+    view&gt; --&gt;
+  &lt;/scroll-view&gt;
+&lt;/view&gt;
+===== 文件: pages/lesson/lesson.js =====
+const petStore = require(&#x27;../../utils/pet-store&#x27;);
+Page({
+  data: { selected: &#x27;&#x27;, options: [
+    { icon: &#x27;🐠&#x27;, value: &#x27;去深海潜水&#x27; },
+    { icon: &#x27;☁️&#x27;, value: &#x27;做个云朵棉花糖SPA&#x27; },
+    { icon: &#x27;🌙&#x27;, value: &#x27;月光牛奶浴&#x27; },
+    { icon: &#x27;🎠&#x27;, value: &#x27;坐星光旋转木马&#x27; },
+    { icon: &#x27;🍃&#x27;, value: &#x27;听树洞收音机&#x27; },
+    { icon: &#x27;🍞&#x27;, value: &#x27;在面包房打盹&#x27; }
+  ] },
+  onSelect(e) { this.setData({ selected: e.currentTarget.dataset.value }); },
+  async onSubmit() {
+    if (!this.data.selected) return wx.showToast({ title: &#x27;先选一堂课吧&#x27;, icon: &#x27;none&#x27; });
+    const result = await petStore.completeLesson(this.data.selected);
+    if (!result.ok) return wx.showToast({ title: result.message, icon: &#x27;none&#x27; });
+    wx.showToast({ title: result.alreadyDone ? &#x27;今天已经上过课啦&#x27; : &#x27;它认真听完了&#x27;, icon: &#x27;none&#x27; });
+    setTimeout(() =&gt; wx.navigateBack(), 700);
+  }
+});
+===== 文件: pages/lesson/lesson.wxml =====
+&lt;view class=&quot;page&quot;&gt;&lt;nav-bar title=&quot;蛋前教育&quot;&gt;&lt;/nav-bar&gt;&lt;view class=&quot;content&quot;&gt;&lt;text class=&quot;kicker&quot;&gt;LITTLE
+     CLASS&lt;/text&gt;&lt;text class=&quot;title&quot;&gt;今天想教蛋宝宝什么？&lt;/text&gt;&lt;text class=&quot;desc&quot;&gt;你的选择会轻轻影响它
+    破壳后的性格。&lt;/text&gt;&lt;view class=&quot;options&quot;&gt;&lt;view wx:for=&quot;{{options}}&quot; wx:key=&quot;value&quot; class=&quot;option {
+    {selected === item.value ? &#x27;option--selected&#x27; : &#x27;&#x27;}}&quot; data-value=&quot;{{item.value}}&quot; bindtap=&quot;onSelect&quot;
+    &gt;&lt;view class=&quot;icon&quot;&gt;{{item.icon}}&lt;/view&gt;&lt;text&gt;{{item.value}}&lt;/text&gt;&lt;text class=&quot;arrow&quot;&gt;{{selected ==
+    = item.value ? &#x27;✓&#x27; : &#x27;›&#x27;}}&lt;/text&gt;&lt;/view&gt;&lt;/view&gt;&lt;view class=&quot;spacer&quot;&gt;&lt;/view&gt;&lt;button class=&quot;primary {{</pre></div>
+<div class="src-page"><pre>    !selected ? &#x27;primary--disabled&#x27; : &#x27;&#x27;}}&quot; bindtap=&quot;onSubmit&quot;&gt;开始今天的小课&lt;/button&gt;&lt;/view&gt;&lt;/view&gt;
+===== 文件: pages/account/account.js =====
+const petStore = require(&#x27;../../utils/pet-store&#x27;);
+
+Page({
+  onLogout() {
+    wx.showModal({
+      title: &#x27;退出登录&#x27;,
+      content: &#x27;退出后将清除本机账号及蛋宝宝体验数据。&#x27;,
+      confirmColor: &#x27;#D9463C&#x27;,
+      success: (res) =&gt; {
+        if (!res.confirm) return;
+        getApp().clearLoginState();
+        petStore.clearAccountData();
+        wx.reLaunch({ url: &#x27;/pages/welcome/welcome&#x27; });
+      }
+    });
+  },
+
+  onDeregister() { wx.navigateTo({ url: &#x27;/pages/deregister/deregister&#x27; }); }
+});
+===== 文件: pages/account/account.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;账号&quot;&gt;&lt;/nav-bar&gt;
+
+  &lt;view class=&quot;content&quot;&gt;
+
+    &lt;view class=&quot;panel&quot;&gt;
+      &lt;list-row
+        label=&quot;退出登录&quot;
+        show-chevron=&quot;{{false}}&quot;
+        show-border=&quot;{{false}}&quot;
+        bind:rowtap=&quot;onLogout&quot;
+      &gt;&lt;/list-row&gt;
+    &lt;/view&gt;
+
+    &lt;view class=&quot;spacer&quot;&gt;&lt;/view&gt;
+
+    &lt;view class=&quot;panel danger-panel&quot;&gt;
+      &lt;list-row
+        label=&quot;注销账号&quot;
+        label-color=&quot;#D9463C&quot;
+        show-chevron=&quot;{{false}}&quot;
+        show-border=&quot;{{false}}&quot;
+        bind:rowtap=&quot;onDeregister&quot;
+      &gt;&lt;/list-row&gt;
+    &lt;/view&gt;
+
+  &lt;/view&gt;
+&lt;/view&gt;
+===== 文件: pages/invite-codes/invite-codes.js =====
+const inviteApi = require(&#x27;../../utils/invite-api&#x27;);
+
+const MESSAGES = {
+  load: &#x27;加载失败，请下拉重试&#x27;,
+  empty: &#x27;暂无可用激活码&#x27;
+};
+
+Page({
+  data: {</pre></div>
+<div class="src-page"><pre>    inviteCode: null,
+    exhausted: false,
+    loading: true,
+    error: &#x27;&#x27;
+  },
+
+  onShow() {
+    this.loadInviteCode();
+  },
+
+  async loadInviteCode() {
+    this.setData({ loading: true, error: &#x27;&#x27; });
+    try {
+      const code = await inviteApi.getMine();
+      const exhausted = this.isExhausted(code);
+      this.setData({ inviteCode: code, exhausted, loading: false, error: &#x27;&#x27; });
+    } catch (error) {
+      this.setData({
+        inviteCode: null,
+        exhausted: true,
+        loading: false,
+        error: (error &amp;&amp; error.userMessage) || MESSAGES.load
+      });
+    }
+  },
+
+  isExhausted(code) {
+    if (!code) return true;
+    return (code.remaining || 0) &lt;= 0 || code.status !== 1;
+  },
+
+  onRetry() {
+    this.loadInviteCode();
+  },
+
+  onCopy() {
+    const { inviteCode, exhausted, loading } = this.data;
+    if (loading || !inviteCode || exhausted) return;
+    wx.setClipboardData({ data: inviteCode.code });
+  }
+});
+===== 文件: pages/invite-codes/invite-codes.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;我的激活码&quot;&gt;&lt;/nav-bar&gt;
+  &lt;scroll-view class=&quot;content&quot; scroll-y&gt;
+    &lt;view wx:if=&quot;{{loading}}&quot; class=&quot;state state--loading&quot;&gt;
+      &lt;text class=&quot;state-text&quot;&gt;加载中…&lt;/text&gt;
+    &lt;/view&gt;
+
+    &lt;view wx:elif=&quot;{{error}}&quot; class=&quot;state state--error&quot;&gt;
+      &lt;text class=&quot;state-text&quot;&gt;{{error}}&lt;/text&gt;
+      &lt;button class=&quot;retry&quot; bindtap=&quot;onRetry&quot;&gt;重试&lt;/button&gt;
+    &lt;/view&gt;
+
+    &lt;block wx:elif=&quot;{{inviteCode}}&quot;&gt;
+      &lt;view class=&quot;intro&quot;&gt;
+        &lt;text class=&quot;title&quot;&gt;把一颗蛋送给朋友&lt;/text&gt;
+        &lt;text class=&quot;desc&quot;&gt;你有一个专属激活码，可邀请朋友各领养一只蛋宝宝。每位朋友只能使用一次，使用后
+    扣减一次剩余次数。&lt;/text&gt;
+      &lt;/view&gt;</pre></div>
+<div class="src-page"><pre>      &lt;view class=&quot;code-card {{exhausted ? &#x27;code-card--exhausted&#x27; : &#x27;&#x27;}}&quot;&gt;
+        &lt;view class=&quot;code-head&quot;&gt;
+          &lt;text class=&quot;code-label&quot;&gt;我的激活码&lt;/text&gt;
+          &lt;text class=&quot;usage&quot;&gt;已用 {{inviteCode.usedCount}} / {{inviteCode.quota}} · 剩余 {{inviteCode.r
+    emaining}}&lt;/text&gt;
+        &lt;/view&gt;
+        &lt;text class=&quot;code&quot;&gt;{{inviteCode.code}}&lt;/text&gt;
+        &lt;view class=&quot;code-foot&quot;&gt;
+          &lt;text class=&quot;state-label&quot;&gt;{{exhausted ? &#x27;已用完&#x27; : &#x27;可邀请&#x27;}}&lt;/text&gt;
+          &lt;button class=&quot;copy&quot; disabled=&quot;{{exhausted}}&quot; bindtap=&quot;onCopy&quot;&gt;复制激活码&lt;/button&gt;
+        &lt;/view&gt;
+      &lt;/view&gt;
+    &lt;/block&gt;
+
+    &lt;view wx:else class=&quot;empty&quot;&gt;暂无可用激活码&lt;/view&gt;
+
+    &lt;view class=&quot;note&quot;&gt;个人激活码不提供积分、排行榜或现金奖励。只有朋友成功绑定蛋宝宝后，才会扣减一次剩
+    余次数。&lt;/view&gt;
+  &lt;/scroll-view&gt;
+&lt;/view&gt;
+===== 文件: pages/album/album.js =====
+const petStore = require(&#x27;../../utils/pet-store&#x27;);
+Page({
+  data: { cards: [] },
+  onShow() {
+    const pet = petStore.getPet();
+    const cards = (pet &amp;&amp; pet.collectionCards) ? pet.collectionCards.map((card, index) =&gt; ({
+      ...card,
+      petType: pet.prototype || &#x27;玉兔&#x27;,
+      name: pet.name || pet.prototype || &#x27;蛋宝宝&#x27;,
+      index
+    })) : [];
+    this.setData({ cards });
+  },
+  onOpen(e) {
+    const index = e.currentTarget.dataset.index || 0;
+    wx.navigateTo({ url: `/pages/collection-card/collection-card?index=${index}` });
+  }
+});
+===== 文件: pages/album/album.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;我的卡册&quot;&gt;&lt;/nav-bar&gt;
+  &lt;view class=&quot;content&quot;&gt;
+    &lt;view wx:if=&quot;{{cards.length &gt; 0}}&quot; class=&quot;card-list&quot;&gt;
+      &lt;view wx:for=&quot;{{cards}}&quot; wx:key=&quot;id&quot; class=&quot;album-card&quot; bindtap=&quot;onOpen&quot; data-index=&quot;{{item.index}
+    }&quot;&gt;
+        &lt;image wx:if=&quot;{{item.imageUrl}}&quot; class=&quot;album-pet-avatar&quot; src=&quot;{{item.imageUrl}}&quot; mode=&quot;aspectFi
+    ll&quot;&gt;&lt;/image&gt;
+        &lt;view wx:else class=&quot;baby-mark&quot;&gt;{{item.petType === &#x27;锦鲤&#x27; ? &#x27;锦&#x27; : &#x27;兔&#x27;}}&lt;/view&gt;
+        &lt;view class=&quot;copy&quot;&gt;
+          &lt;text class=&quot;name&quot;&gt;{{item.name}}&lt;/text&gt;
+          &lt;text class=&quot;meta&quot;&gt;{{item.brief || &#x27;&#x27;}}&lt;/text&gt;
+          &lt;text class=&quot;source-tag&quot;&gt;{{item.source === &#x27;HATCH&#x27; ? &#x27;破壳首卡&#x27; : item.source}}&lt;/text&gt;
+        &lt;/view&gt;
+        &lt;text class=&quot;arrow&quot;&gt;›&lt;/text&gt;
+      &lt;/view&gt;
+    &lt;/view&gt;
+    &lt;view wx:else class=&quot;empty&quot;&gt;
+      &lt;view class=&quot;empty-card&quot;&gt;&lt;/view&gt;
+      &lt;text class=&quot;empty-title&quot;&gt;卡册还是空的&lt;/text&gt;</pre></div>
+<div class="src-page"><pre>      &lt;text class=&quot;empty-desc&quot;&gt;到达预设破壳日后，收藏卡会自动收入这里。&lt;/text&gt;
+    &lt;/view&gt;
+  &lt;/view&gt;
+&lt;/view&gt;
+===== 文件: pages/deregister/deregister.js =====
+const DEREGISTER_KEY = &#x27;eggbaby_deregister_request_v1&#x27;;
+
+Page({
+  data: { pending: false, endDate: &#x27;&#x27; },
+
+  onShow() {
+    const request = wx.getStorageSync(DEREGISTER_KEY);
+    if (!request) return this.setData({ pending: false, endDate: &#x27;&#x27; });
+    const end = new Date(request.endAt);
+    this.setData({
+      pending: true,
+      endDate: `${end.getFullYear()}年${end.getMonth() + 1}月${end.getDate()}日`
+    });
+  },
+
+  onConfirmDeregister() {
+    if (this.data.pending) {
+      wx.showToast({ title: &#x27;注销申请已提交，可取消注销&#x27;, icon: &#x27;none&#x27; });
+      return;
+    }
+    wx.showModal({
+      title: &#x27;再次确认&#x27;,
+      content: &#x27;提交后进入 15 天冷静期，数据不会立即删除。确定继续吗？&#x27;,
+      confirmColor: &#x27;#D9463C&#x27;,
+      success: (res) =&gt; {
+        if (!res.confirm) return;
+        const submittedAt = Date.now();
+        wx.setStorageSync(DEREGISTER_KEY, { submittedAt, endAt: submittedAt + 15 * 24 * 60 * 60 * 1000 }
+    );
+        this.onShow();
+        wx.showToast({ title: &#x27;注销申请已提交&#x27;, icon: &#x27;success&#x27; });
+      }
+    });
+  },
+
+  onCancelDeregister() {
+    wx.showModal({
+      title: &#x27;取消注销&#x27;,
+      content: &#x27;取消后账号会恢复正常，可以继续使用蛋宝宝、卡册和对话。&#x27;,
+      success: (res) =&gt; {
+        if (!res.confirm) return;
+        wx.removeStorageSync(DEREGISTER_KEY);
+        this.onShow();
+        wx.showToast({ title: &#x27;已取消注销&#x27;, icon: &#x27;success&#x27; });
+      }
+    });
+  },
+
+  onBackAccount() { wx.navigateBack(); },
+  onCancel() { wx.navigateBack(); }
+});
+===== 文件: pages/deregister/deregister.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;注销账号&quot;&gt;&lt;/nav-bar&gt;
+</pre></div>
+<div class="src-page"><pre>  &lt;scroll-view scroll-y class=&quot;content&quot;&gt;
+
+    &lt;view wx:if=&quot;{{pending}}&quot; class=&quot;pending-block&quot;&gt;
+      &lt;view class=&quot;pending-icon&quot;&gt;✓&lt;/view&gt;
+      &lt;text class=&quot;pending-title&quot;&gt;注销申请已提交&lt;/text&gt;
+      &lt;text class=&quot;pending-desc&quot;&gt;账号正处于 15 天冷静期，预计 {{endDate}} 后处理。数据尚未删除，冷静期结
+    束前可随时取消。&lt;/text&gt;
+      &lt;text class=&quot;pending-note&quot;&gt;请勿重复提交注销申请。&lt;/text&gt;
+    &lt;/view&gt;
+
+    &lt;view wx:else class=&quot;warn-block&quot;&gt;
+      &lt;view class=&quot;warn-badge&quot;&gt;
+        &lt;text class=&quot;warn-mark&quot;&gt;!&lt;/text&gt;
+      &lt;/view&gt;
+      &lt;text class=&quot;warn-title&quot;&gt;注销后以下数据将被永久删除&lt;/text&gt;
+    &lt;/view&gt;
+
+    &lt;card wx:if=&quot;{{!pending}}&quot; tint=&quot;base&quot; ext-class=&quot;deletion-card&quot;&gt;
+      &lt;view class=&quot;deletion-list&quot;&gt;
+        &lt;view class=&quot;deletion-row&quot;&gt;
+          &lt;view class=&quot;x-badge&quot;&gt;&lt;text class=&quot;x-mark&quot;&gt;×&lt;/text&gt;&lt;/view&gt;
+          &lt;text class=&quot;deletion-text&quot;&gt;账号信息（昵称、头像、生日、城市等）&lt;/text&gt;
+        &lt;/view&gt;
+        &lt;view class=&quot;deletion-row&quot;&gt;
+          &lt;view class=&quot;x-badge&quot;&gt;&lt;text class=&quot;x-mark&quot;&gt;×&lt;/text&gt;&lt;/view&gt;
+          &lt;text class=&quot;deletion-text&quot;&gt;所有蛋宝宝的对话记录&lt;/text&gt;
+        &lt;/view&gt;
+        &lt;view class=&quot;deletion-row&quot;&gt;
+          &lt;view class=&quot;x-badge&quot;&gt;&lt;text class=&quot;x-mark&quot;&gt;×&lt;/text&gt;&lt;/view&gt;
+          &lt;text class=&quot;deletion-text&quot;&gt;蛋宝宝设备绑定关系&lt;/text&gt;
+        &lt;/view&gt;
+        &lt;view class=&quot;deletion-row&quot;&gt;
+          &lt;view class=&quot;x-badge&quot;&gt;&lt;text class=&quot;x-mark&quot;&gt;×&lt;/text&gt;&lt;/view&gt;
+          &lt;text class=&quot;deletion-text&quot;&gt;成就与成长记录&lt;/text&gt;
+        &lt;/view&gt;
+      &lt;/view&gt;
+    &lt;/card&gt;
+
+    &lt;card wx:if=&quot;{{!pending}}&quot; tint=&quot;base&quot; ext-class=&quot;hardware-card&quot;&gt;
+      &lt;text class=&quot;card-title&quot;&gt;关于实体蛋宝宝&lt;/text&gt;
+      &lt;text class=&quot;card-body&quot;&gt;注销后设备将解除绑定，回到未激活状态。可用其他账号重新激活，但那将是一只全
+    新的蛋宝宝，原有的对话与记忆不会恢复。&lt;/text&gt;
+    &lt;/card&gt;
+
+    &lt;card wx:if=&quot;{{!pending}}&quot; tint=&quot;tint-green&quot; ext-class=&quot;cooldown-card&quot;&gt;
+      &lt;text class=&quot;card-title card-title--green&quot;&gt;注意&lt;/text&gt;
+      &lt;view class=&quot;cooldown-list&quot;&gt;
+        &lt;text class=&quot;cooldown-item&quot;&gt;· 提交申请后进入 &lt;text class=&quot;cooldown-strong&quot;&gt;15 天冷静期&lt;/text&gt;&lt;/t
+    ext&gt;
+        &lt;text class=&quot;cooldown-item&quot;&gt;· 冷静期内重新登录可随时撤销注销&lt;/text&gt;
+        &lt;text class=&quot;cooldown-item&quot;&gt;· 15 天后数据将被永久删除，无法恢复&lt;/text&gt;
+      &lt;/view&gt;
+    &lt;/card&gt;
+
+  &lt;/scroll-view&gt;
+
+  &lt;view class=&quot;button-bar&quot;&gt;
+    &lt;app-button wx:if=&quot;{{pending}}&quot; text=&quot;取消注销&quot; bind:tap=&quot;onCancelDeregister&quot;&gt;&lt;/app-button&gt;
+    &lt;app-button wx:if=&quot;{{pending}}&quot; text=&quot;返回账号页&quot; variant=&quot;secondary&quot; bind:tap=&quot;onBackAccount&quot;&gt;&lt;/app
+    -button&gt;</pre></div>
+<div class="src-page"><pre>    &lt;app-button wx:if=&quot;{{!pending}}&quot; text=&quot;我已了解，继续注销&quot; variant=&quot;danger&quot; bind:tap=&quot;onConfirmDereg
+    ister&quot;&gt;&lt;/app-button&gt;
+    &lt;app-button wx:if=&quot;{{!pending}}&quot; text=&quot;我再想想&quot; variant=&quot;secondary&quot; bind:tap=&quot;onCancel&quot;&gt;&lt;/app-butto
+    n&gt;
+  &lt;/view&gt;
+
+&lt;/view&gt;
+===== 文件: pages/help/help.js =====
+// 客服邮箱：页面唯一的联系方式入口，首屏与底部支持条共用
+const SUPPORT_EMAIL = &#x27;hello@eggbabe.com&#x27;;
+
+Page({
+  data: {
+    supportEmail: SUPPORT_EMAIL,
+    cats: { device: true, account: true, chat: true, other: true },
+    // 搜索关键词与命中结果；为空串时展示分类列表
+    searchQuery: &#x27;&#x27;,
+    searchResults: [],
+    // 现实求助热线：静态内容（心理援助 12356 / 报警 110 / 急救 120）
+    support: { psychologicalHotline: &#x27;12356&#x27;, police: &#x27;110&#x27;, medicalEmergency: &#x27;120&#x27; },
+
+    deviceFaqs: [
+      {
+        q: &#x27;如何激活我的蛋宝宝？&#x27;,
+        a: &#x27;打开小程序后点击「添加蛋宝宝」，手动输入随实体蛋或朋友提供的有效激活码。服务端确认后才会完成
+    绑定。&#x27;,
+        open: false
+      },
+      {
+        q: &#x27;互动会让实体装置提前打开吗？&#x27;,
+        a: &#x27;不会。实体装置只按服务端预设时间打开；触摸、说话和蛋壳创作只提供当下回应，不改变时间、款式或
+    收藏卡内容。&#x27;,
+        open: false
+      },
+      {
+        q: &#x27;为什么不能添加第二只蛋宝宝？&#x27;,
+        a: &#x27;当前 MVP 是单蛋版本，每个账号最多绑定 1 只。已绑定账号再次输入激活码时不会消耗新激活码。&#x27;,
+        open: false
+      },
+      {
+        q: &#x27;装置没有按时打开怎么办？&#x27;,
+        a: `请保留装置照片、激活码信息和问题发生时间，并发送邮件至 ${SUPPORT_EMAIL}。邮件中请说明提前打
+    开、未打开、机械故障或激活码与原型不符等具体情况。`,
+        open: false
+      }
+    ],
+
+    accountFaqs: [
+      {
+        q: &#x27;如何修改昵称 / 头像？&#x27;,
+        a: &#x27;进入「我的」→「个人信息」。点击头像区域可更换头像（微信会弹出头像选择面板，第一项即你的微信
+    头像）；点击昵称旁的文字即可修改昵称，最多 16 个字。&#x27;,
+        open: true
+      }
+    ],
+
+    chatFaqs: [
+      {
+        q: &#x27;为什么现在不能和蛋宝宝对话？&#x27;,
+        a: &#x27;文字对话会在我破壳后开放。孵化期可以轻触或长按蛋壳，从首页自由陪伴入口选择想做的事，也可以直</pre></div>
+<div class="src-page"><pre>    接跟我说说话。&#x27;,
+        open: false
+      },
+      {
+        q: &#x27;对话记录会保存多久？&#x27;,
+        a: &#x27;对话只按连续性与安全所必需的范围保存，具体保存期限和删除方式以备案域名上的正式隐私政策为准。
+    &#x27;,
+        open: false
+      },
+      {
+        q: &#x27;如何导出或删除对话记录？&#x27;,
+        a: &#x27;进入「我的」→「对话记录」。你可以填写邮箱申请导出，也可以删除当前账号下的全部对话记录。删除
+    后无法恢复，建议先导出备份。&#x27;,
+        open: false
+      },
+      {
+        q: &#x27;什么是破壳？&#x27;,
+        a: &#x27;破壳是我结束孵化、正式苏醒的时刻——从这一刻起，我会开口说话，和你开始真正的陪伴与对话。&#x27;,
+        open: false
+      }
+    ],
+
+    otherFaqs: [
+      {
+        q: &#x27;如何联系邮件支持？&#x27;,
+        a: `发送邮件至 ${SUPPORT_EMAIL}，并在邮件中说明蛋宝宝 ID、问题发生时间和具体情况。点击本页底部邮
+    箱可以复制地址。`,
+        open: false
+      },
+      {
+        q: &#x27;隐私数据如何处理？&#x27;,
+        a: `你的数据仅用于提供蛋宝宝服务，具体收集与使用范围见「系统设置」→「隐私政策」。对话记录可在「
+    我的」→「对话记录」中申请导出或删除，其他个人信息权利申请可发送邮件至 ${SUPPORT_EMAIL}。`,
+        open: false
+      }
+    ]
+  },
+
+  onToggleCat(e) {
+    const cat = e.currentTarget.dataset.cat;
+    this.setData({ [`cats.${cat}`]: !this.data.cats[cat] });
+  },
+
+  onToggleFaq(e) {
+    const { group, index } = e.currentTarget.dataset;
+    this.setData({ [`${group}[${index}].open`]: !this.data[group][index].open });
+  },
+
+  // 搜索：跨四组 FAQ 做问题+答案的子串匹配；11 条短文本，量小无需防抖
+  onSearchInput(e) {
+    const searchQuery = String(e.detail.value || &#x27;&#x27;).trim();
+    if (!searchQuery) {
+      this.setData({ searchQuery: &#x27;&#x27;, searchResults: [] });
+      return;
+    }
+    const groups = [&#x27;deviceFaqs&#x27;, &#x27;accountFaqs&#x27;, &#x27;chatFaqs&#x27;, &#x27;otherFaqs&#x27;];
+    const searchResults = groups
+      .flatMap(group =&gt; this.data[group] || [])
+      .filter(item =&gt; `${item.q} ${item.a}`.includes(searchQuery));
+    this.setData({ searchQuery, searchResults });</pre></div>
+<div class="src-page"><pre>  },
+
+  // 复制客服邮箱；失败时弹窗展示邮箱地址兜底
+  onCopySupportEmail() {
+    wx.setClipboardData({
+      data: SUPPORT_EMAIL,
+      fail: () =&gt; wx.showModal({
+        title: &#x27;邮件支持&#x27;,
+        content: SUPPORT_EMAIL,
+        showCancel: false
+      })
+    });
+  },
+
+  // 跳转用户反馈页
+  onFeedback() {
+    wx.navigateTo({ url: &#x27;/pages/feedback/feedback&#x27; });
+  }
+});
+===== 文件: pages/help/help.wxml =====
+&lt;view class=&quot;page&quot;&gt;
+  &lt;nav-bar title=&quot;帮助中心&quot;&gt;&lt;/nav-bar&gt;
+
+  &lt;!-- 顶部搜索框：本地过滤 FAQ 关键词 --&gt;
+  &lt;view class=&quot;search-bar&quot;&gt;
+    &lt;view class=&quot;search-input&quot;&gt;
+      &lt;view class=&quot;search-icon&quot;&gt;&lt;/view&gt;
+      &lt;input class=&quot;search-field&quot; value=&quot;{{searchQuery}}&quot; placeholder=&quot;搜索问题关键词&quot; placeholder-class
+    =&quot;search-ph&quot; bindinput=&quot;onSearchInput&quot; /&gt;
+    &lt;/view&gt;
+  &lt;/view&gt;
+
+  &lt;scroll-view scroll-y class=&quot;faq-scroll&quot;&gt;
+
+    &lt;!-- 首屏：用户反馈入口 + 客服邮箱 + 现实求助信息（静态内容，来自 UI 设计稿）；搜索时隐藏 --&gt;
+    &lt;view wx:if=&quot;{{!searchQuery}}&quot; class=&quot;help-first-screen&quot;&gt;
+      &lt;text class=&quot;help-heading&quot;&gt;遇到问题&lt;/text&gt;
+      &lt;view class=&quot;help-action&quot; aria-role=&quot;button&quot; bindtap=&quot;onFeedback&quot;&gt;&lt;text&gt;用户反馈&lt;/text&gt;&lt;text&gt;›&lt;/te
+    xt&gt;&lt;/view&gt;
+      &lt;view class=&quot;support-config&quot; aria-role=&quot;button&quot; aria-label=&quot;复制客服邮箱 {{supportEmail}}&quot; bindtap
+    =&quot;onCopySupportEmail&quot;&gt;
+        &lt;view&gt;
+          &lt;text class=&quot;support-config__label&quot;&gt;客服邮箱&lt;/text&gt;
+          &lt;text class=&quot;support-config__value&quot;&gt;{{supportEmail}}&lt;/text&gt;
+        &lt;/view&gt;
+        &lt;text class=&quot;support-config__copy&quot;&gt;复制&lt;/text&gt;
+      &lt;/view&gt;
+      &lt;text class=&quot;help-heading help-heading--reality&quot;&gt;需要现实帮助&lt;/text&gt;
+      &lt;view class=&quot;reality-card&quot;&gt;
+        &lt;text&gt;心理援助热线：{{support.psychologicalHotline}}&lt;/text&gt;
+        &lt;text&gt;紧急危险：{{support.police}} / {{support.medicalEmergency}}&lt;/text&gt;
+      &lt;/view&gt;
+    &lt;/view&gt;
+
+    &lt;!-- 搜索结果：命中即定位，搜索时替换分类列表 --&gt;
+    &lt;view wx:if=&quot;{{searchQuery}}&quot; class=&quot;search-results&quot;&gt;
+      &lt;view wx:if=&quot;{{searchResults.length}}&quot;&gt;
+        &lt;view wx:for=&quot;{{searchResults}}&quot; wx:key=&quot;q&quot; class=&quot;search-result&quot;&gt;
+          &lt;text class=&quot;search-result-q&quot;&gt;{{item.q}}&lt;/text&gt;
+          &lt;text class=&quot;search-result-a&quot;&gt;{{item.a}}&lt;/text&gt;</pre></div>
+<div class="src-page"><pre>        &lt;/view&gt;
+      &lt;/view&gt;
+      &lt;view wx:else class=&quot;search-empty&quot;&gt;没有找到相关问题，试试其他关键词。&lt;/view&gt;
+    &lt;/view&gt;
+
+    &lt;collapse-item wx:if=&quot;{{!searchQuery}}&quot;
+      title=&quot;设备问题&quot;
+      variant=&quot;category&quot;
+      expanded=&quot;{{cats.device}}&quot;
+      bind:toggle=&quot;onToggleCat&quot;
+      data-cat=&quot;device&quot;
+    &gt;
+      &lt;view class=&quot;qa-group&quot;&gt;
+        &lt;collapse-item
+          wx:for=&quot;{{deviceFaqs}}&quot;
+          wx:key=&quot;q&quot;
+          title=&quot;{{item.q}}&quot;
+          variant=&quot;question&quot;
+          expanded=&quot;{{item.open}}&quot;
+          show-border=&quot;{{index !== deviceFaqs.length - 1}}&quot;
+          bind:toggle=&quot;onToggleFaq&quot;
+          data-group=&quot;deviceFaqs&quot;
+          data-index=&quot;{{index}}&quot;
+        &gt;
+          &lt;text&gt;{{item.a}}&lt;/text&gt;
+        &lt;/collapse-item&gt;
+      &lt;/view&gt;
+    &lt;/collapse-item&gt;
+
+    &lt;collapse-item wx:if=&quot;{{!searchQuery}}&quot;
+      title=&quot;账号&quot;
+      variant=&quot;category&quot;
+      expanded=&quot;{{cats.account}}&quot;
+      bind:toggle=&quot;onToggleCat&quot;
+      data-cat=&quot;account&quot;
+    &gt;
+      &lt;view class=&quot;qa-group&quot;&gt;
+        &lt;collapse-item
+          wx:for=&quot;{{accountFaqs}}&quot;
+          wx:key=&quot;q&quot;
+          title=&quot;{{item.q}}&quot;
+          variant=&quot;question&quot;
+          expanded=&quot;{{item.open}}&quot;
+          show-border=&quot;{{index !== accountFaqs.length - 1}}&quot;
+          bind:toggle=&quot;onToggleFaq&quot;
+          data-group=&quot;accountFaqs&quot;
+          data-index=&quot;{{index}}&quot;
+        &gt;
+          &lt;text&gt;{{item.a}}&lt;/text&gt;
+        &lt;/collapse-item&gt;
+      &lt;/view&gt;
+    &lt;/collapse-item&gt;
+
+    &lt;collapse-item wx:if=&quot;{{!searchQuery}}&quot;
+      title=&quot;对话功能&quot;
+      variant=&quot;category&quot;
+      expanded=&quot;{{cats.chat}}&quot;
+      bind:toggle=&quot;onToggleCat&quot;
+      data-cat=&quot;chat&quot;
+    &gt;</pre></div>
+<div class="src-page"><pre>      &lt;view class=&quot;qa-group&quot;&gt;
+        &lt;collapse-item
+          wx:for=&quot;{{chatFaqs}}&quot;
+          wx:key=&quot;q&quot;
+          title=&quot;{{item.q}}&quot;
+          variant=&quot;question&quot;
+          expanded=&quot;{{item.open}}&quot;
+          show-border=&quot;{{index !== chatFaqs.length - 1}}&quot;
+          bind:toggle=&quot;onToggleFaq&quot;
+          data-group=&quot;chatFaqs&quot;
+          data-index=&quot;{{index}}&quot;
+        &gt;
+          &lt;text&gt;{{item.a}}&lt;/text&gt;
+        &lt;/collapse-item&gt;
+      &lt;/view&gt;
+    &lt;/collapse-item&gt;
+
+    &lt;collapse-item wx:if=&quot;{{!searchQuery}}&quot;
+      title=&quot;其他&quot;
+      variant=&quot;category&quot;
+      expanded=&quot;{{cats.other}}&quot;
+      show-border=&quot;{{false}}&quot;
+      bind:toggle=&quot;onToggleCat&quot;
+      data-cat=&quot;other&quot;
+    &gt;
+      &lt;view class=&quot;qa-group&quot;&gt;
+        &lt;collapse-item
+          wx:for=&quot;{{otherFaqs}}&quot;
+          wx:key=&quot;q&quot;
+          title=&quot;{{item.q}}&quot;
+          variant=&quot;question&quot;
+          expanded=&quot;{{item.open}}&quot;
+          show-border=&quot;{{index !== otherFaqs.length - 1}}&quot;
+          bind:toggle=&quot;onToggleFaq&quot;
+          data-group=&quot;otherFaqs&quot;
+          data-index=&quot;{{index}}&quot;
+        &gt;
+          &lt;text&gt;{{item.a}}&lt;/text&gt;
+        &lt;/collapse-item&gt;
+      &lt;/view&gt;
+    &lt;/collapse-item&gt;
+
+    &lt;view class=&quot;bottom-space&quot;&gt;&lt;/view&gt;
+
+  &lt;/scroll-view&gt;
+
+  &lt;!-- 底部邮件支持条：点击复制客服邮箱 --&gt;
+  &lt;view class=&quot;support-bar&quot;&gt;
+    &lt;text class=&quot;support-hint&quot;&gt;没找到答案？&lt;/text&gt;
+    &lt;view class=&quot;support-link&quot; aria-role=&quot;button&quot; aria-label=&quot;复制邮件支持邮箱 {{supportEmail}}&quot; bindtap
+    =&quot;onCopySupportEmail&quot;&gt;
+      &lt;view class=&quot;support-copy&quot;&gt;
+        &lt;text class=&quot;support-label&quot;&gt;邮件支持&lt;/text&gt;
+        &lt;text class=&quot;support-email&quot;&gt;{{supportEmail}}&lt;/text&gt;
+      &lt;/view&gt;
+      &lt;text class=&quot;support-action&quot;&gt;复制&lt;/text&gt;
+    &lt;/view&gt;
+  &lt;/view&gt;
+
+&lt;/view&gt;</pre></div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+
+digraph G {
+  rankdir=TB;
+  graph [fontname="Songti SC", fontsize=12, bgcolor="white", pad=0.2, nodesep=0.35, ranksep=0.55];
+  node  [fontname="Songti SC", fontsize=12, style="filled,rounded", shape=box, color="#555", fillcolor="#f5f5f5", margin="0.12,0.06"];
+  edge  [fontname="Songti SC", fontsize=10, color="#555"];
+
+  subgraph cluster_ext { label="外部"; style=dashed; color="#999";
+    web [label="manager-web\n智控台前端", fillcolor="#e8f0fe"];
+    mob [label="manager-mobile\n移动管理端", fillcolor="#e8f0fe"];
+    py  [label="xiaozhi-server\nPython AI 核心", fillcolor="#e8f0fe"];
+    esp [label="ESP32 设备", fillcolor="#e8f0fe"];
+  }
+
+  subgraph cluster_in { label="爱予慧AI智能体管理服务后端"; style="rounded"; color="#333"; penwidth=1.2;
+    subgraph cluster_l1 { label="接入层"; style="rounded"; color="#888";
+      ctl [label="Controller 层\n(@RestController, /xiaozhi)", fillcolor="#fff3e0"];
+      knf [label="Knife4j/SpringDoc\n接口文档", fillcolor="#fff3e0"];
+    }
+    subgraph cluster_l2 { label="控制层"; style="rounded"; color="#888";
+      shiro [label="Shiro 过滤器链\nauthc/jwt/anon", fillcolor="#e8f5e9"];
+      gh    [label="全局 Handler\n异常/XSS/参数解析", fillcolor="#e8f5e9"];
+      asp   [label="Aspect 切面\n操作日志/幂等", fillcolor="#e8f5e9"];
+    }
+    subgraph cluster_l3 { label="服务层"; style="rounded"; color="#888";
+      svc [label="Service 业务\ndevice/agent/config/pdc/pet\nvoiceclone/sys/...", fillcolor="#f3e5f5"];
+    }
+    subgraph cluster_l4 { label="持久化层"; style="rounded"; color="#888";
+      mp  [label="MyBatis-Plus DAO\n+ Liquibase 迁移", fillcolor="#fce4ec"];
+      ob  [label="OceanBase\n(MySQL 兼容)", fillcolor="#fce4ec"];
+      rd  [label="Redis\n缓存/会话", fillcolor="#fce4ec"];
+    }
+  }
+
+  web -> ctl [label="REST /xiaozhi"];
+  mob -> ctl;
+  ctl -> shiro [label="请求拦截"];
+  shiro -> gh;
+  gh -> asp;
+  asp -> svc;
+  svc -> mp [label="CRUD"];
+  mp -> ob;
+  svc -> rd [label="缓存读写"];
+  svc -> py  [label="配置下发", style=dashed];
+  py  -> esp [label="WebSocket", style=dashed];
+}

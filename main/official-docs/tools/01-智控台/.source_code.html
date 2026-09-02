@@ -1,0 +1,3625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+@page {
+  size: A4;
+  margin: 22mm 15mm 18mm 15mm;
+  @top-center { content: "爱予慧AI智能体管理平台 V1.0"; font-family: "Songti SC", "SimSun", serif; font-size: 10.5pt; }
+  @top-right { content: "第 " counter(page) " 页"; font-family: "Songti SC", "SimSun", serif; font-size: 9pt; }
+}
+body { margin: 0; }
+.src-page { page-break-after: always; }
+.src-page pre {
+  margin: 0;
+  font-family: "Menlo", "Courier New", "Songti SC", "SimSun", monospace;
+  font-size: 8pt;
+  line-height: 3.95mm;
+  white-space: pre;
+}
+</style>
+</head>
+<body>
+<div class="src-page"><pre>// ===== 文件: src/main.js =====
+import &#x27;element-ui/lib/theme-chalk/index.css&#x27;;
+import &#x27;normalize.css/normalize.css&#x27;; // A modern alternative to CSS resets
+import Vue from &#x27;vue&#x27;;
+import ElementUI from &#x27;element-ui&#x27;;
+import App from &#x27;./App.vue&#x27;;
+import router from &#x27;./router&#x27;;
+import store from &#x27;./store&#x27;;
+import i18n from &#x27;./i18n&#x27;;
+import locale from &#x27;element-ui/lib/locale&#x27;
+import &#x27;./styles/global.scss&#x27;;
+import { register as registerServiceWorker } from &#x27;./registerServiceWorker&#x27;;
+import featureManager from &#x27;./utils/featureManager&#x27;;
+
+// 创建事件总线，用于组件间通信
+Vue.prototype.$eventBus = new Vue();
+
+Vue.use(ElementUI);
+locale.i18n((key, value) =&gt; i18n.t(key, value))
+
+Vue.config.productionTip = false
+
+// 注册Service Worker
+registerServiceWorker();
+
+// 创建Vue实例
+new Vue({
+  router,
+  store,
+  i18n,
+  render: function (h) { return h(App) }
+}).$mount(&#x27;#app&#x27;)
+// ===== 文件: src/App.vue =====
+&lt;template&gt;
+  &lt;div id=&quot;app&quot;&gt;
+    &lt;router-view /&gt;
+    &lt;cache-viewer v-if=&quot;isCDNEnabled&quot; :visible.sync=&quot;showCacheViewer&quot; /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;style lang=&quot;scss&quot;&gt;
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+
+nav {
+  padding: 30px;
+
+  a {
+    font-weight: bold;
+    color: #2c3e50;
+
+    &amp;.router-link-exact-active {
+      color: #42b983;
+    }
+  }</pre></div>
+<div class="src-page"><pre>}
+
+.copyright {
+  padding: 0 !important;
+  color: rgb(0, 0, 0);
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.el-message {
+  top: 70px !important;
+}
+&lt;/style&gt;
+&lt;script&gt;
+import CacheViewer from &#x27;@/components/CacheViewer.vue&#x27;;
+import { logCacheStatus } from &#x27;@/utils/cacheViewer&#x27;;
+
+export default {
+  name: &#x27;App&#x27;,
+  components: {
+    CacheViewer
+  },
+  data() {
+    return {
+      showCacheViewer: false,
+      isCDNEnabled: process.env.VUE_APP_USE_CDN === &#x27;true&#x27;
+    };
+  },
+  created() {
+    // 挂载 store 状态
+    this.$store.commit(&#x27;setUserInfo&#x27;, JSON.parse(localStorage.getItem(&#x27;userInfo&#x27;) || &#x27;{}&#x27;));
+    this.$store.commit(&#x27;setPubConfig&#x27;, JSON.parse(localStorage.getItem(&#x27;pubConfig&#x27;) || &#x27;{}&#x27;));
+  },
+  mounted() {
+    // 检测是否为移动设备且VUE_APP_H5_URL不为空，如果两个条件都满足则跳转到H5页面
+    if (this.isMobileDevice() &amp;&amp; process.env.VUE_APP_H5_URL) {
+      window.location.href = process.env.VUE_APP_H5_URL;
+      return;
+    }
+
+    // 只有在启用CDN时才添加相关事件和功能
+    if (this.isCDNEnabled) {
+      // 添加全局快捷键Alt+C用于显示缓存查看器
+      document.addEventListener(&#x27;keydown&#x27;, this.handleKeyDown);
+
+      // 在全局对象上添加缓存检查方法，便于调试
+      window.checkCDNCacheStatus = () =&gt; {
+        this.showCacheViewer = true;
+      };
+
+      // 在控制台输出提示信息
+      console.info(
+        &#x27;%c[&#x27; + this.$t(&#x27;system.name&#x27;) + &#x27;] &#x27; + this.$t(&#x27;cache.cdnEnabled&#x27;),
+        &#x27;color: #409EFF; font-weight: bold;&#x27;</pre></div>
+<div class="src-page"><pre>      );
+      console.info(
+        &#x27;按下 Alt+C 组合键或在控制台运行 checkCDNCacheStatus() 可以查看CDN缓存状态&#x27;
+      );
+
+      // 检查Service Worker状态
+      this.checkServiceWorkerStatus();
+    } else {
+      console.info(
+        &#x27;%c[&#x27; + this.$t(&#x27;system.name&#x27;) + &#x27;] &#x27; + this.$t(&#x27;cache.cdnDisabled&#x27;),
+        &#x27;color: #67C23A; font-weight: bold;&#x27;
+      );
+    }
+  },
+  beforeDestroy() {
+    // 只有在启用CDN时才需要移除事件监听
+    if (this.isCDNEnabled) {
+      document.removeEventListener(&#x27;keydown&#x27;, this.handleKeyDown);
+    }
+  },
+  methods: {
+    handleKeyDown(e) {
+      // Alt+C 快捷键
+      if (e.altKey &amp;&amp; e.key === &#x27;c&#x27;) {
+        this.showCacheViewer = true;
+      }
+    },
+    isMobileDevice() {
+      // 检测是否为移动设备的函数
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    },
+
+    async checkServiceWorkerStatus() {
+      // 检查Service Worker是否已注册
+      if (&#x27;serviceWorker&#x27; in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          if (registrations.length &gt; 0) {
+            console.info(
+              &#x27;%c[&#x27; + this.$t(&#x27;system.name&#x27;) + &#x27;] &#x27; + this.$t(&#x27;cache.serviceWorkerRegistered&#x27;),
+              &#x27;color: #67C23A; font-weight: bold;&#x27;
+            );
+
+            // 输出缓存状态到控制台
+            setTimeout(async () =&gt; {
+              const hasCaches = await logCacheStatus();
+              if (!hasCaches) {
+                console.info(
+                &#x27;%c[&#x27; + this.$t(&#x27;system.name&#x27;) + &#x27;] &#x27; + this.$t(&#x27;cache.noCacheDetected&#x27;),
+                &#x27;color: #E6A23C; font-weight: bold;&#x27;
+              );
+
+              // 开发环境下提供额外提示
+              if (process.env.NODE_ENV === &#x27;development&#x27;) {
+                console.info(
+                  &#x27;%c[&#x27; + this.$t(&#x27;system.name&#x27;) + &#x27;] &#x27; + this.$t(&#x27;cache.swDevEnvWarning&#x27;),
+                  &#x27;color: #E6A23C; font-weight: bold;&#x27;
+                );
+                console.info(this.$t(&#x27;cache.swCheckMethods&#x27;));
+                console.info(&#x27;1. &#x27; + this.$t(&#x27;cache.swCheckMethod1&#x27;));</pre></div>
+<div class="src-page"><pre>                console.info(&#x27;2. &#x27; + this.$t(&#x27;cache.swCheckMethod2&#x27;));
+                console.info(&#x27;3. &#x27; + this.$t(&#x27;cache.swCheckMethod3&#x27;));
+              }
+              }
+            }, 2000);
+          } else {
+            console.info(
+                  &#x27;%c[&#x27; + this.$t(&#x27;system.name&#x27;) + &#x27;] &#x27; + this.$t(&#x27;cache.serviceWorkerNotRegistered&#x27;),
+                  &#x27;color: #F56C6C; font-weight: bold;&#x27;
+                );
+
+                if (process.env.NODE_ENV === &#x27;development&#x27;) {
+                  console.info(
+                    &#x27;%c[&#x27; + this.$t(&#x27;system.name&#x27;) + &#x27;] &#x27; + this.$t(&#x27;cache.swDevEnvNormal&#x27;),
+                    &#x27;color: #E6A23C; font-weight: bold;&#x27;
+                  );
+                  console.info(this.$t(&#x27;cache.swProdOnly&#x27;));
+                  console.info(this.$t(&#x27;cache.swTestingTitle&#x27;));
+                  console.info(&#x27;1. &#x27; + this.$t(&#x27;cache.swTestingStep1&#x27;));
+                  console.info(&#x27;2. &#x27; + this.$t(&#x27;cache.swTestingStep2&#x27;));
+                }
+          }
+        } catch (error) {
+          console.error(&#x27;检查Service Worker状态失败:&#x27;, error);
+        }
+      } else {
+          console.warn(this.$t(&#x27;cache.swNotSupported&#x27;));
+        }
+    }
+  }
+};
+&lt;/script&gt;
+// ===== 文件: src/registerServiceWorker.js =====
+/* eslint-disable no-console */
+
+export const register = () =&gt; {
+  if (process.env.NODE_ENV === &#x27;production&#x27; &amp;&amp; &#x27;serviceWorker&#x27; in navigator) {
+    window.addEventListener(&#x27;load&#x27;, () =&gt; {
+      const swUrl = `${process.env.BASE_URL}service-worker.js`;
+
+      console.info(`[小智服务] 正在尝试注册Service Worker，URL: ${swUrl}`);
+
+      // 先检查Service Worker是否已注册
+      navigator.serviceWorker.getRegistrations().then(registrations =&gt; {
+        if (registrations.length &gt; 0) {
+          console.info(&#x27;[小智服务] 发现已有Service Worker注册，正在检查更新&#x27;);
+        }
+
+        // 继续注册Service Worker
+        navigator.serviceWorker
+          .register(swUrl)
+          .then(registration =&gt; {
+            console.info(&#x27;[小智服务] Service Worker注册成功&#x27;);
+
+            // 更新处理
+            registration.onupdatefound = () =&gt; {
+              const installingWorker = registration.installing;
+              if (installingWorker == null) {
+                return;
+              }</pre></div>
+<div class="src-page"><pre>              installingWorker.onstatechange = () =&gt; {
+                if (installingWorker.state === &#x27;installed&#x27;) {
+                  if (navigator.serviceWorker.controller) {
+                    // 内容已缓存更新，通知用户刷新
+                    console.log(&#x27;[小智服务] 新内容可用，请刷新页面&#x27;);
+                    // 可以在这里展示更新提示
+                    const updateNotification = document.createElement(&#x27;div&#x27;);
+                    updateNotification.style.cssText = `
+                      position: fixed;
+                      bottom: 20px;
+                      right: 20px;
+                      background: #409EFF;
+                      color: white;
+                      padding: 12px 20px;
+                      border-radius: 4px;
+                      box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+                      z-index: 9999;
+                    `;
+                    updateNotification.innerHTML = `
+                      &lt;div style=&quot;display: flex; align-items: center;&quot;&gt;
+                        &lt;span style=&quot;margin-right: 10px;&quot;&gt;发现新版本，点击刷新应用&lt;/span&gt;
+                        &lt;button style=&quot;background: white; color: #409EFF; border: none; padding: 5px 10p
+    x; border-radius: 3px; cursor: pointer;&quot;&gt;刷新&lt;/button&gt;
+                      &lt;/div&gt;
+                    `;
+                    document.body.appendChild(updateNotification);
+                    updateNotification.querySelector(&#x27;button&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; {
+                      window.location.reload();
+                    });
+                  } else {
+                    // 一切正常，Service Worker已成功安装
+                    console.log(&#x27;[小智服务] 内容已缓存供离线使用&#x27;);
+
+                    // 可以在这里初始化缓存
+                    setTimeout(() =&gt; {
+                      // 预热CDN缓存
+                      const cdnUrls = [
+                        &#x27;https://unpkg.com/element-ui@2.15.14/lib/theme-chalk/index.css&#x27;,
+                        &#x27;https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css&#x27;,
+                        &#x27;https://unpkg.com/vue@2.6.14/dist/vue.min.js&#x27;,
+                        &#x27;https://unpkg.com/vue-router@3.6.5/dist/vue-router.min.js&#x27;,
+                        &#x27;https://unpkg.com/vuex@3.6.2/dist/vuex.min.js&#x27;,
+                        &#x27;https://unpkg.com/element-ui@2.15.14/lib/index.js&#x27;,
+                        &#x27;https://unpkg.com/axios@0.27.2/dist/axios.min.js&#x27;,
+                        &#x27;https://unpkg.com/opus-decoder@0.7.7/dist/opus-decoder.min.js&#x27;
+                      ];
+
+                      // 预热缓存
+                      cdnUrls.forEach(url =&gt; {
+                        fetch(url, { mode: &#x27;no-cors&#x27; }).catch(err =&gt; {
+                          console.log(`预热缓存 ${url} 失败`, err);
+                        });
+                      });
+                    }, 2000);
+                  }
+                }
+              };
+            };
+          })
+          .catch(error =&gt; {</pre></div>
+<div class="src-page"><pre>            console.error(&#x27;Service Worker 注册失败:&#x27;, error);
+
+            if (error.name === &#x27;TypeError&#x27; &amp;&amp; error.message.includes(&#x27;Failed to register a ServiceWorker
+    &#x27;)) {
+              console.warn(&#x27;[小智服务] 注册Service Worker时出现网络错误，CDN资源可能无法缓存&#x27;);
+              if (process.env.NODE_ENV === &#x27;production&#x27;) {
+                console.info(
+                  &#x27;可能原因：1. 服务器未配置正确的MIME类型 2. 服务器SSL证书问题 3. 服务器未返回service-w
+    orker.js文件&#x27;
+                );
+              }
+            }
+          });
+      });
+    });
+  }
+};
+
+export const unregister = () =&gt; {
+  if (&#x27;serviceWorker&#x27; in navigator) {
+    navigator.serviceWorker.ready
+      .then(registration =&gt; {
+        registration.unregister();
+      })
+      .catch(error =&gt; {
+        console.error(error.message);
+      });
+  }
+};
+// ===== 文件: src/service-worker.js =====
+/* global self, workbox */
+
+// 自定义Service Worker安装和激活的处理逻辑
+self.addEventListener(&#x27;message&#x27;, (event) =&gt; {
+  if (event.data &amp;&amp; event.data.type === &#x27;SKIP_WAITING&#x27;) {
+    self.skipWaiting();
+  }
+});
+
+// CDN资源列表
+const CDN_CSS = [
+  &#x27;https://unpkg.com/element-ui@2.15.14/lib/theme-chalk/index.css&#x27;,
+  &#x27;https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css&#x27;
+];
+
+const CDN_JS = [
+  &#x27;https://unpkg.com/vue@2.6.14/dist/vue.min.js&#x27;,
+  &#x27;https://unpkg.com/vue-router@3.6.5/dist/vue-router.min.js&#x27;,
+  &#x27;https://unpkg.com/vuex@3.6.2/dist/vuex.min.js&#x27;,
+  &#x27;https://unpkg.com/element-ui@2.15.14/lib/index.js&#x27;,
+  &#x27;https://unpkg.com/axios@0.27.2/dist/axios.min.js&#x27;,
+  &#x27;https://unpkg.com/opus-decoder@0.7.7/dist/opus-decoder.min.js&#x27;
+];
+
+// 当Service Worker被注入manifest后会自动执行
+const manifest = self.__WB_MANIFEST || [];
+
+// 检查是否启用CDN模式
+const isCDNEnabled = manifest.some(entry =&gt;
+  entry.url === &#x27;cdn-mode&#x27; &amp;&amp; entry.revision === &#x27;enabled&#x27;</pre></div>
+<div class="src-page"><pre>);
+
+console.log(`Service Worker 已初始化, CDN模式: ${isCDNEnabled ? &#x27;启用&#x27; : &#x27;禁用&#x27;}`);
+
+// 注入workbox相关代码
+importScripts(&#x27;https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js&#x27;);
+workbox.setConfig({ debug: false });
+
+// 开启workbox
+workbox.core.skipWaiting();
+workbox.core.clientsClaim();
+
+// 预缓存离线页面
+const OFFLINE_URL = &#x27;/offline.html&#x27;;
+workbox.precaching.precacheAndRoute([
+  { url: OFFLINE_URL, revision: null }
+]);
+
+// 添加安装完成事件处理器，在控制台显示安装消息
+self.addEventListener(&#x27;install&#x27;, event =&gt; {
+  if (isCDNEnabled) {
+    console.log(&#x27;Service Worker 已安装，开始缓存CDN资源&#x27;);
+  } else {
+    console.log(&#x27;Service Worker 已安装，CDN模式禁用，仅缓存本地资源&#x27;);
+  }
+
+  // 确保离线页面被缓存
+  event.waitUntil(
+    caches.open(&#x27;offline-cache&#x27;).then((cache) =&gt; {
+      return cache.add(OFFLINE_URL);
+    })
+  );
+});
+
+// 添加激活事件处理器
+self.addEventListener(&#x27;activate&#x27;, event =&gt; {
+  console.log(&#x27;Service Worker 已激活，现在控制着页面&#x27;);
+
+  // 清理旧版本缓存
+  event.waitUntil(
+    caches.keys().then(cacheNames =&gt; {
+      return Promise.all(
+        cacheNames.filter(cacheName =&gt; {
+          // 清理除当前版本外的缓存
+          return cacheName.startsWith(&#x27;workbox-&#x27;) &amp;&amp; !workbox.core.cacheNames.runtime.includes(cacheName
+    );
+        }).map(cacheName =&gt; {
+          return caches.delete(cacheName);
+        })
+      );
+    })
+  );
+});
+
+// 添加fetch事件拦截器，用于查看CDN资源是否命中缓存
+self.addEventListener(&#x27;fetch&#x27;, event =&gt; {
+  // 只有启用CDN模式时才进行CDN资源缓存监控
+  if (isCDNEnabled) {
+    const url = new URL(event.request.url);
+</pre></div>
+<div class="src-page"><pre>    // 针对CDN资源，输出是否命中缓存的信息
+    if ([...CDN_CSS, ...CDN_JS].includes(url.href)) {
+      // 不干扰正常的fetch流程，只添加日志
+      console.log(`请求CDN资源: ${url.href}`);
+    }
+  }
+});
+
+// 仅在CDN模式下缓存CDN资源
+if (isCDNEnabled) {
+  // 缓存CDN的CSS资源
+  workbox.routing.registerRoute(
+    ({ url }) =&gt; CDN_CSS.includes(url.href),
+    new workbox.strategies.CacheFirst({
+      cacheName: &#x27;cdn-stylesheets&#x27;,
+      plugins: [
+        new workbox.expiration.ExpirationPlugin({
+          maxAgeSeconds: 365 * 24 * 60 * 60, // 增加到1年缓存
+          maxEntries: 10, // 最多缓存10个CSS文件
+        }),
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200], // 缓存成功响应
+        }),
+      ],
+    })
+  );
+
+  // 缓存CDN的JS资源
+  workbox.routing.registerRoute(
+    ({ url }) =&gt; CDN_JS.includes(url.href),
+    new workbox.strategies.CacheFirst({
+      cacheName: &#x27;cdn-scripts&#x27;,
+      plugins: [
+        new workbox.expiration.ExpirationPlugin({
+          maxAgeSeconds: 365 * 24 * 60 * 60, // 增加到1年缓存
+          maxEntries: 20, // 最多缓存20个JS文件
+        }),
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200], // 缓存成功响应
+        }),
+      ],
+    })
+  );
+}
+
+// 无论是否启用CDN模式，都缓存本地静态资源
+workbox.routing.registerRoute(
+  /\.(?:js|css|png|jpg|jpeg|svg|gif|ico|woff|woff2|eot|ttf|otf)$/,
+  new workbox.strategies.StaleWhileRevalidate({
+    cacheName: &#x27;static-resources&#x27;,
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxAgeSeconds: 7 * 24 * 60 * 60, // 7天缓存
+        maxEntries: 50, // 最多缓存50个文件
+      }),
+    ],
+  })
+);
+
+// 缓存HTML页面</pre></div>
+<div class="src-page"><pre>workbox.routing.registerRoute(
+  /\.html$/,
+  new workbox.strategies.NetworkFirst({
+    cacheName: &#x27;html-cache&#x27;,
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxAgeSeconds: 1 * 24 * 60 * 60, // 1天缓存
+        maxEntries: 10, // 最多缓存10个HTML文件
+      }),
+    ],
+  })
+);
+
+// 离线页面 - 使用更可靠的处理方式
+workbox.routing.setCatchHandler(async ({ event }) =&gt; {
+  // 根据请求类型返回适当的默认页面
+  switch (event.request.destination) {
+    case &#x27;document&#x27;:
+      // 如果是网页请求，返回离线页面
+      return caches.match(OFFLINE_URL);
+    default:
+      // 所有其他请求返回错误
+      return Response.error();
+  }
+});
+// ===== 文件: src/router/index.js =====
+import Vue from &#x27;vue&#x27;
+import VueRouter from &#x27;vue-router&#x27;
+import { canAccessRoute, readStoredUserInfo } from &#x27;./access.mjs&#x27;
+
+Vue.use(VueRouter)
+
+const routes = [
+  {
+    path: &#x27;/&#x27;,
+    name: &#x27;welcome&#x27;,
+    component: function () {
+      return import(&#x27;../views/login.vue&#x27;)
+    }
+  },
+  {
+    path: &#x27;/role-config&#x27;,
+    name: &#x27;RoleConfig&#x27;,
+    component: function () {
+      return import(&#x27;../views/roleConfig.vue&#x27;)
+    }
+  },
+  {
+    path: &#x27;/voice-print&#x27;,
+    name: &#x27;VoicePrint&#x27;,
+    component: function () {
+      return import(&#x27;../views/VoicePrint.vue&#x27;)
+    }
+  },
+  {
+    path: &#x27;/login&#x27;,
+    name: &#x27;login&#x27;,
+    component: function () {
+      return import(&#x27;../views/login.vue&#x27;)
+    }</pre></div>
+<div class="src-page"><pre>  },
+  {
+    path: &#x27;/home&#x27;,
+    name: &#x27;home&#x27;,
+    component: function () {
+      return import(&#x27;../views/home.vue&#x27;)
+    }
+  },
+  {
+    path: &#x27;/register&#x27;,
+    name: &#x27;Register&#x27;,
+    component: function () {
+      return import(&#x27;../views/register.vue&#x27;)
+    }
+  },
+  {
+    path: &#x27;/retrieve-password&#x27;,
+    name: &#x27;RetrievePassword&#x27;,
+    component: function () {
+      return import(&#x27;../views/retrievePassword.vue&#x27;)
+    }
+  },
+  // 设备管理页面路由
+  {
+    path: &#x27;/device-management&#x27;,
+    name: &#x27;DeviceManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/DeviceManagement.vue&#x27;)
+    }
+  },
+  // 添加用户管理路由
+  {
+    path: &#x27;/user-management&#x27;,
+    name: &#x27;UserManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/UserManagement.vue&#x27;)
+    }
+  },
+  {
+    path: &#x27;/model-config&#x27;,
+    name: &#x27;ModelConfig&#x27;,
+    component: function () {
+      return import(&#x27;../views/ModelConfig.vue&#x27;)
+    }
+  },
+  {
+    path: &#x27;/params-management&#x27;,
+    name: &#x27;ParamsManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/ParamsManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;参数管理&#x27;
+    }
+  },
+  {
+    path: &#x27;/knowledge-base-management&#x27;,
+    name: &#x27;KnowledgeBaseManagement&#x27;,
+    component: function () {</pre></div>
+<div class="src-page"><pre>      return import(&#x27;../views/KnowledgeBaseManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;知识库管理&#x27;
+    }
+  },
+  {
+    path: &#x27;/server-side-management&#x27;,
+    name: &#x27;ServerSideManager&#x27;,
+    component: function () {
+      return import(&#x27;../views/ServerSideManager.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;服务端管理&#x27;
+    }
+  },
+  {
+    path: &#x27;/ota-management&#x27;,
+    name: &#x27;OtaManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/OtaManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;OTA管理&#x27;
+    }
+  },
+  {
+    path: &#x27;/voice-resource-management&#x27;,
+    name: &#x27;VoiceResourceManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/VoiceResourceManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;音色资源开通&#x27;
+    }
+  },
+  {
+    path: &#x27;/voice-clone-management&#x27;,
+    name: &#x27;VoiceCloneManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/VoiceCloneManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;音色克隆管理&#x27;
+    }
+  },
+  {
+    path: &#x27;/dict-management&#x27;,
+    name: &#x27;DictManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/DictManagement.vue&#x27;)
+    }
+  },
+  {
+    path: &#x27;/provider-management&#x27;,</pre></div>
+<div class="src-page"><pre>    name: &#x27;ProviderManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/ProviderManagement.vue&#x27;)
+    }
+  },
+  // 添加默认角色管理路由
+  {
+    path: &#x27;/agent-template-management&#x27;,
+    name: &#x27;AgentTemplateManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/AgentTemplateManagement.vue&#x27;)
+    }
+  },
+  // 添加模板快速配置路由
+  {
+    path: &#x27;/template-quick-config&#x27;,
+    name: &#x27;TemplateQuickConfig&#x27;,
+    component: function () {
+      return import(&#x27;../views/TemplateQuickConfig.vue&#x27;)
+    }
+  },
+  // 功能配置页面路由
+  {
+    path: &#x27;/feature-management&#x27;,
+    name: &#x27;FeatureManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/FeatureManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;功能配置&#x27;
+    }
+  },
+  // 替换词管理
+  {
+    path: &#x27;/replacement-word-management&#x27;,
+    name: &#x27;ReplacementWordManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/ReplacementWordManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;替换词管理&#x27;
+    }
+  },
+  // 通讯录管理页面路由
+  {
+    path: &#x27;/address-book-management&#x27;,
+    name: &#x27;AddressBookManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/AddressBookManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;通讯录管理&#x27;
+    }
+  },
+  // ==================== NFC 生产管理路由 ====================
+  {
+    path: &#x27;/pdc-nfc/product-types&#x27;,</pre></div>
+<div class="src-page"><pre>    name: &#x27;NfcProductTypes&#x27;,
+    component: function () {
+      return import(&#x27;../views/nfc/NfcProductTypeManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: &#x27;NFC 商品类型&#x27;
+    }
+  },
+  {
+    path: &#x27;/pdc-nfc/batches&#x27;,
+    name: &#x27;NfcBatches&#x27;,
+    component: function () {
+      return import(&#x27;../views/nfc/NfcBatchManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: &#x27;NFC 批次管理&#x27;
+    }
+  },
+  {
+    path: &#x27;/pdc-nfc/scheme&#x27;,
+    name: &#x27;NfcScheme&#x27;,
+    component: function () {
+      return import(&#x27;../views/nfc/NfcSchemeManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: &#x27;NFC Scheme 任务&#x27;
+    }
+  },
+  {
+    path: &#x27;/pdc-nfc/write&#x27;,
+    name: &#x27;NfcWrite&#x27;,
+    component: function () {
+      return import(&#x27;../views/nfc/NfcWriteJobManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: &#x27;NFC 写卡任务&#x27;
+    }
+  },
+  {
+    path: &#x27;/pdc-nfc/manual-write/:jobId&#x27;,
+    name: &#x27;NfcManualWrite&#x27;,
+    component: function () {
+      return import(&#x27;../views/nfc/NfcManualWrite.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: &#x27;NFC 手动写卡&#x27;
+    }
+  },
+  {
+    path: &#x27;/pdc-nfc/assets&#x27;,</pre></div>
+<div class="src-page"><pre>    name: &#x27;NfcAssets&#x27;,
+    component: function () {
+      return import(&#x27;../views/nfc/NfcAssetManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: &#x27;NFC 资产管理&#x27;
+    }
+  },
+  {
+    path: &#x27;/pdc-nfc/activation&#x27;,
+    name: &#x27;NfcActivation&#x27;,
+    component: function () {
+      return import(&#x27;../views/nfc/NfcActivationManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: &#x27;NFC 扫码激活&#x27;
+    }
+  },
+  {
+    path: &#x27;/pdc-nfc/audit&#x27;,
+    name: &#x27;NfcAudit&#x27;,
+    component: function () {
+      return import(&#x27;../views/nfc/NfcOperationLogManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: &#x27;NFC 审计日志&#x27;
+    }
+  },
+  // 故事引擎内容运营页面路由
+  {
+    path: &#x27;/story-engine-management&#x27;,
+    name: &#x27;StoryEngineManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/StoryEngineManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;故事引擎&#x27;
+    }
+  },
+  // 用户反馈管理页面路由
+  {
+    path: &#x27;/feedback-management&#x27;,
+    name: &#x27;FeedbackManagement&#x27;,
+    component: function () {
+      return import(&#x27;../views/FeedbackManagement.vue&#x27;)
+    },
+    meta: {
+      requiresAuth: true,
+      title: &#x27;反馈管理&#x27;
+    }
+  },
+]
+const router = new VueRouter({</pre></div>
+<div class="src-page"><pre>  base: process.env.VUE_APP_PUBLIC_PATH || &#x27;/&#x27;,
+  routes
+})
+
+// 全局处理重复导航，改为刷新页面
+const originalPush = VueRouter.prototype.push
+VueRouter.prototype.push = function push(location) {
+  return originalPush.call(this, location).catch(err =&gt; {
+    if (err.name === &#x27;NavigationDuplicated&#x27;) {
+      // 如果是重复导航，刷新页面
+      window.location.reload()
+    } else {
+      // 其他错误正常抛出
+      throw err
+    }
+  })
+}
+
+// 需要登录才能访问的路由
+const protectedRoutes = [&#x27;home&#x27;, &#x27;RoleConfig&#x27;, &#x27;DeviceManagement&#x27;, &#x27;UserManagement&#x27;, &#x27;ModelConfig&#x27;, &#x27;Kno
+    wledgeBaseManagement&#x27;, &#x27;KnowledgeFileUpload&#x27;, &#x27;AddressBookManagement&#x27;]
+
+// 路由守卫
+router.beforeEach((to, from, next) =&gt; {
+  // 检查是否是需要保护的路由
+  if (protectedRoutes.includes(to.name)) {
+    // 从localStorage获取token
+    const token = localStorage.getItem(&#x27;token&#x27;)
+    if (!token) {
+      // 未登录，跳转到登录页
+      next({ name: &#x27;login&#x27;, query: { redirect: to.fullPath } })
+      return
+    }
+  }
+
+  // NFC 路由使用 meta 驱动的访问控制
+  if (to.meta &amp;&amp; (to.meta.requiresAuth || to.meta.requiresSuperAdmin)) {
+    const token = localStorage.getItem(&#x27;token&#x27;)
+    // 优先使用 Vuex 中的 userInfo，刷新竞态时回退到 localStorage
+    const vuexUserInfo = router.app &amp;&amp; router.app.$store ? router.app.$store.state.userInfo : null
+    const userInfo = vuexUserInfo || readStoredUserInfo()
+    const result = canAccessRoute(to, token, userInfo)
+    if (!result.allowed) {
+      next({ path: result.redirect, query: result.redirect === &#x27;/login&#x27; ? { redirect: to.fullPath } : {}
+     })
+      return
+    }
+  }
+
+  next()
+})
+
+export default router
+// ===== 文件: src/store/index.js =====
+import { goToPage } from &quot;@/utils&quot;;
+import Vue from &#x27;vue&#x27;;
+import Vuex from &#x27;vuex&#x27;;
+import Api from &#x27;../apis/api&#x27;;
+import Constant from &#x27;../utils/constant&#x27;;
+</pre></div>
+<div class="src-page"><pre>Vue.use(Vuex)
+
+export default new Vuex.Store({
+  state: {
+    token: &#x27;&#x27;,
+    userInfo: {}, // 添加用户信息存储
+    pubConfig: { // 添加公共配置存储
+      version: &#x27;&#x27;,
+      beianIcpNum: &#x27;null&#x27;,
+      beianGaNum: &#x27;null&#x27;,
+      allowUserRegister: false,
+      sm2PublicKey: &#x27;&#x27;
+    }
+  },
+  getters: {
+    getToken(state) {
+      if (!state.token) {
+        state.token = localStorage.getItem(&#x27;token&#x27;)
+      }
+      return state.token
+    },
+    getUserInfo(state) {
+      return state.userInfo
+    },
+    getPubConfig(state) {
+      return state.pubConfig
+    }
+  },
+  mutations: {
+    setToken(state, token) {
+      state.token = token
+      localStorage.setItem(&#x27;token&#x27;, token)
+    },
+    setUserInfo(state, userInfo) {
+      state.userInfo = userInfo
+      localStorage.setItem(&#x27;userInfo&#x27;, JSON.stringify(userInfo))
+    },
+    setPubConfig(state, config) {
+      state.pubConfig = config
+      localStorage.setItem(&#x27;pubConfig&#x27;, JSON.stringify(config))
+    },
+    clearAuth(state) {
+      state.token = &#x27;&#x27;
+      state.userInfo = {}
+      localStorage.removeItem(&#x27;token&#x27;)
+      localStorage.removeItem(&#x27;userInfo&#x27;)
+    }
+  },
+  actions: {
+    // 添加 logout action
+    logout({ commit }) {
+      return new Promise((resolve) =&gt; {
+        commit(&#x27;clearAuth&#x27;)
+        goToPage(Constant.PAGE.LOGIN, true);
+      })
+    },
+    // 添加获取公共配置的 action
+    fetchPubConfig({ commit }) {
+      return new Promise((resolve) =&gt; {
+        Api.user.getPubConfig(({ data }) =&gt; {</pre></div>
+<div class="src-page"><pre>          if (data.code === 0) {
+            commit(&#x27;setPubConfig&#x27;, data.data);
+          }
+          resolve();
+        });
+      });
+    }
+  },
+  modules: {
+  }
+})
+// ===== 文件: src/apis/api.js =====
+// 引入各个模块的请求
+import admin from &#x27;./module/admin.js&#x27;
+import agent from &#x27;./module/agent.js&#x27;
+import device from &#x27;./module/device.js&#x27;
+import dict from &#x27;./module/dict.js&#x27;
+import model from &#x27;./module/model.js&#x27;
+import ota from &#x27;./module/ota.js&#x27;
+import timbre from &quot;./module/timbre.js&quot;
+import user from &#x27;./module/user.js&#x27;
+import voiceClone from &#x27;./module/voiceClone.js&#x27;
+import voiceResource from &#x27;./module/voiceResource.js&#x27;
+import knowledgeBase from &#x27;./module/knowledgeBase.js&#x27;
+import correctWord from &#x27;./module/correctWord.js&#x27;
+import addressBook from &#x27;./module/addressBook.js&#x27;
+import pdcNfc from &#x27;./module/pdcNfc.js&#x27;
+import storyEngine from &#x27;./module/storyEngine.js&#x27;
+import feedback from &#x27;./module/feedback.js&#x27;
+
+
+
+/**
+ * 接口地址
+ * 开发时自动读取使用.env.development文件
+ * 编译时自动读取使用.env.production文件
+ */
+const DEV_API_SERVICE = process.env.VUE_APP_API_BASE_URL
+
+/**
+ * 根据开发环境返回接口url
+ * @returns {string}
+ */
+export function getServiceUrl() {
+    return DEV_API_SERVICE
+}
+
+/** request服务封装 */
+export default {
+    getServiceUrl,
+    user,
+    admin,
+    agent,
+    device,
+    model,
+    timbre,
+    ota,
+    dict,
+    voiceResource,
+    voiceClone,</pre></div>
+<div class="src-page"><pre>    knowledgeBase,
+    correctWord,
+    addressBook,
+    pdcNfc,
+    storyEngine,
+    feedback
+  }
+// ===== 文件: src/apis/httpRequest.js =====
+import Fly from &#x27;flyio/dist/npm/fly&#x27;;
+import store from &#x27;../store/index&#x27;;
+import Constant from &#x27;../utils/constant&#x27;;
+import { goToPage, isNotNull, showDanger, showWarning } from &#x27;../utils/index&#x27;;
+import i18n from &#x27;../i18n/index&#x27;;
+
+const fly = new Fly()
+// 设置超时
+fly.config.timeout = 30000
+
+/**
+ * Request服务封装
+ */
+export default {
+    sendRequest,
+    reAjaxFun,
+    clearRequestTime
+}
+
+function sendRequest() {
+    return {
+        _sucCallback: null,
+        _failCallback: null,
+        _networkFailCallback: null,
+        _method: &#x27;GET&#x27;,
+        _data: {},
+        _header: { &#x27;content-type&#x27;: &#x27;application/json; charset=utf-8&#x27; },
+        _url: &#x27;&#x27;,
+        _responseType: undefined, // 新增响应类型字段
+        &#x27;send&#x27;() {
+            // 设置语言请求头
+            const currentLang = i18n.locale;
+            // 转换语言代码格式，将zh_CN转换为zh-CN
+            let acceptLanguage = currentLang.replace(&#x27;_&#x27;, &#x27;-&#x27;);
+            // 为英语添加默认地区代码
+            if (acceptLanguage === &#x27;en&#x27;) {
+                acceptLanguage = &#x27;en-US&#x27;;
+            }
+            this._header[&#x27;Accept-Language&#x27;] = acceptLanguage;
+
+            if (isNotNull(store.getters.getToken)) {
+                this._header.Authorization = &#x27;Bearer &#x27; + (JSON.parse(store.getters.getToken)).token
+            }
+
+            // 打印请求信息
+            fly.request(this._url, this._data, {
+                method: this._method,
+                headers: this._header,
+                responseType: this._responseType
+            }).then((res) =&gt; {
+                const error = httpHandlerError(res, this._failCallback, this._networkFailCallback);
+                if (error) {</pre></div>
+<div class="src-page"><pre>                    return
+                }
+
+                if (this._sucCallback) {
+                    this._sucCallback(res)
+                }
+            }).catch((res) =&gt; {
+                // 打印失败响应
+                console.log(&#x27;catch&#x27;, res)
+                httpHandlerError(res, this._failCallback, this._networkFailCallback)
+            })
+            return this
+        },
+        &#x27;success&#x27;(callback) {
+            this._sucCallback = callback
+            return this
+        },
+        &#x27;fail&#x27;(callback) {
+            this._failCallback = callback
+            return this
+        },
+        &#x27;networkFail&#x27;(callback) {
+            this._networkFailCallback = callback
+            return this
+        },
+        &#x27;url&#x27;(url) {
+            if (url) {
+                url = url.replaceAll(&#x27;$&#x27;, &#x27;/&#x27;)
+            }
+            this._url = url
+            return this
+        },
+        &#x27;data&#x27;(data) {
+            this._data = data
+            return this
+        },
+        &#x27;method&#x27;(method) {
+            this._method = method
+            return this
+        },
+        &#x27;header&#x27;(header) {
+            this._header = header
+            return this
+        },
+        &#x27;showLoading&#x27;(showLoading) {
+            this._showLoading = showLoading
+            return this
+        },
+        &#x27;async&#x27;(flag) {
+            this.async = flag
+        },
+        // 新增类型设置方法
+        &#x27;type&#x27;(responseType) {
+            this._responseType = responseType;
+            return this;
+        }
+    }
+}
+
+/**</pre></div>
+<div class="src-page"><pre> * Info 请求完成后返回信息
+ * failCallback 回调函数
+ * networkFailCallback 回调函数
+ */
+// 在错误处理函数中添加日志
+function httpHandlerError(info, failCallback, networkFailCallback) {
+
+    /** 请求成功，退出该函数 可以根据项目需求来判断是否请求成功。这里判断的是status为200的时候是成功 */
+    let networkError = false
+    if (info.status === 200) {
+        if (info.data.code === &#x27;success&#x27; || info.data.code === 0 || info.data.code === undefined) {
+            return networkError
+        } else if (info.data.code === 401) {
+            store.commit(&#x27;clearAuth&#x27;);
+            goToPage(Constant.PAGE.LOGIN, true);
+            return true
+        } else {
+            // 直接使用后端返回的国际化消息
+            let errorMessage = info.data.msg;
+
+            if (failCallback) {
+                failCallback(info)
+            } else {
+                showDanger(errorMessage)
+            }
+            return true
+        }
+    }
+    if (networkFailCallback) {
+        networkFailCallback(info)
+    } else {
+        showDanger(`网络请求出现了错误【${info.status}】`)
+    }
+    return true
+}
+
+let requestTime = 0
+let reAjaxSec = 2
+
+function reAjaxFun(fn) {
+    let nowTimeSec = new Date().getTime() / 1000
+    if (requestTime === 0) {
+        requestTime = nowTimeSec
+    }
+    let ajaxIndex = parseInt((nowTimeSec - requestTime) / reAjaxSec)
+    if (ajaxIndex &gt; 10) {
+        showWarning(&#x27;似乎无法连接服务器&#x27;)
+    } else {
+        showWarning(&#x27;正在连接服务器(&#x27; + ajaxIndex + &#x27;)&#x27;)
+    }
+    if (ajaxIndex &lt; 10 &amp;&amp; fn) {
+        setTimeout(() =&gt; {
+            fn()
+        }, reAjaxSec * 1000)
+    }
+}
+
+function clearRequestTime() {
+    requestTime = 0
+}</pre></div>
+<div class="src-page"><pre>// ===== 文件: src/apis/module/addressBook.js =====
+import { getServiceUrl } from &#x27;../api&#x27;;
+import RequestService from &#x27;../httpRequest&#x27;;
+
+export default {
+  /**
+   * 获取设备通讯录列表
+   */
+  getAddressBookList(macAddress, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/device/address-book/${macAddress}`)
+      .method(&#x27;GET&#x27;)
+      .success((res) =&gt; {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail(() =&gt; {
+        RequestService.reAjaxFun(() =&gt; {
+          this.getAddressBookList(macAddress, callback);
+        });
+      }).send();
+  },
+
+  /**
+   * 更新设备通讯录别名
+   */
+  updateAlias(data, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/device/address-book/alias`)
+      .method(&#x27;PUT&#x27;)
+      .data(data)
+      .success((res) =&gt; {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail(() =&gt; {
+        RequestService.reAjaxFun(() =&gt; {
+          this.updateAlias(data, callback);
+        });
+      }).send();
+  },
+
+  /**
+   * 更新设备通讯录权限
+   */
+  updatePermission(data, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/device/address-book/permission`)
+      .method(&#x27;PUT&#x27;)
+      .data(data)
+      .success((res) =&gt; {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail(() =&gt; {
+        RequestService.reAjaxFun(() =&gt; {
+          this.updatePermission(data, callback);
+        });
+      }).send();
+  }</pre></div>
+<div class="src-page"><pre>};
+// ===== 文件: src/apis/module/admin.js =====
+import { getServiceUrl } from &#x27;../api&#x27;;
+import RequestService from &#x27;../httpRequest&#x27;;
+
+
+export default {
+    // 用户列表
+    getUserList(params, callback) {
+        const queryParams = new URLSearchParams({
+            page: params.page,
+            limit: params.limit,
+            mobile: params.mobile
+        }).toString();
+
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/users?${queryParams}`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;请求失败:&#x27;, err)
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getUserList(callback)
+                })
+            }).send()
+    },
+    // 删除用户
+    deleteUser(id, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/users/${id}`)
+            .method(&#x27;DELETE&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;删除失败:&#x27;, err)
+                RequestService.reAjaxFun(() =&gt; {
+                    this.deleteUser(id, callback)
+                })
+            }).send()
+    },
+    // 重置用户密码
+    resetUserPassword(id, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/users/${id}`)
+            .method(&#x27;PUT&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;重置密码失败:&#x27;, err)
+                RequestService.reAjaxFun(() =&gt; {
+                    this.resetUserPassword(id, callback)
+                })
+            }).send()</pre></div>
+<div class="src-page"><pre>    },
+    // 获取参数列表
+    getParamsList(params, callback) {
+        const queryParams = new URLSearchParams({
+            page: params.page,
+            limit: params.limit,
+            paramCode: params.paramCode || &#x27;&#x27;
+        }).toString();
+
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/params/page?${queryParams}`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;获取参数列表失败:&#x27;, err)
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getParamsList(params, callback)
+                })
+            }).send()
+    },
+    // 保存
+    addParam(data, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/params`)
+            .method(&#x27;POST&#x27;)
+            .data(data)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((err) =&gt; {
+                RequestService.clearRequestTime()
+                failCallback(err)
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;添加参数失败:&#x27;, err)
+                RequestService.reAjaxFun(() =&gt; {
+                    this.addParam(data, callback)
+                })
+            }).send()
+    },
+    // 修改
+    updateParam(data, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/params`)
+            .method(&#x27;PUT&#x27;)
+            .data(data)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((err) =&gt; {
+                RequestService.clearRequestTime()
+                failCallback(err)
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;更新参数失败:&#x27;, err)</pre></div>
+<div class="src-page"><pre>                RequestService.reAjaxFun(() =&gt; {
+                    this.updateParam(data, callback)
+                })
+            }).send()
+    },
+    // 删除
+    deleteParam(ids, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/params/delete`)
+            .method(&#x27;POST&#x27;)
+            .data(ids)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res);
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;删除参数失败:&#x27;, err)
+                RequestService.reAjaxFun(() =&gt; {
+                    this.deleteParam(ids, callback)
+                })
+            }).send()
+    },
+    // 获取ws服务端列表
+    getWsServerList(params, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/server/server-list`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;获取ws服务端列表失败:&#x27;, err)
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getWsServerList(params, callback)
+                })
+            }).send();
+    },
+    // 发送ws服务器动作指令
+    sendWsServerAction(data, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/server/emit-action`)
+            .method(&#x27;POST&#x27;)
+            .data(data)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.sendWsServerAction(data, callback)
+                })
+            }).send();
+    }
+
+}
+// ===== 文件: src/apis/module/agent.js =====
+import { getServiceUrl } from &#x27;../api&#x27;;
+import RequestService from &#x27;../httpRequest&#x27;;
+</pre></div>
+<div class="src-page"><pre>const CALLBACK_RETRY_LIMIT = 10;
+const CALLBACK_RETRY_DELAY_MS = 2000;
+const CALLBACK_RETRY_WINDOW_MS = CALLBACK_RETRY_LIMIT * CALLBACK_RETRY_DELAY_MS;
+
+function retryCallbackRequest(retry, retryCount, onTerminalFailure, error, retryStartedAt) {
+    if (!onTerminalFailure) {
+        RequestService.reAjaxFun(() =&gt; retry(retryCount + 1))
+        return
+    }
+    const startedAt = retryStartedAt || Date.now()
+    if (retryCount &gt;= CALLBACK_RETRY_LIMIT || Date.now() - startedAt &gt;= CALLBACK_RETRY_WINDOW_MS) {
+        RequestService.clearRequestTime()
+        onTerminalFailure(error)
+        return
+    }
+    setTimeout(() =&gt; retry(retryCount + 1, startedAt), CALLBACK_RETRY_DELAY_MS)
+}
+
+function attachTerminalFailure(request, onTerminalFailure) {
+    if (onTerminalFailure) {
+        request.fail((error) =&gt; {
+            RequestService.clearRequestTime()
+            onTerminalFailure(error)
+        })
+    }
+    return request
+}
+
+function terminateCallbackRequest(onTerminalFailure, error) {
+    RequestService.clearRequestTime()
+    if (onTerminalFailure) {
+        onTerminalFailure(error)
+    }
+}
+
+
+export default {
+    // 获取智能体列表
+    getAgentList(callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/list`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAgentList(callback);
+                });
+            }).send();
+    },
+    // 添加智能体
+    addAgent(agentName, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent`)
+            .method(&#x27;POST&#x27;)
+            .data({ agentName: agentName })
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();</pre></div>
+<div class="src-page"><pre>                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.addAgent(agentName, callback);
+                });
+            }).send();
+    },
+    // 删除智能体
+    deleteAgent(agentId, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}`)
+            .method(&#x27;DELETE&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.deleteAgent(agentId, callback);
+                });
+            }).send();
+    },
+    // 获取智能体配置
+    getDeviceConfig(agentId, callback, onTerminalFailure, retryCount = 0, retryStartedAt = 0) {
+        const retryWindowStartedAt = retryStartedAt || Date.now()
+        const request = RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;获取配置失败:&#x27;, err);
+                retryCallbackRequest(
+                    (nextRetryCount, nextRetryStartedAt) =&gt; this.getDeviceConfig(
+                        agentId,
+                        callback,
+                        onTerminalFailure,
+                        nextRetryCount,
+                        nextRetryStartedAt
+                    ),
+                    retryCount,
+                    onTerminalFailure,
+                    err,
+                    retryWindowStartedAt
+                )
+            })
+        attachTerminalFailure(request, onTerminalFailure).send();
+    },
+    // 配置智能体
+    updateAgentConfig(agentId, configData, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}`)
+            .method(&#x27;PUT&#x27;)
+            .data(configData)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);</pre></div>
+<div class="src-page"><pre>            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.updateAgentConfig(agentId, configData, callback);
+                });
+            }).send();
+    },
+    // 获取智能体配置快照列表
+    getAgentSnapshots(agentId, params, callback, onTerminalFailure, retryCount = 0, retryStartedAt = 0) 
+    {
+        const retryWindowStartedAt = retryStartedAt || Date.now()
+        const request = RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}/snapshots`)
+            .method(&#x27;GET&#x27;)
+            .data(params)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail((error) =&gt; {
+                retryCallbackRequest(
+                    (nextRetryCount, nextRetryStartedAt) =&gt; this.getAgentSnapshots(
+                        agentId,
+                        params,
+                        callback,
+                        onTerminalFailure,
+                        nextRetryCount,
+                        nextRetryStartedAt
+                    ),
+                    retryCount,
+                    onTerminalFailure,
+                    error,
+                    retryWindowStartedAt
+                )
+            })
+        attachTerminalFailure(request, onTerminalFailure).send();
+    },
+    // 获取智能体配置快照详情
+    getAgentSnapshot(agentId, snapshotId, callback, onTerminalFailure, retryCount = 0, retryStartedAt = 
+    0) {
+        const retryWindowStartedAt = retryStartedAt || Date.now()
+        const request = RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}/snapshots/${snapshotId}`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail((error) =&gt; {
+                retryCallbackRequest(
+                    (nextRetryCount, nextRetryStartedAt) =&gt; this.getAgentSnapshot(
+                        agentId,
+                        snapshotId,
+                        callback,
+                        onTerminalFailure,
+                        nextRetryCount,
+                        nextRetryStartedAt
+                    ),
+                    retryCount,
+                    onTerminalFailure,</pre></div>
+<div class="src-page"><pre>                    error,
+                    retryWindowStartedAt
+                )
+            })
+        attachTerminalFailure(request, onTerminalFailure).send();
+    },
+    // 恢复智能体配置快照
+    restoreAgentSnapshot(agentId, snapshotId, currentStateToken, callback, onTerminalFailure) {
+        const request = RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}/snapshots/${snapshotId}/restore`)
+            .method(&#x27;POST&#x27;)
+            .data({ currentStateToken })
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail((error) =&gt; {
+                terminateCallbackRequest(onTerminalFailure, error)
+            })
+        attachTerminalFailure(request, onTerminalFailure).send();
+    },
+    // 删除智能体配置快照
+    deleteAgentSnapshot(agentId, snapshotId, callback, onTerminalFailure) {
+        const request = RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}/snapshots/${snapshotId}`)
+            .method(&#x27;DELETE&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail((error) =&gt; {
+                terminateCallbackRequest(onTerminalFailure, error)
+            })
+        attachTerminalFailure(request, onTerminalFailure).send();
+    },
+    // 新增方法：获取智能体模板
+    getAgentTemplate(callback) {  // 移除templateName参数
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/template`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;获取模板失败:&#x27;, err);
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAgentTemplate(callback);
+                });
+            }).send();
+    },
+
+    // 新增：获取智能体模板分页列表
+    getAgentTemplatesPage(params, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/template/page`)
+            .method(&#x27;GET&#x27;)
+            .data(params)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();</pre></div>
+<div class="src-page"><pre>                callback(res);
+            })
+            .networkFail((err) =&gt; {
+                console.error(&#x27;获取模板分页列表失败:&#x27;, err);
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAgentTemplatesPage(params, callback);
+                });
+            }).send();
+    },
+    // 获取智能体会话列表
+    getAgentSessions(agentId, params, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}/sessions`)
+            .method(&#x27;GET&#x27;)
+            .data(params)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAgentSessions(agentId, params, callback);
+                });
+            }).send();
+    },
+    // 获取智能体聊天记录
+    getAgentChatHistory(agentId, sessionId, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/${agentId}/chat-history/${sessionId}`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAgentChatHistory(agentId, sessionId, callback);
+                });
+            }).send();
+    },
+    // 获取音频下载ID
+    getAudioId(audioId, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/audio/${audioId}`)
+            .method(&#x27;POST&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAudioId(audioId, callback);
+                });
+            }).send();
+    },
+    // 获取智能体的MCP接入点地址
+    getAgentMcpAccessAddress(agentId, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/mcp/address/${agentId}`)
+            .method(&#x27;GET&#x27;)</pre></div>
+<div class="src-page"><pre>            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .fail((err) =&gt; {
+                callback(err);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAgentMcpAccessAddress(agentId, callback);
+                });
+            }).send();
+    },
+    // 获取智能体的MCP工具列表
+    getAgentMcpToolsList(agentId, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/mcp/tools/${agentId}`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAgentMcpToolsList(agentId, callback);
+                });
+            }).send();
+    },
+    // 添加智能体的声纹
+    addAgentVoicePrint(voicePrintData, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/voice-print`)
+            .method(&#x27;POST&#x27;)
+            .data(voicePrintData)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.addAgentVoicePrint(voicePrintData, callback);
+                });
+            }).send();
+    },
+    // 获取指定智能体声纹列表
+    getAgentVoicePrintList(id, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/agent/voice-print/list/${id}`)
+            .method(&#x27;GET&#x27;)
+            .success((res) =&gt; {
+                RequestService.clearRequestTime();
+                callback(res);
+            })
+            .networkFail(() =&gt; {
+                RequestService.reAjaxFun(() =&gt; {
+                    this.getAgentVoicePrintList(id, callback);
+                });
+            }).send();
+    },
+    // 删除智能体声纹</pre></div>
+<div class="src-page"><pre>      this.logsPage = page
+      this.fetchLogs()
+    },
+    handleClose() {
+      this.dialogVisible = false
+      this.rawAsset = null
+      this.logsData = []
+      this.logsTotal = 0
+      this.logsPage = 1
+    }
+  }
+}
+&lt;/script&gt;
+
+&lt;style lang=&quot;scss&quot; scoped&gt;
+.asset-detail {
+  min-height: 120px;
+}
+
+.hash-text {
+  font-family: monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 20px 0 12px;
+  color: #303133;
+}
+
+.timeline-section {
+  margin-top: 8px;
+}
+
+.logs-section {
+  margin-top: 8px;
+}
+
+.logs-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+}
+&lt;/style&gt;
+// ===== 文件: src/components/nfc/NfcBatchDialog.vue =====
+&lt;template&gt;
+  &lt;el-dialog
+    title=&quot;创建批次&quot;
+    :visible.sync=&quot;dialogVisible&quot;
+    width=&quot;600px&quot;
+    :close-on-click-modal=&quot;false&quot;
+    @close=&quot;handleClose&quot;
+  &gt;
+    &lt;el-form
+      ref=&quot;batchForm&quot;
+      :model=&quot;form&quot;
+      :rules=&quot;rules&quot;
+      label-width=&quot;100px&quot;</pre></div>
+<div class="src-page"><pre>      label-position=&quot;right&quot;
+    &gt;
+      &lt;el-form-item label=&quot;批次号&quot; prop=&quot;batchNo&quot;&gt;
+        &lt;el-input
+          v-model=&quot;form.batchNo&quot;
+          placeholder=&quot;全局唯一，资产编号将以此为前缀&quot;
+          maxlength=&quot;64&quot;
+        &gt;&lt;/el-input&gt;
+      &lt;/el-form-item&gt;
+
+      &lt;el-form-item label=&quot;商品类型&quot; prop=&quot;productTypeId&quot;&gt;
+        &lt;el-select
+          v-model=&quot;form.productTypeId&quot;
+          placeholder=&quot;请选择商品类型&quot;
+          filterable
+          style=&quot;width: 100%;&quot;
+          :loading=&quot;productTypeLoading&quot;
+        &gt;
+          &lt;el-option
+            v-for=&quot;item in productTypeOptions&quot;
+            :key=&quot;item.id&quot;
+            :label=&quot;`${item.typeCode} - ${item.typeName}`&quot;
+            :value=&quot;item.id&quot;
+          &gt;&lt;/el-option&gt;
+        &lt;/el-select&gt;
+      &lt;/el-form-item&gt;
+
+      &lt;el-form-item label=&quot;SKU 编码&quot; prop=&quot;skuCode&quot;&gt;
+        &lt;el-input
+          v-model=&quot;form.skuCode&quot;
+          placeholder=&quot;请输入 SKU 编码&quot;
+          maxlength=&quot;64&quot;
+        &gt;&lt;/el-input&gt;
+      &lt;/el-form-item&gt;
+
+      &lt;el-form-item label=&quot;原型&quot; prop=&quot;prototype&quot;&gt;
+        &lt;el-select
+          v-model=&quot;form.prototype&quot;
+          placeholder=&quot;请选择原型&quot;
+          style=&quot;width: 100%;&quot;
+          :loading=&quot;prototypeLoading&quot;
+        &gt;
+          &lt;el-option
+            v-for=&quot;item in prototypeOptions&quot;
+            :key=&quot;item.key&quot;
+            :label=&quot;item.name&quot;
+            :value=&quot;item.key&quot;
+          &gt;&lt;/el-option&gt;
+        &lt;/el-select&gt;
+      &lt;/el-form-item&gt;
+
+      &lt;el-form-item label=&quot;计划数量&quot; prop=&quot;plannedQuantity&quot;&gt;
+        &lt;el-input-number
+          v-model=&quot;form.plannedQuantity&quot;
+          :min=&quot;1&quot;
+          :max=&quot;10000&quot;
+          :step=&quot;1&quot;
+          controls-position=&quot;right&quot;
+        &gt;&lt;/el-input-number&gt;
+      &lt;/el-form-item&gt;</pre></div>
+<div class="src-page"><pre>
+      &lt;el-form-item label=&quot;备注&quot; prop=&quot;remark&quot;&gt;
+        &lt;el-input
+          type=&quot;textarea&quot;
+          v-model=&quot;form.remark&quot;
+          :rows=&quot;3&quot;
+          placeholder=&quot;请输入备注（可选）&quot;
+          maxlength=&quot;200&quot;
+          show-word-limit
+        &gt;&lt;/el-input&gt;
+      &lt;/el-form-item&gt;
+    &lt;/el-form&gt;
+
+    &lt;template slot=&quot;footer&quot;&gt;
+      &lt;el-button @click=&quot;handleClose&quot;&gt;取 消&lt;/el-button&gt;
+      &lt;el-button type=&quot;primary&quot; :loading=&quot;saving&quot; @click=&quot;handleSubmit&quot;&gt;确 定&lt;/el-button&gt;
+    &lt;/template&gt;
+  &lt;/el-dialog&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import Api from &#x27;@/apis/api&#x27;
+
+export default {
+  name: &#x27;NfcBatchDialog&#x27;,
+  props: {
+    visible: {
+      type: Boolean,
+      default: false
+    }
+  },
+  data() {
+    return {
+      dialogVisible: this.visible,
+      saving: false,
+      productTypeLoading: false,
+      productTypeOptions: [],
+      prototypeLoading: false,
+      prototypeOptions: [],
+      form: {
+        batchNo: &#x27;&#x27;,
+        productTypeId: &#x27;&#x27;,
+        skuCode: &#x27;&#x27;,
+        prototype: &#x27;&#x27;,
+        plannedQuantity: 1,
+        remark: &#x27;&#x27;
+      },
+      rules: {
+        batchNo: [
+          { required: true, message: &#x27;请输入批次号&#x27;, trigger: &#x27;blur&#x27; },
+          { max: 64, message: &#x27;批次号长度不能超过 64 个字符&#x27;, trigger: &#x27;blur&#x27; }
+        ],
+        productTypeId: [
+          { required: true, message: &#x27;请选择商品类型&#x27;, trigger: &#x27;change&#x27; }
+        ],
+        skuCode: [
+          { required: true, message: &#x27;请输入 SKU 编码&#x27;, trigger: &#x27;blur&#x27; },
+          { max: 64, message: &#x27;SKU 编码长度不能超过 64 个字符&#x27;, trigger: &#x27;blur&#x27; }
+        ],
+        prototype: [</pre></div>
+<div class="src-page"><pre>          { required: true, message: &#x27;请选择原型&#x27;, trigger: &#x27;change&#x27; }
+        ],
+        plannedQuantity: [
+          { required: true, message: &#x27;请输入计划数量&#x27;, trigger: &#x27;blur&#x27; },
+          { type: &#x27;number&#x27;, min: 1, max: 10000, message: &#x27;数量范围 1-10000&#x27;, trigger: &#x27;blur&#x27; }
+        ]
+      }
+    }
+  },
+  watch: {
+    visible(val) {
+      this.dialogVisible = val
+      if (val) {
+        this.fetchProductTypes()
+        this.fetchPrototypes()
+      }
+    },
+    dialogVisible(val) {
+      this.$emit(&#x27;update:visible&#x27;, val)
+    }
+  },
+  methods: {
+    fetchProductTypes() {
+      this.productTypeLoading = true
+      Api.pdcNfc.listProductTypes({ page: 1, limit: 200 }, (res) =&gt; {
+        this.productTypeLoading = false
+        if (res.data &amp;&amp; res.data.code === 0) {
+          this.productTypeOptions = res.data.data?.list || res.data.data || []
+        } else {
+          this.$message.error(res.data?.msg || &#x27;获取商品类型列表失败&#x27;)
+        }
+      })
+    },
+    // 原型选项来自字典 EGG_PET_PROTOTYPE，dict_value 为中文且与后端校验值一致
+    // 拉取失败时不做本地兜底：宁可下拉为空暴露异常，也不能用可能过期的硬编码值生产错误资产
+    fetchPrototypes() {
+      this.prototypeLoading = true
+      Api.dict.getDictDataByType(&#x27;EGG_PET_PROTOTYPE&#x27;)
+        .then((data) =&gt; {
+          this.prototypeLoading = false
+          this.prototypeOptions = Array.isArray(data) ? data : (data.data || [])
+        })
+        .catch(() =&gt; {
+          this.prototypeLoading = false
+          this.prototypeOptions = []
+          this.$message.error(&#x27;获取原型字典失败，请稍后重试&#x27;)
+        })
+    },
+    handleSubmit() {
+      this.$refs.batchForm.validate((valid) =&gt; {
+        if (!valid) return
+        this.saving = true
+        Api.pdcNfc.createBatch(this.form, (res) =&gt; {
+          this.saving = false
+          if (res.data &amp;&amp; res.data.code === 0) {
+            this.$message.success(&#x27;批次创建成功&#x27;)
+            this.$emit(&#x27;created&#x27;)
+            this.handleClose()
+          } else {
+            this.$message.error(res.data?.msg || &#x27;批次创建失败&#x27;)</pre></div>
+<div class="src-page"><pre>          }
+        })
+      })
+    },
+    handleClose() {
+      this.dialogVisible = false
+      this.saving = false
+      this.$nextTick(() =&gt; {
+        if (this.$refs.batchForm) {
+          this.$refs.batchForm.resetFields()
+        }
+        this.form = {
+          batchNo: &#x27;&#x27;,
+          productTypeId: &#x27;&#x27;,
+          skuCode: &#x27;&#x27;,
+          prototype: &#x27;&#x27;,
+          plannedQuantity: 1,
+          remark: &#x27;&#x27;
+        }
+      })
+    }
+  }
+}
+&lt;/script&gt;
+// ===== 文件: src/components/nfc/NfcStockInDialog.vue =====
+&lt;template&gt;
+  &lt;el-dialog
+    title=&quot;资产批量入库&quot;
+    :visible.sync=&quot;dialogVisible&quot;
+    width=&quot;600px&quot;
+    :close-on-click-modal=&quot;false&quot;
+    @close=&quot;handleClose&quot;
+  &gt;
+    &lt;!-- 步骤 1：填写表单 --&gt;
+    &lt;div v-if=&quot;step === &#x27;form&#x27;&quot; class=&quot;stock-in-form&quot;&gt;
+      &lt;el-form
+        ref=&quot;stockInForm&quot;
+        :model=&quot;form&quot;
+        :rules=&quot;rules&quot;
+        label-width=&quot;110px&quot;
+        label-position=&quot;right&quot;
+      &gt;
+        &lt;el-form-item label=&quot;入库资产&quot;&gt;
+          &lt;div class=&quot;asset-summary&quot;&gt;
+            &lt;el-tag type=&quot;info&quot;&gt;共 {{ assetIds.length }} 项&lt;/el-tag&gt;
+            &lt;span v-if=&quot;assetIds.length === 0&quot; class=&quot;text-muted&quot;&gt;请在资产列表中勾选需要入库的资产&lt;/span
+    &gt;
+          &lt;/div&gt;
+        &lt;/el-form-item&gt;
+
+        &lt;el-form-item label=&quot;入库单号&quot; prop=&quot;businessNo&quot;&gt;
+          &lt;el-input
+            v-model=&quot;form.businessNo&quot;
+            placeholder=&quot;请输入入库业务单号&quot;
+            maxlength=&quot;64&quot;
+          &gt;&lt;/el-input&gt;
+        &lt;/el-form-item&gt;
+
+        &lt;el-form-item label=&quot;备注&quot; prop=&quot;remark&quot;&gt;
+          &lt;el-input</pre></div>
+<div class="src-page"><pre>            type=&quot;textarea&quot;
+            v-model=&quot;form.remark&quot;
+            :rows=&quot;3&quot;
+            placeholder=&quot;请输入备注（可选）&quot;
+            maxlength=&quot;200&quot;
+            show-word-limit
+          &gt;&lt;/el-input&gt;
+        &lt;/el-form-item&gt;
+      &lt;/el-form&gt;
+    &lt;/div&gt;
+
+    &lt;!-- 步骤 2：确认 --&gt;
+    &lt;div v-if=&quot;step === &#x27;confirm&#x27;&quot; class=&quot;confirm-section&quot;&gt;
+      &lt;el-alert title=&quot;请确认入库信息&quot; type=&quot;info&quot; :closable=&quot;false&quot; show-icon&gt;&lt;/el-alert&gt;
+      &lt;el-descriptions :column=&quot;1&quot; border size=&quot;medium&quot; class=&quot;confirm-desc&quot;&gt;
+        &lt;el-descriptions-item label=&quot;入库资产数&quot;&gt;{{ assetIds.length }} 项&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;入库单号&quot;&gt;{{ form.businessNo }}&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;备注&quot;&gt;{{ form.remark || &#x27;-&#x27; }}&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;请求 ID&quot;&gt;{{ form.requestId }}&lt;/el-descriptions-item&gt;
+      &lt;/el-descriptions&gt;
+    &lt;/div&gt;
+
+    &lt;!-- 步骤 3：结果 --&gt;
+    &lt;div v-if=&quot;step === &#x27;result&#x27;&quot; class=&quot;result-section&quot;&gt;
+      &lt;el-result
+        :icon=&quot;resultIcon&quot;
+        :title=&quot;resultTitle&quot;
+        :subTitle=&quot;resultSubTitle&quot;
+      &gt;
+        &lt;template slot=&quot;extra&quot;&gt;
+          &lt;el-button type=&quot;primary&quot; @click=&quot;handleClose&quot;&gt;完 成&lt;/el-button&gt;
+        &lt;/template&gt;
+      &lt;/el-result&gt;
+      &lt;div v-if=&quot;result&quot; class=&quot;result-detail&quot;&gt;
+        &lt;el-descriptions :column=&quot;2&quot; border size=&quot;medium&quot;&gt;
+          &lt;el-descriptions-item label=&quot;处理数量&quot;&gt;{{ result.processedCount ?? 0 }}&lt;/el-descriptions-item&gt;
+          &lt;el-descriptions-item label=&quot;成功数量&quot;&gt;{{ result.successCount ?? 0 }}&lt;/el-descriptions-item&gt;
+        &lt;/el-descriptions&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;template slot=&quot;footer&quot;&gt;
+      &lt;template v-if=&quot;step === &#x27;form&#x27;&quot;&gt;
+        &lt;el-button @click=&quot;handleClose&quot;&gt;取 消&lt;/el-button&gt;
+        &lt;el-button
+          type=&quot;primary&quot;
+          :disabled=&quot;assetIds.length === 0&quot;
+          @click=&quot;goConfirm&quot;
+        &gt;下一步&lt;/el-button&gt;
+      &lt;/template&gt;
+      &lt;template v-if=&quot;step === &#x27;confirm&#x27;&quot;&gt;
+        &lt;el-button @click=&quot;step = &#x27;form&#x27;&quot;&gt;上一步&lt;/el-button&gt;
+        &lt;el-button type=&quot;primary&quot; :loading=&quot;submitting&quot; @click=&quot;handleSubmit&quot;&gt;确认入库&lt;/el-button&gt;
+      &lt;/template&gt;
+    &lt;/template&gt;
+  &lt;/el-dialog&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import Api from &#x27;@/apis/api&#x27;</pre></div>
+<div class="src-page"><pre>
+export default {
+  name: &#x27;NfcStockInDialog&#x27;,
+  props: {
+    visible: {
+      type: Boolean,
+      default: false
+    },
+    assetIds: {
+      type: Array,
+      default: () =&gt; []
+    }
+  },
+  data() {
+    return {
+      dialogVisible: this.visible,
+      step: &#x27;form&#x27;,
+      submitting: false,
+      result: null,
+      form: {
+        businessNo: &#x27;&#x27;,
+        remark: &#x27;&#x27;,
+        requestId: &#x27;&#x27;
+      },
+      rules: {
+        businessNo: [
+          { required: true, message: &#x27;请输入入库业务单号&#x27;, trigger: &#x27;blur&#x27; },
+          { max: 64, message: &#x27;单号长度不能超过 64 个字符&#x27;, trigger: &#x27;blur&#x27; }
+        ]
+      }
+    }
+  },
+  computed: {
+    resultIcon() {
+      if (this.result &amp;&amp; this.result.successCount === 0) return &#x27;error&#x27;
+      if (this.result &amp;&amp; this.result.successCount &lt; (this.result.processedCount || 0)) return &#x27;warning&#x27;
+      return &#x27;success&#x27;
+    },
+    resultTitle() {
+      if (this.result &amp;&amp; this.result.successCount === 0) return &#x27;入库失败&#x27;
+      if (this.result &amp;&amp; this.result.successCount &lt; (this.result.processedCount || 0)) return &#x27;部分成功&#x27;
+      return &#x27;入库成功&#x27;
+    },
+    resultSubTitle() {
+      if (!this.result) return &#x27;&#x27;
+      return `处理 ${this.result.processedCount ?? 0} 项，成功 ${this.result.successCount ?? 0} 项`
+    }
+  },
+  watch: {
+    visible(val) {
+      this.dialogVisible = val
+    },
+    dialogVisible(val) {
+      this.$emit(&#x27;update:visible&#x27;, val)
+    }
+  },
+  methods: {
+    generateUUID() {
+      if (typeof crypto !== &#x27;undefined&#x27; &amp;&amp; crypto.randomUUID) {
+        return crypto.randomUUID()</pre></div>
+<div class="src-page"><pre>      }
+      return &#x27;xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx&#x27;.replace(/[xy]/g, (c) =&gt; {
+        const r = Math.random() * 16 | 0
+        const v = c === &#x27;x&#x27; ? r : (r &amp; 0x3 | 0x8)
+        return v.toString(16)
+      })
+    },
+    goConfirm() {
+      this.$refs.stockInForm.validate((valid) =&gt; {
+        if (!valid) return
+        this.form.requestId = this.generateUUID()
+        this.step = &#x27;confirm&#x27;
+      })
+    },
+    handleSubmit() {
+      this.submitting = true
+      const payload = {
+        assetIds: [...this.assetIds],
+        businessNo: this.form.businessNo,
+        requestId: this.form.requestId
+      }
+      if (this.form.remark) payload.remark = this.form.remark
+      Api.pdcNfc.stockIn(payload, (res) =&gt; {
+        this.submitting = false
+        if (res.data &amp;&amp; res.data.code === 0) {
+          this.result = res.data.data || {}
+          this.step = &#x27;result&#x27;
+          this.$emit(&#x27;stocked&#x27;, this.result)
+        } else {
+          this.$message.error(res.data?.msg || &#x27;入库失败&#x27;)
+        }
+      })
+    },
+    handleClose() {
+      this.dialogVisible = false
+      this.step = &#x27;form&#x27;
+      this.result = null
+      this.form = { businessNo: &#x27;&#x27;, remark: &#x27;&#x27;, requestId: &#x27;&#x27; }
+      this.$nextTick(() =&gt; {
+        if (this.$refs.stockInForm) {
+          this.$refs.stockInForm.resetFields()
+        }
+      })
+    }
+  }
+}
+&lt;/script&gt;
+
+&lt;style lang=&quot;scss&quot; scoped&gt;
+.asset-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.text-muted {
+  color: #c0c4cc;
+  font-size: 13px;
+}
+</pre></div>
+<div class="src-page"><pre>.confirm-section {
+  .confirm-desc {
+    margin-top: 16px;
+  }
+}
+
+.result-detail {
+  margin-top: 16px;
+}
+&lt;/style&gt;
+// ===== 文件: src/components/nfc/NfcWriteJobDialog.vue =====
+&lt;template&gt;
+  &lt;el-dialog
+    title=&quot;写卡任务&quot;
+    :visible.sync=&quot;dialogVisible&quot;
+    width=&quot;650px&quot;
+    :close-on-click-modal=&quot;false&quot;
+    @close=&quot;handleClose&quot;
+  &gt;
+    &lt;div v-loading=&quot;loading&quot; class=&quot;write-job-detail&quot;&gt;
+      &lt;el-descriptions :column=&quot;2&quot; border size=&quot;medium&quot;&gt;
+        &lt;el-descriptions-item label=&quot;任务ID&quot;&gt;{{ jobDetail.id || &#x27;-&#x27; }}&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;批次号&quot;&gt;{{ jobDetail.batchNo || &#x27;-&#x27; }}&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;状态&quot;&gt;
+          &lt;el-tag :type=&quot;badgeType(jobDetail.status)&quot;&gt;{{ statusText(jobDetail.status) }}&lt;/el-tag&gt;
+        &lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;计划数量&quot;&gt;{{ jobDetail.plannedQuantity || &#x27;-&#x27; }}&lt;/el-descriptions-i
+    tem&gt;
+        &lt;el-descriptions-item label=&quot;已导出&quot;&gt;{{ jobDetail.exportedCount ?? 0 }}&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;已写入&quot;&gt;{{ jobDetail.writtenCount ?? 0 }}&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;已验证&quot;&gt;{{ jobDetail.verifiedCount ?? 0 }}&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;失败数&quot;&gt;{{ jobDetail.failureCount ?? 0 }}&lt;/el-descriptions-item&gt;
+        &lt;el-descriptions-item label=&quot;创建时间&quot; :span=&quot;2&quot;&gt;{{ formatTime(jobDetail.createTime) }}&lt;/el-desc
+    riptions-item&gt;
+      &lt;/el-descriptions&gt;
+
+      &lt;div v-if=&quot;jobDetail.status === &#x27;EXPORTED&#x27; || jobDetail.status === &#x27;RESULT_IMPORTED&#x27;&quot; class=&quot;job-a
+    ctions&quot;&gt;
+        &lt;el-button type=&quot;primary&quot; icon=&quot;el-icon-download&quot; :loading=&quot;downloading&quot; @click=&quot;handleDownload&quot;
+    &gt;
+          下载写卡数据
+        &lt;/el-button&gt;
+        &lt;el-button type=&quot;warning&quot; icon=&quot;el-icon-upload2&quot; @click=&quot;showImportDialog = true&quot;&gt;
+          导入写卡结果
+        &lt;/el-button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;template slot=&quot;footer&quot;&gt;
+      &lt;el-button @click=&quot;handleClose&quot;&gt;关 闭&lt;/el-button&gt;
+    &lt;/template&gt;
+
+    &lt;NfcWriteResultImportDialog
+      :visible.sync=&quot;showImportDialog&quot;
+      :job-id=&quot;jobDetail.id || jobId&quot;
+      @imported=&quot;onImported&quot;
+    /&gt;
+  &lt;/el-dialog&gt;
+&lt;/template&gt;
+</pre></div>
+<div class="src-page"><pre>&lt;script&gt;
+import Api from &#x27;@/apis/api&#x27;
+import { statusBadgeType, statusLabel, formatDate } from &#x27;@/utils/pdcNfcState.mjs&#x27;
+import NfcWriteResultImportDialog from &#x27;./NfcWriteResultImportDialog.vue&#x27;
+
+export default {
+  name: &#x27;NfcWriteJobDialog&#x27;,
+  components: { NfcWriteResultImportDialog },
+  props: {
+    visible: {
+      type: Boolean,
+      default: false
+    },
+    jobId: {
+      type: [String, Number],
+      default: &#x27;&#x27;
+    }
+  },
+  data() {
+    return {
+      dialogVisible: this.visible,
+      loading: false,
+      downloading: false,
+      showImportDialog: false,
+      jobDetail: {},
+      pollTimer: null
+    }
+  },
+  watch: {
+    visible(val) {
+      this.dialogVisible = val
+      if (val &amp;&amp; this.jobId) {
+        this.fetchJobDetail()
+        this.startPolling()
+      }
+    },
+    dialogVisible(val) {
+      this.$emit(&#x27;update:visible&#x27;, val)
+      if (!val) {
+        this.stopPolling()
+      }
+    },
+    jobId(val) {
+      if (this.dialogVisible &amp;&amp; val) {
+        this.fetchJobDetail()
+      }
+    }
+  },
+  beforeDestroy() {
+    this.stopPolling()
+  },
+  methods: {
+    badgeType: statusBadgeType,
+    statusText: statusLabel,
+    formatTime: formatDate,
+    fetchJobDetail() {
+      if (!this.jobId) return
+      this.loading = true
+      Api.pdcNfc.getWriteJob(this.jobId, (res) =&gt; {
+        this.loading = false</pre></div>
+<div class="src-page"><pre>        if (res.data &amp;&amp; res.data.code === 0) {
+          this.jobDetail = res.data.data || {}
+          // Stop polling if terminal state
+          if ([&#x27;EXPORTED&#x27;, &#x27;RESULT_IMPORTED&#x27;, &#x27;FAILED&#x27;, &#x27;CANCELLED&#x27;].includes(this.jobDetail.status)) {
+            this.stopPolling()
+          }
+        } else {
+          this.$message.error(res.data?.msg || &#x27;获取写卡任务详情失败&#x27;)
+        }
+      })
+    },
+    startPolling() {
+      this.stopPolling()
+      this.pollTimer = setInterval(() =&gt; {
+        this.fetchJobDetail()
+      }, 3000)
+    },
+    stopPolling() {
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer)
+        this.pollTimer = null
+      }
+    },
+    handleDownload() {
+      if (!this.jobDetail.id) {
+        this.$message.warning(&#x27;任务信息不完整&#x27;)
+        return
+      }
+      this.downloading = true
+      Api.pdcNfc.downloadWriteJob(this.jobDetail.id, (res) =&gt; {
+        this.downloading = false
+        // The blob response comes back as res.data (already a Blob when responseType is blob)
+        const blob = res.data instanceof Blob ? res.data : new Blob([res.data])
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement(&#x27;a&#x27;)
+        link.href = url
+        link.download = `write_job_${this.jobDetail.id}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+        this.$message.success(&#x27;下载已开始&#x27;)
+      })
+    },
+    onImported() {
+      this.fetchJobDetail()
+      this.$emit(&#x27;refresh&#x27;)
+    },
+    handleClose() {
+      this.dialogVisible = false
+      this.jobDetail = {}
+    }
+  }
+}
+&lt;/script&gt;
+
+&lt;style lang=&quot;scss&quot; scoped&gt;
+.write-job-detail {
+  min-height: 120px;
+}</pre></div>
+<div class="src-page"><pre>
+.job-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+}
+&lt;/style&gt;
+// ===== 文件: src/components/nfc/NfcWriteResultImportDialog.vue =====
+&lt;template&gt;
+  &lt;el-dialog
+    title=&quot;导入写卡结果&quot;
+    :visible.sync=&quot;dialogVisible&quot;
+    width=&quot;550px&quot;
+    :close-on-click-modal=&quot;false&quot;
+    @close=&quot;handleClose&quot;
+  &gt;
+    &lt;el-form label-width=&quot;100px&quot; label-position=&quot;right&quot;&gt;
+      &lt;el-form-item label=&quot;写卡任务&quot;&gt;
+        &lt;span&gt;{{ jobId || &#x27;-&#x27; }}&lt;/span&gt;
+      &lt;/el-form-item&gt;
+
+      &lt;el-form-item label=&quot;结果文件&quot;&gt;
+        &lt;el-upload
+          ref=&quot;upload&quot;
+          action=&quot;#&quot;
+          :auto-upload=&quot;false&quot;
+          :limit=&quot;1&quot;
+          :accept=&quot;&#x27;.csv&#x27;&quot;
+          :on-change=&quot;handleFileChange&quot;
+          :on-remove=&quot;handleFileRemove&quot;
+          :file-list=&quot;fileList&quot;
+        &gt;
+          &lt;el-button size=&quot;small&quot; type=&quot;primary&quot;&gt;选择 CSV 文件&lt;/el-button&gt;
+          &lt;div slot=&quot;tip&quot; class=&quot;el-upload__tip&quot;&gt;仅支持 .csv 格式的写卡结果文件&lt;/div&gt;
+        &lt;/el-upload&gt;
+      &lt;/el-form-item&gt;
+
+      &lt;el-form-item v-if=&quot;importResult&quot; label=&quot;导入结果&quot;&gt;
+        &lt;div class=&quot;import-result&quot;&gt;
+          &lt;el-tag type=&quot;success&quot;&gt;已验证: {{ importResult.verifiedCount || 0 }}&lt;/el-tag&gt;
+          &lt;el-tag type=&quot;warning&quot; class=&quot;ml-8&quot;&gt;已写入: {{ importResult.writtenCount || 0 }}&lt;/el-tag&gt;
+          &lt;el-tag type=&quot;danger&quot; class=&quot;ml-8&quot;&gt;失败: {{ importResult.failureCount || 0 }}&lt;/el-tag&gt;
+        &lt;/div&gt;
+      &lt;/el-form-item&gt;
+    &lt;/el-form&gt;
+
+    &lt;template slot=&quot;footer&quot;&gt;
+      &lt;el-button @click=&quot;handleClose&quot;&gt;关 闭&lt;/el-button&gt;
+      &lt;el-button
+        type=&quot;primary&quot;
+        :loading=&quot;importing&quot;
+        :disabled=&quot;!selectedFile&quot;
+        @click=&quot;handleImport&quot;
+      &gt;
+        开始导入
+      &lt;/el-button&gt;
+    &lt;/template&gt;
+  &lt;/el-dialog&gt;
+&lt;/template&gt;
+</pre></div>
+<div class="src-page"><pre>&lt;script&gt;
+import Api from &#x27;@/apis/api&#x27;
+
+export default {
+  name: &#x27;NfcWriteResultImportDialog&#x27;,
+  props: {
+    visible: {
+      type: Boolean,
+      default: false
+    },
+    jobId: {
+      type: [String, Number],
+      default: &#x27;&#x27;
+    }
+  },
+  data() {
+    return {
+      dialogVisible: this.visible,
+      importing: false,
+      selectedFile: null,
+      fileList: [],
+      importResult: null
+    }
+  },
+  watch: {
+    visible(val) {
+      this.dialogVisible = val
+    },
+    dialogVisible(val) {
+      this.$emit(&#x27;update:visible&#x27;, val)
+    }
+  },
+  methods: {
+    generateUUID() {
+      if (typeof crypto !== &#x27;undefined&#x27; &amp;&amp; crypto.randomUUID) {
+        return crypto.randomUUID()
+      }
+      // Fallback UUID v4
+      return &#x27;xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx&#x27;.replace(/[xy]/g, (c) =&gt; {
+        const r = Math.random() * 16 | 0
+        const v = c === &#x27;x&#x27; ? r : (r &amp; 0x3 | 0x8)
+        return v.toString(16)
+      })
+    },
+    handleFileChange(file) {
+      const name = file.name || &#x27;&#x27;
+      if (!name.toLowerCase().endsWith(&#x27;.csv&#x27;)) {
+        this.$message.error(&#x27;请选择 .csv 格式的文件&#x27;)
+        this.$refs.upload.clearFiles()
+        this.selectedFile = null
+        return
+      }
+      this.selectedFile = file.raw
+      this.importResult = null
+    },
+    handleFileRemove() {
+      this.selectedFile = null
+      this.importResult = null
+    },
+    handleImport() {</pre></div>
+<div class="src-page"><pre>      if (!this.selectedFile) {
+        this.$message.warning(&#x27;请先选择结果文件&#x27;)
+        return
+      }
+      if (!this.jobId) {
+        this.$message.error(&#x27;缺少写卡任务 ID&#x27;)
+        return
+      }
+      this.importing = true
+      const requestId = this.generateUUID()
+      Api.pdcNfc.importWriteResult(this.jobId, this.selectedFile, requestId, (res) =&gt; {
+        this.importing = false
+        if (res.data &amp;&amp; res.data.code === 0) {
+          this.importResult = res.data.data || {}
+          this.$message.success(&#x27;导入成功&#x27;)
+          this.$emit(&#x27;imported&#x27;, this.importResult)
+        } else {
+          this.$message.error(res.data?.msg || &#x27;导入失败&#x27;)
+        }
+      })
+    },
+    handleClose() {
+      this.dialogVisible = false
+      this.selectedFile = null
+      this.fileList = []
+      this.importResult = null
+      this.$nextTick(() =&gt; {
+        if (this.$refs.upload) {
+          this.$refs.upload.clearFiles()
+        }
+      })
+    }
+  }
+}
+&lt;/script&gt;
+
+&lt;style lang=&quot;scss&quot; scoped&gt;
+.import-result {
+  display: flex;
+  align-items: center;
+}
+
+.ml-8 {
+  margin-left: 8px;
+}
+&lt;/style&gt;
+// ===== 文件: src/utils/cacheViewer.js =====
+/**
+ * 缓存查看工具 - 用于检查CDN资源是否已被Service Worker缓存
+ */
+
+/**
+ * 获取所有Service Worker缓存的名称
+ * @returns {Promise&lt;string[]&gt;} 缓存名称列表
+ */
+export const getCacheNames = async () =&gt; {
+  if (!(&#x27;caches&#x27; in window)) {
+    return [];
+  }
+</pre></div>
+<div class="src-page"><pre>  try {
+    return await caches.keys();
+  } catch (error) {
+    console.error(&#x27;获取缓存名称失败:&#x27;, error);
+    return [];
+  }
+};
+
+/**
+ * 获取指定缓存中的所有URL
+ * @param {string} cacheName 缓存名称
+ * @returns {Promise&lt;string[]&gt;} 缓存的URL列表
+ */
+export const getCacheUrls = async (cacheName) =&gt; {
+  if (!(&#x27;caches&#x27; in window)) {
+    return [];
+  }
+
+  try {
+    const cache = await caches.open(cacheName);
+    const requests = await cache.keys();
+    return requests.map(request =&gt; request.url);
+  } catch (error) {
+    console.error(`获取缓存 ${cacheName} 的URL失败:`, error);
+    return [];
+  }
+};
+
+/**
+ * 检查特定URL是否已被缓存
+ * @param {string} url 要检查的URL
+ * @returns {Promise&lt;boolean&gt;} 是否已缓存
+ */
+export const isUrlCached = async (url) =&gt; {
+  if (!(&#x27;caches&#x27; in window)) {
+    return false;
+  }
+
+  try {
+    const cacheNames = await getCacheNames();
+    for (const cacheName of cacheNames) {
+      const cache = await caches.open(cacheName);
+      const match = await cache.match(url);
+      if (match) {
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error(`检查URL ${url} 是否缓存失败:`, error);
+    return false;
+  }
+};
+
+/**
+ * 获取当前页面所有CDN资源的缓存状态
+ * @returns {Promise&lt;Object&gt;} 缓存状态对象
+ */
+export const checkCdnCacheStatus = async () =&gt; {
+  // 从CDN缓存中查找资源</pre></div>
+<div class="src-page"><pre>  const cdnCaches = [&#x27;cdn-stylesheets&#x27;, &#x27;cdn-scripts&#x27;];
+  const results = {
+    css: [],
+    js: [],
+    totalCached: 0,
+    totalNotCached: 0
+  };
+
+  for (const cacheName of cdnCaches) {
+    try {
+      const urls = await getCacheUrls(cacheName);
+
+      // 区分CSS和JS资源
+      for (const url of urls) {
+        if (url.endsWith(&#x27;.css&#x27;)) {
+          results.css.push({ url, cached: true });
+        } else if (url.endsWith(&#x27;.js&#x27;)) {
+          results.js.push({ url, cached: true });
+        }
+        results.totalCached++;
+      }
+    } catch (error) {
+      console.error(`获取 ${cacheName} 缓存信息失败:`, error);
+    }
+  }
+
+  return results;
+};
+
+/**
+ * 清除所有Service Worker缓存
+ * @returns {Promise&lt;boolean&gt;} 是否成功清除
+ */
+export const clearAllCaches = async () =&gt; {
+  if (!(&#x27;caches&#x27; in window)) {
+    return false;
+  }
+
+  try {
+    const cacheNames = await getCacheNames();
+    for (const cacheName of cacheNames) {
+      await caches.delete(cacheName);
+    }
+    return true;
+  } catch (error) {
+    console.error(&#x27;清除所有缓存失败:&#x27;, error);
+    return false;
+  }
+};
+
+/**
+ * 将缓存状态输出到控制台
+ */
+export const logCacheStatus = async () =&gt; {
+  console.group(&#x27;Service Worker 缓存状态&#x27;);
+
+  const cacheNames = await getCacheNames();
+  console.log(&#x27;已发现的缓存:&#x27;, cacheNames);
+
+  for (const cacheName of cacheNames) {</pre></div>
+<div class="src-page"><pre>    const urls = await getCacheUrls(cacheName);
+    console.group(`缓存: ${cacheName} (${urls.length} 项)`);
+    urls.forEach(url =&gt; console.log(url));
+    console.groupEnd();
+  }
+
+  console.groupEnd();
+  return cacheNames.length &gt; 0;
+};
+// ===== 文件: src/utils/constant.js =====
+const HAVE_NO_RESULT = &#x27;暂无&#x27;
+export default {
+    HAVE_NO_RESULT, // 项目的配置信息
+    PAGE: {
+        LOGIN: &#x27;/login&#x27;,
+    },
+    STORAGE_KEY: {
+        TOKEN: &#x27;TOKEN&#x27;,
+        PUBLIC_KEY: &#x27;PUBLIC_KEY&#x27;,
+        USER_TYPE: &#x27;USER_TYPE&#x27;
+    },
+    Lang: {
+        &#x27;zh_cn&#x27;: &#x27;zh_cn&#x27;, &#x27;zh_tw&#x27;: &#x27;zh_tw&#x27;, &#x27;en&#x27;: &#x27;en&#x27;
+    },
+    FONT_SIZE: {
+        &#x27;big&#x27;: &#x27;big&#x27;,
+        &#x27;normal&#x27;: &#x27;normal&#x27;,
+    }, // 获取map中的某key
+    get(map, key) {
+        return map[key] || HAVE_NO_RESULT
+    }
+}
+// ===== 文件: src/utils/date.js =====
+export const toDate = (date) =&gt; {
+  return isDate(date) ? new Date(date) : null
+}
+
+export const isDate = (date) =&gt; {
+  if (date === null || date === undefined) return false
+  if (isNaN(new Date(date).getTime())) return false
+  return true
+}
+
+export const isDateObject = (val) =&gt; {
+  return val instanceof Date
+}
+
+export const formatAddDate = (date, format, addDay) =&gt; {
+  date = toDate(date)
+  if (!date) {
+    return &#x27;&#x27;
+  }
+  if (!addDay) {
+    date.setDate(date.getDate() + addDay)
+  }
+  return formatDateTool(date, format || &#x27;yyyy-MM-dd HH:mm:ss&#x27;)
+}
+
+export const formatDate = (date, format) =&gt; {
+  date = toDate(date)</pre></div>
+<div class="src-page"><pre>  if (!date) return &#x27;&#x27;
+  return formatDateTool(date, format || &#x27;yyyy-MM-dd HH:mm:ss&#x27;)
+}
+
+function formatDateTool(date, fmt) {
+  if (/(y+)/.test(fmt)) {
+    fmt = fmt.replace(
+      RegExp.$1,
+      (date.getFullYear() + &#x27;&#x27;).substr(4 - RegExp.$1.length)
+    )
+  }
+  const o = {
+    &#x27;M+&#x27;: date.getMonth() + 1,
+    &#x27;d+&#x27;: date.getDate(),
+    &#x27;H+&#x27;: date.getHours(),
+    &#x27;h+&#x27;: date.getHours(),
+    &#x27;m+&#x27;: date.getMinutes(),
+    &#x27;s+&#x27;: date.getSeconds()
+  }
+  for (const k in o) {
+    if (new RegExp(`(${k})`).test(fmt)) {
+      const str = o[k] + &#x27;&#x27;
+      fmt = fmt.replace(
+        RegExp.$1,
+        RegExp.$1.length === 1 ? str : padLeftZero(str)
+      )
+    }
+  }
+  return fmt
+}
+
+function padLeftZero(str) {
+  return (&#x27;00&#x27; + str).substr(str.length)
+}
+// ===== 文件: src/utils/featureManager.js =====
+//功能配置工具
+import Api from &quot;@/apis/api&quot;;
+import store from &quot;@/store&quot;;
+
+class FeatureManager {
+    constructor() {
+        this.defaultFeatures = {
+            voiceprintRecognition: {
+                name: &#x27;feature.voiceprintRecognition.name&#x27;,
+                enabled: false,
+                description: &#x27;feature.voiceprintRecognition.description&#x27;
+            },
+            voiceClone: {
+                name: &#x27;feature.voiceClone.name&#x27;,
+                enabled: false,
+                description: &#x27;feature.voiceClone.description&#x27;
+            },
+            knowledgeBase: {
+                name: &#x27;feature.knowledgeBase.name&#x27;,
+                enabled: false,
+                description: &#x27;feature.knowledgeBase.description&#x27;
+            },
+            mcpAccessPoint: {
+                name: &#x27;feature.mcpAccessPoint.name&#x27;,
+                enabled: false,</pre></div>
+<div class="src-page"><pre>                description: &#x27;feature.mcpAccessPoint.description&#x27;
+            },
+            vad: {
+                name: &#x27;feature.vad.name&#x27;,
+                enabled: false,
+                description: &#x27;feature.vad.description&#x27;
+            },
+            asr: {
+                name: &#x27;feature.asr.name&#x27;,
+                enabled: false,
+                description: &#x27;feature.asr.description&#x27;
+            },
+            addressBook: {
+                name: &#x27;feature.addressBook.name&#x27;,
+                enabled: false,
+                description: &#x27;feature.addressBook.description&#x27;
+            }
+        };
+        this.currentFeatures = { ...this.defaultFeatures }; // 当前内存中的配置
+        this.initialized = false;
+        this.initPromise = null;
+    }
+
+    /**
+     * 等待初始化完成
+     */
+    async waitForInitialization() {
+        if (!this.initPromise) {
+            this.initPromise = this.init();
+        }
+        await this.initPromise;
+        return this.initialized;
+    }
+
+    /**
+     * 初始化功能配置
+     */
+    async init() {
+        try {
+            // 从pub-config接口获取配置
+            const config = await this.getConfigFromPubConfig();
+            if (config) {
+                this.currentFeatures = { ...config }; // 保存到内存
+                this.initialized = true;
+                return;
+            }
+        } catch (error) {
+            console.warn(&#x27;从pub-config接口获取配置失败:&#x27;, error);
+        }
+
+        // pub-config接口失败，使用默认配置
+        this.currentFeatures = { ...this.defaultFeatures }; // 保存默认配置到内存
+        this.initialized = true;
+    }
+
+    /**
+     * 更新config缓存
+     */
+    updateConfigCache(config) {
+        store.commit(&#x27;setPubConfig&#x27;, config);</pre></div>
+<div class="src-page"><pre>        localStorage.setItem(&#x27;pubConfig&#x27;, JSON.stringify(config));
+    }
+
+    /**
+     * 从pub-config接口获取配置
+     */
+    async getConfigFromPubConfig() {
+        return new Promise((resolve) =&gt; {
+            // 直接调用pub-config接口获取配置
+            Api.user.getPubConfig((result) =&gt; {
+                // 检查返回结果的结构
+                if (result &amp;&amp; result.status === 200) {
+                    // 检查是否有data字段
+                    if (result.data) {
+                        const configCache = result.data.data || {};
+                        // 检查是否有code字段，如果有则按照code判断
+                        if (result.data.code !== undefined) {
+                            if (result.data.code === 0 &amp;&amp; result.data.data &amp;&amp; result.data.data.systemWeb
+    Menu) {
+                                try {
+                                    let config;
+                                    if (typeof result.data.data.systemWebMenu === &#x27;string&#x27;) {
+                                        // 如果是字符串，需要解析JSON
+                                        config = JSON.parse(result.data.data.systemWebMenu);
+                                    } else {
+                                        // 如果已经是对象，直接使用
+                                        config = result.data.data.systemWebMenu;
+                                    }
+
+                                    // 检查配置中是否包含features对象
+                                    if (config &amp;&amp; config.features) {
+                                        // 确保knowledgeBase功能存在且配置正确
+                                        if (!config.features.knowledgeBase) {
+                                            console.warn(&#x27;配置中缺少knowledgeBase功能，合并默认配置&#x27;);
+                                            config.features = { ...this.defaultFeatures, ...config.featu
+    res };
+                                        }
+                                        resolve(config.features);
+                                    } else {
+                                        console.warn(&#x27;配置中缺少features对象，使用默认配置&#x27;);
+                                        resolve(this.defaultFeatures);
+                                    }
+                                    configCache.systemWebMenu = config;
+                                } catch (error) {
+                                    console.warn(&#x27;处理systemWebMenu配置失败:&#x27;, error);
+                                    resolve(null);
+                                }
+                            } else {
+                                console.warn(&#x27;接口返回code不为0或缺少必要数据，使用默认配置&#x27;);
+                                resolve(null);
+                            }
+                        } else {
+                            // 如果没有code字段，直接检查systemWebMenu
+                            if (result.data &amp;&amp; result.data.systemWebMenu) {
+                                try {
+                                    let config;
+                                    if (typeof result.data.systemWebMenu === &#x27;string&#x27;) {
+                                        // 如果是字符串，需要解析JSON
+                                        config = JSON.parse(result.data.systemWebMenu);
+                                    } else {</pre></div>
+<div class="src-page"><pre>                                        // 如果已经是对象，直接使用
+                                        config = result.data.systemWebMenu;
+                                    }
+
+                                    // 检查配置中是否包含features对象
+                                    if (config &amp;&amp; config.features) {
+                                        // 确保knowledgeBase功能存在且配置正确
+                                        if (!config.features.knowledgeBase) {
+                                            console.warn(&#x27;配置中缺少knowledgeBase功能，合并默认配置&#x27;);
+                                            config.features = { ...this.defaultFeatures, ...config.featu
+    res };
+                                        }
+                                        resolve(config.features);
+                                    } else {
+                                        console.warn(&#x27;配置中缺少features对象，使用默认配置&#x27;);
+                                        resolve(this.defaultFeatures);
+                                    }
+                                    configCache.systemWebMenu = config;
+                                } catch (error) {
+                                    console.warn(&#x27;处理systemWebMenu配置失败:&#x27;, error);
+                                    resolve(null);
+                                }
+                            } else {
+                                console.warn(&#x27;接口返回缺少systemWebMenu数据，使用默认配置&#x27;);
+                                resolve(null);
+                            }
+                        }
+                        this.updateConfigCache(configCache)
+                    } else {
+                        console.warn(&#x27;接口返回数据中缺少data字段，使用默认配置&#x27;);
+                        resolve(null);
+                    }
+                } else {
+                    console.warn(&#x27;pub-config接口调用失败，使用默认配置&#x27;);
+                    resolve(null);
+                }
+            });
+        });
+    }
+
+    /**
+     * 获取当前配置
+     */
+    getCurrentConfig() {
+        // 返回内存中的当前配置
+        return this.currentFeatures;
+    }
+
+    /**
+     * 保存配置到后端API
+     */
+    async saveConfig(config) {
+        try {
+            // 更新内存中的配置
+            this.currentFeatures = { ...config };
+
+            // 异步保存到后端API
+            this.saveConfigToAPI(config).catch(error =&gt; {
+                console.warn(&#x27;保存配置到API失败:&#x27;, error);
+            }).finally(() =&gt; {</pre></div>
+<div class="src-page"><pre>                this.init()
+            });
+
+            // 触发配置变更事件
+            window.dispatchEvent(new CustomEvent(&#x27;featureConfigChanged&#x27;, {
+                detail: config
+            }));
+        } catch (error) {
+            console.error(&#x27;保存功能配置失败:&#x27;, error);
+        }
+    }
+
+    /**
+     * 保存配置到后端API
+     */
+    async saveConfigToAPI(config) {
+        return new Promise((resolve) =&gt; {
+            // 直接使用已知的ID（600）更新参数
+            Api.admin.updateParam(
+                {
+                    id: 600,
+                    paramCode: &#x27;system-web.menu&#x27;,
+                    paramValue: JSON.stringify({
+                        features: config,
+                        groups: {
+                            featureManagement: [&quot;voiceprintRecognition&quot;, &quot;voiceClone&quot;, &quot;knowledgeBase&quot;, 
+    &quot;mcpAccessPoint&quot;, &quot;addressBook&quot;],
+                            voiceManagement: [&quot;vad&quot;, &quot;asr&quot;]
+                        }
+                    }),
+                    valueType: &#x27;json&#x27;,
+                    remark: &#x27;系统功能菜单配置&#x27;
+                },
+                (updateResult) =&gt; {
+                    if (updateResult.code === 0) {
+                        resolve();
+                    } else {
+                        // 如果更新失败，可能是参数不存在或其他错误，记录但不阻止保存到localStorage
+                        console.warn(&#x27;更新参数失败:&#x27;, updateResult.msg);
+                        resolve(); // 不阻止保存到localStorage
+                    }
+                },
+                (error) =&gt; {
+                    console.warn(&#x27;更新参数失败:&#x27;, error);
+                    resolve(); // 不阻止保存到localStorage
+                }
+            );
+        });
+    }
+
+
+
+    /**
+     * 获取所有功能配置
+     */
+    getAllFeatures() {
+        return this.getCurrentConfig();
+    }
+
+    /**</pre></div>
+<div class="src-page"><pre>     * 获取简化的配置对象（用于首页组件）
+     */
+    getConfig() {
+        const features = this.getAllFeatures();
+        return {
+            voiceprintRecognition: features.voiceprintRecognition?.enabled || false,
+            voiceClone: features.voiceClone?.enabled || false,
+            knowledgeBase: features.knowledgeBase?.enabled || false,
+            mcpAccessPoint: features.mcpAccessPoint?.enabled || false,
+            vad: features.vad?.enabled || false,
+            asr: features.asr?.enabled || false,
+            addressBook: features.addressBook?.enabled || false
+        };
+    }
+
+    /**
+     * 获取指定功能的状态
+     */
+    getFeatureStatus(featureKey) {
+        const features = this.getAllFeatures();
+        return features[featureKey]?.enabled || false;
+    }
+
+    /**
+     * 设置功能状态
+     */
+    setFeatureStatus(featureKey, enabled) {
+        const features = this.getAllFeatures();
+        if (features[featureKey]) {
+            features[featureKey].enabled = enabled;
+            this.saveConfig(features);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 启用功能
+     */
+    enableFeature(featureKey) {
+        return this.setFeatureStatus(featureKey, true);
+    }
+
+    /**
+     * 禁用功能
+     */
+    disableFeature(featureKey) {
+        return this.setFeatureStatus(featureKey, false);
+    }
+
+    /**
+     * 切换功能状态
+     */
+    toggleFeature(featureKey) {
+        const currentStatus = this.getFeatureStatus(featureKey);
+        return this.setFeatureStatus(featureKey, !currentStatus);
+    }
+
+    /**
+     * 重置所有功能为默认状态</pre></div>
+<div class="src-page"><pre>     */
+    resetToDefault() {
+        this.saveConfig(this.defaultFeatures);
+    }
+
+    /**
+     * 批量更新功能状态
+     */
+    updateFeatures(featureUpdates) {
+        const features = this.getAllFeatures();
+        Object.keys(featureUpdates).forEach(featureKey =&gt; {
+            if (features[featureKey]) {
+                features[featureKey].enabled = featureUpdates[featureKey];
+            } else if (this.defaultFeatures[featureKey]) {
+                features[featureKey] = { ...this.defaultFeatures[featureKey] };
+                features[featureKey].enabled = featureUpdates[featureKey];
+            }
+        });
+        this.saveConfig(features);
+    }
+
+    /**
+     * 获取已启用的功能列表
+     */
+    getEnabledFeatures() {
+        const features = this.getAllFeatures();
+        return Object.keys(features).filter(key =&gt; features[key].enabled);
+    }
+
+    /**
+     * 检查功能是否启用
+     */
+    isFeatureEnabled(featureKey) {
+        return this.getFeatureStatus(featureKey);
+    }
+}
+
+// 创建单例实例
+const featureManager = new FeatureManager();
+
+export default featureManager;
+// ===== 文件: src/utils/format.js =====
+// 日期格式化函数
+export function formatDate(date) {
+  if (!date) return &#x27;&#x27;;
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, &#x27;0&#x27;);
+  const day = String(d.getDate()).padStart(2, &#x27;0&#x27;);
+  const hour = String(d.getHours()).padStart(2, &#x27;0&#x27;);
+  const minute = String(d.getMinutes()).padStart(2, &#x27;0&#x27;);
+  const second = String(d.getSeconds()).padStart(2, &#x27;0&#x27;);
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
+// 文件大小格式化函数
+export function formatFileSize(bytes) {
+  if (!bytes || bytes === 0) return &#x27;0 B&#x27;;
+  const units = [&#x27;B&#x27;, &#x27;KB&#x27;, &#x27;MB&#x27;, &#x27;GB&#x27;, &#x27;TB&#x27;];
+  const k = 1024;</pre></div>
+<div class="src-page"><pre>  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + &#x27; &#x27; + units[i];
+}
+// ===== 文件: src/utils/index.js =====
+import { Message } from &#x27;element-ui&#x27;
+import router from &#x27;../router&#x27;
+import Constant from &#x27;../utils/constant&#x27;
+
+/**
+ * 判断用户是否登录
+ */
+export function checkUserLogin(fn) {
+    let token = localStorage.getItem(Constant.STORAGE_KEY.TOKEN)
+    let userType = localStorage.getItem(Constant.STORAGE_KEY.USER_TYPE)
+    if (isNull(token) || isNull(userType)) {
+        goToPage(&#x27;console&#x27;, true)
+        return
+    }
+    if (fn) {
+        fn()
+    }
+}
+
+/**
+ * 判断是否为空
+ * @param data
+ * @returns {boolean}
+ */
+export function isNull(data) {
+    if (data === undefined) {
+        return true
+    } else if (data === null) {
+        return true
+    } else if (typeof data === &#x27;string&#x27; &amp;&amp; (data.length === 0 || data === &#x27;&#x27; || data === &#x27;undefined&#x27; || 
+    data === &#x27;null&#x27;)) {
+        return true
+    } else if ((data instanceof Array) &amp;&amp; data.length === 0) {
+        return true
+    }
+    return false
+}
+
+/**
+ * 判断不为空
+ * @param data
+ * @returns {boolean}
+ */
+export function isNotNull(data) {
+    return !isNull(data)
+}
+
+/**
+ * 显示顶部红色通知
+ * @param msg
+ */
+export function showDanger(msg) {
+    if (isNull(msg)) {
+        return
+    }
+    Message({</pre></div>
+<div class="src-page"><pre>        message: msg,
+        type: &#x27;error&#x27;,
+        showClose: true
+    })
+}
+
+/**
+ * 显示顶部橙色通知
+ * @param msg
+ */
+export function showWarning(msg) {
+    if (isNull(msg)) {
+        return
+    }
+    Message({
+        message: msg,
+        type: &#x27;warning&#x27;,
+        showClose: true
+    });
+}
+
+
+
+/**
+ * 显示顶部绿色通知
+ * @param msg
+ */
+export function showSuccess(msg) {
+    Message({
+        message: msg,
+        type: &#x27;success&#x27;,
+        showClose: true
+    })
+}
+
+
+
+/**
+ * 页面跳转
+ * @param path
+ * @param isRepalce
+ */
+export function goToPage(path, isRepalce) {
+    if (isRepalce) {
+        router.replace(path)
+    } else {
+        router.push(path)
+    }
+}
+
+/**
+ * 获取当前vue页面名称
+ * @param path
+ * @param isRepalce
+ */
+export function getCurrentPage() {
+    let hash = location.hash.replace(&#x27;#&#x27;, &#x27;&#x27;)
+    if (hash.indexOf(&#x27;?&#x27;) &gt; 0) {
+        hash = hash.substring(0, hash.indexOf(&#x27;?&#x27;))
+    }</pre></div>
+<div class="src-page"><pre>    return hash
+}
+
+/**
+ * 生成从[min,max]的随机数
+ * @param min
+ * @param max
+ * @returns {number}
+ */
+export function randomNum(min, max) {
+    return Math.round(Math.random() * (max - min) + min)
+}
+
+
+/**
+ * 获取uuid
+ */
+export function getUUID() {
+    return &#x27;xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx&#x27;.replace(/[xy]/g, c =&gt; {
+        return (c === &#x27;x&#x27; ? (Math.random() * 16 | 0) : (&#x27;r&amp;0x3&#x27; | &#x27;0x8&#x27;)).toString(16)
+    })
+}
+
+
+/**
+ * 验证手机号格式
+ * @param {string} mobile 手机号
+ * @param {string} areaCode 区号
+ * @returns {boolean}
+ */
+export function validateMobile(mobile, areaCode) {
+    // 移除所有非数字字符
+    const cleanMobile = mobile.replace(/\D/g, &#x27;&#x27;);
+
+    // 根据不同区号使用不同的验证规则
+    switch (areaCode) {
+        case &#x27;+86&#x27;: // 中国大陆
+            return /^1[3-9]\d{9}$/.test(cleanMobile);
+        case &#x27;+852&#x27;: // 中国香港
+            return /^[569]\d{7}$/.test(cleanMobile);
+        case &#x27;+853&#x27;: // 中国澳门
+            return /^6\d{7}$/.test(cleanMobile);
+        case &#x27;+886&#x27;: // 中国台湾
+            return /^9\d{8}$/.test(cleanMobile);
+        case &#x27;+1&#x27;: // 美国/加拿大
+            return /^[2-9]\d{9}$/.test(cleanMobile);
+        case &#x27;+44&#x27;: // 英国
+            return /^7[1-9]\d{8}$/.test(cleanMobile);
+        case &#x27;+81&#x27;: // 日本
+            return /^[7890]\d{8}$/.test(cleanMobile);
+        case &#x27;+82&#x27;: // 韩国
+            return /^1[0-9]\d{7}$/.test(cleanMobile);
+        case &#x27;+65&#x27;: // 新加坡
+            return /^[89]\d{7}$/.test(cleanMobile);
+        case &#x27;+61&#x27;: // 澳大利亚
+            return /^[4578]\d{8}$/.test(cleanMobile);
+        case &#x27;+49&#x27;: // 德国
+            return /^1[5-7]\d{8}$/.test(cleanMobile);
+        case &#x27;+33&#x27;: // 法国
+            return /^[67]\d{8}$/.test(cleanMobile);</pre></div>
+<div class="src-page"><pre>        case &#x27;+39&#x27;: // 意大利
+            return /^3[0-9]\d{8}$/.test(cleanMobile);
+        case &#x27;+34&#x27;: // 西班牙
+            return /^[6-9]\d{8}$/.test(cleanMobile);
+        case &#x27;+55&#x27;: // 巴西
+            return /^[1-9]\d{10}$/.test(cleanMobile);
+        case &#x27;+91&#x27;: // 印度
+            return /^[6-9]\d{9}$/.test(cleanMobile);
+        case &#x27;+971&#x27;: // 阿联酋
+            return /^[5]\d{8}$/.test(cleanMobile);
+        case &#x27;+966&#x27;: // 沙特阿拉伯
+            return /^[5]\d{8}$/.test(cleanMobile);
+        case &#x27;+880&#x27;: // 孟加拉国
+            return /^1[3-9]\d{8}$/.test(cleanMobile);
+        case &#x27;+234&#x27;: // 尼日利亚
+            return /^[789]\d{9}$/.test(cleanMobile);
+        case &#x27;+254&#x27;: // 肯尼亚
+            return /^[17]\d{8}$/.test(cleanMobile);
+        case &#x27;+255&#x27;: // 坦桑尼亚
+            return /^[67]\d{8}$/.test(cleanMobile);
+        case &#x27;+7&#x27;: // 哈萨克斯坦
+            return /^[67]\d{9}$/.test(cleanMobile);
+        default:
+            // 其他国际号码：至少5位，最多15位
+            return /^\d{5,15}$/.test(cleanMobile);
+    }
+}
+
+
+/**
+ * 生成SM2密钥对（十六进制格式）
+ * @returns {Object} 包含公钥和私钥的对象
+ */
+export function generateSm2KeyPairHex() {
+    // 使用sm-crypto库生成SM2密钥对
+    const sm2 = require(&#x27;sm-crypto&#x27;).sm2;
+    const keypair = sm2.generateKeyPairHex();
+
+    return {
+        publicKey: keypair.publicKey,
+        privateKey: keypair.privateKey,
+        clientPublicKey: keypair.publicKey, // 客户端公钥
+        clientPrivateKey: keypair.privateKey // 客户端私钥
+    };
+}
+
+/**
+ * SM2公钥加密
+ * @param {string} publicKey 公钥（十六进制格式）
+ * @param {string} plainText 明文
+ * @returns {string} 加密后的密文（十六进制格式）
+ */
+export function sm2Encrypt(publicKey, plainText) {
+    if (!publicKey) {
+        throw new Error(&#x27;公钥不能为null或undefined&#x27;);
+    }
+
+    if (!plainText) {
+        throw new Error(&#x27;明文不能为空&#x27;);
+    }</pre></div>
+<div class="src-page"><pre>
+    const sm2 = require(&#x27;sm-crypto&#x27;).sm2;
+    // SM2加密，添加04前缀表示未压缩公钥
+    const encrypted = sm2.doEncrypt(plainText, publicKey, 1);
+    // 转换为十六进制格式（与后端保持一致，添加04前缀）
+    const result = &quot;04&quot; + encrypted;
+
+    return result;
+}
+
+/**
+ * SM2私钥解密
+ * @param {string} privateKey 私钥（十六进制格式）
+ * @param {string} cipherText 密文（十六进制格式）
+ * @returns {string} 解密后的明文
+ */
+export function sm2Decrypt(privateKey, cipherText) {
+    const sm2 = require(&#x27;sm-crypto&#x27;).sm2;
+    // 移除04前缀（与后端保持一致）
+    const dataWithoutPrefix = cipherText.startsWith(&quot;04&quot;) ? cipherText.substring(2) : cipherText;
+    // SM2解密
+    return sm2.doDecrypt(dataWithoutPrefix, privateKey, 1);
+}
+
+/**
+ * 防抖函数
+ * @param {Function} fn 要防抖的函数
+ * @param {number} delay 延迟时间（毫秒），默认500ms
+ * @param {boolean} immediate 是否立即执行，默认false
+ * @returns {Function} 防抖处理后的函数
+ */
+export function debounce(fn, delay = 500, immediate = false) {
+    let timer = null;
+
+    return function (...args) {
+        const context = this;
+
+        if (timer) {
+            clearTimeout(timer);
+        }
+
+        if (immediate &amp;&amp; !timer) {
+            fn.apply(context, args);
+        }
+
+        timer = setTimeout(() =&gt; {
+            if (!immediate) {
+                fn.apply(context, args);
+            }
+            timer = null;
+        }, delay);
+    };
+}
+
+// ===== 文件: src/i18n/index.js =====
+import Vue from &#x27;vue&#x27;;
+import VueI18n from &#x27;vue-i18n&#x27;;
+import zhCN from &#x27;./zh_CN&#x27;;
+import zhTW from &#x27;./zh_TW&#x27;;
+import en from &#x27;./en&#x27;;</pre></div>
+<div class="src-page"><pre>import de from &#x27;./de&#x27;;
+import vi from &#x27;./vi&#x27;;
+import ptBR from &#x27;./pt_BR&#x27;;
+
+import enLocale from &#x27;element-ui/lib/locale/lang/en&#x27;
+import zhLocale from &#x27;element-ui/lib/locale/lang/zh-CN&#x27;
+import twLocale from &#x27;element-ui/lib/locale/lang/zh-TW&#x27;
+import deLocale from &#x27;element-ui/lib/locale/lang/de&#x27;
+import viLocale from &#x27;element-ui/lib/locale/lang/vi&#x27;
+import ptBRLocale from &#x27;element-ui/lib/locale/lang/pt-br&#x27;
+
+
+Vue.use(VueI18n);
+
+// 从本地存储获取语言设置，如果没有则使用浏览器语言或默认语言
+// 目前仅开放中文简体和繁体，其他语言（en/de/vi/pt_BR）暂时屏蔽，统一回退到 zh_CN
+const getDefaultLanguage = () =&gt; {
+  const savedLang = localStorage.getItem(&#x27;userLanguage&#x27;);
+  if (savedLang === &#x27;zh_CN&#x27; || savedLang === &#x27;zh_TW&#x27;) {
+    return savedLang;
+  }
+  const browserLang = navigator.language || navigator.userLanguage;
+  if (browserLang === &#x27;zh-TW&#x27; || browserLang === &#x27;zh-HK&#x27; || browserLang === &#x27;zh-MO&#x27;) {
+    return &#x27;zh_TW&#x27;;
+  }
+  // if (browserLang.indexOf(&#x27;de&#x27;) === 0) {
+  //   return &#x27;de&#x27;;
+  // }
+  // if (browserLang.indexOf(&#x27;vi&#x27;) === 0) {
+  //   return &#x27;vi&#x27;;
+  // }
+  // if (browserLang === &#x27;pt-BR&#x27; || browserLang === &#x27;pt&#x27;) {
+  //   return &#x27;pt_BR&#x27;;
+  // }
+  // return &#x27;en&#x27;;
+  return &#x27;zh_CN&#x27;;
+};
+
+const i18n = new VueI18n({
+  locale: getDefaultLanguage(),
+  fallbackLocale: &#x27;zh_CN&#x27;,
+  messages: {
+    &#x27;zh_CN&#x27;: { ...zhLocale, ...zhCN },
+    &#x27;zh_TW&#x27;: { ...twLocale, ...zhTW },
+    &#x27;en&#x27;: { ...en, ...enLocale },
+    &#x27;de&#x27;: { ...de, ...deLocale },
+    &#x27;vi&#x27;: { ...vi, ...viLocale },
+    &#x27;pt_BR&#x27;: { ...ptBR, ...ptBRLocale }
+  }
+});
+
+export default i18n;
+
+// 提供一个方法来切换语言
+export const changeLanguage = (lang) =&gt; {
+  i18n.locale = lang;
+  localStorage.setItem(&#x27;userLanguage&#x27;, lang);
+  // 通知组件语言已更改
+  Vue.prototype.$eventBus.$emit(&#x27;languageChanged&#x27;, lang);
+};</pre></div>
+</body>
+</html>

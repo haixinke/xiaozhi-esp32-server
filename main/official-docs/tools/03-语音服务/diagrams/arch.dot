@@ -1,0 +1,46 @@
+
+digraph G {
+  rankdir=TB;
+  graph [fontname="Songti SC", fontsize=12, bgcolor="white", pad=0.2, nodesep=0.35, ranksep=0.55];
+  node  [fontname="Songti SC", fontsize=12, style="filled,rounded", shape=box, color="#555", fillcolor="#f5f5f5", margin="0.12,0.06"];
+  edge  [fontname="Songti SC", fontsize=10, color="#555"];
+
+  subgraph cluster_ext { label="外部"; style=dashed; color="#999";
+    esp [label="ESP32 终端设备", fillcolor="#e8f0fe"];
+    ai  [label="AI 服务商\n(ASR/TTS/LLM)", fillcolor="#e8f0fe"];
+    mt  [label="智控台 manager-api", fillcolor="#e8f0fe"];
+  }
+
+  subgraph cluster_in { label="爱予慧AI语音交互服务系统"; style="rounded"; color="#333"; penwidth=1.2;
+    subgraph cluster_l1 { label="接入层"; style="rounded"; color="#888";
+      ws  [label="WebSocketServer\n端口 8000", fillcolor="#fff3e0"];
+      http[label="SimpleHttpServer\n端口 8003", fillcolor="#fff3e0"];
+      auth[label="JWT 鉴权", fillcolor="#fff3e0"];
+    }
+    subgraph cluster_l2 { label="编排层"; style="rounded"; color="#888";
+      conn[label="ConnectionHandler\n连接状态机", fillcolor="#e8f5e9"];
+      hdl [label="消息处理器\n(hello/listen/abort/iot)", fillcolor="#e8f5e9"];
+    }
+    subgraph cluster_l3 { label="能力层"; style="rounded"; color="#888";
+      prov[label="Provider 工厂\nASR/TTS/LLM/VAD/Intent/Memory", fillcolor="#f3e5f5"];
+      tool[label="UnifiedToolHandler\n+ 函数插件", fillcolor="#f3e5f5"];
+    }
+    subgraph cluster_l4 { label="存储层"; style="rounded"; color="#888";
+      ob  [label="OceanBase\n向量记忆 + 知识图谱", fillcolor="#fce4ec"];
+      rd  [label="Redis\n缓存", fillcolor="#fce4ec"];
+    }
+  }
+
+  esp -> ws  [label="Opus 音频流"];
+  ws  -> auth [label="握手鉴权"];
+  auth -> conn;
+  conn -> hdl;
+  hdl  -> prov [label="流水线编排"];
+  hdl  -> tool [label="工具调用"];
+  prov -> ai   [label="ASR/TTS/LLM API"];
+  conn -> ob   [label="记忆存取"];
+  conn -> rd   [label="热缓存"];
+  http -> mt   [label="远程配置/OTA"];
+  mt  -> conn  [label="配置下发/设备校验", style=dashed];
+  http -> esp  [label="OTA 固件", style=dashed];
+}

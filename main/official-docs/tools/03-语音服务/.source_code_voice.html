@@ -1,0 +1,3625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+@page {
+  size: A4;
+  margin: 22mm 15mm 18mm 15mm;
+  @top-center { content: "爱予慧AI语音交互服务系统 V1.0"; font-family: "Songti SC", "SimSun", serif; font-size: 10.5pt; }
+  @top-right { content: "第 " counter(page) " 页"; font-family: "Songti SC", "SimSun", serif; font-size: 9pt; }
+}
+body { margin: 0; }
+.src-page { page-break-after: always; }
+.src-page pre {
+  margin: 0;
+  font-family: "Songti SC", "Menlo", "Courier New", monospace;
+  font-size: 8pt;
+  line-height: 3.95mm;
+  white-space: pre;
+}
+</style>
+</head>
+<body>
+<div class="src-page"><pre># ===== 文件: xiaozhi-server/app.py =====
+import sys
+import uuid
+import signal
+import asyncio
+from aioconsole import ainput
+from config.settings import load_config
+from config.logger import setup_logging
+from core.utils.util import get_local_ip, validate_mcp_endpoint
+from core.http_server import SimpleHttpServer
+from core.websocket_server import WebSocketServer
+from core.utils.util import check_ffmpeg_installed
+from core.utils.gc_manager import get_gc_manager
+
+TAG = __name__
+logger = setup_logging()
+
+
+async def wait_for_exit() -&gt; None:
+    &quot;&quot;&quot;
+    阻塞直到收到 Ctrl‑C / SIGTERM。
+    - Unix: 使用 add_signal_handler
+    - Windows: 依赖 KeyboardInterrupt
+    &quot;&quot;&quot;
+    loop = asyncio.get_running_loop()
+    stop_event = asyncio.Event()
+
+    if sys.platform != &quot;win32&quot;:  # Unix / macOS
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, stop_event.set)
+        await stop_event.wait()
+    else:
+        # Windows：await一个永远pending的fut，
+        # 让 KeyboardInterrupt 冒泡到 asyncio.run，以此消除遗留普通线程导致进程退出阻塞的问题
+        try:
+            await asyncio.Future()
+        except KeyboardInterrupt:  # Ctrl‑C
+            pass
+
+
+async def monitor_stdin():
+    &quot;&quot;&quot;监控标准输入，消费回车键&quot;&quot;&quot;
+    while True:
+        await ainput()  # 异步等待输入，消费回车
+
+
+async def main():
+    check_ffmpeg_installed()
+    config = await load_config()
+
+    # auth_key优先级：配置文件server.auth_key &gt; manager-api.secret &gt; 自动生成
+    # auth_key用于jwt认证，比如视觉分析接口的jwt认证、ota接口的token生成与websocket认证
+    # 获取配置文件中的auth_key
+    auth_key = config[&quot;server&quot;].get(&quot;auth_key&quot;, &quot;&quot;)
+
+    # 验证auth_key，无效则尝试使用manager-api.secret
+    if not auth_key or len(auth_key) == 0 or &quot;你&quot; in auth_key:
+        auth_key = config.get(&quot;manager-api&quot;, {}).get(&quot;secret&quot;, &quot;&quot;)
+        # 验证secret，无效则生成随机密钥
+        if not auth_key or len(auth_key) == 0 or &quot;你&quot; in auth_key:</pre></div>
+<div class="src-page"><pre>            auth_key = str(uuid.uuid4().hex)
+
+    config[&quot;server&quot;][&quot;auth_key&quot;] = auth_key
+
+    # 添加 stdin 监控任务
+    stdin_task = asyncio.create_task(monitor_stdin())
+
+    # 启动全局GC管理器（5分钟清理一次）
+    gc_manager = get_gc_manager(interval_seconds=300)
+    await gc_manager.start()
+
+    # 启动 WebSocket 服务器
+    ws_server = WebSocketServer(config)
+    ws_task = asyncio.create_task(ws_server.start())
+    # 启动 Simple http 服务器
+    ota_server = SimpleHttpServer(config)
+    ota_task = asyncio.create_task(ota_server.start())
+
+    read_config_from_api = config.get(&quot;read_config_from_api&quot;, False)
+    port = int(config[&quot;server&quot;].get(&quot;http_port&quot;, 8003))
+    if not read_config_from_api:
+        logger.bind(tag=TAG).info(
+            &quot;OTA接口是\t\thttp://{}:{}/xiaozhi/ota/&quot;,
+            get_local_ip(),
+            port,
+        )
+    logger.bind(tag=TAG).info(
+        &quot;视觉分析接口是\thttp://{}:{}/mcp/vision/explain&quot;,
+        get_local_ip(),
+        port,
+    )
+    mcp_endpoint = config.get(&quot;mcp_endpoint&quot;, None)
+    if mcp_endpoint is not None and &quot;你&quot; not in mcp_endpoint:
+        # 校验MCP接入点格式
+        if validate_mcp_endpoint(mcp_endpoint):
+            logger.bind(tag=TAG).info(&quot;mcp接入点是\t{}&quot;, mcp_endpoint)
+            # 将mcp计入点地址转成调用点
+            mcp_endpoint = mcp_endpoint.replace(&quot;/mcp/&quot;, &quot;/call/&quot;)
+            config[&quot;mcp_endpoint&quot;] = mcp_endpoint
+        else:
+            logger.bind(tag=TAG).error(&quot;mcp接入点不符合规范&quot;)
+            config[&quot;mcp_endpoint&quot;] = &quot;你的接入点 websocket地址&quot;
+
+    # 获取WebSocket配置，使用安全的默认值
+    websocket_port = 8000
+    server_config = config.get(&quot;server&quot;, {})
+    if isinstance(server_config, dict):
+        websocket_port = int(server_config.get(&quot;port&quot;, 8000))
+
+    logger.bind(tag=TAG).info(
+        &quot;Websocket地址是\tws://{}:{}/xiaozhi/v1/&quot;,
+        get_local_ip(),
+        websocket_port,
+    )
+
+    logger.bind(tag=TAG).info(
+        &quot;=======上面的地址是websocket协议地址，请勿用浏览器访问=======&quot;
+    )
+    logger.bind(tag=TAG).info(
+        &quot;如想测试websocket请启动digital-human模块，打开浏览器交互测试&quot;</pre></div>
+<div class="src-page"><pre>    )
+    logger.bind(tag=TAG).info(
+        &quot;=============================================================\n&quot;
+    )
+
+    try:
+        await wait_for_exit()  # 阻塞直到收到退出信号
+    except asyncio.CancelledError:
+        print(&quot;任务被取消，清理资源中...&quot;)
+    finally:
+        # 停止全局GC管理器
+        await gc_manager.stop()
+
+        # 取消所有任务（关键修复点）
+        stdin_task.cancel()
+        ws_task.cancel()
+        if ota_task:
+            ota_task.cancel()
+
+        # 等待任务终止（必须加超时）
+        await asyncio.wait(
+            [stdin_task, ws_task, ota_task] if ota_task else [stdin_task, ws_task],
+            timeout=3.0,
+            return_when=asyncio.ALL_COMPLETED,
+        )
+        print(&quot;服务器已关闭，程序退出。&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print(&quot;手动中断，程序终止。&quot;)
+# ===== 文件: xiaozhi-server/config/config_loader.py =====
+import os
+import asyncio
+import yaml
+from collections.abc import Mapping
+from config.manage_api_client import (
+    init_service,
+    get_server_config,
+    get_agent_models,
+    get_correct_words,
+    DeviceNotFoundException,
+    DeviceBindException,
+)
+
+
+def get_project_dir():
+    &quot;&quot;&quot;获取项目根目录&quot;&quot;&quot;
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + &quot;/&quot;
+
+
+def read_config(config_path):
+    with open(config_path, &quot;r&quot;, encoding=&quot;utf-8&quot;) as file:
+        config = yaml.safe_load(file)
+    return config
+
+
+async def load_config():</pre></div>
+<div class="src-page"><pre>    &quot;&quot;&quot;加载配置文件&quot;&quot;&quot;
+    from core.utils.cache.manager import cache_manager, CacheType
+
+    # 检查缓存
+    cached_config = cache_manager.get(CacheType.CONFIG, &quot;main_config&quot;)
+    if cached_config is not None:
+        return cached_config
+
+    default_config_path = get_project_dir() + &quot;config.yaml&quot;
+    custom_config_path = get_project_dir() + &quot;data/.config.yaml&quot;
+
+    # 加载默认配置
+    default_config = read_config(default_config_path)
+    custom_config = read_config(custom_config_path)
+
+    if custom_config.get(&quot;manager-api&quot;, {}).get(&quot;url&quot;):
+        config = await get_config_from_api_async(custom_config)
+    else:
+        # 合并配置
+        config = merge_configs(default_config, custom_config)
+    # 初始化目录
+    ensure_directories(config)
+
+    # 缓存配置
+    cache_manager.set(CacheType.CONFIG, &quot;main_config&quot;, config)
+    return config
+
+
+async def get_config_from_api_async(config):
+    &quot;&quot;&quot;从Java API获取配置（异步版本）&quot;&quot;&quot;
+    # 初始化API客户端
+    init_service(config)
+
+    # 获取服务器配置
+    config_data = await get_server_config()
+    if config_data is None:
+        raise Exception(&quot;Failed to fetch server config from API&quot;)
+
+    config_data[&quot;read_config_from_api&quot;] = True
+    config_data[&quot;manager-api&quot;] = {
+        &quot;url&quot;: config[&quot;manager-api&quot;].get(&quot;url&quot;, &quot;&quot;),
+        &quot;secret&quot;: config[&quot;manager-api&quot;].get(&quot;secret&quot;, &quot;&quot;),
+    }
+    auth_enabled = config_data.get(&quot;server&quot;, {}).get(&quot;auth&quot;, {}).get(&quot;enabled&quot;, False)
+    # server的配置以本地为准
+    if config.get(&quot;server&quot;):
+        config_data[&quot;server&quot;] = {
+            &quot;ip&quot;: config[&quot;server&quot;].get(&quot;ip&quot;, &quot;&quot;),
+            &quot;port&quot;: config[&quot;server&quot;].get(&quot;port&quot;, &quot;&quot;),
+            &quot;http_port&quot;: config[&quot;server&quot;].get(&quot;http_port&quot;, &quot;&quot;),
+            &quot;vision_explain&quot;: config[&quot;server&quot;].get(&quot;vision_explain&quot;, &quot;&quot;),
+            &quot;auth_key&quot;: config[&quot;server&quot;].get(&quot;auth_key&quot;, &quot;&quot;),
+        }
+    config_data[&quot;server&quot;][&quot;auth&quot;] = {&quot;enabled&quot;: auth_enabled}
+    # 如果服务器没有prompt_template，则从本地配置读取
+    if not config_data.get(&quot;prompt_template&quot;):
+        config_data[&quot;prompt_template&quot;] = config.get(&quot;prompt_template&quot;)
+    return config_data
+
+</pre></div>
+<div class="src-page"><pre>async def get_private_config_from_api(config, device_id, client_id):
+    &quot;&quot;&quot;从Java API获取私有配置&quot;&quot;&quot;
+    results = await asyncio.gather(
+        get_agent_models(device_id, client_id, config[&quot;selected_module&quot;]),
+        get_correct_words(device_id),
+        return_exceptions=True,
+    )
+    agent_result = results[0]
+    correct_words = results[1] if not isinstance(results[1], Exception) else None
+
+    # 抛出业务异常
+    if isinstance(agent_result, DeviceNotFoundException):
+        raise agent_result
+    if isinstance(agent_result, DeviceBindException):
+        raise agent_result
+
+    private_config = agent_result if not isinstance(agent_result, Exception) else {}
+    if correct_words:
+        private_config[&quot;correct_words&quot;] = correct_words
+    return private_config
+
+
+def ensure_directories(config):
+    &quot;&quot;&quot;确保所有配置路径存在&quot;&quot;&quot;
+    dirs_to_create = set()
+    project_dir = get_project_dir()  # 获取项目根目录
+    # 日志文件目录
+    log_dir = config.get(&quot;log&quot;, {}).get(&quot;log_dir&quot;, &quot;tmp&quot;)
+    dirs_to_create.add(os.path.join(project_dir, log_dir))
+
+    # ASR/TTS模块输出目录
+    for module in [&quot;ASR&quot;, &quot;TTS&quot;]:
+        if config.get(module) is None:
+            continue
+        for provider in config.get(module, {}).values():
+            output_dir = provider.get(&quot;output_dir&quot;, &quot;&quot;)
+            if output_dir:
+                dirs_to_create.add(output_dir)
+
+    # 根据selected_module创建模型目录
+    selected_modules = config.get(&quot;selected_module&quot;, {})
+    for module_type in [&quot;ASR&quot;, &quot;LLM&quot;, &quot;TTS&quot;]:
+        selected_provider = selected_modules.get(module_type)
+        if not selected_provider:
+            continue
+        if config.get(module_type) is None:
+            continue
+        if config.get(selected_provider) is None:
+            continue
+        provider_config = config.get(module_type, {}).get(selected_provider, {})
+        output_dir = provider_config.get(&quot;output_dir&quot;)
+        if output_dir:
+            full_model_dir = os.path.join(project_dir, output_dir)
+            dirs_to_create.add(full_model_dir)
+
+    # 统一创建目录（保留原data目录创建）
+    for dir_path in dirs_to_create:
+        try:
+            os.makedirs(dir_path, exist_ok=True)
+        except PermissionError:</pre></div>
+<div class="src-page"><pre>            print(f&quot;警告：无法创建目录 {dir_path}，请检查写入权限&quot;)
+
+
+def merge_configs(default_config, custom_config):
+    &quot;&quot;&quot;
+    递归合并配置，custom_config优先级更高
+
+    Args:
+        default_config: 默认配置
+        custom_config: 用户自定义配置
+
+    Returns:
+        合并后的配置
+    &quot;&quot;&quot;
+    if not isinstance(default_config, Mapping) or not isinstance(
+        custom_config, Mapping
+    ):
+        return custom_config
+
+    merged = dict(default_config)
+
+    for key, value in custom_config.items():
+        if (
+            key in merged
+            and isinstance(merged[key], Mapping)
+            and isinstance(value, Mapping)
+        ):
+            merged[key] = merge_configs(merged[key], value)
+        else:
+            merged[key] = value
+
+    return merged
+# ===== 文件: xiaozhi-server/config/logger.py =====
+import os
+import sys
+import asyncio
+from loguru import logger
+from config.config_loader import load_config
+from config.settings import check_config_file
+from core.utils.cache.manager import cache_manager, CacheType
+
+SERVER_VERSION = &quot;0.9.6&quot;
+_logger_initialized = False
+
+
+def get_module_abbreviation(module_name, module_dict):
+    &quot;&quot;&quot;获取模块名称的缩写，如果为空则返回00
+    如果名称中包含下划线，则返回下划线后面的前两个字符
+    &quot;&quot;&quot;
+    module_value = module_dict.get(module_name, &quot;&quot;)
+    if not module_value:
+        return &quot;00&quot;
+    if &quot;_&quot; in module_value:
+        parts = module_value.split(&quot;_&quot;)
+        return parts[-1][:2] if parts[-1] else &quot;00&quot;
+    return module_value[:2]
+
+
+def build_module_string(selected_module):
+    &quot;&quot;&quot;构建模块字符串&quot;&quot;&quot;</pre></div>
+<div class="src-page"><pre>    return (
+        get_module_abbreviation(&quot;VAD&quot;, selected_module)
+        + get_module_abbreviation(&quot;ASR&quot;, selected_module)
+        + get_module_abbreviation(&quot;LLM&quot;, selected_module)
+        + get_module_abbreviation(&quot;TTS&quot;, selected_module)
+        + get_module_abbreviation(&quot;Memory&quot;, selected_module)
+        + get_module_abbreviation(&quot;Intent&quot;, selected_module)
+        + get_module_abbreviation(&quot;VLLM&quot;, selected_module)
+    )
+
+
+def formatter(record):
+    &quot;&quot;&quot;为没有 tag 的日志添加默认值，并处理动态模块字符串&quot;&quot;&quot;
+    record[&quot;extra&quot;].setdefault(&quot;tag&quot;, record[&quot;name&quot;])
+    # 如果没有设置 selected_module，使用默认值
+    record[&quot;extra&quot;].setdefault(&quot;selected_module&quot;, &quot;00000000000000&quot;)
+    # 将 selected_module 从 extra 提取到顶级，以支持 {selected_module} 格式
+    record[&quot;selected_module&quot;] = record[&quot;extra&quot;][&quot;selected_module&quot;]
+    return record[&quot;message&quot;]
+
+
+def setup_logging(config=None):
+    &quot;&quot;&quot;从配置文件中读取日志配置，并设置日志输出格式和级别&quot;&quot;&quot;
+    if config is None:
+        check_config_file()
+        # 先查缓存，避免在 async 上下文中重复 await load_config
+        config = cache_manager.get(CacheType.CONFIG, &quot;main_config&quot;)
+        if config is None:
+            # 缓存也没有（理论上不该发生），才走 asyncio.run
+            config = asyncio.run(load_config())
+    log_config = config[&quot;log&quot;]
+    global _logger_initialized
+
+    # 第一次初始化时配置日志
+    if not _logger_initialized:
+        # 使用默认的模块字符串进行初始化
+        logger.configure(
+            extra={
+                &quot;selected_module&quot;: log_config.get(&quot;selected_module&quot;, &quot;00000000000000&quot;),
+            }
+        )
+
+        log_format = log_config.get(
+            &quot;log_format&quot;,
+            &quot;&lt;green&gt;{time:YYMMDD HH:mm:ss}&lt;/green&gt;[{version}_{extra[selected_module]}][&lt;light-blue&gt;{extr
+    a[tag]}&lt;/light-blue&gt;]-&lt;level&gt;{level}&lt;/level&gt;-&lt;cyan&gt;{file}:{line}&lt;/cyan&gt;-&lt;light-green&gt;{message}&lt;/ligh
+    t-green&gt;&quot;,
+        )
+        log_format_file = log_config.get(
+            &quot;log_format_file&quot;,
+            &quot;{time:YYYY-MM-DD HH:mm:ss} - {version}_{extra[selected_module]} - {name} - {level} - {extra
+    [tag]} - {file}:{line} - {message}&quot;,
+        )
+        log_format = log_format.replace(&quot;{version}&quot;, SERVER_VERSION)
+        log_format_file = log_format_file.replace(&quot;{version}&quot;, SERVER_VERSION)
+
+        log_level = log_config.get(&quot;log_level&quot;, &quot;INFO&quot;)
+        log_dir = log_config.get(&quot;log_dir&quot;, &quot;tmp&quot;)
+        log_file = log_config.get(&quot;log_file&quot;, &quot;server.log&quot;)
+        data_dir = log_config.get(&quot;data_dir&quot;, &quot;data&quot;)</pre></div>
+<div class="src-page"><pre>        log_to_file = log_config.get(&quot;log_to_file&quot;, True)  # 生产环境容器可设为 false，仅输出到 stdout
+
+        if log_to_file:
+            os.makedirs(log_dir, exist_ok=True)
+        os.makedirs(data_dir, exist_ok=True)
+
+        # 配置日志输出
+        logger.remove()
+
+        # 输出到控制台
+        logger.add(sys.stdout, format=log_format, level=log_level, filter=formatter)
+
+        # 输出到文件 - 容器环境可关闭（log_to_file: false），由运行时采集 stdout
+        if log_to_file:
+            log_file_path = os.path.join(log_dir, log_file)
+            logger.add(
+                log_file_path,
+                format=log_format_file,
+                level=log_level,
+                filter=formatter,
+                rotation=&quot;10 MB&quot;,  # 每个文件最大10MB
+                retention=&quot;30 days&quot;,  # 保留30天
+                compression=None,
+                encoding=&quot;utf-8&quot;,
+                enqueue=True,  # 异步安全
+                backtrace=True,
+                diagnose=True,
+            )
+        _logger_initialized = True  # 标记为已初始化
+
+    return logger
+
+
+def create_connection_logger(selected_module_str):
+    &quot;&quot;&quot;为连接创建独立的日志器，绑定特定的模块字符串&quot;&quot;&quot;
+    return logger.bind(selected_module=selected_module_str)
+# ===== 文件: xiaozhi-server/config/manage_api_client.py =====
+import os
+import base64
+from typing import Optional, Dict
+
+import httpx
+
+TAG = __name__
+
+
+class DeviceNotFoundException(Exception):
+    pass
+
+
+class DeviceBindException(Exception):
+    def __init__(self, bind_code):
+        self.bind_code = bind_code
+        super().__init__(f&quot;设备绑定异常，绑定码: {bind_code}&quot;)
+
+
+class ManageApiClient:
+    _instance = None
+    _async_clients = {}  # 为每个事件循环存储独立的客户端
+    _secret = None</pre></div>
+<div class="src-page"><pre>
+    def __new__(cls, config):
+        &quot;&quot;&quot;单例模式确保全局唯一实例，并支持传入配置参数&quot;&quot;&quot;
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._init_client(config)
+        return cls._instance
+
+    @classmethod
+    def _init_client(cls, config):
+        &quot;&quot;&quot;初始化配置（延迟创建客户端）&quot;&quot;&quot;
+        cls.config = config.get(&quot;manager-api&quot;)
+
+        if not cls.config:
+            raise Exception(&quot;manager-api配置错误&quot;)
+
+        if not cls.config.get(&quot;url&quot;) or not cls.config.get(&quot;secret&quot;):
+            raise Exception(&quot;manager-api的url或secret配置错误&quot;)
+
+        if &quot;你&quot; in cls.config.get(&quot;secret&quot;):
+            raise Exception(&quot;请先配置manager-api的secret&quot;)
+
+        cls._secret = cls.config.get(&quot;secret&quot;)
+        cls.free_daily_chat_limit = config.get(&quot;chat_quota&quot;, {}).get(&quot;free_daily_limit&quot;, 30)
+        cls.max_retries = cls.config.get(&quot;max_retries&quot;, 6)  # 最大重试次数
+        cls.retry_delay = cls.config.get(&quot;retry_delay&quot;, 10)  # 初始重试延迟(秒)
+        # 不在这里创建 AsyncClient，延迟到实际使用时创建
+        cls._async_clients = {}
+
+    @classmethod
+    async def _ensure_async_client(cls):
+        &quot;&quot;&quot;确保异步客户端已创建（为每个事件循环创建独立的客户端）&quot;&quot;&quot;
+        import asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop_id = id(loop)
+
+            # 为每个事件循环创建独立的客户端
+            if loop_id not in cls._async_clients:
+                # 服务端可能主动关闭连接，httpx 连接池无法正确检测和清理
+                limits = httpx.Limits(
+                    max_keepalive_connections=0,  # 禁用 keep-alive，每次都新建连接
+                )
+                cls._async_clients[loop_id] = httpx.AsyncClient(
+                    base_url=cls.config.get(&quot;url&quot;),
+                    headers={
+                        &quot;User-Agent&quot;: f&quot;PythonClient/2.0 (PID:{os.getpid()})&quot;,
+                        &quot;Accept&quot;: &quot;application/json&quot;,
+                        &quot;Authorization&quot;: &quot;Bearer &quot; + cls._secret,
+                    },
+                    timeout=cls.config.get(&quot;timeout&quot;, 30),
+                    limits=limits,  # 使用限制
+                    trust_env=False,
+                )
+            return cls._async_clients[loop_id]
+        except RuntimeError:
+            # 如果没有运行中的事件循环，创建一个临时的
+            raise Exception(&quot;必须在异步上下文中调用&quot;)
+</pre></div>
+<div class="src-page"><pre>    @classmethod
+    async def _async_request(cls, method: str, endpoint: str, **kwargs) -&gt; Dict:
+        &quot;&quot;&quot;发送单次异步HTTP请求并处理响应&quot;&quot;&quot;
+        # 确保客户端已创建
+        client = await cls._ensure_async_client()
+        endpoint = endpoint.lstrip(&quot;/&quot;)
+        response = None
+        try:
+            response = await client.request(method, endpoint, **kwargs)
+            response.raise_for_status()
+
+            result = response.json()
+
+            # 处理API返回的业务错误
+            if result.get(&quot;code&quot;) == 10041:
+                raise DeviceNotFoundException(result.get(&quot;msg&quot;))
+            elif result.get(&quot;code&quot;) == 10042:
+                raise DeviceBindException(result.get(&quot;msg&quot;))
+            elif result.get(&quot;code&quot;) != 0:
+                raise Exception(f&quot;API返回错误: {result.get(&#x27;msg&#x27;, &#x27;未知错误&#x27;)}&quot;)
+
+            # 返回成功数据
+            return result.get(&quot;data&quot;) if result.get(&quot;code&quot;) == 0 else None
+        finally:
+            # 确保响应被关闭（即使异常也会执行）
+            if response is not None:
+                await response.aclose()
+
+    @classmethod
+    def _should_retry(cls, exception: Exception) -&gt; bool:
+        &quot;&quot;&quot;判断异常是否应该重试&quot;&quot;&quot;
+        # 网络连接相关错误
+        if isinstance(
+            exception, (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError)
+        ):
+            return True
+
+        # HTTP状态码错误
+        if isinstance(exception, httpx.HTTPStatusError):
+            status_code = exception.response.status_code
+            return status_code in [408, 429, 500, 502, 503, 504]
+
+        return False
+
+    @classmethod
+    async def _execute_async_request(cls, method: str, endpoint: str, **kwargs) -&gt; Dict:
+        &quot;&quot;&quot;带重试机制的异步请求执行器&quot;&quot;&quot;
+        import asyncio
+
+        retry_count = 0
+
+        while retry_count &lt;= cls.max_retries:
+            try:
+                # 执行异步请求
+                return await cls._async_request(method, endpoint, **kwargs)
+            except Exception as e:
+                # 判断是否应该重试
+                if retry_count &lt; cls.max_retries and cls._should_retry(e):
+                    retry_count += 1
+                    print(</pre></div>
+<div class="src-page"><pre>                        f&quot;{method} {endpoint} 异步请求失败，将在 {cls.retry_delay:.1f} 秒后进行第 {retry
+    _count} 次重试&quot;
+                    )
+                    await asyncio.sleep(cls.retry_delay)
+                    continue
+                else:
+                    # 不重试，直接抛出异常
+                    raise
+
+    @classmethod
+    def safe_close(cls):
+        &quot;&quot;&quot;安全关闭所有异步连接池&quot;&quot;&quot;
+        import asyncio
+
+        for client in list(cls._async_clients.values()):
+            try:
+                asyncio.run(client.aclose())
+            except Exception:
+                pass
+        cls._async_clients.clear()
+        cls._instance = None
+
+
+async def get_server_config() -&gt; Optional[Dict]:
+    &quot;&quot;&quot;获取服务器基础配置&quot;&quot;&quot;
+    return await ManageApiClient._instance._execute_async_request(
+        &quot;POST&quot;, &quot;/config/server-base&quot;
+    )
+
+
+async def get_agent_models(
+    mac_address: str, client_id: str, selected_module: Dict
+) -&gt; Optional[Dict]:
+    &quot;&quot;&quot;获取代理模型配置&quot;&quot;&quot;
+    return await ManageApiClient._instance._execute_async_request(
+        &quot;POST&quot;,
+        &quot;/config/agent-models&quot;,
+        json={
+            &quot;macAddress&quot;: mac_address,
+            &quot;clientId&quot;: client_id,
+            &quot;selectedModule&quot;: selected_module,
+        },
+    )
+
+
+async def get_correct_words(mac_address: str) -&gt; Optional[Dict]:
+    &quot;&quot;&quot;获取智能体替换词&quot;&quot;&quot;
+    try:
+        return await ManageApiClient._instance._execute_async_request(
+            &quot;POST&quot;, &quot;/config/correct-words&quot;,
+            json={&quot;macAddress&quot;: mac_address}
+        )
+    except Exception as e:
+        print(f&quot;获取替换词失败: {e}&quot;)
+        return None
+
+
+async def generate_and_save_chat_summary(session_id: str) -&gt; Optional[Dict]:
+    &quot;&quot;&quot;生成并保存聊天记录总结&quot;&quot;&quot;
+    try:</pre></div>
+<div class="src-page"><pre>        return await ManageApiClient._instance._execute_async_request(
+            &quot;POST&quot;,
+            f&quot;/agent/chat-summary/{session_id}/save&quot;,
+        )
+    except Exception as e:
+        print(f&quot;生成并保存聊天记录总结失败: {e}&quot;)
+        return None
+
+
+async def generate_and_save_chat_title(session_id: str) -&gt; Optional[Dict]:
+    &quot;&quot;&quot;生成并保存聊天标题&quot;&quot;&quot;
+    try:
+        return await ManageApiClient._instance._execute_async_request(
+            &quot;POST&quot;,
+            f&quot;/agent/chat-title/{session_id}/generate&quot;,
+        )
+    except Exception as e:
+        print(f&quot;生成并保存聊天标题失败: {e}&quot;)
+        return None
+
+
+async def report(
+    mac_address: str, session_id: str, chat_type: int, content: str, audio, report_time
+) -&gt; Optional[Dict]:
+    &quot;&quot;&quot;异步聊天记录上报&quot;&quot;&quot;
+    if not content or not ManageApiClient._instance:
+        return None
+    try:
+        return await ManageApiClient._instance._execute_async_request(
+            &quot;POST&quot;,
+            f&quot;/agent/chat-history/report&quot;,
+            json={
+                &quot;macAddress&quot;: mac_address,
+                &quot;sessionId&quot;: session_id,
+                &quot;chatType&quot;: chat_type,
+                &quot;content&quot;: content,
+                &quot;reportTime&quot;: report_time,
+                &quot;audioBase64&quot;: (
+                    base64.b64encode(audio).decode(&quot;utf-8&quot;) if audio else None
+                ),
+            },
+        )
+    except Exception as e:
+        print(f&quot;TTS上报失败: {e}&quot;)
+        return None
+
+
+async def lookup_address_book(caller_mac: str, nickname: str) -&gt; Optional[Dict]:
+    &quot;&quot;&quot;根据昵称查找目标设备&quot;&quot;&quot;
+    if not ManageApiClient._instance:
+        return None
+    try:
+        return await ManageApiClient._instance._execute_async_request(
+            &quot;GET&quot;,
+            f&quot;/device/address-book/lookup?callerMac={caller_mac}&amp;nickname={nickname}&quot;,
+        )
+    except Exception as e:
+        print(f&quot;通讯录查找失败: {e}&quot;)
+        return None
+</pre></div>
+<div class="src-page"><pre>
+async def check_chat_quota(mac_address: str) -&gt; Optional[Dict]:
+    &quot;&quot;&quot;检查聊天配额（先加后查，原子操作）&quot;&quot;&quot;
+    if not ManageApiClient._instance:
+        return None
+    try:
+        return await ManageApiClient._instance._execute_async_request(
+            &quot;POST&quot;,
+            &quot;/config/chat-quota/check&quot;,
+            json={&quot;macAddress&quot;: mac_address},
+        )
+    except Exception as e:
+        print(f&quot;聊天配额检查失败: {e}&quot;)
+        # 失败时保守放行，不影响用户体验
+        return {&quot;allowed&quot;: True, &quot;remaining&quot;: -1, &quot;total&quot;: ManageApiClient.free_daily_chat_limit}
+
+
+def init_service(config):
+    ManageApiClient(config)
+
+
+def manage_api_http_safe_close():
+    ManageApiClient.safe_close()
+# ===== 文件: xiaozhi-server/config/settings.py =====
+import os
+import asyncio
+from config.config_loader import read_config, get_project_dir, load_config
+
+
+default_config_file = &quot;config.yaml&quot;
+config_file_valid = False
+
+
+def check_config_file():
+    global config_file_valid
+    if config_file_valid:
+        return
+    &quot;&quot;&quot;
+    简化的配置检查，仅提示用户配置文件的使用情况
+    &quot;&quot;&quot;
+    custom_config_file = get_project_dir() + &quot;data/.&quot; + default_config_file
+    if not os.path.exists(custom_config_file):
+        raise FileNotFoundError(
+            &quot;找不到data/.config.yaml文件，请按教程确认该配置文件是否存在&quot;
+        )
+
+    # 检查是否从API读取配置
+    config = asyncio.run(load_config())
+    if config.get(&quot;read_config_from_api&quot;, False):
+        print(&quot;从API读取配置&quot;)
+        old_config_origin = read_config(custom_config_file)
+        if old_config_origin.get(&quot;selected_module&quot;) is not None:
+            error_msg = &quot;您的配置文件好像既包含智控台的配置又包含本地配置：\n&quot;
+            error_msg += &quot;\n建议您：\n&quot;
+            error_msg += &quot;1、将根目录的config_from_api.yaml文件复制到data下，重命名为.config.yaml\n&quot;
+            error_msg += &quot;2、按教程配置好接口地址和密钥\n&quot;
+            raise ValueError(error_msg)
+    config_file_valid = True
+# ===== 文件: xiaozhi-server/models/snakers4_silero-vad/hubconf.py =====
+dependencies = [&#x27;torch&#x27;, &#x27;torchaudio&#x27;]</pre></div>
+<div class="src-page"><pre>import torch
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), &#x27;src&#x27;))
+from silero_vad.utils_vad import (init_jit_model,
+                                  get_speech_timestamps,
+                                  save_audio,
+                                  read_audio,
+                                  VADIterator,
+                                  collect_chunks,
+                                  OnnxWrapper)
+
+
+def versiontuple(v):
+    splitted = v.split(&#x27;+&#x27;)[0].split(&quot;.&quot;)
+    version_list = []
+    for i in splitted:
+        try:
+            version_list.append(int(i))
+        except:
+            version_list.append(0)
+    return tuple(version_list)
+
+
+def silero_vad(onnx=False, force_onnx_cpu=False, opset_version=16):
+    &quot;&quot;&quot;Silero Voice Activity Detector
+    Returns a model with a set of utils
+    Please see https://github.com/snakers4/silero-vad for usage examples
+    &quot;&quot;&quot;
+    available_ops = [15, 16]
+    if onnx and opset_version not in available_ops:
+        raise Exception(f&#x27;Available ONNX opset_version: {available_ops}&#x27;)
+
+    if not onnx:
+        installed_version = torch.__version__
+        supported_version = &#x27;1.12.0&#x27;
+        if versiontuple(installed_version) &lt; versiontuple(supported_version):
+            raise Exception(f&#x27;Please install torch {supported_version} or greater ({installed_version} i
+    nstalled)&#x27;)
+
+    model_dir = os.path.join(os.path.dirname(__file__), &#x27;src&#x27;, &#x27;silero_vad&#x27;, &#x27;data&#x27;)
+    if onnx:
+        if opset_version == 16:
+            model_name = &#x27;silero_vad.onnx&#x27;
+        else:
+            model_name = f&#x27;silero_vad_16k_op{opset_version}.onnx&#x27;
+        model = OnnxWrapper(os.path.join(model_dir, model_name), force_onnx_cpu)
+    else:
+        model = init_jit_model(os.path.join(model_dir, &#x27;silero_vad.jit&#x27;))
+    utils = (get_speech_timestamps,
+             save_audio,
+             read_audio,
+             VADIterator,
+             collect_chunks)
+
+    return model, utils
+# ===== 文件: xiaozhi-server/models/snakers4_silero-vad/src/silero_vad/__init__.py =====
+from importlib.metadata import version
+try:
+    __version__ = version(__name__)</pre></div>
+<div class="src-page"><pre>except:
+    pass
+
+from silero_vad.model import load_silero_vad
+from silero_vad.utils_vad import (get_speech_timestamps,
+                                  save_audio,
+                                  read_audio,
+                                  VADIterator,
+                                  collect_chunks)
+# ===== 文件: xiaozhi-server/models/snakers4_silero-vad/src/silero_vad/model.py =====
+from .utils_vad import init_jit_model, OnnxWrapper
+import torch
+torch.set_num_threads(1)
+
+
+def load_silero_vad(onnx=False, opset_version=16):
+    available_ops = [15, 16]
+    if onnx and opset_version not in available_ops:
+        raise Exception(f&#x27;Available ONNX opset_version: {available_ops}&#x27;)
+
+    if onnx:
+        if opset_version == 16:
+            model_name = &#x27;silero_vad.onnx&#x27;
+        else:
+            model_name = f&#x27;silero_vad_16k_op{opset_version}.onnx&#x27;
+    else:
+        model_name = &#x27;silero_vad.jit&#x27;
+    package_path = &quot;silero_vad.data&quot;
+
+    try:
+        import importlib_resources as impresources
+        model_file_path = str(impresources.files(package_path).joinpath(model_name))
+    except:
+        from importlib import resources as impresources
+        try:
+            with impresources.path(package_path, model_name) as f:
+                model_file_path = f
+        except:
+            model_file_path = str(impresources.files(package_path).joinpath(model_name))
+
+    if onnx:
+        model = OnnxWrapper(model_file_path, force_onnx_cpu=True)
+    else:
+        model = init_jit_model(model_file_path)
+
+    return model
+# ===== 文件: xiaozhi-server/models/snakers4_silero-vad/src/silero_vad/utils_vad.py =====
+import torch
+import torchaudio
+from typing import Callable, List
+import warnings
+
+languages = [&#x27;ru&#x27;, &#x27;en&#x27;, &#x27;de&#x27;, &#x27;es&#x27;]
+
+
+class OnnxWrapper():
+
+    def __init__(self, path, force_onnx_cpu=False):
+        import numpy as np
+        global np</pre></div>
+<div class="src-page"><pre>        import onnxruntime
+
+        opts = onnxruntime.SessionOptions()
+        opts.inter_op_num_threads = 1
+        opts.intra_op_num_threads = 1
+
+        if force_onnx_cpu and &#x27;CPUExecutionProvider&#x27; in onnxruntime.get_available_providers():
+            self.session = onnxruntime.InferenceSession(path, providers=[&#x27;CPUExecutionProvider&#x27;], sess_o
+    ptions=opts)
+        else:
+            self.session = onnxruntime.InferenceSession(path, sess_options=opts)
+
+        self.reset_states()
+        if &#x27;16k&#x27; in path:
+            warnings.warn(&#x27;This model support only 16000 sampling rate!&#x27;)
+            self.sample_rates = [16000]
+        else:
+            self.sample_rates = [8000, 16000]
+
+    def _validate_input(self, x, sr: int):
+        if x.dim() == 1:
+            x = x.unsqueeze(0)
+        if x.dim() &gt; 2:
+            raise ValueError(f&quot;Too many dimensions for input audio chunk {x.dim()}&quot;)
+
+        if sr != 16000 and (sr % 16000 == 0):
+            step = sr // 16000
+            x = x[:,::step]
+            sr = 16000
+
+        if sr not in self.sample_rates:
+            raise ValueError(f&quot;Supported sampling rates: {self.sample_rates} (or multiply of 16000)&quot;)
+        if sr / x.shape[1] &gt; 31.25:
+            raise ValueError(&quot;Input audio chunk is too short&quot;)
+
+        return x, sr
+
+    def reset_states(self, batch_size=1):
+        self._state = torch.zeros((2, batch_size, 128)).float()
+        self._context = torch.zeros(0)
+        self._last_sr = 0
+        self._last_batch_size = 0
+
+    def __call__(self, x, sr: int):
+
+        x, sr = self._validate_input(x, sr)
+        num_samples = 512 if sr == 16000 else 256
+
+        if x.shape[-1] != num_samples:
+            raise ValueError(f&quot;Provided number of samples is {x.shape[-1]} (Supported values: 256 for 80
+    00 sample rate, 512 for 16000)&quot;)
+
+        batch_size = x.shape[0]
+        context_size = 64 if sr == 16000 else 32
+
+        if not self._last_batch_size:
+            self.reset_states(batch_size)
+        if (self._last_sr) and (self._last_sr != sr):
+            self.reset_states(batch_size)
+        if (self._last_batch_size) and (self._last_batch_size != batch_size):</pre></div>
+<div class="src-page"><pre>            self.reset_states(batch_size)
+
+        if not len(self._context):
+            self._context = torch.zeros(batch_size, context_size)
+
+        x = torch.cat([self._context, x], dim=1)
+        if sr in [8000, 16000]:
+            ort_inputs = {&#x27;input&#x27;: x.numpy(), &#x27;state&#x27;: self._state.numpy(), &#x27;sr&#x27;: np.array(sr, dtype=&#x27;in
+    t64&#x27;)}
+            ort_outs = self.session.run(None, ort_inputs)
+            out, state = ort_outs
+            self._state = torch.from_numpy(state)
+        else:
+            raise ValueError()
+
+        self._context = x[..., -context_size:]
+        self._last_sr = sr
+        self._last_batch_size = batch_size
+
+        out = torch.from_numpy(out)
+        return out
+
+    def audio_forward(self, x, sr: int):
+        outs = []
+        x, sr = self._validate_input(x, sr)
+        self.reset_states()
+        num_samples = 512 if sr == 16000 else 256
+
+        if x.shape[1] % num_samples:
+            pad_num = num_samples - (x.shape[1] % num_samples)
+            x = torch.nn.functional.pad(x, (0, pad_num), &#x27;constant&#x27;, value=0.0)
+
+        for i in range(0, x.shape[1], num_samples):
+            wavs_batch = x[:, i:i+num_samples]
+            out_chunk = self.__call__(wavs_batch, sr)
+            outs.append(out_chunk)
+
+        stacked = torch.cat(outs, dim=1)
+        return stacked.cpu()
+
+
+class Validator():
+    def __init__(self, url, force_onnx_cpu):
+        self.onnx = True if url.endswith(&#x27;.onnx&#x27;) else False
+        torch.hub.download_url_to_file(url, &#x27;inf.model&#x27;)
+        if self.onnx:
+            import onnxruntime
+            if force_onnx_cpu and &#x27;CPUExecutionProvider&#x27; in onnxruntime.get_available_providers():
+                self.model = onnxruntime.InferenceSession(&#x27;inf.model&#x27;, providers=[&#x27;CPUExecutionProvider&#x27;
+    ])
+            else:
+                self.model = onnxruntime.InferenceSession(&#x27;inf.model&#x27;)
+        else:
+            self.model = init_jit_model(model_path=&#x27;inf.model&#x27;)
+
+    def __call__(self, inputs: torch.Tensor):
+        with torch.no_grad():
+            if self.onnx:
+                ort_inputs = {&#x27;input&#x27;: inputs.cpu().numpy()}
+                outs = self.model.run(None, ort_inputs)</pre></div>
+<div class="src-page"><pre>                outs = [torch.Tensor(x) for x in outs]
+            else:
+                outs = self.model(inputs)
+
+        return outs
+
+
+def read_audio(path: str,
+               sampling_rate: int = 16000):
+    list_backends = torchaudio.list_audio_backends()
+
+    assert len(list_backends) &gt; 0, &#x27;The list of available backends is empty, please install backend manu
+    ally. \
+                                    \n Recommendations: \n \tSox (UNIX OS) \n \tSoundfile (Windows OS, U
+    NIX OS) \n \tffmpeg (Windows OS, UNIX OS)&#x27;
+
+    try:
+        effects = [
+            [&#x27;channels&#x27;, &#x27;1&#x27;],
+            [&#x27;rate&#x27;, str(sampling_rate)]
+        ]
+
+        wav, sr = torchaudio.sox_effects.apply_effects_file(path, effects=effects)
+    except:
+        wav, sr = torchaudio.load(path)
+
+        if wav.size(0) &gt; 1:
+            wav = wav.mean(dim=0, keepdim=True)
+
+        if sr != sampling_rate:
+            transform = torchaudio.transforms.Resample(orig_freq=sr,
+                                                       new_freq=sampling_rate)
+            wav = transform(wav)
+            sr = sampling_rate
+
+    assert sr == sampling_rate
+    return wav.squeeze(0)
+
+
+def save_audio(path: str,
+               tensor: torch.Tensor,
+               sampling_rate: int = 16000):
+    torchaudio.save(path, tensor.unsqueeze(0), sampling_rate, bits_per_sample=16)
+
+
+def init_jit_model(model_path: str,
+                   device=torch.device(&#x27;cpu&#x27;)):
+    model = torch.jit.load(model_path, map_location=device)
+    model.eval()
+    return model
+
+
+def make_visualization(probs, step):
+    import pandas as pd
+    pd.DataFrame({&#x27;probs&#x27;: probs},
+                 index=[x * step for x in range(len(probs))]).plot(figsize=(16, 8),
+                 kind=&#x27;area&#x27;, ylim=[0, 1.05], xlim=[0, len(probs) * step],
+                 xlabel=&#x27;seconds&#x27;,
+                 ylabel=&#x27;speech probability&#x27;,
+                 colormap=&#x27;tab20&#x27;)</pre></div>
+<div class="src-page"><pre>
+
+@torch.no_grad()
+def get_speech_timestamps(audio: torch.Tensor,
+                          model,
+                          threshold: float = 0.5,
+                          sampling_rate: int = 16000,
+                          min_speech_duration_ms: int = 250,
+                          max_speech_duration_s: float = float(&#x27;inf&#x27;),
+                          min_silence_duration_ms: int = 100,
+                          speech_pad_ms: int = 30,
+                          return_seconds: bool = False,
+                          visualize_probs: bool = False,
+                          progress_tracking_callback: Callable[[float], None] = None,
+                          neg_threshold: float = None,
+                          window_size_samples: int = 512,):
+
+    &quot;&quot;&quot;
+    This method is used for splitting long audios into speech chunks using silero VAD
+
+    Parameters
+    ----------
+    audio: torch.Tensor, one dimensional
+        One dimensional float torch.Tensor, other types are casted to torch if possible
+
+    model: preloaded .jit/.onnx silero VAD model
+
+    threshold: float (default - 0.5)
+        Speech threshold. Silero VAD outputs speech probabilities for each audio chunk, probabilities AB
+    OVE this value are considered as SPEECH.
+        It is better to tune this parameter for each dataset separately, but &quot;lazy&quot; 0.5 is pretty good f
+    or most datasets.
+
+    sampling_rate: int (default - 16000)
+        Currently silero VAD models support 8000 and 16000 (or multiply of 16000) sample rates
+
+    min_speech_duration_ms: int (default - 250 milliseconds)
+        Final speech chunks shorter min_speech_duration_ms are thrown out
+
+    max_speech_duration_s: int (default -  inf)
+        Maximum duration of speech chunks in seconds
+        Chunks longer than max_speech_duration_s will be split at the timestamp of the last silence that
+     lasts more than 100ms (if any), to prevent agressive cutting.
+        Otherwise, they will be split aggressively just before max_speech_duration_s.
+
+    min_silence_duration_ms: int (default - 100 milliseconds)
+        In the end of each speech chunk wait for min_silence_duration_ms before separating it
+
+    speech_pad_ms: int (default - 30 milliseconds)
+        Final speech chunks are padded by speech_pad_ms each side
+
+    return_seconds: bool (default - False)
+        whether return timestamps in seconds (default - samples)
+
+    visualize_probs: bool (default - False)
+        whether draw prob hist or not
+
+    progress_tracking_callback: Callable[[float], None] (default - None)
+        callback function taking progress in percents as an argument
+</pre></div>
+<div class="src-page"><pre>    neg_threshold: float (default = threshold - 0.15)
+        Negative threshold (noise or exit threshold). If model&#x27;s current state is SPEECH, values BELOW t
+    his value are considered as NON-SPEECH.
+
+    window_size_samples: int (default - 512 samples)
+        !!! DEPRECATED, DOES NOTHING !!!
+
+    Returns
+    ----------
+    speeches: list of dicts
+        list containing ends and beginnings of speech chunks (samples or seconds based on return_seconds
+    )
+    &quot;&quot;&quot;
+
+    if not torch.is_tensor(audio):
+        try:
+            audio = torch.Tensor(audio)
+        except:
+            raise TypeError(&quot;Audio cannot be casted to tensor. Cast it manually&quot;)
+
+    if len(audio.shape) &gt; 1:
+        for i in range(len(audio.shape)):  # trying to squeeze empty dimensions
+            audio = audio.squeeze(0)
+        if len(audio.shape) &gt; 1:
+            raise ValueError(&quot;More than one dimension in audio. Are you trying to process audio with 2 c
+    hannels?&quot;)
+
+    if sampling_rate &gt; 16000 and (sampling_rate % 16000 == 0):
+        step = sampling_rate // 16000
+        sampling_rate = 16000
+        audio = audio[::step]
+        warnings.warn(&#x27;Sampling rate is a multiply of 16000, casting to 16000 manually!&#x27;)
+    else:
+        step = 1
+
+    if sampling_rate not in [8000, 16000]:
+        raise ValueError(&quot;Currently silero VAD models support 8000 and 16000 (or multiply of 16000) samp
+    le rates&quot;)
+
+    window_size_samples = 512 if sampling_rate == 16000 else 256
+
+    model.reset_states()
+    min_speech_samples = sampling_rate * min_speech_duration_ms / 1000
+    speech_pad_samples = sampling_rate * speech_pad_ms / 1000
+    max_speech_samples = sampling_rate * max_speech_duration_s - window_size_samples - 2 * speech_pad_sa
+    mples
+    min_silence_samples = sampling_rate * min_silence_duration_ms / 1000
+    min_silence_samples_at_max_speech = sampling_rate * 98 / 1000
+
+    audio_length_samples = len(audio)
+
+    speech_probs = []
+    for current_start_sample in range(0, audio_length_samples, window_size_samples):
+        chunk = audio[current_start_sample: current_start_sample + window_size_samples]
+        if len(chunk) &lt; window_size_samples:
+            chunk = torch.nn.functional.pad(chunk, (0, int(window_size_samples - len(chunk))))
+        speech_prob = model(chunk, sampling_rate).item()
+        speech_probs.append(speech_prob)
+        # caculate progress and seng it to callback function
+        progress = current_start_sample + window_size_samples</pre></div>
+<div class="src-page"><pre>        if progress &gt; audio_length_samples:
+            progress = audio_length_samples
+        progress_percent = (progress / audio_length_samples) * 100
+        if progress_tracking_callback:
+            progress_tracking_callback(progress_percent)
+
+    triggered = False
+    speeches = []
+    current_speech = {}
+
+    if neg_threshold is None:
+        neg_threshold = max(threshold - 0.15, 0.01)
+    temp_end = 0  # to save potential segment end (and tolerate some silence)
+    prev_end = next_start = 0  # to save potential segment limits in case of maximum segment size reache
+    d
+
+    for i, speech_prob in enumerate(speech_probs):
+        if (speech_prob &gt;= threshold) and temp_end:
+            temp_end = 0
+            if next_start &lt; prev_end:
+                next_start = window_size_samples * i
+
+        if (speech_prob &gt;= threshold) and not triggered:
+            triggered = True
+            current_speech[&#x27;start&#x27;] = window_size_samples * i
+            continue
+
+        if triggered and (window_size_samples * i) - current_speech[&#x27;start&#x27;] &gt; max_speech_samples:
+            if prev_end:
+                current_speech[&#x27;end&#x27;] = prev_end
+                speeches.append(current_speech)
+                current_speech = {}
+                if next_start &lt; prev_end:  # previously reached silence (&lt; neg_thres) and is still not s
+    peech (&lt; thres)
+                    triggered = False
+                else:
+                    current_speech[&#x27;start&#x27;] = next_start
+                prev_end = next_start = temp_end = 0
+            else:
+                current_speech[&#x27;end&#x27;] = window_size_samples * i
+                speeches.append(current_speech)
+                current_speech = {}
+                prev_end = next_start = temp_end = 0
+                triggered = False
+                continue
+
+        if (speech_prob &lt; neg_threshold) and triggered:
+            if not temp_end:
+                temp_end = window_size_samples * i
+            if ((window_size_samples * i) - temp_end) &gt; min_silence_samples_at_max_speech:  # condition 
+    to avoid cutting in very short silence
+                prev_end = temp_end
+            if (window_size_samples * i) - temp_end &lt; min_silence_samples:
+                continue
+            else:
+                current_speech[&#x27;end&#x27;] = temp_end
+                if (current_speech[&#x27;end&#x27;] - current_speech[&#x27;start&#x27;]) &gt; min_speech_samples:
+                    speeches.append(current_speech)
+                current_speech = {}
+                prev_end = next_start = temp_end = 0</pre></div>
+<div class="src-page"><pre>                triggered = False
+                continue
+
+    if current_speech and (audio_length_samples - current_speech[&#x27;start&#x27;]) &gt; min_speech_samples:
+        current_speech[&#x27;end&#x27;] = audio_length_samples
+        speeches.append(current_speech)
+
+    for i, speech in enumerate(speeches):
+        if i == 0:
+            speech[&#x27;start&#x27;] = int(max(0, speech[&#x27;start&#x27;] - speech_pad_samples))
+        if i != len(speeches) - 1:
+            silence_duration = speeches[i+1][&#x27;start&#x27;] - speech[&#x27;end&#x27;]
+            if silence_duration &lt; 2 * speech_pad_samples:
+                speech[&#x27;end&#x27;] += int(silence_duration // 2)
+                speeches[i+1][&#x27;start&#x27;] = int(max(0, speeches[i+1][&#x27;start&#x27;] - silence_duration // 2))
+            else:
+                speech[&#x27;end&#x27;] = int(min(audio_length_samples, speech[&#x27;end&#x27;] + speech_pad_samples))
+                speeches[i+1][&#x27;start&#x27;] = int(max(0, speeches[i+1][&#x27;start&#x27;] - speech_pad_samples))
+        else:
+            speech[&#x27;end&#x27;] = int(min(audio_length_samples, speech[&#x27;end&#x27;] + speech_pad_samples))
+
+    if return_seconds:
+        audio_length_seconds = audio_length_samples / sampling_rate
+        for speech_dict in speeches:
+            speech_dict[&#x27;start&#x27;] = max(round(speech_dict[&#x27;start&#x27;] / sampling_rate, 1), 0)
+            speech_dict[&#x27;end&#x27;] = min(round(speech_dict[&#x27;end&#x27;] / sampling_rate, 1), audio_length_seconds)
+    elif step &gt; 1:
+        for speech_dict in speeches:
+            speech_dict[&#x27;start&#x27;] *= step
+            speech_dict[&#x27;end&#x27;] *= step
+
+    if visualize_probs:
+        make_visualization(speech_probs, window_size_samples / sampling_rate)
+
+    return speeches
+
+
+class VADIterator:
+    def __init__(self,
+                 model,
+                 threshold: float = 0.5,
+                 sampling_rate: int = 16000,
+                 min_silence_duration_ms: int = 100,
+                 speech_pad_ms: int = 30
+                 ):
+
+        &quot;&quot;&quot;
+        Class for stream imitation
+
+        Parameters
+        ----------
+        model: preloaded .jit/.onnx silero VAD model
+
+        threshold: float (default - 0.5)
+            Speech threshold. Silero VAD outputs speech probabilities for each audio chunk, probabilitie
+    s ABOVE this value are considered as SPEECH.
+            It is better to tune this parameter for each dataset separately, but &quot;lazy&quot; 0.5 is pretty go
+    od for most datasets.
+
+        sampling_rate: int (default - 16000)</pre></div>
+<div class="src-page"><pre>            Currently silero VAD models support 8000 and 16000 sample rates
+
+        min_silence_duration_ms: int (default - 100 milliseconds)
+            In the end of each speech chunk wait for min_silence_duration_ms before separating it
+
+        speech_pad_ms: int (default - 30 milliseconds)
+            Final speech chunks are padded by speech_pad_ms each side
+        &quot;&quot;&quot;
+
+        self.model = model
+        self.threshold = threshold
+        self.sampling_rate = sampling_rate
+
+        if sampling_rate not in [8000, 16000]:
+            raise ValueError(&#x27;VADIterator does not support sampling rates other than [8000, 16000]&#x27;)
+
+        self.min_silence_samples = sampling_rate * min_silence_duration_ms / 1000
+        self.speech_pad_samples = sampling_rate * speech_pad_ms / 1000
+        self.reset_states()
+
+    def reset_states(self):
+
+        self.model.reset_states()
+        self.triggered = False
+        self.temp_end = 0
+        self.current_sample = 0
+
+    @torch.no_grad()
+    def __call__(self, x, return_seconds=False):
+        &quot;&quot;&quot;
+        x: torch.Tensor
+            audio chunk (see examples in repo)
+
+        return_seconds: bool (default - False)
+            whether return timestamps in seconds (default - samples)
+        &quot;&quot;&quot;
+
+        if not torch.is_tensor(x):
+            try:
+                x = torch.Tensor(x)
+            except:
+                raise TypeError(&quot;Audio cannot be casted to tensor. Cast it manually&quot;)
+
+        window_size_samples = len(x[0]) if x.dim() == 2 else len(x)
+        self.current_sample += window_size_samples
+
+        speech_prob = self.model(x, self.sampling_rate).item()
+
+        if (speech_prob &gt;= self.threshold) and self.temp_end:
+            self.temp_end = 0
+
+        if (speech_prob &gt;= self.threshold) and not self.triggered:
+            self.triggered = True
+            speech_start = max(0, self.current_sample - self.speech_pad_samples - window_size_samples)
+            return {&#x27;start&#x27;: int(speech_start) if not return_seconds else round(speech_start / self.samp
+    ling_rate, 1)}
+
+        if (speech_prob &lt; self.threshold - 0.15) and self.triggered:
+            if not self.temp_end:
+                self.temp_end = self.current_sample</pre></div>
+<div class="src-page"><pre>            if self.current_sample - self.temp_end &lt; self.min_silence_samples:
+                return None
+            else:
+                speech_end = self.temp_end + self.speech_pad_samples - window_size_samples
+                self.temp_end = 0
+                self.triggered = False
+                return {&#x27;end&#x27;: int(speech_end) if not return_seconds else round(speech_end / self.sampli
+    ng_rate, 1)}
+
+        return None
+
+
+def collect_chunks(tss: List[dict],
+                   wav: torch.Tensor):
+    chunks = []
+    for i in tss:
+        chunks.append(wav[i[&#x27;start&#x27;]: i[&#x27;end&#x27;]])
+    return torch.cat(chunks)
+
+
+def drop_chunks(tss: List[dict],
+                wav: torch.Tensor):
+    chunks = []
+    cur_start = 0
+    for i in tss:
+        chunks.append((wav[cur_start: i[&#x27;start&#x27;]]))
+        cur_start = i[&#x27;end&#x27;]
+    return torch.cat(chunks)
+# ===== 文件: xiaozhi-server/models/snakers4_silero-vad/src/silero_vad/data/__init__.py =====
+# ===== 文件: xiaozhi-server/models/SenseVoiceSmall/demo.py =====
+from funasr import AutoModel
+from funasr.utils.postprocess_utils import rich_transcription_postprocess
+
+model_dir = &quot;./&quot;
+
+
+model = AutoModel(
+    model=model_dir,
+    vad_model=&quot;fsmn-vad&quot;,
+    vad_kwargs={&quot;max_single_segment_time&quot;: 30000},
+    # device=&quot;cuda:0&quot;,
+    hub=&quot;hf&quot;,
+)
+
+# en
+res = model.generate(
+    input=f&quot;{model.model_path}/example/en.mp3&quot;,
+    cache={},
+    language=&quot;auto&quot;,  # &quot;zn&quot;, &quot;en&quot;, &quot;yue&quot;, &quot;ja&quot;, &quot;ko&quot;, &quot;nospeech&quot;
+    use_itn=True,
+    batch_size_s=60,
+    merge_vad=True,  #
+    merge_length_s=15,
+)
+text = rich_transcription_postprocess(res[0][&quot;text&quot;])
+print(text)
+
+# ===== 文件: xiaozhi-server/core/connection.py =====
+import os
+import sys</pre></div>
+<div class="src-page"><pre>import copy
+import json
+import re
+import uuid
+import time
+import queue
+import asyncio
+import threading
+import traceback
+import subprocess
+import websockets
+import opuslib_next
+import numpy as np
+
+from core.utils.util import (
+    extract_json_from_string,
+    check_vad_update,
+    check_asr_update,
+    filter_sensitive_info,
+)
+from typing import Dict, Any
+from collections import deque
+from core.utils.modules_initialize import (
+    initialize_modules,
+    initialize_tts,
+    initialize_asr,
+)
+from core.handle.reportHandle import report, enqueue_tool_report
+from core.providers.tts.default import DefaultTTS
+from concurrent.futures import ThreadPoolExecutor
+from core.utils.dialogue import Message, Dialogue
+
+from core.providers.asr.dto.dto import InterfaceType
+from core.handle.textHandle import handleTextMessage
+from core.providers.tools.unified_tool_handler import UnifiedToolHandler
+from plugins_func.loadplugins import auto_import_modules
+from plugins_func.register import Action, ActionResponse
+from core.auth import AuthenticationError
+from config.config_loader import get_private_config_from_api
+from core.providers.tts.dto.dto import ContentType, TTSMessageDTO, SentenceType
+from config.logger import setup_logging, build_module_string, create_connection_logger
+from config.manage_api_client import DeviceNotFoundException, DeviceBindException, generate_and_save_cha
+    t_title
+from core.utils.prompt_manager import PromptManager
+from core.utils.voiceprint_provider import VoiceprintProvider
+from core.utils.util import get_system_error_response
+from core.utils import textUtils
+from core.content_safety import (
+    ContentSafetyContext,
+    ContentSafetyGate,
+    OutputSafetyGate,
+)
+from core.utils.content_safety import create_content_safety_provider
+
+
+TAG = __name__
+
+auto_import_modules(&quot;plugins_func.functions&quot;)
+
+</pre></div>
+<div class="src-page"><pre>class TTSException(RuntimeError):
+    pass
+
+# direct_answer 虚拟工具定义
+# 不是真实工具，是路由机制：将&quot;调不调工具&quot;的二选一变为&quot;调哪个&quot;的多选，防止小模型误触发真实工具
+DIRECT_ANSWER_TOOL = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;direct_answer&quot;,
+        &quot;description&quot;: &quot;当用户的请求不匹配其他任何工具时，可用此选项直接回复。将回复内容写在response参数
+    里。&quot;,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;response&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;你回复用户的完整内容&quot;,
+                },
+            },
+            &quot;required&quot;: [&quot;response&quot;],
+        },
+    },
+}
+
+
+class ConnectionHandler:
+    def __init__(
+            self,
+            config: Dict[str, Any],
+            _vad,
+            _asr,
+            _llm,
+            _memory,
+            _intent,
+            server=None,
+            content_safety_provider=None,
+    ):
+        self.common_config = config
+        self.config = copy.deepcopy(config)
+        self.session_id = str(uuid.uuid4())
+        self.logger = setup_logging()
+        self.server = server  # 保存server实例的引用
+        self.content_safety_provider = (
+            content_safety_provider or create_content_safety_provider(config)
+        )
+        self.content_safety_gate = ContentSafetyGate(
+            self.content_safety_provider,
+            self.config,
+            audit_log=self.logger.bind(tag=TAG).info,
+        )
+
+        self.need_bind = False  # 是否需要绑定设备
+        self.bind_completed_event = asyncio.Event()
+        self.bind_code = None  # 绑定设备的验证码
+        self.last_bind_prompt_time = 0  # 上次播放绑定提示的时间戳(秒)
+        self.bind_prompt_interval = 60  # 绑定提示播放间隔(秒)
+
+        self.read_config_from_api = self.config.get(&quot;read_config_from_api&quot;, False)
+
+        self.websocket: websockets.ServerConnection | None = None</pre></div>
+<div class="src-page"><pre>        self.headers = None
+        self.device_id = None
+        self.client_ip = None
+        self.prompt = None
+        self.welcome_msg = None
+        self.max_output_size = 0
+        self.chat_history_conf = 0
+        self.audio_format = &quot;opus&quot;
+        self.sample_rate = 24000  # 默认采样率，从客户端 hello 消息中动态更新
+
+        # 客户端状态相关
+        self.client_abort = False
+        # 当前轮次是否命中危机内容（轻生等）；入口放行时置 True，出口兜底据此分级
+        self.crisis_context = False
+        self.client_is_speaking = False
+        self.client_listen_mode = &quot;auto&quot;
+        self.client_aec = False  # 是否启用了服务端AEC
+
+        # 线程任务相关
+        self.loop = None  # 在 handle_connection 中获取运行中的事件循环
+        self.stop_event = threading.Event()
+        self.executor = ThreadPoolExecutor(max_workers=5)
+
+        # 添加上报线程池
+        self.report_queue = queue.Queue(maxsize=100)  # 限制上报队列大小，防止内存溢出（优化：1000→100）
+        self.report_thread = None
+        # 未来可以通过修改此处，调节asr的上报和tts的上报，目前默认都开启
+        self.report_asr_enable = self.read_config_from_api
+        self.report_tts_enable = self.read_config_from_api
+
+        # 依赖的组件
+        self.vad = None
+        self.asr = None
+        self.tts = None
+        self._asr = _asr
+        self._vad = _vad
+        self.llm = _llm
+        self.memory = _memory
+        self.intent = _intent
+
+        # 为每个连接单独管理声纹识别
+        self.voiceprint_provider = None
+
+        # vad相关变量
+        self.client_audio_buffer = bytearray()
+        self.client_have_voice = False
+        self.client_voice_window = deque(maxlen=5)
+        self.first_activity_time = 0.0  # 记录首次活动的时间（毫秒）
+        self.last_activity_time = 0.0  # 统一的活动时间戳（毫秒）
+        self.vad_last_voice_time = 0.0  # 记录用户最后一次说话的时间（毫秒）
+        self.client_voice_stop = False
+        self.last_is_voice = False
+
+        # asr相关变量
+        # 因为实际部署时可能会用到公共的本地ASR，不能把变量暴露给公共ASR
+        # 所以涉及到ASR的变量，需要在这里定义，属于connection的私有变量
+        self.asr_audio = []  # 存储PCM帧列表，供VAD和ASR共享
+        self.asr_audio_queue = queue.Queue(maxsize=100)  # 限制音频队列大小，约100帧PCM数据
+        self.current_speaker = None  # 存储当前说话人
+        self.introduced_speakers = set()  # 已&quot;首次引入&quot;的说话人，控制只在首轮带名字</pre></div>
+<div class="src-page"><pre>        self.system_introduced_speakers = set()  # 已在 system 注入过身份的说话人，控制 system 身份只首
+    轮出现
+
+        # llm相关变量
+        self.dialogue = Dialogue()
+
+        # tts相关变量
+        self.sentence_id = None
+        # 处理TTS响应没有文本返回
+        self.tts_MessageText = &quot;&quot;
+
+        # iot相关变量
+        self.iot_descriptors = {}
+        self.func_handler = None
+
+        self.cmd_exit = self.config[&quot;exit_commands&quot;]
+
+        # 是否在聊天结束后关闭连接
+        self.close_after_chat = False
+        self.load_function_plugin = False
+        self.intent_type = &quot;nointent&quot;
+
+        self.timeout_seconds = (
+                int(self.config.get(&quot;close_connection_no_voice_time&quot;, 120)) + 60
+        )  # 在原来第一道关闭的基础上加60秒，进行二道关闭
+        self.timeout_task = None
+        self._background_init_task = None
+
+        # {&quot;mcp&quot;:true} 表示启用MCP功能
+        self.features = None
+
+        # 标记连接是否来自MQTT
+        self.conn_from_mqtt_gateway = False
+
+        # 初始化提示词管理器
+        self.prompt_manager = PromptManager(self.config, self.logger)
+
+        # 初始化通话状态
+        self.calling = False
+        # 标记当前是否为来电接听模式
+        self.incoming_call = None
+
+    async def handle_connection(self, ws: websockets.ServerConnection):
+        try:
+            # 获取运行中的事件循环（必须在异步上下文中）
+            self.loop = asyncio.get_running_loop()
+
+            # 获取并验证headers
+            self.headers = dict(ws.request.headers)
+            real_ip = self.headers.get(&quot;x-real-ip&quot;) or self.headers.get(
+                &quot;x-forwarded-for&quot;
+            )
+            if real_ip:
+                self.client_ip = real_ip.split(&quot;,&quot;)[0].strip()
+            else:
+                self.client_ip = ws.remote_address[0]
+            self.logger.bind(tag=TAG).info(
+                f&quot;{self.client_ip} conn - Headers: {self.headers}&quot;
+            )
+</pre></div>
+<div class="src-page"><pre>            self.device_id = self.headers.get(&quot;device-id&quot;, None)
+
+            # 认证通过,继续处理
+            self.websocket = ws
+
+            # 检查是否来自MQTT连接
+            request_path = ws.request.path
+            self.conn_from_mqtt_gateway = request_path.endswith(&quot;?from=mqtt_gateway&quot;)
+            if self.conn_from_mqtt_gateway:
+                self.logger.bind(tag=TAG).info(&quot;连接来自:MQTT网关&quot;)
+
+            # 初始化活动时间戳
+            self.first_activity_time = time.time() * 1000
+            self.last_activity_time = time.time() * 1000
+
+            # 启动超时检查任务
+            self.timeout_task = asyncio.create_task(self._check_timeout())
+
+            # 启动AEC缓存清理任务
+            self._aec_cache_cleanup_task = asyncio.create_task(self._check_aec_cache_expiry())
+
+            self.welcome_msg = self.config[&quot;xiaozhi&quot;]
+            self.welcome_msg[&quot;session_id&quot;] = self.session_id
+
+            # 从配置中读取采样率
+            self.sample_rate = self.welcome_msg[&quot;audio_params&quot;][&quot;sample_rate&quot;]
+            self.logger.bind(tag=TAG).info(f&quot;配置输出音频采样率为: {self.sample_rate}&quot;)
+
+            # 在后台初始化配置和组件（完全不阻塞主循环）
+            self._background_init_task = asyncio.create_task(self._background_initialize())
+
+            try:
+                async for message in self.websocket:
+                    await self._route_message(message)
+            except websockets.exceptions.ConnectionClosed:
+                self.logger.bind(tag=TAG).info(&quot;客户端断开连接&quot;)
+
+        except AuthenticationError as e:
+            self.logger.bind(tag=TAG).error(f&quot;Authentication failed: {str(e)}&quot;)
+            return
+        except Exception as e:
+            stack_trace = traceback.format_exc()
+            self.logger.bind(tag=TAG).error(f&quot;Connection error: {str(e)}-{stack_trace}&quot;)
+            return
+        finally:
+            try:
+                await self._save_and_close(ws)
+            except Exception as final_error:
+                self.logger.bind(tag=TAG).error(f&quot;最终清理时出错: {final_error}&quot;)
+                # 确保即使保存记忆失败，也要关闭连接
+                try:
+                    await self.close(ws)
+                except Exception as close_error:
+                    self.logger.bind(tag=TAG).error(
+                        f&quot;强制关闭连接时出错: {close_error}&quot;
+                    )
+
+    async def _save_and_close(self, ws):
+        &quot;&quot;&quot;保存记忆并关闭连接&quot;&quot;&quot;
+        self.logger.bind(tag=TAG).info(f&quot;_save_and_close called, memory={self.memory is not None}, dialo</pre></div>
+<div class="src-page"><pre>    gue_len={len(self.dialogue.dialogue) if self.dialogue else 0}&quot;)
+        try:
+            # 守护线程1：独立生成标题（不依赖记忆模型）
+            if self.session_id:
+                def generate_title_task():
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(
+                            generate_and_save_chat_title(self.session_id)
+                        )
+                    except Exception as e:
+                        self.logger.bind(tag=TAG).error(f&quot;生成标题失败: {e}&quot;)
+                    finally:
+                        try:
+                            loop.close()
+                        except Exception:
+                            pass
+
+                threading.Thread(target=generate_title_task, daemon=False).start()
+
+            # 守护线程2：异步保存记忆（仅记忆，不含标题）
+            if self.memory:
+                def save_memory_task():
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(
+                            self.memory.save_memory(
+                                self.dialogue.dialogue, self.session_id
+                            )
+                        )
+                    except Exception as e:
+                        self.logger.bind(tag=TAG).error(f&quot;保存记忆失败: {e}&quot;)
+                    finally:
+                        try:
+                            loop.close()
+                        except Exception:
+                            pass
+
+                threading.Thread(target=save_memory_task, daemon=True).start()
+        except Exception as e:
+            self.logger.bind(tag=TAG).error(f&quot;保存记忆失败: {e}&quot;)
+        finally:
+            # 关闭连接（记忆保存线程在后台继续执行）
+            try:
+                await self.close(ws)
+            except Exception as close_error:
+                self.logger.bind(tag=TAG).error(
+                    f&quot;保存记忆后关闭连接失败: {close_error}&quot;
+                )
+
+    async def _discard_message_with_bind_prompt(self):
+        &quot;&quot;&quot;丢弃消息并检查是否需要播放绑定提示&quot;&quot;&quot;
+        current_time = time.time()
+        # 检查是否需要播放绑定提示
+        if current_time - self.last_bind_prompt_time &gt;= self.bind_prompt_interval:
+            self.last_bind_prompt_time = current_time
+            # 复用现有的绑定提示逻辑
+            from core.handle.receiveAudioHandle import check_bind_device</pre></div>
+<div class="src-page"><pre>    &quot;&quot;&quot;将用户输入的中文类别映射到配置文件中的类别键&quot;&quot;&quot;
+    if not category_text:
+        return None
+
+    # 类别映射字典，目前支持社会、国际、财经新闻，如需更多类型，参见配置文件
+    category_map = {
+        # 社会新闻
+        &quot;社会&quot;: &quot;society_rss_url&quot;,
+        &quot;社会新闻&quot;: &quot;society_rss_url&quot;,
+        # 国际新闻
+        &quot;国际&quot;: &quot;world_rss_url&quot;,
+        &quot;国际新闻&quot;: &quot;world_rss_url&quot;,
+        # 财经新闻
+        &quot;财经&quot;: &quot;finance_rss_url&quot;,
+        &quot;财经新闻&quot;: &quot;finance_rss_url&quot;,
+        &quot;金融&quot;: &quot;finance_rss_url&quot;,
+        &quot;经济&quot;: &quot;finance_rss_url&quot;,
+    }
+
+    # 转换为小写并去除空格
+    normalized_category = category_text.lower().strip()
+
+    # 返回映射结果，如果没有匹配项则返回原始输入
+    return category_map.get(normalized_category, category_text)
+
+
+@register_function(
+    &quot;get_news_from_chinanews&quot;,
+    GET_NEWS_FROM_CHINANEWS_FUNCTION_DESC,
+    ToolType.SYSTEM_CTL,
+)
+async def get_news_from_chinanews(
+    conn: &quot;ConnectionHandler&quot;,
+    category: str = None,
+    detail: bool = False,
+    lang: str = &quot;zh_CN&quot;,
+):
+    &quot;&quot;&quot;获取新闻并随机选择一条进行播报，或获取上一条新闻的详细内容&quot;&quot;&quot;
+    try:
+        # 如果detail为True，获取上一条新闻的详细内容
+        if detail:
+            if (
+                not hasattr(conn, &quot;last_news_link&quot;)
+                or not conn.last_news_link
+                or &quot;link&quot; not in conn.last_news_link
+            ):
+                return ActionResponse(
+                    Action.REQLLM,
+                    &quot;抱歉，没有找到最近查询的新闻，请先获取一条新闻。&quot;,
+                    None,
+                )
+
+            link = conn.last_news_link.get(&quot;link&quot;)
+            title = conn.last_news_link.get(&quot;title&quot;, &quot;未知标题&quot;)
+
+            if link == &quot;#&quot;:
+                return ActionResponse(
+                    Action.REQLLM, &quot;抱歉，该新闻没有可用的链接获取详细内容。&quot;, None
+                )
+</pre></div>
+<div class="src-page"><pre>            logger.bind(tag=TAG).debug(f&quot;获取新闻详情: {title}, URL={link}&quot;)
+
+            # 获取新闻详情
+            detail_content = await fetch_news_detail(link)
+
+            if not detail_content or detail_content == &quot;无法获取详细内容&quot;:
+                return ActionResponse(
+                    Action.REQLLM,
+                    f&quot;抱歉，无法获取《{title}》的详细内容，可能是链接已失效或网站结构发生变化。&quot;,
+                    None,
+                )
+
+            # 构建详情报告
+            detail_report = (
+                f&quot;根据下列数据，用{lang}回应用户的新闻详情查询请求：\n\n&quot;
+                f&quot;新闻标题: {title}\n&quot;
+                f&quot;详细内容: {detail_content}\n\n&quot;
+                f&quot;(请对上述新闻内容进行总结，提取关键信息，以自然、流畅的方式向用户播报，&quot;
+                f&quot;不要提及这是总结，就像是在讲述一个完整的新闻故事)&quot;
+            )
+
+            return ActionResponse(Action.REQLLM, detail_report, None)
+
+        # 否则，获取新闻列表并随机选择一条
+        # 从配置中获取RSS URL
+        rss_config = conn.config.get(&quot;plugins&quot;, {}).get(&quot;get_news_from_chinanews&quot;, {})
+        default_rss_url = rss_config.get(
+            &quot;default_rss_url&quot;, &quot;https://www.chinanews.com.cn/rss/society.xml&quot;
+        )
+
+        # 将用户输入的类别映射到配置中的类别键
+        mapped_category = map_category(category)
+
+        # 如果提供了类别，尝试从配置中获取对应的URL
+        rss_url = default_rss_url
+        if mapped_category and mapped_category in rss_config:
+            rss_url = rss_config[mapped_category]
+
+        logger.bind(tag=TAG).info(
+            f&quot;获取新闻: 原始类别={category}, 映射类别={mapped_category}, URL={rss_url}&quot;
+        )
+
+        # 获取新闻列表
+        news_items = await fetch_news_from_rss(rss_url)
+
+        if not news_items:
+            return ActionResponse(
+                Action.REQLLM, &quot;抱歉，未能获取到新闻信息，请稍后再试。&quot;, None
+            )
+
+        # 随机选择一条新闻
+        selected_news = random.choice(news_items)
+
+        # 保存当前新闻链接到连接对象，以便后续查询详情
+        if not hasattr(conn, &quot;last_news_link&quot;):
+            conn.last_news_link = {}
+        conn.last_news_link = {
+            &quot;link&quot;: selected_news.get(&quot;link&quot;, &quot;#&quot;),
+            &quot;title&quot;: selected_news.get(&quot;title&quot;, &quot;未知标题&quot;),
+        }</pre></div>
+<div class="src-page"><pre>
+        # 构建新闻报告
+        news_report = (
+            f&quot;根据下列数据，用{lang}回应用户的新闻查询请求：\n\n&quot;
+            f&quot;新闻标题: {selected_news[&#x27;title&#x27;]}\n&quot;
+            f&quot;发布时间: {selected_news[&#x27;pubDate&#x27;]}\n&quot;
+            f&quot;新闻内容: {selected_news[&#x27;description&#x27;]}\n&quot;
+            f&quot;(请以自然、流畅的方式向用户播报这条新闻，可以适当总结内容，&quot;
+            f&quot;直接读出新闻即可，不需要额外多余的内容。&quot;
+            f&quot;如果用户询问更多详情，告知用户可以说&#x27;请详细介绍这条新闻&#x27;获取更多内容)&quot;
+        )
+
+        return ActionResponse(Action.REQLLM, news_report, None)
+
+    except Exception as e:
+        logger.bind(tag=TAG).error(f&quot;获取新闻出错: {e}&quot;)
+        return ActionResponse(
+            Action.REQLLM, &quot;抱歉，获取新闻时发生错误，请稍后再试。&quot;, None
+        )
+# ===== 文件: xiaozhi-server/plugins_func/functions/get_news_from_newsnow.py =====
+import random
+import httpx
+from io import BytesIO
+from markitdown import MarkItDown, StreamInfo
+from config.logger import setup_logging
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+
+TAG = __name__
+logger = setup_logging()
+
+CHANNEL_MAP = {
+    &quot;V2EX&quot;: &quot;v2ex-share&quot;,
+    &quot;知乎&quot;: &quot;zhihu&quot;,
+    &quot;微博&quot;: &quot;weibo&quot;,
+    &quot;联合早报&quot;: &quot;zaobao&quot;,
+    &quot;酷安&quot;: &quot;coolapk&quot;,
+    &quot;MKTNews&quot;: &quot;mktnews-flash&quot;,
+    &quot;华尔街见闻&quot;: &quot;wallstreetcn-quick&quot;,
+    &quot;36氪&quot;: &quot;36kr-quick&quot;,
+    &quot;抖音&quot;: &quot;douyin&quot;,
+    &quot;虎扑&quot;: &quot;hupu&quot;,
+    &quot;百度贴吧&quot;: &quot;tieba&quot;,
+    &quot;今日头条&quot;: &quot;toutiao&quot;,
+    &quot;IT之家&quot;: &quot;ithome&quot;,
+    &quot;澎湃新闻&quot;: &quot;thepaper&quot;,
+    &quot;卫星通讯社&quot;: &quot;sputniknewscn&quot;,
+    &quot;参考消息&quot;: &quot;cankaoxiaoxi&quot;,
+    &quot;远景论坛&quot;: &quot;pcbeta-windows11&quot;,
+    &quot;财联社&quot;: &quot;cls-depth&quot;,
+    &quot;雪球&quot;: &quot;xueqiu-hotstock&quot;,
+    &quot;格隆汇&quot;: &quot;gelonghui&quot;,
+    &quot;法布财经&quot;: &quot;fastbull-express&quot;,
+    &quot;Solidot&quot;: &quot;solidot&quot;,
+    &quot;Hacker News&quot;: &quot;hackernews&quot;,
+    &quot;Product Hunt&quot;: &quot;producthunt&quot;,</pre></div>
+<div class="src-page"><pre>    &quot;Github&quot;: &quot;github-trending-today&quot;,
+    &quot;哔哩哔哩&quot;: &quot;bilibili-hot-search&quot;,
+    &quot;快手&quot;: &quot;kuaishou&quot;,
+    &quot;靠谱新闻&quot;: &quot;kaopu&quot;,
+    &quot;金十数据&quot;: &quot;jin10&quot;,
+    &quot;百度热搜&quot;: &quot;baidu&quot;,
+    &quot;牛客&quot;: &quot;nowcoder&quot;,
+    &quot;少数派&quot;: &quot;sspai&quot;,
+    &quot;稀土掘金&quot;: &quot;juejin&quot;,
+    &quot;凤凰网&quot;: &quot;ifeng&quot;,
+    &quot;虫部落&quot;: &quot;chongbuluo-latest&quot;,
+}
+
+# 默认新闻来源字典，当配置中没有指定时使用
+DEFAULT_NEWS_SOURCES = &quot;澎湃新闻;百度热搜;财联社&quot;
+
+def _get_newsnow_config(conn):
+    # 从连接配置获取
+    plugins = conn.config.get(&quot;plugins&quot;, {})
+    newsnow = plugins.get(&quot;get_news_from_newsnow&quot;, {})
+    sources = newsnow.get(&quot;news_sources&quot;, &quot;&quot;)
+    if isinstance(sources, str) and sources.strip():
+        return sources
+
+    return &quot;&quot;
+
+def get_news_sources_from_config(conn):
+    &quot;&quot;&quot;从配置中获取新闻源字符串&quot;&quot;&quot;
+    try:
+        result = _get_newsnow_config(conn)
+        if result:
+            logger.bind(tag=TAG).debug(f&quot;使用配置的新闻源: {result}&quot;)
+            return result
+
+        logger.bind(tag=TAG).debug(&quot;未找到新闻源配置，使用默认配置&quot;)
+        return DEFAULT_NEWS_SOURCES
+
+    except Exception as e:
+        logger.bind(tag=TAG).error(f&quot;获取新闻源配置失败: {e}，使用默认配置&quot;)
+        return DEFAULT_NEWS_SOURCES
+
+
+# 从默认配置获取可用的新闻源名称（运行时由get_news_sources_from_config动态获取）
+example_sources_str = DEFAULT_NEWS_SOURCES.replace(&quot;;&quot;,&quot;、&quot;)
+
+GET_NEWS_FROM_NEWSNOW_FUNCTION_DESC = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;get_news_from_newsnow&quot;,
+        &quot;description&quot;: &quot;当用户要求查看或收听新闻时调用（如&#x27;来条新闻&#x27;&#x27;今天有什么新闻&#x27;）。&quot;,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;source&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: f&quot;新闻源的标准中文名称，例如{example_sources_str}等。可选参数，如果不
+    提供则使用默认新闻源&quot;,
+                },
+                &quot;detail&quot;: {
+                    &quot;type&quot;: &quot;boolean&quot;,</pre></div>
+<div class="src-page"><pre>                    &quot;description&quot;: &quot;是否获取详细内容，默认为false。如果为true，则获取上一条新闻的详细内
+    容&quot;,
+                },
+                &quot;lang&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;返回用户使用的语言code，例如zh_CN/zh_HK/en_US/ja_JP等，默认zh_CN&quot;,
+                },
+            },
+            &quot;required&quot;: [&quot;lang&quot;],
+        },
+    },
+}
+
+
+async def fetch_news_from_api(conn: &quot;ConnectionHandler&quot;, source=&quot;thepaper&quot;):
+    &quot;&quot;&quot;从API获取新闻列表&quot;&quot;&quot;
+    try:
+        api_url = f&quot;https://newsnow.busiyi.world/api/s?id={source}&quot;
+
+        news_config = conn.config.get(&quot;plugins&quot;, {}).get(&quot;get_news_from_newsnow&quot;, {})
+        if news_config.get(&quot;url&quot;):
+            api_url = news_config[&quot;url&quot;] + source
+
+        headers = {&quot;User-Agent&quot;: &quot;Mozilla/5.0&quot;}
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=3.0)) as client:
+            response = await client.get(api_url, headers=headers)
+
+        data = response.json()
+
+        if &quot;items&quot; in data:
+            return data[&quot;items&quot;]
+        else:
+            logger.bind(tag=TAG).error(f&quot;获取新闻API响应格式错误: {data}&quot;)
+            return []
+
+    except Exception as e:
+        logger.bind(tag=TAG).error(f&quot;获取新闻API失败: {e}&quot;)
+        return []
+
+
+async def fetch_news_detail(url):
+    &quot;&quot;&quot;获取新闻详情页内容并使用MarkItDown清理HTML&quot;&quot;&quot;
+    try:
+        headers = {&quot;User-Agent&quot;: &quot;Mozilla/5.0&quot;}
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=3.0)) as client:
+            response = await client.get(url, headers=headers)
+
+        # 使用MarkItDown清理HTML内容
+        md = MarkItDown(enable_plugins=False)
+        result = md.convert_stream(
+            BytesIO(response.content),
+            stream_info=StreamInfo(
+                mimetype=&quot;text/html&quot;,
+                extension=&quot;.html&quot;,
+                charset=response.encoding or &quot;utf-8&quot;,
+            ),
+        )
+
+        # 获取清理后的文本内容
+        clean_text = result.text_content</pre></div>
+<div class="src-page"><pre>
+        # 如果清理后的内容为空，返回提示信息
+        if not clean_text or len(clean_text.strip()) == 0:
+            logger.bind(tag=TAG).warning(f&quot;清理后的新闻内容为空: {url}&quot;)
+            return &quot;无法解析新闻详情内容，可能是网站结构特殊或内容受限。&quot;
+
+        return clean_text
+    except Exception as e:
+        logger.bind(tag=TAG).error(f&quot;获取新闻详情失败: {e}&quot;)
+        return &quot;无法获取详细内容&quot;
+
+
+@register_function(
+    &quot;get_news_from_newsnow&quot;,
+    GET_NEWS_FROM_NEWSNOW_FUNCTION_DESC,
+    ToolType.SYSTEM_CTL,
+)
+async def get_news_from_newsnow(
+    conn: &quot;ConnectionHandler&quot;,
+    source: str = &quot;澎湃新闻&quot;,
+    detail: bool = False,
+    lang: str = &quot;zh_CN&quot;,
+):
+    &quot;&quot;&quot;获取新闻并随机选择一条进行播报，或获取上一条新闻的详细内容&quot;&quot;&quot;
+    try:
+        # 获取当前配置的新闻源
+        news_sources = get_news_sources_from_config(conn)
+
+        # 如果detail为True，获取上一条新闻的详细内容
+        detail = str(detail).lower() == &quot;true&quot;
+        if detail:
+            if (
+                not hasattr(conn, &quot;last_newsnow_link&quot;)
+                or not conn.last_newsnow_link
+                or &quot;url&quot; not in conn.last_newsnow_link
+            ):
+                return ActionResponse(
+                    Action.REQLLM,
+                    &quot;抱歉，没有找到最近查询的新闻，请先获取一条新闻。&quot;,
+                    None,
+                )
+
+            url = conn.last_newsnow_link.get(&quot;url&quot;)
+            title = conn.last_newsnow_link.get(&quot;title&quot;, &quot;未知标题&quot;)
+            source_id = conn.last_newsnow_link.get(&quot;source_id&quot;, &quot;thepaper&quot;)
+            source_name = CHANNEL_MAP.get(source_id, &quot;未知来源&quot;)
+
+            if not url or url == &quot;#&quot;:
+                return ActionResponse(
+                    Action.REQLLM, &quot;抱歉，该新闻没有可用的链接获取详细内容。&quot;, None
+                )
+
+            logger.bind(tag=TAG).debug(
+                f&quot;获取新闻详情: {title}, 来源: {source_name}, URL={url}&quot;
+            )
+
+            # 获取新闻详情
+            detail_content = await fetch_news_detail(url)
+
+            if not detail_content or detail_content == &quot;无法获取详细内容&quot;:</pre></div>
+<div class="src-page"><pre>                return ActionResponse(
+                    Action.REQLLM,
+                    f&quot;抱歉，无法获取《{title}》的详细内容，可能是链接已失效或网站结构发生变化。&quot;,
+                    None,
+                )
+
+            # 构建详情报告
+            detail_report = (
+                f&quot;根据下列数据，用{lang}回应用户的新闻详情查询请求：\n\n&quot;
+                f&quot;新闻标题: {title}\n&quot;
+                # f&quot;新闻来源: {source_name}\n&quot;
+                f&quot;详细内容: {detail_content}\n\n&quot;
+                f&quot;(请对上述新闻内容进行总结，提取关键信息，以自然、流畅的方式向用户播报，&quot;
+                f&quot;不要提及这是总结，就像是在讲述一个完整的新闻)&quot;
+            )
+
+            return ActionResponse(Action.REQLLM, detail_report, None)
+
+        # 否则，获取新闻列表并随机选择一条
+        # 将中文名称转换为英文ID
+        english_source_id = None
+
+        # 检查输入的中文名称是否在配置的新闻源中
+        news_sources_list = [
+            name.strip() for name in news_sources.split(&quot;;&quot;) if name.strip()
+        ]
+        if source in news_sources_list:
+            # 如果输入的中文名称在配置的新闻源中，在 CHANNEL_MAP 中查找对应的英文ID
+            english_source_id = CHANNEL_MAP.get(source)
+
+        # 如果找不到对应的英文ID，使用默认源
+        if not english_source_id:
+            logger.bind(tag=TAG).warning(f&quot;无效的新闻源: {source}，使用默认源澎湃新闻&quot;)
+            english_source_id = &quot;thepaper&quot;
+            source = &quot;澎湃新闻&quot;
+
+        logger.bind(tag=TAG).info(f&quot;获取新闻: 新闻源={source}({english_source_id})&quot;)
+
+        # 获取新闻列表
+        news_items = await fetch_news_from_api(conn, english_source_id)
+
+        if not news_items:
+            return ActionResponse(
+                Action.REQLLM,
+                f&quot;抱歉，未能从{source}获取到新闻信息，请稍后再试或尝试其他新闻源。&quot;,
+                None,
+            )
+
+        # 随机选择一条新闻
+        selected_news = random.choice(news_items)
+
+        # 保存当前新闻链接到连接对象，以便后续查询详情
+        if not hasattr(conn, &quot;last_newsnow_link&quot;):
+            conn.last_newsnow_link = {}
+        conn.last_newsnow_link = {
+            &quot;url&quot;: selected_news.get(&quot;url&quot;, &quot;#&quot;),
+            &quot;title&quot;: selected_news.get(&quot;title&quot;, &quot;未知标题&quot;),
+            &quot;source_id&quot;: english_source_id,
+        }
+</pre></div>
+<div class="src-page"><pre>        # 构建新闻报告
+        news_report = (
+            f&quot;根据下列数据，用{lang}回应用户的新闻查询请求：\n\n&quot;
+            f&quot;新闻标题: {selected_news[&#x27;title&#x27;]}\n&quot;
+            # f&quot;新闻来源: {source}\n&quot;
+            f&quot;(请以自然、流畅的方式向用户播报这条新闻标题，&quot;
+            f&quot;提示用户可以要求获取详细内容，此时会获取新闻的详细内容。)&quot;
+        )
+
+        return ActionResponse(Action.REQLLM, news_report, None)
+
+    except Exception as e:
+        logger.bind(tag=TAG).error(f&quot;获取新闻出错: {e}&quot;)
+        return ActionResponse(
+            Action.REQLLM, &quot;抱歉，获取新闻时发生错误，请稍后再试。&quot;, None
+        )
+# ===== 文件: xiaozhi-server/plugins_func/functions/get_time.py =====
+from datetime import datetime
+import cnlunar
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+
+get_lunar_function_desc = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;get_lunar&quot;,
+        &quot;description&quot;: (
+            &quot;用于具体日期的阴历/农历和黄历信息。&quot;
+            &quot;用户可以指定查询内容，如：阴历日期、天干地支、节气、生肖、星座、八字、宜忌等。&quot;
+            &quot;如果没有指定查询内容，则默认查询干支年和农历日期。&quot;
+            &quot;对于&#x27;今天农历是多少&#x27;、&#x27;今天农历日期&#x27;这样的基本查询，请直接使用context中的信息，不要调用此工
+    具。&quot;
+        ),
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;date&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;要查询的日期，格式为YYYY-MM-DD，例如2024-01-01。如果不提供，则使用当
+    前日期&quot;,
+                },
+                &quot;query&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;要查询的内容，例如阴历日期、天干地支、节日、节气、生肖、星座、八字、
+    宜忌等&quot;,
+                },
+            },
+            &quot;required&quot;: [],
+        },
+    },
+}
+
+
+@register_function(&quot;get_lunar&quot;, get_lunar_function_desc, ToolType.WAIT)
+def get_lunar(date=None, query=None):
+    &quot;&quot;&quot;
+    用于获取当前的阴历/农历，和天干地支、节气、生肖、星座、八字、宜忌等黄历信息
+    &quot;&quot;&quot;
+    from core.utils.cache.manager import cache_manager, CacheType
+
+    # 如果提供了日期参数，则使用指定日期；否则使用当前日期</pre></div>
+<div class="src-page"><pre>    if date:
+        try:
+            now = datetime.strptime(date, &quot;%Y-%m-%d&quot;)
+        except ValueError:
+            return ActionResponse(
+                Action.REQLLM,
+                f&quot;日期格式错误，请使用YYYY-MM-DD格式，例如：2024-01-01&quot;,
+                None,
+            )
+    else:
+        now = datetime.now()
+
+    current_date = now.strftime(&quot;%Y-%m-%d&quot;)
+
+    # 如果 query 为 None，则使用默认文本
+    if query is None:
+        query = &quot;默认查询干支年和农历日期&quot;
+
+    # 尝试从缓存获取农历信息
+    lunar_cache_key = f&quot;lunar_info_{current_date}&quot;
+    cached_lunar_info = cache_manager.get(CacheType.LUNAR, lunar_cache_key)
+    if cached_lunar_info:
+        return ActionResponse(Action.REQLLM, cached_lunar_info, None)
+
+    response_text = f&quot;根据以下信息回应用户的查询请求，并提供与{query}相关的信息：\n&quot;
+
+    lunar = cnlunar.Lunar(now, godType=&quot;8char&quot;)
+    response_text += (
+        &quot;农历信息：\n&quot;
+        &quot;%s年%s%s\n&quot; % (lunar.lunarYearCn, lunar.lunarMonthCn[:-1], lunar.lunarDayCn)
+        + &quot;干支: %s年 %s月 %s日\n&quot; % (lunar.year8Char, lunar.month8Char, lunar.day8Char)
+        + &quot;生肖: 属%s\n&quot; % (lunar.chineseYearZodiac)
+        + &quot;八字: %s\n&quot;
+        % (
+            &quot; &quot;.join(
+                [lunar.year8Char, lunar.month8Char, lunar.day8Char, lunar.twohour8Char]
+            )
+        )
+        + &quot;今日节日: %s\n&quot;
+        % (
+            &quot;,&quot;.join(
+                filter(
+                    None,
+                    (
+                        lunar.get_legalHolidays(),
+                        lunar.get_otherHolidays(),
+                        lunar.get_otherLunarHolidays(),
+                    ),
+                )
+            )
+        )
+        + &quot;今日节气: %s\n&quot; % (lunar.todaySolarTerms)
+        + &quot;下一节气: %s %s年%s月%s日\n&quot;
+        % (
+            lunar.nextSolarTerm,
+            lunar.nextSolarTermYear,
+            lunar.nextSolarTermDate[0],
+            lunar.nextSolarTermDate[1],
+        )
+        + &quot;今年节气表: %s\n&quot;</pre></div>
+<div class="src-page"><pre>        % (
+            &quot;, &quot;.join(
+                [
+                    f&quot;{term}({date[0]}月{date[1]}日)&quot;
+                    for term, date in lunar.thisYearSolarTermsDic.items()
+                ]
+            )
+        )
+        + &quot;生肖冲煞: %s\n&quot; % (lunar.chineseZodiacClash)
+        + &quot;星座: %s\n&quot; % (lunar.starZodiac)
+        + &quot;纳音: %s\n&quot; % lunar.get_nayin()
+        + &quot;彭祖百忌: %s\n&quot; % (lunar.get_pengTaboo(delimit=&quot;, &quot;))
+        + &quot;值日: %s执位\n&quot; % lunar.get_today12DayOfficer()[0]
+        + &quot;值神: %s(%s)\n&quot;
+        % (lunar.get_today12DayOfficer()[1], lunar.get_today12DayOfficer()[2])
+        + &quot;廿八宿: %s\n&quot; % lunar.get_the28Stars()
+        + &quot;吉神方位: %s\n&quot; % &quot; &quot;.join(lunar.get_luckyGodsDirection())
+        + &quot;今日胎神: %s\n&quot; % lunar.get_fetalGod()
+        + &quot;宜: %s\n&quot; % &quot;、&quot;.join(lunar.goodThing[:10])
+        + &quot;忌: %s\n&quot; % &quot;、&quot;.join(lunar.badThing[:10])
+        + &quot;(默认返回干支年和农历日期；仅在要求查询宜忌信息时才返回本日宜忌)&quot;
+    )
+
+    # 缓存农历信息
+    cache_manager.set(CacheType.LUNAR, lunar_cache_key, response_text)
+
+    return ActionResponse(Action.REQLLM, response_text, None)
+# ===== 文件: xiaozhi-server/plugins_func/functions/get_weather.py =====
+import httpx
+from bs4 import BeautifulSoup
+from config.logger import setup_logging
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+from core.utils.util import get_ip_info
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+TAG = __name__
+logger = setup_logging()
+
+GET_WEATHER_FUNCTION_DESC = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;get_weather&quot;,
+        &quot;description&quot;: (
+            &quot;获取某个地点的天气，用户应提供一个位置，比如用户说杭州天气，参数为：杭州。&quot;
+            &quot;如果用户说的是省份，默认用省会城市。如果用户说的不是省份或城市而是一个地名，默认用该地所在
+    省份的省会城市。&quot;
+            &quot;重要：本地未来7天天气已在上下文中提供，用户未指明其他城市时绝对不要调用此工具。&quot;
+        ),
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;location&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;地点名，例如杭州。可选参数，如果不提供则不传&quot;,
+                },
+                &quot;lang&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,</pre></div>
+<div class="src-page"><pre>                    &quot;description&quot;: &quot;返回用户使用的语言code，例如zh_CN/zh_HK/en_US/ja_JP等，默认zh_CN&quot;,
+                },
+            },
+            &quot;required&quot;: [&quot;lang&quot;],
+        },
+    },
+}
+
+HEADERS = {
+    &quot;User-Agent&quot;: (
+        &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 &quot;
+        &quot;(KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36&quot;
+    )
+}
+
+# 天气代码 https://dev.qweather.com/docs/resource/icons/#weather-icons
+WEATHER_CODE_MAP = {
+    &quot;100&quot;: &quot;晴&quot;,
+    &quot;101&quot;: &quot;多云&quot;,
+    &quot;102&quot;: &quot;少云&quot;,
+    &quot;103&quot;: &quot;晴间多云&quot;,
+    &quot;104&quot;: &quot;阴&quot;,
+    &quot;150&quot;: &quot;晴&quot;,
+    &quot;151&quot;: &quot;多云&quot;,
+    &quot;152&quot;: &quot;少云&quot;,
+    &quot;153&quot;: &quot;晴间多云&quot;,
+    &quot;300&quot;: &quot;阵雨&quot;,
+    &quot;301&quot;: &quot;强阵雨&quot;,
+    &quot;302&quot;: &quot;雷阵雨&quot;,
+    &quot;303&quot;: &quot;强雷阵雨&quot;,
+    &quot;304&quot;: &quot;雷阵雨伴有冰雹&quot;,
+    &quot;305&quot;: &quot;小雨&quot;,
+    &quot;306&quot;: &quot;中雨&quot;,
+    &quot;307&quot;: &quot;大雨&quot;,
+    &quot;308&quot;: &quot;极端降雨&quot;,
+    &quot;309&quot;: &quot;毛毛雨/细雨&quot;,
+    &quot;310&quot;: &quot;暴雨&quot;,
+    &quot;311&quot;: &quot;大暴雨&quot;,
+    &quot;312&quot;: &quot;特大暴雨&quot;,
+    &quot;313&quot;: &quot;冻雨&quot;,
+    &quot;314&quot;: &quot;小到中雨&quot;,
+    &quot;315&quot;: &quot;中到大雨&quot;,
+    &quot;316&quot;: &quot;大到暴雨&quot;,
+    &quot;317&quot;: &quot;暴雨到大暴雨&quot;,
+    &quot;318&quot;: &quot;大暴雨到特大暴雨&quot;,
+    &quot;350&quot;: &quot;阵雨&quot;,
+    &quot;351&quot;: &quot;强阵雨&quot;,
+    &quot;399&quot;: &quot;雨&quot;,
+    &quot;400&quot;: &quot;小雪&quot;,
+    &quot;401&quot;: &quot;中雪&quot;,
+    &quot;402&quot;: &quot;大雪&quot;,
+    &quot;403&quot;: &quot;暴雪&quot;,
+    &quot;404&quot;: &quot;雨夹雪&quot;,
+    &quot;405&quot;: &quot;雨雪天气&quot;,
+    &quot;406&quot;: &quot;阵雨夹雪&quot;,
+    &quot;407&quot;: &quot;阵雪&quot;,
+    &quot;408&quot;: &quot;小到中雪&quot;,
+    &quot;409&quot;: &quot;中到大雪&quot;,
+    &quot;410&quot;: &quot;大到暴雪&quot;,
+    &quot;456&quot;: &quot;阵雨夹雪&quot;,</pre></div>
+<div class="src-page"><pre>    &quot;457&quot;: &quot;阵雪&quot;,
+    &quot;499&quot;: &quot;雪&quot;,
+    &quot;500&quot;: &quot;薄雾&quot;,
+    &quot;501&quot;: &quot;雾&quot;,
+    &quot;502&quot;: &quot;霾&quot;,
+    &quot;503&quot;: &quot;扬沙&quot;,
+    &quot;504&quot;: &quot;浮尘&quot;,
+    &quot;507&quot;: &quot;沙尘暴&quot;,
+    &quot;508&quot;: &quot;强沙尘暴&quot;,
+    &quot;509&quot;: &quot;浓雾&quot;,
+    &quot;510&quot;: &quot;强浓雾&quot;,
+    &quot;511&quot;: &quot;中度霾&quot;,
+    &quot;512&quot;: &quot;重度霾&quot;,
+    &quot;513&quot;: &quot;严重霾&quot;,
+    &quot;514&quot;: &quot;大雾&quot;,
+    &quot;515&quot;: &quot;特强浓雾&quot;,
+    &quot;900&quot;: &quot;热&quot;,
+    &quot;901&quot;: &quot;冷&quot;,
+    &quot;999&quot;: &quot;未知&quot;,
+}
+
+
+async def fetch_city_info(location, api_key, api_host):
+    url = f&quot;https://{api_host}/geo/v2/city/lookup?key={api_key}&amp;location={location}&amp;lang=zh&quot;
+    async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=3.0)) as client:
+        response = await client.get(url, headers=HEADERS)
+    data = response.json()
+    if data.get(&quot;error&quot;) is not None:
+        logger.bind(tag=TAG).error(
+            f&quot;获取天气失败，原因：{data.get(&#x27;error&#x27;, {}).get(&#x27;detail&#x27;)}&quot;
+        )
+        return None
+    return data.get(&quot;location&quot;, [])[0] if data.get(&quot;location&quot;) else None
+
+
+async def fetch_weather_page(url):
+    async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=3.0)) as client:
+        response = await client.get(url, headers=HEADERS)
+    return BeautifulSoup(response.text, &quot;html.parser&quot;) if response.status_code == 200 else None
+
+
+def parse_weather_info(soup):
+    city_name = soup.select_one(&quot;h1.c-submenu__location&quot;).get_text(strip=True)
+
+    current_abstract = soup.select_one(&quot;.c-city-weather-current .current-abstract&quot;)
+    current_abstract = (
+        current_abstract.get_text(strip=True) if current_abstract else &quot;未知&quot;
+    )
+
+    current_basic = {}
+    for item in soup.select(
+        &quot;.c-city-weather-current .current-basic .current-basic___item&quot;
+    ):
+        parts = item.get_text(strip=True, separator=&quot; &quot;).split(&quot; &quot;)
+        if len(parts) == 2:
+            key, value = parts[1], parts[0]
+            current_basic[key] = value
+
+    temps_list = []
+    for row in soup.select(&quot;.city-forecast-tabs__row&quot;)[:7]:  # 取前7天的数据</pre></div>
+<div class="src-page"><pre>        date = row.select_one(&quot;.date-bg .date&quot;).get_text(strip=True)
+        weather_code = (
+            row.select_one(&quot;.date-bg .icon&quot;)[&quot;src&quot;].split(&quot;/&quot;)[-1].split(&quot;.&quot;)[0]
+        )
+        weather = WEATHER_CODE_MAP.get(weather_code, &quot;未知&quot;)
+        temps = [span.get_text(strip=True) for span in row.select(&quot;.tmp-cont .temp&quot;)]
+        high_temp, low_temp = (temps[0], temps[-1]) if len(temps) &gt;= 2 else (None, None)
+        temps_list.append((date, weather, high_temp, low_temp))
+
+    return city_name, current_abstract, current_basic, temps_list
+
+
+@register_function(&quot;get_weather&quot;, GET_WEATHER_FUNCTION_DESC, ToolType.SYSTEM_CTL)
+async def get_weather(conn: &quot;ConnectionHandler&quot;, location: str = None, lang: str = &quot;zh_CN&quot;):
+    from core.utils.cache.manager import cache_manager, CacheType
+
+    weather_config = conn.config.get(&quot;plugins&quot;, {}).get(&quot;get_weather&quot;, {})
+    api_host = weather_config.get(&quot;api_host&quot;, &quot;mj7p3y7naa.re.qweatherapi.com&quot;)
+    api_key = weather_config.get(&quot;api_key&quot;, &quot;a861d0d5e7bf4ee1a83d9a9e4f96d4da&quot;)
+    default_location = weather_config.get(&quot;default_location&quot;, &quot;广州&quot;)
+    client_ip = conn.client_ip
+
+    # 优先使用用户提供的location参数
+    if not location:
+        # 通过客户端IP解析城市
+        if client_ip:
+            # 先从缓存获取IP对应的城市信息
+            cached_ip_info = cache_manager.get(CacheType.IP_INFO, client_ip)
+            if cached_ip_info:
+                location = cached_ip_info.get(&quot;city&quot;)
+            else:
+                # 缓存未命中，调用API获取
+                ip_info = get_ip_info(client_ip, logger)
+                if ip_info:
+                    cache_manager.set(CacheType.IP_INFO, client_ip, ip_info)
+                    location = ip_info.get(&quot;city&quot;)
+
+            if not location:
+                location = default_location
+        else:
+            # 若无IP，使用默认位置
+            location = default_location
+    # 尝试从缓存获取完整天气报告
+    weather_cache_key = f&quot;full_weather_{location}_{lang}&quot;
+    cached_weather_report = cache_manager.get(CacheType.WEATHER, weather_cache_key)
+    if cached_weather_report:
+        return ActionResponse(Action.REQLLM, cached_weather_report, None)
+
+    # 缓存未命中，获取实时天气数据
+    city_info = await fetch_city_info(location, api_key, api_host)
+    if not city_info:
+        return ActionResponse(
+            Action.REQLLM, f&quot;未找到相关的城市: {location}，请确认地点是否正确&quot;, None
+        )
+    soup = await fetch_weather_page(city_info[&quot;fxLink&quot;])
+    if not soup:
+        return ActionResponse(Action.REQLLM, None, &quot;请求失败&quot;)
+    city_name, current_abstract, current_basic, temps_list = parse_weather_info(soup)
+
+    weather_report = f&quot;您查询的位置是：{city_name}\n\n当前天气: {current_abstract}\n&quot;</pre></div>
+<div class="src-page"><pre>
+    # 添加有效的当前天气参数
+    if current_basic:
+        weather_report += &quot;详细参数：\n&quot;
+        for key, value in current_basic.items():
+            if value != &quot;0&quot;:  # 过滤无效值
+                weather_report += f&quot;  · {key}: {value}\n&quot;
+
+    # 添加7天预报
+    weather_report += &quot;\n未来7天预报：\n&quot;
+    for date, weather, high, low in temps_list:
+        weather_report += f&quot;{date}: {weather}，气温 {low}~{high}\n&quot;
+
+    # 提示语
+    weather_report += &quot;\n（如需某一天的具体天气，请告诉我日期）&quot;
+
+    # 缓存完整的天气报告
+    cache_manager.set(CacheType.WEATHER, weather_cache_key, weather_report)
+
+    return ActionResponse(Action.REQLLM, weather_report, None)
+# ===== 文件: xiaozhi-server/plugins_func/functions/handle_exit_intent.py =====
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+from config.logger import setup_logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+TAG = __name__
+logger = setup_logging()
+
+handle_exit_intent_function_desc = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;handle_exit_intent&quot;,
+        &quot;description&quot;: &quot;当用户想结束对话或需要退出系统时调用&quot;,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;say_goodbye&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;和用户友好结束对话的告别语&quot;,
+                }
+            },
+            &quot;required&quot;: [&quot;say_goodbye&quot;],
+        },
+    },
+}
+
+
+@register_function(
+    &quot;handle_exit_intent&quot;, handle_exit_intent_function_desc, ToolType.SYSTEM_CTL
+)
+def handle_exit_intent(conn: &quot;ConnectionHandler&quot;, say_goodbye: str | None = None):
+    # 处理退出意图
+    try:
+        if say_goodbye is None:
+            say_goodbye = &quot;再见，祝您生活愉快！&quot;
+        if not conn.close_after_chat:
+            conn.close_after_chat = True</pre></div>
+<div class="src-page"><pre>        logger.bind(tag=TAG).info(f&quot;退出意图已处理:{say_goodbye}&quot;)
+        return ActionResponse(
+            action=Action.RESPONSE, result=&quot;退出意图已处理&quot;, response=say_goodbye
+        )
+    except Exception as e:
+        logger.bind(tag=TAG).error(f&quot;处理退出意图错误: {e}&quot;)
+        return ActionResponse(
+            action=Action.NONE, result=&quot;退出意图处理失败&quot;, response=&quot;&quot;
+        )
+# ===== 文件: xiaozhi-server/plugins_func/functions/hass_get_state.py =====
+import httpx
+from config.logger import setup_logging
+from plugins_func.functions.hass_init import initialize_hass_handler
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+TAG = __name__
+logger = setup_logging()
+
+hass_get_state_function_desc = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;hass_get_state&quot;,
+        &quot;description&quot;: &quot;获取homeassistant里设备的状态,包括查询灯光亮度、颜色、色温,媒体播放器的音量,设备
+    的暂停、继续操作&quot;,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;entity_id&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;需要操作的设备id,homeassistant里的entity_id&quot;,
+                }
+            },
+            &quot;required&quot;: [&quot;entity_id&quot;],
+        },
+    },
+}
+
+
+@register_function(&quot;hass_get_state&quot;, hass_get_state_function_desc, ToolType.SYSTEM_CTL)
+async def hass_get_state(conn: &quot;ConnectionHandler&quot;, entity_id=&quot;&quot;):
+    try:
+        ha_response = await handle_hass_get_state(conn, entity_id)
+        return ActionResponse(Action.REQLLM, ha_response, None)
+    except httpx.TimeoutException:
+        logger.bind(tag=TAG).error(&quot;获取Home Assistant状态超时&quot;)
+        return ActionResponse(Action.ERROR, &quot;请求超时&quot;, None)
+    except Exception as e:
+        error_msg = f&quot;执行Home Assistant操作失败&quot;
+        logger.bind(tag=TAG).error(error_msg)
+        return ActionResponse(Action.ERROR, error_msg, None)
+
+
+async def handle_hass_get_state(conn: &quot;ConnectionHandler&quot;, entity_id):
+    ha_config = initialize_hass_handler(conn)
+    api_key = ha_config.get(&quot;api_key&quot;)
+    base_url = ha_config.get(&quot;base_url&quot;)</pre></div>
+<div class="src-page"><pre>    url = f&quot;{base_url}/api/states/{entity_id}&quot;
+    headers = {&quot;Authorization&quot;: f&quot;Bearer {api_key}&quot;, &quot;Content-Type&quot;: &quot;application/json&quot;}
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=3.0)) as client:
+        response = await client.get(url, headers=headers)
+
+    if response.status_code == 200:
+        responsetext = &quot;设备状态:&quot; + response.json()[&quot;state&quot;] + &quot; &quot;
+        logger.bind(tag=TAG).info(f&quot;api返回内容: {response.json()}&quot;)
+
+        if &quot;media_title&quot; in response.json()[&quot;attributes&quot;]:
+            responsetext = (
+                responsetext
+                + &quot;正在播放的是:&quot;
+                + str(response.json()[&quot;attributes&quot;][&quot;media_title&quot;])
+                + &quot; &quot;
+            )
+        if &quot;volume_level&quot; in response.json()[&quot;attributes&quot;]:
+            responsetext = (
+                responsetext
+                + &quot;音量是:&quot;
+                + str(response.json()[&quot;attributes&quot;][&quot;volume_level&quot;])
+                + &quot; &quot;
+            )
+        if &quot;color_temp_kelvin&quot; in response.json()[&quot;attributes&quot;]:
+            responsetext = (
+                responsetext
+                + &quot;色温是:&quot;
+                + str(response.json()[&quot;attributes&quot;][&quot;color_temp_kelvin&quot;])
+                + &quot; &quot;
+            )
+        if &quot;rgb_color&quot; in response.json()[&quot;attributes&quot;]:
+            responsetext = (
+                responsetext
+                + &quot;rgb颜色是:&quot;
+                + str(response.json()[&quot;attributes&quot;][&quot;rgb_color&quot;])
+                + &quot; &quot;
+            )
+        if &quot;brightness&quot; in response.json()[&quot;attributes&quot;]:
+            responsetext = (
+                responsetext
+                + &quot;亮度是:&quot;
+                + str(response.json()[&quot;attributes&quot;][&quot;brightness&quot;])
+                + &quot; &quot;
+            )
+        logger.bind(tag=TAG).info(f&quot;查询返回内容: {responsetext}&quot;)
+        return responsetext
+    else:
+        return f&quot;切换失败，错误码: {response.status_code}&quot;
+# ===== 文件: xiaozhi-server/plugins_func/functions/hass_init.py =====
+from config.logger import setup_logging
+from core.utils.util import check_model_key
+
+TAG = __name__
+logger = setup_logging()
+
+
+def append_devices_to_prompt(conn):
+    if conn.intent_type == &quot;function_call&quot;:
+        funcs = conn.config[&quot;Intent&quot;][conn.config[&quot;selected_module&quot;][&quot;Intent&quot;]].get(</pre></div>
+<div class="src-page"><pre>            &quot;functions&quot;, []
+        )
+
+        # 安全地获取插件配置
+        plugins_config = conn.config.get(&quot;plugins&quot;, {})
+        config_source = (
+            &quot;home_assistant&quot;
+            if plugins_config.get(&quot;home_assistant&quot;)
+            else &quot;hass_get_state&quot;
+        )
+
+        if &quot;hass_get_state&quot; in funcs or &quot;hass_set_state&quot; in funcs:
+            prompt = &quot;\n下面是我家智能设备列表（位置，设备名，entity_id），可以通过homeassistant控制\n&quot;
+            deviceStr = plugins_config.get(config_source, {}).get(&quot;devices&quot;, &quot;&quot;)
+            conn.prompt += prompt + deviceStr + &quot;\n&quot;
+            # 更新提示词
+            conn.dialogue.update_system_message(conn.prompt)
+
+
+def initialize_hass_handler(conn):
+    ha_config = {}
+    if not conn.load_function_plugin:
+        return ha_config
+
+    # 安全地获取插件配置
+    plugins_config = conn.config.get(&quot;plugins&quot;, {})
+    # 确定配置来源
+    config_source = (
+        &quot;home_assistant&quot; if plugins_config.get(&quot;home_assistant&quot;) else &quot;hass_get_state&quot;
+    )
+    if not plugins_config.get(config_source):
+        return ha_config
+
+    # 统一获取配置
+    plugin_config = plugins_config[config_source]
+    ha_config[&quot;base_url&quot;] = plugin_config.get(&quot;base_url&quot;)
+    ha_config[&quot;api_key&quot;] = plugin_config.get(&quot;api_key&quot;)
+
+    # 统一检查API密钥
+    model_key_msg = check_model_key(&quot;home_assistant&quot;, ha_config.get(&quot;api_key&quot;))
+    if model_key_msg:
+        logger.bind(tag=TAG).error(model_key_msg)
+
+    return ha_config
+# ===== 文件: xiaozhi-server/plugins_func/functions/hass_play_music.py =====
+import httpx
+from config.logger import setup_logging
+from plugins_func.functions.hass_init import initialize_hass_handler
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+TAG = __name__
+logger = setup_logging()
+
+hass_play_music_function_desc = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {</pre></div>
+<div class="src-page"><pre>        &quot;name&quot;: &quot;hass_play_music&quot;,
+        &quot;description&quot;: &quot;用户想听音乐、有声书的时候使用，在房间的媒体播放器（media_player）里播放对应音频
+    &quot;,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;media_content_id&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;可以是音乐或有声书的专辑名称、歌曲名、演唱者,如果未指定就填random&quot;,
+                },
+                &quot;entity_id&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;需要操作的音箱的设备id,homeassistant里的entity_id,media_player开头&quot;,
+                },
+            },
+            &quot;required&quot;: [&quot;media_content_id&quot;, &quot;entity_id&quot;],
+        },
+    },
+}
+
+
+@register_function(
+    &quot;hass_play_music&quot;, hass_play_music_function_desc, ToolType.SYSTEM_CTL
+)
+async def hass_play_music(conn: &quot;ConnectionHandler&quot;, entity_id=&quot;&quot;, media_content_id=&quot;random&quot;):
+    try:
+        result = await handle_hass_play_music(conn, entity_id, media_content_id)
+        return ActionResponse(
+            action=Action.RECORD, result=&quot;指令已接收&quot;, response=result
+        )
+    except Exception as e:
+        logger.bind(tag=TAG).error(f&quot;处理音乐意图错误: {e}&quot;)
+        return ActionResponse(
+            action=Action.RESPONSE, result=str(e), response=&quot;播放音乐时出错了&quot;
+        )
+
+
+async def handle_hass_play_music(
+    conn: &quot;ConnectionHandler&quot;, entity_id, media_content_id
+):
+    ha_config = initialize_hass_handler(conn)
+    api_key = ha_config.get(&quot;api_key&quot;)
+    base_url = ha_config.get(&quot;base_url&quot;)
+    url = f&quot;{base_url}/api/services/music_assistant/play_media&quot;
+    headers = {&quot;Authorization&quot;: f&quot;Bearer {api_key}&quot;, &quot;Content-Type&quot;: &quot;application/json&quot;}
+    data = {&quot;entity_id&quot;: entity_id, &quot;media_id&quot;: media_content_id}
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=3.0)) as client:
+        response = await client.post(url, headers=headers, json=data)
+
+    if response.status_code == 200:
+        return f&quot;正在播放{media_content_id}的音乐&quot;
+    else:
+        return f&quot;音乐播放失败，错误码: {response.status_code}&quot;
+# ===== 文件: xiaozhi-server/plugins_func/functions/hass_set_state.py =====
+import httpx
+from config.logger import setup_logging
+from plugins_func.functions.hass_init import initialize_hass_handler
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+from typing import TYPE_CHECKING</pre></div>
+<div class="src-page"><pre>
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+TAG = __name__
+logger = setup_logging()
+
+hass_set_state_function_desc = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;hass_set_state&quot;,
+        &quot;description&quot;: &quot;设置homeassistant里设备的状态,包括开、关,调整灯光亮度、颜色、色温,调整播放器的音
+    量,设备的暂停、继续、静音操作&quot;,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;state&quot;: {
+                    &quot;type&quot;: &quot;object&quot;,
+                    &quot;properties&quot;: {
+                        &quot;type&quot;: {
+                            &quot;type&quot;: &quot;string&quot;,
+                            &quot;description&quot;: &quot;需要操作的动作,打开设备:turn_on,关闭设备:turn_off,增加亮度:b
+    rightness_up,降低亮度:brightness_down,设置亮度:brightness_value,增加音量:volume_up,降低音量:volume_d
+    own,设置音量:volume_set,设置色温:set_kelvin,设置颜色:set_color,设备暂停:pause,设备继续:continue,静音
+    /取消静音:volume_mute&quot;,
+                        },
+                        &quot;input&quot;: {
+                            &quot;type&quot;: &quot;integer&quot;,
+                            &quot;description&quot;: &quot;只有在设置音量,设置亮度时候才需要,有效值为1-100,对应音量和亮
+    度的1%-100%&quot;,
+                        },
+                        &quot;is_muted&quot;: {
+                            &quot;type&quot;: &quot;string&quot;,
+                            &quot;description&quot;: &quot;只有在设置静音操作时才需要,设置静音的时候该值为true,取消静音
+    时该值为false&quot;,
+                        },
+                        &quot;rgb_color&quot;: {
+                            &quot;type&quot;: &quot;array&quot;,
+                            &quot;items&quot;: {&quot;type&quot;: &quot;integer&quot;},
+                            &quot;description&quot;: &quot;只有在设置颜色时需要,这里填目标颜色的rgb值&quot;,
+                        },
+                    },
+                    &quot;required&quot;: [&quot;type&quot;],
+                },
+                &quot;entity_id&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;需要操作的设备id,homeassistant里的entity_id&quot;,
+                },
+            },
+            &quot;required&quot;: [&quot;state&quot;, &quot;entity_id&quot;],
+        },
+    },
+}
+
+
+@register_function(&quot;hass_set_state&quot;, hass_set_state_function_desc, ToolType.SYSTEM_CTL)
+async def hass_set_state(conn: &quot;ConnectionHandler&quot;, entity_id=&quot;&quot;, state=None):
+    if state is None:
+        state = {}
+    try:</pre></div>
+<div class="src-page"><pre>        ha_response = await handle_hass_set_state(conn, entity_id, state)
+        return ActionResponse(Action.REQLLM, ha_response, None)
+    except httpx.TimeoutException:
+        logger.bind(tag=TAG).error(&quot;设置Home Assistant状态超时&quot;)
+        return ActionResponse(Action.ERROR, &quot;请求超时&quot;, None)
+    except Exception as e:
+        error_msg = f&quot;执行Home Assistant操作失败&quot;
+        logger.bind(tag=TAG).error(error_msg)
+        return ActionResponse(Action.ERROR, error_msg, None)
+
+
+async def handle_hass_set_state(conn: &quot;ConnectionHandler&quot;, entity_id, state):
+    ha_config = initialize_hass_handler(conn)
+    api_key = ha_config.get(&quot;api_key&quot;)
+    base_url = ha_config.get(&quot;base_url&quot;)
+    &quot;&quot;&quot;
+    state = { &quot;type&quot;:&quot;brightness_up&quot;,&quot;input&quot;:&quot;80&quot;,&quot;is_muted&quot;:&quot;true&quot;}
+    &quot;&quot;&quot;
+    domains = entity_id.split(&quot;.&quot;)
+    if len(domains) &gt; 1:
+        domain = domains[0]
+    else:
+        return &quot;执行失败，错误的设备id&quot;
+    action = &quot;&quot;
+    arg = &quot;&quot;
+    value = &quot;&quot;
+    if state[&quot;type&quot;] == &quot;turn_on&quot;:
+        description = &quot;设备已打开&quot;
+        if domain == &quot;cover&quot;:
+            action = &quot;open_cover&quot;
+        elif domain == &quot;vacuum&quot;:
+            action = &quot;start&quot;
+        else:
+            action = &quot;turn_on&quot;
+    elif state[&quot;type&quot;] == &quot;turn_off&quot;:
+        description = &quot;设备已关闭&quot;
+        if domain == &quot;cover&quot;:
+            action = &quot;close_cover&quot;
+        elif domain == &quot;vacuum&quot;:
+            action = &quot;stop&quot;
+        else:
+            action = &quot;turn_off&quot;
+    elif state[&quot;type&quot;] == &quot;brightness_up&quot;:
+        description = &quot;灯光已调亮&quot;
+        action = &quot;turn_on&quot;
+        arg = &quot;brightness_step_pct&quot;
+        value = 10
+    elif state[&quot;type&quot;] == &quot;brightness_down&quot;:
+        description = &quot;灯光已调暗&quot;
+        action = &quot;turn_on&quot;
+        arg = &quot;brightness_step_pct&quot;
+        value = -10
+    elif state[&quot;type&quot;] == &quot;brightness_value&quot;:
+        description = f&quot;亮度已调整到{state[&#x27;input&#x27;]}&quot;
+        action = &quot;turn_on&quot;
+        arg = &quot;brightness_pct&quot;
+        value = state[&quot;input&quot;]
+    elif state[&quot;type&quot;] == &quot;set_color&quot;:
+        description = f&quot;颜色已调整到{state[&#x27;rgb_color&#x27;]}&quot;
+        action = &quot;turn_on&quot;</pre></div>
+<div class="src-page"><pre>        arg = &quot;rgb_color&quot;
+        value = state[&quot;rgb_color&quot;]
+    elif state[&quot;type&quot;] == &quot;set_kelvin&quot;:
+        description = f&quot;色温已调整到{state[&#x27;input&#x27;]}K&quot;
+        action = &quot;turn_on&quot;
+        arg = &quot;kelvin&quot;
+        value = state[&quot;input&quot;]
+    elif state[&quot;type&quot;] == &quot;volume_up&quot;:
+        description = &quot;音量已调大&quot;
+        action = state[&quot;type&quot;]
+    elif state[&quot;type&quot;] == &quot;volume_down&quot;:
+        description = &quot;音量已调小&quot;
+        action = state[&quot;type&quot;]
+    elif state[&quot;type&quot;] == &quot;volume_set&quot;:
+        description = f&quot;音量已调整到{state[&#x27;input&#x27;]}&quot;
+        action = state[&quot;type&quot;]
+        arg = &quot;volume_level&quot;
+        value = state[&quot;input&quot;]
+        if state[&quot;input&quot;] &gt;= 1:
+            value = state[&quot;input&quot;] / 100
+    elif state[&quot;type&quot;] == &quot;volume_mute&quot;:
+        description = f&quot;设备已静音&quot;
+        action = state[&quot;type&quot;]
+        arg = &quot;is_volume_muted&quot;
+        value = state[&quot;is_muted&quot;]
+    elif state[&quot;type&quot;] == &quot;pause&quot;:
+        description = f&quot;设备已暂停&quot;
+        action = state[&quot;type&quot;]
+        if domain == &quot;media_player&quot;:
+            action = &quot;media_pause&quot;
+        if domain == &quot;cover&quot;:
+            action = &quot;stop_cover&quot;
+        if domain == &quot;vacuum&quot;:
+            action = &quot;pause&quot;
+    elif state[&quot;type&quot;] == &quot;continue&quot;:
+        description = f&quot;设备已继续&quot;
+        if domain == &quot;media_player&quot;:
+            action = &quot;media_play&quot;
+        if domain == &quot;vacuum&quot;:
+            action = &quot;start&quot;
+    else:
+        return f&quot;{domain} {state[&#x27;type&#x27;]}功能尚未支持&quot;
+
+    if arg == &quot;&quot;:
+        data = {
+            &quot;entity_id&quot;: entity_id,
+        }
+    else:
+        data = {&quot;entity_id&quot;: entity_id, arg: value}
+    url = f&quot;{base_url}/api/services/{domain}/{action}&quot;
+    headers = {&quot;Authorization&quot;: f&quot;Bearer {api_key}&quot;, &quot;Content-Type&quot;: &quot;application/json&quot;}
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=3.0)) as client:
+        response = await client.post(url, headers=headers, json=data)
+
+    logger.bind(tag=TAG).info(
+        f&quot;设置状态:{description},url:{url},return_code:{response.status_code}&quot;
+    )
+    if response.status_code == 200:
+        return description</pre></div>
+<div class="src-page"><pre>    else:
+        return f&quot;设置失败，错误码: {response.status_code}&quot;
+# ===== 文件: xiaozhi-server/plugins_func/functions/play_music.py =====
+import os
+import re
+import time
+import random
+import difflib
+import traceback
+from pathlib import Path
+from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType, ContentType
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+TAG = __name__
+
+MUSIC_CACHE = {}
+
+play_music_function_desc = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;play_music&quot;,
+        &quot;description&quot;: &quot;当用户要求播放音乐、歌曲时调用。&quot;,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;song_name&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;歌曲名称，如果用户没有指定具体歌名则为&#x27;random&#x27;, 明确指定的时返回音乐
+    的名字 示例: ```用户:播放两只老虎\n参数：两只老虎``` ```用户:播放音乐 \n参数：random ```&quot;,
+                }
+            },
+            &quot;required&quot;: [&quot;song_name&quot;],
+        },
+    },
+}
+
+
+@register_function(&quot;play_music&quot;, play_music_function_desc, ToolType.SYSTEM_CTL)
+async def play_music(conn: &quot;ConnectionHandler&quot;, song_name: str):
+    try:
+        music_intent = (
+            f&quot;播放音乐 {song_name}&quot; if song_name != &quot;random&quot; else &quot;随机播放音乐&quot;
+        )
+        await handle_music_command(conn, music_intent)
+        return ActionResponse(
+            action=Action.RECORD, result=&quot;指令已接收&quot;, response=&quot;正在为您播放音乐&quot;
+        )
+    except Exception as e:
+        conn.logger.bind(tag=TAG).error(f&quot;处理音乐意图错误: {e}&quot;)
+        return ActionResponse(
+            action=Action.RESPONSE, result=str(e), response=&quot;播放音乐时出错了&quot;
+        )
+
+
+def _extract_song_name(text):
+    &quot;&quot;&quot;从用户输入中提取歌名&quot;&quot;&quot;</pre></div>
+<div class="src-page"><pre>    for keyword in [&quot;播放音乐&quot;]:
+        if keyword in text:
+            parts = text.split(keyword)
+            if len(parts) &gt; 1:
+                return parts[1].strip()
+    return None
+
+
+def _find_best_match(potential_song, music_files):
+    &quot;&quot;&quot;查找最匹配的歌曲&quot;&quot;&quot;
+    best_match = None
+    highest_ratio = 0
+
+    for music_file in music_files:
+        song_name = os.path.splitext(music_file)[0]
+        ratio = difflib.SequenceMatcher(None, potential_song, song_name).ratio()
+        if ratio &gt; highest_ratio and ratio &gt; 0.4:
+            highest_ratio = ratio
+            best_match = music_file
+    return best_match
+
+
+def get_music_files(music_dir, music_ext):
+    music_dir = Path(music_dir)
+    music_files = []
+    music_file_names = []
+    for file in music_dir.rglob(&quot;*&quot;):
+        # 判断是否是文件
+        if file.is_file():
+            # 获取文件扩展名
+            ext = file.suffix.lower()
+            # 判断扩展名是否在列表中
+            if ext in music_ext:
+                # 添加相对路径
+                music_files.append(str(file.relative_to(music_dir)))
+                music_file_names.append(
+                    os.path.splitext(str(file.relative_to(music_dir)))[0]
+                )
+    return music_files, music_file_names
+
+
+def initialize_music_handler(conn: &quot;ConnectionHandler&quot;):
+    global MUSIC_CACHE
+    if MUSIC_CACHE == {}:
+        plugins_config = conn.config.get(&quot;plugins&quot;, {})
+        if &quot;play_music&quot; in plugins_config:
+            MUSIC_CACHE[&quot;music_config&quot;] = plugins_config[&quot;play_music&quot;]
+            MUSIC_CACHE[&quot;music_dir&quot;] = os.path.abspath(
+                MUSIC_CACHE[&quot;music_config&quot;].get(&quot;music_dir&quot;, &quot;./music&quot;)  # 默认路径修改
+            )
+            MUSIC_CACHE[&quot;music_ext&quot;] = MUSIC_CACHE[&quot;music_config&quot;].get(
+                &quot;music_ext&quot;, (&quot;.mp3&quot;, &quot;.wav&quot;, &quot;.p3&quot;)
+            )
+            MUSIC_CACHE[&quot;refresh_time&quot;] = MUSIC_CACHE[&quot;music_config&quot;].get(
+                &quot;refresh_time&quot;, 60
+            )
+        else:
+            MUSIC_CACHE[&quot;music_dir&quot;] = os.path.abspath(&quot;./music&quot;)
+            MUSIC_CACHE[&quot;music_ext&quot;] = (&quot;.mp3&quot;, &quot;.wav&quot;, &quot;.p3&quot;)
+            MUSIC_CACHE[&quot;refresh_time&quot;] = 60</pre></div>
+<div class="src-page"><pre>        # 获取音乐文件列表
+        MUSIC_CACHE[&quot;music_files&quot;], MUSIC_CACHE[&quot;music_file_names&quot;] = get_music_files(
+            MUSIC_CACHE[&quot;music_dir&quot;], MUSIC_CACHE[&quot;music_ext&quot;]
+        )
+        MUSIC_CACHE[&quot;scan_time&quot;] = time.time()
+    return MUSIC_CACHE
+
+
+async def handle_music_command(conn: &quot;ConnectionHandler&quot;, text):
+    initialize_music_handler(conn)
+    global MUSIC_CACHE
+
+    &quot;&quot;&quot;处理音乐播放指令&quot;&quot;&quot;
+    clean_text = re.sub(r&quot;[^\w\s]&quot;, &quot;&quot;, text).strip()
+    conn.logger.bind(tag=TAG).debug(f&quot;检查是否是音乐命令: {clean_text}&quot;)
+
+    # 尝试匹配具体歌名
+    if os.path.exists(MUSIC_CACHE[&quot;music_dir&quot;]):
+        if time.time() - MUSIC_CACHE[&quot;scan_time&quot;] &gt; MUSIC_CACHE[&quot;refresh_time&quot;]:
+            # 刷新音乐文件列表
+            MUSIC_CACHE[&quot;music_files&quot;], MUSIC_CACHE[&quot;music_file_names&quot;] = (
+                get_music_files(MUSIC_CACHE[&quot;music_dir&quot;], MUSIC_CACHE[&quot;music_ext&quot;])
+            )
+            MUSIC_CACHE[&quot;scan_time&quot;] = time.time()
+
+        potential_song = _extract_song_name(clean_text)
+        if potential_song:
+            best_match = _find_best_match(potential_song, MUSIC_CACHE[&quot;music_files&quot;])
+            if best_match:
+                conn.logger.bind(tag=TAG).info(f&quot;找到最匹配的歌曲: {best_match}&quot;)
+                await play_local_music(conn, specific_file=best_match)
+                return True
+    # 检查是否是通用播放音乐命令
+    await play_local_music(conn)
+    return True
+
+
+def _get_random_play_prompt(song_name):
+    &quot;&quot;&quot;生成随机播放引导语&quot;&quot;&quot;
+    # 移除文件扩展名
+    clean_name = os.path.splitext(song_name)[0]
+    prompts = [
+        f&quot;正在为您播放，《{clean_name}》&quot;,
+        f&quot;请欣赏歌曲，《{clean_name}》&quot;,
+        f&quot;即将为您播放，《{clean_name}》&quot;,
+        f&quot;现在为您带来，《{clean_name}》&quot;,
+        f&quot;让我们一起聆听，《{clean_name}》&quot;,
+        f&quot;接下来请欣赏，《{clean_name}》&quot;,
+        f&quot;此刻为您献上，《{clean_name}》&quot;,
+    ]
+    # 直接使用random.choice，不设置seed
+    return random.choice(prompts)
+
+
+async def play_local_music(conn: &quot;ConnectionHandler&quot;, specific_file=None):
+    global MUSIC_CACHE
+    &quot;&quot;&quot;播放本地音乐文件&quot;&quot;&quot;
+    try:
+        if not os.path.exists(MUSIC_CACHE[&quot;music_dir&quot;]):
+            conn.logger.bind(tag=TAG).error(</pre></div>
+<div class="src-page"><pre>                f&quot;音乐目录不存在: &quot; + MUSIC_CACHE[&quot;music_dir&quot;]
+            )
+            return
+
+        # 确保路径正确性
+        if specific_file:
+            selected_music = specific_file
+            music_path = os.path.join(MUSIC_CACHE[&quot;music_dir&quot;], specific_file)
+        else:
+            if not MUSIC_CACHE[&quot;music_files&quot;]:
+                conn.logger.bind(tag=TAG).error(&quot;未找到MP3音乐文件&quot;)
+                return
+            selected_music = random.choice(MUSIC_CACHE[&quot;music_files&quot;])
+            music_path = os.path.join(MUSIC_CACHE[&quot;music_dir&quot;], selected_music)
+
+        if not os.path.exists(music_path):
+            conn.logger.bind(tag=TAG).error(f&quot;选定的音乐文件不存在: {music_path}&quot;)
+            return
+        text = _get_random_play_prompt(selected_music)
+        conn.tts.store_tts_text(conn.sentence_id, text)
+        # conn.dialogue.put(Message(role=&quot;assistant&quot;, content=text))
+
+        if conn.intent_type == &quot;intent_llm&quot;:
+            conn.tts.tts_text_queue.put(
+                TTSMessageDTO(
+                    sentence_id=conn.sentence_id,
+                    sentence_type=SentenceType.FIRST,
+                    content_type=ContentType.ACTION,
+                )
+            )
+        conn.tts.tts_text_queue.put(
+            TTSMessageDTO(
+                sentence_id=conn.sentence_id,
+                sentence_type=SentenceType.MIDDLE,
+                content_type=ContentType.TEXT,
+                content_detail=text,
+            )
+        )
+        conn.tts.tts_text_queue.put(
+            TTSMessageDTO(
+                sentence_id=conn.sentence_id,
+                sentence_type=SentenceType.MIDDLE,
+                content_type=ContentType.FILE,
+                content_file=music_path,
+            )
+        )
+        if conn.intent_type == &quot;intent_llm&quot;:
+            conn.tts.tts_text_queue.put(
+                TTSMessageDTO(
+                    sentence_id=conn.sentence_id,
+                    sentence_type=SentenceType.LAST,
+                    content_type=ContentType.ACTION,
+                )
+            )
+
+    except Exception as e:
+        conn.logger.bind(tag=TAG).error(f&quot;播放音乐失败: {str(e)}&quot;)
+        conn.logger.bind(tag=TAG).error(f&quot;详细错误: {traceback.format_exc()}&quot;)
+# ===== 文件: xiaozhi-server/plugins_func/functions/search_from_ragflow.py =====
+import json</pre></div>
+<div class="src-page"><pre>import httpx
+from config.logger import setup_logging
+from plugins_func.register import register_function, ToolType, ActionResponse, Action
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+TAG = __name__
+logger = setup_logging()
+
+# 定义基础的函数描述模板
+SEARCH_FROM_RAGFLOW_FUNCTION_DESC = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;search_from_ragflow&quot;,
+        &quot;description&quot;: &quot;从知识库中查询信息&quot;,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {&quot;question&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;查询的问题&quot;}},
+            &quot;required&quot;: [&quot;question&quot;],
+        },
+    },
+}
+
+
+@register_function(
+    &quot;search_from_ragflow&quot;, SEARCH_FROM_RAGFLOW_FUNCTION_DESC, ToolType.SYSTEM_CTL
+)
+async def search_from_ragflow(conn: &quot;ConnectionHandler&quot;, question=None):
+    # 确保字符串参数正确处理编码
+    if question and isinstance(question, str):
+        # 确保问题参数是UTF-8编码的字符串
+        pass
+    else:
+        question = str(question) if question is not None else &quot;&quot;
+
+    ragflow_config = conn.config.get(&quot;plugins&quot;, {}).get(&quot;search_from_ragflow&quot;, {})
+    base_url = ragflow_config.get(&quot;base_url&quot;, &quot;&quot;)
+    api_key = ragflow_config.get(&quot;api_key&quot;, &quot;&quot;)
+    dataset_ids = ragflow_config.get(&quot;dataset_ids&quot;, [])
+
+    url = base_url + &quot;/api/v1/retrieval&quot;
+    headers = {&quot;Authorization&quot;: f&quot;Bearer {api_key}&quot;, &quot;Content-Type&quot;: &quot;application/json&quot;}
+
+    # 确保payload中的字符串都是UTF-8编码
+    payload = {&quot;question&quot;: question, &quot;dataset_ids&quot;: dataset_ids}
+
+    try:
+        # 使用ensure_ascii=False确保JSON序列化时正确处理中文
+        async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=3.0), verify=False) as client:
+            response = await client.post(url, json=payload, headers=headers)
+
+        # 显式设置响应的编码为utf-8
+        response.encoding = &quot;utf-8&quot;
+
+        response.raise_for_status()
+
+        # 先获取文本内容，然后手动处理JSON解码
+        response_text = response.text</pre></div>
+<div class="src-page"><pre>
+        result = json.loads(response_text)
+
+        if result.get(&quot;code&quot;) != 0:
+            error_detail = result.get(&quot;error&quot;, {}).get(&quot;detail&quot;, &quot;未知错误&quot;)
+            error_message = result.get(&quot;error&quot;, {}).get(&quot;message&quot;, &quot;&quot;)
+            error_code = result.get(&quot;code&quot;, &quot;&quot;)
+
+            # 安全地记录错误信息
+            logger.bind(tag=TAG).error(
+                f&quot;RAGFlow API调用失败，响应码：{error_code}，错误详情：{error_detail}，完整响应：{result
+    }&quot;
+            )
+
+            # 构建详细的错误响应
+            error_response = f&quot;RAG接口返回异常（错误码：{error_code}）&quot;
+
+            if error_message:
+                error_response += f&quot;：{error_message}&quot;
+            if error_detail:
+                error_response += f&quot;\n详情：{error_detail}&quot;
+
+            return ActionResponse(Action.RESPONSE, None, error_response)
+
+        chunks = result.get(&quot;data&quot;, {}).get(&quot;chunks&quot;, [])
+        contents = []
+        for chunk in chunks:
+            content = chunk.get(&quot;content&quot;, &quot;&quot;)
+            if content:
+                # 安全地处理内容字符串
+                if isinstance(content, str):
+                    contents.append(content)
+                elif isinstance(content, bytes):
+                    contents.append(content.decode(&quot;utf-8&quot;, errors=&quot;replace&quot;))
+                else:
+                    contents.append(str(content))
+
+        if contents:
+            # 组织知识库内容为引用模式
+            context_text = f&quot;# 关于问题【{question}】查到知识库如下\n&quot;
+            context_text += &quot;```\n\n\n&quot;.join(contents[:5])
+            context_text += &quot;\n```&quot;
+        else:
+            context_text = &quot;根据知识库查询结果，没有相关信息。&quot;
+        return ActionResponse(Action.REQLLM, context_text, None)
+
+    except httpx.TimeoutException as e:
+        error_response = &quot;RAG接口请求超时&quot;
+        error_response += &quot;\n可能原因：RAGflow服务响应缓慢或网络延迟&quot;
+        error_response += &quot;\n解决方案：请稍后重试或检查RAGflow服务性能&quot;
+        return ActionResponse(Action.RESPONSE, None, error_response)
+
+    except httpx.HTTPStatusError as e:
+        if hasattr(e.response, &quot;status_code&quot;):
+            status_code = e.response.status_code
+            error_response = f&quot;RAG接口HTTP错误（状态码：{status_code}）&quot;
+            try:
+                error_detail = e.response.json().get(&quot;error&quot;, {}).get(&quot;message&quot;, &quot;&quot;)
+                if error_detail:
+                    error_response += f&quot;\n错误详情：{error_detail}&quot;</pre></div>
+<div class="src-page"><pre>            except:
+                pass
+        else:
+            error_response = f&quot;RAG接口HTTP异常：{str(e)}&quot;
+        return ActionResponse(Action.RESPONSE, None, error_response)
+
+    except httpx.HTTPError as e:
+        error_response = &quot;无法连接到RAG接口&quot;
+        error_response += &quot;\n可能原因：RAGflow服务地址错误或服务未运行&quot;
+        error_response += &quot;\n解决方案：请检查RAGflow服务地址配置和服务状态&quot;
+        return ActionResponse(Action.RESPONSE, None, error_response)
+
+    except Exception as e:
+        # 其他异常
+        error_type = type(e).__name__
+        logger.bind(tag=TAG).error(
+            f&quot;RAGflow处理异常，异常类型：{error_type}，详情：{str(e)}&quot;
+        )
+
+        # 提供详细的错误信息
+        error_response = f&quot;RAG接口处理异常（{error_type}）：{str(e)}&quot;
+        return ActionResponse(Action.RESPONSE, None, error_response)
+# ===== 文件: xiaozhi-server/plugins_func/functions/web_search.py =====
+import httpx
+from config.logger import setup_logging
+from plugins_func.register import (
+    register_function,
+    ToolType,
+    ActionResponse,
+    Action,
+)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.connection import ConnectionHandler
+
+TAG = __name__
+logger = setup_logging()
+
+_DEFAULT_DESCRIPTION = (
+    &quot;联网搜索工具。当用户明确需要联网搜索问题时使用此工具。&quot;
+)
+
+WEB_SEARCH_FUNCTION_DESC = {
+    &quot;type&quot;: &quot;function&quot;,
+    &quot;function&quot;: {
+        &quot;name&quot;: &quot;web_search&quot;,
+        &quot;description&quot;: _DEFAULT_DESCRIPTION,
+        &quot;parameters&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;query&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;description&quot;: &quot;搜索关键词或问题&quot;,
+                }
+            },
+            &quot;required&quot;: [&quot;query&quot;],
+        },
+    },
+}</pre></div>
+<div class="src-page"><pre>
+
+async def _search_metaso(api_key: str, query: str, max_results: int) -&gt; str:
+    &quot;&quot;&quot;调用秘塔搜索API&quot;&quot;&quot;
+    url = &quot;https://metaso.cn/api/v1/search&quot;
+    headers = {
+        &quot;Authorization&quot;: f&quot;Bearer {api_key}&quot;,
+        &quot;Content-Type&quot;: &quot;application/json&quot;,
+    }
+    payload = {
+        &quot;q&quot;: query,
+        &quot;size&quot;: max_results,
+        &quot;stream&quot;: False,
+        &quot;scope&quot;: &quot;webpage&quot;,
+        &quot;includeSummary&quot;: True,
+        &quot;includeRawContent&quot;: False,
+        &quot;conciseSnippet&quot;: False,
+    }
+    logger.bind(tag=TAG).debug(f&quot;秘塔搜索请求 | URL: {url} | payload: {payload}&quot;)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=3.0)) as client:
+        response = await client.post(url, json=payload, headers=headers)
+    data = response.json()
+    logger.bind(tag=TAG).debug(f&quot;秘塔搜索响应 | status: {response.status_code}&quot;)
+
+    webpages = data.get(&quot;webpages&quot;, [])
+    if not webpages:
+        return &quot;未找到相关搜索结果。&quot;
+
+    lines = [&quot;【联网搜索结果】&quot;]
+    for i, item in enumerate(webpages, 1):
+        title = item.get(&quot;title&quot;, &quot;无标题&quot;)
+        snippet = item.get(&quot;summary&quot;, &quot;&quot;)
+        date = item.get(&quot;date&quot;, &quot;&quot;)
+        lines.append(f&quot;{i}. 标题：{title}&quot;)
+        if date:
+            lines.append(f&quot;   日期：{date}&quot;)
+        if snippet:
+            lines.append(f&quot;   摘要：{snippet}&quot;)
+
+    return &quot;\n&quot;.join(lines)
+
+
+async def _search_tavily(api_key: str, query: str, max_results: int) -&gt; str:
+    &quot;&quot;&quot;调用Tavily搜索API&quot;&quot;&quot;
+    url = &quot;https://api.tavily.com/search&quot;
+    headers = {
+        &quot;Authorization&quot;: f&quot;Bearer {api_key}&quot;,
+        &quot;Content-Type&quot;: &quot;application/json&quot;,
+    }
+    payload = {
+        &quot;query&quot;: query,
+        &quot;max_results&quot;: max_results,
+        &quot;search_depth&quot;: &quot;advanced&quot;,
+        &quot;include_answer&quot;: &quot;advanced&quot;,
+    }
+    logger.bind(tag=TAG).debug(f&quot;Tavily搜索请求 | URL: {url} | payload: {payload}&quot;)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=3.0)) as client:
+        response = await client.post(url, json=payload, headers=headers)
+    data = response.json()
+    logger.bind(tag=TAG).debug(f&quot;Tavily搜索响应 | status: {response.status_code} | data: {data}&quot;)</pre></div>
+<div class="src-page"><pre>
+    results = data.get(&quot;results&quot;, [])
+    if not results:
+        return &quot;未找到相关搜索结果。&quot;
+
+    answer = data.get(&quot;answer&quot;, &quot;&quot;)
+    lines = [f&quot;【联网搜索结果】\n总结：{answer}&quot;]
+    # for i, item in enumerate(results, 1):
+    #     title = item.get(&quot;title&quot;, &quot;无标题&quot;)
+    #     summary = item.get(&quot;content&quot;, &quot;&quot;)
+    #     lines.append(f&quot;{i}. 标题：{title}&quot;)
+    #     if summary:
+    #         lines.append(f&quot;   摘要：{summary}&quot;)
+
+    return &quot;\n&quot;.join(lines)
+
+
+@register_function(&quot;web_search&quot;, WEB_SEARCH_FUNCTION_DESC, ToolType.SYSTEM_CTL)
+async def web_search(conn: &quot;ConnectionHandler&quot;, query: str = None):
+    logger.bind(tag=TAG).info(f&quot;web_search 被调用 | query={query}&quot;)
+    if not query:
+        return ActionResponse(Action.REQLLM, &quot;请提供搜索关键词。&quot;, None)
+
+    web_search_config = conn.config.get(&quot;plugins&quot;, {}).get(&quot;web_search&quot;, {})
+    provider = web_search_config.get(&quot;provider&quot;, &quot;&quot;).lower()
+    max_results = int(web_search_config.get(&quot;max_results&quot;, 3))
+    logger.bind(tag=TAG).info(f&quot;web_search 配置 | provider={provider} | max_results={max_results} | conf
+    ig_keys={list(web_search_config.keys())}&quot;)
+
+    api_key = web_search_config.get(&quot;api_key&quot;, &quot;&quot;)
+    if not api_key:
+        return ActionResponse(
+            Action.REQLLM,
+            &quot;联网搜索功能未配置API Key，请在配置文件中填写。&quot;,
+            None,
+        )
+
+    try:
+        if provider == &quot;metaso&quot;:
+            result_text = await _search_metaso(api_key, query, max_results)
+        elif provider == &quot;tavily&quot;:
+            result_text = await _search_tavily(api_key, query, max_results)
+        else:
+            return ActionResponse(
+                Action.REQLLM,
+                f&quot;联网搜索功能未配置或配置的搜索源无效（当前：{provider}），请检查配置。&quot;,
+                None,
+            )
+        logger.bind(tag=TAG).info(f&quot;搜索结果组装完成:\n{result_text}&quot;)
+    except httpx.TimeoutException:
+        logger.bind(tag=TAG).error(&quot;联网搜索请求超时&quot;)
+        result_text = &quot;联网搜索请求超时，请稍后重试。&quot;
+    except httpx.HTTPStatusError as e:
+        logger.bind(tag=TAG).error(f&quot;联网搜索请求失败: {e}&quot;)
+        result_text = &quot;联网搜索请求失败，请稍后重试。&quot;
+    except Exception as e:
+        logger.bind(tag=TAG).error(f&quot;联网搜索异常: {e}&quot;)
+        result_text = &quot;联网搜索出现异常，请稍后重试。&quot;
+
+    return ActionResponse(Action.REQLLM, result_text, None)</pre></div>
+</body>
+</html>

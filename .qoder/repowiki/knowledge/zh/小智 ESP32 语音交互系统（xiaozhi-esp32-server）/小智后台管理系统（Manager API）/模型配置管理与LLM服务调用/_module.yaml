@@ -1,9 +1,0 @@
-schema_version: 1
-module_path: manager_api/model_llm
-title: 模型配置管理与LLM服务调用
-scope:
-    - main/manager-api/src/main/java/xiaozhi/modules/model/
-    - main/manager-api/src/main/java/xiaozhi/modules/llm/
-source_files: []
-depends_on: []
-related_to: []

@@ -1,8 +1,0 @@
-schema_version: 1
-module_path: xiaozhi_server/providers/llm
-title: 大语言模型（LLM）提供商适配层
-scope:
-    - main/xiaozhi-server/core/providers/llm/
-source_files: []
-depends_on: []
-related_to: []

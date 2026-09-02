@@ -1,9 +1,0 @@
-schema_version: 1
-module_path: xiaozhi_server/performance_tools
-title: 语音与模型性能测试工具集
-scope:
-    - main/xiaozhi-server/performance_tester/
-source_files: []
-depends_on: []
-related_to:
-    - path: xiaozhi_server/providers

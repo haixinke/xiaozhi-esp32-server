@@ -1,9 +1,0 @@
-schema_version: 1
-module_path: xiaozhi_server/config_and_assets
-title: 配置加载与资源管理
-scope:
-    - main/xiaozhi-server/config/
-source_files: []
-depends_on: []
-related_to:
-    - path: manager_api/config_correctword

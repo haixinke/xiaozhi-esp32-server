@@ -1,9 +1,0 @@
-schema_version: 1
-module_path: manager_api/voice_features
-title: 声音克隆与音色管理模块
-scope:
-    - main/manager-api/src/main/java/xiaozhi/modules/voiceclone/
-    - main/manager-api/src/main/java/xiaozhi/modules/timbre/
-source_files: []
-depends_on: []
-related_to: []

@@ -1,8 +1,0 @@
-schema_version: 1
-module_path: manager_api/agent_module
-title: 智能体（Agent）管理模块
-scope:
-    - main/manager-api/src/main/java/xiaozhi/modules/agent/
-source_files: []
-depends_on: []
-related_to: []

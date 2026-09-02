@@ -1,8 +1,0 @@
-schema_version: 1
-module_path: manager_api/device_module
-title: 设备管理与OTA升级模块
-scope:
-    - main/manager-api/src/main/java/xiaozhi/modules/device/
-source_files: []
-depends_on: []
-related_to: []

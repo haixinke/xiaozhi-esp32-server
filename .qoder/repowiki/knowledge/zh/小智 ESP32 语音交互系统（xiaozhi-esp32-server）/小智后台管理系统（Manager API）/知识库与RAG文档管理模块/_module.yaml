@@ -1,8 +1,0 @@
-schema_version: 1
-module_path: manager_api/knowledge_module
-title: 知识库与RAG文档管理模块
-scope:
-    - main/manager-api/src/main/java/xiaozhi/modules/knowledge/
-source_files: []
-depends_on: []
-related_to: []

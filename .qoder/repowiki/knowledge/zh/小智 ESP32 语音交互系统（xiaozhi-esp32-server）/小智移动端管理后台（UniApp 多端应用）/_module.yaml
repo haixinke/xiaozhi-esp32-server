@@ -1,9 +1,0 @@
-schema_version: 1
-module_path: manager_mobile
-title: 小智移动端管理后台（UniApp 多端应用）
-scope:
-    - main/manager-mobile/
-source_files: []
-depends_on: []
-related_to:
-    - path: manager_api

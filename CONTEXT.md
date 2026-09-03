@@ -26,6 +26,14 @@
 
 注入 LLM 动态上下文的故事快照文案，格式 `{大场景}·{小场景}：{动作}`（如 `在家·卧室：小憩`）。仅当故事状态为 ACTIVE 时注入。
 
+### 窗景 (Window Scene)
+
+非独立场景，而是 `在家`/`卧室` 场景内的标签覆盖：`ai_story_action_image.tag='窗户'` 行经 `SpecialSceneTagRegistry` 名称规则（`bigSceneName=在家` + `smallSceneName=卧室` + `tag=窗户`）命中。名称匹配，非 ID 匹配——运营在智控台重命名场景会静默破坏规则。selector 将带标签图排除出主背景图抽选，首个命中标签图的 `image_url` 成为 `tagImageUrl` 快照；其余窗景行被丢弃。
+
+### 窗景文案快照 (tagImageCaption)
+
+`PetStoryStateVO.tagImageCaption`：窗景标签图对应的 `|`-分隔多句文案快照串，镜像背景图文案（`caption`）的存储与下发路径——selector 选取窗景行时将其 `captions` 列（`ai_story_action_image.captions`，`VARCHAR(1000)`，`|`-分隔）快照至 `ai_pet_story_state.tag_image_caption` 列，再经 VO 下发。前端按 `/[|｜]/` 切分为池，每次开窗与点气泡随机重抽一句，无定时轮播；`tagImageCaption` 为空时回落前端固定列表 `FEEDBACK_MESSAGES`。与 `caption`（背景图文案快照）是两套独立字段，勿混用。导入流程对带标签图跳过 captions 填充，故窗景行 captions 需由运营逐行 `updateInfo` 配置。
+
 ### 同时段图片轮换 (Same-Period Image Rotation)
 
 动作持续时间内、图片时段未变时，故事引擎在当前时段候选背景图中排除正在使用的图后随机换一张，配文随图更新。动作、场景、时长均不变。与"图片时段边界换图"互补：前者同时段内轮换，后者跨时段切换。

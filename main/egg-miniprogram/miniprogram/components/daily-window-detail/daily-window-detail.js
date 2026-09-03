@@ -29,6 +29,8 @@ Component({
   properties: {
     visible: { type: Boolean, value: false },
     image: { type: String, value: '' },
+    // 窗景文案池：来自后端 tagImageCaption（| 分隔）拆分；为空时回落 FEEDBACK_MESSAGES
+    captionPool: { type: Array, value: [] },
     weather: { type: String, value: 'sunny' },
     season: { type: String, value: 'spring' },
     period: { type: String, value: 'day' },
@@ -251,16 +253,20 @@ Component({
     },
 
     nextFeedbackMessage() {
+      // 池优先：后端 tagImageCaption 拆分非空时从中抽取；否则回落前端固定 FEEDBACK_MESSAGES
+      const pool = this.properties.captionPool.length
+        ? this.properties.captionPool
+        : FEEDBACK_MESSAGES;
       const currentIndex = Number.isInteger(this.feedbackIndex) ? this.feedbackIndex : -1;
       let nextIndex;
-      if (currentIndex < 0 || FEEDBACK_MESSAGES.length < 2) {
-        nextIndex = Math.floor(Math.random() * FEEDBACK_MESSAGES.length);
+      if (currentIndex < 0 || pool.length < 2) {
+        nextIndex = Math.floor(Math.random() * pool.length);
       } else {
-        const offset = 1 + Math.floor(Math.random() * (FEEDBACK_MESSAGES.length - 1));
-        nextIndex = (currentIndex + offset) % FEEDBACK_MESSAGES.length;
+        const offset = 1 + Math.floor(Math.random() * (pool.length - 1));
+        nextIndex = (currentIndex + offset) % pool.length;
       }
       this.feedbackIndex = nextIndex;
-      return FEEDBACK_MESSAGES[nextIndex];
+      return pool[nextIndex];
     },
 
     onFeedbackTap() {

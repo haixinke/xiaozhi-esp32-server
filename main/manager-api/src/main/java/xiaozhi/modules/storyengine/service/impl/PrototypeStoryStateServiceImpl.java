@@ -124,6 +124,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         current.setActionImageId(chosen.imageId());
         current.setImageUrl(chosen.imageUrl());
         current.setTagImageUrl(chosen.tagImageUrl());
+        current.setTagImageCaption(chosen.tagImageCaption());
         current.setCaption(chosen.caption());
         current.setImageTimeOfDay(newTimeOfDay);
         return periodChanged ? StoryEvaluationResult.REFRESHED_PERIOD_IMAGE
@@ -258,6 +259,7 @@ public class PrototypeStoryStateServiceImpl implements PrototypeStoryStateServic
         target.setImageTimeOfDay(period.imageTimeOfDay().databaseValue());
         target.setImageUrl(selected.imageUrl());
         target.setTagImageUrl(selected.tagImageUrl());
+        target.setTagImageCaption(selected.tagImageCaption());
         target.setCaption(selected.caption());
         target.setDurationHours(selected.durationHours());
         target.setStartedAt(startedAt);

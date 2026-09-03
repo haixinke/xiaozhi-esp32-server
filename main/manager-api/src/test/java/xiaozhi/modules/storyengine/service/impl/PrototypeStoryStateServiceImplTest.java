@@ -253,7 +253,7 @@ class PrototypeStoryStateServiceImplTest {
         when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "白天")).thenReturn(periodImages);
         when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", "old-image-id"))
                 .thenReturn(Optional.of(new StoryPeriodImageSelection("alt-image-id",
-                        "https://example.com/alt.png", "新文案", null)));
+                        "https://example.com/alt.png", "新文案", null, null)));
 
         assertThat(service.evaluate(PROTOTYPE, evaluatedAt))
                 .isEqualTo(StoryEvaluationResult.ROTATED_PERIOD_IMAGE);
@@ -262,6 +262,7 @@ class PrototypeStoryStateServiceImplTest {
         assertThat(current.getImageUrl()).isEqualTo("https://example.com/alt.png");
         assertThat(current.getCaption()).isEqualTo("新文案");
         assertThat(current.getTagImageUrl()).isNull();
+        assertThat(current.getTagImageCaption()).isNull();
         // 时段未变
         assertThat(current.getImageTimeOfDay()).isEqualTo(untouched.getImageTimeOfDay());
         assertThat(current.getActionId()).isEqualTo(untouched.getActionId());
@@ -289,7 +290,7 @@ class PrototypeStoryStateServiceImplTest {
         when(contentLoader.loadPeriodImages(PROTOTYPE, "old-action-id", "落日")).thenReturn(periodImages);
         when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", null))
                 .thenReturn(Optional.of(new StoryPeriodImageSelection("sunset-image-id",
-                        "https://example.com/sunset.png", "落日文案", "https://example.com/sunset-window.png")));
+                        "https://example.com/sunset.png", "落日文案", "https://example.com/sunset-window.png", "窗景看云")));
 
         assertThat(service.evaluate(PROTOTYPE, evaluatedAt))
                 .isEqualTo(StoryEvaluationResult.REFRESHED_PERIOD_IMAGE);
@@ -299,6 +300,7 @@ class PrototypeStoryStateServiceImplTest {
         assertThat(current.getImageUrl()).isEqualTo("https://example.com/sunset.png");
         assertThat(current.getCaption()).isEqualTo("落日文案");
         assertThat(current.getTagImageUrl()).isEqualTo("https://example.com/sunset-window.png");
+        assertThat(current.getTagImageCaption()).isEqualTo("窗景看云");
         assertThat(current.getImageTimeOfDay()).isEqualTo("落日");
         assertThat(current.getActionId()).isEqualTo(untouched.getActionId());
         assertThat(current.getBigSceneId()).isEqualTo(untouched.getBigSceneId());
@@ -350,7 +352,7 @@ class PrototypeStoryStateServiceImplTest {
         // 首次：时段边界换图，不排除在用图
         when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", null))
                 .thenReturn(Optional.of(new StoryPeriodImageSelection("sunset-image-id",
-                        "https://example.com/sunset.png", "落日文案", null)));
+                        "https://example.com/sunset.png", "落日文案", null, null)));
         // 二次：同时段轮换，排除在用图后无可换目标
         when(selector.selectPeriodImage(periodImages, "旧大场景", "旧小场景", "sunset-image-id"))
                 .thenReturn(Optional.empty());
@@ -582,6 +584,7 @@ class PrototypeStoryStateServiceImplTest {
         assertThat(current.getImageTimeOfDay()).isEqualTo(StoryImageTimeOfDay.DAY.databaseValue());
         assertThat(current.getImageUrl()).isEqualTo("https://example.com/new.png");
         assertThat(current.getTagImageUrl()).isEqualTo("https://example.com/window.png");
+        assertThat(current.getTagImageCaption()).isEqualTo("早安|看云");
         assertThat(current.getCaption()).isEqualTo("新文案");
         assertThat(current.getDurationHours()).isEqualTo(durationHours);
         assertThat(current.getStartedAt()).isEqualTo(Date.from(evaluatedAt.toInstant()));
@@ -676,6 +679,7 @@ class PrototypeStoryStateServiceImplTest {
         copy.setImageTimeOfDay(source.getImageTimeOfDay());
         copy.setImageUrl(source.getImageUrl());
         copy.setTagImageUrl(source.getTagImageUrl());
+        copy.setTagImageCaption(source.getTagImageCaption());
         copy.setCaption(source.getCaption());
         copy.setDurationHours(source.getDurationHours());
         copy.setStartedAt(source.getStartedAt());
@@ -691,7 +695,7 @@ class PrototypeStoryStateServiceImplTest {
     private static SelectedStoryState selected(int durationHours) {
         return new SelectedStoryState("new-big-id", "新大场景", "new-small-id", "新小场景",
                 "new-action-id", "新动作", "new-image-id", "https://example.com/new.png",
-                "新文案", durationHours, "https://example.com/window.png");
+                "新文案", durationHours, "https://example.com/window.png", "早安|看云");
     }
 
     private static ZonedDateTime at(String value) {

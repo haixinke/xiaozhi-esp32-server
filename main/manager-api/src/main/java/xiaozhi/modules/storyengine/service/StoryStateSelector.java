@@ -80,19 +80,19 @@ public class StoryStateSelector {
             return Optional.empty();
         }
         String tagImageUrl = null;
+        String tagImageCaption = null;
         if (specialTag != null) {
-            tagImageUrl = images.stream()
-                    .filter(candidate -> isSpecialTag(candidate, specialTag))
-                    .map(StoryImageCandidate::imageUrl)
-                    .findFirst()
-                    .orElse(null);
-            if (tagImageUrl == null) {
+            // 命中标签图时同时快照其 captions（| 分隔原串），供客户端拆分随机展示
+            Optional<StoryImageCandidate> tagImage = firstSpecialTagImage(images, specialTag);
+            if (tagImage.isEmpty()) {
                 return Optional.empty();
             }
+            tagImageUrl = tagImage.get().imageUrl();
+            tagImageCaption = captionSnapshot(tagImage.get().captions());
         }
         StoryImageCandidate image = mainImages.get(random.nextInt(0, mainImages.size()));
         return Optional.of(new StoryPeriodImageSelection(image.id(), image.imageUrl(),
-                captionSnapshot(image.captions()), tagImageUrl));
+                captionSnapshot(image.captions()), tagImageUrl, tagImageCaption));
     }
 
     /** 按累计权重区间定位命中的小场景 */
@@ -125,18 +125,24 @@ public class StoryStateSelector {
                 .toList();
         StoryImageCandidate image = mainImages.get(random.nextInt(0, mainImages.size()));
         String caption = captionSnapshot(image.captions());
-        // 有规则时取动作内特殊标签图（当前时段候选图首张）URL 快照，供客户端渲染（如窗景）
-        String tagImageUrl = specialTag == null ? null : action.images().stream()
-                .filter(candidate -> isSpecialTag(candidate, specialTag))
-                .map(StoryImageCandidate::imageUrl)
-                .findFirst()
-                .orElse(null);
+        // 有规则时取动作内特殊标签图（当前时段候选图首张）URL + captions 快照，供客户端渲染（如窗景）
+        // 标签图缺失时不阻断主场景选择（与原语义一致）：tagImageUrl/tagImageCaption 留空，客户端据此不渲染窗景
+        String tagImageUrl = null;
+        String tagImageCaption = null;
+        if (specialTag != null) {
+            Optional<StoryImageCandidate> tagImage = firstSpecialTagImage(action.images(), specialTag);
+            if (tagImage.isPresent()) {
+                tagImageUrl = tagImage.get().imageUrl();
+                tagImageCaption = captionSnapshot(tagImage.get().captions());
+            }
+        }
         // 持续小时数在 [durationMin, durationMax] 闭区间内等概率选择
         int durationHours = action.durationMin()
                 + random.nextInt(0, action.durationMax() - action.durationMin() + 1);
         return StorySelectionResult.selected(new SelectedStoryState(
                 scene.bigSceneId(), scene.bigSceneName(), scene.smallSceneId(), scene.smallSceneName(),
-                action.id(), action.name(), image.id(), image.imageUrl(), caption, durationHours, tagImageUrl));
+                action.id(), action.name(), image.id(), image.imageUrl(), caption, durationHours,
+                tagImageUrl, tagImageCaption));
     }
 
     /** 配文快照透传：整串（多条用 | 分隔）原样落库，由客户端拆分后随机展示；去掉分隔符后全空时归一为空串 */
@@ -145,6 +151,13 @@ public class StoryStateSelector {
             return "";
         }
         return captions.replace("|", "").replace("｜", "").isBlank() ? "" : captions;
+    }
+
+    /** 取候选图中中命中的首张特殊标签图（如卧室窗景），无命中返回 empty */
+    private Optional<StoryImageCandidate> firstSpecialTagImage(List<StoryImageCandidate> images, String specialTag) {
+        return images.stream()
+                .filter(candidate -> isSpecialTag(candidate, specialTag))
+                .findFirst();
     }
 
     private boolean hasEligibleAction(StorySceneCandidate scene) {

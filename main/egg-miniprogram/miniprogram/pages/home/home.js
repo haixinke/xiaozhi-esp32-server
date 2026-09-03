@@ -20,6 +20,11 @@ const STORY_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 // 窗户弹层只在“在家”大场景的“卧室”小场景出现（硬编码产品约定）
 const STORY_WINDOW_BIG_SCENE = '在家';
 const STORY_WINDOW_SMALL_SCENE = '卧室';
+
+// caption 整串（多条用 | 或全角 ｜ 分隔）拆分为去空白、滤空段的池；背景与窗景共用
+function splitCaptionPool(raw) {
+  return raw.split(/[|｜]/).map((item) => item.trim()).filter((item) => item);
+}
 // 故事背景轨道宽 200vw，可横向拖拽查看左半屏；位移超过阈值才判定为拖拽，避免误伤点击
 const STORY_DRAG_THRESHOLD_PX = 6;
 // 拖拽增益：手指位移放大倍数，让全景背景一次滑屏扫过更多轨道，体感更跟手
@@ -484,6 +489,7 @@ Page({
       this.clearStoryCaptionToast();
       this.lastStoryCaption = '';
       this.storyCaptionPool = [];
+      this.lastWindowCaption = '';
       this._pendingStoryImage = '';
       if (this.data.storyImageUrl || this.data.storyTagImageUrl || this.data.storyWindowAvailable || this.data.storyAtHome) {
         this.setData({
@@ -491,7 +497,8 @@ Page({
           storyTagImageUrl: '',
           storyWindowAvailable: false,
           storyWindowVisible: false,
-          storyAtHome: false
+          storyAtHome: false,
+          windowCaptionPool: []
         });
       }
       return;
@@ -531,6 +538,13 @@ Page({
         });
         // 故事背景走共享 downloadFile 通道：绕开 <image> 内置加载器挂起问题；成功才换图，失败保留旧背景
         this.resolveStoryBackground(petId, imageUrl);
+        // 窗景文案池：镜像背景 caption 池的拆分逻辑（| / ｜ 分隔），整串变化时重建；
+        // 仅建池供窗景组件每次开窗/点气泡随机抽，不引入分钟轮换
+        const tagImageCaption = state && typeof state.tagImageCaption === 'string' ? state.tagImageCaption.trim() : '';
+        if (tagImageCaption !== this.lastWindowCaption) {
+          this.lastWindowCaption = tagImageCaption;
+          this.setData({ windowCaptionPool: tagImageCaption ? splitCaptionPool(tagImageCaption) : [] });
+        }
         // caption 整串变化（含首次进入）时重建轮换池并立即随机抽一条；
         // 10 分钟轮询到相同整串不重置池，分钟轮换继续
         const caption = state && typeof state.caption === 'string' ? state.caption.trim() : '';
@@ -544,8 +558,7 @@ Page({
         }
         if (caption !== this.lastStoryCaption) {
           this.lastStoryCaption = caption;
-          // 兼容半角 | 与全角 ｜ 分隔符，拆分后去空白、滤空段
-          this.storyCaptionPool = caption.split(/[|｜]/).map((item) => item.trim()).filter((item) => item);
+          this.storyCaptionPool = splitCaptionPool(caption);
           this.lastCaptionIndex = -1;
           this.rotateStoryCaption();
           this.scheduleStoryCaptionRotation();

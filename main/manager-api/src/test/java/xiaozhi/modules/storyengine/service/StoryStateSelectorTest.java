@@ -211,6 +211,37 @@ class StoryStateSelectorTest {
     }
 
     @Test
+    void selectedStateCarriesWindowTagImageCaptionFromWindowImage() {
+        // 窗景标签图的 captions 原串（| 分隔）随 tagImageUrl 一并快照，供客户端拆分随机展示
+        StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "早安|看云|风来了", "https://example.com/window.png");
+        StoryImageCandidate normalImage = image("image-id", "", "https://example.com/image.png");
+        StoryActionCandidate action = action("动作", 1, 1, normalImage, windowImage);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(bedroomScene(100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().tagImageCaption()).isEqualTo("早安|看云|风来了");
+    }
+
+    @Test
+    void selectedStateCarriesEmptyTagImageCaptionWhenWindowImageHasBlankCaptions() {
+        // 窗景图 captions 为空：captionSnapshot 归一为空串，客户端据此回落前端兜底
+        StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "  ", "https://example.com/window.png");
+        StoryImageCandidate normalImage = image("image-id", "", "https://example.com/image.png");
+        StoryActionCandidate action = action("动作", 1, 1, normalImage, windowImage);
+        StoryStateSelector selector = selectorWithRolls(
+                draw(1, 101, 1), draw(0, 1, 0), draw(0, 1, 0), draw(0, 1, 0));
+
+        StorySelectionResult result = selector.selectInitial(List.of(bedroomScene(100, action)));
+
+        assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
+        assertThat(result.state().tagImageUrl()).isEqualTo("https://example.com/window.png");
+        assertThat(result.state().tagImageCaption()).isEmpty();
+    }
+
+    @Test
     void mainImageNeverFallsBackToWindowTaggedImage() {
         // 主图抽取范围不含窗户图：即使随机数指向窗户图原下标，主图也只能命中非窗户图
         StoryImageCandidate windowImage = taggedImage("window-id", "窗户", "https://example.com/window.png");
@@ -248,6 +279,7 @@ class StoryStateSelectorTest {
 
         assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
         assertThat(result.state().tagImageUrl()).isNull();
+        assertThat(result.state().tagImageCaption()).isNull();
     }
 
     @Test
@@ -264,6 +296,7 @@ class StoryStateSelectorTest {
         assertThat(result.type()).isEqualTo(StorySelectionResultType.SELECTED);
         assertThat(result.state().imageUrl()).isEqualTo("https://example.com/window.png");
         assertThat(result.state().tagImageUrl()).isNull();
+        assertThat(result.state().tagImageCaption()).isNull();
     }
 
     @Test
@@ -357,6 +390,24 @@ class StoryStateSelectorTest {
 
         assertThat(result.imageId()).isEqualTo("normal-id");
         assertThat(result.tagImageUrl()).isEqualTo("https://example.com/window.png");
+        assertThat(result.tagImageCaption()).isEmpty();
+    }
+
+    @Test
+    void periodImageSnapshotsWindowTagImageCaptionInBedroom() {
+        // 在家+卧室时段换图：窗景标签图 captions 原串随 tagImageUrl 一并快照
+        StoryStateSelector selector = selectorWithRolls(draw(0, 1, 0));
+        List<StoryImageCandidate> images = List.of(
+                image("normal-id", "落日睡觉", "https://example.com/normal.png"),
+                taggedImage("window-id", "窗户", "黄昏|看落日", "https://example.com/window.png"));
+
+        StoryPeriodImageSelection result = selector
+                .selectPeriodImage(images, "在家", "卧室", null)
+                .orElseThrow();
+
+        assertThat(result.imageId()).isEqualTo("normal-id");
+        assertThat(result.tagImageUrl()).isEqualTo("https://example.com/window.png");
+        assertThat(result.tagImageCaption()).isEqualTo("黄昏|看落日");
     }
 
     @Test
@@ -412,6 +463,10 @@ class StoryStateSelectorTest {
 
     private static StoryImageCandidate taggedImage(String id, String tag, String imageUrl) {
         return new StoryImageCandidate(id, imageUrl, "", tag);
+    }
+
+    private static StoryImageCandidate taggedImage(String id, String tag, String captions, String imageUrl) {
+        return new StoryImageCandidate(id, imageUrl, captions, tag);
     }
 
     private record ExpectedDraw(int originInclusive, int boundExclusive, int value) {

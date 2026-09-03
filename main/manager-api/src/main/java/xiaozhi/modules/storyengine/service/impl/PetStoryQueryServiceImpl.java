@@ -126,8 +126,8 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
                 entity.getSmallSceneId(), entity.getSmallSceneName(), entity.getActionId(),
                 entity.getActionName(), entity.getActionImageId(), entity.getWeightPeriod(),
                 entity.getImageTimeOfDay(), entity.getImageUrl(), entity.getTagImageUrl(),
-                entity.getCaption(), entity.getDurationHours(), entity.getStartedAt(),
-                entity.getExpectedEndAt(), vo);
+                entity.getTagImageCaption(), entity.getCaption(), entity.getDurationHours(),
+                entity.getStartedAt(), entity.getExpectedEndAt(), vo);
         return vo;
     }
 
@@ -137,7 +137,7 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
                 entity.getSmallSceneId(), entity.getSmallSceneName(), entity.getActionId(),
                 entity.getActionName(), entity.getActionImageId(), entity.getWeightPeriod(),
                 entity.getImageTimeOfDay(), entity.getImageUrl(), null,
-                entity.getCaption(), entity.getDurationHours(), entity.getStartedAt(),
+                null, entity.getCaption(), entity.getDurationHours(), entity.getStartedAt(),
                 entity.getExpectedEndAt(), vo);
         vo.setArchivedAt(entity.getArchivedAt());
         return vo;
@@ -146,8 +146,8 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
     private void copySnapshot(String petPrototype, String bigSceneId, String bigSceneName,
             String smallSceneId, String smallSceneName, String actionId, String actionName,
             String actionImageId, String weightPeriod, String imageTimeOfDay, String imageUrl,
-            String tagImageUrl, String caption, Integer durationHours, java.util.Date startedAt,
-            java.util.Date expectedEndAt, PetStoryStateVO vo) {
+            String tagImageUrl, String tagImageCaption, String caption, Integer durationHours,
+            java.util.Date startedAt, java.util.Date expectedEndAt, PetStoryStateVO vo) {
         vo.setPetPrototype(petPrototype);
         vo.setBigSceneId(bigSceneId);
         vo.setBigSceneName(bigSceneName);
@@ -160,6 +160,7 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
         vo.setImageTimeOfDay(imageTimeOfDay);
         vo.setImageUrl(imageUrl);
         vo.setTagImageUrl(tagImageUrl);
+        vo.setTagImageCaption(tagImageCaption);
         vo.setCaption(caption);
         vo.setDurationHours(durationHours);
         vo.setStartedAt(startedAt);

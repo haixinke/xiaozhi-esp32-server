@@ -182,6 +182,7 @@
   <daily-window-detail
     visible="{{storyWindowVisible}}"
     image="{{storyTagImageUrl}}"
+    caption-pool="{{windowCaptionPool}}"
     origin-style="{{storyWindowOriginStyle}}"
     bind:close="onStoryWindowClosed"
     bind:retry="onStoryWindowRetry"

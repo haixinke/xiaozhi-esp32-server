@@ -19,6 +19,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.repository.IRepository;
 
+import cn.hutool.core.collection.CollUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.constant.Constant;
@@ -31,7 +32,6 @@ import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.ConvertUtils;
 import xiaozhi.common.utils.JsonUtils;
-import xiaozhi.common.utils.ToolUtil;
 import xiaozhi.modules.agent.dao.AgentDao;
 import xiaozhi.modules.agent.dao.AgentTagDao;
 import xiaozhi.modules.agent.dto.AgentCreateDTO;
@@ -254,13 +254,13 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
                         .map(DeviceEntity::getAgentId)
                         .distinct()
                         .collect(Collectors.toList());
-                if (ToolUtil.isNotEmpty(agentIds)) {
+                if (CollUtil.isNotEmpty(agentIds)) {
                     w.or().in("id", agentIds);
                 }
 
                 // 按标签名搜索
                 List<String> tagAgentIds = agentTagService.getAgentIdsByTagName(keyword);
-                if (ToolUtil.isNotEmpty(tagAgentIds)) {
+                if (CollUtil.isNotEmpty(tagAgentIds)) {
                     w.or().in("id", tagAgentIds);
                 }
             });
@@ -302,7 +302,7 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
 
         // 获取标签列表
         List<AgentTagEntity> tags = agentTagDao.selectByAgentId(agent.getId());
-        if (ToolUtil.isNotEmpty(tags)) {
+        if (CollUtil.isNotEmpty(tags)) {
             dto.setTags(tags.stream().map(this::convertTagToDTO).collect(Collectors.toList()));
         }
 

@@ -824,6 +824,7 @@ databaseChangeLog:
             encoding: utf8
             path: classpath:db/changelog/202607101200.sql
   - changeSet:
+  - changeSet:
       id: 202607101500
       author: minwang
       changes:
@@ -1005,3 +1006,31 @@ databaseChangeLog:
         - sqlFile:
             encoding: utf8
             path: classpath:db/changelog/202609031000.sql
+  - changeSet:
+      id: 202607290930
+      author: cgd
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202607290930.sql
+  - changeSet:
+      id: 202608061000
+      author: cgd
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608061030.sql
+  - changeSet:
+      id: 202608061800
+      author: cgd
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608061800.sql
+  - changeSet:
+      id: 202608131030
+      author: tykechen
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608131030.sql

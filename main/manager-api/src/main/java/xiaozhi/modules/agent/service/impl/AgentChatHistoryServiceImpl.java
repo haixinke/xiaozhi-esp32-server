@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import org.apache.commons.lang3.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,6 @@ import xiaozhi.common.oss.OssService;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.ConvertUtils;
 import xiaozhi.common.utils.JsonUtils;
-import xiaozhi.common.utils.ToolUtil;
 import xiaozhi.modules.agent.Enums.AgentChatHistoryType;
 import xiaozhi.modules.agent.dao.AiAgentChatAudioDao;
 import xiaozhi.modules.agent.dao.AiAgentChatHistoryDao;
@@ -124,7 +124,7 @@ public class AgentChatHistoryServiceImpl extends CrudRepository<AiAgentChatHisto
         if (deleteAudio) {
             // 分批删除音频,避免超时
             List<String> audioIds = baseMapper.getAudioIdsByAgentId(agentId);
-            if (ToolUtil.isNotEmpty(audioIds)) {
+            if (CollUtil.isNotEmpty(audioIds)) {
                 // 每批删除1000条
                 List<List<String>> batch = ListUtil.split(audioIds, 1000);
                 batch.forEach(dataList -> {

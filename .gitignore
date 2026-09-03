@@ -228,3 +228,9 @@ graphify-out/**
 
 # 蛋宝宝静态 UI 参考项目（不入库）
 main/eggbabe-miniprogram/
+
+# Qoder IDE
+.qoder/
+
+# Playwright MCP 测试产物
+.playwright-mcp/

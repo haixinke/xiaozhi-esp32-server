@@ -132,7 +132,7 @@ public class AgentChatHistoryServiceImpl extends CrudRepository<AiAgentChatHisto
                     if (ossService.isEnabled()) {
                         try {
                             List<String> ossKeys = aiAgentChatAudioDao.getOssKeysByAudioIds(dataList);
-                            if (ToolUtil.isNotEmpty(ossKeys)) {
+                            if (CollUtil.isNotEmpty(ossKeys)) {
                                 ossService.deleteBatch(ossKeys);
                             }
                         } catch (Exception e) {

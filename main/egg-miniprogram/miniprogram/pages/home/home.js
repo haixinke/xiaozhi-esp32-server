@@ -52,6 +52,10 @@ const CHAT_ENTRY_ICONS = {
 };
 const CHAT_ENTRY_ICON_FALLBACK = '/assets/ui/3d-actions/ui_3d_scene_find_home_egg_96_v01_p8_v01.png';
 
+// 破壳后右下角 AI 写真入口 icon
+// TODO(design): AI写真暂无相机图标素材，暂用贴纸图标占位，待设计补齐后替换
+const PHOTO_ENTRY_ICON = '/assets/ui/3d-actions/ui_3d_toolbar_sticker_96_v02.png';
+
 function chatEntryIcon(prototype) {
   return CHAT_ENTRY_ICONS[String(prototype || '')] || CHAT_ENTRY_ICON_FALLBACK;
 }
@@ -59,8 +63,7 @@ function chatEntryIcon(prototype) {
 const COMPANION_ACTIONS = [
   { key: 'wish', title: '许愿池', icon: INTERACTION_ICONS.wish },
   { key: 'learn', title: '早教班', icon: INTERACTION_ICONS.learn },
-  { key: 'draw', title: '画画', icon: INTERACTION_ICONS.draw },
-  { key: 'photo', title: 'AI写真', icon: INTERACTION_ICONS.photo }
+  { key: 'draw', title: '画画', icon: INTERACTION_ICONS.draw }
 ];
 
 const WEATHER_LABELS = {
@@ -134,6 +137,8 @@ Page({
     storyWindowHotspotStyle: '',
     // 左下角聊天入口 icon（按原型选图）
     storyChatIcon: CHAT_ENTRY_ICON_FALLBACK,
+    // 右下角 AI 写真入口 icon（破壳后可见）
+    photoEntryIcon: PHOTO_ENTRY_ICON,
     // 故事状态 caption 提示条（toast）：进入/整串变化立即展示，之后每分钟轮换一条，每条展示 5000ms 后淡出
     storyCaptionToastText: '',
     storyCaptionToastVisible: false,
@@ -965,6 +970,11 @@ Page({
     }
   },
 
+  // 破壳后右下角 AI 写真入口：跳转生图页
+  onPhotoEntryTap() {
+    wx.navigateTo({ url: '/pages/photo-gen/photo-gen' });
+  },
+
   /**
    * 点击陪伴入口图标：未解锁入口给出反馈，draw 为占位提示，其余按 300ms 场景过渡后跳转。
    * @param {WechatMiniProgramEvent} e 点击事件
@@ -973,8 +983,6 @@ Page({
     const key = e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.key;
     if (key === 'wish' && !this.data.wishUnlocked) return this.showFeedback('许愿池还在准备中。');
     if (key === 'learn' && !this.data.learnUnlocked) return this.showFeedback('蛋宝宝还没到早教的年龄，明天来试试吧。');
-    // AI写真需要已破壳的宠物（任务归属 petId）
-    if (key === 'photo' && this.data.stage !== 'hatched') return this.showFeedback('破壳后就能和蛋宝宝拍写真啦。');
     if (key === 'draw') {
       // 打开编辑器前读本地涂鸦操作缓存(shell)，恢复画布让用户在之前作品上继续编辑
       const pet = this.data.pet;
@@ -982,7 +990,7 @@ Page({
       this.setData({ doodleEditorVisible: true, doodleInitialOperations: initialOperations });
       return;
     }
-    const routes = { wish: '/pages/wish/wish', learn: '/pages/lesson/lesson', photo: '/pages/photo-gen/photo-gen' };
+    const routes = { wish: '/pages/wish/wish', learn: '/pages/lesson/lesson' };
     if (routes[key]) {
       // 300ms 场景过渡后跳转，与静态项目节奏一致
       setTimeout(() => wx.navigateTo({ url: routes[key] }), 300);

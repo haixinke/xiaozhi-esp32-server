@@ -6,7 +6,7 @@
 
 | # | 决策点 | 结论 |
 |---|---|---|
-| Q1 | 功能入口 | 宠物主页（home）加"AI 写真"入口，跳转独立生成页 |
+| Q1 | 功能入口 | 宠物主页（home）破壳后主场景加"AI 写真"入口，跳转独立生成页 |
 | Q2 | IP 参考图 | 按用户当前宠物原型自动选：锦鲤 `https://oss.eggbabe.com/default-ip/fish/fish.png`、玉兔 `https://oss.eggbabe.com/default-ip/rabbit/rabbit.png`，用户无感知 |
 | Q3 | 文案 | 渲染进图片内；后端按原型随机抽取，用户不可编辑、不可自定义 |
 | Q4 | 结果去向 | 保存相册 + `onShareAppMessage` 小程序卡片分享（标题用抽中的文案） |
@@ -104,7 +104,7 @@ resp: { taskId, status: PENDING|RUNNING|REVIEWING|SUCCEEDED|FAILED,
 ## 4. 小程序（egg-miniprogram）
 
 - `app.json` 注册 `pages/photo-gen/photo-gen`。
-- home 页宠物区加入口按钮 → `wx.navigateTo` 生成页。
+- home 页破壳后主场景（stage === `hatched` 且"在家"大场景）右下角放圆形 AI 写真入口按钮（与左下角聊天入口同款样式）→ `wx.navigateTo` 生成页；破壳前不展示入口。
 - 生成页三态：
   1. **选图**：`wx.chooseMedia`（count=1，album+camera），用 `tempFiles[0].size` 前置拦截 >5MB 并友好提示；预览确认后 `wx.uploadFile` 上传（照抄 `utils/doodle-api.js` 封装，scene 换 `ai-gen`）→ 建任务。
   2. **生成中**：`setInterval` 2.5s 轮询任务接口，`onHide`/`onUnload` `clearInterval` 成对管理；PENDING/REVIEWING 态显示"审核中"提示。

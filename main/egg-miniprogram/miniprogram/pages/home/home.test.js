@@ -207,8 +207,7 @@ const preHatchAssetsMock = {
   INTERACTION_ICONS: {
     wish: '/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.png',
     learn: '/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.png',
-    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.png',
-    photo: '/assets/ui/3d-actions/ui_3d_toolbar_sticker_96_v02.png'
+    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.png'
   },
   SCENE_OPTIONS: [
     {
@@ -813,7 +812,7 @@ async function run() {
   assert.strictEqual(pageLamp.data.lampOn, false, 'lamp toggles off');
 
   // ===== Task 8 新增断言：companion 图标入口 =====
-  // 1. companionActions 包含 wish/learn/draw/photo 且携带图标与锁定状态
+  // 1. companionActions 包含 wish/learn/draw 且携带图标与锁定状态
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatching');
@@ -822,8 +821,8 @@ async function run() {
   pageCompanion.onShow();
   const actions = pageCompanion.data.companionActions;
   assert.ok(Array.isArray(actions), 'companionActions is array');
-  assert.strictEqual(actions.length, 4, 'companionActions has four entries');
-  assert.deepStrictEqual(actions.map(a => a.key), ['wish', 'learn', 'draw', 'photo'], 'companionActions keys order');
+  assert.strictEqual(actions.length, 3, 'companionActions has three entries');
+  assert.deepStrictEqual(actions.map(a => a.key), ['wish', 'learn', 'draw'], 'companionActions keys order');
   actions.forEach((a) => {
     assert.ok(a.icon, `companion action ${a.key} has icon`);
     assert.ok(a.title, `companion action ${a.key} has title`);
@@ -1332,6 +1331,17 @@ async function run() {
   pageEggIcon.onLoad();
   pageEggIcon.onShow();
   assert.ok(pageEggIcon.data.storyChatIcon.includes('find_home_egg'), 'unknown prototype falls back to the egg icon');
+
+  // 32a. 破壳后右下角 AI 写真入口：点击跳转 photo-gen 页
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pagePhotoEntry = makePage();
+  pagePhotoEntry.onLoad();
+  pagePhotoEntry.onShow();
+  assert.ok(pagePhotoEntry.data.photoEntryIcon, 'photo entry icon present');
+  pagePhotoEntry.onPhotoEntryTap();
+  assert.strictEqual(navigatedTo, '/pages/photo-gen/photo-gen', 'photo entry navigates to photo-gen page');
 
   // 33. 背景图加载后按真实宽高比扩展轨道，初始居中，整张图任何区域都能拖到
   resetScenario();

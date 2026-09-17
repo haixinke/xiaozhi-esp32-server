@@ -1,0 +1,57 @@
+<!-- AI写真：选图 → 生成中 → 结果，单页三态 -->
+<view class="page">
+  <nav-bar title="AI写真" />
+
+  <!-- 选图态 -->
+  <block wx:if="{{phase === 'pick'}}">
+    <view class="hint-card">
+      <text class="hint-title">随手拍一张</text>
+      <text class="hint-desc">拍下身边的任意画面，蛋宝宝会钻进照片里和你合影</text>
+    </view>
+    <view class="photo-frame" bindtap="onChoosePhoto">
+      <image wx:if="{{photoPreview}}" class="photo-preview" src="{{photoPreview}}" mode="aspectFill" />
+      <view wx:else class="photo-placeholder">
+        <text class="photo-placeholder-plus">+</text>
+        <text class="photo-placeholder-text">拍照或从相册选择</text>
+      </view>
+    </view>
+    <button class="primary-btn {{(!photoPreview || submitting) ? 'primary-btn--disabled' : ''}}"
+            bindtap="onStartGenerate" disabled="{{!photoPreview || submitting}}">
+      {{submitting ? statusText : '开始生成'}}
+    </button>
+  </block>
+
+  <!-- 生成中态（含审核中间态） -->
+  <block wx:elif="{{phase === 'working'}}">
+    <view class="working-wrap">
+      <image class="working-photo" src="{{photoPreview}}" mode="aspectFill" />
+      <view class="working-spinner"></view>
+      <text class="working-text">{{statusText}}</text>
+      <text class="working-sub">内容需通过微信安全审核，请稍候</text>
+    </view>
+  </block>
+
+  <!-- 结果态 -->
+  <block wx:elif="{{phase === 'result'}}">
+    <view class="result-frame">
+      <image class="result-image" src="{{resultUrl}}" mode="widthFix" />
+      <!-- 合规：AI 生成内容常驻标识（2025-09-01 起强制） -->
+      <text class="ai-badge">图片由AI生成</text>
+    </view>
+    <view class="result-actions">
+      <button class="primary-btn" bindtap="onSaveImage" disabled="{{saving}}">
+        {{saving ? '保存中…' : '保存到相册'}}
+      </button>
+      <button class="ghost-btn" open-type="share">分享给好友</button>
+      <button class="ghost-btn" bindtap="onRetry">再来一张</button>
+    </view>
+  </block>
+
+  <!-- 失败态 -->
+  <block wx:else>
+    <view class="failed-wrap">
+      <text class="failed-reason">{{failReason}}</text>
+      <button class="primary-btn" bindtap="onRetry">重新生成</button>
+    </view>
+  </block>
+</view>

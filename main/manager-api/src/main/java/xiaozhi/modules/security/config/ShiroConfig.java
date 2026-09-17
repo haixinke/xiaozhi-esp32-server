@@ -104,6 +104,8 @@ public class ShiroConfig {
         filterMap.put("/companion/detail/**", "oauth2");
         filterMap.put("/voiceClone/play/**", "anon");
         filterMap.put("/wechat/login", "anon");
+        // 微信消息推送回调（mediaCheckAsync 审核结果）：安全性依赖验签 + AES 密钥，不走 Bearer
+        filterMap.put("/wechat/mp/callback", "anon");
         filterMap.put("/wechat/bindPhone", "oauth2");
         filterMap.put("/subscription/plans", "anon");
         filterMap.put("/subscription/me", "oauth2");

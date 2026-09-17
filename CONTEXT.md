@@ -58,6 +58,18 @@
 
 当用户当日发送的聊天消息数（`ai_agent_chat_history` 中 `chat_type=1` 的记录，按用户跨设备合并，Asia/Shanghai 日界）超过 300 条时触发的合规提醒。弹窗文案"长时间 AI 陪伴易产生依赖，请多参与线下户外活动。"；年龄区间为 `AGE_0_14`（≤14 周岁）的用户弹窗后退出聊天页、当日禁聊，成年人可继续使用且当日仅提示一次。计数由后端 `GET /agent/chat-history/daily-user-count` 只读查询，前端每分钟轮询触发；`chatLimited` 表示未成年人当日已超阈值。与订阅制聊天配额（`freeDailyChatLimit`）是两套独立机制，互不覆盖。详见 ADR 0002。
 
+### AI 生图任务 (Image Gen Task)
+
+用户上传一张照片，与宠物原型对应的 IP 参考图和一条预置文案合成新图片的一次异步任务。状态机：PENDING（照片内容审核中）→ RUNNING（图片生成中）→ REVIEWING（结果图审核中）→ SUCCEEDED / FAILED。照片或结果图任一被内容审核驳回即 FAILED，且不计入每日配额（每日 3 次，仅成功计次）。用户照片作为场景/氛围参考输入，产品口径为"随手拍任意画面"，不做人像保留。记录于 `ai_image_task`。完整异步审核链的选型理由详见 ADR 0004。
+
+### IP 参考图 (IP Reference Image)
+
+按宠物原型预置的形象图（锦鲤 `https://oss.eggbabe.com/default-ip/fish/fish.png`、玉兔 `https://oss.eggbabe.com/default-ip/rabbit/rabbit.png`），作为 AI 生图的形象一致性约束输入。与头像池（`default-avatar/`，每原型 22 张随机抽取）是两套用途：头像池用于领养时分配头像，IP 参考图是固定单图用于生图。
+
+### 预置文案 (Preset Caption)
+
+AI 生图时按宠物原型随机抽取、渲染进图片内的一句话（如"锦鲤附体 诸事顺利"）。后端按原型维护文案池，用户不可编辑、不可自定义；同一条文案同时用作分享卡片标题。
+
 ### 一人一宠 (One Pet Per User)
 
 当前产品规则：一个微信用户同一时间只能领养一只蛋宝宝。两条领养入口（邀请码 `adopt`、NFC 触碰 `claim`）共用同一约束与同一错误码 `PET_ALREADY_EXISTS`(10206)；NFC 领取页对该场景展示专属面板「领取失败：您已经领取过蛋宝宝，一个用户暂时只支持领养一个蛋宝宝。」。数据模型 `ai_pet` 保留 1:N 能力（user_id 外键），"暂时"意味着未来可能放开多宠，届时仅需移除该约束检查。

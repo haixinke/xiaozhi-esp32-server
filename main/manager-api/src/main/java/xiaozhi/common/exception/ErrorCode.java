@@ -317,6 +317,12 @@ public interface ErrorCode {
     int IMAGE_FILE_TYPE_ERROR = 10222; // 图片文件类型错误
     int INVALID_AGE_RANGE = 10223; // 年龄区间错误
 
+    // AI生图相关错误码
+    int IMAGE_GEN_QUOTA_EXCEEDED = 10224; // 今日生成次数已用完，明天再来吧
+    int IMAGE_GEN_TASK_NOT_FOUND = 10225; // 生成任务不存在
+    int IMAGE_GEN_PHOTO_URL_INVALID = 10226; // 图片地址不合法
+    int IMAGE_GEN_CHECK_SUBMIT_FAILED = 10227; // 内容安全校验提交失败，请稍后再试
+
     // 用户反馈相关错误码
     int FEEDBACK_SUBMIT_TOO_FREQUENTLY = 10330; // 反馈提交过于频繁，请稍后再试
     int FEEDBACK_NOT_FOUND = 10331; // 反馈记录不存在

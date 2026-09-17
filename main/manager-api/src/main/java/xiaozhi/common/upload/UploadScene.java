@@ -14,7 +14,12 @@ public enum UploadScene {
     /**
      * 破壳前蛋壳涂鸦作品。存放到 doodle/{userId}/ 路径下，与用户头像隔离。
      */
-    DOODLE("doodle", Set.of("image/png", "image/jpeg", "image/webp"), 5 * 1024 * 1024L);
+    DOODLE("doodle", Set.of("image/png", "image/jpeg", "image/webp"), 5 * 1024 * 1024L),
+
+    /**
+     * AI生图用户照片。存放到 ai-gen/{userId}/ 路径下，与涂鸦作品隔离。
+     */
+    AI_GEN("ai-gen", Set.of("image/png", "image/jpeg", "image/webp"), 5 * 1024 * 1024L);
 
     /**
      * OSS key 路径前缀，最终 key 形如 {pathPrefix}/{userId}/{uuid}.{ext}。

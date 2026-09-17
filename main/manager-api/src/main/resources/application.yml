@@ -32,6 +32,10 @@ eggbaby:
   miniprogram:
     appid: ${EGG_MINIPROGRAM_APPID:}
     secret: ${EGG_MINIPROGRAM_SECRET:}
+    # mp 后台「开发管理-消息推送」配置，用于接收 mediaCheckAsync 内容审核结果
+    msgpush:
+      token: ${EGG_WECHAT_MSGPUSH_TOKEN:}
+      aes-key: ${EGG_WECHAT_MSGPUSH_AES_KEY:}
 
 # 微信支付：dev 默认走 mock，生产环境必须显式设置为 false（通过 env: WECHAT_PAY_MOCK=false 或 prod profile 覆盖）
 wechat:
@@ -107,6 +111,9 @@ mybatis-plus:
 pet:
   quick-hatch:
     code: ${PET_QUICK_HATCH_CODE:}
+  # AI生图：免费用户每日成功次数上限（失败/审核驳回不计次）
+  image-gen:
+    daily-limit: ${PET_IMAGE_GEN_DAILY_LIMIT:3}
 
 # AI宠物头像配置
 # 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成头像 URL

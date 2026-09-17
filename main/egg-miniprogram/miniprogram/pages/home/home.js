@@ -59,7 +59,8 @@ function chatEntryIcon(prototype) {
 const COMPANION_ACTIONS = [
   { key: 'wish', title: '许愿池', icon: INTERACTION_ICONS.wish },
   { key: 'learn', title: '早教班', icon: INTERACTION_ICONS.learn },
-  { key: 'draw', title: '画画', icon: INTERACTION_ICONS.draw }
+  { key: 'draw', title: '画画', icon: INTERACTION_ICONS.draw },
+  { key: 'photo', title: 'AI写真', icon: INTERACTION_ICONS.photo }
 ];
 
 const WEATHER_LABELS = {
@@ -972,6 +973,8 @@ Page({
     const key = e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.key;
     if (key === 'wish' && !this.data.wishUnlocked) return this.showFeedback('许愿池还在准备中。');
     if (key === 'learn' && !this.data.learnUnlocked) return this.showFeedback('蛋宝宝还没到早教的年龄，明天来试试吧。');
+    // AI写真需要已破壳的宠物（任务归属 petId）
+    if (key === 'photo' && this.data.stage !== 'hatched') return this.showFeedback('破壳后就能和蛋宝宝拍写真啦。');
     if (key === 'draw') {
       // 打开编辑器前读本地涂鸦操作缓存(shell)，恢复画布让用户在之前作品上继续编辑
       const pet = this.data.pet;
@@ -979,7 +982,7 @@ Page({
       this.setData({ doodleEditorVisible: true, doodleInitialOperations: initialOperations });
       return;
     }
-    const routes = { wish: '/pages/wish/wish', learn: '/pages/lesson/lesson' };
+    const routes = { wish: '/pages/wish/wish', learn: '/pages/lesson/lesson', photo: '/pages/photo-gen/photo-gen' };
     if (routes[key]) {
       // 300ms 场景过渡后跳转，与静态项目节奏一致
       setTimeout(() => wx.navigateTo({ url: routes[key] }), 300);

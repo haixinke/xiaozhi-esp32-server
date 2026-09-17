@@ -92,6 +92,8 @@ module.exports = {
   INTERACTION_ICONS: {
     wish: '/assets/ui/3d-actions/ui_3d_wishing_fountain_two_tier_simple_256_v04.png',
     learn: '/assets/ui/3d-actions/ui_3d_early_learning_picture_book_simple_256_v03.png',
-    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.png'
+    draw: '/assets/ui/3d-actions/ui_3d_drawing_palette_256_v02.png',
+    // TODO(design): AI写真暂无相机图标素材，暂用贴纸图标占位，待设计补齐后替换
+    photo: '/assets/ui/3d-actions/ui_3d_toolbar_sticker_96_v02.png'
   }
 };

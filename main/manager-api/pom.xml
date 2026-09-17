@@ -266,6 +266,12 @@
             <artifactId>wechatpay-java</artifactId>
             <version>0.2.17</version>
         </dependency>
+        <!-- 微信公众号/小程序 SDK：消息推送验签与 AES 解密（mediaCheckAsync 审核回调） -->
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-mp</artifactId>
+            <version>4.7.0</version>
+        </dependency>
         <!-- 阿里云OSS SDK -->
         <dependency>
             <groupId>com.aliyun.oss</groupId>

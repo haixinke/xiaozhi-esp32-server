@@ -35,8 +35,8 @@ import xiaozhi.modules.wechat.service.WechatMediaCheckService;
 /**
  * AI生图异步执行器。
  *
- * <p>由 {@link ImageGenTaskServiceImpl} 在照片审核通过后触发（RUNNING 态）：
- * Seedream 多图参考生成 → 结果图下载上传 OSS → 提交结果图内容审核（REVIEWING 态）。
+ * <p>由 {@link ImageGenTaskServiceImpl} 在任务创建后触发（联调阶段直接 RUNNING；恢复审核后为照片审核通过）：
+ * Seedream 多图参考生成 → 结果图下载上传 OSS → 置 SUCCEEDED（TODO(security): 恢复审核后为提交结果图审核，REVIEWING 态）。
  * 独立成 Bean 是为了让 {@code @Async} 经代理生效（自调用不会异步）。
  */
 @Slf4j
@@ -114,25 +114,27 @@ public class ImageGenExecutor {
             ossService.upload(ossKey, imageBytes, CannedAccessControlList.PublicRead);
             String resultUrl = ossService.buildPublicUrl(ossKey);
 
-            String openid = openidOf(task.getUserId());
-            if (openid == null) {
-                failTask(taskId, "生成失败，请重试");
-                return;
-            }
-            String resultTraceId = mediaCheckService.mediaCheckAsync(resultUrl, openid);
+            // TODO(security): 临时跳过结果图微信内容安全审核（mediaCheckAsync），联调阶段直接置 SUCCEEDED 并计配额；
+            // 上线前必须恢复：提交结果审核 → RUNNING→REVIEWING，审核回调通过后才 SUCCEEDED + counted=1
+            // String openid = openidOf(task.getUserId());
+            // if (openid == null) {
+            //     failTask(taskId, "生成失败，请重试");
+            //     return;
+            // }
+            // String resultTraceId = mediaCheckService.mediaCheckAsync(resultUrl, openid);
 
             // 条件更新：清理任务可能已将其置 FAILED，仅在仍 RUNNING 时推进
             int rows = imageGenTaskDao.update(null, new UpdateWrapper<ImageGenTaskEntity>()
                     .eq("id", taskId)
                     .eq("status", ImageGenTaskStatus.RUNNING.name())
-                    .set("status", ImageGenTaskStatus.REVIEWING.name())
+                    .set("status", ImageGenTaskStatus.SUCCEEDED.name())
                     .set("result_url", resultUrl)
-                    .set("result_trace_id", resultTraceId));
+                    .set("counted", 1));
             if (rows == 0) {
                 log.info("AI生图任务状态已迁移，跳过推进 taskId={}", taskId);
                 return;
             }
-            log.info("AI生图生成完成待审核 taskId={}, resultUrl={}", taskId, resultUrl);
+            log.info("AI生图生成完成（审核已临时跳过）taskId={}, resultUrl={}", taskId, resultUrl);
         } catch (Exception e) {
             log.error("AI生图执行异常 taskId={}", taskId, e);
             failTask(taskId, "生成失败，请重试");

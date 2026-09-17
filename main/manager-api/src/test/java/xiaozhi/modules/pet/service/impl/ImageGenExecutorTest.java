@@ -28,7 +28,6 @@ import xiaozhi.modules.pet.constant.ImageGenTaskStatus;
 import xiaozhi.modules.pet.dao.ImageGenTaskDao;
 import xiaozhi.modules.pet.entity.ImageGenTaskEntity;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
-import xiaozhi.modules.wechat.entity.WechatUserEntity;
 import xiaozhi.modules.wechat.service.WechatMediaCheckService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,7 +82,7 @@ class ImageGenExecutorTest {
     }
 
     @Test
-    @DisplayName("generate - 多图参考调用Seedream，结果上传OSS并推进REVIEWING")
+    @DisplayName("generate - 多图参考调用Seedream，结果上传OSS并直接置SUCCEEDED计配额（审核临时跳过）")
     void generate_happyPath_reviewsResult() {
         ImageGenTaskEntity task = task(ImageGenTaskStatus.RUNNING.name());
         when(taskDao.selectById(7L)).thenReturn(task);
@@ -98,10 +97,6 @@ class ImageGenExecutorTest {
         when(restTemplate.exchange(eq(URI.create(GENERATED_URL)), eq(HttpMethod.GET),
                 any(HttpEntity.class), eq(byte[].class))).thenReturn(ResponseEntity.ok(bytes));
 
-        WechatUserEntity wechatUser = new WechatUserEntity();
-        wechatUser.setOpenid("openid-1");
-        when(wechatUserDao.selectOne(any())).thenReturn(wechatUser);
-        when(mediaCheckService.mediaCheckAsync(eq(RESULT_OSS_URL), eq("openid-1"))).thenReturn("trace-result-1");
         when(taskDao.update(isNull(), any(UpdateWrapper.class))).thenReturn(1);
 
         executor.generate(7L);
@@ -114,12 +109,14 @@ class ImageGenExecutorTest {
 
         verify(ossService).upload("ai-gen/1001/7.png", bytes, CannedAccessControlList.PublicRead);
 
+        // TODO(security): 审核临时跳过，直接 SUCCEEDED + counted=1；恢复审核后应推进 REVIEWING + resultTraceId
+        verify(mediaCheckService, never()).mediaCheckAsync(anyString(), anyString());
         ArgumentCaptor<UpdateWrapper> updateCaptor = ArgumentCaptor.forClass(UpdateWrapper.class);
         verify(taskDao).update(isNull(), updateCaptor.capture());
         assertThat(updateCaptor.getValue().getParamNameValuePairs())
-                .containsValue(ImageGenTaskStatus.REVIEWING.name())
+                .containsValue(ImageGenTaskStatus.SUCCEEDED.name())
                 .containsValue(RESULT_OSS_URL)
-                .containsValue("trace-result-1");
+                .containsValue(1);
     }
 
     @Test

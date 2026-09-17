@@ -37,20 +37,43 @@ Page({
 
   onChoosePhoto() {
     if (this.data.submitting) return;
+    // 基础库 <2.10.0 无 chooseMedia，降级 chooseImage
+    if (typeof wx.chooseMedia !== 'function') {
+      wx.chooseImage({
+        count: 1,
+        sourceType: ['album', 'camera'],
+        success: (res) => this._onPhotoChosen({ tempFilePath: res.tempFilePaths && res.tempFilePaths[0] }),
+        fail: (err) => this._onChooseFail(err)
+      });
+      return;
+    }
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
       sourceType: ['album', 'camera'],
       success: (res) => {
         const file = res.tempFiles && res.tempFiles[0];
-        if (!file) return;
-        if (file.size > MAX_FILE_SIZE) {
-          wx.showToast({ title: '图片不能超过 5MB', icon: 'none' });
-          return;
-        }
-        this.setData({ photoPreview: file.tempFilePath });
-      }
+        this._onPhotoChosen(file && { tempFilePath: file.tempFilePath, size: file.size });
+      },
+      fail: (err) => this._onChooseFail(err)
     });
+  },
+
+  // 选图成功统一入口：超限拦截 + 写入预览
+  _onPhotoChosen(file) {
+    if (!file || !file.tempFilePath) return;
+    if (file.size && file.size > MAX_FILE_SIZE) {
+      wx.showToast({ title: '图片不能超过 5MB', icon: 'none' });
+      return;
+    }
+    this.setData({ photoPreview: file.tempFilePath });
+  },
+
+  // 选图失败兜底提示：用户主动取消不提示（errMsg 含 cancel）
+  _onChooseFail(err) {
+    console.warn('[photo-gen] choose image fail', err);
+    if (err && err.errMsg && err.errMsg.indexOf('cancel') !== -1) return;
+    wx.showToast({ title: '无法打开相册/相机，请检查权限', icon: 'none' });
   },
 
   async onStartGenerate() {

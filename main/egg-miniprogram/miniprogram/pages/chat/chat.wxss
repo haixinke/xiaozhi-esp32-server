@@ -6,15 +6,10 @@
 
 .chat-header { flex: none; min-height: 0; background: rgba(255, 255, 255, 0.9); }
 
-/* AI 内容标识：对齐静态项目 ai-content-timeline-label，位于消息列表顶部 */
+/* 顶部提示语（防诈骗等合规标识）：对齐静态项目 ai-content-timeline-label，位于消息列表顶部 */
 .ai-content-label {
   padding: 12rpx 0 4rpx;
   color: rgba(92, 92, 92, 0.48); font-size: 18rpx; line-height: 1.45; text-align: center;
-}
-
-/* 紧跟在 AI 内容标识后的第二行（防诈骗提示）：收紧上间距，视觉成组 */
-.ai-content-label--tight {
-  padding-top: 0;
 }
 
 /* 心情状态条 */
@@ -102,6 +97,11 @@
 .composer-input {
   display: block; width: 100%; height: 40rpx; max-height: 134rpx; padding: 0; margin: 0;
   background: transparent; color: #1A1A1A; font-size: 25rpx; line-height: 40rpx;
+}
+/* AI 内容标识：常驻输入框下方，与输入栏同背景同安全区，随键盘一起顶起 */
+.composer-ai-label {
+  padding: 8rpx 0 4rpx;
+  color: rgba(92, 92, 92, 0.48); font-size: 18rpx; line-height: 1.45; text-align: center;
 }
 .send-button {
   width: 96rpx; height: 96rpx; flex: none; border-radius: 50%;

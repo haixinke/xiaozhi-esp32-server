@@ -1,6 +1,10 @@
 .page {
   min-height: 100vh;
   background: #FAFAF8;
+}
+
+/* 内容区留白，nav-bar 需顶到屏幕边缘（与"我的"页结构一致） */
+.content {
   padding: 32rpx;
   box-sizing: border-box;
 }

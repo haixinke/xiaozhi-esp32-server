@@ -2,11 +2,12 @@
 <view class="page">
   <nav-bar title="AI写真" />
 
+  <view class="content">
   <!-- 选图态 -->
   <block wx:if="{{phase === 'pick'}}">
     <view class="hint-card">
       <text class="hint-title">随手拍一张</text>
-      <text class="hint-desc">拍下身边的任意画面，蛋宝宝会钻进照片里和你合影</text>
+      <text class="hint-desc">拍下身边的任意画面，蛋宝宝会钻进你的照片里</text>
     </view>
     <view class="photo-frame" bindtap="onChoosePhoto">
       <image wx:if="{{photoPreview}}" class="photo-preview" src="{{photoPreview}}" mode="aspectFill" />
@@ -15,8 +16,9 @@
         <text class="photo-placeholder-text">拍照或从相册选择</text>
       </view>
     </view>
-    <button class="primary-btn {{(!photoPreview || submitting) ? 'primary-btn--disabled' : ''}}"
-            bindtap="onStartGenerate" disabled="{{!photoPreview || submitting}}">
+    <!-- 未选图时不渲染按钮，避免露出置灰文字 -->
+    <button wx:if="{{photoPreview}}" class="primary-btn {{submitting ? 'primary-btn--disabled' : ''}}"
+            bindtap="onStartGenerate" disabled="{{submitting}}">
       {{submitting ? statusText : '开始生成'}}
     </button>
   </block>
@@ -54,6 +56,7 @@
       <button class="primary-btn" bindtap="onRetry">重新生成</button>
     </view>
   </block>
+  </view>
 
   <!-- 屏幕外隐藏 canvas：超限图片压缩的第二级缩放用（见 utils/image-compress） -->
   <canvas type="2d" id="compress-canvas" style="position:fixed;left:-9999px;top:-9999px" />

@@ -54,4 +54,7 @@
       <button class="primary-btn" bindtap="onRetry">重新生成</button>
     </view>
   </block>
+
+  <!-- 屏幕外隐藏 canvas：超限图片压缩的第二级缩放用（见 utils/image-compress） -->
+  <canvas type="2d" id="compress-canvas" style="position:fixed;left:-9999px;top:-9999px" />
 </view>

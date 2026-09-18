@@ -2,6 +2,7 @@
 // 后端链路为 照片审核(PENDING) → 生成(RUNNING) → 结果审核(REVIEWING) → SUCCEEDED/FAILED，
 // 期间任何中间态都展示"生成中"与审核提示。
 const { uploadGenPhoto, createImageGenTask, getImageGenTask } = require('../../utils/image-gen-api');
+const { compressIfNeeded } = require('../../utils/image-compress');
 
 const POLL_INTERVAL_MS = 2500;
 // 生成 + 两轮审核的宽限时长（mediaCheckAsync 推送标称 30 分钟内，实际通常秒级）
@@ -36,13 +37,27 @@ Page({
   },
 
   onChoosePhoto() {
-    if (this.data.submitting) return;
+    // 压缩处理中禁止重复选图，避免并发压缩相互覆盖
+    if (this.data.submitting || this._compressing) return;
     // 基础库 <2.10.0 无 chooseMedia，降级 chooseImage
     if (typeof wx.chooseMedia !== 'function') {
       wx.chooseImage({
         count: 1,
         sourceType: ['album', 'camera'],
-        success: (res) => this._onPhotoChosen({ tempFilePath: res.tempFilePaths && res.tempFilePaths[0] }),
+        success: (res) => {
+          const tempFilePath = res.tempFilePaths && res.tempFilePaths[0];
+          if (!tempFilePath) return;
+          // chooseImage 不返回文件大小，补 getFileInfo 与 chooseMedia 路径对齐
+          if (typeof wx.getFileInfo !== 'function') {
+            this._choosing = this._onPhotoChosen({ tempFilePath });
+            return;
+          }
+          wx.getFileInfo({
+            filePath: tempFilePath,
+            success: (info) => { this._choosing = this._onPhotoChosen({ tempFilePath, size: info.size }); },
+            fail: () => { this._choosing = this._onPhotoChosen({ tempFilePath }); }
+          });
+        },
         fail: (err) => this._onChooseFail(err)
       });
       return;
@@ -53,20 +68,34 @@ Page({
       sourceType: ['album', 'camera'],
       success: (res) => {
         const file = res.tempFiles && res.tempFiles[0];
-        this._onPhotoChosen(file && { tempFilePath: file.tempFilePath, size: file.size });
+        this._choosing = this._onPhotoChosen(file && { tempFilePath: file.tempFilePath, size: file.size });
       },
       fail: (err) => this._onChooseFail(err)
     });
   },
 
-  // 选图成功统一入口：超限拦截 + 写入预览
-  _onPhotoChosen(file) {
+  // 选图成功统一入口：超限先客户端压缩（两级，见 utils/image-compress），仍超才拦截；通过则写入预览
+  async _onPhotoChosen(file) {
     if (!file || !file.tempFilePath) return;
+    let chosen = file;
     if (file.size && file.size > MAX_FILE_SIZE) {
-      wx.showToast({ title: '图片不能超过 5MB', icon: 'none' });
-      return;
+      this._compressing = true;
+      wx.showLoading({ title: '图片处理中…', mask: true });
+      let result;
+      try {
+        result = await compressIfNeeded({ tempFilePath: file.tempFilePath, size: file.size, page: this });
+      } finally {
+        this._compressing = false;
+        wx.hideLoading();
+      }
+      // toast 必须在 hideLoading 之后：hideLoading 会连带关掉 showToast 的提示
+      if (!result.ok) {
+        wx.showToast({ title: '图片不能超过 5MB', icon: 'none' });
+        return;
+      }
+      chosen = result;
     }
-    this.setData({ photoPreview: file.tempFilePath });
+    this.setData({ photoPreview: chosen.tempFilePath });
   },
 
   // 选图失败兜底提示：用户主动取消不提示（errMsg 含 cancel）

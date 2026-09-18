@@ -1,4 +1,4 @@
-// AI生图：照片上传（scene=ai-gen）、任务创建与轮询查询。
+// AI生图：照片上传（scene=ai_gen）、任务创建与轮询查询。
 // 任务为异步链路（照片审核 → 生成 → 结果审核），创建后按 taskId 轮询状态。
 const { post, get } = require('./request');
 const auth = require('./auth');
@@ -6,7 +6,7 @@ const { API_BASE_URL } = require('../config/api');
 
 /**
  * 上传用户照片到 OSS。
- * 调用通用上传接口 POST /upload/image（scene=ai-gen），接口返回通用 envelope { code, data, msg }。
+ * 调用通用上传接口 POST /upload/image（scene=ai_gen），接口返回通用 envelope { code, data, msg }。
  * @param {string} tempFilePath 本地临时文件路径
  * @returns {Promise<string>} OSS 图片 URL
  */
@@ -21,7 +21,8 @@ function uploadGenPhoto(tempFilePath) {
       url: `${API_BASE_URL}/upload/image`,
       filePath: tempFilePath,
       name: 'file',
-      formData: { scene: 'ai-gen' },
+      // 场景码对应后端 UploadScene.AI_GEN 枚举常量名，必须下划线（连字符解析失败会报“不支持的上传场景”）
+      formData: { scene: 'ai_gen' },
       header: { Authorization: `Bearer ${session.token}` },
       success: (res) => {
         if (res.statusCode !== 200) {

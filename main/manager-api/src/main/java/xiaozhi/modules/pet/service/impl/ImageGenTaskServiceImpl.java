@@ -48,10 +48,30 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
             PROTOTYPE_KOI, "https://oss.eggbabe.com/default-ip/fish/fish.png",
             PROTOTYPE_RABBIT, "https://oss.eggbabe.com/default-ip/rabbit/rabbit.png");
 
-    /** 预置文案池：渲染进图片内，同时用作分享卡片标题；用户不可编辑 */
+    /** 预置文案池：渲染进图片内，同时用作分享卡片标题；用户不可编辑（00后气质：活泼、俏皮、佛系、幽默） */
     private static final Map<String, List<String>> CAPTION_POOL = Map.of(
-            PROTOTYPE_KOI, List.of("好运连连", "锦鲤附体 诸事顺利", "摸鱼也能赢"),
-            PROTOTYPE_RABBIT, List.of("玉兔呈祥", "月宫来的小可爱", "温柔有光"));
+            PROTOTYPE_KOI, List.of(
+                    "转发这条锦鲤，好运直接拉满",
+                    "摸鱼摸到大奖，锦鲤本鲤",
+                    "今天也要做一条好运爆棚的鱼",
+                    "水逆退散，锦鲤罩我",
+                    "躺平的鱼运气都不会太差",
+                    "锦鲤附身，主打一个心想事成",
+                    "不慌不忙，好运正在路上",
+                    "摸鱼一时爽，好运经常来",
+                    "本鲤出马，烦恼全挂",
+                    "佛系养鱼，好运自来"),
+            PROTOTYPE_RABBIT, List.of(
+                    "月宫在逃小可爱，已上线",
+                    "兔兔我啊，今天也在认真可爱",
+                    "蹦跶两下，烦恼清零",
+                    "吃可爱长大的，不服来rua",
+                    "玉兔营业中，快乐不打烊",
+                    "随缘可爱，佛系卖萌",
+                    "耳朵一竖，好事将至",
+                    "今天份的快乐已充好电",
+                    "慢生活万岁，兔兔不着急",
+                    "温柔有光，自带治愈buff"));
 
     private static final String DEFAULT_OSS_PUBLIC_URL = "https://oss.eggbabe.com";
 

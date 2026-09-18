@@ -44,14 +44,18 @@ import xiaozhi.modules.wechat.service.WechatMediaCheckService;
 public class ImageGenExecutor {
 
     /**
-     * prompt 模板：照片仅作场景/氛围参考，不保留真实人物面部（方舟防深伪护栏要求，已实测验证）；
-     * IP 形象一致性 + 预置文案图内渲染。Spike 样张见 docs/image-gen/implementation-plan.md。
+     * prompt 模板：用户照片作背景基底（真实人物保留），IP 形象一致性 + 尺寸/位置/光影与背景和谐，
+     * 预置文案图内渲染。Spike 样张见 docs/image-gen/implementation-plan.md。
      */
     private static final String PROMPT_TEMPLATE = """
-            以第二张图片中的卡通宠物IP形象为绝对主角，形象特征必须与参考图保持完全一致；\
-            将第一张用户随手拍的照片作为场景与氛围参考，把IP角色自然融入该场景中，画面温馨可爱、构图精美；\
-            画面中艺术化地渲染中文文字「%s」。\
-            注意：不保留照片中任何真实人物的面部或身份特征，人物若存在则虚化为背景氛围。""";
+            以第一张用户上传的照片为画面基底，完整保留照片中的真实场景、人物与细节；\
+            照片中若有人物，保留其面部与形象特征，不得虚化、替换或删除；\
+            将第二张图片中的卡通宠物IP形象自然融入画面，IP的形象特征必须与参考图保持完全一致；\
+            IP角色的尺寸要适中：与背景中的人物和物体比例协调，不过大喧宾夺主，也不过小难以辨认；\
+            把IP角色放在画面中合理或有创意的位置（如桌面、肩头、掌心、前景一角等），让它与场景或人物产生自然有趣的互动；\
+            IP角色的光照、色调、阴影与透视要与照片背景和谐统一，仿佛它真实存在于这个场景中；\
+            画面中渲染中文文字「%s」，文字采用可爱的涂鸦风格：圆润的手写体字形，像随手画上去的涂鸦贴纸，\
+            笔画略带歪扭俏皮感，颜色活泼明快，与卡通宠物IP的可爱气质呼应，与整体画面氛围协调。""";
 
     private final ImageGenTaskDao imageGenTaskDao;
     private final WechatUserDao wechatUserDao;

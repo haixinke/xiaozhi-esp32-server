@@ -5260,8 +5260,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1789296161.7327473,
-    "ast_hash": "f686e5e0c83acd7b82bfec799ced804f",
+    "mtime": 1789717572.384945,
+    "ast_hash": "fabc23fd4712b9af50df3d17092f9f50",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5405,8 +5405,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1789650520.0329792,
-    "ast_hash": "8e58cdba2c6b464d1a1ed18bf7d7bf10",
+    "mtime": 1789717946.963105,
+    "ast_hash": "f13ab69cda172e0b59837f07ab4f381f",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
@@ -8345,18 +8345,18 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/photo-gen/photo-gen.js": {
-    "mtime": 1789648547.4943666,
-    "ast_hash": "9b0cc2e91ed1849b9cca55ae87df548c",
+    "mtime": 1789722965.3965487,
+    "ast_hash": "2eec4e751d7ed111f9878461c3abea76",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/photo-gen/photo-gen.test.js": {
-    "mtime": 1789648732.4911523,
-    "ast_hash": "6657e8118c8e68ab4f5482b994bb2c87",
+    "mtime": 1789722945.5611868,
+    "ast_hash": "7627b4d1c010d72fbf741b7a9119eb22",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/image-gen-api.js": {
-    "mtime": 1789648502.4199433,
-    "ast_hash": "d52ef1e3c52a20a1fe70ab9722b2c23e",
+    "mtime": 1789711365.1110873,
+    "ast_hash": "f8c47310c4bd3419eac4c8b57a3b4113",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/constant/ImageGenTaskStatus.java": {
@@ -8395,13 +8395,13 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/ImageGenExecutor.java": {
-    "mtime": 1789651331.1278844,
-    "ast_hash": "8e77c4df0fc0b074c22cfd0c75b29d57",
+    "mtime": 1789714510.892327,
+    "ast_hash": "57fa77a846e6e870b0bf4a843287bd96",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/ImageGenTaskServiceImpl.java": {
-    "mtime": 1789651290.1842394,
-    "ast_hash": "5b4cedcdd88724891ff563e2d54aacc1",
+    "mtime": 1789714510.892575,
+    "ast_hash": "5656b5180f1158e64aec03237b4998ee",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/vo/ImageGenTaskVO.java": {
@@ -8430,13 +8430,13 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/ImageGenExecutorTest.java": {
-    "mtime": 1789651408.4124045,
-    "ast_hash": "c1191b91a975119ba38105beb9a3167a",
+    "mtime": 1789714510.8928049,
+    "ast_hash": "a86570cc2a8d4766dc24f6b08f006f3d",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/ImageGenTaskServiceImplTest.java": {
-    "mtime": 1789651408.2195814,
-    "ast_hash": "90fe035342f6d326a2435425ef0b8939",
+    "mtime": 1789714510.8929806,
+    "ast_hash": "4f7c564a21df41d3eee2a2872dfe3ec0",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/wechat/controller/WechatMsgCallbackControllerTest.java": {
@@ -8687,6 +8687,16 @@
   "main/official-docs/04-\u540e\u7aef\u670d\u52a1-\u7231\u4e88\u6167AI\u667a\u80fd\u4f53\u7ba1\u7406\u670d\u52a1\u540e\u7aefV1.0/\u7231\u4e88\u6167AI\u667a\u80fd\u4f53\u7ba1\u7406\u670d\u52a1\u540e\u7aefV1.0-\u8bbe\u8ba1\u8bf4\u660e\u4e66.pdf": {
     "mtime": 1788425021.2517073,
     "ast_hash": "ba30c13e09a626eb8fe5c6edcf75909f",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/image-compress.js": {
+    "mtime": 1789722968.814556,
+    "ast_hash": "614d12c62e5275dfbf18a0d1bdc11dbc",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/image-compress.test.js": {
+    "mtime": 1789722949.6318026,
+    "ast_hash": "af3e1acb6906ba361e2f355d7718f607",
     "semantic_hash": ""
   }
 }

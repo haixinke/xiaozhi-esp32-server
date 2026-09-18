@@ -473,6 +473,9 @@ async function run() {
     'post-hatch home must render the bottom-left chat entry icon');
   assert.ok(homeTemplate.includes('wx:if="{{storyAtHome}}"'),
     'chat entry must be gated on the at-home story scene');
+  const photoEntryTag = homeTemplate.match(/<view[^>]*class="story-photo-entry"[^>]*>/);
+  assert.ok(photoEntryTag && !photoEntryTag[0].includes('storyAtHome'),
+    'photo entry must always render post-hatch, not gated on the at-home story scene');
   assert.ok(homeTemplate.includes('src="{{storyChatIcon}}"'),
     'chat entry icon must render the prototype-based image');
   assert.ok(!homeTemplate.includes('home-actions__chat'),

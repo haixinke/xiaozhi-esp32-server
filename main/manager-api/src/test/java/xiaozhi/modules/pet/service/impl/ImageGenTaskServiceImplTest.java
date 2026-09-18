@@ -26,6 +26,7 @@ import xiaozhi.modules.pet.entity.ImageGenTaskEntity;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.vo.ImageGenTaskVO;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
+import xiaozhi.modules.wechat.entity.WechatUserEntity;
 import xiaozhi.modules.wechat.service.WechatMediaCheckService;
 
 import xiaozhi.common.utils.SpringContextUtils;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -108,25 +110,26 @@ class ImageGenTaskServiceImplTest {
     }
 
     @Test
-    @DisplayName("createTask - 锦鲤原型落库IP参考图与文案，跳过审核直接RUNNING并触发生成")
+    @DisplayName("createTask - 锦鲤原型落库IP参考图与文案，提交照片审核")
     void createTask_koi_storesIpImageAndCaption() {
         when(petDao.selectOne(any())).thenReturn(pet());
         when(taskDao.selectCount(any())).thenReturn(0L);
+        WechatUserEntity wechatUser = new WechatUserEntity();
+        wechatUser.setOpenid("openid-1");
+        when(wechatUserDao.selectOne(any())).thenReturn(wechatUser);
+        when(mediaCheckService.mediaCheckAsync(eq(PHOTO_URL), eq("openid-1"))).thenReturn("trace-photo-1");
 
         ImageGenTaskVO vo = service.createTask(USER_ID, PHOTO_URL);
 
         ArgumentCaptor<ImageGenTaskEntity> captor = ArgumentCaptor.forClass(ImageGenTaskEntity.class);
         verify(taskDao).insert(captor.capture());
         ImageGenTaskEntity saved = captor.getValue();
-        // TODO(security): 审核临时跳过，创建即 RUNNING；恢复审核后应回到 PENDING + photoTraceId
-        assertThat(saved.getStatus()).isEqualTo(ImageGenTaskStatus.RUNNING.name());
+        assertThat(saved.getStatus()).isEqualTo(ImageGenTaskStatus.PENDING.name());
         assertThat(saved.getIpImageUrl()).isEqualTo("https://oss.eggbabe.com/default-ip/fish/fish.png");
         assertThat(saved.getCaption()).isIn("好运连连", "锦鲤附体 诸事顺利", "摸鱼也能赢");
-        assertThat(saved.getPhotoTraceId()).isNull();
+        assertThat(saved.getPhotoTraceId()).isEqualTo("trace-photo-1");
         assertThat(saved.getCounted()).isEqualTo(0);
-        assertThat(vo.getStatus()).isEqualTo(ImageGenTaskStatus.RUNNING.name());
-        verify(mediaCheckService, never()).mediaCheckAsync(anyString(), anyString());
-        verify(imageGenExecutor).generateAsync(any());
+        assertThat(vo.getStatus()).isEqualTo(ImageGenTaskStatus.PENDING.name());
     }
 
     @Test

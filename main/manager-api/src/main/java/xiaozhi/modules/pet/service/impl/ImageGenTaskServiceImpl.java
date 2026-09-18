@@ -97,6 +97,7 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         if (todayCountedCount(userId) >= dailyLimit) {
             throw new RenException(ErrorCode.IMAGE_GEN_QUOTA_EXCEEDED);
         }
+        String openid = openidOf(userId);
 
         ImageGenTaskEntity task = new ImageGenTaskEntity();
         task.setUserId(userId);
@@ -104,19 +105,15 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         task.setPhotoUrl(photoUrl);
         task.setIpImageUrl(resolveIpImageUrl(pet.getPrototype()));
         task.setCaption(drawCaption(pet.getPrototype()));
-        // TODO(security): 临时跳过微信内容安全审核（mediaCheckAsync），联调阶段直接进 RUNNING 触发生成；
-        // 上线前必须恢复：创建时 PENDING + 提交照片审核，审核回调通过后才触发生成
-        task.setStatus(ImageGenTaskStatus.RUNNING.name());
+        task.setStatus(ImageGenTaskStatus.PENDING.name());
         task.setCounted(0);
 
-        // String openid = openidOf(userId);
         // 先提交照片审核拿到 trace_id 再落库，提交失败则整个请求失败、不留半成品任务
-        // String traceId = mediaCheckService.mediaCheckAsync(photoUrl, openid);
-        // task.setPhotoTraceId(traceId);
+        String traceId = mediaCheckService.mediaCheckAsync(photoUrl, openid);
+        task.setPhotoTraceId(traceId);
 
         baseDao.insert(task);
         log.info("AI生图任务创建成功 userId={}, taskId={}, prototype={}", userId, task.getId(), pet.getPrototype());
-        imageGenExecutor.generateAsync(task.getId());
         return toVO(task);
     }
 

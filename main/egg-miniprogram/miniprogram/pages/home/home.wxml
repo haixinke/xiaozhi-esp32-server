@@ -134,8 +134,8 @@
         </view>
       </view>
 
-      <!-- 右下角 AI 写真入口：与聊天入口同款圆形按钮；仅"在家"大场景显示 -->
-      <view wx:if="{{storyAtHome}}" class="story-photo-entry">
+      <!-- 右下角 AI 写真入口：与聊天入口同款圆形按钮；破壳后常驻显示，不随故事场景切换 -->
+      <view class="story-photo-entry">
         <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和蛋宝宝拍写真" bindtap="onPhotoEntryTap">
           <image class="story-chat-icon" src="{{photoEntryIcon}}" mode="aspectFill" />
         </view>

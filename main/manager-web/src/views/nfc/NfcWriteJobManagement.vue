@@ -115,6 +115,14 @@
                     @click="handleImport(row)"
                   >导入结果</el-button>
                   <el-button
+                    v-if="canTrustRelease(row)"
+                    size="mini"
+                    type="text"
+                    class="warning-text"
+                    icon="el-icon-unlock"
+                    @click="handleTrustRelease(row)"
+                  >免检放行</el-button>
+                  <el-button
                     v-if="canManualWrite(row)"
                     size="mini"
                     type="text"
@@ -194,6 +202,42 @@
       @imported="onImported"
     />
 
+    <!-- 免检放行对话框（ADR 0005）：工厂未回传结果 CSV 时的退路通道，次级入口 -->
+    <el-dialog
+      title="免检放行"
+      :visible.sync="trustReleaseDialogVisible"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="trustReleaseTargetRow" class="trust-release-dialog">
+        <p class="trust-release-batch">
+          任务：{{ trustReleaseTargetRow._writeJob && trustReleaseTargetRow._writeJob.jobNo }}
+          （{{ trustReleaseTargetRow._writeJob && trustReleaseTargetRow._writeJob.totalCount || 0 }} 张）
+        </p>
+        <el-alert
+          type="warning"
+          :closable="false"
+          title="仅当代工厂无法回传结果 CSV 时使用。有结果文件时请优先走「导入结果」硬校验通道。"
+        ></el-alert>
+        <p class="trust-release-tip">
+          放行前请先用手机触碰抽检若干张卡，确认微信能正常拉起领取页。
+        </p>
+        <el-checkbox v-model="trustReleaseLockConfirmed" class="trust-release-lock">
+          确认代工厂已完成锁卡（未锁卡标签可被改写指向钓鱼页）
+        </el-checkbox>
+      </div>
+      <span slot="footer">
+        <el-button size="small" @click="trustReleaseDialogVisible = false">取消</el-button>
+        <el-button
+          size="small"
+          type="warning"
+          :disabled="!trustReleaseLockConfirmed"
+          :loading="trustReleaseSubmitting"
+          @click="confirmTrustRelease"
+        >确认放行</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 创建任务对话框：选择写卡模式（ADR 0003，创建后不可变更） -->
     <el-dialog
       title="创建写卡任务"
@@ -249,6 +293,11 @@ export default {
       pollJobIds: new Set(),
       showImportDialog: false,
       importJobId: '',
+      // 免检放行（ADR 0005）：次级入口，仅 FACTORY_CSV + EXPORTED 任务可用
+      trustReleaseDialogVisible: false,
+      trustReleaseTargetRow: null,
+      trustReleaseLockConfirmed: false,
+      trustReleaseSubmitting: false,
       createDialogVisible: false,
       // 默认手动模式（小批量验证场景高频），工厂 CSV 模式已解禁可选
       createMode: 'MANUAL',
@@ -311,7 +360,11 @@ export default {
       const job = row._writeJob
       return job && !this.isManualJob(row) && job.status === 'EXPORTED'
     },
-    canManualWrite(row) {
+    canTrustRelease(row) {
+      // 免检放行（ADR 0005）：与导入同一前置（工厂模式 + EXPORTED），作为次级入口并列展示
+      const job = row._writeJob
+      return job && !this.isManualJob(row) && job.status === 'EXPORTED'
+    },    canManualWrite(row) {
       const job = row._writeJob
       return job && this.isManualJob(row) && job.status === 'CREATED'
     },
@@ -501,6 +554,39 @@ export default {
       this.tableData.forEach(row => {
         if (row._writeJob) {
           this.fetchWriteJob(row.id, row._writeJob.id)
+        }
+      })
+    },
+
+    // ==================== 免检放行（ADR 0005） ====================
+
+    handleTrustRelease(row) {
+      const job = row._writeJob
+      if (!job || !job.id) {
+        this.$message.warning('任务信息不完整')
+        return
+      }
+      this.trustReleaseTargetRow = row
+      this.trustReleaseLockConfirmed = false
+      this.trustReleaseDialogVisible = true
+    },
+
+    confirmTrustRelease() {
+      const row = this.trustReleaseTargetRow
+      const job = row && row._writeJob
+      if (!job || !job.id || !this.trustReleaseLockConfirmed) return
+      const requestId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      this.trustReleaseSubmitting = true
+      Api.pdcNfc.trustReleaseWriteJob(job.id, true, requestId, (res) => {
+        this.trustReleaseSubmitting = false
+        if (res.data && res.data.code === 0) {
+          this.$message.success(`免检放行成功，${res.data.data?.releasedCount || 0} 张资产已验证`)
+          this.trustReleaseDialogVisible = false
+          this.onImported()
+        } else {
+          this.$message.error(res.data?.msg || '免检放行失败')
         }
       })
     },
@@ -720,6 +806,26 @@ export default {
 
 .danger-text {
   color: #f56c6c !important;
+}
+
+.warning-text {
+  color: #e6a23c !important;
+}
+
+.trust-release-batch {
+  margin: 0 0 12px;
+  color: #606266;
+}
+
+.trust-release-tip {
+  margin: 12px 0;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.trust-release-lock {
+  display: block;
+  margin-top: 4px;
 }
 
 .create-mode-batch {

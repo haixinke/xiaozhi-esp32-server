@@ -234,10 +234,28 @@ export default {
   },
 
   /**
+   * 免检放行（ADR 0005）：工厂未回传结果 CSV 时信任推进任务内资产。
+   * 变更类 POST 不做自动重试；接口本身按 requestId 幂等，超时后由用户确认状态再操作。
+   */
+  trustReleaseWriteJob(jobId, lockConfirmed, requestId, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/pdc/nfc/write/${jobId}/trust-release`)
+      .method('POST')
+      .data({ lockConfirmed, requestId })
+      .success((res) => {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail((err) => {
+        console.error('免检放行失败:', err);
+        callback({ data: { code: -1, msg: '免检放行网络请求失败，请刷新确认任务状态后再重试' } });
+      }).send();
+  },
+
+  /**
    * 取消写卡任务
    */
-  cancelWriteJob(jobId, callback) {
-    RequestService.sendRequest()
+  cancelWriteJob(jobId, callback) {    RequestService.sendRequest()
       .url(`${getServiceUrl()}/pdc/nfc/write/cancel/${jobId}`)
       .method('POST')
       .success((res) => {

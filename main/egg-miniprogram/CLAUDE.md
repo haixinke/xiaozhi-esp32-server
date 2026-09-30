@@ -9,8 +9,7 @@
 - **技术栈**：微信原生小程序（JS / WXML / WXSS / JSON），无构建工具、无包管理器
 - **工程根**：`project.config.json` 中 `miniprogramRoot: "miniprogram/"`，开发者工具导入 `main/egg-miniprogram/`
 - **AppID**：`wx661d20e88437af73`
-- **设计规范**：[DESIGN.md](./DESIGN.md)；产品需求：`docs/蛋宝宝小程序PRD.md`、`docs/蛋宝宝小程序MVP_PRD.md`
-
+- **设计规范**：[DESIGN.md](./DESIGN.md)；
 ### 与其它子项目的关系
 
 | 交互对象 | 子项目 | 用途 |
@@ -165,7 +164,6 @@ find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 - [DESIGN.md](./DESIGN.md) — 设计系统（改样式必读）
 - [AGENTS.md](./AGENTS.md) — Codex 协作指引
 - [README.md](./README.md) — 说明文档
-- `docs/蛋宝宝小程序PRD.md` — 完整产品需求
 - `docs/egg-pet-identity-and-hatch-api.md` — 设备/宠物身份模型与接口契约
 - `../manager-api/CLAUDE.md` — 后端服务架构
 - `../miniprogram/CLAUDE.md` — 姊妹聊天小程序（架构参考）

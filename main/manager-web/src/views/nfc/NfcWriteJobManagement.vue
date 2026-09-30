@@ -356,15 +356,19 @@ export default {
       const job = row._writeJob
       return job && !this.isManualJob(row) && (job.status === 'CREATED' || job.status === 'EXPORTED')
     },
-    canImport(row) {
+    isFactoryExported(row) {
+      // 工厂模式 + EXPORTED：导入结果与免检放行共用此前置（ADR 0005）
       const job = row._writeJob
       return job && !this.isManualJob(row) && job.status === 'EXPORTED'
     },
+    canImport(row) {
+      return this.isFactoryExported(row)
+    },
     canTrustRelease(row) {
-      // 免检放行（ADR 0005）：与导入同一前置（工厂模式 + EXPORTED），作为次级入口并列展示
-      const job = row._writeJob
-      return job && !this.isManualJob(row) && job.status === 'EXPORTED'
-    },    canManualWrite(row) {
+      // 免检放行：与导入同一前置，作为次级入口并列展示
+      return this.isFactoryExported(row)
+    },
+    canManualWrite(row) {
       const job = row._writeJob
       return job && this.isManualJob(row) && job.status === 'CREATED'
     },

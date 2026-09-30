@@ -255,7 +255,8 @@ export default {
   /**
    * 取消写卡任务
    */
-  cancelWriteJob(jobId, callback) {    RequestService.sendRequest()
+  cancelWriteJob(jobId, callback) {
+    RequestService.sendRequest()
       .url(`${getServiceUrl()}/pdc/nfc/write/cancel/${jobId}`)
       .method('POST')
       .success((res) => {
@@ -409,6 +410,26 @@ export default {
   },
 
   /**
+   * 资产入库（不重试变体）：分批循环调用方用——reAjaxFun 重试耗尽后不会回调，
+   * 调用方 Promise 会永远悬挂；此变体网络失败直接回调 code=-1 让调用方收尾。
+   * 服务端按 requestId 幂等，用户确认状态后可安全重试。
+   */
+  stockInOnce(data, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/pdc/nfc/admin/assets/stock-in`)
+      .method('POST')
+      .data(data)
+      .success((res) => {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail((err) => {
+        console.error('资产入库失败:', err);
+        callback({ data: { code: -1, msg: '入库网络请求失败，请核对资产状态后重试' } });
+      }).send();
+  },
+
+  /**
    * 资产激活
    */
   activate(data, callback) {
@@ -425,6 +446,24 @@ export default {
         RequestService.reAjaxFun(() => {
           this.activate(data, callback);
         });
+      }).send();
+  },
+
+  /**
+   * 资产激活（不重试变体）：同 stockInOnce，供分批循环调用方使用。
+   */
+  activateOnce(data, callback) {
+    RequestService.sendRequest()
+      .url(`${getServiceUrl()}/pdc/nfc/admin/assets/activate`)
+      .method('POST')
+      .data(data)
+      .success((res) => {
+        RequestService.clearRequestTime();
+        callback(res);
+      })
+      .networkFail((err) => {
+        console.error('资产激活失败:', err);
+        callback({ data: { code: -1, msg: '激活网络请求失败，请核对资产状态后重试' } });
       }).send();
   },
 

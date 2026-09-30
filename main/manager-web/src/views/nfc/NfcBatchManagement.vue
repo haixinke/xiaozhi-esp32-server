@@ -513,7 +513,8 @@ export default {
         const requestId = typeof crypto !== 'undefined' && crypto.randomUUID
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(16).slice(2)}`
-        const apiCall = type === 'STOCK_IN' ? Api.pdcNfc.stockIn : Api.pdcNfc.activate
+        // 不重试变体：reAjaxFun 重试耗尽后不会回调，分批循环的 Promise 会永远悬挂
+        const apiCall = type === 'STOCK_IN' ? Api.pdcNfc.stockInOnce : Api.pdcNfc.activateOnce
         apiCall({ assetIds: chunkIds, businessNo, requestId }, (res) => resolve(res))
       })
       let doneBatches = 0

@@ -260,6 +260,24 @@ class PdcNfcTrustReleaseIntegrationTest extends MySqlContainerSupport {
     }
 
     @Test
+    @DisplayName("资产租约被其他任务持有时整体回滚（核心并发前置）")
+    void rollsBackWhenLeaseHeldByAnotherJob() {
+        // 模拟第二张卡的写卡租约被另一个任务持有（如历史数据漂移）
+        PdcNfcAssetEntity drifted = assetDao.selectById(SECOND_ASSET_ID);
+        drifted.setActiveWriteJobId(999L);
+        assetDao.updateById(drifted);
+
+        assertThatThrownBy(() -> trustReleaseService.trustRelease(
+                JOB_ID, true, OPERATOR_ID, UUID.randomUUID()))
+                .isInstanceOf(RenException.class)
+                .extracting("code")
+                .isEqualTo(xiaozhi.common.exception.ErrorCode.PDC_NFC_INVALID_STATE);
+
+        assertInitialDatabaseState();
+        assertThat(assetDao.selectById(SECOND_ASSET_ID).getActiveWriteJobId()).isEqualTo(999L);
+    }
+
+    @Test
     @DisplayName("任务不存在拒绝（10510）")
     void rejectsMissingJob() {
         assertThatThrownBy(() -> trustReleaseService.trustRelease(

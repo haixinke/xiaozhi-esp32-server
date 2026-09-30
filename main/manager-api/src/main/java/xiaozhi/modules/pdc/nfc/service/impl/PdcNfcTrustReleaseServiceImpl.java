@@ -157,6 +157,10 @@ public class PdcNfcTrustReleaseServiceImpl implements PdcNfcTrustReleaseService 
                     now) != 1) {
                 throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
             }
+        } else {
+            // 资产与任务已推进但批次非 WRITING（如并发取消/状态漂移）：不阻断放行，留痕排查
+            log.warn("Trust release: batch {} in unexpected status {}, skip READY_FOR_STOCK transition, jobId={}",
+                    batch.getId(), batch.getStatus(), jobId);
         }
 
         // 审计：操作人/任务/资产数/锁卡声明落库，失败回滚整个放行

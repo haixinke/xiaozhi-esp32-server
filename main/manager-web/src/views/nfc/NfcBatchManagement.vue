@@ -77,6 +77,20 @@
                     type="text"
                     @click="openWriteJobDialog(row)"
                   >写卡任务</el-button>
+                  <el-button
+                    v-if="row.status === 'READY_FOR_STOCK'"
+                    size="mini"
+                    type="text"
+                    icon="el-icon-box"
+                    @click="handleBulkStockIn(row)"
+                  >批量入库</el-button>
+                  <el-button
+                    v-if="row.status === 'READY_FOR_STOCK' || row.status === 'COMPLETED'"
+                    size="mini"
+                    type="text"
+                    icon="el-icon-circle-check"
+                    @click="handleBulkActivate(row)"
+                  >批量激活</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -156,10 +170,9 @@
             手动模式（小批量验证）
             <div class="create-mode-hint">手机 NFC App 逐张写卡，触碰自验证，验证通过后锁卡再入库</div>
           </el-radio>
-          <!-- 工厂 CSV 模式暂不可用：验证阶段仅支持手动模式，恢复时去掉 disabled 即可（后端能力保留） -->
-          <el-radio label="FACTORY_CSV" class="create-mode-option" disabled>
+          <el-radio label="FACTORY_CSV" class="create-mode-option">
             工厂 CSV 模式
-            <div class="create-mode-hint">量产：导出 CSV 给工厂设备批量写卡，回传结果导入（暂不可用，验证阶段仅支持手动模式）</div>
+            <div class="create-mode-hint">量产：导出 CSV 给工厂设备批量写卡，回传结果导入；工厂无法回传时可在写卡任务页走免检放行</div>
           </el-radio>
         </el-radio-group>
       </div>
@@ -175,6 +188,37 @@
       :job-id="currentWriteJobId"
       @refresh="fetchBatches"
     />
+
+    <!-- 批量入库/激活对话框（批次级快捷入口，复用资产批量接口，超 500 自动分批） -->
+    <el-dialog
+      :title="bulkDialogType === 'STOCK_IN' ? '批量入库' : '批量激活'"
+      :visible.sync="bulkDialogVisible"
+      width="460px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="bulkTargetRow" class="bulk-dialog">
+        <p class="bulk-batch">批次：{{ bulkTargetRow.batchNo }}</p>
+        <p class="bulk-count">
+          {{ bulkDialogType === 'STOCK_IN' ? '待入库（已验证）' : '待激活（在库）' }}资产：{{ bulkAssetIds.length }} 张
+        </p>
+        <el-input
+          v-model="bulkBusinessNo"
+          :placeholder="bulkDialogType === 'STOCK_IN' ? '入库单号（必填）' : '激活单号（必填）'"
+          maxlength="64"
+          class="bulk-business-no"
+        ></el-input>
+      </div>
+      <span slot="footer">
+        <el-button size="small" @click="bulkDialogVisible = false">取消</el-button>
+        <el-button
+          size="small"
+          type="primary"
+          :disabled="!bulkBusinessNo.trim() || bulkAssetIds.length === 0"
+          :loading="bulkSubmitting"
+          @click="confirmBulkOperation"
+        >确认{{ bulkDialogType === 'STOCK_IN' ? '入库' : '激活' }}</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -211,7 +255,14 @@ export default {
       // 创建写卡任务对话框：默认手动模式（当前小批量验证阶段手动为主路径，ADR 0003）
       createJobDialogVisible: false,
       createJobTargetRow: null,
-      createJobMode: 'MANUAL'
+      createJobMode: 'MANUAL',
+      // 批量入库/激活（批次级入口）
+      bulkDialogVisible: false,
+      bulkDialogType: '',
+      bulkTargetRow: null,
+      bulkAssetIds: [],
+      bulkBusinessNo: '',
+      bulkSubmitting: false
     }
   },
   computed: {
@@ -395,6 +446,97 @@ export default {
     openWriteJobDialog(row) {
       this.currentWriteJobId = row.writeJobId
       this.writeJobDialogVisible = true
+    },
+
+    // ==================== 批量入库/激活（批次级入口） ====================
+
+    handleBulkStockIn(row) {
+      this.openBulkDialog(row, 'STOCK_IN', 'VERIFIED')
+    },
+    handleBulkActivate(row) {
+      this.openBulkDialog(row, 'ACTIVATE', 'IN_STOCK')
+    },
+
+    // 打开弹窗前先拉全量目标资产 ID；为空则不弹窗直接提示
+    async openBulkDialog(row, type, status) {
+      try {
+        const ids = await this.loadBatchAssetIds(row.id, status)
+        if (ids.length === 0) {
+          this.$message.warning(type === 'STOCK_IN' ? '本批次暂无待入库（已验证）资产' : '本批次暂无待激活（在库）资产')
+          return
+        }
+        this.bulkTargetRow = row
+        this.bulkDialogType = type
+        this.bulkAssetIds = ids
+        this.bulkBusinessNo = ''
+        this.bulkDialogVisible = true
+      } catch (e) {
+        this.$message.error('查询批次资产失败，请刷新后重试')
+      }
+    },
+
+    // 分页拉满该批次指定状态的全部资产 ID（资产分页接口单页上限 100）
+    loadBatchAssetIds(batchId, status) {
+      const ids = []
+      const fetchPage = (page) => new Promise((resolve, reject) => {
+        Api.pdcNfc.listAssets({ batchId, status, page, limit: 100 }, (res) => {
+          if (res.data && res.data.code === 0) {
+            const data = res.data.data
+            const list = data?.list || []
+            list.forEach(a => ids.push(a.id))
+            const total = data?.total || list.length
+            resolve(ids.length >= total || list.length === 0)
+          } else {
+            reject(new Error(res.data?.msg || 'query failed'))
+          }
+        })
+      })
+      let page = 1
+      const loop = async () => {
+        while (await fetchPage(page) === false) {
+          page += 1
+        }
+        return ids
+      }
+      return loop()
+    },
+
+    // 分批提交（每批 ≤500，各批独立幂等 requestId）；某批失败即中止并提示已成功批数
+    async confirmBulkOperation() {
+      const ids = this.bulkAssetIds
+      const type = this.bulkDialogType
+      const businessNo = this.bulkBusinessNo.trim()
+      if (!ids.length || !businessNo) return
+      this.bulkSubmitting = true
+      const CHUNK_SIZE = 500
+      const callApi = (chunkIds) => new Promise((resolve) => {
+        const requestId = typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+        const apiCall = type === 'STOCK_IN' ? Api.pdcNfc.stockIn : Api.pdcNfc.activate
+        apiCall({ assetIds: chunkIds, businessNo, requestId }, (res) => resolve(res))
+      })
+      let doneBatches = 0
+      const totalBatches = Math.ceil(ids.length / CHUNK_SIZE)
+      let failedMsg = ''
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const res = await callApi(ids.slice(i, i + CHUNK_SIZE))
+        if (res.data && res.data.code === 0) {
+          doneBatches += 1
+        } else {
+          failedMsg = res.data?.msg || '网络请求失败'
+          break
+        }
+      }
+      this.bulkSubmitting = false
+      const label = type === 'STOCK_IN' ? '入库' : '激活'
+      if (doneBatches === totalBatches) {
+        this.$message.success(`批量${label}成功，共 ${ids.length} 张`)
+        this.bulkDialogVisible = false
+      } else {
+        this.$message.error(`第 ${doneBatches + 1} 批${label}失败（${failedMsg}），已成功 ${doneBatches} 批，请核对后重试剩余资产`)
+      }
+      this.fetchBatches()
     }
   }
 }
@@ -533,5 +675,20 @@ export default {
   color: #909399;
   margin-left: 24px;
   line-height: 1.5;
+}
+
+.bulk-batch {
+  margin: 0 0 8px;
+  color: #606266;
+}
+
+.bulk-count {
+  margin: 0 0 12px;
+  color: #303133;
+  font-weight: 500;
+}
+
+.bulk-business-no {
+  width: 100%;
 }
 </style>

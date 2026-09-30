@@ -62,13 +62,16 @@ class PdcNfcWriteJobDownloadTest {
     private PdcNfcAdminIdempotencyService idempotencyService;
     @Mock
     private PdcNfcManualWriteService manualWriteService;
+    @Mock
+    private xiaozhi.modules.pdc.nfc.service.PdcNfcTrustReleaseService trustReleaseService;
 
     private PdcNfcWriteJobAdminController controller;
 
     @BeforeEach
     void setUp() {
         controller = new PdcNfcWriteJobAdminController(
-                writeJobService, writeResultImporter, idempotencyService, manualWriteService);
+                writeJobService, writeResultImporter, idempotencyService,
+                manualWriteService, trustReleaseService);
     }
 
     // --- helpers ---

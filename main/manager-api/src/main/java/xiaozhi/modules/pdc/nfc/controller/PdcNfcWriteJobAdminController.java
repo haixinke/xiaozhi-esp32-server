@@ -13,11 +13,14 @@ import org.springframework.web.multipart.MultipartFile;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAdminOperationType;
 import xiaozhi.modules.pdc.nfc.dto.PdcNfcManualMarkDTO;
+import xiaozhi.modules.pdc.nfc.dto.PdcNfcTrustReleaseDTO;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcAdminIdempotencyService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcManualWriteService;
+import xiaozhi.modules.pdc.nfc.service.PdcNfcTrustReleaseService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteJobService;
 import xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImporter;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcManualAssetVO;
+import xiaozhi.modules.pdc.nfc.vo.PdcNfcTrustReleaseVO;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteFile;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteImportVO;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcWriteJobVO;
@@ -48,6 +51,7 @@ public class PdcNfcWriteJobAdminController {
     private final PdcNfcWriteResultImporter writeResultImporter;
     private final PdcNfcAdminIdempotencyService idempotencyService;
     private final PdcNfcManualWriteService manualWriteService;
+    private final PdcNfcTrustReleaseService trustReleaseService;
 
     @PostMapping("/create/{batchId}")
     @Operation(summary = "创建写卡任务")
@@ -114,6 +118,29 @@ public class PdcNfcWriteJobAdminController {
                 () -> writeResultImporter.importResult(jobId, requestId, file, operatorId)
         );
         return new Result<PdcNfcWriteImportVO>().ok(vo);
+    }
+
+    /**
+     * 免检放行（ADR 0005）：工厂未回传结果 CSV 时的退路通道。
+     * 与导入互斥（仅 EXPORTED 任务可用），幂等语义与导入一致。
+     */
+    @PostMapping("/{jobId}/trust-release")
+    @Operation(summary = "免检放行（工厂未回传结果时信任推进）")
+    public Result<PdcNfcTrustReleaseVO> trustRelease(
+            @PathVariable Long jobId,
+            @Validated @RequestBody PdcNfcTrustReleaseDTO dto
+    ) {
+        Long operatorId = SecurityUser.getUserId();
+        String canonicalRequest = jobId + ":" + dto.getRequestId();
+        PdcNfcTrustReleaseVO vo = idempotencyService.execute(
+                PdcNfcAdminOperationType.TRUST_RELEASE,
+                dto.getRequestId(),
+                canonicalRequest,
+                PdcNfcTrustReleaseVO.class,
+                () -> trustReleaseService.trustRelease(
+                        jobId, Boolean.TRUE.equals(dto.getLockConfirmed()), operatorId, dto.getRequestId())
+        );
+        return new Result<PdcNfcTrustReleaseVO>().ok(vo);
     }
 
     // --- 手动写卡模式（ADR 0003）：仅 mode=MANUAL 的任务可用，与 CSV 通道互斥 ---

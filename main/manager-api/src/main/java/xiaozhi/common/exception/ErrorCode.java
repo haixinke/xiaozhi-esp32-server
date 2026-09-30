@@ -356,4 +356,5 @@ public interface ErrorCode {
     int PDC_NFC_JOB_MODE_MISMATCH = 10525; // 操作与写卡任务模式不符（工厂CSV/手动通道互斥）
     int PDC_NFC_ASSET_NOT_LOCKED = 10526; // 手动模式资产未锁卡，禁止入库
     int PDC_NFC_LOCK_NOT_VERIFIED = 10527; // 手动模式资产锁后未完成触碰复验，禁止入库
+    int PDC_NFC_LOCK_DECLARATION_REQUIRED = 10528; // 免检放行必须确认代工厂已锁卡声明
 }

@@ -20,7 +20,8 @@ public final class PdcNfcWriteJobStateMachine {
         Map.of(
             // CREATED -> COMPLETED：手动模式不经过导出/导入，全部资产验证通过后直接完成（ADR 0003）
             CREATED, Set.of(EXPORTED, COMPLETED, CANCELLED),
-            EXPORTED, Set.of(RESULT_IMPORTED, CANCELLED),
+            // EXPORTED -> COMPLETED：免检放行（ADR 0005，工厂未回传结果 CSV 时跳过导入直接完成）
+            EXPORTED, Set.of(RESULT_IMPORTED, COMPLETED, CANCELLED),
             RESULT_IMPORTED, Set.of(COMPLETED)
         );
 

@@ -17,6 +17,7 @@ import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAdminOperationType;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcBatchStatus;
+import xiaozhi.modules.pdc.nfc.constant.PdcNfcVerifySource;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcAssetDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcBatchDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcOperationLogDao;
@@ -224,10 +225,13 @@ public class PdcNfcInventoryServiceImpl implements PdcNfcInventoryService {
                 throw new RenException(ErrorCode.PDC_NFC_INVALID_STATE);
             }
             assetStateMachine.requireTransition(currentStatus, targetState);
-            // ADR 0003 手动模式入库门禁：verify_source 非空 = 手动模式验证的资产，
+            // ADR 0003 手动模式入库门禁：verify_source 为 TOUCH/MANUAL = 手动模式验证的资产，
             // 发真实用户前必须已锁卡且完成锁后触碰复验；
-            // 工厂模式资产（verify_source 为空）已由结果 CSV 的 is_read_only 硬校验覆盖。
-            if (targetState == IN_STOCK && asset.getVerifySource() != null) {
+            // 工厂模式资产（verify_source 为空）已由结果 CSV 的 is_read_only 硬校验覆盖；
+            // 免检放行资产（FACTORY_TRUST，ADR 0005）以操作员锁卡人工声明为准，入库不再校验。
+            boolean manualVerified = PdcNfcVerifySource.TOUCH.name().equals(asset.getVerifySource())
+                    || PdcNfcVerifySource.MANUAL.name().equals(asset.getVerifySource());
+            if (targetState == IN_STOCK && manualVerified) {
                 if (asset.getLockedAt() == null) {
                     throw new RenException(ErrorCode.PDC_NFC_ASSET_NOT_LOCKED);
                 }

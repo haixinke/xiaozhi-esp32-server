@@ -145,6 +145,9 @@ class PdcNfcJobStateMachineTest {
                 PdcNfcWriteJobStatus.EXPORTED, PdcNfcWriteJobStatus.RESULT_IMPORTED)).doesNotThrowAnyException();
         assertThatCode(() -> writeJobStateMachine.requireTransition(
                 PdcNfcWriteJobStatus.EXPORTED, PdcNfcWriteJobStatus.CANCELLED)).doesNotThrowAnyException();
+        // ADR 0005：免检放行跳过导入，EXPORTED 直达 COMPLETED
+        assertThatCode(() -> writeJobStateMachine.requireTransition(
+                PdcNfcWriteJobStatus.EXPORTED, PdcNfcWriteJobStatus.COMPLETED)).doesNotThrowAnyException();
         assertThatCode(() -> writeJobStateMachine.requireTransition(
                 PdcNfcWriteJobStatus.RESULT_IMPORTED, PdcNfcWriteJobStatus.COMPLETED)).doesNotThrowAnyException();
     }
@@ -165,7 +168,7 @@ class PdcNfcJobStateMachineTest {
                 PdcNfcWriteJobStatus.CREATED, PdcNfcWriteJobStatus.RESULT_IMPORTED))
                 .isInstanceOf(RenException.class);
         assertThatThrownBy(() -> writeJobStateMachine.requireTransition(
-                PdcNfcWriteJobStatus.EXPORTED, PdcNfcWriteJobStatus.COMPLETED))
+                PdcNfcWriteJobStatus.RESULT_IMPORTED, PdcNfcWriteJobStatus.EXPORTED))
                 .isInstanceOf(RenException.class);
     }
 

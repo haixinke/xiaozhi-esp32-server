@@ -8,5 +8,6 @@ public enum PdcNfcAdminOperationType {
     STOCK_IN,
     ACTIVATE,
     DISABLE,
-    SCRAP
+    SCRAP,
+    TRUST_RELEASE
 }

@@ -216,6 +216,23 @@ class PdcNfcInventoryServiceTest {
     }
 
     @Test
+    @DisplayName("stockIn: 免检放行资产（FACTORY_TRUST）不受锁卡门禁影响")
+    void stockInTrustReleasedAssetBypassesLockGate() {
+        // ADR 0005：免检放行以操作员锁卡人工声明为准，入库不再校验 lockedAt/lockVerifiedAt
+        PdcNfcAssetEntity asset = createAsset(1L, "A001", "VERIFIED");
+        asset.setVerifySource("FACTORY_TRUST");
+
+        stubIdempotencyFirstCall();
+        when(assetDao.selectByIdsForUpdate(any())).thenReturn(List.of(asset));
+
+        PdcNfcBulkAssetOperationDTO request = createRequest(
+                List.of(1L), "BN001", UUID.randomUUID());
+        PdcNfcBulkOperationVO result = inventoryService.stockIn(request, 100L);
+
+        assertThat(result.successCount()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("activate: IN_STOCK 资产激活成功")
     void activateSuccess() {
         PdcNfcAssetEntity asset1 = createAsset(1L, "A001", "IN_STOCK");

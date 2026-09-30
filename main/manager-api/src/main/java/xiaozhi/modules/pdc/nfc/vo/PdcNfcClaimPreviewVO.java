@@ -7,7 +7,7 @@ package xiaozhi.modules.pdc.nfc.vo;
  *
  * @param productName 商品类型名称
  * @param prototype   原型标识
- * @param claimStatus 领取状态（CLAIMABLE / CLAIMED_BY_SELF / CLAIMED_BY_OTHER / ALREADY_OWNED / UNAVAILABLE）
+ * @param claimStatus 领取状态（CLAIMABLE / CLAIMED_BY_SELF / CLAIMED_BY_OTHER / ALREADY_OWNED / NOT_ACTIVATED / UNAVAILABLE）
  * @param pet         已绑定的宠物信息（已领取时返回）
  */
 public record PdcNfcClaimPreviewVO(
@@ -21,5 +21,7 @@ public record PdcNfcClaimPreviewVO(
     public static final String STATUS_CLAIMED_BY_OTHER = "CLAIMED_BY_OTHER";
     /** 一人一宠约束：用户已领养过蛋宝宝，不可再领取 */
     public static final String STATUS_ALREADY_OWNED = "ALREADY_OWNED";
+    /** 卡已入库未激活：量产收货与放行之间的状态，给用户可解释的提示而非通用不可用 */
+    public static final String STATUS_NOT_ACTIVATED = "NOT_ACTIVATED";
     public static final String STATUS_UNAVAILABLE = "UNAVAILABLE";
 }

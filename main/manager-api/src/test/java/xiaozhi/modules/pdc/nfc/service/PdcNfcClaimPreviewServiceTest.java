@@ -399,6 +399,35 @@ class PdcNfcClaimPreviewServiceTest {
     }
 
     @Test
+    void inStockAssetReturnsNotActivated() {
+        // 卡已入库未激活：量产收货与放行之间被真实用户碰到，返回专属状态而非通用 UNAVAILABLE
+        setupAllGatesEnabled();
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setBatchId(10L);
+        asset.setPrototype("jade_rabbit");
+        asset.setStatus("IN_STOCK");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
+        batch.setId(10L);
+        batch.setProductTypeId(100L);
+        when(batchDao.selectById(10L)).thenReturn(batch);
+
+        PdcNfcProductTypeEntity productType = new PdcNfcProductTypeEntity();
+        productType.setTypeName("翡翠玉兔");
+        when(productTypeDao.selectById(100L)).thenReturn(productType);
+
+        PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_NOT_ACTIVATED);
+        assertThat(result.productName()).isEqualTo("翡翠玉兔");
+        assertThat(result.pet()).isNull();
+    }
+
+    @Test
     void scrappedAssetReturnsUnavailable() {
         setupAllGatesEnabled();
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));

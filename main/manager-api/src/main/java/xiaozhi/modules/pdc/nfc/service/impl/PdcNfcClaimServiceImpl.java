@@ -182,6 +182,16 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             }
         }
 
+        // 卡已入库未激活：量产收货与放行之间被真实用户碰到，返回专属状态供前端提示
+        if (PdcNfcAssetStatus.IN_STOCK.name().equals(status)) {
+            String productName = resolveProductName(asset.getBatchId());
+            return new PdcNfcClaimPreviewVO(
+                    productName,
+                    asset.getPrototype(),
+                    PdcNfcClaimPreviewVO.STATUS_NOT_ACTIVATED,
+                    null);
+        }
+
         // All other states → UNAVAILABLE
         log.debug("[NFC-CLAIM] Asset status {} is not claimable, assetId={}", status, asset.getId());
         return unavailable();

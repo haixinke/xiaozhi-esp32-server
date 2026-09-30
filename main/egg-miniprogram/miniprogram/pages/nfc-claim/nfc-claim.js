@@ -5,7 +5,7 @@ const { getPendingNfcClaimIntent, clearPendingNfcClaimIntent } = require('../../
 const petStore = require('../../utils/pet-store');
 
 // States: BOOTSTRAPPING, NEED_PHONE, LOADING_PREVIEW, READY, SUBMITTING,
-//         SUCCESS, CLAIMED_BY_OTHER, ALREADY_OWNED, UNAVAILABLE, NETWORK_ERROR
+//         SUCCESS, CLAIMED_BY_OTHER, ALREADY_OWNED, NOT_ACTIVATED, UNAVAILABLE, NETWORK_ERROR
 // 注：CLAIMED_BY_SELF 不再是页面态——蛋已归本用户时跳过中间页，直接回首页
 const STATES = {
   BOOTSTRAPPING: 'BOOTSTRAPPING',
@@ -16,6 +16,7 @@ const STATES = {
   SUCCESS: 'SUCCESS',
   CLAIMED_BY_OTHER: 'CLAIMED_BY_OTHER',
   ALREADY_OWNED: 'ALREADY_OWNED',
+  NOT_ACTIVATED: 'NOT_ACTIVATED',
   UNAVAILABLE: 'UNAVAILABLE',
   NETWORK_ERROR: 'NETWORK_ERROR'
 };
@@ -128,6 +129,9 @@ Page({
     } else if (status === 'ALREADY_OWNED') {
       // 一人一宠：用户已领养过，preview 直接给出专属面板，不再展示领取按钮
       this.setData({ ...data, state: STATES.ALREADY_OWNED });
+    } else if (status === 'NOT_ACTIVATED') {
+      // 卡已入库未激活：量产收货与放行之间被碰到，给出可解释提示
+      this.setData({ ...data, state: STATES.NOT_ACTIVATED });
     } else {
       this.setData({ ...data, state: STATES.UNAVAILABLE, statusLabel: STATUS_LABELS.UNAVAILABLE });
     }

@@ -50,6 +50,14 @@
     <button class="secondary-button" bindtap="onGoHome">回到首页</button>
   </view>
 
+  <!-- NOT_ACTIVATED：卡已入库未激活（量产收货与放行之间） -->
+  <view wx:elif="{{state === 'NOT_ACTIVATED'}}" class="center-panel">
+    <view class="icon-circle"><text class="icon-emoji">🥚</text></view>
+    <text class="panel-title">卡片尚未激活</text>
+    <text class="panel-desc">这只蛋宝宝还在路上，敬请期待。</text>
+    <button class="secondary-button" bindtap="onGoHome">回到首页</button>
+  </view>
+
   <!-- UNAVAILABLE -->
   <view wx:elif="{{state === 'UNAVAILABLE'}}" class="center-panel">
     <view class="icon-circle"><text class="icon-emoji">⚠️</text></view>

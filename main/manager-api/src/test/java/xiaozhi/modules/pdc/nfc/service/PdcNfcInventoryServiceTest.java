@@ -22,6 +22,7 @@ import xiaozhi.modules.pdc.nfc.dao.PdcNfcAdminRequestDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcAssetDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcBatchDao;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcOperationLogDao;
+import xiaozhi.modules.pdc.nfc.dto.PdcNfcAssetQueryDTO;
 import xiaozhi.modules.pdc.nfc.dto.PdcNfcBulkAssetOperationDTO;
 import xiaozhi.modules.pdc.nfc.dto.PdcNfcOperationLogQueryDTO;
 import xiaozhi.modules.pdc.nfc.entity.PdcNfcAdminRequestEntity;
@@ -450,6 +451,55 @@ class PdcNfcInventoryServiceTest {
                 createRequest(List.of(1L), "BN010", UUID.randomUUID()), 100L);
 
         verify(batchDao, never()).updateById(any(PdcNfcBatchEntity.class));
+    }
+
+    @Test
+    @DisplayName("queryAssets: 按批次号精确查询，命中批次后按 batchId 等值过滤")
+    void queryAssetsByBatchNoExactMatch() {
+        // Arrange
+        PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
+        batch.setId(7L);
+        batch.setBatchNo("B20261001-01");
+        when(batchDao.selectOne(any())).thenReturn(batch);
+        when(batchDao.selectById(7L)).thenReturn(batch);
+
+        PdcNfcAssetEntity asset = createAsset(1L, "A001", "IN_STOCK");
+        asset.setBatchId(7L);
+        Page<PdcNfcAssetEntity> page = new Page<>(1, 20);
+        page.setRecords(List.of(asset));
+        page.setTotal(1);
+        when(assetDao.selectPage(any(), any())).thenReturn(page);
+
+        PdcNfcAssetQueryDTO query = new PdcNfcAssetQueryDTO();
+        query.setBatchNo("B20261001-01");
+
+        // Act
+        PageData<xiaozhi.modules.pdc.nfc.vo.PdcNfcAssetVO> result = inventoryService.queryAssets(query);
+
+        // Assert
+        assertThat(result.getTotal()).isEqualTo(1);
+        assertThat(result.getList().get(0).batchNo()).isEqualTo("B20261001-01");
+        // 批次号经 selectOne 解析为批次后再查资产（wrapper 参数懒渲染，单测无法直接断言 SQL 段，以行为断言覆盖）
+        verify(batchDao).selectOne(any());
+        verify(assetDao).selectPage(any(), any());
+    }
+
+    @Test
+    @DisplayName("queryAssets: 批次号不存在时返回空页且不查资产表")
+    void queryAssetsByBatchNoNotFound() {
+        // Arrange
+        when(batchDao.selectOne(any())).thenReturn(null);
+
+        PdcNfcAssetQueryDTO query = new PdcNfcAssetQueryDTO();
+        query.setBatchNo("NOT-EXIST");
+
+        // Act
+        PageData<xiaozhi.modules.pdc.nfc.vo.PdcNfcAssetVO> result = inventoryService.queryAssets(query);
+
+        // Assert
+        assertThat(result.getTotal()).isEqualTo(0);
+        assertThat(result.getList()).isEmpty();
+        verify(assetDao, never()).selectPage(any(), any());
     }
 
     @Test

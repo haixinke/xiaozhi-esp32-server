@@ -26,8 +26,8 @@
                 @keyup.enter.native="handleSearch"
               />
               <el-input
-                v-model="filters.batchId"
-                placeholder="批次 ID"
+                v-model="filters.batchNo"
+                placeholder="批次号"
                 clearable
                 class="filter-item"
                 @keyup.enter.native="handleSearch"
@@ -200,7 +200,7 @@ export default {
       filters: {
         assetNo: '',
         wechatSn: '',
-        batchId: '',
+        batchNo: '',
         status: '',
         skuCode: '',
         prototype: '',
@@ -269,7 +269,7 @@ export default {
       const f = this.activeFilters
       if (f.assetNo) params.assetNo = f.assetNo
       if (f.wechatSn) params.wechatSn = f.wechatSn
-      if (f.batchId) params.batchId = f.batchId
+      if (f.batchNo) params.batchNo = f.batchNo
       if (f.status) params.status = f.status
       if (f.skuCode) params.skuCode = f.skuCode
       if (f.prototype) params.prototype = f.prototype
@@ -303,7 +303,7 @@ export default {
       this.filters = {
         assetNo: '',
         wechatSn: '',
-        batchId: '',
+        batchNo: '',
         status: '',
         skuCode: '',
         prototype: '',

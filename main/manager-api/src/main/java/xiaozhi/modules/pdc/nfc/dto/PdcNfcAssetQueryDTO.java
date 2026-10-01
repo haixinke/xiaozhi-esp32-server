@@ -17,6 +17,9 @@ public class PdcNfcAssetQueryDTO {
     /** 批次 ID */
     private Long batchId;
 
+    /** 批次号（精确匹配；与 batchId 二选一，资产管理页筛选用） */
+    private String batchNo;
+
     /** 资产状态（CREATED / SCHEME_GENERATED / WRITTEN / VERIFIED / IN_STOCK / ACTIVE / CLAIMED / DISABLED / SCRAPPED） */
     private String status;
 

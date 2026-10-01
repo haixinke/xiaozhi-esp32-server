@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.PageData;
@@ -382,6 +383,17 @@ public class PdcNfcInventoryServiceImpl implements PdcNfcInventoryService {
         }
         if (query.getBatchId() != null) {
             wrapper.eq(PdcNfcAssetEntity::getBatchId, query.getBatchId());
+        }
+        // 批次号精确匹配：batch_no 全局唯一（uk_pdc_nfc_batch_no），先解析批次 id 再等值过滤资产；
+        // 批次号不存在时直接返回空页，不查资产表
+        if (StringUtils.hasText(query.getBatchNo())) {
+            PdcNfcBatchEntity batch = batchDao.selectOne(
+                    new LambdaQueryWrapper<PdcNfcBatchEntity>()
+                            .eq(PdcNfcBatchEntity::getBatchNo, query.getBatchNo()));
+            if (batch == null) {
+                return new PageData<>(Collections.emptyList(), 0);
+            }
+            wrapper.eq(PdcNfcAssetEntity::getBatchId, batch.getId());
         }
         if (query.getStatus() != null) {
             wrapper.eq(PdcNfcAssetEntity::getStatus, query.getStatus());

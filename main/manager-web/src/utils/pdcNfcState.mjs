@@ -102,7 +102,8 @@ export function statusLabel(status) {
 
 /**
  * 操作类型 -> 中文文案映射（模块级常量，label 函数与下拉选项共用，避免两处漂移）。
- * 取值来源两类：PdcNfcAdminOperationType 后台管理操作 +
+ * 取值来源两类：PdcNfcAdminOperationType 后台管理操作（含 ADR 0005 免检放行
+ * TRUST_RELEASE，由 PdcNfcTrustReleaseServiceImpl 写入操作日志）+
  * 手动写卡链路的审计动作（PdcNfcManualWriteServiceImpl.logOperation：
  * SCHEME_REVEAL / PdcNfcManualMarkAction 各值 / TOUCH_VERIFY）。
  */
@@ -113,6 +114,8 @@ const OPERATION_TYPE_LABELS = {
   'IMPORT_RESULT': '写卡结果导入',
   'EXPORT': '导出写卡文件',
   'RELEASE_EVIDENCE': '登记发布证据',
+  // 免检放行（ADR 0005）：工厂 CSV 模式下抽检 + 锁卡人工声明替代结果文件证据
+  'TRUST_RELEASE': '免检放行',
   'STOCK_IN': '入库',
   'ACTIVATE': '激活',
   'DISABLE': '禁用',

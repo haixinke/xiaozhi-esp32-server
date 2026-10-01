@@ -168,9 +168,13 @@ describe('operationTypeLabel', () => {
     assert.equal(operationTypeLabel('RELEASE_EVIDENCE'), '登记发布证据')
   })
 
+  it('maps trust release (ADR 0005) to Chinese label', () => {
+    assert.equal(operationTypeLabel('TRUST_RELEASE'), '免检放行')
+  })
+
   it('operationTypeOptions returns value/label pairs covering every mapped type', () => {
     const options = operationTypeOptions()
-    assert.ok(options.length >= 13)
+    assert.ok(options.length >= 14)
     // 下拉选项 label 不得重名，否则操作员无法区分
     const labels = options.map(o => o.label)
     assert.equal(new Set(labels).size, labels.length)

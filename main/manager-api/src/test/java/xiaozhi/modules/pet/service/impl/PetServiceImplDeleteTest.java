@@ -154,4 +154,51 @@ class PetServiceImplDeleteTest {
         assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
         assertThat(result).hasSize(1);
     }
+
+    /** 构造一只已删除宠物（deletedAt>0），归属当前用户 */
+    private PetEntity deletedPet() {
+        PetEntity pet = alivePet();
+        pet.setDeletedAt(System.currentTimeMillis());
+        return pet;
+    }
+
+    @Test
+    @DisplayName("getById - 已删除宠物按 PET_NOT_FOUND 处理")
+    void getById_deletedPet_throwsPetNotFound() {
+        when(petDao.selectById(PET_ID)).thenReturn(deletedPet());
+
+        assertThatThrownBy(() -> service.getById(USER_ID, PET_ID))
+                .isInstanceOfSatisfying(RenException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.PET_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("updatePet - 已删除宠物按 PET_NOT_FOUND 处理")
+    void updatePet_deletedPet_throwsPetNotFound() {
+        when(petDao.selectById(PET_ID)).thenReturn(deletedPet());
+
+        assertThatThrownBy(() -> service.updatePet(USER_ID, PET_ID, "新昵称"))
+                .isInstanceOfSatisfying(RenException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.PET_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("changeScene - 已删除宠物按 PET_NOT_FOUND 处理")
+    void changeScene_deletedPet_throwsPetNotFound() {
+        when(petDao.selectById(PET_ID)).thenReturn(deletedPet());
+
+        assertThatThrownBy(() -> service.changeScene(USER_ID, PET_ID))
+                .isInstanceOfSatisfying(RenException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.PET_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("hatch - 已删除宠物按 PET_NOT_FOUND 处理")
+    void hatch_deletedPet_throwsPetNotFound() {
+        when(petDao.selectById(PET_ID)).thenReturn(deletedPet());
+
+        assertThatThrownBy(() -> service.hatch(USER_ID, PET_ID))
+                .isInstanceOfSatisfying(RenException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.PET_NOT_FOUND));
+    }
 }

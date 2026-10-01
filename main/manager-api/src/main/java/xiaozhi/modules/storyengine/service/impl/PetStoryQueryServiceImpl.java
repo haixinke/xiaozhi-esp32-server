@@ -92,10 +92,10 @@ public class PetStoryQueryServiceImpl implements PetStoryQueryService {
         return new PageData<>(records, result.getTotal());
     }
 
-    /** 校验宠物存在且归属当前用户，否则抛出对应业务异常 */
+    /** 校验宠物存在且归属当前用户，否则抛出对应业务异常（已删除=不存在） */
     private PetEntity ownedPet(Long userId, String petId) {
         PetEntity pet = petDao.selectById(petId);
-        if (pet == null) {
+        if (pet == null || pet.isDeleted()) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         if (userId == null || !userId.equals(pet.getUserId())) {

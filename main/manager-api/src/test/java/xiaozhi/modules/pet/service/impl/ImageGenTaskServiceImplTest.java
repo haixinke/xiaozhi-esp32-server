@@ -14,6 +14,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 
 import xiaozhi.common.config.AliyunOssProperties;
@@ -233,5 +234,20 @@ class ImageGenTaskServiceImplTest {
         task.setPetId("pet-1");
         task.setStatus(status);
         return task;
+    }
+
+    @Test
+    @DisplayName("createTask - 宠物查询过滤已删除宠物（仅 deleted_at=0 可生图）")
+    void createTask_petQueryFiltersDeletedPets() {
+        when(petDao.selectOne(any())).thenReturn(null);
+
+        assertThatThrownBy(() -> service.createTask(USER_ID, PHOTO_URL))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.PET_NOT_FOUND);
+
+        ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(petDao).selectOne(captor.capture());
+        assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
     }
 }

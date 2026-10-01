@@ -110,7 +110,7 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         }
 
         PetEntity pet = petDao.selectOne(
-                new QueryWrapper<PetEntity>().eq("user_id", userId).last("limit 1"));
+                new QueryWrapper<PetEntity>().eq("user_id", userId).eq("deleted_at", 0).last("limit 1"));
         if (pet == null) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }

@@ -15,6 +15,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DuplicateKeyException;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
@@ -357,5 +359,20 @@ class PetServiceImplAdoptTest {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IllegalStateException("无法设置 quickHatchCode 字段", e);
         }
+    }
+
+    @Test
+    @DisplayName("adopt - 名额检查过滤已删除宠物（仅 deleted_at=0 占位）")
+    void adopt_existCheckFiltersDeletedPets() {
+        when(petDao.exists(any(QueryWrapper.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> petService.adopt(1001L, new PetAdoptDTO()))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
+
+        ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(petDao).exists(captor.capture());
+        assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
     }
 }

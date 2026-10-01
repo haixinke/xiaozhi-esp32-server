@@ -53,7 +53,8 @@ public class HatchActionServiceImpl implements HatchActionService {
         }
 
         PetEntity pet = petDao.selectById(petId);
-        if (pet == null) {
+        // 统一语义「已删除=不存在」
+        if (pet == null || pet.isDeleted()) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         if (!userId.equals(pet.getUserId())) {
@@ -142,7 +143,8 @@ public class HatchActionServiceImpl implements HatchActionService {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
         PetEntity pet = petDao.selectById(petId);
-        if (pet == null) {
+        // 统一语义「已删除=不存在」
+        if (pet == null || pet.isDeleted()) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         if (!userId.equals(pet.getUserId())) {

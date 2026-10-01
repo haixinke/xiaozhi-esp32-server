@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -13,6 +14,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DuplicateKeyException;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
@@ -137,5 +140,37 @@ class PetServiceImplBirthTest {
         device.setId(DEVICE_ID);
         device.setUserId(USER_ID);
         return device;
+    }
+
+    @Test
+    @DisplayName("birth - 账号名额检查过滤已删除宠物（删除后设备可重新出生）")
+    void birth_accountExistCheckFiltersDeletedPets() {
+        when(deviceDao.selectById(DEVICE_ID)).thenReturn(boundDevice());
+        when(petDao.selectOne(any())).thenReturn(null);
+        when(petDao.exists(any(QueryWrapper.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> petService.birth(DEVICE_ID))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
+
+        ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(petDao).exists(captor.capture());
+        assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
+    }
+
+    @Test
+    @DisplayName("birth - 设备级宠物查询过滤已删除（孤儿设备走新建而非改写已删除行）")
+    void birth_devicePetQueryFiltersDeletedPets() {
+        when(deviceDao.selectById(DEVICE_ID)).thenReturn(boundDevice());
+        when(petDao.selectOne(any())).thenReturn(null);
+        when(petDao.exists(any(QueryWrapper.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> petService.birth(DEVICE_ID))
+                .isInstanceOf(RenException.class);
+
+        ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(petDao).selectOne(captor.capture());
+        assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
     }
 }

@@ -310,6 +310,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         requireCreatableEggInput(userId, prototype);
         QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
         existWrapper.eq("user_id", userId);
+        // 逻辑删除的宠物不占领养名额：删除后可再领养
+        existWrapper.eq("deleted_at", 0);
         if (petDao.exists(existWrapper)) {
             throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
         }
@@ -334,6 +336,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
         QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
         existWrapper.eq("user_id", userId);
+        // 逻辑删除的宠物不占领养名额：删除后可再领养
+        existWrapper.eq("deleted_at", 0);
         if (petDao.exists(existWrapper)) {
             throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
         }
@@ -414,12 +418,16 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
 
         // 2. 查询该设备是否已有宠物；同设备宠物保留演示更新行为
+        //    过滤已删除：删宠后孤儿设备应走新建分支，而非"演示更新"改写已删除行
         QueryWrapper<PetEntity> deviceWrapper = new QueryWrapper<>();
         deviceWrapper.eq("device_id", deviceId);
+        deviceWrapper.eq("deleted_at", 0);
         PetEntity existingPet = petDao.selectOne(deviceWrapper);
         if (existingPet == null) {
             QueryWrapper<PetEntity> userWrapper = new QueryWrapper<>();
             userWrapper.eq("user_id", device.getUserId());
+            // 逻辑删除的宠物不占领养名额：删除后设备可重新出生
+            userWrapper.eq("deleted_at", 0);
             if (petDao.exists(userWrapper)) {
                 throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
             }
@@ -534,7 +542,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         PetEntity pet = petDao.selectById(petId);
         // 统一语义「已删除=不存在」：不存在、已删除、非本人一律 PET_NOT_FOUND，
         // 不泄露他人宠物的存在性
-        if (pet == null || isDeleted(pet) || !userId.equals(pet.getUserId())) {
+        if (pet == null || pet.isDeleted() || !userId.equals(pet.getUserId())) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         // 逻辑删除：只写删除时间戳，数据行保留（审计与人工恢复用）；关联数据不级联
@@ -543,17 +551,11 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         petDao.updateById(pet);
     }
 
-    /**
-     * 是否已逻辑删除。deleted_at 为 null 视为未删除（防御历史数据/测试桩为空值）。
-     */
-    private boolean isDeleted(PetEntity pet) {
-        return pet.getDeletedAt() != null && pet.getDeletedAt() > 0;
-    }
-
     @Override
     public PetVO updatePet(Long userId, String petId, String nickname) {
         PetEntity pet = petDao.selectById(petId);
-        if (pet == null) {
+        // 统一语义「已删除=不存在」
+        if (pet == null || pet.isDeleted()) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         if (!pet.getUserId().equals(userId)) {
@@ -571,7 +573,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     @Override
     public PetVO getById(Long userId, String petId) {
         PetEntity pet = petDao.selectById(petId);
-        if (pet == null) {
+        // 统一语义「已删除=不存在」
+        if (pet == null || pet.isDeleted()) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         if (!userId.equals(pet.getUserId())) {
@@ -588,7 +591,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
         PetEntity pet = petDao.selectById(petId);
-        if (pet == null) {
+        // 统一语义「已删除=不存在」
+        if (pet == null || pet.isDeleted()) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         if (!userId.equals(pet.getUserId())) {
@@ -619,7 +623,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
 
         PetEntity pet = petDao.selectByIdForUpdate(petId);
-        if (pet == null) {
+        // 统一语义「已删除=不存在」
+        if (pet == null || pet.isDeleted()) {
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         if (!userId.equals(pet.getUserId())) {
@@ -919,7 +924,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
         try {
             PetEntity pet = petDao.selectOne(
-                    new QueryWrapper<PetEntity>().eq("device_id", deviceId).last("limit 1"));
+                    new QueryWrapper<PetEntity>().eq("device_id", deviceId).eq("deleted_at", 0).last("limit 1"));
             if (pet == null) {
                 return ctx;
             }

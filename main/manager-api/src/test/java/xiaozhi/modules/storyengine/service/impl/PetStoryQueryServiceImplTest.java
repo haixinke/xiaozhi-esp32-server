@@ -397,4 +397,19 @@ class PetStoryQueryServiceImplTest {
     private static Date date(String instant) {
         return Date.from(Instant.parse(instant));
     }
+
+    @Test
+    void getCurrent_deletedPet_throwsPetNotFound() {
+        // 已删除宠物按「已删除=不存在」拒绝，归属校验之前
+        PetEntity pet = new PetEntity();
+        pet.setId("pet-1");
+        pet.setUserId(1001L);
+        pet.setDeletedAt(System.currentTimeMillis());
+        when(petDao.selectById("pet-1")).thenReturn(pet);
+
+        assertThatThrownBy(() -> service.getCurrent(1001L, "pet-1"))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.PET_NOT_FOUND));
+    }
 }

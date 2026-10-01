@@ -333,4 +333,36 @@ class HatchActionServiceImplTest {
     private HatchActionType unused() {
         return HatchActionType.NICKNAME;
     }
+
+    @Test
+    @DisplayName("recordHatchAction - 已删除宠物按 PET_NOT_FOUND 拒绝")
+    void recordHatchAction_deletedPet_throwsPetNotFound() {
+        PetEntity pet = new PetEntity();
+        pet.setId("pet-1");
+        pet.setUserId(1001L);
+        pet.setHatchStatus("EGG");
+        pet.setDeletedAt(System.currentTimeMillis());
+        when(petDao.selectById("pet-1")).thenReturn(pet);
+
+        assertThatThrownBy(() -> service.recordHatchAction(1001L, "pet-1", new HatchActionDTO()))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.PET_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("listByPetId - 已删除宠物按 PET_NOT_FOUND 拒绝")
+    void listByPetId_deletedPet_throwsPetNotFound() {
+        PetEntity pet = new PetEntity();
+        pet.setId("pet-1");
+        pet.setUserId(1001L);
+        pet.setHatchStatus("EGG");
+        pet.setDeletedAt(System.currentTimeMillis());
+        when(petDao.selectById("pet-1")).thenReturn(pet);
+
+        assertThatThrownBy(() -> service.listByPetId(1001L, "pet-1"))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.PET_NOT_FOUND));
+    }
 }

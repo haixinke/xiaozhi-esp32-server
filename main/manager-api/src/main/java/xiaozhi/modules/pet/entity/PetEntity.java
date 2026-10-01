@@ -109,4 +109,11 @@ public class PetEntity {
     @Schema(description = "创建时间")
     @TableField(fill = FieldFill.INSERT)
     private Date createDate;
+
+    /**
+     * 是否已逻辑删除（已删除=不存在）。deleted_at 为 null 视为未删除（防御历史数据/测试桩为空值）。
+     */
+    public boolean isDeleted() {
+        return deletedAt != null && deletedAt > 0;
+    }
 }

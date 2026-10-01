@@ -4,10 +4,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.entity.PetEntity;
@@ -144,5 +147,18 @@ class PetServiceImplStoryContextTest {
 
         assertThat(ctx).isEmpty();
         verify(petStoryQueryService, never()).getCurrentByPrototype(anyString());
+    }
+
+    @Test
+    @DisplayName("实时上下文查询过滤已删除宠物（deleted_at=0），已删除返回空上下文")
+    void context_queryFiltersDeletedPets() {
+        when(petDao.selectOne(any())).thenReturn(null);
+
+        Map<String, String> ctx = petService.buildRealtimeContext(DEVICE_ID);
+
+        assertThat(ctx).isEmpty();
+        ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(petDao).selectOne(captor.capture());
+        assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
     }
 }

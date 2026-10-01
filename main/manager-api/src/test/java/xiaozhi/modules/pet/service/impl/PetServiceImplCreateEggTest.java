@@ -12,6 +12,8 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.context.MessageSource;
 
 import xiaozhi.common.exception.RenException;
@@ -243,5 +245,18 @@ class PetServiceImplCreateEggTest {
         properties.setRabbit(rabbit);
 
         return properties;
+    }
+
+    @Test
+    @DisplayName("createEgg - 名额检查过滤已删除宠物（NFC claim 路径共用此检查）")
+    void createEgg_existCheckFiltersDeletedPets() {
+        when(petDao.exists(any(QueryWrapper.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> petService.createEgg(1001L, "锦鲤"))
+                .isInstanceOf(RenException.class);
+
+        ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(petDao).exists(captor.capture());
+        assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
     }
 }

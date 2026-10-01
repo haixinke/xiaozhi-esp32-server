@@ -91,6 +91,9 @@ public class PetEntity {
     @Schema(description = "今日心情一句话")
     private String todayMoodSentence;
 
+    @Schema(description = "逻辑删除时间戳(epoch毫秒): 0=未删除, >0=已删除(已删除=不存在)")
+    private Long deletedAt;
+
     @Schema(description = "更新者")
     @TableField(fill = FieldFill.UPDATE)
     private Long updater;

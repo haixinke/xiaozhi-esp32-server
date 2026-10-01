@@ -518,12 +518,36 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     public List<PetVO> listByUserId(Long userId) {
         QueryWrapper<PetEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId);
+        // 逻辑删除过滤：已删除=不存在，小程序列表只展示未删除宠物
+        wrapper.eq("deleted_at", 0);
         wrapper.orderByDesc("create_date");
         List<PetEntity> pets = petDao.selectList(wrapper);
         return pets.stream()
                 .peek(this::refreshTodayMood)
                 .map(this::toVO)
                 .toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteByUserId(Long userId, String petId) {
+        PetEntity pet = petDao.selectById(petId);
+        // 统一语义「已删除=不存在」：不存在、已删除、非本人一律 PET_NOT_FOUND，
+        // 不泄露他人宠物的存在性
+        if (pet == null || isDeleted(pet) || !userId.equals(pet.getUserId())) {
+            throw new RenException(ErrorCode.PET_NOT_FOUND);
+        }
+        // 逻辑删除：只写删除时间戳，数据行保留（审计与人工恢复用）；关联数据不级联
+        pet.setDeletedAt(System.currentTimeMillis());
+        pet.setUpdater(userId);
+        petDao.updateById(pet);
+    }
+
+    /**
+     * 是否已逻辑删除。deleted_at 为 null 视为未删除（防御历史数据/测试桩为空值）。
+     */
+    private boolean isDeleted(PetEntity pet) {
+        return pet.getDeletedAt() != null && pet.getDeletedAt() > 0;
     }
 
     @Override

@@ -75,6 +75,13 @@ public interface PetService extends BaseService<PetEntity> {
     PetVO updatePet(Long userId, String petId, String nickname);
 
     /**
+     * 逻辑删除宠物：仅打 deleted_at 时间戳标记，数据行保留。
+     * 统一语义「已删除=不存在」：宠物不存在、已删除、非本人三种情况
+     * 一律抛 PET_NOT_FOUND，不泄露他人宠物的存在性。任意孵化状态可删。
+     */
+    void deleteByUserId(Long userId, String petId);
+
+    /**
      * 将宠物实体转为视图对象。
      */
     PetVO toVO(PetEntity pet);

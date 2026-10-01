@@ -85,6 +85,15 @@ public class PetController {
         return new Result<List<PetVO>>().ok(pets);
     }
 
+    @DeleteMapping("/{id}")
+    @Operation(summary = "删除宠物(逻辑删除，数据保留)")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Void> delete(@PathVariable String id) {
+        Long userId = SecurityUser.getUserId();
+        petService.deleteByUserId(userId, id);
+        return new Result<Void>().ok(null);
+    }
+
     @PutMapping("/update")
     @Operation(summary = "编辑宠物信息")
     @RequiresPermissions("sys:role:normal")

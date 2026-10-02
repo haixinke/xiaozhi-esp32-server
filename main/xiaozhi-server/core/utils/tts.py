@@ -41,6 +41,56 @@ def create_instance(class_name, *args, **kwargs):
     raise ValueError(f"不支持的TTS类型: {class_name}，请检查该配置的type是否设置正确")
 
 
+class DialogueAsideFilter:
+    """
+    对话旁白流式过滤器：吞掉定界符包裹的非对白描述（动作/神态/心理），
+    仅供阅读不入语音。状态跨 chunk 保持，可处理旁白被流式分片切开的情况。
+    开符后累计超过 MAX_ASIDE_LEN 字仍未闭合时触发安全阀：判定为普通文本，
+    将开符与已吞内容原样吐出并复位，避免单个 stray 开符导致后续回复整体被吞。
+    """
+
+    # 开符 -> 闭符；星号开闭同符
+    # 与 MarkdownCleaner.REGEXES 中三条旁白正则是同一组定界符，增删需双处同步
+    OPEN_TO_CLOSE = {"（": "）", "(": ")", "*": "*"}
+    # 取值依据：正常动作/神态描述极少超过 50 字；阈值过小会误吐长旁白，过大则 stray 开符吞掉过多正常回复
+    MAX_ASIDE_LEN = 50
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        # 当前等待的闭符，None 表示正常（非吞食）状态
+        self._close = None
+        # 吞食期间缓存的内容，安全阀吐出时需要
+        self._pending_open = ""
+        self._buffer = []
+
+    def feed(self, text: str) -> str:
+        out = []
+        for ch in text:
+            if self._close is None:
+                if ch in self.OPEN_TO_CLOSE:
+                    self._close = self.OPEN_TO_CLOSE[ch]
+                    self._pending_open = ch
+                    self._buffer = []
+                else:
+                    out.append(ch)
+            elif ch == self._close:
+                # 闭合：丢弃整段旁白，回到正常状态
+                self._close = None
+                self._buffer = []
+            else:
+                self._buffer.append(ch)
+                if len(self._buffer) > self.MAX_ASIDE_LEN:
+                    # 安全阀：疑似 stray 开符（模型忘了闭合），吞掉比吐出后果更严重——
+                    # 整段回复会无声，故原样吐出已吞内容并复位为正常文本
+                    out.append(self._pending_open)
+                    out.extend(self._buffer)
+                    self._close = None
+                    self._buffer = []
+        return "".join(out)
+
+
 class MarkdownCleaner:
     """
     封装 Markdown 清理逻辑：直接用 MarkdownCleaner.clean_markdown(text) 即可
@@ -106,6 +156,11 @@ class MarkdownCleaner:
     # 这里要把 replace_xxx 的静态方法放在最前定义，以便在列表里能正确引用它们。
     REGEXES = [
         (re.compile(r'```.*?```', re.DOTALL), ''),  # 代码块
+        # 对话旁白（闭合段）：必须先于粗体/斜体规则，否则 *…* 会被斜体规则保留内容
+        # 与 DialogueAsideFilter.OPEN_TO_CLOSE 是同一组定界符，增删需双处同步
+        (re.compile(r'（[^）]*）'), ''),  # 全角括号旁白
+        (re.compile(r'\([^)]*\)'), ''),  # 半角括号旁白
+        (re.compile(r'\*[^*]*\*'), ''),  # 星号旁白
         (re.compile(r'^#+\s*', re.MULTILINE), ''),  # 标题
         (re.compile(r'(\*\*|__)(.*?)\1'), r'\2'),  # 粗体
         (re.compile(r'(\*|_)(?=\S)(.*?)(?<=\S)\1'), r'\2'),  # 斜体

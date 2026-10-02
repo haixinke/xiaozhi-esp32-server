@@ -45,6 +45,7 @@ from config.manage_api_client import DeviceNotFoundException, DeviceBindExceptio
 from core.utils.prompt_manager import PromptManager
 from core.utils.voiceprint_provider import VoiceprintProvider
 from core.utils.util import get_system_error_response
+from core.utils.tts import DialogueAsideFilter
 from core.utils import textUtils
 from core.content_safety import (
     ContentSafetyContext,
@@ -110,6 +111,8 @@ class ConnectionHandler:
         )
 
         self.need_bind = False  # 是否需要绑定设备
+        # 对话旁白流式过滤器：吞掉括号/星号包裹的非对白描述，状态跨 chunk 保持
+        self.dialogue_aside_filter = DialogueAsideFilter()
         self.bind_completed_event = asyncio.Event()
         self.bind_code = None  # 绑定设备的验证码
         self.last_bind_prompt_time = 0  # 上次播放绑定提示的时间戳(秒)
@@ -1088,6 +1091,10 @@ class ConnectionHandler:
             return False
     
     def _enqueue_checked_tts_text(self, sentence_id, text):
+        # 只过滤入 TTS 队列的文本，对话历史与前端显示保留原文
+        text = self.dialogue_aside_filter.feed(text)
+        if not text:
+            return  # 整段被吞（如旁白跨 chunk 未闭合），不入队
         self.tts.tts_text_queue.put(
             TTSMessageDTO(
                 sentence_id=sentence_id,

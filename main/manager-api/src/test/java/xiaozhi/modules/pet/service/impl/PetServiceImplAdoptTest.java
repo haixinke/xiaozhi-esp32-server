@@ -188,6 +188,9 @@ class PetServiceImplAdoptTest {
         long span = saved.getExpectedHatchTime().getTime() - saved.getHatchStartTime().getTime();
         assertThat(span).isEqualTo(sevenDaysMs);
 
+        // 创建来源：邀请码（激活码）领养入口
+        assertThat(saved.getSource()).isEqualTo("INVITE_CODE");
+
         // 邀请码已核销
         verify(inviteService).consume(eq("EGG-ABCD-1"), eq(userId));
 

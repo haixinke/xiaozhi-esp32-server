@@ -88,6 +88,9 @@ public class PetEntity {
     @Schema(description = "今日心情对应日期(跨天重算判断)")
     private LocalDate todayMoodDate;
 
+    @Schema(description = "创建来源: INVITE_CODE-邀请码(激活码)领养, NFC-NFC触碰领取, DEVICE_BIRTH-设备出生")
+    private String source;
+
     @Schema(description = "今日心情一句话")
     private String todayMoodSentence;
 

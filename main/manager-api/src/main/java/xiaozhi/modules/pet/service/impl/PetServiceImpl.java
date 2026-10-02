@@ -302,6 +302,13 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
     private static final String MOOD_ZONE_ID = "Asia/Shanghai";
 
+    /** 宠物创建来源：邀请码(激活码)领养 */
+    private static final String SOURCE_INVITE_CODE = "INVITE_CODE";
+    /** 宠物创建来源：NFC 触碰领取 */
+    private static final String SOURCE_NFC = "NFC";
+    /** 宠物创建来源：设备出生 */
+    private static final String SOURCE_DEVICE_BIRTH = "DEVICE_BIRTH";
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PetVO createEgg(Long userId, String prototype) {
@@ -317,7 +324,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         }
         PetEntity pet;
         try {
-            pet = buildAndInsertEgg(userId, prototype);
+            pet = buildAndInsertEgg(userId, prototype, SOURCE_NFC);
         } catch (DuplicateKeyException e) {
             throw new RenException(ErrorCode.PET_ALREADY_EXISTS, e);
         }
@@ -348,7 +355,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         String prototype = PROTOTYPES.get(ThreadLocalRandom.current().nextInt(PROTOTYPES.size()));
         PetEntity pet;
         try {
-            pet = buildAndInsertEgg(userId, prototype);
+            pet = buildAndInsertEgg(userId, prototype, SOURCE_INVITE_CODE);
         } catch (DuplicateKeyException e) {
             throw new RenException(ErrorCode.PET_ALREADY_EXISTS, e);
         }
@@ -378,13 +385,15 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     /**
      * 纯数据库建蛋：校验 userId 和 prototype，创建 EGG 态 PetEntity 并插入，返回实体。
      * 不发起任何外部调用，不刷新今日心情。加入调用方事务。
+     * source 记录创建来源（邀请码领养 / NFC 领取），由调用方按入口传入。
      */
-    private PetEntity buildAndInsertEgg(Long userId, String prototype) {
+    private PetEntity buildAndInsertEgg(Long userId, String prototype, String source) {
         requireCreatableEggInput(userId, prototype);
         Date now = new Date();
         PetEntity pet = new PetEntity();
         pet.setUserId(userId);
         pet.setPrototype(prototype);
+        pet.setSource(source);
         pet.setHatchStatus(HATCH_STATUS_EGG);
         pet.setHatchStartTime(now);
         pet.setExpectedHatchTime(new Date(now.getTime() + SEVEN_DAYS_MS));
@@ -478,6 +487,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         PetEntity pet = new PetEntity();
         pet.setUserId(device.getUserId());
         pet.setDeviceId(deviceId);
+        pet.setSource(SOURCE_DEVICE_BIRTH);
         pet.setNickname(nickname);
         pet.setBirthDate(birthDate);
         pet.setBazi(calcResult.bazi());

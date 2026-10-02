@@ -97,6 +97,8 @@ class PetServiceImplCreateEggTest {
         assertThat(pet.getValue().getPrototype()).isEqualTo("锦鲤");
         assertThat(pet.getValue().getHatchStatus()).isEqualTo("EGG");
         assertThat(pet.getValue().getDeviceId()).isNull();
+        // 创建来源：createEgg 仅被 NFC 触碰领取链路调用，标记 NFC
+        assertThat(pet.getValue().getSource()).isEqualTo("NFC");
         verifyNoInteractions(llmService, agentService, deviceDao, eventPublisher);
         assertThat(result.getId()).isEqualTo(pet.getValue().getId());
     }

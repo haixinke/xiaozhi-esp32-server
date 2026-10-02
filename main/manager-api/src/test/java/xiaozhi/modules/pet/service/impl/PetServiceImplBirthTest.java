@@ -135,6 +135,21 @@ class PetServiceImplBirthTest {
         verify(petDao, never()).insert(any(PetEntity.class));
     }
 
+    @Test
+    @DisplayName("birth - 设备出生新建宠物 source 标记为 DEVICE_BIRTH")
+    void birth_newPet_setsSourceDeviceBirth() {
+        when(deviceDao.selectById(DEVICE_ID)).thenReturn(boundDevice());
+        when(petDao.selectOne(any())).thenReturn(null);
+        when(petDao.exists(any())).thenReturn(false);
+        when(agentService.createAgent(any())).thenReturn("agent-1");
+
+        petService.birth(DEVICE_ID);
+
+        ArgumentCaptor<PetEntity> captor = ArgumentCaptor.forClass(PetEntity.class);
+        verify(petDao).insert(captor.capture());
+        assertThat(captor.getValue().getSource()).isEqualTo("DEVICE_BIRTH");
+    }
+
     private DeviceEntity boundDevice() {
         DeviceEntity device = new DeviceEntity();
         device.setId(DEVICE_ID);

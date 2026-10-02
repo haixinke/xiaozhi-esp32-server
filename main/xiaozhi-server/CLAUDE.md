@@ -11,9 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **运行服务器**：`python app.py`
 - **安装依赖**：`pip install -r requirements.txt`
 - **运行性能基准测试**：`python performance_tester.py`
-- **浏览器 WebSocket 测试**：启动服务器后，在浏览器中打开 `test/test_page.html`
+- **运行测试**：`venv/bin/python -m pytest tests/`（pytest 未装进 venv 时需先 `pip install pytest`）
 
-本仓库没有 pytest 测试套件或正式的测试运行器。`test/` 目录仅包含前端测试页面。
+`tests/` 下有 pytest 用例（`content_safety/`、`tts/`），无 pytest.ini/conftest.py，从本目录运行即可。注意 `tests/content_safety/test_aliyun_provider.py` 依赖阿里云 SDK，本地未装时 collection 报错，可用 `--ignore=tests/content_safety/test_aliyun_provider.py` 跳过；`test_chat_integration.py` 与 `test_provider_factory.py` 存在既有失败，非新改动引入。
 
 ## 架构
 
@@ -84,7 +84,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `config/` —— 配置加载、日志设置、智控台 API 客户端
 - `plugins_func/functions/` —— 自动发现的工具函数
 - `performance_tester/` —— ASR/LLM/TTS 的独立基准测试脚本
-- `test/` —— 基于浏览器的 WebSocket 测试页面（仅前端）
+- `tests/` —— pytest 用例（`content_safety/` 内容安全、`tts/` 语音文本处理）
 - `models/` —— 本地模型文件（例如 `SenseVoiceSmall`）
 
 ## 依赖与环境

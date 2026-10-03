@@ -25,7 +25,8 @@ function translateZodiac(zodiac) {
 
 function maskUserId(userId) {
   const s = String(userId || '');
-  return s.slice(0, 8);
+  // 展示用户 ID 前 11 位（原为前 8 位，用户反馈偏短）
+  return s.slice(0, 11);
 }
 
 function formatDisplay(profile) {

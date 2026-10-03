@@ -38,7 +38,7 @@
                   data-idx="{{index}}"
                   data-count="{{item.photos.length}}"
                   bindtouchstart="onDeckTouchStart"
-                  catchtouchmove="onDeckTouchMove"
+                  bindtouchmove="onDeckTouchMove"
                   bindtouchend="onDeckTouchEnd">
               <image class="deck-image" src="{{photo.resultUrl}}" mode="aspectFill" lazy-load="{{index > 0}}" />
             </view>

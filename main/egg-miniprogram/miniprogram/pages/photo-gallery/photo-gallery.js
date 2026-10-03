@@ -82,7 +82,7 @@ Page({
     }
   },
 
-  // ---- 卡册手势：左右拨动顶卡，超阈值滑出并循环至册底 ----
+  // ---- 卡册手势：方向锁分发——纵向主导让页面滚动，横向主导拨动顶卡 ----
 
   onDeckTouchStart(e) {
     const { idx, count, date } = e.currentTarget.dataset;
@@ -92,14 +92,24 @@ Page({
       return;
     }
     const touch = e.touches[0];
-    this._drag = { date, startX: touch.clientX, moved: false };
+    // direction: null 未锁定 | 'h' 横向翻卡 | 'v' 纵向放行页面滚动
+    this._drag = { date, startX: touch.clientX, startY: touch.clientY, direction: null, moved: false };
   },
 
   onDeckTouchMove(e) {
     const drag = this._drag;
     if (!drag) return;
-    const dragX = e.touches[0].clientX - drag.startX;
-    if (Math.abs(dragX) > TAP_TOLERANCE) drag.moved = true;
+    const touch = e.touches[0];
+    const dragX = touch.clientX - drag.startX;
+    const dragY = touch.clientY - drag.startY;
+    // 首段位移过容差即锁方向，本次触摸不再切换
+    if (!drag.direction) {
+      if (Math.max(Math.abs(dragX), Math.abs(dragY)) <= TAP_TOLERANCE) return;
+      drag.direction = Math.abs(dragX) > Math.abs(dragY) ? 'h' : 'v';
+    }
+    // 纵向：交给页面滚动，不动卡册
+    if (drag.direction === 'v') return;
+    drag.moved = true;
     this.setData({ [`decks.${drag.date}.dragX`]: dragX });
   },
 

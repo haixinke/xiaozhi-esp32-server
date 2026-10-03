@@ -8750,8 +8750,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/photo-gallery/photo-gallery.js": {
-    "mtime": 1790998641.3471525,
-    "ast_hash": "37e6f7a1aab64bd0331fd049a35c3651",
+    "mtime": 1790999584.585484,
+    "ast_hash": "0e8268579a257eca110ab471b3f3d38f",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/photo-gallery-helper.js": {

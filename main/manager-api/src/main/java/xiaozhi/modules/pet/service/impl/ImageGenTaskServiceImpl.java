@@ -2,7 +2,9 @@ package xiaozhi.modules.pet.service.impl;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -215,7 +217,9 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
             ImageGenGalleryVO.PhotoVO photo = new ImageGenGalleryVO.PhotoVO();
             photo.setTaskId(String.valueOf(row.get("id")));
             photo.setResultUrl((String) row.get("result_url"));
-            photo.setCreateTime(DateUtils.format((Date) row.get("create_date")));
+            // selectMaps 下 datetime 列由 MyBatis 类型处理器映射为 LocalDateTime，而非 java.util.Date
+            photo.setCreateTime(((LocalDateTime) row.get("create_date"))
+                    .format(DateTimeFormatter.ofPattern(DateUtils.DATE_TIME_PATTERN)));
             byDay.computeIfAbsent(String.valueOf(row.get("day")), k -> new ArrayList<>()).add(photo);
         }
 

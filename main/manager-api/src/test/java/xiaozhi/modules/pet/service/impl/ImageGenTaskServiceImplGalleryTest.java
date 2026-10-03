@@ -127,7 +127,7 @@ class ImageGenTaskServiceImplGalleryTest {
         assertThat(vo.getList().get(0).getPhotos().get(0).getResultUrl())
                 .isEqualTo("https://oss.eggbabe.com/ai-gen/1001/3.jpg");
         assertThat(vo.getList().get(0).getPhotos().get(0).getCreateTime())
-                .isEqualTo(xiaozhi.common.utils.DateUtils.format(shanghaiTime(2026, 10, 3, 20)));
+                .isEqualTo("2026-10-03 20:00:00");
     }
 
     @Test
@@ -141,12 +141,12 @@ class ImageGenTaskServiceImplGalleryTest {
         assertThat(vo.getLimit()).isEqualTo(50);
     }
 
-    /** 模拟照片行查询结果：day 列为数据库 DATE(create_date) 返回值 */
+    /** 模拟照片行查询结果：day 列为数据库 DATE(create_date) 返回值；create_date 按真实行为映射为 LocalDateTime */
     private static Map<String, Object> photoRow(Long id, Date createDate, String day) {
         Map<String, Object> row = new java.util.HashMap<>();
         row.put("id", id);
         row.put("result_url", "https://oss.eggbabe.com/ai-gen/1001/" + id + ".jpg");
-        row.put("create_date", createDate);
+        row.put("create_date", createDate.toInstant().atZone(java.time.ZoneId.of("Asia/Shanghai")).toLocalDateTime());
         row.put("day", java.sql.Date.valueOf(day));
         return row;
     }

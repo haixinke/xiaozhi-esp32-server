@@ -26,7 +26,10 @@ import xiaozhi.common.oss.OssService;
 import xiaozhi.modules.pet.config.SeedreamProperties;
 import xiaozhi.modules.pet.constant.ImageGenTaskStatus;
 import xiaozhi.modules.pet.dao.ImageGenTaskDao;
+import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.entity.ImageGenTaskEntity;
+import xiaozhi.modules.pet.entity.PetEntity;
+import xiaozhi.modules.pet.service.PhotoCaptionService;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
 import xiaozhi.modules.wechat.service.WechatMediaCheckService;
@@ -53,6 +56,10 @@ class ImageGenExecutorTest {
     @Mock
     private WechatUserDao wechatUserDao;
     @Mock
+    private PetDao petDao;
+    @Mock
+    private PhotoCaptionService photoCaptionService;
+    @Mock
     private ArkService arkService;
     @Mock
     private ObjectProvider<ArkService> arkServiceProvider;
@@ -72,14 +79,19 @@ class ImageGenExecutorTest {
         seedreamProperties.setModel("doubao-seedream-test");
         seedreamProperties.setSize("2K");
 
-        executor = new ImageGenExecutor(taskDao, wechatUserDao, seedreamProperties, arkServiceProvider,
-                restTemplate, ossService, mediaCheckService);
+        executor = new ImageGenExecutor(taskDao, wechatUserDao, petDao, photoCaptionService,
+                seedreamProperties, arkServiceProvider, restTemplate, ossService, mediaCheckService);
 
         // lenient：非 RUNNING 态等用例不走到这些桩
         lenient().when(arkServiceProvider.getIfAvailable()).thenReturn(arkService);
         lenient().when(ossService.isEnabled()).thenReturn(true);
         lenient().when(ossService.buildPublicUrl(anyString()))
                 .thenAnswer(inv -> "https://oss.eggbabe.com/" + inv.getArgument(0));
+        // 文案桩：LLM 动态文案由 PhotoCaptionService 负责，此处固定返回便于断言 prompt
+        PetEntity pet = new PetEntity();
+        pet.setPrototype("锦鲤");
+        lenient().when(petDao.selectById("pet-1")).thenReturn(pet);
+        lenient().when(photoCaptionService.drawCaption("锦鲤")).thenReturn("好运连连");
     }
 
     @Test
@@ -104,8 +116,11 @@ class ImageGenExecutorTest {
 
         verify(mediaCheckService, never()).mediaCheckAsync(anyString(), anyString());
         ArgumentCaptor<UpdateWrapper> captor = ArgumentCaptor.forClass(UpdateWrapper.class);
-        verify(taskDao).update(isNull(), captor.capture());
-        assertThat(captor.getValue().getSqlSet()).contains("status=").contains("counted=").contains("result_url=");
+        // 两次 update：文案落库 + 推进 SUCCEEDED
+        verify(taskDao, org.mockito.Mockito.times(2)).update(isNull(), captor.capture());
+        assertThat(captor.getAllValues().get(0).getSqlSet()).contains("caption=");
+        assertThat(captor.getAllValues().get(1).getSqlSet()).contains("status=").contains("counted=")
+                .contains("result_url=");
     }
 
     @Test
@@ -141,11 +156,25 @@ class ImageGenExecutorTest {
         verify(ossService).upload("ai-gen/1001/7.png", bytes, CannedAccessControlList.PublicRead);
 
         ArgumentCaptor<UpdateWrapper> updateCaptor = ArgumentCaptor.forClass(UpdateWrapper.class);
-        verify(taskDao).update(isNull(), updateCaptor.capture());
-        assertThat(updateCaptor.getValue().getParamNameValuePairs())
+        // 两次 update：文案落库 + 推进 REVIEWING
+        verify(taskDao, org.mockito.Mockito.times(2)).update(isNull(), updateCaptor.capture());
+        assertThat(updateCaptor.getAllValues().get(0).getSqlSet()).contains("caption=");
+        assertThat(updateCaptor.getAllValues().get(1).getParamNameValuePairs())
                 .containsValue(ImageGenTaskStatus.REVIEWING.name())
                 .containsValue(RESULT_OSS_URL)
                 .containsValue("trace-result-1");
+    }
+
+    @Test
+    @DisplayName("generate - 文案落库时任务已迁出RUNNING，放弃生成不调Seedream")
+    void generate_captionStoreConflict_aborts() {
+        when(taskDao.selectById(7L)).thenReturn(task(ImageGenTaskStatus.RUNNING.name()));
+        // 条件更新影响 0 行：并发清理已把任务置 FAILED
+        when(taskDao.update(isNull(), any(UpdateWrapper.class))).thenReturn(0);
+
+        executor.generate(7L);
+
+        verify(arkService, never()).generateImages(any());
     }
 
     @Test
@@ -169,7 +198,8 @@ class ImageGenExecutorTest {
         executor.generate(7L);
 
         ArgumentCaptor<UpdateWrapper> captor = ArgumentCaptor.forClass(UpdateWrapper.class);
-        verify(taskDao).update(isNull(), captor.capture());
+        // 最后一次 update 为置 FAILED
+        verify(taskDao, org.mockito.Mockito.atLeastOnce()).update(isNull(), captor.capture());
         assertThat(captor.getValue().getParamNameValuePairs())
                 .containsValue(ImageGenTaskStatus.FAILED.name());
     }

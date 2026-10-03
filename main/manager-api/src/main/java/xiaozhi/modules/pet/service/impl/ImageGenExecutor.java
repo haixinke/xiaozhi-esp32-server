@@ -28,7 +28,10 @@ import xiaozhi.common.oss.OssService;
 import xiaozhi.modules.pet.config.SeedreamProperties;
 import xiaozhi.modules.pet.constant.ImageGenTaskStatus;
 import xiaozhi.modules.pet.dao.ImageGenTaskDao;
+import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.entity.ImageGenTaskEntity;
+import xiaozhi.modules.pet.entity.PetEntity;
+import xiaozhi.modules.pet.service.PhotoCaptionService;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
 import xiaozhi.modules.wechat.service.WechatMediaCheckService;
@@ -55,11 +58,13 @@ public class ImageGenExecutor {
             IP角色的尺寸要适中：与背景中的人物和物体比例协调，不过大喧宾夺主，也不过小难以辨认；\
             把IP角色放在画面中合理或有创意的位置（如桌面、肩头、掌心、前景一角等），让它与场景或人物产生自然有趣的互动；\
             IP角色的光照、色调、阴影与透视要与照片背景和谐统一，仿佛它真实存在于这个场景中；\
-            画面中渲染中文文字「%s」，文字采用可爱的涂鸦风格：圆润的手写体字形，像随手画上去的涂鸦贴纸，\
-            笔画略带歪扭俏皮感，颜色活泼明快，与卡通宠物IP的可爱气质呼应，与整体画面氛围协调。""";
+            画面中渲染中文文字「%s」，文字采用可爱的涂鸦风格：手写体字形，像随手画上去的涂鸦贴纸，\
+            笔画略带歪扭俏皮感，不过文字不能歪扭过度，让人看不懂文字，颜色活泼明快，与卡通宠物IP的可爱气质呼应，与整体画面氛围协调。""";
 
     private final ImageGenTaskDao imageGenTaskDao;
     private final WechatUserDao wechatUserDao;
+    private final PetDao petDao;
+    private final PhotoCaptionService photoCaptionService;
     private final SeedreamProperties seedreamProperties;
     private final ObjectProvider<ArkService> arkServiceProvider;
     private final RestTemplate restTemplate;
@@ -72,6 +77,8 @@ public class ImageGenExecutor {
 
     public ImageGenExecutor(ImageGenTaskDao imageGenTaskDao,
             WechatUserDao wechatUserDao,
+            PetDao petDao,
+            PhotoCaptionService photoCaptionService,
             SeedreamProperties seedreamProperties,
             ObjectProvider<ArkService> arkServiceProvider,
             RestTemplate restTemplate,
@@ -79,6 +86,8 @@ public class ImageGenExecutor {
             WechatMediaCheckService mediaCheckService) {
         this.imageGenTaskDao = imageGenTaskDao;
         this.wechatUserDao = wechatUserDao;
+        this.petDao = petDao;
+        this.photoCaptionService = photoCaptionService;
         this.seedreamProperties = seedreamProperties;
         this.arkServiceProvider = arkServiceProvider;
         this.restTemplate = restTemplate;
@@ -108,6 +117,13 @@ public class ImageGenExecutor {
         }
 
         try {
+            String caption = generateAndStoreCaption(task);
+            if (caption == null) {
+                // 任务状态已迁移（如超时清理置 FAILED），放弃本次生成
+                return;
+            }
+            task.setCaption(caption);
+
             String generatedUrl = callSeedream(arkService, task);
             if (StringUtils.isBlank(generatedUrl)) {
                 failTask(taskId, "生成失败，请重试");
@@ -160,6 +176,25 @@ public class ImageGenExecutor {
             log.error("AI生图执行异常 taskId={}", taskId, e);
             failTask(taskId, "生成失败，请重试");
         }
+    }
+
+    /**
+     * 生成写真文案并落库。文案在此刻（而非建任务时）生成：LLM 调用秒级耗时，
+     * 放进异步阶段不拖慢 createTask 接口；用户本就要轮询等图，无感知。
+     * 条件更新兼作并发护栏：任务已迁出 RUNNING 时返回 null，调用方放弃生成。
+     */
+    private String generateAndStoreCaption(ImageGenTaskEntity task) {
+        PetEntity pet = petDao.selectById(task.getPetId());
+        String caption = photoCaptionService.drawCaption(pet != null ? pet.getPrototype() : null);
+        int rows = imageGenTaskDao.update(null, new UpdateWrapper<ImageGenTaskEntity>()
+                .eq("id", task.getId())
+                .eq("status", ImageGenTaskStatus.RUNNING.name())
+                .set("caption", caption));
+        if (rows == 0) {
+            log.info("AI生图任务状态已迁移，跳过文案落库 taskId={}", task.getId());
+            return null;
+        }
+        return caption;
     }
 
     private String callSeedream(ArkService arkService, ImageGenTaskEntity task) {

@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,31 +52,6 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
     private static final Map<String, String> IP_REFERENCE_IMAGE = Map.of(
             PROTOTYPE_KOI, "https://oss.eggbabe.com/default-ip/fish/fish.png",
             PROTOTYPE_RABBIT, "https://oss.eggbabe.com/default-ip/rabbit/rabbit.png");
-
-    /** 预置文案池：渲染进图片内，同时用作分享卡片标题；用户不可编辑（00后气质：活泼、俏皮、佛系、幽默） */
-    private static final Map<String, List<String>> CAPTION_POOL = Map.of(
-            PROTOTYPE_KOI, List.of(
-                    "转发这条锦鲤，好运直接拉满",
-                    "摸鱼摸到大奖，锦鲤本鲤",
-                    "今天也要做一条好运爆棚的鱼",
-                    "水逆退散，锦鲤罩我",
-                    "躺平的鱼运气都不会太差",
-                    "锦鲤附身，主打一个心想事成",
-                    "不慌不忙，好运正在路上",
-                    "摸鱼一时爽，好运经常来",
-                    "本鲤出马，烦恼全挂",
-                    "佛系养鱼，好运自来"),
-            PROTOTYPE_RABBIT, List.of(
-                    "月宫在逃小可爱，已上线",
-                    "兔兔我啊，今天也在认真可爱",
-                    "蹦跶两下，烦恼清零",
-                    "吃可爱长大的，不服来rua",
-                    "玉兔营业中，快乐不打烊",
-                    "随缘可爱，佛系卖萌",
-                    "耳朵一竖，好事将至",
-                    "今天份的快乐已充好电",
-                    "慢生活万岁，兔兔不着急",
-                    "温柔有光，自带治愈buff"));
 
     private static final String DEFAULT_OSS_PUBLIC_URL = "https://oss.eggbabe.com";
 
@@ -136,7 +110,8 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         task.setPetId(pet.getId());
         task.setPhotoUrl(photoUrl);
         task.setIpImageUrl(resolveIpImageUrl(pet.getPrototype()));
-        task.setCaption(drawCaption(pet.getPrototype()));
+        // 文案占位：由 ImageGenExecutor 在生成阶段经 LLM 动态产出并落库（此处仅满足 NOT NULL 约束）
+        task.setCaption("");
         task.setCounted(0);
 
         if (skipMediaCheck) {
@@ -370,21 +345,17 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
     /** 未知原型兜底用玉兔（与收藏卡参考图未知原型不用图的策略不同：本功能必须有参考图） */
     private static final String PROTOTYPE_DEFAULT = PROTOTYPE_RABBIT;
 
-    private static String drawCaption(String prototype) {
-        List<String> pool = CAPTION_POOL.getOrDefault(prototype, CAPTION_POOL.get(PROTOTYPE_DEFAULT));
-        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
-    }
-
     private static ImageGenTaskVO toVO(ImageGenTaskEntity task) {
         ImageGenTaskVO vo = new ImageGenTaskVO();
         vo.setTaskId(String.valueOf(task.getId()));
         vo.setStatus(task.getStatus());
-        // 结果图 URL 仅在审核通过（SUCCEEDED）后下发，避免 REVIEWING 态泄露未过审图片
+        // 结果图 URL 与文案仅在审核通过（SUCCEEDED）后下发：前者避免泄露未过审图片，
+        // 后者避免 LLM 动态文案未经图审就以分享标题纯文本透出，且遮住建任务时的占位空串
         if (ImageGenTaskStatus.SUCCEEDED.name().equals(task.getStatus())) {
             vo.setResultUrl(task.getResultUrl());
+            vo.setCaption(task.getCaption());
         }
         vo.setFailReason(task.getFailReason());
-        vo.setCaption(task.getCaption());
         return vo;
     }
 }

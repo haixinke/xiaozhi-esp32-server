@@ -1,5 +1,7 @@
 package xiaozhi.modules.llm.service.impl;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -45,7 +48,18 @@ public class OpenAIStyleLLMServiceImpl implements LLMService {
     @Autowired
     private ModelConfigService modelConfigService;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = buildRestTemplate();
+
+    /**
+     * 显式配置超时：JdkClientHttpRequestFactory 默认 HttpClient 无连接超时，
+     * LLM 端点黑洞时会阻塞至 OS 层 TCP 超时（分钟级），拖死调用方线程池
+     */
+    private static RestTemplate buildRestTemplate() {
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build());
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        return new RestTemplate(factory);
+    }
 
     /**
      * 根据域名自动禁用思考模式
@@ -413,6 +427,69 @@ public class OpenAIStyleLLMServiceImpl implements LLMService {
             }
         } catch (Exception e) {
             log.error("调用LLM服务生成标题时发生异常，modelId: {}", modelId, e);
+        }
+
+        return null;
+    }
+
+    @Override
+    public String generateText(String prompt) {
+        ModelConfigEntity llmConfig = getDefaultLLMConfig();
+        if (llmConfig == null || llmConfig.getConfigJson() == null) {
+            log.warn("未找到可用的LLM模型配置，无法生成文本");
+            return null;
+        }
+
+        JSONObject configJson = llmConfig.getConfigJson();
+        String baseUrl = configJson.getStr("base_url");
+        String model = configJson.getStr("model_name");
+        String apiKey = configJson.getStr("api_key");
+        Double temperature = configJson.getDouble("temperature");
+        Integer maxTokens = configJson.getInt("max_tokens");
+
+        if (StringUtils.isBlank(baseUrl) || StringUtils.isBlank(apiKey)) {
+            log.warn("LLM配置不完整，baseUrl或apiKey为空");
+            return null;
+        }
+
+        try {
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", model != null ? model : "gpt-3.5-turbo");
+            requestBody.put("messages", List.of(Map.of("role", "user", "content", prompt)));
+            requestBody.put("temperature", temperature != null ? temperature : 0.7);
+            requestBody.put("max_tokens", maxTokens != null ? maxTokens : 2000);
+
+            // 禁用思考模式
+            applyThinkingDisabled(baseUrl, requestBody);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + apiKey);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+            String apiUrl = baseUrl;
+            if (!apiUrl.endsWith("/chat/completions")) {
+                if (!apiUrl.endsWith("/")) {
+                    apiUrl += "/";
+                }
+                apiUrl += "chat/completions";
+            }
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    apiUrl, HttpMethod.POST, entity, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                JSONObject responseJson = JSONUtil.parseObj(response.getBody());
+                JSONArray choices = responseJson.getJSONArray("choices");
+                if (choices != null && choices.size() > 0) {
+                    return choices.getJSONObject(0).getJSONObject("message").getStr("content");
+                }
+            } else {
+                log.error("LLM API调用失败，状态码：{}，响应：{}", response.getStatusCode(), response.getBody());
+            }
+        } catch (Exception e) {
+            log.error("调用LLM生成文本时发生异常", e);
         }
 
         return null;

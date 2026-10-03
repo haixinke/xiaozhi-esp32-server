@@ -128,7 +128,7 @@ class ImageGenTaskServiceImplTest {
     }
 
     @Test
-    @DisplayName("createTask - 锦鲤原型落库IP参考图与文案，提交照片审核")
+    @DisplayName("createTask - 锦鲤原型落库IP参考图，文案留空待生成阶段LLM产出，提交照片审核")
     void createTask_koi_storesIpImageAndCaption() {
         when(petDao.selectOne(any())).thenReturn(pet());
         when(taskDao.selectCount(any())).thenReturn(0L);
@@ -144,11 +144,8 @@ class ImageGenTaskServiceImplTest {
         ImageGenTaskEntity saved = captor.getValue();
         assertThat(saved.getStatus()).isEqualTo(ImageGenTaskStatus.PENDING.name());
         assertThat(saved.getIpImageUrl()).isEqualTo("https://oss.eggbabe.com/default-ip/fish/fish.png");
-        // 文案池见 ImageGenTaskServiceImpl.CAPTION_POOL 锦鲤池（10 条），断言与池保持一致
-        assertThat(saved.getCaption()).isIn(
-                "转发这条锦鲤，好运直接拉满", "摸鱼摸到大奖，锦鲤本鲤", "今天也要做一条好运爆棚的鱼",
-                "水逆退散，锦鲤罩我", "躺平的鱼运气都不会太差", "锦鲤附身，主打一个心想事成",
-                "不慌不忙，好运正在路上", "摸鱼一时爽，好运经常来", "本鲤出马，烦恼全挂", "佛系养鱼，好运自来");
+        // 文案由 ImageGenExecutor 生成阶段经 LLM 动态产出（PhotoCaptionService），此处仅占位
+        assertThat(saved.getCaption()).isEmpty();
         assertThat(saved.getPhotoTraceId()).isEqualTo("trace-photo-1");
         assertThat(saved.getCounted()).isEqualTo(0);
         assertThat(vo.getStatus()).isEqualTo(ImageGenTaskStatus.PENDING.name());

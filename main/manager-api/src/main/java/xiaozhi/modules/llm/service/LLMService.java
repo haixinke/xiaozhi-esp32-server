@@ -70,10 +70,18 @@ public interface LLMService {
 
     /**
      * 生成会话标题
-     * 
+     *
      * @param conversation 对话内容
      * @param modelId      模型ID
      * @return 标题（约15字）
      */
     String generateTitle(String conversation, String modelId);
+
+    /**
+     * 通用文本生成（使用默认 LLM 配置）
+     *
+     * @param prompt 完整提示词
+     * @return 模型输出原文；服务不可用或调用失败时返回 null，由调用方兜底
+     */
+    String generateText(String prompt);
 }

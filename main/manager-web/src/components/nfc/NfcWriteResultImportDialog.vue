@@ -4,6 +4,7 @@
     :visible.sync="dialogVisible"
     width="550px"
     :close-on-click-modal="false"
+    append-to-body
     @close="handleClose"
   >
     <el-form label-width="100px" label-position="right">

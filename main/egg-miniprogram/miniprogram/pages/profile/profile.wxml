@@ -4,7 +4,7 @@
   <scroll-view scroll-y class="content">
 
     <view class="avatar-section">
-      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" bindtap="onAvatarTap">
         <image wx:if="{{avatarUrl}}" class="avatar-image" src="{{avatarUrl}}" mode="aspectFill"></image>
         <egg-avatar wx:else size="{{72}}"></egg-avatar>
       </button>

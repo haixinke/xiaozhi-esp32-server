@@ -102,6 +102,20 @@ Page({
       });
   },
 
+  // 隐私协议防御：chooseAvatar 受《用户隐私保护指引》门控，用户未同意（或曾拒绝）时
+  // 点击按钮会被微信静默拦截——无弹窗、无回调。tap 先于 chooseavatar 触发，
+  // 此处检查授权状态，未授权时主动唤起隐私授权弹窗兜底。
+  onAvatarTap() {
+    if (!wx.getPrivacySetting) return;
+    wx.getPrivacySetting({
+      success: (res) => {
+        if (res.needAuthorization && wx.requirePrivacyAuthorize) {
+          wx.requirePrivacyAuthorize();
+        }
+      }
+    });
+  },
+
   onChooseAvatar(e) {
     const tempPath = e.detail.avatarUrl;
     if (!tempPath) return;

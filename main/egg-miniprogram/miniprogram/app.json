@@ -10,6 +10,7 @@
     "pages/lesson/lesson",
     "pages/collection-card/collection-card",
     "pages/photo-gen/photo-gen",
+    "pages/photo-gallery/photo-gallery",
     "pages/album/album",
     "pages/invite-codes/invite-codes",
     "pages/chat/chat",

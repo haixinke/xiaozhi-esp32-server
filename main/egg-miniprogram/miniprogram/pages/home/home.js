@@ -970,9 +970,9 @@ Page({
     }
   },
 
-  // 破壳后右下角 AI 写真入口：跳转生图页
+  // 破壳后右下角 AI 写真入口：跳转写真集页
   onPhotoEntryTap() {
-    wx.navigateTo({ url: '/pages/photo-gen/photo-gen' });
+    wx.navigateTo({ url: '/pages/photo-gallery/photo-gallery' });
   },
 
   /**

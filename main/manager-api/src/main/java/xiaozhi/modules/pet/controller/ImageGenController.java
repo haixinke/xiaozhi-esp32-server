@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.pet.dto.ImageGenTaskCreateDTO;
 import xiaozhi.modules.pet.service.ImageGenTaskService;
+import xiaozhi.modules.pet.vo.ImageGenGalleryVO;
 import xiaozhi.modules.pet.vo.ImageGenTaskVO;
 import xiaozhi.modules.security.user.SecurityUser;
 
@@ -54,5 +56,18 @@ public class ImageGenController {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
         return new Result<ImageGenTaskVO>().ok(imageGenTaskService.getTask(userId, taskId));
+    }
+
+    @GetMapping("/gallery")
+    @Operation(summary = "分页查询AI写真集（按天分组倒序，只含成功任务）")
+    @RequiresPermissions("sys:role:normal")
+    public Result<ImageGenGalleryVO> gallery(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "limit", defaultValue = "10") int limit) {
+        Long userId = SecurityUser.getUserId();
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        return new Result<ImageGenGalleryVO>().ok(imageGenTaskService.gallery(userId, page, limit));
     }
 }

@@ -1,0 +1,243 @@
+.page {
+  min-height: 100vh;
+  background: #FAFAF8;
+}
+
+/* ---- 首屏加载 ---- */
+
+.boot-loading {
+  display: flex;
+  justify-content: center;
+  padding-top: 240rpx;
+}
+
+.boot-spinner {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  border: 4rpx solid #D8D8D2;
+  border-top-color: #002900;
+  animation: gallery-spin 0.9s linear infinite;
+}
+
+@keyframes gallery-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- 空状态 ---- */
+
+.empty-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 200rpx 64rpx 0;
+  gap: 16rpx;
+}
+
+.empty-title {
+  font-size: 40rpx;
+  font-weight: 600;
+  color: #002900;
+}
+
+.empty-desc {
+  font-size: 26rpx;
+  color: #8C8C88;
+}
+
+.primary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 48rpx;
+  background: #002900;
+  color: #FFFFFF;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+.empty-btn {
+  width: 60%;
+  height: 96rpx;
+  margin-top: 48rpx;
+}
+
+/* ---- 时间轴 ---- */
+
+.timeline {
+  padding: 16rpx 32rpx 40rpx;
+}
+
+.milestone {
+  padding: 24rpx 0 8rpx 44rpx;
+  font-size: 96rpx;
+  font-weight: 700;
+  color: #002900;
+  opacity: 0.14;
+  line-height: 1.1;
+}
+
+.day-node {
+  position: relative;
+  padding: 24rpx 0 40rpx 44rpx;
+  /* 时间轴竖线 */
+  border-left: 2rpx solid #E4E4DE;
+}
+
+.day-marker {
+  position: absolute;
+  left: -10rpx;
+  top: 44rpx;
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 50%;
+  background: #002900;
+}
+
+.day-label {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #002900;
+  margin-bottom: 20rpx;
+}
+
+/* ---- 卡册 ---- */
+
+.deck {
+  position: relative;
+  width: 100%;
+  height: 640rpx;
+}
+
+.deck-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 88%;
+  height: 100%;
+  border-radius: 24rpx;
+  overflow: hidden;
+  background: #FFFFFF;
+  box-shadow: 0 8rpx 32rpx rgba(0, 41, 0, 0.10);
+}
+
+/* 顶卡 */
+.deck-pos-0 {
+  z-index: 3;
+}
+
+/* 第二张：缩小上探，露出边缘形成堆叠感 */
+.deck-pos-1 {
+  z-index: 2;
+  transform: scale(0.94) translateY(-20rpx) translateX(12rpx) rotate(1.5deg);
+}
+
+.deck-pos-2 {
+  z-index: 1;
+  transform: scale(0.88) translateY(-40rpx) translateX(24rpx) rotate(3deg);
+}
+
+/* 滑出/回弹时才开过渡，拖拽跟手无动画 */
+.deck-card--anim {
+  transition: transform 0.3s ease-out;
+}
+
+/* 堆叠位移本身也要有过渡（顶卡飞走后底下卡上浮） */
+.deck-pos-1,
+.deck-pos-2 {
+  transition: transform 0.3s ease-out;
+}
+
+.deck-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---- 列表提示 ---- */
+
+.list-tip {
+  text-align: center;
+  font-size: 24rpx;
+  color: #B8B8B2;
+  padding: 24rpx 0 160rpx;
+}
+
+/* ---- 悬浮制作按钮 ---- */
+
+.fab {
+  position: fixed;
+  right: 32rpx;
+  bottom: calc(48rpx + env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  padding: 0 40rpx;
+  border-radius: 44rpx;
+  background: #002900;
+  box-shadow: 0 12rpx 32rpx rgba(0, 41, 0, 0.28);
+}
+
+.fab-text {
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+/* ---- 全屏查看器 ---- */
+
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: #000000;
+}
+
+.viewer-swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.viewer-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewer-image {
+  width: 100%;
+}
+
+.viewer-close {
+  position: absolute;
+  top: calc(32rpx + env(safe-area-inset-top));
+  right: 32rpx;
+  z-index: 31;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #FFFFFF;
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+.viewer-indicator {
+  position: absolute;
+  bottom: calc(48rpx + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  z-index: 31;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 26rpx;
+}

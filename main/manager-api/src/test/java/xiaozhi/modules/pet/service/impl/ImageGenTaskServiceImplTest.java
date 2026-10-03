@@ -127,7 +127,11 @@ class ImageGenTaskServiceImplTest {
         ImageGenTaskEntity saved = captor.getValue();
         assertThat(saved.getStatus()).isEqualTo(ImageGenTaskStatus.PENDING.name());
         assertThat(saved.getIpImageUrl()).isEqualTo("https://oss.eggbabe.com/default-ip/fish/fish.png");
-        assertThat(saved.getCaption()).isIn("好运连连", "锦鲤附体 诸事顺利", "摸鱼也能赢");
+        // 文案池见 ImageGenTaskServiceImpl.CAPTION_POOL 锦鲤池（10 条），断言与池保持一致
+        assertThat(saved.getCaption()).isIn(
+                "转发这条锦鲤，好运直接拉满", "摸鱼摸到大奖，锦鲤本鲤", "今天也要做一条好运爆棚的鱼",
+                "水逆退散，锦鲤罩我", "躺平的鱼运气都不会太差", "锦鲤附身，主打一个心想事成",
+                "不慌不忙，好运正在路上", "摸鱼一时爽，好运经常来", "本鲤出马，烦恼全挂", "佛系养鱼，好运自来");
         assertThat(saved.getPhotoTraceId()).isEqualTo("trace-photo-1");
         assertThat(saved.getCounted()).isEqualTo(0);
         assertThat(vo.getStatus()).isEqualTo(ImageGenTaskStatus.PENDING.name());

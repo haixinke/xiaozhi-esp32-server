@@ -2,6 +2,7 @@ package xiaozhi.modules.pet.service;
 
 import java.time.Duration;
 
+import xiaozhi.modules.pet.vo.ImageGenGalleryVO;
 import xiaozhi.modules.pet.vo.ImageGenTaskVO;
 
 /**
@@ -26,6 +27,18 @@ public interface ImageGenTaskService {
      * 查询任务（仅限本人任务）。
      */
     ImageGenTaskVO getTask(Long userId, Long taskId);
+
+    /**
+     * 分页查询当前用户的写真集：只含 SUCCEEDED 任务，按天分组倒序（最新日期在顶），
+     * 分页单位是"天"（一页 N 天，每天内嵌当日全部写真，按生成时间倒序）。
+     * 无写真的日期不产生节点。
+     *
+     * @param userId 当前用户ID
+     * @param page   页码（从1开始，小于1收敛为1）
+     * @param limit  每页天数（1~50，超出收敛）
+     * @return 按天分组的写真集视图
+     */
+    ImageGenGalleryVO gallery(Long userId, int page, int limit);
 
     /**
      * 处理微信 mediaCheckAsync 审核结果推送。

@@ -1,0 +1,74 @@
+<!-- AI写真集：按天倒序时间轴 + 年份里程碑 + 卡册 + 全屏查看器 -->
+<view class="page">
+  <nav-bar title="AI写真" />
+
+  <!-- 首屏加载中 -->
+  <view wx:if="{{!loaded}}" class="boot-loading">
+    <view class="boot-spinner"></view>
+  </view>
+
+  <!-- 空状态：从未制作过写真 -->
+  <view wx:elif="{{timelineItems.length === 0}}" class="empty-wrap">
+    <text class="empty-title">还没有写真</text>
+    <text class="empty-desc">拍下身边的任意画面，蛋宝宝会钻进你的照片里</text>
+    <button class="primary-btn empty-btn" bindtap="onMakePhoto">制作第一张写真</button>
+  </view>
+
+  <!-- 时间轴 -->
+  <block wx:else>
+    <view class="timeline">
+      <block wx:for="{{timelineItems}}" wx:key="key">
+        <!-- 年份里程碑：跨年处自动插入，不占分页单位 -->
+        <view wx:if="{{item.type === 'milestone'}}" class="milestone">{{item.year}}</view>
+
+        <!-- 日期节点 -->
+        <view wx:else class="day-node">
+          <view class="day-marker"></view>
+          <text class="day-label">{{item.label}}</text>
+
+          <!-- 卡册：多张堆叠，顶卡可左右拨出循环；单张直接展示 -->
+          <view class="deck {{item.photos.length <= 1 ? 'deck--single' : ''}}">
+            <view wx:for="{{decks[item.date].order}}" wx:for-item="photo" wx:key="taskId"
+                  wx:if="{{index < 3}}"
+                  class="deck-card deck-pos-{{index}} {{decks[item.date].animating ? 'deck-card--anim' : ''}}"
+                  style="{{index === 0 ? 'transform: translateX(' + decks[item.date].dragX + 'px) rotate(' + decks[item.date].dragX / 20 + 'deg);' : ''}}"
+                  bindtap="onCardTap"
+                  data-date="{{item.date}}"
+                  data-task-id="{{photo.taskId}}"
+                  data-idx="{{index}}"
+                  data-count="{{item.photos.length}}"
+                  catchtouchstart="onDeckTouchStart"
+                  catchtouchmove="onDeckTouchMove"
+                  catchtouchend="onDeckTouchEnd">
+              <image class="deck-image" src="{{photo.resultUrl}}" mode="aspectFill" lazy-load="{{index > 0}}" />
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="list-tip">加载中…</view>
+    <view wx:elif="{{!hasMore}}" class="list-tip">就这些啦</view>
+  </block>
+
+  <!-- 悬浮制作入口：两种状态恒显 -->
+  <view class="fab" bindtap="onMakePhoto">
+    <text class="fab-text">制作写真</text>
+  </view>
+
+  <!-- 全屏查看器：滑切同组，长按唤起底部保存，无常驻按钮 -->
+  <view wx:if="{{viewer}}" class="viewer" catchtouchmove="noop">
+    <swiper class="viewer-swiper" current="{{viewer.current}}" bindchange="onViewerChange">
+      <swiper-item wx:for="{{viewer.photos}}" wx:for-item="photo" wx:key="taskId">
+        <view class="viewer-item">
+          <image class="viewer-image" src="{{photo.resultUrl}}" mode="aspectFit"
+                 bindlongpress="onViewerLongPress" />
+        </view>
+      </swiper-item>
+    </swiper>
+    <view class="viewer-close" bindtap="onCloseViewer">×</view>
+    <view wx:if="{{viewer.photos.length > 1}}" class="viewer-indicator">
+      {{viewer.current + 1}} / {{viewer.photos.length}}
+    </view>
+  </view>
+</view>

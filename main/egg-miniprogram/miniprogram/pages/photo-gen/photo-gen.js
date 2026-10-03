@@ -1,8 +1,9 @@
 // AI写真页：拍照/选图 → 上传 → 异步生成（轮询任务状态）→ 结果展示/保存/分享。
 // 后端链路为 照片审核(PENDING) → 生成(RUNNING) → 结果审核(REVIEWING) → SUCCEEDED/FAILED，
 // 期间任何中间态都展示"生成中"与审核提示。
-const { uploadGenPhoto, createImageGenTask, getImageGenTask } = require('../../utils/image-gen-api');
+const { uploadGenPhoto, createImageGenTask, getImageGenTask, GALLERY_DIRTY_KEY } = require('../../utils/image-gen-api');
 const { compressIfNeeded } = require('../../utils/image-compress');
+const { saveRemoteImage } = require('../../utils/save-image');
 
 const POLL_INTERVAL_MS = 2500;
 // 生成 + 两轮审核的宽限时长（mediaCheckAsync 推送标称 30 分钟内，实际通常秒级）
@@ -131,32 +132,22 @@ Page({
     this.setData({ phase: 'pick', statusText: '', resultUrl: '', failReason: '', caption: '' });
   },
 
-  onSaveImage() {
+  // 回流写真集：栈内已有写真集页则返回（触发其 onShow 刷新），否则新打开
+  onViewGallery() {
+    const pages = getCurrentPages();
+    const index = pages.findIndex((p) => p.route === 'pages/photo-gallery/photo-gallery');
+    if (index !== -1) {
+      wx.navigateBack({ delta: pages.length - 1 - index });
+    } else {
+      wx.navigateTo({ url: '/pages/photo-gallery/photo-gallery' });
+    }
+  },
+
+  async onSaveImage() {
     const { resultUrl, saving } = this.data;
     if (!resultUrl || saving) return;
     this.setData({ saving: true });
-    wx.downloadFile({
-      url: resultUrl,
-      success: (res) => {
-        if (res.statusCode !== 200 || !res.tempFilePath) {
-          this._saveDone('保存失败，请重试');
-          return;
-        }
-        wx.saveImageToPhotosAlbum({
-          filePath: res.tempFilePath,
-          success: () => this._saveDone('已保存到相册'),
-          fail: (err) => {
-            // 用户拒绝相册授权时引导去设置页开启
-            const denied = err && err.errMsg && err.errMsg.includes('auth');
-            this._saveDone(denied ? '请在设置中允许保存到相册' : '保存失败，请重试');
-          }
-        });
-      },
-      fail: () => this._saveDone('保存失败，请重试')
-    });
-  },
-
-  _saveDone(message) {
+    const message = await saveRemoteImage(resultUrl);
     this.setData({ saving: false });
     wx.showToast({ title: message, icon: 'none' });
   },
@@ -192,6 +183,8 @@ Page({
       const task = await getImageGenTask(this._taskId);
       if (task.status === 'SUCCEEDED') {
         this._stopPolling();
+        // 置脏标记：写真集页 onShow 发现后刷新第一页，把新写真带进时间轴
+        wx.setStorageSync(GALLERY_DIRTY_KEY, 1);
         this.setData({ phase: 'result', resultUrl: task.resultUrl || '', caption: task.caption || '' });
       } else if (task.status === 'FAILED') {
         this._stopPolling();

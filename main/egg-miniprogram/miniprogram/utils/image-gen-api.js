@@ -4,6 +4,10 @@ const { post, get } = require('./request');
 const auth = require('./auth');
 const { API_BASE_URL } = require('../config/api');
 
+// 写真集脏标记：生成成功后置 1，写真集页 onShow 发现即刷新第一页。
+// 常量化避免 photo-gen 与 photo-gallery 两处手拼字符串静默断链。
+const GALLERY_DIRTY_KEY = 'gallery_dirty';
+
 /**
  * 上传用户照片到 OSS。
  * 调用通用上传接口 POST /upload/image（scene=ai_gen），接口返回通用 envelope { code, data, msg }。
@@ -63,4 +67,14 @@ function getImageGenTask(taskId) {
   return get(`/pet/image-gen/tasks/${taskId}`);
 }
 
-module.exports = { uploadGenPhoto, createImageGenTask, getImageGenTask };
+/**
+ * 分页查询写真集（按天分组倒序，只含成功任务；分页单位是天）。
+ * @param {number} page 页码，从 1 开始
+ * @param {number} limit 每页天数
+ * @returns {Promise<{total: number, page: number, limit: number, list: Array<{date: string, photos: Array<{taskId: string, resultUrl: string, createTime: string}>}>}>}
+ */
+function getImageGenGallery(page, limit) {
+  return get('/pet/image-gen/gallery', { page, limit });
+}
+
+module.exports = { uploadGenPhoto, createImageGenTask, getImageGenTask, getImageGenGallery, GALLERY_DIRTY_KEY };

@@ -3,7 +3,9 @@ package xiaozhi.modules.pet.service.impl;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -21,12 +23,14 @@ import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.upload.UploadScene;
+import xiaozhi.common.utils.DateUtils;
 import xiaozhi.modules.pet.constant.ImageGenTaskStatus;
 import xiaozhi.modules.pet.dao.ImageGenTaskDao;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.entity.ImageGenTaskEntity;
 import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.service.ImageGenTaskService;
+import xiaozhi.modules.pet.vo.ImageGenGalleryVO;
 import xiaozhi.modules.pet.vo.ImageGenTaskVO;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
@@ -77,6 +81,9 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
 
     /** 与 OSS 默认域名一致的兜底，仅在配置缺失时使用 */
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
+
+    /** 写真集每页天数上限，防止一次拉取过多日期节点 */
+    private static final int GALLERY_MAX_LIMIT = 50;
 
     private final PetDao petDao;
     private final WechatUserDao wechatUserDao;
@@ -151,6 +158,74 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
             throw new RenException(ErrorCode.IMAGE_GEN_TASK_NOT_FOUND);
         }
         return toVO(task);
+    }
+
+    @Override
+    public ImageGenGalleryVO gallery(Long userId, int page, int limit) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
+        int safePage = Math.max(page, 1);
+        int safeLimit = Math.min(Math.max(limit, 1), GALLERY_MAX_LIMIT);
+
+        // 总天数（只数有写真的天）：COUNT(DISTINCT DATE(create_date))
+        // DATE() 用数据库会话时区（JDBC 配置 Asia/Shanghai），与配额日界一致
+        List<Map<String, Object>> countRows = baseDao.selectMaps(new QueryWrapper<ImageGenTaskEntity>()
+                .select("COUNT(DISTINCT DATE(create_date)) AS cnt")
+                .eq("user_id", userId)
+                .eq("status", ImageGenTaskStatus.SUCCEEDED.name()));
+        long total = countRows.isEmpty() ? 0 : ((Number) countRows.get(0).get("cnt")).longValue();
+
+        ImageGenGalleryVO vo = new ImageGenGalleryVO();
+        vo.setTotal(total);
+        vo.setPage(safePage);
+        vo.setLimit(safeLimit);
+        vo.setList(List.of());
+        if (total == 0) {
+            return vo;
+        }
+
+        // 本页日期：DISTINCT DATE(create_date) 倒序分页
+        List<Map<String, Object>> dayRows = baseDao.selectMaps(new QueryWrapper<ImageGenTaskEntity>()
+                .select("DISTINCT DATE(create_date) AS day")
+                .eq("user_id", userId)
+                .eq("status", ImageGenTaskStatus.SUCCEEDED.name())
+                .orderByDesc("day")
+                .last("LIMIT " + (safePage - 1) * safeLimit + "," + safeLimit));
+        List<LocalDate> days = dayRows.stream()
+                .map(row -> LocalDate.parse(String.valueOf(row.get("day"))))
+                .toList();
+        if (days.isEmpty()) {
+            return vo;
+        }
+
+        // 范围拉取本页所有写真再按天分组：本页最早~最晚日期之间的成功任务必然都属于本页日期，
+        // 否则该日期会进入 DISTINCT 集合、与分页窗口矛盾。
+        // 范围条件与分组同用 DATE()（数据库会话时区），避免 JVM 与 DB 日界错位把边界照片归错天
+        List<Map<String, Object>> photoRows = baseDao.selectMaps(new QueryWrapper<ImageGenTaskEntity>()
+                .select("id", "result_url", "create_date", "DATE(create_date) AS day")
+                .eq("user_id", userId)
+                .eq("status", ImageGenTaskStatus.SUCCEEDED.name())
+                .apply("DATE(create_date) >= {0}", days.get(days.size() - 1).toString())
+                .apply("DATE(create_date) <= {0}", days.get(0).toString())
+                .orderByDesc("create_date"));
+
+        Map<String, List<ImageGenGalleryVO.PhotoVO>> byDay = new LinkedHashMap<>();
+        for (Map<String, Object> row : photoRows) {
+            ImageGenGalleryVO.PhotoVO photo = new ImageGenGalleryVO.PhotoVO();
+            photo.setTaskId(String.valueOf(row.get("id")));
+            photo.setResultUrl((String) row.get("result_url"));
+            photo.setCreateTime(DateUtils.format((Date) row.get("create_date")));
+            byDay.computeIfAbsent(String.valueOf(row.get("day")), k -> new ArrayList<>()).add(photo);
+        }
+
+        vo.setList(days.stream().map(day -> {
+            ImageGenGalleryVO.DayVO dayVO = new ImageGenGalleryVO.DayVO();
+            dayVO.setDate(day.toString());
+            dayVO.setPhotos(byDay.getOrDefault(day.toString(), List.of()));
+            return dayVO;
+        }).toList());
+        return vo;
     }
 
     @Override

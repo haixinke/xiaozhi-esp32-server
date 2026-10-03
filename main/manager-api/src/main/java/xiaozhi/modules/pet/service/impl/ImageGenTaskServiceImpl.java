@@ -97,6 +97,10 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
     @Value("${pet.image-gen.daily-limit:3}")
     private int dailyLimit;
 
+    /** 跳过微信内容审核：仅限本地调试（审核回调打不到本地），生产必须为 false */
+    @Value("${pet.image-gen.skip-media-check:false}")
+    private boolean skipMediaCheck;
+
     public ImageGenTaskServiceImpl(PetDao petDao,
             WechatUserDao wechatUserDao,
             WechatMediaCheckService mediaCheckService,
@@ -126,7 +130,6 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         if (todayCountedCount(userId) >= dailyLimit) {
             throw new RenException(ErrorCode.IMAGE_GEN_QUOTA_EXCEEDED);
         }
-        String openid = openidOf(userId);
 
         ImageGenTaskEntity task = new ImageGenTaskEntity();
         task.setUserId(userId);
@@ -134,8 +137,19 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         task.setPhotoUrl(photoUrl);
         task.setIpImageUrl(resolveIpImageUrl(pet.getPrototype()));
         task.setCaption(drawCaption(pet.getPrototype()));
-        task.setStatus(ImageGenTaskStatus.PENDING.name());
         task.setCounted(0);
+
+        if (skipMediaCheck) {
+            // 本地调试旁路：跳过照片审核直接进生成（openid 与 trace_id 均不需要）
+            task.setStatus(ImageGenTaskStatus.RUNNING.name());
+            baseDao.insert(task);
+            log.warn("AI生图跳过内容审核（仅限本地调试）userId={}, taskId={}", userId, task.getId());
+            imageGenExecutor.generateAsync(task.getId());
+            return toVO(task);
+        }
+
+        String openid = openidOf(userId);
+        task.setStatus(ImageGenTaskStatus.PENDING.name());
 
         // 先提交照片审核拿到 trace_id 再落库，提交失败则整个请求失败、不留半成品任务
         String traceId = mediaCheckService.mediaCheckAsync(photoUrl, openid);

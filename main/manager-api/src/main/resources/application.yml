@@ -114,6 +114,9 @@ pet:
   # AI生图：免费用户每日成功次数上限（失败/审核驳回不计次）
   image-gen:
     daily-limit: ${PET_IMAGE_GEN_DAILY_LIMIT:3}
+    # 跳过微信内容安全审核（照片 + 结果图）。仅限本地调试：微信审核回调打不到本地时置 true，
+    # 任务直接 创建→生成→成功。生产必须保持 false，否则未过审图片直接可见
+    skip-media-check: ${PET_IMAGE_GEN_SKIP_MEDIA_CHECK:false}
 
 # AI宠物头像配置
 # 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成头像 URL

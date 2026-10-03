@@ -83,6 +83,32 @@ class ImageGenExecutorTest {
     }
 
     @Test
+    @DisplayName("generate - 跳过审核开关开启时直接SUCCEEDED并计次，不提交结果审核")
+    void generate_skipMediaCheck_directSuccess() {
+        org.springframework.test.util.ReflectionTestUtils.setField(executor, "skipMediaCheck", true);
+        ImageGenTaskEntity task = task(ImageGenTaskStatus.RUNNING.name());
+        when(taskDao.selectById(7L)).thenReturn(task);
+
+        ImagesResponse response = new ImagesResponse();
+        ImagesResponse.Image image = new ImagesResponse.Image();
+        image.setUrl(GENERATED_URL);
+        response.setData(List.of(image));
+        when(arkService.generateImages(any(GenerateImagesRequest.class))).thenReturn(response);
+
+        byte[] bytes = { 1, 2, 3 };
+        when(restTemplate.exchange(eq(URI.create(GENERATED_URL)), eq(HttpMethod.GET),
+                any(HttpEntity.class), eq(byte[].class))).thenReturn(ResponseEntity.ok(bytes));
+        when(taskDao.update(isNull(), any(UpdateWrapper.class))).thenReturn(1);
+
+        executor.generate(7L);
+
+        verify(mediaCheckService, never()).mediaCheckAsync(anyString(), anyString());
+        ArgumentCaptor<UpdateWrapper> captor = ArgumentCaptor.forClass(UpdateWrapper.class);
+        verify(taskDao).update(isNull(), captor.capture());
+        assertThat(captor.getValue().getSqlSet()).contains("status=").contains("counted=").contains("result_url=");
+    }
+
+    @Test
     @DisplayName("generate - 多图参考调用Seedream，结果上传OSS并推进REVIEWING")
     void generate_happyPath_reviewsResult() {
         ImageGenTaskEntity task = task(ImageGenTaskStatus.RUNNING.name());

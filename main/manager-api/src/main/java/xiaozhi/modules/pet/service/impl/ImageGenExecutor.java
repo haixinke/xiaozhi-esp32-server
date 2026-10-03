@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -65,6 +66,10 @@ public class ImageGenExecutor {
     private final OssService ossService;
     private final WechatMediaCheckService mediaCheckService;
 
+    /** 跳过微信内容审核：仅限本地调试（审核回调打不到本地），生产必须为 false */
+    @Value("${pet.image-gen.skip-media-check:false}")
+    private boolean skipMediaCheck;
+
     public ImageGenExecutor(ImageGenTaskDao imageGenTaskDao,
             WechatUserDao wechatUserDao,
             SeedreamProperties seedreamProperties,
@@ -117,6 +122,20 @@ public class ImageGenExecutor {
             String ossKey = "ai-gen/" + task.getUserId() + "/" + task.getId() + ".png";
             ossService.upload(ossKey, imageBytes, CannedAccessControlList.PublicRead);
             String resultUrl = ossService.buildPublicUrl(ossKey);
+
+            if (skipMediaCheck) {
+                // 本地调试旁路：跳过结果图审核，直接成功并计次
+                int rows = imageGenTaskDao.update(null, new UpdateWrapper<ImageGenTaskEntity>()
+                        .eq("id", taskId)
+                        .eq("status", ImageGenTaskStatus.RUNNING.name())
+                        .set("status", ImageGenTaskStatus.SUCCEEDED.name())
+                        .set("counted", 1)
+                        .set("result_url", resultUrl));
+                if (rows > 0) {
+                    log.warn("AI生图跳过结果审核直接成功（仅限本地调试）taskId={}, resultUrl={}", taskId, resultUrl);
+                }
+                return;
+            }
 
             String openid = openidOf(task.getUserId());
             if (openid == null) {

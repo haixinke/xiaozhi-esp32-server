@@ -99,6 +99,23 @@ class ImageGenTaskServiceImplTest {
     }
 
     @Test
+    @DisplayName("createTask - 跳过审核开关开启时直接RUNNING并触发生成，不提交微信审核")
+    void createTask_skipMediaCheck_directRunning() {
+        ReflectionTestUtils.setField(service, "skipMediaCheck", true);
+        when(petDao.selectOne(any())).thenReturn(pet());
+        when(taskDao.selectCount(any())).thenReturn(0L);
+
+        ImageGenTaskVO vo = service.createTask(USER_ID, PHOTO_URL);
+
+        ArgumentCaptor<ImageGenTaskEntity> captor = ArgumentCaptor.forClass(ImageGenTaskEntity.class);
+        verify(taskDao).insert(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(ImageGenTaskStatus.RUNNING.name());
+        verify(mediaCheckService, never()).mediaCheckAsync(anyString(), anyString());
+        verify(imageGenExecutor).generateAsync(any());
+        assertThat(vo.getStatus()).isEqualTo(ImageGenTaskStatus.RUNNING.name());
+    }
+
+    @Test
     @DisplayName("createTask - 当日配额已用完时拒绝")
     void createTask_quotaExceeded_rejected() {
         when(petDao.selectOne(any())).thenReturn(pet());

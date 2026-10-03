@@ -51,8 +51,8 @@
     <view wx:elif="{{!hasMore}}" class="list-tip">就这些啦</view>
   </block>
 
-  <!-- 悬浮制作入口：两种状态恒显 -->
-  <view class="fab" bindtap="onMakePhoto">
+  <!-- 悬浮制作入口：有时间轴时显示；空状态已有大按钮，不重复 -->
+  <view wx:if="{{loaded && timelineItems.length > 0}}" class="fab" bindtap="onMakePhoto">
     <text class="fab-text">制作写真</text>
   </view>
 

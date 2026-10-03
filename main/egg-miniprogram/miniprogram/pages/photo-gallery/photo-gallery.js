@@ -21,12 +21,19 @@ Page({
     hasMore: false,
     loadingMore: false,
     viewer: null, // { photos, current } 非空即显示全屏查看器
+    viewerCloseTop: 96, // 查看器关闭按钮 top（px），onLoad 时按胶囊下缘重算
     saving: false
   },
 
   onLoad() {
     this._todayStr = formatToday();
     this._days = [];
+    // 关闭按钮避让右上角小程序胶囊（··· ⊙）：贴胶囊下缘 + 8px 间距
+    try {
+      this.setData({ viewerCloseTop: wx.getMenuButtonBoundingClientRect().bottom + 8 });
+    } catch (error) {
+      // 极少数基础库不支持时保留默认值
+    }
     this._loadPage(1);
   },
 

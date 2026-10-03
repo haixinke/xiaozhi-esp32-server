@@ -9,14 +9,14 @@
 - **技术栈**：微信原生小程序（JS / WXML / WXSS / JSON），无构建工具、无包管理器
 - **工程根**：`project.config.json` 中 `miniprogramRoot: "miniprogram/"`，开发者工具导入 `main/egg-miniprogram/`
 - **AppID**：`wx661d20e88437af73`
-- **设计规范**：[DESIGN.md](./DESIGN.md)；
+- **设计规范**：[DESIGN.md](./DESIGN.md)
+
 ### 与其它子项目的关系
 
 | 交互对象 | 子项目 | 用途 |
 |---|---|---|
 | 后端管理服务 | `main/manager-api/`（Java Spring Boot，端口 8002，上下文 `/xiaozhi`） | 微信注册登录、宠物创建/孵化/破壳、设备绑定 |
 | 聊天服务 | `main/xiaozhi-server/`（Python，WebSocket 端口 8000） | 破壳后语音对话（ASR → LLM → TTS） |
-| 姊妹小程序 | `main/miniprogram/`（"笨笨女友"） | 同生态聊天小程序，架构可参考 |
 
 ## 目录结构
 
@@ -29,38 +29,35 @@ main/egg-miniprogram/
 └── miniprogram/                 # 小程序源码根
     ├── app.js / app.json / app.wxss
     ├── assets/  components/  sitemap.json
-    ├── config/                  # api.js（BASE_URL）、wish-questions.js
+    ├── config/                  # api.js（BASE_URL）、wish-questions.js、age-ranges.js 等
     ├── libs/opus/               # Opus 解码库
-    ├── pages/                   # 20 个页面（见 app.json）
-    └── utils/
+    ├── pages/                   # 25 个页面（见 app.json）
+    └── utils/                   # 27 个模块，按职责命名（*-api.js 为后端封装）
         ├── request.js           # HTTP 封装（Bearer token，401 静默重登）
         ├── auth.js              # 登录态管理
-        ├── pet-api.js           # 宠物 API 封装
         ├── pet-store.js         # 宠物状态缓存层（PetVO ↔ 本地 pet 映射）
-        ├── wechat-api.js        # 微信 API（bindPhone）
-        ├── invite-api.js        # 邀请码 API
-        ├── ota.js               # OTA 设备检查（返回 WS 凭证）
-        ├── websocket.js         # WebSocket 管理器（心跳/重连/分发）
-        ├── audio.js             # 音频管理器（Opus 解码播放）
-        └── *.test.js            # 单元测试
+        ├── ota.js / websocket.js / audio.js   # 语音链路：WS 凭证 → 连接管理 → Opus 播放
+        └── *.test.js            # 单元测试（node 直跑）
 ```
 
-页面清单见 `app.json`（20 个页面，tabBar 为 `home` + `my`）。自定义组件：`nav-bar`、`egg-avatar`、`pet-avatar`、`button`、`card`、`list-row`、`collapse-item`、`mood-badge`、`signal-bars`。
+页面清单见 `app.json`（tabBar 为 `home` + `my`）。自定义组件 14 个，见 `components/`（`nav-bar`、`egg-avatar`、`pet-avatar`、`doodle-editor`、`incubation-scene`、`mood-badge` 等）。
 
-## 当前实现状态
+## 核心链路路由速查
 
-项目**已接入后端服务**，核心链路均走真实 API：
+| 链路 | 入口页面 → 后端/API |
+|---|---|
+| 微信登录 | `app.js` → `wx.login` → `POST /wechat/login` |
+| 手机号绑定 | `pages/home`「添加蛋宝宝」→ `POST /wechat/bindPhone`（领养前置门槛） |
+| 领养 | `pages/add-device` → `POST /pet/adopt`（激活码即邀请码） |
+| 孵化修炼 | `pages/home` 等 → `POST /pet/{id}/hatch-action` |
+| 破壳 | `pet-store.createCollectionCard()` → `POST /pet/{id}/hatch` → 收藏卡页 |
+| 每日心情 | `GET /pet/list` 懒生成 `todayMood`，无值时前端本地 fallback |
+| 语音对话 | `pages/chat` → `ota.js` 取 WS 凭证 → `websocket.js` → `audio.js` 播放 |
+| 邀请码 | `pages/invite-codes` → `GET /invite/mine` |
 
-- **微信登录**：`app.js` → `wx.login` → `POST /wechat/login`；登录态由 `auth.js` 管理（提前 5 分钟续期，401 静默重登）
-- **手机号绑定**：`home.js` 的“添加蛋宝宝”操作 → `POST /wechat/bindPhone`（领取蛋宝宝前的强制门槛；绑定成功后进入邀请码/激活码页面）
-- **领养**：`add-device.js` → `POST /pet/adopt`（激活码即邀请码）
-- **孵化修炼**：`pet-store.js` → `POST /pet/{id}/hatch-action`
-- **破壳**：`pet-store.createCollectionCard()` → `POST /pet/{id}/hatch` → 跳转收藏卡页
-- **每日心情**：后端 `GET /pet/list` 懒生成 `todayMood`，前端优先使用，无值时本地 fallback
-- **语音对话**：`chat.js` → `ota.js` 获取 WS 凭证 → `websocket.js` 连接 → `audio.js` 播放 Opus
-- **邀请码**：`invite-api.js` → `GET /invite/mine`
+登录态由 `utils/auth.js` 管理（提前 5 分钟续期，401 静默重登）。
 
-`pet-store.js` 为本地缓存层：`savePetFromVO(vo)` 将后端 `PetVO` 映射为本地 pet 并缓存，支持离线回显。**后端为唯一事实源**。**尚未实现**：分享图小程序码、数据统计。
+`pet-store.js` 为本地缓存层：`savePetFromVO(vo)` 将后端 `PetVO` 映射为本地 pet 并缓存，支持离线回显。**后端为唯一事实源**。
 
 ## 与后端服务 `manager-api` 的交互
 
@@ -74,20 +71,6 @@ main/egg-miniprogram/
 
 **token / openid / wx.login code 严禁落日志、严禁入库**。未绑定手机号可以进入并浏览首页；点击“添加蛋宝宝”后必须完成手机号授权，才能继续进入邀请码/激活码页面领取蛋宝宝。
 
-### 宠物 API
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/pet/adopt` | `{ inviteCode }` → `PetVO`（`hatchStatus=EGG`，`deviceId=null`） |
-| POST | `/pet/{id}/hatch-action` | `{ type, payload }` → `HatchActionResultVO`（减时 + 幂等） |
-| GET | `/pet/{id}/hatch-actions` | → `HatchActionVO[]` |
-| POST | `/pet/{id}/hatch` | → `PetVO`（破壳：建 device+agent、回填档案） |
-| GET | `/pet/{id}` / `/pet/list` | → `PetVO` / `PetVO[]` |
-| PUT | `/pet/update` | `{ id, nickname }` |
-
-错误码：`PET_ALREADY_HATCHED=10209`、`PET_HATCH_TIME_NOT_REACHED=10214`。
-
-`PetVO` 关键字段：`id, userId, deviceId, nickname, birthDate` / `bazi, wuxing, zodiac, mbti, personality, personalityBrief` / `todayMood, todayMoodDate, todayMoodSentence` / `hatchStatus(EGG/HATCHED), hatchStartTime, expectedHatchTime, hatchedAt, acceleratedMinutes` / `avatarUrl, sceneUrl, prototype, gender, bloodType`。
 
 ### 孵化状态机映射
 
@@ -112,7 +95,7 @@ main/egg-miniprogram/
 | 摸一摸 | `CUDDLE` | 1h/日 | 每日 | `pages/home` 长按 |
 | 许愿池 | `WISH` | 1h/日 | 每日 | `pages/wish` |
 | 蛋蛋早教班 | `LESSON` | 1h/日 | 每日 | `pages/lesson` |
-| 彩蛋涂鸦 | `DOODLE` | 12h | 一次性 | `pages/doodle` |
+| 彩蛋涂鸦 | `DOODLE` | 12h | 一次性 | `pages/home`（doodle-editor 组件） |
 
 "每日一次"由唯一索引 `uk_pet_action_date` 保证。doodle 不做 AI 生图。详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
 
@@ -147,16 +130,71 @@ find main/egg-miniprogram -type f -name '*.js' -print0 | xargs -0 -n1 node --che
 find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 ```
 
-本机联调：`/start-api` 启动后端、`/start-ai` 启动聊天服务、`/mini-ip` 切换 BASE_URL 到本机 IP。
+## 小程序自动化测试
+
+排查或验证**页面级交互问题**（WXML 事件绑定、手势、页面跳转、组件联动）时，不要只靠读代码推测——用下面两个官方工具搭可重复运行的反馈回路。选择标准：纯 JS 逻辑用单测；组件渲染/事件用 simulate；整页交互、只有真引擎才暴露的问题用 automator。
+
+### miniprogram-automator（整页 E2E，驱动真实开发者工具）
+
+适用：页面跳转、WXML 事件绑定、手势交互、原生组件（swiper/image/scroll-view）行为、`wx.*` API 真实行为。凡是「逻辑看着对但真机/模拟器就是不生效」的 bug（如 `catchtouchstart` 吞掉 `bindtap`），只有它能复现。
+
+前置条件：微信开发者工具 → 设置 → 安全设置 → 开启「服务端口」。依赖装在临时目录即可（本项目无 npm 基建，不入库）：
+
+```bash
+mkdir -p /tmp/egg-e2e && cd /tmp/egg-e2e && npm init -y && npm install miniprogram-automator
+```
+
+核心用法：
+
+```js
+const automator = require('miniprogram-automator');
+const miniProgram = await automator.launch({
+  cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+  projectPath: '<repo>/main/egg-miniprogram'
+});
+const page = await miniProgram.reLaunch('/pages/photo-gallery/photo-gallery');
+await page.waitFor(3000);                        // 页面 API 无加载完成回调，用固定等待
+const el = await page.$('.deck-card');           // CSS 选择器；$$ 取全部
+await el.tap();                                  // 还有 touchstart/touchmove/touchend/longpress
+const data = await page.data();                  // 直接读页面 data 断言状态
+await page.callMethod('onCardTap', fakeEvent);   // 绕过事件系统直调页面方法（区分「事件没触发」与「逻辑错了」）
+await miniProgram.evaluate(() => {               // 在小程序上下文执行任意 JS，
+  const p = getCurrentPages().pop();             // 可 monkeypatch 页面方法记录调用
+});
+await miniProgram.close();
+```
+
+调试范式：先 `$()` + `tap()` 复现症状，再 `callMethod()` 直调处理函数——若直调正常而 tap 无效，问题在 WXML 事件绑定层而非 JS 逻辑。
+
+### miniprogram-simulate（组件单测，纯 JS，无需开发者工具）
+
+适用：自定义组件（`components/` 下 nav-bar、egg-avatar 等）的渲染与事件单测，可进 CI。配合 jest 使用：
+
+```js
+const simulate = require('miniprogram-simulate');
+const id = simulate.load('/components/nav-bar/nav-bar');   // 组件路径
+const comp = simulate.render(id, { title: 'AI写真' });     // 传 properties
+comp.attach(document.createElement('parent-wrapper'));     // 挂载触发生命周期
+expect(comp.querySelector('.title').dom.textContent).toBe('AI写真');
+comp.querySelector('.back').dispatchEvent('touchstart');   // 触发事件
+await simulate.sleep(0);
+```
+
+### 选型速查
+
+| 问题层级 | 工具 |
+|---|---|
+| utils/ 纯函数 | 现有 `*.test.js`（node 直跑） |
+| 自定义组件渲染/事件 | miniprogram-simulate |
+| 整页交互、WXML 绑定、手势、原生组件 | miniprogram-automator |
+
 
 ## 约定与注意事项
 
 - 页面/组件保持四件套 `.js/.json/.wxml/.wxss`；新增页面在 `app.json` 注册；`navigationStyle: custom`，所有页面需自带 `nav-bar`。
 - **样式修改必读 [DESIGN.md](./DESIGN.md)**。孵化期只展示蛋形，不展示背景场景（PRD 红线，`verify-project.js` 会校验）。
-- 一个账号只能领养 1 只蛋宝宝（后端 `uk_ai_pet_user_id` 唯一索引保证；`uk_ai_pet_device_id` 另保证一设备一宠物）。
 - 昵称限制：最多 10 个字符（5 汉字），含敏感词拦截。
 - **不入库 / 不落日志**：AppSecret、token、openid、unionid、`wx.login` code 等。
-- 后端 schema 变更走 Liquibase：**新增 changeset + SQL 文件，不编辑已有 changeset**。
 - **WXML 数据绑定禁止使用 `prototype` 作为字段名**：`prototype` 是 JS 原型链保留属性，WXML 引擎会沿原型链命中 `Object.prototype` 而非自身属性，导致渲染空白。改用 `petType` 等别名。
 
 ## 相关文档
@@ -164,6 +202,4 @@ find main/egg-miniprogram -type f -name '*.json' -print0 | xargs -0 -n1 jq empty
 - [DESIGN.md](./DESIGN.md) — 设计系统（改样式必读）
 - [AGENTS.md](./AGENTS.md) — Codex 协作指引
 - [README.md](./README.md) — 说明文档
-- `docs/egg-pet-identity-and-hatch-api.md` — 设备/宠物身份模型与接口契约
 - `../manager-api/CLAUDE.md` — 后端服务架构
-- `../miniprogram/CLAUDE.md` — 姊妹聊天小程序（架构参考）

@@ -37,9 +37,9 @@
                   data-task-id="{{photo.taskId}}"
                   data-idx="{{index}}"
                   data-count="{{item.photos.length}}"
-                  catchtouchstart="onDeckTouchStart"
+                  bindtouchstart="onDeckTouchStart"
                   catchtouchmove="onDeckTouchMove"
-                  catchtouchend="onDeckTouchEnd">
+                  bindtouchend="onDeckTouchEnd">
               <image class="deck-image" src="{{photo.resultUrl}}" mode="aspectFill" lazy-load="{{index > 0}}" />
             </view>
           </view>
@@ -56,17 +56,17 @@
     <text class="fab-text">制作写真</text>
   </view>
 
-  <!-- 全屏查看器：滑切同组，长按唤起底部保存，无常驻按钮 -->
+  <!-- 全屏查看器：滑切同组，单击关闭，长按唤起底部保存 -->
   <view wx:if="{{viewer}}" class="viewer" catchtouchmove="noop">
     <swiper class="viewer-swiper" current="{{viewer.current}}" bindchange="onViewerChange">
       <swiper-item wx:for="{{viewer.photos}}" wx:for-item="photo" wx:key="taskId">
-        <view class="viewer-item">
+        <view class="viewer-item" bindtap="onCloseViewer">
           <image class="viewer-image" src="{{photo.resultUrl}}" mode="aspectFit"
                  bindlongpress="onViewerLongPress" />
         </view>
       </swiper-item>
     </swiper>
-    <view class="viewer-close" bindtap="onCloseViewer">×</view>
+    <view class="viewer-close" style="top: {{viewerCloseTop}}px;" bindtap="onCloseViewer">×</view>
     <view wx:if="{{viewer.photos.length > 1}}" class="viewer-indicator">
       {{viewer.current + 1}} / {{viewer.photos.length}}
     </view>

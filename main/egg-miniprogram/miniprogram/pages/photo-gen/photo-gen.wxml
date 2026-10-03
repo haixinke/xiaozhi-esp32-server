@@ -44,7 +44,6 @@
       <button class="primary-btn" bindtap="onSaveImage" disabled="{{saving}}">
         {{saving ? '保存中…' : '保存到相册'}}
       </button>
-      <button class="ghost-btn" open-type="share">分享给好友</button>
       <button class="ghost-btn" bindtap="onRetry">再来一张</button>
       <button class="ghost-btn" bindtap="onViewGallery">查看写真集</button>
     </view>

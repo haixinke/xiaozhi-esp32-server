@@ -153,6 +153,8 @@ Page({
   },
 
   // 分享小程序卡片：标题用抽中的预置文案（与图内渲染文字同一条）
+  // 结果页无分享按钮（用户数据隔离，好友看不到写真，按钮误导已移除），
+  // 但保留本 handler 供右上角胶囊菜单转发——卡片落 home 页，用于拉新
   onShareAppMessage() {
     return {
       title: this.data.caption || '我和蛋宝宝的 AI 写真',

@@ -1325,6 +1325,45 @@ async function run() {
   pageNoBg.onStoryDragMove({ touches: [{ clientX: 100 }] });
   assert.strictEqual(pageNoBg.data.storyScrollX, 0, 'no story background means no drag');
 
+  // 31a. 多宠换宠手势不被历史拖拽标志卡死（回归：_storyDragMoved 跨手势残留曾导致划不回）
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageSwitchBack = makePage();
+  pageSwitchBack.onLoad();
+  pageSwitchBack.onShow();
+  const petList = [
+    { id: 'pet-egg', prototype: '锦鲤', name: '鲤鲤', createdAt: FIXED_TIMESTAMP - 3 * 24 * 60 * 60 * 1000, hatchStatus: 'EGG' },
+    { id: 'pet-001', prototype: '玉兔', name: '小白', createdAt: FIXED_TIMESTAMP - 2 * 24 * 60 * 60 * 1000, hatchStatus: 'HATCHED' }
+  ];
+  requestGetResult = petList.map((vo) => ({ ...vo }));
+  await pageSwitchBack.loadPetFromServer();
+  assert.strictEqual(pageSwitchBack.data.currentPetIndex, 0, 'first load lands on the earliest adopted pet');
+  // 模拟上滑切到破壳宠物（index 1）。切换经两级 setTimeout（淡出→换宠、淡入→解锁），逐级 flush
+  pageSwitchBack.onPetSwipeStart({ touches: [{ clientX: 187, clientY: 500 }] });
+  pageSwitchBack.onPetSwipeEnd({ changedTouches: [{ clientX: 187, clientY: 300 }] });
+  const fadeOutTimer = timerCallback;
+  fadeOutTimer();
+  const fadeInTimer = timerCallback;
+  fadeInTimer();
+  assert.strictEqual(pageSwitchBack.data.currentPetIndex, 1, 'swipe up switches to the second pet');
+  await Promise.resolve();
+  // 在故事空间横向拖拽一次（drag.moved=true，置位 _storyDragMoved）。必须先有 storyImageUrl，
+  // 否则 onStoryDragStart 直接 return，标志不会置位、测试就复现不了 bug
+  pageSwitchBack.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/pano.png' });
+  pageSwitchBack.onStoryDragStart({ touches: [{ clientX: 300 }] });
+  pageSwitchBack.onStoryDragMove({ touches: [{ clientX: 100 }] });
+  pageSwitchBack.onStoryDragEnd();
+  // 下滑想切回：新手势 touchstart 先到 .page——必须清掉残留标志，否则换宠被误拦
+  pageSwitchBack.onPetSwipeStart({ touches: [{ clientX: 187, clientY: 300 }] });
+  pageSwitchBack.onPetSwipeEnd({ changedTouches: [{ clientX: 187, clientY: 500 }] });
+  const fadeOutTimer2 = timerCallback;
+  fadeOutTimer2();
+  const fadeInTimer2 = timerCallback;
+  fadeInTimer2();
+  assert.strictEqual(pageSwitchBack.data.currentPetIndex, 0,
+    'swipe down after a horizontal story drag switches back to the first pet (stale drag flag cleared)');
+
   // 32. 聊天入口 icon 按原型选图：玉兔/锦鲤/未知兜底
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -1350,7 +1389,7 @@ async function run() {
   pageEggIcon.onShow();
   assert.ok(pageEggIcon.data.storyChatIcon.includes('find_home_egg'), 'unknown prototype falls back to the egg icon');
 
-  // 32a. 破壳后右下角 AI 写真入口：点击跳转 photo-gen 页
+  // 32a. 破壳后右下角 AI 写真入口：点击跳转写真集页（photo-gen 已被 photo-gallery 取代）
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatched');
@@ -1359,7 +1398,7 @@ async function run() {
   pagePhotoEntry.onShow();
   assert.ok(pagePhotoEntry.data.photoEntryIcon, 'photo entry icon present');
   pagePhotoEntry.onPhotoEntryTap();
-  assert.strictEqual(navigatedTo, '/pages/photo-gen/photo-gen', 'photo entry navigates to photo-gen page');
+  assert.strictEqual(navigatedTo, '/pages/photo-gallery/photo-gallery', 'photo entry navigates to photo-gallery page');
 
   // 33. 背景图加载后按真实宽高比扩展轨道，初始居中，整张图任何区域都能拖到
   resetScenario();

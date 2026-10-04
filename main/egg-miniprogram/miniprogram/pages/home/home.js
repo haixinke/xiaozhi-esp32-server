@@ -1020,6 +1020,11 @@ Page({
   // 多宠物上下滑动切换：记录手势起点；只有多只宠物且无弹层/破壳视频时才允许切换，
   // 单宠物用户手势完全不生效（无滑动、无切换 UI）
   onPetSwipeStart(event) {
+    // 上一次手势的拖拽标志（onStoryDragEnd 置位，供同手势 tap 抑制）不得跨手势残留，
+    // 否则横向拖过故事背景一次后，后续所有垂直换宠滑动都被 onPetSwipeEnd 误拦——
+    // 无论本次手势起点落在无 touch 绑定的 fixed story-track 还是 pet-view，touchstart
+    // 冒泡到 .page 必先于 touchend 触发，此处清零是可靠复位点
+    this._storyDragMoved = false;
     if (!this.canSwitchPet()) return;
     const touch = event && event.touches && event.touches[0];
     if (!touch) return;

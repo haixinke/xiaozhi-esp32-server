@@ -185,9 +185,9 @@ class PetServiceImplCreateEggTest {
     }
 
     @Test
-    @DisplayName("createEgg 用户已有宠物时抛 PET_ALREADY_EXISTS，不再插库")
+    @DisplayName("createEgg 用户已有同原型宠物时抛 PET_ALREADY_EXISTS，不再插库")
     void createEggWhenUserAlreadyHasPetThrows() {
-        // 一人一宠（当前产品规则）：预检查命中即拒绝
+        // 同原型限一只（领养名额规则）：预检查命中即拒绝
         when(petDao.exists(any())).thenReturn(true);
 
         assertThatThrownBy(() -> petService.createEgg(1008L, "锦鲤"))
@@ -195,6 +195,37 @@ class PetServiceImplCreateEggTest {
                 .satisfies(ex -> assertThat(((RenException) ex).getCode())
                         .isEqualTo(xiaozhi.common.exception.ErrorCode.PET_ALREADY_EXISTS));
         verify(petDao, org.mockito.Mockito.never()).insert(any(PetEntity.class));
+    }
+
+    @Test
+    @DisplayName("createEgg 名额检查按原型限定：已有其他原型不占用本原型名额")
+    void createEgg_existCheckScopedToSamePrototype() {
+        // 领养名额规则：NFC 渠道同用户跨原型多只、同原型限一只。
+        // 检查条件必须同时带 user_id + prototype + deleted_at=0，
+        // 否则已有玉兔的用户无法再领锦鲤（退化成一人一宠）
+        when(petDao.exists(any(QueryWrapper.class))).thenReturn(false);
+
+        petService.createEgg(1010L, "锦鲤");
+
+        ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(petDao).exists(captor.capture());
+        QueryWrapper<PetEntity> wrapper = captor.getValue();
+        assertThat(wrapper.getSqlSegment()).contains("prototype =");
+        assertThat(wrapper.getParamNameValuePairs()).containsValue("锦鲤");
+    }
+
+    @Test
+    @DisplayName("createEgg 同原型宠物已逻辑删除时不占名额，可重新创建")
+    void createEgg_deletedSamePrototypePet_doesNotOccupyQuota() {
+        // 已删除=不存在：同原型已删宠物被 deleted_at=0 条件过滤，exists 返回 false
+        when(petDao.exists(any(QueryWrapper.class))).thenReturn(false);
+
+        PetVO result = petService.createEgg(1011L, "玉兔");
+
+        ArgumentCaptor<PetEntity> pet = ArgumentCaptor.forClass(PetEntity.class);
+        verify(petDao).insert(pet.capture());
+        assertThat(pet.getValue().getPrototype()).isEqualTo("玉兔");
+        assertThat(result.getPrototype()).isEqualTo("玉兔");
     }
 
     @Test

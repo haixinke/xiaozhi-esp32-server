@@ -312,11 +312,12 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PetVO createEgg(Long userId, String prototype) {
-        // 一人一宠（当前产品规则）：与 adopt() 同一约束同一错误码。
-        // 预检查拦截常规重复领养；catch 兜底预检查与插入之间的并发窗口（唯一索引冲突）。
+        // 领养名额规则：NFC 渠道同用户跨原型多只、同原型限一只（与 adopt() 的全渠道一只不同，
+        // 此处检查按原型限定）。预检查拦截常规重复领养；catch 兜底预检查与插入之间的并发窗口（唯一索引冲突）。
         requireCreatableEggInput(userId, prototype);
         QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
         existWrapper.eq("user_id", userId);
+        existWrapper.eq("prototype", prototype);
         // 逻辑删除的宠物不占领养名额：删除后可再领养
         existWrapper.eq("deleted_at", 0);
         if (petDao.exists(existWrapper)) {

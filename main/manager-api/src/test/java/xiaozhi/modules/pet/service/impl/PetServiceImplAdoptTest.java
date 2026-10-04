@@ -378,4 +378,24 @@ class PetServiceImplAdoptTest {
         verify(petDao).exists(captor.capture());
         assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
     }
+
+    @Test
+    @DisplayName("adopt - 名额检查为全渠道判定：不带 prototype/source 条件，已有 NFC 宠物同样拦截")
+    void adopt_existCheckCoversAllChannels() {
+        // 渠道互斥（双向）：邀请码渠道限一只，已有任何来源（含 NFC）的未删宠物即拦截。
+        // 该语义靠检查条件「不含 prototype/source 过滤」成立，锁定防止误改成按原型限定
+        when(petDao.exists(any(QueryWrapper.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> petService.adopt(1001L, new PetAdoptDTO()))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
+
+        ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(petDao).exists(captor.capture());
+        String sqlSegment = captor.getValue().getSqlSegment();
+        assertThat(sqlSegment).contains("deleted_at =");
+        assertThat(sqlSegment).doesNotContain("prototype");
+        assertThat(sqlSegment).doesNotContain("source");
+    }
 }

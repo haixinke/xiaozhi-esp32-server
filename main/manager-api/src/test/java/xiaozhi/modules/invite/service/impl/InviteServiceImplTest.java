@@ -84,7 +84,8 @@ class InviteServiceImplTest {
         assertThat(vo.getRemaining()).isEqualTo(5);
         assertThat(vo.getUsedCount()).isZero();
         assertThat(vo.getStatus()).isEqualTo(1);
-        assertThat(vo.getCode()).hasSize(8);
+        // 邀请码现为 5 位（见 InviteCodeGenerator.LENGTH，commit 3762bdd3 有意从 8 缩短到 5）
+        assertThat(vo.getCode()).hasSize(5);
         verify(inviteCodeDao).insert(any(InviteCodeEntity.class));
     }
 

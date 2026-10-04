@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -34,6 +34,7 @@ import org.springframework.context.MessageSource;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.DeleteObjectsRequest;
 import com.aliyun.oss.model.OSSObject;
+import com.aliyun.oss.model.PutObjectRequest;
 
 import xiaozhi.common.config.AliyunOssProperties;
 import xiaozhi.common.exception.ErrorCode;
@@ -101,7 +102,12 @@ class OssServiceTest {
         String result = ossService.upload(ossKey, data);
 
         assertThat(result).isEqualTo(ossKey);
-        verify(ossClient).putObject(eq("test-bucket"), eq(ossKey), any(ByteArrayInputStream.class));
+        // 生产代码使用 PutObjectRequest 承载元数据（contentLength/ACL），校验 bucket 与 key
+        ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        verify(ossClient).putObject(captor.capture());
+        assertThat(captor.getValue().getBucketName()).isEqualTo("test-bucket");
+        assertThat(captor.getValue().getKey()).isEqualTo(ossKey);
+        assertThat(captor.getValue().getMetadata().getContentLength()).isEqualTo(data.length);
     }
 
     @Test

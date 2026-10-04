@@ -266,12 +266,14 @@ public PetVO hatch(Long userId, String petId) {
 | `type` | 含义 | 减少时长 | 幂等类型 | payload | 前端页面 |
 |---|---|---|---|---|---|
 | `NICKNAME` | 起昵称 | 720 分（12h） | 一次性 | `{ "nickname": "小金" }` | `pages/nickname` |
-| `CUDDLE` | 摸一摸 | 60 分（1h） | 每日 | `{ }` | `pages/home` 长按蛋壳 |
-| `WISH` | 许愿池 | 60 分（1h） | 每日 | `{ "value": "许愿内容" }` | `pages/wish` |
-| `LESSON` | 蛋蛋早教班 | 60 分（1h） | 每日 | `{ "value": "课程/选择值" }` | `pages/lesson` |
+| `CUDDLE` | 摸一摸 | 120 分（2h） | 每日 | `{ }` | `pages/home` 长按蛋壳 |
+| `WISH` | 许愿池 | 120 分（2h） | 每日 | `{ "value": "许愿内容" }` | `pages/wish` |
+| `LESSON` | 蛋蛋早教班 | 120 分（2h） | 每日 | `{ "value": "课程/选择值" }` | `pages/lesson` |
 | `DOODLE` | 彩蛋涂鸦 | 720 分（12h） | 一次性 | `{ "color": "#FFD700", "colorName": "金色", "pattern": "波点" }` | `pages/doodle` |
 
 > **doodle 不做 AI 生图**：涂鸦仅记录用户选择的颜色/图样 payload，不调用 AI 生图能力。
+>
+> **减时分钟数以 `HatchActionType` 枚举现行值为准**（每日动作 CUDDLE/WISH/LESSON 现为 120 分/2h）。
 
 ### 10.4 减时公式（Model X）
 

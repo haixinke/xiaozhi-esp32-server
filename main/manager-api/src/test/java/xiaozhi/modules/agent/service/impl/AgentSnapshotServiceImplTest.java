@@ -1101,7 +1101,7 @@ class AgentSnapshotServiceImplTest {
 
         service.updateAgentById(agentId, update);
 
-        InOrder inOrder = inOrder(agentDao, snapshotService, null);
+        InOrder inOrder = inOrder(agentDao, snapshotService);
         inOrder.verify(snapshotService).createSnapshot(agentId, "initial");
         inOrder.verify(agentDao).updateById(argThat((AgentEntity agent) -> "new-name".equals(agent.getAgentName())));
         inOrder.verify(snapshotService).createSnapshot(agentId, "config");
@@ -1135,7 +1135,7 @@ class AgentSnapshotServiceImplTest {
 
         service.updateAgentById(agentId, update);
 
-        InOrder inOrder = inOrder(agentDao, snapshotService, null);
+        InOrder inOrder = inOrder(agentDao, snapshotService);
         inOrder.verify(snapshotService).createSnapshot(agentId, "current");
         inOrder.verify(agentDao).updateById(argThat((AgentEntity agent) -> "new-name".equals(agent.getAgentName())));
         inOrder.verify(snapshotService).createSnapshot(agentId, "config");
@@ -1168,7 +1168,7 @@ class AgentSnapshotServiceImplTest {
 
         String agentId = service.createAgent(dto);
 
-        InOrder inOrder = inOrder(agentDao, pluginMappingService, snapshotService, null);
+        InOrder inOrder = inOrder(agentDao, pluginMappingService, snapshotService);
         inOrder.verify(agentDao).insert(argThat((AgentEntity agent) -> "test123".equals(agent.getAgentName())
                 && "普通话".equals(agent.getTtsLanguage())
                 && "".equals(agent.getSummaryMemory())
@@ -1631,7 +1631,7 @@ class AgentSnapshotServiceImplTest {
         assertTrue(sql.contains("restore_from_snapshot_id"));
         assertTrue(sql.contains("restore_from_version_no"));
         assertTrue(sql.contains("idx_snapshot_user_created_at"));
-        assertTrue(sql.contains("DEFAULT (JSON_OBJECT())"));
+        // 202607071530.sql 已合并进主 changelog；其 JSON DEFAULT 子句在 68ca7479 中按需移除，无需再断言
         assertTrue(master.contains("202607071530.sql"));
         assertFalse(master.contains("202607081150.sql"));
         assertFalse(master.contains("202607081230.sql"));

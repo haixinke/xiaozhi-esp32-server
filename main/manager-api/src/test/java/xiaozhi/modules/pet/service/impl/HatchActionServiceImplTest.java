@@ -133,7 +133,7 @@ class HatchActionServiceImplTest {
     }
 
     @Test
-    @DisplayName("后续WISH - acceleratedMinutes累加60, expectedHatchTime重算变小, added=60")
+    @DisplayName("后续WISH - acceleratedMinutes累加120, expectedHatchTime重算变小, added=120")
     void subsequentWish_accumulatesAndRecomputesExpected() {
         PetEntity pet = eggPet();
         long startTs = 1_700_000_000_000L;
@@ -148,14 +148,14 @@ class HatchActionServiceImplTest {
         long originalExpected = pet.getExpectedHatchTime().getTime();
         HatchActionResultVO result = service.recordHatchAction(USER_ID, PET_ID, dto);
 
-        assertThat(result.getAddedMinutes()).isEqualTo(60);
+        assertThat(result.getAddedMinutes()).isEqualTo(120);
 
         ArgumentCaptor<PetEntity> petCaptor = ArgumentCaptor.forClass(PetEntity.class);
         verify(petDao).updateById(petCaptor.capture());
         PetEntity updated = petCaptor.getValue();
-        assertThat(updated.getAcceleratedMinutes()).isEqualTo(780);
+        assertThat(updated.getAcceleratedMinutes()).isEqualTo(840);
         long expected = updated.getExpectedHatchTime().getTime();
-        long baseExpected = startTs + SEVEN_DAYS_MS - 780 * ONE_MINUTE_MS;
+        long baseExpected = startTs + SEVEN_DAYS_MS - 840 * ONE_MINUTE_MS;
         assertThat(expected).isEqualTo(Math.max(baseExpected, startTs));
         // 比动作前更早(加速使其提前)
         assertThat(expected).isLessThan(originalExpected);

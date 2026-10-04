@@ -114,10 +114,12 @@ PRD §5.3 是「双轨孵化（进度不减时）」；本实现按产品确认�
 | type | 加速 | 幂等 | payload |
 |---|---|---|---|
 | `NICKNAME` | 720 分（12h） | 一次性 | `{ nickname }`（≤10字符+敏感词） |
-| `CUDDLE` | 60 分 | 每日 | `{ }` |
-| `WISH` | 60 分 | 每日 | `{ value }` |
-| `LESSON` | 60 分 | 每日 | `{ value }` |
+| `CUDDLE` | 120 分（2h） | 每日 | `{ }` |
+| `WISH` | 120 分（2h） | 每日 | `{ value }` |
+| `LESSON` | 120 分（2h） | 每日 | `{ value }` |
 | `DOODLE` | 720 分（12h） | 一次性 | `{ color, colorName, pattern }`（不做 AI 生图） |
+
+> 各动作减时分钟数以 `HatchActionType` 枚举现行值为准（每日动作现为 120 分/2h）。
 
 - 出参 `HatchActionResultVO { addedMinutes, alreadyDone, readyToHatch, pet: PetVO }`。当日已完成/一次性已完成 → `alreadyDone=true, addedMinutes=0`，不重复减时。
 - 已破壳 → `PET_ALREADY_HATCHED`(10209)。

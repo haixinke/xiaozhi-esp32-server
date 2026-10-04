@@ -92,12 +92,12 @@ main/egg-miniprogram/
 | 动作 | type | 减时 | 幂等 | 前端页面 |
 |---|---|---|---|---|
 | 起昵称 | `NICKNAME` | 12h | 一次性 | `pages/nickname` |
-| 摸一摸 | `CUDDLE` | 1h/日 | 每日 | `pages/home` 长按 |
-| 许愿池 | `WISH` | 1h/日 | 每日 | `pages/wish` |
-| 蛋蛋早教班 | `LESSON` | 1h/日 | 每日 | `pages/lesson` |
+| 摸一摸 | `CUDDLE` | 2h/日 | 每日 | `pages/home` 长按 |
+| 许愿池 | `WISH` | 2h/日 | 每日 | `pages/wish` |
+| 蛋蛋早教班 | `LESSON` | 2h/日 | 每日 | `pages/lesson` |
 | 彩蛋涂鸦 | `DOODLE` | 12h | 一次性 | `pages/home`（doodle-editor 组件） |
 
-"每日一次"由唯一索引 `uk_pet_action_date` 保证。doodle 不做 AI 生图。详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
+"每日一次"由唯一索引 `uk_pet_action_date` 保证。减时分钟数以 manager-api `HatchActionType` 枚举现行值为准（每日动作现为 120 分/2h）。doodle 不做 AI 生图。详见 `docs/egg-pet-identity-and-hatch-api.md` 第 10 节。
 
 ### 设备 / 宠物身份模型
 

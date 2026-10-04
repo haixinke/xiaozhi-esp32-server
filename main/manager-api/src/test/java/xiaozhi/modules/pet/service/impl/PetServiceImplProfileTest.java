@@ -11,8 +11,11 @@ import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.vo.UserProfileVO;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.context.annotation.Import;
+import xiaozhi.common.config.TestArkServiceConfig;
 
 @Slf4j
+@Import(TestArkServiceConfig.class)
 @SpringBootTest
 @ActiveProfiles("dev")
 @DisplayName("PetService UserProfile 功能测试")

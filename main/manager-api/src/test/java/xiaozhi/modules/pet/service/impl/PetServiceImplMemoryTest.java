@@ -18,8 +18,11 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.springframework.context.annotation.Import;
+import xiaozhi.common.config.TestArkServiceConfig;
 
 @Slf4j
+@Import(TestArkServiceConfig.class)
 @SpringBootTest
 @ActiveProfiles("dev")
 @DisplayName("PetService Memory 功能测试")

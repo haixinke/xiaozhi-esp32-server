@@ -17,8 +17,11 @@ import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.context.annotation.Import;
+import xiaozhi.common.config.TestArkServiceConfig;
 
 @Slf4j
+@Import(TestArkServiceConfig.class)
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("dev")

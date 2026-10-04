@@ -18,8 +18,11 @@ import xiaozhi.modules.security.dto.LoginDTO;
 import xiaozhi.modules.security.dto.SmsVerificationDTO;
 import xiaozhi.modules.sys.dto.RetrievePasswordDTO;
 import xiaozhi.modules.sys.service.SysUserService;
+import org.springframework.context.annotation.Import;
+import xiaozhi.common.config.TestArkServiceConfig;
 
 @Slf4j
+@Import(TestArkServiceConfig.class)
 @SpringBootTest
 @ActiveProfiles("dev")
 class loginControllerTest {

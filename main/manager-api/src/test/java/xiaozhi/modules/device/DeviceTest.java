@@ -15,8 +15,11 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.modules.sys.dto.SysUserDTO;
 import xiaozhi.modules.sys.service.SysUserService;
+import org.springframework.context.annotation.Import;
+import xiaozhi.common.config.TestArkServiceConfig;
 
 @Slf4j
+@Import(TestArkServiceConfig.class)
 @SpringBootTest
 @ActiveProfiles("dev")
 @DisplayName("设备测试")

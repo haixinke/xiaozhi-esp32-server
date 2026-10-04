@@ -26,6 +26,8 @@ import xiaozhi.modules.invite.dto.InviteCodeCreateDTO;
 import xiaozhi.modules.invite.entity.InviteUsageEntity;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.invite.vo.InviteCodeVO;
+import org.springframework.context.annotation.Import;
+import xiaozhi.common.config.TestArkServiceConfig;
 
 /**
  * 邀请码消耗并发集成测试。
@@ -39,6 +41,7 @@ import xiaozhi.modules.invite.vo.InviteCodeVO;
  * （自身 {@code @Transactional}）在独立事务中提交，工作线程可见；通过 {@link AfterEach} 清理
  * 测试产生的企业码及其使用记录，避免污染 dev 库。
  */
+@Import(TestArkServiceConfig.class)
 @SpringBootTest
 @ActiveProfiles("dev")
 @DisplayName("邀请码消耗并发集成测试")

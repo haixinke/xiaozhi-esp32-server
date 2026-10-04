@@ -13,7 +13,7 @@
     <text wx:if="{{productName}}" class="panel-title">{{productName}}</text>
     <text wx:if="{{petType}}" class="panel-prototype">原型：{{petType}}</text>
     <text wx:if="{{statusLabel}}" class="panel-status">{{statusLabel}}</text>
-    <text class="panel-desc">领取前需要授权手机号，用于保障你的蛋宝宝账号安全。</text>
+    <text class="panel-desc">领取前需要授权手机号，用于保障您的蛋宝宝账号安全。</text>
     <button class="primary-button" open-type="getPhoneNumber" loading="{{authorizingPhone}}" disabled="{{authorizingPhone}}" bindgetphonenumber="onAuthorizePhone">授权手机号并领取</button>
   </view>
 
@@ -30,9 +30,9 @@
   <view wx:elif="{{state === 'SUCCESS'}}" class="center-panel">
     <view class="icon-circle icon-circle--success"><text class="icon-emoji">🎉</text></view>
     <text class="panel-title">领取成功！</text>
-    <text wx:if="{{pet}}" class="panel-desc">{{pet.petType}}已来到你的蛋宝宝家园。</text>
+    <text wx:if="{{pet}}" class="panel-desc">{{pet.petType}}已来到您的蛋宝宝家园。</text>
     <!-- 渠道互斥：领取替换了邀请码宠物时，轻提示数据去向，防「数据丢失」误解（ADR 0007） -->
-    <text wx:if="{{replacedInvitePet}}" class="panel-desc panel-note">你的体验宠物已随本次领取替换，原数据已在平台侧保留。</text>
+    <text wx:if="{{replacedInvitePet}}" class="panel-desc panel-note">您的虚拟宠物已随本次NFC领取进行替换。</text>
     <button class="primary-button" bindtap="onGoHome">去看看它</button>
   </view>
 

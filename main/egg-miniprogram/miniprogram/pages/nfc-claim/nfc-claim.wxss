@@ -1,11 +1,12 @@
-.page { min-height: 100vh; background: #F8F7EF; }
+/* 纵向弹性布局：内容面板在导航栏以下的剩余空间内垂直居中 */
+.page { min-height: 100vh; background: #F8F7EF; display: flex; flex-direction: column; }
 
-.loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 280rpx; }
+.loading { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .loading-spinner { width: 64rpx; height: 64rpx; border-radius: 50%; border: 5rpx solid rgba(0,41,0,.10); border-top-color: #002900; animation: spin 0.7s linear infinite; }
 .loading-text { margin-top: 24rpx; font-size: 28rpx; color: #6C6A62; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.center-panel { display: flex; flex-direction: column; align-items: center; padding: 120rpx 56rpx 0; text-align: center; }
+.center-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 56rpx 80rpx; text-align: center; }
 
 .icon-circle { width: 160rpx; height: 160rpx; border-radius: 50%; background: rgba(237,231,142,.30); display: flex; align-items: center; justify-content: center; margin-bottom: 40rpx; }
 .icon-circle--success { background: rgba(134,200,134,.25); }

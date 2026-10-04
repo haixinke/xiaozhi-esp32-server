@@ -39,7 +39,9 @@ Page({
   data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', genderClass: '', zodiacSymbol: '', signatureClass: '', shareReady: false },
 
   onLoad(query) {
-    const pet = petStore.getPet();
+    // 优先按 petId 定位宠物（"我的卡册"跨宠物跳转），缺失/未命中时回退当前激活宠物（兼容旧入口）
+    let pet = query && query.petId ? petStore.getPetById(query.petId) : null;
+    if (!pet) pet = petStore.getPet();
     if (!pet || !pet.collectionCards || pet.collectionCards.length === 0) {
       wx.showToast({ title: '还没有破壳收藏卡', icon: 'none' });
       setTimeout(() => wx.navigateBack(), 600);

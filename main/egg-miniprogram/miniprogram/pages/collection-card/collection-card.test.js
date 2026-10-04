@@ -17,7 +17,15 @@ let inviteMineError = null;
 
 Module._load = function (request, parent, isMain) {
   if (parent && parent.filename === pagePath) {
-    if (request === '../../utils/pet-store') return { getPet: () => null };
+    if (request === '../../utils/pet-store') {
+      return {
+        getPet: () => null,
+        getPetById: (petId) => (petId === 'pet-b'
+          ? { id: 'pet-b', prototype: '玉兔', name: '小玉', hatchedAt: Date.now(), collectionCards: [{ id: 'c3', brief: '兔首卡', style: '锦' }] }
+          : null),
+        todayKey: () => '2026-10-04'
+      };
+    }
     if (request === '../../utils/invite-api') {
       return {
         getMine: async () => {
@@ -77,6 +85,36 @@ assert.match(
 (async () => {
   require('./collection-card');
   assert.ok(pageConfig, 'collection-card page should be registered');
+
+// --- onLoad 按 petId 定位宠物（"我的卡册"跨宠物跳转）---
+const wxStubs = {
+  toastTitles: [],
+  navigateBackCount: 0,
+  shareMenus: []
+};
+global.wx = {
+  getStorageSync() { return ''; },
+  showToast(options) { wxStubs.toastTitles.push(options.title); },
+  navigateBack() { wxStubs.navigateBackCount += 1; },
+  hideShareMenu(options) { wxStubs.shareMenus.push(options); },
+  showShareMenu() {}
+};
+const onLoadPage = {
+  ...Object.fromEntries(Object.entries(pageConfig).filter(([, value]) => typeof value === 'function')),
+  data: { ...pageConfig.data },
+  setData(changes) { this.data = { ...this.data, ...changes }; }
+};
+onLoadPage.onLoad({ petId: 'pet-b', index: '0' });
+assert.strictEqual(onLoadPage.data.card.id, 'c3', 'onLoad 按 petId 取到对应宠物的卡');
+assert.strictEqual(onLoadPage.data.card.name, '小玉', '卡片展示所属宠物名');
+assert.strictEqual(onLoadPage.data.pet.name, '小玉', 'pet 为 petId 对应宠物');
+wxStubs.toastTitles.length = 0;
+onLoadPage.onLoad({ petId: 'pet-x', index: '0' });
+assert.strictEqual(wxStubs.toastTitles[0], '还没有破壳收藏卡', 'petId 未命中缓存且激活宠物无卡时兜底 toast');
+// navigateBack 有 600ms 延迟，等它触发后再断言
+await new Promise((resolve) => setTimeout(resolve, 700));
+assert.strictEqual(wxStubs.navigateBackCount, 1, '无卡时返回上一页');
+delete global.wx;
 
   const loadingSharePage = makePage();
   assert.strictEqual(

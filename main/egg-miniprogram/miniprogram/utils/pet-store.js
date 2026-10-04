@@ -100,6 +100,22 @@ function getPet() {
   return pet;
 }
 
+// 按 petId 从多宠物缓存读取宠物（不切换“当前宠物”），“我的卡册”跨宠物聚合与单卡页按 petId 取宠物使用。
+// 与 getPet() 同款 ownerId 校验：换账号后旧缓存不可见
+function getPetById(petId) {
+  if (!petId) return null;
+  const pet = readPetsMap()[String(petId)];
+  const user = getUser();
+  if (pet && pet.ownerId && user && pet.ownerId !== user.id) return null;
+  return pet || null;
+}
+
+// 读取全部缓存宠物（“我的卡册”聚合用户名下所有宠物的收藏卡）；同样按 ownerId 过滤
+function getAllPets() {
+  const user = getUser();
+  return Object.values(readPetsMap()).filter((pet) => pet && (!pet.ownerId || !user || pet.ownerId === user.id));
+}
+
 function savePet(pet) {
   savePetToMap(pet);
   return write(PET_KEY, pet);
@@ -620,6 +636,8 @@ module.exports = {
   clearAccountData,
   getIdentityId,
   getPet,
+  getPetById,
+  getAllPets,
   savePet,
   isBound,
   savePetFromVO,

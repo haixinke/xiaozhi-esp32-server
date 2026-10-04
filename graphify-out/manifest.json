@@ -2025,9 +2025,9 @@
     "semantic_hash": "d5e41830dafb01b93671df42b29cc0a0"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/ProfileControllerTest.java": {
-    "mtime": 1788425021.149173,
-    "ast_hash": "8396af1000a3f1089a46facb1c6c1676",
-    "semantic_hash": "8396af1000a3f1089a46facb1c6c1676"
+    "mtime": 1791112545.2502627,
+    "ast_hash": "edae0ccbdd2e8f0d3d16851a68bb2817",
+    "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/MemoryControllerTest.java": {
     "mtime": 1791112095.425955,
@@ -5260,13 +5260,13 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1791105564.5999563,
-    "ast_hash": "f686e5e0c83acd7b82bfec799ced804f",
+    "mtime": 1791116991.9004335,
+    "ast_hash": "fabc23fd4712b9af50df3d17092f9f50",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
-    "mtime": 1788425021.0746415,
-    "ast_hash": "7063f138ec08ccdf178f474f97439860",
+    "mtime": 1791116991.9013712,
+    "ast_hash": "c6cfe8b2a2bad41b487b18f3205c324a",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/request.js": {
@@ -5285,8 +5285,8 @@
     "semantic_hash": "f93043828dd68c996c6888b9c9fde406"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.js": {
-    "mtime": 1791099518.3008173,
-    "ast_hash": "45b0465476b7a5b87d52bcbd006c6ffe",
+    "mtime": 1791116991.9011872,
+    "ast_hash": "c34632d834e86ec61db196562291bb2c",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store-actions.test.js": {
@@ -5440,14 +5440,14 @@
     "semantic_hash": "be03a2df3784436eff0cc106b6ceb2ce"
   },
   "main/egg-miniprogram/miniprogram/pages/collection-card/collection-card.test.js": {
-    "mtime": 1788425021.0660577,
-    "ast_hash": "a72cd95fd2579599585f586d852027cc",
-    "semantic_hash": "a72cd95fd2579599585f586d852027cc"
+    "mtime": 1791116991.901014,
+    "ast_hash": "7991f3ff5ac5066ea4fd52831df5b2de",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/collection-card/collection-card.js": {
-    "mtime": 1788425021.065922,
-    "ast_hash": "208d4e57ebc97fb6877daa23c60c2f11",
-    "semantic_hash": "208d4e57ebc97fb6877daa23c60c2f11"
+    "mtime": 1791116991.9008377,
+    "ast_hash": "535414b0fb99ea0e1077481a0e3aa045",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/welcome/welcome.test.js": {
     "mtime": 1788425021.0723143,
@@ -5510,9 +5510,9 @@
     "semantic_hash": "533669c00c8f5abc46909dc39b041a61"
   },
   "main/egg-miniprogram/miniprogram/pages/album/album.js": {
-    "mtime": 1788425021.0649974,
-    "ast_hash": "61904ebefaece371c08c4b2a32363c08",
-    "semantic_hash": "61904ebefaece371c08c4b2a32363c08"
+    "mtime": 1791116991.9006166,
+    "ast_hash": "be3633f8e66efb0802531cc74b8e3848",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/deregister/deregister.js": {
     "mtime": 1788425021.0662887,
@@ -8807,6 +8807,11 @@
   "main/manager-api/src/test/java/xiaozhi/common/config/TestArkServiceConfig.java": {
     "mtime": 1791111329.4853992,
     "ast_hash": "64c58dabe7615bb71d8dfca7d871adbf",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/pages/album/album.test.js": {
+    "mtime": 1791117018.6136508,
+    "ast_hash": "f8fd1a212d783b49108ee12659491c29",
     "semantic_hash": ""
   }
 }

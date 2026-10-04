@@ -293,3 +293,22 @@ runUpdateNicknameTests().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+
+// --- getPetById / getAllPets：多宠物缓存读取（"我的卡册"跨宠物聚合依赖） ---
+petStore.clearAccountData();
+petStore.saveUser({ id: 42, nickname: '蛋友' });
+const multiA = petStore.mapPetFromVO({ ...eggVO, id: 'pet-a', nickname: '小金', collectionCards: [{ id: 'c1' }] });
+const multiB = petStore.mapPetFromVO({ ...eggVO, id: 'pet-b', prototype: '玉兔', nickname: '小玉', collectionCards: [{ id: 'c2' }, { id: 'c3' }] });
+petStore.cachePets([multiA, multiB]);
+assert.strictEqual(petStore.getPetById('pet-b').name, '小玉', 'getPetById 按 id 取到对应宠物');
+assert.strictEqual(petStore.getPetById('pet-a').id, 'pet-a', 'getPetById 取到第一只宠物');
+assert.strictEqual(petStore.getPetById('pet-x'), null, 'getPetById 未知 id 返回 null');
+assert.strictEqual(petStore.getPetById(''), null, 'getPetById 空 id 返回 null');
+assert.strictEqual(petStore.getAllPets().length, 2, 'getAllPets 返回全部缓存宠物');
+// ownerId 隔离：换账号后缓存宠物不可见
+petStore.saveUser({ id: 43, nickname: '别人' });
+assert.strictEqual(petStore.getPetById('pet-a'), null, 'getPetById ownerId 不匹配返回 null');
+assert.strictEqual(petStore.getAllPets().length, 0, 'getAllPets 换账号后为空');
+petStore.clearAccountData();
+petStore.saveUser({ id: 42, nickname: '蛋友' });
+console.log('pet-store getPetById/getAllPets: PASS');

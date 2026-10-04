@@ -110,7 +110,7 @@ assert.strictEqual(onLoadPage.data.card.name, '小玉', '卡片展示所属宠�
 assert.strictEqual(onLoadPage.data.pet.name, '小玉', 'pet 为 petId 对应宠物');
 wxStubs.toastTitles.length = 0;
 onLoadPage.onLoad({ petId: 'pet-x', index: '0' });
-assert.strictEqual(wxStubs.toastTitles[0], '还没有破壳收藏卡', 'petId 未命中缓存且激活宠物无卡时兜底 toast');
+assert.strictEqual(wxStubs.toastTitles[0], '收藏卡信息已更新，请刷新后重试', 'petId 未命中缓存时提示并返回，不回退激活宠物');
 // navigateBack 有 600ms 延迟，等它触发后再断言
 await new Promise((resolve) => setTimeout(resolve, 700));
 assert.strictEqual(wxStubs.navigateBackCount, 1, '无卡时返回上一页');

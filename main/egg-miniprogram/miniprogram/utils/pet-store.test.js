@@ -311,4 +311,13 @@ assert.strictEqual(petStore.getPetById('pet-a'), null, 'getPetById ownerId 不�
 assert.strictEqual(petStore.getAllPets().length, 0, 'getAllPets 换账号后为空');
 petStore.clearAccountData();
 petStore.saveUser({ id: 42, nickname: '蛋友' });
-console.log('pet-store getPetById/getAllPets: PASS');
+
+// --- replacePets：整体重建缓存（服务端删除的宠物不再残留） ---
+petStore.cachePets([multiA, multiB]);
+assert.strictEqual(petStore.getAllPets().length, 2, 'replacePets 前提：两只宠物在缓存');
+petStore.replacePets([multiA]);
+assert.strictEqual(petStore.getAllPets().length, 1, 'replacePets 只保留给定宠物');
+assert.strictEqual(petStore.getPetById('pet-b'), null, 'replacePets 后被移除的宠物不可见');
+petStore.replacePets([]);
+assert.strictEqual(petStore.getAllPets().length, 0, 'replacePets 空数组清空缓存');
+console.log('pet-store getPetById/getAllPets/replacePets: PASS');

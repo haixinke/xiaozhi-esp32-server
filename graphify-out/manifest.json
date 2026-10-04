@@ -5260,13 +5260,13 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1791116991.9004335,
+    "mtime": 1791117074.3820438,
     "ast_hash": "fabc23fd4712b9af50df3d17092f9f50",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
-    "mtime": 1791116991.9013712,
-    "ast_hash": "c6cfe8b2a2bad41b487b18f3205c324a",
+    "mtime": 1791117214.5735698,
+    "ast_hash": "0e24ba25c520cf83c0f9742b33b35724",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/request.js": {
@@ -5285,8 +5285,8 @@
     "semantic_hash": "f93043828dd68c996c6888b9c9fde406"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.js": {
-    "mtime": 1791116991.9011872,
-    "ast_hash": "c34632d834e86ec61db196562291bb2c",
+    "mtime": 1791117230.3861325,
+    "ast_hash": "ada5c5c535ee27e4fce437b7550647e1",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store-actions.test.js": {
@@ -5440,13 +5440,13 @@
     "semantic_hash": "be03a2df3784436eff0cc106b6ceb2ce"
   },
   "main/egg-miniprogram/miniprogram/pages/collection-card/collection-card.test.js": {
-    "mtime": 1791116991.901014,
-    "ast_hash": "7991f3ff5ac5066ea4fd52831df5b2de",
+    "mtime": 1791117253.5714228,
+    "ast_hash": "4ac1944b2c74a352d0490beca21f7dcb",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/collection-card/collection-card.js": {
-    "mtime": 1791116991.9008377,
-    "ast_hash": "535414b0fb99ea0e1077481a0e3aa045",
+    "mtime": 1791117248.2075665,
+    "ast_hash": "75aea41fcc2e43e41716913088f32884",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/welcome/welcome.test.js": {
@@ -5510,8 +5510,8 @@
     "semantic_hash": "533669c00c8f5abc46909dc39b041a61"
   },
   "main/egg-miniprogram/miniprogram/pages/album/album.js": {
-    "mtime": 1791116991.9006166,
-    "ast_hash": "be3633f8e66efb0802531cc74b8e3848",
+    "mtime": 1791117240.6522396,
+    "ast_hash": "2b0d77d8690bbe01915c9dc0d68daa22",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/deregister/deregister.js": {
@@ -8810,8 +8810,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/album/album.test.js": {
-    "mtime": 1791117018.6136508,
-    "ast_hash": "f8fd1a212d783b49108ee12659491c29",
+    "mtime": 1791117325.0712287,
+    "ast_hash": "aacde45fcd2fb19c771da5f12bfcb67a",
     "semantic_hash": ""
   }
 }

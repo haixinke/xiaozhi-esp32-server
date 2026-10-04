@@ -14,6 +14,8 @@ let petsProvider = null;
 let listPetsResult = null;
 let listPetsError = null;
 let navigateToUrl = null;
+// 受控延迟的 listPets 队列：每项是一个 () => Promise，供乱序测试注入
+const pendingListPets = [];
 
 const storage = new Map();
 global.wx = {
@@ -30,7 +32,8 @@ Module._load = function (request, parent, isMain) {
       const store = {
         getPetById: (petId) => (petsProvider ? petsProvider.find((p) => String(p.id) === String(petId)) || null : null),
         getAllPets: () => (petsProvider ? petsProvider.slice() : []),
-        cachePets: (pets) => { if (pets && pets.length) petsProvider = pets.map((vo) => vo); },
+        cachePets: () => {},
+        replacePets: (pets) => { petsProvider = (pets || []).map((vo) => vo); },
         mapPetFromVO: (vo) => ({ id: vo.id, prototype: vo.prototype, name: vo.nickname || '', collectionCards: vo.collectionCards || [] })
       };
       return store;
@@ -39,6 +42,8 @@ Module._load = function (request, parent, isMain) {
       return {
         listPets: async () => {
           if (listPetsError) throw listPetsError;
+          // 延迟队列非空：取队首的受控 Promise（乱序测试用），否则同步返回结果
+          if (pendingListPets.length > 0) return pendingListPets.shift()();
           return listPetsResult;
         }
       };
@@ -111,7 +116,7 @@ function makePage() {
   assert.strictEqual(emptyPage.data.cards.length, 0, '无卡宠物不产生条目');
   assert.match(template, /卡册还是空的/, '空态文案保留');
 
-  // --- 网络刷新成功：更新缓存 ---
+  // --- 网络刷新成功：按服务端列表重建缓存 ---
   petsProvider = [];
   listPetsError = null;
   listPetsResult = [
@@ -121,6 +126,29 @@ function makePage() {
   await refreshedPage.onShow();
   assert.strictEqual(refreshedPage.data.cards.length, 1, '刷新成功后按接口数据渲染');
   assert.strictEqual(refreshedPage.data.cards[0].name, '小金', '刷新后 pet 名取自后端 nickname');
+
+  // --- 服务端删除宠物：重建后幽灵宠物不残留 ---
+  listPetsResult = [];
+  const afterDeletePage = makePage();
+  await afterDeletePage.onShow();
+  assert.strictEqual(afterDeletePage.data.cards.length, 0, '空宠物列表重建缓存后卡册清空');
+
+  // --- 乱序防护：慢的旧响应晚到不得重建缓存 ---
+  petsProvider = [{ id: 'pet-z', name: '旧宠', collectionCards: [{ id: 'cz', createDate: '2026-01-01 00:00:00', sortOrder: 0 }] }];
+  listPetsResult = null;
+  listPetsError = null;
+  let resolveOld;
+  // 两次 onShare：第一次挂起（慢），第二次立即返回空列表（快）
+  pendingListPets.push(() => new Promise((resolve) => { resolveOld = resolve; }));
+  pendingListPets.push(() => Promise.resolve([]));
+  const racingPage = makePage();
+  const first = racingPage.onShow();
+  const second = racingPage.onShow();
+  // 快的新响应先落地（清空缓存），慢的旧响应后到（带幽灵宠物）
+  await second;
+  resolveOld([{ id: 'pet-ghost', collectionCards: [] }]);
+  await first;
+  assert.strictEqual(petsProvider.length, 0, '旧响应不重建缓存（乱序丢弃）');
 
   console.log('album.test.js: ALL PASS');
 })().finally(() => {

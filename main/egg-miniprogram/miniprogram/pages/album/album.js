@@ -8,13 +8,17 @@ Page({
 
   async onShow() {
     this._render();
+    // 请求序号：快速重复进出页面时，慢的旧响应不得覆盖新响应的渲染
+    const requestSeq = (this._requestSeq || 0) + 1;
+    this._requestSeq = requestSeq;
     try {
       const list = await petApi.listPets();
+      if (requestSeq !== this._requestSeq) return;
       const pets = (Array.isArray(list) ? list : [])
         .map((vo) => petStore.mapPetFromVO(vo))
         .filter((pet) => !!pet);
-      if (pets.length > 0) petStore.cachePets(pets);
-      // 刷新结果落地后重渲染（可能拉到别处破壳的新卡）
+      // 整体重建缓存（非合并）：服务端已删除的宠物从缓存移除，空列表同样生效
+      petStore.replacePets(pets);
       this._render();
     } catch (error) {
       // 刷新失败：保持缓存渲染，不阻塞页面

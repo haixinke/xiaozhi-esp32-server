@@ -39,8 +39,19 @@ Page({
   data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', genderClass: '', zodiacSymbol: '', signatureClass: '', shareReady: false },
 
   onLoad(query) {
-    // 优先按 petId 定位宠物（"我的卡册"跨宠物跳转），缺失/未命中时回退当前激活宠物（兼容旧入口）
-    let pet = query && query.petId ? petStore.getPetById(query.petId) : null;
+    // 优先按 petId 定位宠物（"我的卡册"跨宠物跳转）。
+    // petId 已给出但缓存未命中（如缓存已重建、宠物刚被删除）时不回退激活宠物——
+    // 否则 index 会张冠李戴套到别家宠物的卡上；直接提示并返回。
+    // petId 缺失（旧入口）才回退当前激活宠物。
+    let pet = null;
+    if (query && query.petId) {
+      pet = petStore.getPetById(query.petId);
+      if (!pet) {
+        wx.showToast({ title: '收藏卡信息已更新，请刷新后重试', icon: 'none' });
+        setTimeout(() => wx.navigateBack(), 600);
+        return;
+      }
+    }
     if (!pet) pet = petStore.getPet();
     if (!pet || !pet.collectionCards || pet.collectionCards.length === 0) {
       wx.showToast({ title: '还没有破壳收藏卡', icon: 'none' });

@@ -143,6 +143,18 @@ function cachePets(pets) {
   write(PETS_KEY, map);
 }
 
+// 按服务端返回的宠物列表整体重建缓存（合并语义的补充）：
+// 不在列表里的宠物（服务端已删除）从缓存移除，防止“我的卡册”等聚合视图渲染幽灵宠物；
+// 空列表同样生效（用户宠物全部删除时清空缓存）。不改动“当前宠物”。
+function replacePets(pets) {
+  if (!Array.isArray(pets)) return;
+  const map = {};
+  pets.forEach((pet) => {
+    if (pet && pet.id) map[String(pet.id)] = pet;
+  });
+  write(PETS_KEY, map);
+}
+
 function isBound() {
   return !!getPet();
 }
@@ -643,6 +655,7 @@ module.exports = {
   savePetFromVO,
   mapPetFromVO,
   cachePets,
+  replacePets,
   setActivePet,
   getActivePetId,
   setActivePetId,

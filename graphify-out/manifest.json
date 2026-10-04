@@ -550,7 +550,7 @@
     "semantic_hash": "f80289140a75fd24886fdd36e0150b4a"
   },
   "main/xiaozhi-server/core/connection.py": {
-    "mtime": 1790988530.6222804,
+    "mtime": 1791015651.0077426,
     "ast_hash": "1d812a0d96422d74836972b4f4db612f",
     "semantic_hash": ""
   },
@@ -1140,7 +1140,7 @@
     "semantic_hash": "587a99f1e831c8a2e6d74dfb5b6dc87c"
   },
   "main/xiaozhi-server/core/utils/tts.py": {
-    "mtime": 1790988530.6225176,
+    "mtime": 1791015651.0080266,
     "ast_hash": "267812e7250f7cd4aceaeceb6b3cb4bc",
     "semantic_hash": ""
   },
@@ -2055,7 +2055,7 @@
     "semantic_hash": "85ef8edca929abcaad6b19a10257f47a"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/HatchActionServiceImplTest.java": {
-    "mtime": 1790988530.6185155,
+    "mtime": 1791015651.0040755,
     "ast_hash": "fc62b06db92c3c5b72f29ba40933bca0",
     "semantic_hash": ""
   },
@@ -2080,8 +2080,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplAdoptTest.java": {
-    "mtime": 1790988530.6190183,
-    "ast_hash": "0468775043e0d15d045c40910703327a",
+    "mtime": 1791097613.8690023,
+    "ast_hash": "613d30eb1db1ade3e2238d80193b2d07",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplTodayMoodTest.java": {
@@ -3105,12 +3105,12 @@
     "semantic_hash": "08c6117b917414cdb28a1dbf03c61e85"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/llm/service/LLMService.java": {
-    "mtime": 1791009446.055211,
+    "mtime": 1791015650.998168,
     "ast_hash": "741a4b05131bc21e65b7aa6ee332619d",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/llm/service/impl/OpenAIStyleLLMServiceImpl.java": {
-    "mtime": 1791010363.1647577,
+    "mtime": 1791015650.9984214,
     "ast_hash": "4e2111cb9f31e33f520afc2538e25554",
     "semantic_hash": ""
   },
@@ -4385,9 +4385,9 @@
     "semantic_hash": "489035b52540000a449cedfb6f5ce851"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/vo/PetVO.java": {
-    "mtime": 1788425021.1218808,
-    "ast_hash": "8e9da6e57e75c45df253de1a7c9398cf",
-    "semantic_hash": "8e9da6e57e75c45df253de1a7c9398cf"
+    "mtime": 1791098007.1260989,
+    "ast_hash": "1e6092ba61bde62fcb53ff95de2418e6",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/vo/MemoryVO.java": {
     "mtime": 1788425021.121799,
@@ -4480,7 +4480,7 @@
     "semantic_hash": "db31d152614666df0c5ec174de4f97f4"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/entity/PetEntity.java": {
-    "mtime": 1790988530.6145794,
+    "mtime": 1791015650.9992359,
     "ast_hash": "16b4cd37a250abb79b75f73e665d048c",
     "semantic_hash": ""
   },
@@ -4515,7 +4515,7 @@
     "semantic_hash": "81bf8261fd5e2f2707d65d1d81c0fd23"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/controller/PetController.java": {
-    "mtime": 1790988530.614276,
+    "mtime": 1791015650.99896,
     "ast_hash": "831d13c52a270e7ac25d69c574e03bf9",
     "semantic_hash": ""
   },
@@ -4555,7 +4555,7 @@
     "semantic_hash": "569efd5eb4fa0c513aaab5df0cfa1ce3"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/PetService.java": {
-    "mtime": 1790988530.6147962,
+    "mtime": 1791015650.9996338,
     "ast_hash": "f015a85e6858c3ede8089023743a3bff",
     "semantic_hash": ""
   },
@@ -4565,7 +4565,7 @@
     "semantic_hash": "0beee21ef560610ce54b95abd5e651f8"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/HatchActionServiceImpl.java": {
-    "mtime": 1790988530.6151042,
+    "mtime": 1791015651.000197,
     "ast_hash": "f1699dc4ea58c088c3b8f845b3b22758",
     "semantic_hash": ""
   },
@@ -4575,8 +4575,8 @@
     "semantic_hash": "212d21e22202a0126f11c9bf7990c0b3"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/PetServiceImpl.java": {
-    "mtime": 1790988530.6156096,
-    "ast_hash": "3484b893a9b9dd409e51e45724584531",
+    "mtime": 1791098008.776496,
+    "ast_hash": "efadd20a4960ae46984b1ee3510e52a2",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/CollectionCardGenerationListener.java": {
@@ -5260,8 +5260,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1791008011.9409883,
-    "ast_hash": "fabc23fd4712b9af50df3d17092f9f50",
+    "mtime": 1791105564.5999563,
+    "ast_hash": "f686e5e0c83acd7b82bfec799ced804f",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5285,8 +5285,8 @@
     "semantic_hash": "f93043828dd68c996c6888b9c9fde406"
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.js": {
-    "mtime": 1788425021.0745587,
-    "ast_hash": "031bc359d7be2a03ff92434c9b0412a9",
+    "mtime": 1791099518.3008173,
+    "ast_hash": "45b0465476b7a5b87d52bcbd006c6ffe",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store-actions.test.js": {
@@ -5405,13 +5405,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1790751997.9778426,
-    "ast_hash": "f13ab69cda172e0b59837f07ab4f381f",
+    "mtime": 1791106656.9487586,
+    "ast_hash": "b1daf78b22e5677f7ba19a7d01294bba",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1790994832.1089365,
-    "ast_hash": "699ef0c7c68affd4395800b444aaefc3",
+    "mtime": 1791106727.1031363,
+    "ast_hash": "cfe80f57050b384bbe6e9c335bf3386e",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -5460,9 +5460,9 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/profile/profile.js": {
-    "mtime": 1788425021.0714245,
-    "ast_hash": "a71ace5067d384f0b6bc775e1c858f1b",
-    "semantic_hash": "a71ace5067d384f0b6bc775e1c858f1b"
+    "mtime": 1791015650.9962845,
+    "ast_hash": "83f196b3dd873a6704688dd86c779f85",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/profile/profile.test.js": {
     "mtime": 1788425021.0715668,
@@ -5880,13 +5880,13 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/resources/application.yml": {
-    "mtime": 1790996022.3259957,
-    "ast_hash": "7d2bef1da1a62f33a2939ec56a4b9ee9",
+    "mtime": 1791015651.0028918,
+    "ast_hash": "540347f4b886f7e41e32075bedf1f610",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1790988530.6164792,
-    "ast_hash": "03e2870ad3cb63dd4c279a23738a8ce8",
+    "mtime": 1791095951.7097533,
+    "ast_hash": "cd982e77002c12ac1fd5628972faa971",
     "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/_common.sh": {
@@ -6110,7 +6110,7 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/app.json": {
-    "mtime": 1790994447.4131582,
+    "mtime": 1791015650.993208,
     "ast_hash": "4446ea69ed66a055054180da3e5afef3",
     "semantic_hash": ""
   },
@@ -6705,7 +6705,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/storyengine/service/impl/PetStoryQueryServiceImpl.java": {
-    "mtime": 1790988530.615837,
+    "mtime": 1791015651.0017307,
     "ast_hash": "2510c2269f8f466201fb4925d147ee6a",
     "semantic_hash": ""
   },
@@ -6875,7 +6875,7 @@
     "semantic_hash": "abe84cc675a3ab71bd806001d8afec81"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplBirthTest.java": {
-    "mtime": 1790988530.6192186,
+    "mtime": 1791015651.0052798,
     "ast_hash": "e4487be1eeb4f3fde13129393f90b0a0",
     "semantic_hash": ""
   },
@@ -6895,7 +6895,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/storyengine/service/impl/PetStoryQueryServiceImplTest.java": {
-    "mtime": 1790988530.6202354,
+    "mtime": 1791015651.0065148,
     "ast_hash": "991094cae9bf37c9bf4deb8c4aea74de",
     "semantic_hash": ""
   },
@@ -7245,7 +7245,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplStoryContextTest.java": {
-    "mtime": 1790988530.6199331,
+    "mtime": 1791015651.0059953,
     "ast_hash": "352feac350f79b71653859771811851e",
     "semantic_hash": ""
   },
@@ -7385,8 +7385,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/nfc-claim/nfc-claim.js": {
-    "mtime": 1790988530.608569,
-    "ast_hash": "5f31b18b78edef3bd2be8d84280ee5fb",
+    "mtime": 1791099339.1667964,
+    "ast_hash": "58b13482cfdcff5881378eb45fa93012",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/nfc-claim/nfc-claim.test.js": {
@@ -7825,8 +7825,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pdc/nfc/service/impl/PdcNfcClaimServiceImpl.java": {
-    "mtime": 1790988530.6122878,
-    "ast_hash": "d746176ac0aa4e8a9dde4ef6764bb124",
+    "mtime": 1791103631.2544599,
+    "ast_hash": "546de4507db8a460052723682a2115a1",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pdc/nfc/service/impl/PdcNfcInventoryServiceImpl.java": {
@@ -7870,8 +7870,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pdc/nfc/task/PdcNfcSchemeJobWorker.java": {
-    "mtime": 1788425021.1128516,
-    "ast_hash": "1611239ac62acf319927389000e58fd3",
+    "mtime": 1791105564.6004026,
+    "ast_hash": "f15e5f0ce6f9ea16dd8b25c8183c2b36",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pdc/nfc/task/PdcNfcSchemeRateLimiter.java": {
@@ -7900,8 +7900,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pdc/nfc/vo/PdcNfcClaimResultVO.java": {
-    "mtime": 1788425021.113328,
-    "ast_hash": "d3fc0a0a3cc58cce42dcc8aaf5271cde",
+    "mtime": 1791098391.2362099,
+    "ast_hash": "b4b695c6bc144c864fa1e6e47e42101b",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pdc/nfc/vo/PdcNfcManualAssetVO.java": {
@@ -8035,8 +8035,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/controller/PdcNfcClaimControllerTest.java": {
-    "mtime": 1788425021.145328,
-    "ast_hash": "792b8fcbedfbd4a176aa319a19c872cb",
+    "mtime": 1791098472.7802477,
+    "ast_hash": "b3577cef2fe12f6bbaf3521cd2a31e2f",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/controller/PdcNfcProductTypeAdminControllerTest.java": {
@@ -8090,8 +8090,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimPreviewServiceTest.java": {
-    "mtime": 1790988530.6174603,
-    "ast_hash": "90d996812c98e363fb94d4850c912282",
+    "mtime": 1791098051.0118217,
+    "ast_hash": "852c85980e2f22200812779f201eb2ea",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimRateLimiterTest.java": {
@@ -8100,8 +8100,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimServiceTest.java": {
-    "mtime": 1788425021.14713,
-    "ast_hash": "a2406229494a9cc375cb190259fd0edf",
+    "mtime": 1791098379.8386526,
+    "ast_hash": "b085ebe726ed5681cb2d0b876a380b60",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcInventoryServiceTest.java": {
@@ -8175,8 +8175,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplCreateEggTest.java": {
-    "mtime": 1790988530.6194427,
-    "ast_hash": "fc436b8f87b7541268121d575c9ec482",
+    "mtime": 1791097593.5004141,
+    "ast_hash": "a4955bec1e8a8fe28cfe8227cbf6f2cc",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/security/oauth2/Oauth2RealmTest.java": {
@@ -8220,7 +8220,7 @@
     "semantic_hash": ""
   },
   "main/manager-web/src/components/nfc/NfcWriteResultImportDialog.vue": {
-    "mtime": 1791000752.810244,
+    "mtime": 1791015651.006803,
     "ast_hash": "051d2a38ef52128a5a527f5067c03735",
     "semantic_hash": ""
   },
@@ -8345,7 +8345,7 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/photo-gen/photo-gen.js": {
-    "mtime": 1791008011.9413214,
+    "mtime": 1791015650.9957955,
     "ast_hash": "887df419d745e01645f389dcf569b90a",
     "semantic_hash": ""
   },
@@ -8355,7 +8355,7 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/image-gen-api.js": {
-    "mtime": 1790994837.2292411,
+    "mtime": 1791015650.9968896,
     "ast_hash": "77df2db2b4f2f7cc534a5d0f10810fd8",
     "semantic_hash": ""
   },
@@ -8365,7 +8365,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/controller/ImageGenController.java": {
-    "mtime": 1790994199.9143596,
+    "mtime": 1791015650.9986758,
     "ast_hash": "9db629f01ef298817dfacd8bebfa31b2",
     "semantic_hash": ""
   },
@@ -8390,17 +8390,17 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/ImageGenTaskService.java": {
-    "mtime": 1790994159.293677,
+    "mtime": 1791015650.9994335,
     "ast_hash": "2fbce64ae956efd005ee024b5b5944f7",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/ImageGenExecutor.java": {
-    "mtime": 1791009623.9161253,
-    "ast_hash": "c7c54bcfc32dbd0ea8ea8b15b8337e10",
+    "mtime": 1791015651.0004745,
+    "ast_hash": "53057f6e8697cc64710ba90ebd3eaa2b",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/ImageGenTaskServiceImpl.java": {
-    "mtime": 1791010373.49564,
+    "mtime": 1791015651.000747,
     "ast_hash": "67bc4a5155cae0ae94d8541946b93847",
     "semantic_hash": ""
   },
@@ -8430,12 +8430,12 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/ImageGenExecutorTest.java": {
-    "mtime": 1791009682.8144882,
+    "mtime": 1791015651.0043325,
     "ast_hash": "ed284de34b8c8f818ae9f24ff0e5d0fb",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/ImageGenTaskServiceImplTest.java": {
-    "mtime": 1791009703.4235466,
+    "mtime": 1791015651.0048368,
     "ast_hash": "ace20d2500f6ec65f062f2b2aa6b7946",
     "semantic_hash": ""
   },
@@ -8730,73 +8730,78 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/controller/PetControllerDeleteTest.java": {
-    "mtime": 1790988530.618258,
+    "mtime": 1791015651.0038207,
     "ast_hash": "71f5edd3c5ac5ad491f4e944f9bd2326",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PetServiceImplDeleteTest.java": {
-    "mtime": 1790988530.6197228,
-    "ast_hash": "f1b62816ba15a6099c6f51a98fa3dd24",
+    "mtime": 1791095951.7099822,
+    "ast_hash": "c5ab5ef025ecc743142655bd76f09de6",
     "semantic_hash": ""
   },
   "main/xiaozhi-server/tests/tts/__init__.py": {
-    "mtime": 1790988530.6225429,
+    "mtime": 1791015651.0080504,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": ""
   },
   "main/xiaozhi-server/tests/tts/test_dialogue_aside.py": {
-    "mtime": 1790988530.623032,
+    "mtime": 1791015651.0084543,
     "ast_hash": "9b666e16f97affd83880f7d35c250270",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/photo-gallery/photo-gallery.js": {
-    "mtime": 1790999584.585484,
+    "mtime": 1791015650.994298,
     "ast_hash": "0e8268579a257eca110ab471b3f3d38f",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/photo-gallery-helper.js": {
-    "mtime": 1790994257.6204545,
+    "mtime": 1791015650.9971356,
     "ast_hash": "56af0980e2c696db10584d3b28cc7579",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/photo-gallery-helper.test.js": {
-    "mtime": 1790994268.4020224,
+    "mtime": 1791015650.9973886,
     "ast_hash": "57a19220992e351cc9b15f6f777b0b7e",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/save-image.js": {
-    "mtime": 1790994833.1380773,
+    "mtime": 1791015650.9976323,
     "ast_hash": "3366b347b32e78b52c3cd748bf87da52",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/vo/ImageGenGalleryVO.java": {
-    "mtime": 1790994097.72533,
+    "mtime": 1791015651.001471,
     "ast_hash": "832a1cc47bb7e414dbd7cc3b4c2d5c6f",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/ImageGenTaskServiceImplGalleryTest.java": {
-    "mtime": 1790995279.60441,
+    "mtime": 1791015651.0046155,
     "ast_hash": "c3e64c6dd04b6be53edc36bf06f291ba",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/PhotoCaptionService.java": {
-    "mtime": 1791009379.6870255,
+    "mtime": 1791015650.9998338,
     "ast_hash": "c36daefdfbbcda1993787d62e6539429",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/pet/service/impl/PhotoCaptionServiceImpl.java": {
-    "mtime": 1791010386.8750072,
+    "mtime": 1791015651.0012798,
     "ast_hash": "f3df13a067eab95bf2db292f73364c47",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pet/service/impl/PhotoCaptionServiceImplTest.java": {
-    "mtime": 1791010399.3517327,
+    "mtime": 1791015651.0061932,
     "ast_hash": "66f0efdefaba5a8e091099eac74db5be",
     "semantic_hash": ""
   },
   "main/manager-web/tests/pdcNfcNestedDialog.test.mjs": {
-    "mtime": 1791000740.0985177,
+    "mtime": 1791015651.0070083,
     "ast_hash": "f08bb9f6c6f3dc1e3c40300fe369e085",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimInviteReplacementIntegrationTest.java": {
+    "mtime": 1791099302.796303,
+    "ast_hash": "5d6fda8dd5d851594399cdaf462a1bb1",
     "semantic_hash": ""
   }
 }

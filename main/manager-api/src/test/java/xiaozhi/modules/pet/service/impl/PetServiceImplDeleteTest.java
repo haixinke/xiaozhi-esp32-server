@@ -6,10 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -26,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
+import org.springframework.dao.DuplicateKeyException;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -137,6 +140,48 @@ class PetServiceImplDeleteTest {
                 .isInstanceOfSatisfying(RenException.class,
                         e -> assertThat(e.getCode()).isEqualTo(ErrorCode.PET_NOT_FOUND));
         verify(petDao, never()).updateById(any(PetEntity.class));
+    }
+
+    @Test
+    @DisplayName("deleteByUserId - 删除时间戳撞唯一键时取新值重试一次成功")
+    void deleteByUserId_duplicateDeletedAt_retriesWithFreshTimestamp() {
+        // Arrange：唯一索引 (user_id, prototype, deleted_at) 下同用户同原型两次删除可能撞同一毫秒，
+        // 第一次 updateById 抛 DuplicateKeyException，第二次成功
+        PetEntity pet = alivePet();
+        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        List<Long> attemptedTimestamps = new ArrayList<>();
+        when(petDao.updateById(any(PetEntity.class)))
+                .thenAnswer(invocation -> {
+                    attemptedTimestamps.add(invocation.<PetEntity>getArgument(0).getDeletedAt());
+                    throw new DuplicateKeyException("uk_ai_pet_user_prototype_deleted");
+                })
+                .thenAnswer(invocation -> {
+                    attemptedTimestamps.add(invocation.<PetEntity>getArgument(0).getDeletedAt());
+                    return 1;
+                });
+
+        // Act：撞键重试后整体成功，不向外抛错
+        service.deleteByUserId(USER_ID, PET_ID);
+
+        // Assert：两次写入且第二次删除时间戳不同于第一次（撞键重试语义）
+        verify(petDao, times(2)).updateById(any(PetEntity.class));
+        assertThat(attemptedTimestamps).hasSize(2);
+        assertThat(attemptedTimestamps.get(1)).isGreaterThan(attemptedTimestamps.get(0));
+    }
+
+    @Test
+    @DisplayName("deleteByUserId - 撞键重试仍失败则向外抛错，不静默吞掉")
+    void deleteByUserId_duplicateDeletedAtTwice_propagates() {
+        // Arrange：两次都撞键（极端场景），不无限重试
+        PetEntity pet = alivePet();
+        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        when(petDao.updateById(any(PetEntity.class)))
+                .thenThrow(new DuplicateKeyException("uk_ai_pet_user_prototype_deleted"));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.deleteByUserId(USER_ID, PET_ID))
+                .isInstanceOf(DuplicateKeyException.class);
+        verify(petDao, times(2)).updateById(any(PetEntity.class));
     }
 
     @Test

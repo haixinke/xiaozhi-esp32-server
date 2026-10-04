@@ -556,9 +556,17 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
             throw new RenException(ErrorCode.PET_NOT_FOUND);
         }
         // 逻辑删除：只写删除时间戳，数据行保留（审计与人工恢复用）；关联数据不级联
+        // 唯一索引 (user_id, prototype, deleted_at) 下同用户同原型两次删除理论上可撞同一毫秒，
+        // 撞唯一键时取更大的时间戳重试一次；仍失败则向外抛错，不无限重试
         pet.setDeletedAt(System.currentTimeMillis());
         pet.setUpdater(userId);
-        petDao.updateById(pet);
+        try {
+            petDao.updateById(pet);
+        } catch (DuplicateKeyException e) {
+            log.warn("宠物删除时间戳撞唯一键，取新值重试: petId={}", petId);
+            pet.setDeletedAt(Math.max(System.currentTimeMillis(), pet.getDeletedAt() + 1));
+            petDao.updateById(pet);
+        }
     }
 
     @Override

@@ -74,6 +74,9 @@ public class PetVO {
     @Schema(description = "IP形象原型(锦鲤/玉兔等)")
     private String prototype;
 
+    @Schema(description = "创建来源: INVITE_CODE(邀请码领养)/NFC(NFC触碰领取)/DEVICE_BIRTH(设备出生)")
+    private String source;
+
     @Schema(description = "性别: MALE/FEMALE/OTHER")
     private String gender;
 

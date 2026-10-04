@@ -46,7 +46,7 @@ class PdcNfcClaimControllerTest {
 
         PetVO petVO = new PetVO();
         petVO.setId("pet-123");
-        PdcNfcClaimResultVO vo = PdcNfcClaimResultVO.claimed(petVO);
+        PdcNfcClaimResultVO vo = PdcNfcClaimResultVO.claimed(petVO, false);
         UUID requestId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
         when(mockService.confirm(null, "abcdefghij1234567890_-", requestId)).thenReturn(vo);
 
@@ -82,7 +82,7 @@ class PdcNfcClaimControllerTest {
 
         PetVO petVO = new PetVO();
         petVO.setId("pet-123");
-        PdcNfcClaimResultVO expected = PdcNfcClaimResultVO.claimed(petVO);
+        PdcNfcClaimResultVO expected = PdcNfcClaimResultVO.claimed(petVO, false);
         UUID requestId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
         when(mockService.confirm(100L, "abcdefghij1234567890_-", requestId)).thenReturn(expected);
 

@@ -828,6 +828,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setCollectionCards(petCollectionCardService.listByPetId(pet.getId()));
         vo.setSceneUrl(pet.getSceneUrl());
         vo.setPrototype(pet.getPrototype());
+        vo.setSource(pet.getSource());
         vo.setGender(pet.getGender());
         vo.setBloodType(pet.getBloodType());
         vo.setPersonalityBrief(pet.getPersonalityBrief());

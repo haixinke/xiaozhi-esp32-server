@@ -350,8 +350,8 @@ class PdcNfcClaimPreviewServiceTest {
 
     @Test
     void activeAssetUserAlreadyOwnsPetReturnsAlreadyOwned() {
-        // 一人一宠：用户已领养过蛋宝宝，触碰激活卡时 preview 直接返回 ALREADY_OWNED，
-        // 前端据此展示"已领取过"面板，不再展示领取按钮
+        // 重复原型拦截：用户已持有同原型 NFC 宠物，触碰同原型激活卡时 preview 返回 ALREADY_OWNED，
+        // 并带上已有宠物供前端「去看看它」跳转；资产保持 ACTIVE 可被他人领取
         setupAllGatesEnabled();
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
@@ -364,12 +364,64 @@ class PdcNfcClaimPreviewServiceTest {
 
         PetVO ownedPet = new PetVO();
         ownedPet.setId("pet-owned");
+        ownedPet.setPrototype("jade_rabbit");
+        ownedPet.setSource("NFC");
         when(petService.listByUserId(USER_ID)).thenReturn(List.of(ownedPet));
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
         assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_ALREADY_OWNED);
-        assertThat(result.pet()).isNull();
+        assertThat(result.pet()).isNotNull();
+        assertThat(((PetVO) result.pet()).getId()).isEqualTo("pet-owned");
+    }
+
+    @Test
+    void activeAssetUserOwnsDifferentPrototypeNfcPetReturnsClaimable() {
+        // 领养名额规则：跨原型多只得兼——已有 NFC 玉兔不挡锦鲤卡领取
+        setupAllGatesEnabled();
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setBatchId(10L);
+        asset.setPrototype("jade_rabbit");
+        asset.setStatus("ACTIVE");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        PetVO ownedPet = new PetVO();
+        ownedPet.setId("pet-koi");
+        ownedPet.setPrototype("koi");
+        ownedPet.setSource("NFC");
+        when(petService.listByUserId(USER_ID)).thenReturn(List.of(ownedPet));
+
+        PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_CLAIMABLE);
+    }
+
+    @Test
+    void activeAssetUserOwnsOnlyInviteCodePetSamePrototypeReturnsClaimable() {
+        // 渠道互斥：ALREADY_OWNED 只统计 NFC 来源宠物——仅有邀请码宠物（哪怕同原型）
+        // 不拦截 NFC 领取，走 confirm 的替换流程（ADR 0007）
+        setupAllGatesEnabled();
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setBatchId(10L);
+        asset.setPrototype("jade_rabbit");
+        asset.setStatus("ACTIVE");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+
+        PetVO invitePet = new PetVO();
+        invitePet.setId("pet-invite");
+        invitePet.setPrototype("jade_rabbit");
+        invitePet.setSource("INVITE_CODE");
+        when(petService.listByUserId(USER_ID)).thenReturn(List.of(invitePet));
+
+        PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_CLAIMABLE);
     }
 
     @Test

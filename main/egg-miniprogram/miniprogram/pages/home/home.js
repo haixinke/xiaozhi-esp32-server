@@ -44,8 +44,7 @@ const STORY_CAPTION_ROTATE_INTERVAL_MS = 60 * 1000;
 // 多宠物上下滑动切换：垂直位移超过该阈值且大于水平位移才判定为换宠，
 // 避免与破壳后故事背景的横向拖拽、点按蛋等手势互相误触
 const PET_SWIPE_THRESHOLD_PX = 60;
-// 切换宠物的整屏渐隐过渡时长（淡出 → 换宠 → 淡入）
-const PET_SWITCH_FADE_OUT_MS = 160;
+// 切换宠物的整屏渐隐过渡时长（淡入）；淡出阶段由预取就绪时点驱动，不再取固定时长
 const PET_SWITCH_FADE_IN_MS = 240;
 // 左下角聊天入口 icon：按宠物原型选图，与静态项目 life-scene 页同一组素材
 // （玉兔/锦鲤为专用聊天 icon v02，未知原型兜底 find_home 蛋 p8 版）；
@@ -1055,13 +1054,16 @@ Page({
   },
 
   // 切换当前宠物：整屏渐隐过渡（只用 opacity，不用 transform——破壳后故事层是 fixed 定位，
-  // transform 会让 fixed 元素改用该容器作为定位基准，破坏全屏布局）
+  // transform 会让 fixed 元素改用该容器作为定位基准，破坏全屏布局）。
+  // 防闪屏：置换帧（卸载旧场景树/挂载新场景树）必须等新宠物首屏资产就绪——
+  // 否则旧树已卸、新背景图未下载完成，opacity:1 时露出页面底色形成全屏闪白。
+  // 预取通道复用 remoteImage 会话缓存：首次切换等待下载，切回再切立即命中。
   switchCurrentPet(index) {
     const pet = this.data.pets[index];
     if (!pet) return;
     this._petSwitching = true;
     this.setData({ petSwitchStyle: 'opacity:0;' });
-    setTimeout(() => {
+    this.prefetchPetAssets(pet).then(() => {
       // 「当前宠物」为客户端概念：切换后聊天等下游页面统一从 pet-store 读到新选中的宠物
       petStore.setActivePet(pet);
       this.setData({ currentPetIndex: index, petSwitchStyle: 'opacity:1;' });
@@ -1071,7 +1073,31 @@ Page({
         this._petSwitching = false;
         this.setData({ petSwitchStyle: '' });
       }, PET_SWITCH_FADE_IN_MS);
-    }, PET_SWITCH_FADE_OUT_MS);
+    });
+  },
+
+  // 预取目标宠物切换后的首屏资产；600ms 超时兜底保证弱网不卡死切换（此时闪屏退化为原状）。
+  // 破壳宠物取故事背景图（与 loadStoryState 同一数据源、同一下载通道）；
+  // 孵化中宠物取环境场景图。失败也放行——renderPet 后续流程本身有静默重试。
+  prefetchPetAssets(pet) {
+    const stage = petStore.getStage(pet);
+    if (stage === 'hatched') {
+      // 仅预取背景图本体；tag 窗景图为次要元素，挂载慢不构成闪屏
+      return storyApi.getStoryState(pet.id).then((state) => {
+        const imageUrl = state && typeof state.imageUrl === 'string' ? state.imageUrl : '';
+        if (!imageUrl) return;
+        return new Promise((resolve) => remoteImage.loadRemoteImage(imageUrl, () => resolve()));
+      }).catch(() => {});
+    }
+    const environment = incubationEnv.resolveForPet(pet, Date.now());
+    const urls = [environment.fullSceneImage, environment.windowImage]
+      .filter((url) => !!url);
+    if (!urls.length) return Promise.resolve();
+    return new Promise((resolve) => {
+      let pending = urls.length;
+      const done = () => { if (--pending <= 0) resolve(); };
+      urls.forEach((url) => remoteImage.loadRemoteImage(url, done));
+    });
   },
 
   // 破壳后右下角 AI 写真入口：跳转写真集页

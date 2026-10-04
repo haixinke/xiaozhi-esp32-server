@@ -3,6 +3,9 @@ const PET_KEY = 'eggbaby_mvp_pet_v1';
 const USER_KEY = 'eggbaby_mvp_user_v1';
 const IDENTITY_KEY = 'eggbaby_mvp_identity_v1';
 const ACTIVE_PET_KEY = 'eggbaby_active_pet_v1';
+// 多宠物缓存：以 petId 为 key 保存每只宠物的完整本地副本，
+// 避免多只宠物共用单条 PET_KEY 缓存时互相同步本地独占字段（tasks/preferences/shell/messages 等）
+const PETS_KEY = 'eggbaby_mvp_pets_v1';
 // 涂鸦操作序列(shell)本地缓存：仅存操作 JSON，用于重开编辑器恢复画布继续编辑；云端只存合成 PNG
 const DOODLE_SHELL_KEY = 'eggbaby_doodle_shell_v1';
 
@@ -74,6 +77,7 @@ function getIdentityId() {
 // 后两个 key 分别由 pages/profile 与 pages/deregister 写入，这里统一纳入清理。
 const ACCOUNT_KEYS = [
   PET_KEY, USER_KEY, IDENTITY_KEY, ACTIVE_PET_KEY,
+  PETS_KEY,
   DOODLE_SHELL_KEY,
   'eggbaby_profile_v1',
   'eggbaby_deregister_request_v1'
@@ -97,7 +101,30 @@ function getPet() {
 }
 
 function savePet(pet) {
+  savePetToMap(pet);
   return write(PET_KEY, pet);
+}
+
+function readPetsMap() {
+  const map = read(PETS_KEY);
+  return map && typeof map === 'object' ? map : {};
+}
+
+function savePetToMap(pet) {
+  if (!pet || !pet.id) return;
+  const map = readPetsMap();
+  map[String(pet.id)] = pet;
+  write(PETS_KEY, map);
+}
+
+// 批量写入多宠物缓存，不改动“当前宠物”；供主页整批刷新宠物列表时使用
+function cachePets(pets) {
+  if (!Array.isArray(pets)) return;
+  const map = readPetsMap();
+  pets.forEach((pet) => {
+    if (pet && pet.id) map[String(pet.id)] = pet;
+  });
+  write(PETS_KEY, map);
 }
 
 function isBound() {
@@ -111,15 +138,18 @@ function toTimestamp(value) {
   return Number.isFinite(ms) ? ms : null;
 }
 
-// 把后端 PetVO 映射成本地 pet 形状并缓存。
+// 把后端 PetVO 映射成本地 pet 形状（纯映射，不写缓存、不切换当前宠物）。
 // 非 demo 修炼动作已接后端：后端 PetVO 不返回前端独占字段(shell/tasks/preferences/messages/inviteCodes/dailyStatus)，
-// 故这些字段从已缓存 pet 合并(首次领养无缓存时回退默认值)，避免每次 action 调用清空本地状态。
+// 故这些字段从该宠物自己的缓存合并(首次领养无缓存时回退默认值)，避免每次 action 调用清空本地状态；
+// 合并源按 petId 隔离（优先多宠物缓存，兼容升级前只有单宠物缓存的老数据），防止多只宠物互相同步本地字段。
 // 后端派生字段(id/hatchStatus/acceleratedMinutes/时间戳/身份字段/todayMood/deviceId)以 vo 为唯一事实源。
 // stage/进度/倒计时由 getStage/getCountdown 从 hatchStatus/hatchAt/acceleratedMinutes 派生。
-function savePetFromVO(vo) {
+function mapPetFromVO(vo) {
   if (!vo || !vo.id) return null;
   const user = getUser();
-  const existing = read(PET_KEY);
+  const map = readPetsMap();
+  const legacy = read(PET_KEY);
+  const existing = map[String(vo.id)] || (legacy && String(legacy.id) === String(vo.id) ? legacy : null);
   const accelerated = vo.acceleratedMinutes || 0;
   const progress = Math.max(0, Math.min(100, Math.round((accelerated / HATCH_TOTAL_MINUTES) * 100)));
   const hatchStartTime = toTimestamp(vo.hatchStartTime);
@@ -168,6 +198,21 @@ function savePetFromVO(vo) {
     sceneUrl: vo.sceneUrl || ''
   };
   if (existing && Array.isArray(existing._hatchActions)) pet._hatchActions = existing._hatchActions;
+  return pet;
+}
+
+// 映射并缓存为“当前宠物”（含多宠物缓存与 activePetId）；单宠物场景行为与之前一致
+function savePetFromVO(vo) {
+  const pet = mapPetFromVO(vo);
+  if (!pet) return null;
+  savePet(pet);
+  setActivePetId(pet.id);
+  return pet;
+}
+
+// 切换“当前宠物”：「当前宠物」是客户端概念，聊天/许愿/早教等下游页面统一从 getPet() 读取当前选中的宠物
+function setActivePet(pet) {
+  if (!pet || !pet.id) return null;
   savePet(pet);
   setActivePetId(pet.id);
   return pet;
@@ -578,6 +623,9 @@ module.exports = {
   savePet,
   isBound,
   savePetFromVO,
+  mapPetFromVO,
+  cachePets,
+  setActivePet,
   getActivePetId,
   setActivePetId,
   bindPet,

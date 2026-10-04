@@ -73,6 +73,9 @@ let storyStateResult = null;
 let storyStateError = null;
 let getStoryStateCalls = 0;
 let lastStoryStatePetId = null;
+let cachedPetsArg = null;
+let setActivePetCalls = 0;
+let lastActivePet = null;
 let intervalDelay = null;
 let intervalCallback = null;
 let intervalIdSequence = 555;
@@ -91,6 +94,14 @@ const petStoreMock = {
   getPet: () => storedPet,
   savePetFromVO: (pet) => {
     savedPetVO = pet;
+    return pet;
+  },
+  mapPetFromVO: (vo) => (vo ? { ...vo } : null),
+  cachePets: (pets) => { cachedPetsArg = pets; },
+  setActivePet: (pet) => {
+    setActivePetCalls += 1;
+    lastActivePet = pet;
+    storedPet = pet;
     return pet;
   },
   getStage: (pet) => (pet && pet.hatchStatus === 'HATCHED' ? 'hatched' : stageValue),
@@ -394,6 +405,9 @@ function resetScenario() {
   storyStateError = null;
   getStoryStateCalls = 0;
   lastStoryStatePetId = null;
+  cachedPetsArg = null;
+  setActivePetCalls = 0;
+  lastActivePet = null;
   intervalDelay = null;
   intervalCallback = null;
   intervalIdSequence = 555;
@@ -631,7 +645,8 @@ async function run() {
     'empty state remains hidden while the server pet is restoring');
   resolvePetList([hatchedPet]);
   await new Promise((resolve) => setImmediate(resolve));
-  assert.deepStrictEqual(savedPetVO, hatchedPet, 'server pet is saved to local cache');
+  assert.deepStrictEqual(lastActivePet, hatchedPet, 'server pet is saved to local cache');
+  assert.deepStrictEqual(cachedPetsArg, [hatchedPet], 'server pet list is written to the multi-pet cache');
   assert.strictEqual(coldStartPage.data.petRestoreLoading, false,
     'restoration completes after the server pet is returned');
   assert.strictEqual(coldStartPage.data.stage, 'hatched', 'hatched server pet renders the success state');

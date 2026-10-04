@@ -41,6 +41,12 @@ const STORY_CAPTION_TOAST_DURATION_MS = 5000;
 const STORY_CAPTION_TOAST_FADE_MS = 180;
 // caption 分钟轮换：后端下发整串配文（多条用 | 分隔），每 60s 本地随机抽一条展示
 const STORY_CAPTION_ROTATE_INTERVAL_MS = 60 * 1000;
+// 多宠物上下滑动切换：垂直位移超过该阈值且大于水平位移才判定为换宠，
+// 避免与破壳后故事背景的横向拖拽、点按蛋等手势互相误触
+const PET_SWIPE_THRESHOLD_PX = 60;
+// 切换宠物的整屏渐隐过渡时长（淡出 → 换宠 → 淡入）
+const PET_SWITCH_FADE_OUT_MS = 160;
+const PET_SWITCH_FADE_IN_MS = 240;
 // 左下角聊天入口 icon：按宠物原型选图，与静态项目 life-scene 页同一组素材
 // （玉兔/锦鲤为专用聊天 icon v02，未知原型兜底 find_home 蛋 p8 版）；
 // 必须用 PNG：部分真机（尤其 iOS）image 组件无法解码 webp，icon 会空白
@@ -96,6 +102,12 @@ function buildShareQuery(inviteCode) {
 Page({
   data: {
     pet: null,
+    // 多宠物列表：按领养时间正序（先领的在最上，index 0 为默认展示）；只有一只时与单宠物现状完全一致
+    pets: [],
+    currentPetIndex: 0,
+    // 切换宠物时的整屏渐隐样式（空串表示无过渡）；只用 opacity——破壳后故事层是 fixed 定位，
+    // transform 会让 fixed 元素改用该容器作为定位基准，破坏全屏布局
+    petSwitchStyle: '',
     stage: 'empty',
     stageText: '',
     countdown: '',
@@ -161,6 +173,9 @@ Page({
   },
 
   _navigating: false,
+  // 进入主页后的首次服务端加载默认停在最先领取的宠物；首次加载成功后置 false，
+  // 之后的静默刷新保持用户当前选中的宠物
+  _initialPetLoad: true,
   // 临时测试：手动选中的场景 option；null 表示实时自动推导
   sceneTestOverride: null,
 
@@ -206,6 +221,8 @@ Page({
     this.syncTabBar();
     const cached = petStore.getPet();
     if (cached) {
+      // 列表中同步最新缓存宠物并以其为当前宠物；冷启动列表为空时先单条回显，等服务端列表补全
+      this.upsertPetIntoList(cached);
       this.renderPet(cached);
       // 后台静默刷新后端派生字段(今日心情等)，避免缓存跨天后一直展示旧状态
       this.loadPetFromServer();
@@ -215,8 +232,20 @@ Page({
     }
     // 冷启动:缓存空,从后端拉取已有蛋
     this._petRestoreFinished = false;
-    this.setData({ pet: null, stage: 'empty', petRestoreLoading: true, petRestoreError: '' });
+    this.setData({ pet: null, pets: [], currentPetIndex: 0, stage: 'empty', petRestoreLoading: true, petRestoreError: '' });
     this.loadPetFromServer();
+  },
+
+  // 把宠物对象同步进列表并设为当前项；列表没有该宠物时追加到末尾（新领养的宠物领养时间最晚，排最后）
+  upsertPetIntoList(pet) {
+    const pets = this.data.pets.slice();
+    const index = pets.findIndex((item) => String(item.id) === String(pet.id));
+    if (index >= 0) {
+      pets[index] = pet;
+      this.setData({ pets, currentPetIndex: index });
+      return;
+    }
+    this.setData({ pets: pets.concat(pet), currentPetIndex: pets.length });
   },
 
   // 拉取最新 DOODLE 记录的 artUrl；空值表示恢复环境蛋，旧请求不能覆盖新保存结果
@@ -332,10 +361,26 @@ Page({
       const list = await get('/pet/list');
       this.setData({ petRestoreError: '' });
       if (Array.isArray(list) && list.length > 0) {
-        const pet = petStore.savePetFromVO(list[0]);
+        // 多宠物：按领养时间正序排列（先领的在最上），整批写入按 petId 隔离的本地缓存；
+        // 列表接口已过滤已删除宠物(deleted_at=0)，前端无需再过滤
+        const pets = list.map((vo) => petStore.mapPetFromVO(vo))
+          .filter((pet) => !!pet)
+          .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        petStore.cachePets(pets);
+        // 进入主页后的首次加载默认停在最先领取的宠物；之后的静默刷新保持用户当前选中的宠物
+        let index = 0;
+        if (!this._initialPetLoad && previousPetId) {
+          const kept = pets.findIndex((item) => String(item.id) === previousPetId);
+          if (kept >= 0) index = kept;
+        }
+        this._initialPetLoad = false;
+        // 「当前宠物」为客户端概念：聊天/许愿/早教等下游页面统一从 pet-store 读取当前选中的宠物
+        const pet = petStore.setActivePet(pets[index]);
+        this.setData({ pets, currentPetIndex: index });
         this.renderPet(pet);
         if (shouldRestoreDoodle || previousPetId !== String(pet.id)) this.restoreDoodleArt(pet);
       } else {
+        this.setData({ pets: [], currentPetIndex: 0 });
         this.syncPendingInvite(null);
       }
     } catch (error) {
@@ -360,6 +405,8 @@ Page({
     this._petRestoreFinished = false;
     this.setData({
       pet: null,
+      pets: [],
+      currentPetIndex: 0,
       stage: 'empty',
       petRestoreLoading: true,
       petRestoreError: '',
@@ -968,6 +1015,58 @@ Page({
     } else {
       wx.navigateTo({ url: '/pages/hatch-guide/hatch-guide' });
     }
+  },
+
+  // 多宠物上下滑动切换：记录手势起点；只有多只宠物且无弹层/破壳视频时才允许切换，
+  // 单宠物用户手势完全不生效（无滑动、无切换 UI）
+  onPetSwipeStart(event) {
+    if (!this.canSwitchPet()) return;
+    const touch = event && event.touches && event.touches[0];
+    if (!touch) return;
+    this._petSwipe = { startX: Number(touch.clientX || 0), startY: Number(touch.clientY || 0) };
+  },
+
+  onPetSwipeEnd(event) {
+    const swipe = this._petSwipe;
+    this._petSwipe = null;
+    if (!swipe || !this.canSwitchPet()) return;
+    // 本次手势已被故事背景横向拖拽消费（子节点 touchend 先触发并置位）时不换宠
+    if (this._storyDragMoved) return;
+    const touch = event && event.changedTouches && event.changedTouches[0];
+    if (!touch) return;
+    const deltaX = Number(touch.clientX || 0) - swipe.startX;
+    const deltaY = Number(touch.clientY || 0) - swipe.startY;
+    if (Math.abs(deltaY) < PET_SWIPE_THRESHOLD_PX || Math.abs(deltaY) <= Math.abs(deltaX)) return;
+    const nextIndex = this.data.currentPetIndex + (deltaY < 0 ? 1 : -1);
+    if (nextIndex < 0 || nextIndex >= this.data.pets.length) return;
+    this.switchCurrentPet(nextIndex);
+  },
+
+  canSwitchPet() {
+    if (this._petSwitching || this.data.pets.length < 2) return false;
+    // 弹层与破壳视频打开期间不响应换宠，避免遮罩下手势穿透
+    return !(this.data.showPhoneAuthorization || this.data.showNameSheet || this.data.doodleEditorVisible
+      || this.data.dailyWindowVisible || this.data.storyWindowVisible || this.data.hatching);
+  },
+
+  // 切换当前宠物：整屏渐隐过渡（只用 opacity，不用 transform——破壳后故事层是 fixed 定位，
+  // transform 会让 fixed 元素改用该容器作为定位基准，破坏全屏布局）
+  switchCurrentPet(index) {
+    const pet = this.data.pets[index];
+    if (!pet) return;
+    this._petSwitching = true;
+    this.setData({ petSwitchStyle: 'opacity:0;' });
+    setTimeout(() => {
+      // 「当前宠物」为客户端概念：切换后聊天等下游页面统一从 pet-store 读到新选中的宠物
+      petStore.setActivePet(pet);
+      this.setData({ currentPetIndex: index, petSwitchStyle: 'opacity:1;' });
+      this.renderPet(pet);
+      this.restoreDoodleArt(pet);
+      setTimeout(() => {
+        this._petSwitching = false;
+        this.setData({ petSwitchStyle: '' });
+      }, PET_SWITCH_FADE_IN_MS);
+    }, PET_SWITCH_FADE_OUT_MS);
   },
 
   // 破壳后右下角 AI 写真入口：跳转写真集页

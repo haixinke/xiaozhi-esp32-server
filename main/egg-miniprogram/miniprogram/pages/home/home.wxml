@@ -1,4 +1,6 @@
-<view class="page">
+<view class="page" bindtouchstart="onPetSwipeStart" bindtouchend="onPetSwipeEnd" bindtouchcancel="onPetSwipeEnd">
+  <!-- 多宠物切换舞台：整屏渐隐过渡只作用于这一层；弹层/破壳视频在舞台外，不参与过渡 -->
+  <view class="pet-switch-stage" style="{{petSwitchStyle}}">
   <block wx:if="{{authChecked && !petRestoreLoading}}">
     <nav-bar wx:if="{{!pet}}" title="蛋宝宝" show-back="{{false}}"></nav-bar>
 
@@ -142,6 +144,12 @@
       </view>
     </block>
   </block>
+
+  <!-- 多宠物位置指示点：右侧垂直居中，仅多于一只宠物时出现；单宠物用户无感知 -->
+  <view wx:if="{{authChecked && !petRestoreLoading && pets.length > 1}}" class="pet-switch-dots" aria-hidden="true">
+    <view wx:for="{{pets}}" wx:key="id" class="pet-switch-dot {{index === currentPetIndex ? 'pet-switch-dot--active' : ''}}"></view>
+  </view>
+  </view>
 
   <view wx:if="{{showPhoneAuthorization}}" class="phone-auth-mask" catchtap="onClosePhoneAuthorization">
     <view class="phone-auth-dialog" catchtap="noop">

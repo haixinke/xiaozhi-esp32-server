@@ -31,6 +31,8 @@
     <view class="icon-circle icon-circle--success"><text class="icon-emoji">🎉</text></view>
     <text class="panel-title">领取成功！</text>
     <text wx:if="{{pet}}" class="panel-desc">{{pet.petType}}已来到你的蛋宝宝家园。</text>
+    <!-- 渠道互斥：领取替换了邀请码宠物时，轻提示数据去向，防「数据丢失」误解（ADR 0007） -->
+    <text wx:if="{{replacedInvitePet}}" class="panel-desc panel-note">你的体验宠物已随本次领取替换，原数据已在平台侧保留。</text>
     <button class="primary-button" bindtap="onGoHome">去看看它</button>
   </view>
 
@@ -42,11 +44,13 @@
     <button class="secondary-button" bindtap="onGoHome">回到首页</button>
   </view>
 
-  <!-- ALREADY_OWNED：一人一宠约束，用户已领养过蛋宝宝 -->
+  <!-- ALREADY_OWNED：重复原型拦截，用户已领取过该原型角色的宠物；此卡不消耗，仍可给他人领取 -->
   <view wx:elif="{{state === 'ALREADY_OWNED'}}" class="center-panel">
     <view class="icon-circle"><text class="icon-emoji">🥚</text></view>
-    <text class="panel-title">领取失败</text>
-    <text class="panel-desc">您已经领取过蛋宝宝，一个用户暂时只能领养一个蛋宝宝。</text>
+    <text class="panel-title">您已经领取过该角色的宠物</text>
+    <text class="panel-desc">这张卡片没有消耗，还可以给其他小伙伴使用。</text>
+    <!-- preview 回传已有宠物时可「去看看它」直达；10206 竞态兜底无宠物信息，只给回首页 -->
+    <button wx:if="{{ownedPet}}" class="primary-button" bindtap="onGoOwnedPet">去看看它</button>
     <button class="secondary-button" bindtap="onGoHome">回到首页</button>
   </view>
 

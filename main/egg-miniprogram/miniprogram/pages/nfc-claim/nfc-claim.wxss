@@ -15,6 +15,8 @@
 .panel-prototype { display: block; font-size: 28rpx; color: #54632C; margin-bottom: 8rpx; }
 .panel-status { display: block; font-size: 26rpx; color: #78863D; margin-bottom: 48rpx; }
 .panel-desc { display: block; font-size: 28rpx; color: #6C6A62; margin-bottom: 40rpx; line-height: 1.6; }
+/* 渠道互斥轻提示：紧随 panel-desc 之后、按钮之前，视觉层级弱于主文案 */
+.panel-note { display: block; font-size: 24rpx; color: #9B988E; margin: -32rpx 0 24rpx; line-height: 1.5; }
 
 .confirm-button { margin-top: 16rpx; }
 

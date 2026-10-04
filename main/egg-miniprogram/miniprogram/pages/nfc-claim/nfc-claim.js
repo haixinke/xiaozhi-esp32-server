@@ -127,8 +127,9 @@ Page({
     } else if (status === 'CLAIMED_BY_OTHER') {
       this.setData({ ...data, state: STATES.CLAIMED_BY_OTHER });
     } else if (status === 'ALREADY_OWNED') {
-      // 一人一宠：用户已领养过，preview 直接给出专属面板，不再展示领取按钮
-      this.setData({ ...data, state: STATES.ALREADY_OWNED });
+      // 重复原型拦截：用户已持有同原型 NFC 宠物。面板带「去看看它」直达已有宠物——
+      // preview 会回传该宠物；10206 竞态兜底路径没有宠物，按钮退化为回首页
+      this.setData({ ...data, state: STATES.ALREADY_OWNED, ownedPet: result.pet || null });
     } else if (status === 'NOT_ACTIVATED') {
       // 卡已入库未激活：量产收货与放行之间被碰到，给出可解释提示
       this.setData({ ...data, state: STATES.NOT_ACTIVATED });
@@ -181,7 +182,8 @@ Page({
       // 一人一宠约束：preview 后、confirm 前被并发领养等竞态场景，
       // 后端抛 10206 时同样落到"已领取过"面板，而非误导性的网络错误
       if (error && error.code === ERR_PET_ALREADY_EXISTS) {
-        this.setData({ state: STATES.ALREADY_OWNED, errorMessage: '' });
+        // 竞态兜底路径无已有宠物信息，ownedPet 置空使「去看看它」隐藏、只留回首页
+        this.setData({ state: STATES.ALREADY_OWNED, ownedPet: null, errorMessage: '' });
         return;
       }
       this.setData({
@@ -197,7 +199,14 @@ Page({
       petStore.savePetFromVO(result.pet);
       clearPendingNfcClaimIntent();
       getApp().globalData.welcomeCompleted = true;
-      this.setData({ state: STATES.SUCCESS, pet: withPetType(result.pet), claimStatus: status });
+      // replacedInvitePet：渠道互斥（ADR 0007），本次领取静默替换了邀请码宠物，
+      // 成功页带一句轻提示避免用户误以为原有宠物数据无故丢失
+      this.setData({
+        state: STATES.SUCCESS,
+        pet: withPetType(result.pet),
+        claimStatus: status,
+        replacedInvitePet: !!result.replacedInvitePet
+      });
     } else if (status === 'CLAIMED_BY_SELF') {
       // 领取竞态：确认瞬间蛋已被本用户（另一设备/会话）领取，同样直接回首页
       this.goHomeWithPet(result.pet);
@@ -217,6 +226,11 @@ Page({
 
   onGoHome() {
     this.goHomeWithPet(null);
+  },
+
+  // 「去看看它」：重复原型拦截面板直达已有宠物（preview 回传的 ownedPet）
+  onGoOwnedPet() {
+    this.goHomeWithPet(this.data.ownedPet || null);
   },
 
   // 回首页的统一出口：有 pet 先落本地缓存（首页秒开），再清 intent、标记欢迎完成并跳转

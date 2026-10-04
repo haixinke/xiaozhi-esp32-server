@@ -15,13 +15,14 @@ import xiaozhi.modules.pet.vo.ImageGenTaskVO;
 public interface ImageGenTaskService {
 
     /**
-     * 创建生图任务：校验登录/宠物/配额/照片URL，提交照片内容审核后落库（PENDING）。
+     * 创建生图任务：校验登录/宠物归属/配额/照片URL，提交照片内容审核后落库（PENDING）。
      *
      * @param userId   当前用户ID
+     * @param petId    目标宠物ID（必须属于该用户且未删除，否则 PET_NOT_FOUND）
      * @param photoUrl 用户照片 OSS URL（必须是本 bucket ai-gen 前缀）
      * @return 任务视图（taskId + PENDING）
      */
-    ImageGenTaskVO createTask(Long userId, String photoUrl);
+    ImageGenTaskVO createTask(Long userId, String petId, String photoUrl);
 
     /**
      * 查询任务（仅限本人任务）。
@@ -29,16 +30,17 @@ public interface ImageGenTaskService {
     ImageGenTaskVO getTask(Long userId, Long taskId);
 
     /**
-     * 分页查询当前用户的写真集：只含 SUCCEEDED 任务，按天分组倒序（最新日期在顶），
+     * 分页查询指定宠物的写真集：只含 SUCCEEDED 任务，按天分组倒序（最新日期在顶），
      * 分页单位是"天"（一页 N 天，每天内嵌当日全部写真，按生成时间倒序）。
-     * 无写真的日期不产生节点。
+     * 无写真的日期不产生节点。写真正主是宠物（多宠物隔离），宠物必须属于该用户且未删除。
      *
      * @param userId 当前用户ID
+     * @param petId  目标宠物ID（越权/不存在/已删除抛 PET_NOT_FOUND）
      * @param page   页码（从1开始，小于1收敛为1）
      * @param limit  每页天数（1~50，超出收敛）
      * @return 按天分组的写真集视图
      */
-    ImageGenGalleryVO gallery(Long userId, int page, int limit);
+    ImageGenGalleryVO gallery(Long userId, String petId, int page, int limit);
 
     /**
      * 处理微信 mediaCheckAsync 审核结果推送。

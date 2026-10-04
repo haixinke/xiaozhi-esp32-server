@@ -44,7 +44,7 @@ public class ImageGenController {
         if (userId == null) {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
-        return new Result<ImageGenTaskVO>().ok(imageGenTaskService.createTask(userId, dto.getPhotoUrl()));
+        return new Result<ImageGenTaskVO>().ok(imageGenTaskService.createTask(userId, dto.getPetId(), dto.getPhotoUrl()));
     }
 
     @GetMapping("/tasks/{taskId}")
@@ -59,15 +59,16 @@ public class ImageGenController {
     }
 
     @GetMapping("/gallery")
-    @Operation(summary = "分页查询AI写真集（按天分组倒序，只含成功任务）")
+    @Operation(summary = "分页查询AI写真集（按宠物隔离，按天分组倒序，只含成功任务）")
     @RequiresPermissions("sys:role:normal")
     public Result<ImageGenGalleryVO> gallery(
+            @RequestParam(value = "petId") String petId,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "limit", defaultValue = "10") int limit) {
         Long userId = SecurityUser.getUserId();
         if (userId == null) {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
-        return new Result<ImageGenGalleryVO>().ok(imageGenTaskService.gallery(userId, page, limit));
+        return new Result<ImageGenGalleryVO>().ok(imageGenTaskService.gallery(userId, petId, page, limit));
     }
 }

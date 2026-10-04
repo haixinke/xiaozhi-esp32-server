@@ -13,6 +13,7 @@ let chooseImageImpl = null;
 let uploadResult = null;
 let uploadError = null;
 let createResult = null;
+let createArgs = null;
 let pollSequence = [];
 let toastMessages = [];
 let loadingMessages = [];
@@ -28,7 +29,10 @@ Module._load = function (request, parent, isMain) {
           if (uploadError) throw uploadError;
           return uploadResult;
         },
-        createImageGenTask: async () => createResult,
+        createImageGenTask: async (photoUrl, petId) => {
+          createArgs = { photoUrl, petId };
+          return createResult;
+        },
         getImageGenTask: async () => pollSequence.shift()
       };
     }
@@ -55,6 +59,7 @@ global.wx = {
     }
   },
   showToast: (opts) => { toastMessages.push(opts.title); callOrder.push('toast'); },
+  reLaunch: (opts) => { callOrder.push('reLaunch:' + opts.url); },
   showLoading: (opts) => { loadingMessages.push(opts.title); callOrder.push('showLoading'); },
   hideLoading: () => { callOrder.push('hideLoading'); },
   downloadFile: () => { throw new Error('not stubbed'); },
@@ -80,6 +85,7 @@ function reset() {
   uploadResult = 'https://oss.eggbabe.com/ai-gen/1/a.jpg';
   uploadError = null;
   createResult = { taskId: 't-1', status: 'PENDING' };
+  createArgs = null;
   chooseMediaImpl = null;
   chooseImageImpl = null;
   compressResult = { ok: false, tempFilePath: '', size: 0 };
@@ -170,6 +176,24 @@ tests.push(['未选图时点击生成不动作', async () => {
   const page = makePage();
   await page.onStartGenerate();
   assert.strictEqual(page.data.phase, 'pick');
+}]);
+
+tests.push(['onLoad 缺 petId 回主页，有 petId 时创建任务透传给后端（写真按宠物隔离）', async () => {
+  reset();
+  const noPet = makePage();
+  noPet.onLoad({});
+  assert.ok(callOrder.includes('reLaunch:/pages/home/home'), 'missing petId must reLaunch home');
+
+  reset();
+  const page = makePage();
+  page.onLoad({ petId: 'pet-9' });
+  assert.ok(!callOrder.some((c) => c.startsWith('reLaunch')), 'valid petId must not reLaunch');
+  chooseMediaImpl = (opts) => opts.success({ tempFiles: [{ tempFilePath: '/tmp/ok.jpg', size: 1024 }] });
+  page.onChoosePhoto();
+  await page._choosing;
+  await page.onStartGenerate();
+  page._stopPolling();
+  assert.strictEqual(createArgs && createArgs.petId, 'pet-9', 'createImageGenTask must receive the petId from onLoad');
 }]);
 
 tests.push(['生成流程进入working并开始轮询，SUCCEEDED后进入result', async () => {

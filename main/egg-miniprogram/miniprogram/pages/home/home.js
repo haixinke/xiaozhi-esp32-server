@@ -1100,9 +1100,11 @@ Page({
     });
   },
 
-  // 破壳后右下角 AI 写真入口：跳转写真集页
+  // 破壳后右下角 AI 写真入口：跳转写真集页（写真按宠物隔离，透传当前宠物）
   onPhotoEntryTap() {
-    wx.navigateTo({ url: '/pages/photo-gallery/photo-gallery' });
+    const pet = this.data.pet;
+    if (!pet || !pet.id) return;
+    wx.navigateTo({ url: `/pages/photo-gallery/photo-gallery?petId=${pet.id}` });
   },
 
   /**

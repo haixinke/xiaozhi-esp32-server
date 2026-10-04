@@ -25,7 +25,13 @@ Page({
     saving: false
   },
 
-  onLoad() {
+  onLoad(options) {
+    // 写真集按宠物隔离：petId 由主页「当前宠物」透传，缺失时无法定位写真正主，直接回主页
+    if (!options || !options.petId) {
+      wx.reLaunch({ url: '/pages/home/home' });
+      return;
+    }
+    this._petId = options.petId;
     this._todayStr = formatToday();
     this._days = [];
     // 关闭按钮避让右上角小程序胶囊（··· ⊙）：贴胶囊下缘 + 8px 间距
@@ -56,7 +62,7 @@ Page({
   async _loadPage(page) {
     this.setData({ loadingMore: true });
     try {
-      const res = await getImageGenGallery(page, PAGE_LIMIT);
+      const res = await getImageGenGallery(this._petId, page, PAGE_LIMIT);
       const newDays = (res.list || []).map((day) => ({
         date: day.date,
         photos: day.photos || []
@@ -189,7 +195,7 @@ Page({
   // ---- 悬浮按钮 / 空状态：跳制作页 ----
 
   onMakePhoto() {
-    wx.navigateTo({ url: '/pages/photo-gen/photo-gen' });
+    wx.navigateTo({ url: `/pages/photo-gen/photo-gen?petId=${this._petId}` });
   },
 
   noop() {}

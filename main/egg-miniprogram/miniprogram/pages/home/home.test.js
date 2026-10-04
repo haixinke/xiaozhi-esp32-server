@@ -1390,7 +1390,7 @@ async function run() {
   pageEggIcon.onShow();
   assert.ok(pageEggIcon.data.storyChatIcon.includes('find_home_egg'), 'unknown prototype falls back to the egg icon');
 
-  // 32a. 破壳后右下角 AI 写真入口：点击跳转写真集页（photo-gen 已被 photo-gallery 取代）
+  // 32a. 破壳后右下角 AI 写真入口：点击跳转写真集页并透传当前宠物（写真按宠物隔离）
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatched');
@@ -1399,7 +1399,7 @@ async function run() {
   pagePhotoEntry.onShow();
   assert.ok(pagePhotoEntry.data.photoEntryIcon, 'photo entry icon present');
   pagePhotoEntry.onPhotoEntryTap();
-  assert.strictEqual(navigatedTo, '/pages/photo-gallery/photo-gallery', 'photo entry navigates to photo-gallery page');
+  assert.strictEqual(navigatedTo, '/pages/photo-gallery/photo-gallery?petId=pet-001', 'photo entry navigates to photo-gallery page with current petId');
 
   // 33. 背景图加载后按真实宽高比扩展轨道，初始居中，整张图任何区域都能拖到
   resetScenario();

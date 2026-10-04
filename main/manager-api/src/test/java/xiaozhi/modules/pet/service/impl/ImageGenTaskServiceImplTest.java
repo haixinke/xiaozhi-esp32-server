@@ -51,6 +51,7 @@ import java.util.Locale;
 class ImageGenTaskServiceImplTest {
 
     private static final Long USER_ID = 1001L;
+    private static final String PET_ID = "pet-1";
     private static final String PHOTO_URL = "https://oss.eggbabe.com/ai-gen/1001/abc.jpg";
 
     @Mock
@@ -92,7 +93,7 @@ class ImageGenTaskServiceImplTest {
     @Test
     @DisplayName("createTask - 照片URL非本bucket ai-gen前缀时拒绝")
     void createTask_foreignPhotoUrl_rejected() {
-        assertThatThrownBy(() -> service.createTask(USER_ID, "https://evil.example.com/x.jpg"))
+        assertThatThrownBy(() -> service.createTask(USER_ID, PET_ID, "https://evil.example.com/x.jpg"))
                 .isInstanceOf(RenException.class)
                 .extracting(e -> ((RenException) e).getCode())
                 .isEqualTo(ErrorCode.IMAGE_GEN_PHOTO_URL_INVALID);
@@ -105,7 +106,7 @@ class ImageGenTaskServiceImplTest {
         when(petDao.selectOne(any())).thenReturn(pet());
         when(taskDao.selectCount(any())).thenReturn(0L);
 
-        ImageGenTaskVO vo = service.createTask(USER_ID, PHOTO_URL);
+        ImageGenTaskVO vo = service.createTask(USER_ID, PET_ID, PHOTO_URL);
 
         ArgumentCaptor<ImageGenTaskEntity> captor = ArgumentCaptor.forClass(ImageGenTaskEntity.class);
         verify(taskDao).insert(captor.capture());
@@ -121,7 +122,7 @@ class ImageGenTaskServiceImplTest {
         when(petDao.selectOne(any())).thenReturn(pet());
         when(taskDao.selectCount(any())).thenReturn(3L);
 
-        assertThatThrownBy(() -> service.createTask(USER_ID, PHOTO_URL))
+        assertThatThrownBy(() -> service.createTask(USER_ID, PET_ID, PHOTO_URL))
                 .isInstanceOf(RenException.class)
                 .extracting(e -> ((RenException) e).getCode())
                 .isEqualTo(ErrorCode.IMAGE_GEN_QUOTA_EXCEEDED);
@@ -137,7 +138,7 @@ class ImageGenTaskServiceImplTest {
         when(wechatUserDao.selectOne(any())).thenReturn(wechatUser);
         when(mediaCheckService.mediaCheckAsync(eq(PHOTO_URL), eq("openid-1"))).thenReturn("trace-photo-1");
 
-        ImageGenTaskVO vo = service.createTask(USER_ID, PHOTO_URL);
+        ImageGenTaskVO vo = service.createTask(USER_ID, PET_ID, PHOTO_URL);
 
         ArgumentCaptor<ImageGenTaskEntity> captor = ArgumentCaptor.forClass(ImageGenTaskEntity.class);
         verify(taskDao).insert(captor.capture());
@@ -255,17 +256,30 @@ class ImageGenTaskServiceImplTest {
     }
 
     @Test
-    @DisplayName("createTask - 宠物查询过滤已删除宠物（仅 deleted_at=0 可生图）")
+    @DisplayName("createTask - 按 petId+userId+未删除解析宠物，越权/不存在/已删除统一抛 PET_NOT_FOUND")
     void createTask_petQueryFiltersDeletedPets() {
         when(petDao.selectOne(any())).thenReturn(null);
 
-        assertThatThrownBy(() -> service.createTask(USER_ID, PHOTO_URL))
+        assertThatThrownBy(() -> service.createTask(USER_ID, PET_ID, PHOTO_URL))
                 .isInstanceOf(RenException.class)
                 .extracting(e -> ((RenException) e).getCode())
                 .isEqualTo(ErrorCode.PET_NOT_FOUND);
 
+        // 宠物归属三条件缺一不可：id 定位宠物、user_id 防越权、deleted_at 挡已删除宠物
         ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
         verify(petDao).selectOne(captor.capture());
-        assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
+        assertThat(captor.getValue().getSqlSegment())
+                .contains("id =")
+                .contains("user_id =")
+                .contains("deleted_at =");
+    }
+
+    @Test
+    @DisplayName("createTask - petId 为空时拒绝（必填，不做全量兜底）")
+    void createTask_blankPetId_rejected() {
+        assertThatThrownBy(() -> service.createTask(USER_ID, " ", PHOTO_URL))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.PET_NOT_FOUND);
     }
 }

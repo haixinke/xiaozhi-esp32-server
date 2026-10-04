@@ -88,7 +88,7 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
     }
 
     @Override
-    public ImageGenTaskVO createTask(Long userId, String photoUrl) {
+    public ImageGenTaskVO createTask(Long userId, String petId, String photoUrl) {
         if (userId == null) {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
@@ -96,11 +96,8 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
             throw new RenException(ErrorCode.IMAGE_GEN_PHOTO_URL_INVALID);
         }
 
-        PetEntity pet = petDao.selectOne(
-                new QueryWrapper<PetEntity>().eq("user_id", userId).eq("deleted_at", 0).last("limit 1"));
-        if (pet == null) {
-            throw new RenException(ErrorCode.PET_NOT_FOUND);
-        }
+        // 写真正主是宠物：必须显式指定且归属当前用户，多宠物场景下不再容忍"任选一只"
+        PetEntity pet = requireOwnedPet(userId, petId);
         if (todayCountedCount(userId) >= dailyLimit) {
             throw new RenException(ErrorCode.IMAGE_GEN_QUOTA_EXCEEDED);
         }
@@ -152,10 +149,12 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
     }
 
     @Override
-    public ImageGenGalleryVO gallery(Long userId, int page, int limit) {
+    public ImageGenGalleryVO gallery(Long userId, String petId, int page, int limit) {
         if (userId == null) {
             throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
+        // 写真集按宠物隔离：先校验宠物归属，越权/已删除宠物的写真不可见
+        requireOwnedPet(userId, petId);
         int safePage = Math.max(page, 1);
         int safeLimit = Math.min(Math.max(limit, 1), GALLERY_MAX_LIMIT);
 
@@ -164,6 +163,7 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         List<Map<String, Object>> countRows = baseDao.selectMaps(new QueryWrapper<ImageGenTaskEntity>()
                 .select("COUNT(DISTINCT DATE(create_date)) AS cnt")
                 .eq("user_id", userId)
+                .eq("pet_id", petId)
                 .eq("status", ImageGenTaskStatus.SUCCEEDED.name()));
         long total = countRows.isEmpty() ? 0 : ((Number) countRows.get(0).get("cnt")).longValue();
 
@@ -180,6 +180,7 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         List<Map<String, Object>> dayRows = baseDao.selectMaps(new QueryWrapper<ImageGenTaskEntity>()
                 .select("DISTINCT DATE(create_date) AS day")
                 .eq("user_id", userId)
+                .eq("pet_id", petId)
                 .eq("status", ImageGenTaskStatus.SUCCEEDED.name())
                 .orderByDesc("day")
                 .last("LIMIT " + (safePage - 1) * safeLimit + "," + safeLimit));
@@ -196,6 +197,7 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
         List<Map<String, Object>> photoRows = baseDao.selectMaps(new QueryWrapper<ImageGenTaskEntity>()
                 .select("id", "result_url", "create_date", "DATE(create_date) AS day")
                 .eq("user_id", userId)
+                .eq("pet_id", petId)
                 .eq("status", ImageGenTaskStatus.SUCCEEDED.name())
                 .apply("DATE(create_date) >= {0}", days.get(days.size() - 1).toString())
                 .apply("DATE(create_date) <= {0}", days.get(0).toString())
@@ -305,6 +307,25 @@ public class ImageGenTaskServiceImpl extends BaseServiceImpl<ImageGenTaskDao, Im
             log.info("AI生图超时任务清理完成 count={}", rows);
         }
         return rows;
+    }
+
+    /**
+     * 解析并校验宠物归属：petId 必填，且必须是该用户名下未删除的宠物。
+     * 越权/不存在/已删除统一抛 PET_NOT_FOUND，不区分原因以避免泄露他人宠物存在性。
+     */
+    private PetEntity requireOwnedPet(Long userId, String petId) {
+        if (StringUtils.isBlank(petId)) {
+            throw new RenException(ErrorCode.PET_NOT_FOUND);
+        }
+        PetEntity pet = petDao.selectOne(new QueryWrapper<PetEntity>()
+                .eq("id", petId)
+                .eq("user_id", userId)
+                .eq("deleted_at", 0)
+                .last("limit 1"));
+        if (pet == null) {
+            throw new RenException(ErrorCode.PET_NOT_FOUND);
+        }
+        return pet;
     }
 
     /** 当日已计配额的次数（仅成功任务计次） */

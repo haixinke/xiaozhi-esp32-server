@@ -22,6 +22,15 @@ Page({
     saving: false
   },
 
+  onLoad(options) {
+    // 写真正主由写真集页透传（写真按宠物隔离），缺 petId 无法创建任务，直接回主页
+    if (!options || !options.petId) {
+      wx.reLaunch({ url: '/pages/home/home' });
+      return;
+    }
+    this._petId = options.petId;
+  },
+
   onUnload() {
     this._stopPolling();
   },
@@ -113,7 +122,7 @@ Page({
     try {
       const photoUrl = await uploadGenPhoto(photoPreview);
       this.setData({ statusText: '照片审核中…' });
-      const task = await createImageGenTask(photoUrl);
+      const task = await createImageGenTask(photoUrl, this._petId);
       this._taskId = task.taskId;
       this._pollStartedAt = Date.now();
       this.setData({ phase: 'working', statusText: 'AI 生成中，大约需要半分钟…' });
@@ -139,7 +148,7 @@ Page({
     if (index !== -1) {
       wx.navigateBack({ delta: pages.length - 1 - index });
     } else {
-      wx.navigateTo({ url: '/pages/photo-gallery/photo-gallery' });
+      wx.navigateTo({ url: `/pages/photo-gallery/photo-gallery?petId=${this._petId}` });
     }
   },
 

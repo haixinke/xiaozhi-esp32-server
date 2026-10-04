@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Date;
@@ -18,11 +20,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import xiaozhi.common.config.AliyunOssProperties;
 import xiaozhi.common.exception.ErrorCode;
@@ -30,6 +35,8 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.pet.dao.ImageGenTaskDao;
 import xiaozhi.modules.pet.dao.PetDao;
+import xiaozhi.modules.pet.entity.ImageGenTaskEntity;
+import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.vo.ImageGenGalleryVO;
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.service.WechatMediaCheckService;
@@ -39,6 +46,7 @@ import xiaozhi.modules.wechat.service.WechatMediaCheckService;
 class ImageGenTaskServiceImplGalleryTest {
 
     private static final Long USER_ID = 1001L;
+    private static final String PET_ID = "pet-1";
 
     /** 构造 Asia/Shanghai 时区的确定时刻，避免 CI 机器默认时区影响分组断言 */
     private static Date shanghaiTime(int year, int month, int day, int hour) {
@@ -78,15 +86,35 @@ class ImageGenTaskServiceImplGalleryTest {
                 imageGenExecutor);
         ReflectionTestUtils.setField(service, "baseDao", taskDao);
         ReflectionTestUtils.setField(service, "dailyLimit", 3);
+        // lenient：未登录用例在宠物校验前短路
+        lenient().when(petDao.selectOne(any())).thenReturn(pet());
+    }
+
+    private static PetEntity pet() {
+        PetEntity pet = new PetEntity();
+        pet.setId(PET_ID);
+        pet.setUserId(USER_ID);
+        return pet;
     }
 
     @Test
     @DisplayName("gallery - 未登录拒绝")
     void gallery_notLogin_rejected() {
-        assertThatThrownBy(() -> service.gallery(null, 1, 10))
+        assertThatThrownBy(() -> service.gallery(null, PET_ID, 1, 10))
                 .isInstanceOf(RenException.class)
                 .extracting(e -> ((RenException) e).getCode())
                 .isEqualTo(ErrorCode.USER_NOT_LOGIN);
+    }
+
+    @Test
+    @DisplayName("gallery - petId 越权/不存在/已删除统一抛 PET_NOT_FOUND")
+    void gallery_petNotOwned_rejected() {
+        when(petDao.selectOne(any())).thenReturn(null);
+
+        assertThatThrownBy(() -> service.gallery(USER_ID, "other-pet", 1, 10))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.PET_NOT_FOUND);
     }
 
     @Test
@@ -94,12 +122,24 @@ class ImageGenTaskServiceImplGalleryTest {
     void gallery_empty_returnsEmpty() {
         when(taskDao.selectMaps(any())).thenReturn(List.of(Map.of("cnt", 0L)), List.of());
 
-        ImageGenGalleryVO vo = service.gallery(USER_ID, 1, 10);
+        ImageGenGalleryVO vo = service.gallery(USER_ID, PET_ID, 1, 10);
 
         assertThat(vo.getTotal()).isZero();
         assertThat(vo.getList()).isEmpty();
         assertThat(vo.getPage()).isEqualTo(1);
         assertThat(vo.getLimit()).isEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("gallery - 三段查询都带 pet_id 条件（多宠物写真隔离）")
+    void gallery_allQueriesFilterByPetId() {
+        when(taskDao.selectMaps(any())).thenReturn(List.of(Map.of("cnt", 0L)), List.of());
+
+        service.gallery(USER_ID, PET_ID, 1, 10);
+
+        ArgumentCaptor<QueryWrapper<ImageGenTaskEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(taskDao, atLeastOnce()).selectMaps(captor.capture());
+        captor.getAllValues().forEach(wrapper -> assertThat(wrapper.getSqlSegment()).contains("pet_id ="));
     }
 
     @Test
@@ -114,7 +154,7 @@ class ImageGenTaskServiceImplGalleryTest {
                         photoRow(2L, shanghaiTime(2026, 10, 3, 10), "2026-10-03"),
                         photoRow(1L, shanghaiTime(2026, 10, 1, 12), "2026-10-01")));
 
-        ImageGenGalleryVO vo = service.gallery(USER_ID, 1, 10);
+        ImageGenGalleryVO vo = service.gallery(USER_ID, PET_ID, 1, 10);
 
         assertThat(vo.getTotal()).isEqualTo(2);
         assertThat(vo.getList()).hasSize(2);
@@ -135,7 +175,7 @@ class ImageGenTaskServiceImplGalleryTest {
     void gallery_pageParamsClamped() {
         when(taskDao.selectMaps(any())).thenReturn(List.of(Map.of("cnt", 0L)), List.of());
 
-        ImageGenGalleryVO vo = service.gallery(USER_ID, 0, 999);
+        ImageGenGalleryVO vo = service.gallery(USER_ID, PET_ID, 0, 999);
 
         assertThat(vo.getPage()).isEqualTo(1);
         assertThat(vo.getLimit()).isEqualTo(50);

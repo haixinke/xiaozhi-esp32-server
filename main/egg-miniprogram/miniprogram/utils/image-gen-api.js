@@ -52,10 +52,11 @@ function uploadGenPhoto(tempFilePath) {
 /**
  * 创建 AI 生图任务。
  * @param {string} photoUrl 用户照片 OSS URL（uploadGenPhoto 返回值）
+ * @param {string} petId 目标宠物 id（写真正主，多宠物隔离必填）
  * @returns {Promise<{taskId: string, status: string}>}
  */
-function createImageGenTask(photoUrl) {
-  return post('/pet/image-gen/tasks', { photoUrl });
+function createImageGenTask(photoUrl, petId) {
+  return post('/pet/image-gen/tasks', { photoUrl, petId });
 }
 
 /**
@@ -68,13 +69,14 @@ function getImageGenTask(taskId) {
 }
 
 /**
- * 分页查询写真集（按天分组倒序，只含成功任务；分页单位是天）。
+ * 分页查询指定宠物的写真集（按天分组倒序，只含成功任务；分页单位是天）。
+ * @param {string} petId 目标宠物 id
  * @param {number} page 页码，从 1 开始
  * @param {number} limit 每页天数
  * @returns {Promise<{total: number, page: number, limit: number, list: Array<{date: string, photos: Array<{taskId: string, resultUrl: string, createTime: string}>}>}>}
  */
-function getImageGenGallery(page, limit) {
-  return get('/pet/image-gen/gallery', { page, limit });
+function getImageGenGallery(petId, page, limit) {
+  return get('/pet/image-gen/gallery', { petId, page, limit });
 }
 
 module.exports = { uploadGenPhoto, createImageGenTask, getImageGenTask, getImageGenGallery, GALLERY_DIRTY_KEY };

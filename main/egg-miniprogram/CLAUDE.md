@@ -101,10 +101,10 @@ main/egg-miniprogram/
 
 ### 设备 / 宠物身份模型
 
-当前产品规则是**一人一宠**（临时约束，未来可能放开多宠）：一个微信用户同一时间只能领养一只蛋宝宝，由后端 `uk_ai_pet_user_id` 唯一索引 + `adopt()`/`createEgg()` 预检查双重保证，两条领养入口（邀请码、NFC 触碰）共用错误码 `PET_ALREADY_EXISTS`(10206)。`openid` 不能当 device id。聊天身份下沉到宠物级：
+当前产品规则：**NFC 渠道可领养多只，同一原型（锦鲤/玉兔）全局限一只；邀请码渠道仍限一只**（邀请码领养是产品前期验证阶段的中间产物，保留兼容、不再作为主流程）。原型占用全局判定、与渠道无关；重复领养（同原型 / 邀请码渠道超限额）由后端预检查拦截，两条领养入口（邀请码、NFC 触碰）共用错误码 `PET_ALREADY_EXISTS`(10206)。`openid` 不能当 device id。聊天身份下沉到宠物级：
 
 ```
-微信用户(openid) ──1:1（当前约束，模型保留 1:N 能力）── 蛋宝宝(ai_pet) ──1:1── 虚拟设备(ai_device) ──1:1── agent(ai_agent)
+微信用户(openid) ──1:N（NFC 按原型限一只；邀请码渠道限一只）── 蛋宝宝(ai_pet) ──1:1── 虚拟设备(ai_device) ──1:1── agent(ai_agent)
 ```
 
 - 领养只建 `ai_pet`（`deviceId=null`）；破壳时才建 `ai_device` + `agent`（懒创建）

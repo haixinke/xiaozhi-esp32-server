@@ -3,11 +3,11 @@
 > 范围：`manager-api` 中蛋宝宝（egg）从领养到破壳的后端实现。供后期开发参考。
 > 关联：[`egg-miniprogram/docs/egg-pet-identity-and-hatch-api.md`](../../egg-miniprogram/docs/egg-pet-identity-and-hatch-api.md)（接口契约/草案）、[`egg-miniprogram/CLAUDE.md`](../../egg-miniprogram/CLAUDE.md)（小程序侧交互）。
 > 状态：adopt / hatch-action / hatch / `GET /pet/{id}` / 每日心情 todayMood 已落地并通过单测；OTA→xiaozhi-server WS 真机联调、AI 生图、旧端点 `@Deprecated` 迁移待做。
-> 当前版本约束：每个账号只能领养 1 只蛋宝宝，`ai_pet.user_id` 由唯一索引保证。未来多宠版本需先移除该约束，并补齐宠物列表与切换交互后再开放。
+> 领养名额规则：NFC 渠道同一原型（锦鲤/玉兔）全局限一只、可领养多只；邀请码渠道（本文 adopt 链路）仍限一只，属产品前期验证阶段的中间产物。原型占用全局判定、与渠道无关，详见根 `CONTEXT.md`「领养名额规则」。
 
 ## 1. 全景
 
-蛋宝宝当前是「一人一宠」的孵化型 AI 宠物。后端把生命周期拆成三段，对应三个端点族：
+蛋宝宝是孵化型 AI 宠物，领养名额按渠道约束（NFC 按原型限一只、可多只；邀请码限一只）。后端把生命周期拆成三段，对应三个端点族：
 
 ```
 wx.login → /wechat/login(token,userId)
@@ -23,13 +23,13 @@ wx.login → /wechat/login(token,userId)
    └─ 破壳后：小程序用 activeDeviceId 走 OTA(/ota/) 拿 websocket → 直连 xiaozhi-server:8000 语音对话
 ```
 
-身份模型：**一只蛋 = 一个虚拟 `ai_device` = 一个 `ai_agent`**。`openid` 只换 `token/userId`，不进 device；破壳时才建 device+agent（懒创建），领养阶段 `device_id=null`。多宠是后续版本能力，不在当前约束内。
+身份模型：**一只蛋 = 一个虚拟 `ai_device` = 一个 `ai_agent`**。`openid` 只换 `token/userId`，不进 device；破壳时才建 device+agent（懒创建），领养阶段 `device_id=null`。NFC 渠道下同一用户可拥有多只（每原型一只），多宠列表与切换交互随渠道放开补齐。
 
 ## 2. 数据模型
 
-### 2.1 `ai_pet`（复用，当前版本约束一账号一宠）
+### 2.1 `ai_pet`（复用，领养名额按渠道约束：NFC 每原型一只、邀请码一只）
 
-孵化相关字段由 changeset `202607101030.sql` 补齐，`device_id` 由 `202607101500.sql` 放宽为可空（原 NOT NULL）；changeset `202608061500.sql` 增加 `uk_ai_pet_user_id`，作为一账号一宠的并发兜底：
+孵化相关字段由 changeset `202607101030.sql` 补齐，`device_id` 由 `202607101500.sql` 放宽为可空（原 NOT NULL）；changeset `202608061500.sql` 增加 `uk_ai_pet_user_id`，作为领养名额的并发兜底（该索引随分渠道规则改造为按原型/渠道口径，见 ADR 0006 顶部注记）：
 
 | 字段 | 说明 | 谁写 |
 |---|---|---|
@@ -104,7 +104,7 @@ PRD §5.3 是「双轨孵化（进度不减时）」；本实现按产品确认�
 
 ### 4.1 `POST /pet/adopt`（鉴权 normal）
 - 入参 `PetAdoptDTO { inviteCode @NotBlank }`
-- 行为：先检查账号未拥有宠物（唯一索引并发兜底）→ prototype 后端随机（锦鲤/玉兔，与 inviteCode 解耦）→ 建 `ai_pet`（EGG、`device_id=null`、设 Model X 基线、不生成档案）→ `InviteService.consume(inviteCode, userId)`（幂等；无效码抛异常 → 外层事务回滚 insert，不产生孤儿蛋）
+- 行为：先检查邀请码渠道名额（账号未通过邀请码领养过宠物，唯一索引并发兜底）→ prototype 后端随机（锦鲤/玉兔，与 inviteCode 解耦）→ 建 `ai_pet`（EGG、`device_id=null`、设 Model X 基线、不生成档案）→ `InviteService.consume(inviteCode, userId)`（幂等；无效码抛异常 → 外层事务回滚 insert，不产生孤儿蛋）
 - 出参 `PetVO`（前端 stage=waiting）
 
 ### 4.2 `POST /pet/{id}/hatch-action`（鉴权 normal）
@@ -237,7 +237,7 @@ PRD §8 要求「已绑定蛋每天最多一句状态文案，按需生成、当
 | 旧端点迁移 | `POST /pet/birth` / `GET /pet/detail/{deviceId}` 待标 `@Deprecated`，存量演示数据视为已破壳。 |
 | AI 生图 | 头像用预置配置池，未做 AI 生图（代码库无生图能力）。后续集成 provider 后可异步回填 `avatar_url`。 |
 | 每日心情 | ✅ 已落地（懒生成于 `GET /pet/{id}`/`list`，LLM 失败兜底静态池，见 §5.8）。后续可接 chat-history 最近消息时间作破壳后真实活跃度基线（现为 `hatchedAt` 兜底）。 |
-| 多宠 UI | `pages/home` 现按单只蛋渲染；多宠后改列表+当前蛋。MVP 先单宠（`activePetId` 固定第一只）。 |
+| 多宠 UI | `pages/home` 现按单只蛋渲染；NFC 渠道放开多宠后需改列表+当前蛋（`activePetId` 现固定第一只）。 |
 | LLM 延迟 | hatch 同步 2 次 LLM 调用，可能 5–15s；后续可改异步生成档案。首次拉取心情也可能触发 1 次 LLM（二次拉取因幂等不触发）。 |
 
 ## 9. 后期开发指引

@@ -25,8 +25,11 @@ const STORY_WINDOW_SMALL_SCENE = '卧室';
 function splitCaptionPool(raw) {
   return raw.split(/[|｜]/).map((item) => item.trim()).filter((item) => item);
 }
-// 故事背景轨道宽 200vw，可横向拖拽查看左半屏；位移超过阈值才判定为拖拽，避免误伤点击
-const STORY_DRAG_THRESHOLD_PX = 6;
+// 故事背景轨道宽 200vw，可横向拖拽查看左半屏。主轴判定：累计位移（勾股）超过该阈值前
+// 横竖都不动；超过后按 |dx|>=|dy| 判主轴并锁死（45 度附近水平优先——误拖成本低、有边界
+// 钳制兜底，垂直误触发代价是整屏渐隐换宠）。统一阈值取代旧的 6px 横拖进入阈值：垂直
+// 手势从头到尾碰不到背景，无需回弹逻辑
+const STORY_DRAG_THRESHOLD_PX = 10;
 // 拖拽增益：手指位移放大倍数，让全景背景一次滑屏扫过更多轨道，体感更跟手
 const STORY_DRAG_GAIN = 1.8;
 // 松手惯性滚动：帧间隔 / 每帧速度衰减系数 / 最小启动速度(px/ms) / 停止速度(px/ms)；
@@ -741,7 +744,7 @@ Page({
   },
 
   // 故事背景横向拖拽：页面级手势，轨道通过 transform 平移；
-  // 位移超过阈值才进入拖拽，小幅移动不拦截，保证按钮与窗户热区的 tap 正常触发
+  // 位移超过阈值前横竖都不动（保证按钮与窗户热区的 tap 正常触发），超过后判主轴锁死
   onStoryDragStart(event) {
     if (!this.data.storyImageUrl) return;
     const touch = event && event.touches && event.touches[0];
@@ -751,6 +754,9 @@ Page({
     this._storyDragMoved = false;
     this._storyDrag = {
       startX: Number(touch.clientX || 0),
+      startY: Number(touch.clientY || 0),
+      // 主轴：null 未判定；'horizontal' 背景拖拽；'vertical' 换宠手势（本处理器不再消费）
+      axis: null,
       baseX: this.data.storyScrollX,
       moved: false,
       // 速度采样：最近一次的轨道位置与时间戳，供松手惯性计算初速度
@@ -765,11 +771,19 @@ Page({
     if (!drag) return;
     const touch = event && event.touches && event.touches[0];
     if (!touch) return;
-    const delta = Number(touch.clientX || 0) - drag.startX;
-    if (!drag.moved && Math.abs(delta) < STORY_DRAG_THRESHOLD_PX) return;
+    const deltaX = Number(touch.clientX || 0) - drag.startX;
+    const deltaY = Number(touch.clientY || 0) - drag.startY;
+    if (!drag.axis) {
+      // 主轴未判定：累计位移（水平+垂直合成）不足阈值时横竖都不动
+      if (Math.hypot(deltaX, deltaY) < STORY_DRAG_THRESHOLD_PX) return;
+      // 一次判死不反悔：45 度附近（|dx| >= |dy|）水平优先，否则锁垂直。
+      // 锁垂直后本手势整段不再驱动背景——换宠判定交给 onPetSwipeEnd 按位移量裁决
+      drag.axis = Math.abs(deltaX) >= Math.abs(deltaY) ? 'horizontal' : 'vertical';
+    }
+    if (drag.axis === 'vertical') return;
     drag.moved = true;
     const maxShift = this._storyMaxScrollPx();
-    const next = Math.max(-maxShift, Math.min(0, drag.baseX + delta * STORY_DRAG_GAIN));
+    const next = Math.max(-maxShift, Math.min(0, drag.baseX + deltaX * STORY_DRAG_GAIN));
     // 采样瞬时速度（轨道位移/时间）；同毫秒的多条 move 事件不更新，避免除零
     const now = this._storyEventTime(event);
     if (now > drag.lastT) {
@@ -784,6 +798,9 @@ Page({
     const drag = this._storyDrag;
     if (!drag) return;
     this._storyDragMoved = drag.moved;
+    // 主轴判定结果带出手势对象：onPetSwipeEnd 读取后才能让锁垂直的手势
+    // 跳过终点 45 度校验（否则后期横向漂移追平 |dx|>=|dy| 会落进两不沾区）
+    this._storyDragAxis = drag.axis;
     this._storyDrag = null;
     if (!drag.moved) return;
     // 松手前手指已停住一段时间，说明用户主动停稳，不启动惯性
@@ -1022,8 +1039,9 @@ Page({
     // 上一次手势的拖拽标志（onStoryDragEnd 置位，供同手势 tap 抑制）不得跨手势残留，
     // 否则横向拖过故事背景一次后，后续所有垂直换宠滑动都被 onPetSwipeEnd 误拦——
     // 无论本次手势起点落在无 touch 绑定的 fixed story-track 还是 pet-view，touchstart
-    // 冒泡到 .page 必先于 touchend 触发，此处清零是可靠复位点
+    // 冒泡到 .page 必先于 touchend 触发，此处清零是可靠复位点（主轴判定结果同理复位）
     this._storyDragMoved = false;
+    this._storyDragAxis = null;
     if (!this.canSwitchPet()) return;
     const touch = event && event.touches && event.touches[0];
     if (!touch) return;
@@ -1040,7 +1058,12 @@ Page({
     if (!touch) return;
     const deltaX = Number(touch.clientX || 0) - swipe.startX;
     const deltaY = Number(touch.clientY || 0) - swipe.startY;
-    if (Math.abs(deltaY) < PET_SWIPE_THRESHOLD_PX || Math.abs(deltaY) <= Math.abs(deltaX)) return;
+    // 主轴锁死语义（与 onStoryDragMove 判定一致，一次判死不反悔）：锁垂直的手势
+    // 即使终点横向漂移追平 |dx|>=|dy| 也按换宠处理；无主轴记录（如孵化期无故事层）
+    // 才退回终点整体位移的 45 度校验
+    const lockedVertical = this._storyDragAxis === 'vertical';
+    if (!lockedVertical && (Math.abs(deltaY) < PET_SWIPE_THRESHOLD_PX || Math.abs(deltaY) <= Math.abs(deltaX))) return;
+    if (lockedVertical && Math.abs(deltaY) < PET_SWIPE_THRESHOLD_PX) return;
     const nextIndex = this.data.currentPetIndex + (deltaY < 0 ? 1 : -1);
     if (nextIndex < 0 || nextIndex >= this.data.pets.length) return;
     this.switchCurrentPet(nextIndex);

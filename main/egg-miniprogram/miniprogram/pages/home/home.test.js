@@ -429,6 +429,14 @@ function requirePetStage(stage, options = {}) {
   stageValue = stage;
 }
 
+// 双宠夹具：锦鲤蛋（先领）+ 玉兔破壳（后领），换宠手势/点选用例共用
+function makeTwoPetList() {
+  return [
+    { id: 'pet-egg', prototype: '锦鲤', name: '鲤鲤', createdAt: FIXED_TIMESTAMP - 3 * 24 * 60 * 60 * 1000, hatchStatus: 'EGG' },
+    { id: 'pet-001', prototype: '玉兔', name: '小白', createdAt: FIXED_TIMESTAMP - 2 * 24 * 60 * 60 * 1000, hatchStatus: 'HATCHED' }
+  ];
+}
+
 async function run() {
   const homeTemplate = fs.readFileSync(path.join(__dirname, 'home.wxml'), 'utf8');
   assert.ok(!homeTemplate.includes('<text class="state-time">{{countdown}}</text>'),
@@ -1369,11 +1377,7 @@ async function run() {
   const pageSwitchBack = makePage();
   pageSwitchBack.onLoad();
   pageSwitchBack.onShow();
-  const petList = [
-    { id: 'pet-egg', prototype: '锦鲤', name: '鲤鲤', createdAt: FIXED_TIMESTAMP - 3 * 24 * 60 * 60 * 1000, hatchStatus: 'EGG' },
-    { id: 'pet-001', prototype: '玉兔', name: '小白', createdAt: FIXED_TIMESTAMP - 2 * 24 * 60 * 60 * 1000, hatchStatus: 'HATCHED' }
-  ];
-  requestGetResult = petList.map((vo) => ({ ...vo }));
+  requestGetResult = makeTwoPetList().map((vo) => ({ ...vo }));
   await pageSwitchBack.loadPetFromServer();
   assert.strictEqual(pageSwitchBack.data.currentPetIndex, 0, 'first load lands on the earliest adopted pet');
   // 模拟上滑切到破壳宠物（index 1）。切换改为预取就绪后置换：先等预取 promise，
@@ -1401,6 +1405,87 @@ async function run() {
   if (typeof fadeInTimer2 === 'function') fadeInTimer2();
   assert.strictEqual(pageSwitchBack.data.currentPetIndex, 0,
     'swipe down after a horizontal story drag switches back to the first pet (stale drag flag cleared)');
+
+  // 31b. 主轴判定（方案A）：垂直换宠滑动带横向漂移时——背景零位移、手势不被吞
+  // 旧实现 6px 横拖阈值 + 只看 dx：漂移超 6px 背景被误拖（1.8 增益放大），且 moved 置位吞掉换宠
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageAxis = makePage();
+  pageAxis.onLoad();
+  pageAxis.onShow();
+  const petListAxis = makeTwoPetList();
+  requestGetResult = petListAxis.map((vo) => ({ ...vo }));
+  await pageAxis.loadPetFromServer();
+  assert.strictEqual(pageAxis.data.currentPetIndex, 0, 'axis scenario starts on the first pet');
+  pageAxis.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/pano.png' });
+  // 真实事件序：子节点（pet-view/热区）touchstart 先触发故事拖拽起点，再冒泡到 .page 换宠起点；
+  // 两 handler 对共享标志均幂等清零，先后次序不影响行为
+  pageAxis.onStoryDragStart({ touches: [{ clientX: 300, clientY: 500 }] });
+  pageAxis.onPetSwipeStart({ touches: [{ clientX: 300, clientY: 500 }] });
+  // 上滑换宠，手指带 8px 横向漂移
+  pageAxis.onStoryDragMove({ touches: [{ clientX: 305, clientY: 480 }] });
+  pageAxis.onStoryDragMove({ touches: [{ clientX: 298, clientY: 440 }] });
+  pageAxis.onStoryDragMove({ touches: [{ clientX: 292, clientY: 400 }] });
+  assert.strictEqual(pageAxis.data.storyScrollX, 0, 'vertical swipe with drift never drags the background');
+  pageAxis.onStoryDragEnd();
+  pageAxis.onPetSwipeEnd({ changedTouches: [{ clientX: 292, clientY: 400 }] });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  const axisFadeIn = timerCallback;
+  if (typeof axisFadeIn === 'function') axisFadeIn();
+  assert.strictEqual(pageAxis.data.currentPetIndex, 1,
+    'vertical gesture is not swallowed by the story drag flag');
+
+  // 31c. 主轴判定：45 度附近水平优先——|dx| >= |dy| 锁水平，背景照常拖拽
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageAxisH = makePage();
+  pageAxisH.onLoad();
+  pageAxisH.onShow();
+  pageAxisH.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/pano.png' });
+  pageAxisH.onStoryDragStart({ touches: [{ clientX: 300, clientY: 500 }] });
+  pageAxisH.onStoryDragMove({ touches: [{ clientX: 270, clientY: 470 }] });
+  assert.strictEqual(pageAxisH.data.storyScrollX, -54,
+    'diagonal swipe (|dx| >= |dy|) locks horizontal and drags the background');
+  pageAxisH.onStoryDragEnd();
+
+  // 31d. 主轴一次锁死不反悔：垂直锁定后中途拐成水平，背景保持原位不动
+  pageAxisH.onStoryDragStart({ touches: [{ clientX: 300, clientY: 500 }] });
+  pageAxisH.onStoryDragMove({ touches: [{ clientX: 300, clientY: 480 }] });
+  pageAxisH.onStoryDragMove({ touches: [{ clientX: 400, clientY: 380 }] });
+  assert.strictEqual(pageAxisH.data.storyScrollX, -54,
+    'axis lock is one-way: a gesture locked vertical stays vertical');
+  pageAxisH.onStoryDragEnd();
+
+  // 31d-2. 锁垂直的手势不受 onPetSwipeEnd 终点 45 度校验否决：
+  // 上滑早期锁垂直（dy 主导），后期横向漂移追平 |dx|>=|dy|——终点校验若仍按整体位移判，
+  // 会落入「背景没动 + 换宠也没发生」的两不沾区。锁死语义 = 垂直轴消费到底
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageLockV = makePage();
+  pageLockV.onLoad();
+  pageLockV.onShow();
+  requestGetResult = makeTwoPetList().map((vo) => ({ ...vo }));
+  await pageLockV.loadPetFromServer();
+  pageLockV.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/pano.png' });
+  pageLockV.onStoryDragStart({ touches: [{ clientX: 300, clientY: 500 }] });
+  pageLockV.onPetSwipeStart({ touches: [{ clientX: 300, clientY: 500 }] });
+  // 早期明显垂直：锁 vertical
+  pageLockV.onStoryDragMove({ touches: [{ clientX: 302, clientY: 430 }] });
+  // 后期横向漂移追平 |dx|=|dy|=120：终点 (420, 380)
+  pageLockV.onStoryDragMove({ touches: [{ clientX: 420, clientY: 380 }] });
+  assert.strictEqual(pageLockV.data.storyScrollX, 0, 'vertical-locked gesture never drags the background');
+  pageLockV.onStoryDragEnd();
+  pageLockV.onPetSwipeEnd({ changedTouches: [{ clientX: 420, clientY: 380 }] });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  const lockVFadeIn = timerCallback;
+  if (typeof lockVFadeIn === 'function') lockVFadeIn();
+  assert.strictEqual(pageLockV.data.currentPetIndex, 1,
+    'a vertical-locked swipe still switches pets even when final drift makes |dx| >= |dy|');
 
   // 32. 聊天入口 icon 按原型选图：玉兔/锦鲤/未知兜底
   resetScenario();

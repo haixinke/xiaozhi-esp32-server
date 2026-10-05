@@ -145,9 +145,12 @@
     </block>
   </block>
 
-  <!-- 多宠物位置指示点：右侧垂直居中，仅多于一只宠物时出现；单宠物用户无感知 -->
-  <view wx:if="{{authChecked && !petRestoreLoading && pets.length > 1}}" class="pet-switch-dots" aria-hidden="true">
-    <view wx:for="{{pets}}" wx:key="id" class="pet-switch-dot {{index === currentPetIndex ? 'pet-switch-dot--active' : ''}}"></view>
+  <!-- 多宠物位置指示点：右侧垂直居中，仅多于一只宠物时出现；单宠物用户无感知。
+       可点选直接切换（手势之外的保底换宠入口），当前项 dot 幂等 -->
+  <view wx:if="{{authChecked && !petRestoreLoading && pets.length > 1}}" class="pet-switch-dots">
+    <view wx:for="{{pets}}" wx:key="id" class="pet-switch-dot {{index === currentPetIndex ? 'pet-switch-dot--active' : ''}}"
+          hover-class="pet-switch-dot--pressed" aria-role="button"
+          aria-label="切换到{{item.name || item.petType || '蛋宝宝'}}" data-index="{{index}}" bindtap="onPetDotTap"></view>
   </view>
   </view>
 

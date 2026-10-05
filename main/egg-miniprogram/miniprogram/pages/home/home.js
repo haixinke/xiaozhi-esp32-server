@@ -364,9 +364,11 @@ Page({
       this.setData({ petRestoreError: '' });
       if (Array.isArray(list) && list.length > 0) {
         // 多宠物：按领养时间正序排列（先领的在最上），整批写入按 petId 隔离的本地缓存；
-        // 列表接口已过滤已删除宠物(deleted_at=0)，前端无需再过滤
+        // 列表接口已过滤已删除宠物(deleted_at=0)，前端无需再过滤。
+        // petType 为 prototype 的 WXML 别名（原型链保留属性禁止直接绑定，见 CLAUDE.md），供指示点 aria-label 使用
         const pets = list.map((vo) => petStore.mapPetFromVO(vo))
           .filter((pet) => !!pet)
+          .map((pet) => ({ ...pet, petType: pet.prototype || '' }))
           .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
         petStore.cachePets(pets);
         // 进入主页后的首次加载默认停在最先领取的宠物；之后的静默刷新保持用户当前选中的宠物
@@ -1074,6 +1076,16 @@ Page({
     // 弹层与破壳视频打开期间不响应换宠，避免遮罩下手势穿透
     return !(this.data.showPhoneAuthorization || this.data.showNameSheet || this.data.doodleEditorVisible
       || this.data.dailyWindowVisible || this.data.storyWindowVisible || this.data.hatching);
+  },
+
+  // 点指示点换宠（方案D）：手势之外的保底切换入口。与手势换宠共用 canSwitchPet 闸门
+  // （弹层打开不响应）与 switchCurrentPet 渐隐流程；点当前项幂等直接返回
+  onPetDotTap(event) {
+    if (!this.canSwitchPet()) return;
+    const index = Number(event && event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.index);
+    if (!Number.isInteger(index) || index < 0 || index >= this.data.pets.length) return;
+    if (index === this.data.currentPetIndex) return;
+    this.switchCurrentPet(index);
   },
 
   // 切换当前宠物：整屏渐隐过渡（只用 opacity，不用 transform——破壳后故事层是 fixed 定位，

@@ -508,6 +508,14 @@ async function run() {
     'post-hatch home must render the story window hotspot');
   assert.ok(homeTemplate.includes('wx:if="{{storyWindowAvailable}}"'),
     'the story window hotspot must be gated by storyWindowAvailable');
+  // 指示点可点选（方案D）：去掉 pointer-events: none 后提供 100% 可靠换宠入口
+  assert.ok(homeTemplate.includes('bindtap="onPetDotTap"'),
+    'pet switch dots must be tappable to switch pets');
+  assert.ok(/pet-switch-dot[^>]*aria-label/.test(homeTemplate),
+    'each dot carries an aria-label for screen readers');
+  const dotsWxss = fs.readFileSync(path.join(__dirname, 'home.wxss'), 'utf8');
+  assert.ok(!/pet-switch-dots\s*{[^}]*pointer-events:\s*none/.test(dotsWxss),
+    'pet-switch-dots container must not swallow taps (pointer-events: none removed)');
 
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
@@ -653,8 +661,10 @@ async function run() {
     'empty state remains hidden while the server pet is restoring');
   resolvePetList([hatchedPet]);
   await new Promise((resolve) => setImmediate(resolve));
-  assert.deepStrictEqual(lastActivePet, hatchedPet, 'server pet is saved to local cache');
-  assert.deepStrictEqual(cachedPetsArg, [hatchedPet], 'server pet list is written to the multi-pet cache');
+  // home 在缓存列表上补 petType 别名（prototype 的 WXML 安全名，见 CLAUDE.md）
+  const hatchedPetWithAlias = { ...hatchedPet, petType: '玉兔' };
+  assert.deepStrictEqual(lastActivePet, hatchedPetWithAlias, 'server pet is saved to local cache');
+  assert.deepStrictEqual(cachedPetsArg, [hatchedPetWithAlias], 'server pet list is written to the multi-pet cache');
   assert.strictEqual(coldStartPage.data.petRestoreLoading, false,
     'restoration completes after the server pet is returned');
   assert.strictEqual(coldStartPage.data.stage, 'hatched', 'hatched server pet renders the success state');
@@ -1486,6 +1496,31 @@ async function run() {
   if (typeof lockVFadeIn === 'function') lockVFadeIn();
   assert.strictEqual(pageLockV.data.currentPetIndex, 1,
     'a vertical-locked swipe still switches pets even when final drift makes |dx| >= |dy|');
+
+  // 31e. 指示点可点选换宠（方案D）：点第 n 个 dot 直接切到第 n 只宠物，弹层打开时不响应
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatched');
+  const pageDots = makePage();
+  pageDots.onLoad();
+  pageDots.onShow();
+  const petListDots = makeTwoPetList();
+  requestGetResult = petListDots.map((vo) => ({ ...vo }));
+  await pageDots.loadPetFromServer();
+  assert.strictEqual(pageDots.data.currentPetIndex, 0, 'dots scenario starts on the first pet');
+  pageDots.onPetDotTap({ currentTarget: { dataset: { index: 1 } } });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  const dotFadeIn = timerCallback;
+  if (typeof dotFadeIn === 'function') dotFadeIn();
+  assert.strictEqual(pageDots.data.currentPetIndex, 1, 'tapping the second dot switches to the second pet');
+  // 点当前宠物的 dot：幂等，不触发切换
+  pageDots.onPetDotTap({ currentTarget: { dataset: { index: 1 } } });
+  assert.strictEqual(pageDots.data.currentPetIndex, 1, 'tapping the active dot is a no-op');
+  // 弹层打开期间点 dot：不响应（与手势换宠同一闸门）
+  pageDots.setData({ showNameSheet: true });
+  pageDots.onPetDotTap({ currentTarget: { dataset: { index: 0 } } });
+  assert.strictEqual(pageDots.data.currentPetIndex, 1, 'dots do not switch while a sheet is open');
 
   // 32. 聊天入口 icon 按原型选图：玉兔/锦鲤/未知兜底
   resetScenario();

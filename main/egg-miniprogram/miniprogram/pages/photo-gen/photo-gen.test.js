@@ -62,6 +62,8 @@ global.wx = {
   reLaunch: (opts) => { callOrder.push('reLaunch:' + opts.url); },
   showLoading: (opts) => { loadingMessages.push(opts.title); callOrder.push('showLoading'); },
   hideLoading: () => { callOrder.push('hideLoading'); },
+  // SUCCEEDED 分支会写 GALLERY_DIRTY_KEY 脏标记，必须桩住否则 TypeError 被轮询 catch 静默吞掉
+  setStorageSync: () => {},
   downloadFile: () => { throw new Error('not stubbed'); },
   saveImageToPhotosAlbum: () => { throw new Error('not stubbed'); }
 };

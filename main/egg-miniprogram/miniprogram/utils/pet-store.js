@@ -336,12 +336,16 @@ async function updateNickname(name) {
   if (['违法', '诈骗', '赌博'].some(word => value.includes(word))) return { ok: false, message: '昵称含有不适合的内容，请换一个' };
   try {
     let updated;
+    // alreadyDone 语义：破壳后改名视为“非首次”（走 PUT）；孵化中以后端 hatch-action 返回为准
+    // （首次 NICKNAME=false，二次编辑 alreadyDone=true 走 PUT 兜底），不能只看 hatchStatus
+    let alreadyDone = pet.hatchStatus === 'HATCHED';
     if (pet.hatchStatus === 'HATCHED') {
       // 破壳后 NICKNAME 修炼动作不再合法(后端抛 10209)，改名直接走 PUT /pet/update
       const vo = await petApi.updateNickname(pet.id, value);
       updated = savePetFromVO(vo);
     } else {
       const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
+      alreadyDone = !!result.alreadyDone;
       if (result.alreadyDone) {
         // 后端 HatchActionService 仅在首次提交时持久化 nickname；二次提交走 PUT /pet/update 兜底。
         const vo = await petApi.updateNickname(pet.id, value);
@@ -352,7 +356,7 @@ async function updateNickname(name) {
     }
     updated.name = value;
     savePet(updated);
-    return { ok: true, alreadyDone: pet.hatchStatus === 'HATCHED', pet: updated };
+    return { ok: true, alreadyDone, pet: updated };
   } catch (error) {
     return { ok: false, message: (error && error.userMessage) || '提交失败，请稍后重试' };
   }

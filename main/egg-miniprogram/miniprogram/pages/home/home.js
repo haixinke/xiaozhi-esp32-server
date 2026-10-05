@@ -1170,10 +1170,14 @@ Page({
       this.setData({ nameError: result.message || '名字没有保存成功，请重试' });
       return;
     }
+    const renamedPet = { ...this.data.pet, name: result.pet ? result.pet.name : this.data.nameDraft };
     this.setData({
       showNameSheet: false,
-      pet: { ...this.data.pet, name: result.pet ? result.pet.name : this.data.nameDraft }
+      pet: renamedPet
     });
+    // 必须同步列表副本：上下滑动切宠直接读 this.data.pets 并 setActivePet 覆盖缓存，
+    // 不同步会导致切走再切回时旧对象把新名字缓存冲掉
+    this.upsertPetIntoList(renamedPet);
     this.syncTabBar();
     this.showFeedback(result.alreadyDone ? '名字改好啦。' : '我记住自己的名字啦。');
   },

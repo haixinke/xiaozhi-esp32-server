@@ -1083,6 +1083,43 @@ async function run() {
   assert.strictEqual(pageNameFail.data.nameError, '昵称含有不适合的内容，请换一个', 'the failure message surfaces inline');
   assert.strictEqual(pageNameFail.data.savingName, false, 'saving state resets after failure');
 
+  // 14b. 改名后上下切换宠物再切回：名称不得回退旧值（回归：onSaveName 必须同步 this.data.pets，
+  // 否则 switchCurrentPet 用列表里的旧对象 setActivePet 覆盖新缓存）
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: true };
+  requirePetStage('hatching', { name: '旧名字' });
+  requestGetResult = [
+    { id: 'pet-001', prototype: '玉兔', name: '旧名字', hatchStatus: 'EGG', createdAt: 1 },
+    { id: 'pet-002', prototype: '玉兔', name: '宝宝B', hatchStatus: 'EGG', createdAt: 2 }
+  ];
+  updateNicknameResult = { ok: true, alreadyDone: false, pet: { name: '新名字' } };
+  const pageRename = makePage();
+  pageRename.onLoad();
+  pageRename.onShow();
+  // 等待 loadPetFromServer 静默刷新落地（两只宠物进列表）
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(pageRename.data.pets.length, 2, 'server list seeds both incubator pets');
+  assert.strictEqual(pageRename.data.pet.name, '旧名字', 'current pet starts with the old name');
+  pageRename.onPetNameTap();
+  pageRename.onNameInput({ detail: { value: '新名字' } });
+  await pageRename.onSaveName();
+  assert.strictEqual(pageRename.data.pet.name, '新名字', 'rename renders the new name immediately');
+  // 切走再切回；预取与渲染无关本用例，替换为即时完成
+  pageRename.prefetchPetAssets = () => Promise.resolve();
+  pageRename.switchCurrentPet(1);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(pageRename.data.pet.name, '宝宝B', 'swiping down activates the second pet');
+  pageRename.switchCurrentPet(0);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.strictEqual(lastActivePet && lastActivePet.name, '新名字',
+    'switching back must activate the renamed pet, not a stale list copy');
+  assert.strictEqual(pageRename.data.pet.name, '新名字',
+    'the renamed name must survive switching away and back');
+
   // 15. 破壳前未命名：打开 home 自动弹出命名框
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };

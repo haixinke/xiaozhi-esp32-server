@@ -2,7 +2,7 @@
   <nav-bar title="我的卡册"></nav-bar>
   <view class="content">
     <view wx:if="{{cards.length > 0}}" class="card-list">
-      <view wx:for="{{cards}}" wx:key="id" class="album-card" bindtap="onOpen" data-index="{{item.index}}" data-pet-id="{{item.petId}}">
+      <view wx:for="{{cards}}" wx:key="id" class="album-card {{item.gapBefore ? 'gap-before' : ''}}" bindtap="onOpen" data-index="{{item.index}}" data-pet-id="{{item.petId}}">
         <image wx:if="{{item.imageUrl}}" class="album-pet-avatar" src="{{item.imageUrl}}" mode="aspectFill"></image>
         <view wx:else class="baby-mark">{{item.petType === '锦鲤' ? '锦' : '兔'}}</view>
         <view class="copy">

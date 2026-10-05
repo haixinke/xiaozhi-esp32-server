@@ -8,6 +8,8 @@ const pagePath = require.resolve('./album');
 const template = fs.readFileSync(path.join(pageDir, 'album.wxml'), 'utf8');
 // WXML 必须把 petId 放进 dataset，否则点击跳转缺参数
 assert.match(template, /data-pet-id="\{\{item\.petId\}\}"/, '卡片点击必须携带 petId');
+// WXML 必须按 gapBefore 加 gap-before 类，相邻破壳卡才有额外间距
+assert.match(template, /item\.gapBefore \? 'gap-before'/, '卡片必须支持 gapBefore 间距类');
 
 let pageConfig = null;
 let petsProvider = null;
@@ -66,19 +68,19 @@ function makePage() {
   require('./album');
   assert.ok(pageConfig, 'album page should be registered');
 
-  // --- 多宠物聚合：拍平所有宠物的收藏卡，按 createDate 倒序，tie 按 sortOrder 升序 ---
+  // --- 多宠物聚合：拍平所有宠物的收藏卡，按 createDate 正序，tie 按 sortOrder 升序 ---
   petsProvider = [
     {
       id: 'pet-a', prototype: '锦鲤', name: '小金',
       collectionCards: [
-        { id: 'c1', brief: '首卡', createDate: '2026-10-01 10:00:00', sortOrder: 0 },
-        { id: 'c2', brief: '第二张', createDate: '2026-10-03 09:00:00', sortOrder: 1 }
+        { id: 'c1', brief: '首卡', source: 'HATCH', createDate: '2026-10-01 10:00:00', sortOrder: 0 },
+        { id: 'c2', brief: '第二张', source: 'PHOTO', createDate: '2026-10-03 09:00:00', sortOrder: 1 }
       ]
     },
     {
       id: 'pet-b', prototype: '玉兔', name: '小玉',
       collectionCards: [
-        { id: 'c3', brief: '兔首卡', createDate: '2026-10-03 09:00:00', sortOrder: 0 }
+        { id: 'c3', brief: '兔首卡', source: 'HATCH', createDate: '2026-10-03 09:00:00', sortOrder: 0 }
       ]
     }
   ];
@@ -89,16 +91,19 @@ function makePage() {
 
   // 网络失败时回退缓存渲染（Q3）
   assert.strictEqual(page.data.cards.length, 3, '全部宠物的卡都被聚合');
-  assert.strictEqual(page.data.cards[0].id, 'c3', 'createDate 最新的排最前');
-  assert.strictEqual(page.data.cards[1].id, 'c2', 'createDate 倒序');
-  assert.strictEqual(page.data.cards[2].id, 'c1', 'createDate 最早排最后');
+  assert.strictEqual(page.data.cards[0].id, 'c1', 'createDate 最早的排最前');
+  assert.strictEqual(page.data.cards[2].id, 'c2', 'createDate 正序，最晚排最后');
   // createDate 相同的 c2 与 c3：tie 按 sortOrder 升序 → c3(0) 在 c2(1) 前
-  assert.strictEqual(page.data.cards[0].id, 'c3', 'tie-break by sortOrder asc');
-  assert.strictEqual(page.data.cards[1].id, 'c2', 'tie-break by sortOrder asc (2nd)');
-  assert.strictEqual(page.data.cards[0].name, '小玉', '每张卡带所属宠物名');
-  assert.strictEqual(page.data.cards[2].name, '小金', '每张卡带所属宠物名 (2)');
-  assert.strictEqual(page.data.cards[0].petId, 'pet-b', '每张卡带 petId 供跳转');
+  assert.strictEqual(page.data.cards[1].id, 'c3', 'tie-break by sortOrder asc');
+  assert.strictEqual(page.data.cards[0].name, '小金', '每张卡带所属宠物名');
+  assert.strictEqual(page.data.cards[1].name, '小玉', '每张卡带所属宠物名 (2)');
+  assert.strictEqual(page.data.cards[1].petId, 'pet-b', '每张卡带 petId 供跳转');
   assert.strictEqual(page.data.cards[0].index, 0, 'index 为该宠物 collectionCards 内下标');
+
+  // --- gapBefore：相邻两张都是破壳卡时，后一张带间距标记 ---
+  assert.strictEqual(page.data.cards[0].gapBefore, false, '首张卡无 gapBefore');
+  assert.strictEqual(page.data.cards[1].gapBefore, true, 'c3 与前一卡 c1 都是 HATCH，加间距');
+  assert.strictEqual(page.data.cards[2].gapBefore, false, 'c2 非 HATCH，不加间距');
 
   // --- 跳转：单卡页带 petId（Q1）---
   // WXML 用 data-pet-id，dataset 归一化为 camelCase petId

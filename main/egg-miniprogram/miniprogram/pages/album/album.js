@@ -2,7 +2,8 @@ const petStore = require('../../utils/pet-store');
 const petApi = require('../../utils/pet-api');
 
 // "我的卡册"聚合用户名下全部宠物的收藏卡（不按当前宠物），
-// 按获得时间倒序混排；进入时拉一次 /pet/list 刷新缓存，失败回退本地缓存
+// 按获得时间正序混排（最早获得在前，与主页宠物领养顺序一致）；
+// 进入时拉一次 /pet/list 刷新缓存，失败回退本地缓存
 Page({
   data: { cards: [] },
 
@@ -25,7 +26,7 @@ Page({
     }
   },
 
-  // 拍平全部宠物的 collectionCards：createDate 倒序（最新获得在前），同刻按 sortOrder 升序
+  // 拍平全部宠物的 collectionCards：createDate 正序（最早获得在前），同刻按 sortOrder 升序
   _render() {
     const cards = [];
     petStore.getAllPets().forEach((pet) => {
@@ -41,10 +42,16 @@ Page({
       });
     });
     cards.sort((a, b) => {
-      const dateDiff = String(b.createDate || '').localeCompare(String(a.createDate || ''));
+      const dateDiff = String(a.createDate || '').localeCompare(String(b.createDate || ''));
       return dateDiff !== 0 ? dateDiff : (a.sortOrder || 0) - (b.sortOrder || 0);
     });
-    this.setData({ cards });
+    // 相邻两张都是破壳卡（如两个宠物各自的破壳首卡）时，后一张带 gapBefore 标记，
+    // WXSS 据此加 margin-top，避免两张破壳卡视觉上挤在一起
+    const marked = cards.map((card, i) => ({
+      ...card,
+      gapBefore: i > 0 && card.source === 'HATCH' && cards[i - 1].source === 'HATCH'
+    }));
+    this.setData({ cards: marked });
   },
 
   onOpen(e) {

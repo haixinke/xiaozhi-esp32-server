@@ -37,6 +37,9 @@ public class PetPostcardServiceImpl extends BaseServiceImpl<PetPostcardDao, PetP
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    /** 公开页时间展示时区：与项目其它模块（ImageGen 配额日界）一致的固定口径，避免容器时区漂移 */
+    private static final java.time.ZoneId ZONE = java.time.ZoneId.of("Asia/Shanghai");
+
     private final PetDao petDao;
 
     public PetPostcardServiceImpl(PetDao petDao) {
@@ -54,9 +57,6 @@ public class PetPostcardServiceImpl extends BaseServiceImpl<PetPostcardDao, PetP
         // share_id 允许调用方指定（便于测试），缺省时生成
         if (StringUtils.isBlank(postcard.getShareId())) {
             postcard.setShareId(generateShareId());
-        }
-        if (StringUtils.isBlank(postcard.getStatus())) {
-            postcard.setStatus("SENT");
         }
         baseDao.insert(postcard);
         log.info("明信片落库 petId={}, shareId={}", postcard.getPetId(), postcard.getShareId());
@@ -100,7 +100,7 @@ public class PetPostcardServiceImpl extends BaseServiceImpl<PetPostcardDao, PetP
         if (date == null) {
             return "";
         }
-        return date.toInstant().atZone(java.time.ZoneId.systemDefault())
+        return date.toInstant().atZone(ZONE)
                 .format(DateTimeFormatter.ofPattern(DateUtils.DATE_TIME_PATTERN));
     }
 }

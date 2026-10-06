@@ -43,9 +43,6 @@ public class PetPostcardEntity {
     @Schema(description = "明信片文字")
     private String caption;
 
-    @Schema(description = "状态: SENT-已送达/VIEWED-已被查看")
-    private String status;
-
     @Schema(description = "创建者")
     @TableField(fill = FieldFill.INSERT)
     private Long creator;

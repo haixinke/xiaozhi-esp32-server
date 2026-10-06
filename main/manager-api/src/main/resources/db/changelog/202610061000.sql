@@ -8,7 +8,6 @@ CREATE TABLE `ai_pet_postcard` (
   `user_id` BIGINT NOT NULL COMMENT '收件用户ID',
   `image_url` VARCHAR(512) NOT NULL COMMENT '明信片照片OSS URL(已过审)',
   `caption` VARCHAR(255) NOT NULL COMMENT '明信片文字(LLM生成)',
-  `status` VARCHAR(16) NOT NULL DEFAULT 'SENT' COMMENT 'SENT-已送达/VIEWED-已被查看',
   `creator` BIGINT DEFAULT NULL COMMENT '创建者',
   `create_date` DATETIME DEFAULT NULL COMMENT '创建时间',
   `updater` BIGINT DEFAULT NULL COMMENT '更新者',

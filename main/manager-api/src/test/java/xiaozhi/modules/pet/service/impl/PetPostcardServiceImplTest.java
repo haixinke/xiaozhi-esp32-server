@@ -85,7 +85,6 @@ class PetPostcardServiceImplTest {
         PetPostcardEntity entity = sample();
         service.createPostcard(entity);
         assertThat(entity.getShareId()).hasSize(12);
-        assertThat(entity.getStatus()).isEqualTo("SENT");
         verify(petPostcardDao).insert(entity);
     }
 

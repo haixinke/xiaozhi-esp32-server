@@ -5,6 +5,9 @@ const shareInvite = require('./utils/share-invite');
 
 const AUTH_FIELDS = ['token', 'userId', 'openid', 'isNewUser', 'hasPhone', 'agentId'];
 
+// 免登录公开页白名单：不受"未绑手机号踢回 welcome"约束（app 级守卫见 redirectUnboundToWelcome）
+const PUBLIC_PAGES = ['pages/welcome/welcome', 'pages/postcard/postcard'];
+
 function loginWithWechat() {
   return new Promise((resolve, reject) => {
     wx.login({
@@ -73,7 +76,10 @@ App({
   },
 
   redirectUnboundToWelcome(route) {
-    if (route === 'pages/welcome/welcome' || route === '/pages/welcome/welcome') {
+    // 免登录公开页白名单：这些路径不受"未绑手机号踢回 welcome"约束。
+    // postcard 为好友免授权分享入口（点卡片直达，未登录/未绑定都直接可看）
+    const normalized = String(route || '').replace(/^\//, '');
+    if (PUBLIC_PAGES.indexOf(normalized) !== -1) {
       this._welcomeRedirecting = false;
       return;
     }

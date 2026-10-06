@@ -1,0 +1,175 @@
+/* 明信片页：信纸质感（米白纸面 + 邮戳角标），色板与 photo-gen 一致 */
+.page {
+  min-height: 100vh;
+  background: #F3F1E8;
+}
+
+/* 内容区留白，nav-bar 顶到屏幕边缘（与 photo-gen 结构一致） */
+.content {
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+
+/* ===== 三态公共 ===== */
+.state-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 160rpx 0 64rpx;
+}
+
+.state-emoji {
+  font-size: 96rpx;
+  line-height: 1;
+}
+
+.loading-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background: #002900;
+  /* 单点呼吸动画，替代表情图标的加载态 */
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.state-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #002900;
+}
+
+.state-sub {
+  font-size: 26rpx;
+  color: #8C8C88;
+}
+
+/* ===== 邮戳 ===== */
+.postmark {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16rpx;
+}
+
+.postmark-stamp {
+  padding: 10rpx 20rpx;
+  border: 3rpx solid #B8B0A0;
+  border-radius: 8rpx;
+  transform: rotate(3deg);
+}
+
+.postmark-text {
+  font-size: 22rpx;
+  color: #8C8070;
+  letter-spacing: 2rpx;
+}
+
+/* ===== 信纸卡片 ===== */
+.card {
+  background: #FFFDF7;
+  border-radius: 24rpx;
+  box-shadow: 0 26rpx 60rpx rgba(0, 41, 0, 0.16);
+  overflow: hidden;
+}
+
+.card-photo {
+  width: 100%;
+  display: block;
+}
+
+/* AI 标识钉在卡片右上角（.card 为定位上下文） */
+.card {
+  position: relative;
+}
+
+.ai-badge {
+  position: absolute;
+  right: 16rpx;
+  top: 16rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 0, 0, 0.45);
+  color: #FFFFFF;
+  font-size: 20rpx;
+}
+
+.card-body {
+  padding: 32rpx 36rpx 36rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.card-caption {
+  font-size: 32rpx;
+  line-height: 1.7;
+  color: #3C2D24;
+}
+
+.card-signature {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16rpx;
+}
+
+.signature-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #536057;
+}
+
+.signature-date {
+  font-size: 24rpx;
+  color: #8C8C88;
+}
+
+/* ===== 底部操作 ===== */
+.footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-top: 48rpx;
+}
+
+.primary-btn {
+  width: 100%;
+  height: 96rpx;
+  /* 微信 button 自带 padding/行高，改用 flex 居中（与 photo-gen 一致） */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 48rpx;
+  background: #002900;
+  color: #FFFFFF;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+.ghost-btn {
+  width: 100%;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 48rpx;
+  background: #FFFFFF;
+  color: #002900;
+  font-size: 30rpx;
+  font-weight: 500;
+  border: 2rpx solid #002900;
+}
+
+/* 缺页态按钮宽度收窄，避免引导按钮喧宾夺主 */
+.state-wrap .primary-btn,
+.state-wrap .ghost-btn {
+  margin-top: 32rpx;
+  width: 60%;
+}

@@ -1061,3 +1061,10 @@ databaseChangeLog:
         - sqlFile:
             encoding: utf8
             path: classpath:db/changelog/202610041200.sql
+  - changeSet:
+      id: 202610061000
+      author: minwang
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202610061000.sql

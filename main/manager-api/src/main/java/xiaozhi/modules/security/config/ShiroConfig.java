@@ -104,6 +104,8 @@ public class ShiroConfig {
         filterMap.put("/companion/detail/**", "oauth2");
         filterMap.put("/voiceClone/play/**", "anon");
         filterMap.put("/wechat/login", "anon");
+        // 明信片公开分享页：免授权查看（share_id 为不可枚举随机串，防探测）
+        filterMap.put("/pet/postcard/public/**", "anon");
         // 微信消息推送回调（mediaCheckAsync 审核结果）：安全性依赖验签 + AES 密钥，不走 Bearer
         filterMap.put("/wechat/mp/callback", "anon");
         filterMap.put("/wechat/bindPhone", "oauth2");

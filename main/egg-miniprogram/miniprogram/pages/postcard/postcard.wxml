@@ -1,0 +1,46 @@
+<!-- 明信片：好友免授权查看，加载/缺页/就绪三态 -->
+<view class="page">
+  <nav-bar title="明信片" show-back="{{false}}" />
+
+  <view class="content">
+  <!-- 加载态 -->
+  <view wx:if="{{phase === 'loading'}}" class="state-wrap">
+    <view class="loading-dot"></view>
+    <text class="state-text">正在拆开明信片…</text>
+  </view>
+
+  <!-- 缺页态 -->
+  <view wx:elif="{{phase === 'missing'}}" class="state-wrap">
+    <text class="state-emoji">🥚</text>
+    <text class="state-text">明信片不见了</text>
+    <text class="state-sub">可能已被删除或链接有误</text>
+    <button class="primary-btn" bindtap="onRetry">再试一次</button>
+    <button class="ghost-btn" bindtap="onEnter">认识一下蛋宝宝</button>
+  </view>
+
+  <!-- 就绪态：信纸卡片 -->
+  <block wx:else>
+    <view class="postmark">
+      <view class="postmark-stamp">
+        <text class="postmark-text">{{postcard.prototype || '蛋宝宝'}} 寄</text>
+      </view>
+    </view>
+    <view class="card">
+      <image class="card-photo" src="{{postcard.imageUrl}}" mode="widthFix" />
+      <!-- 合规：AI 生成内容常驻标识（与 AI 写真页同口径） -->
+      <text class="ai-badge">图片由AI生成</text>
+      <view class="card-body">
+        <text class="card-caption">{{postcard.caption}}</text>
+        <view class="card-signature">
+          <text class="signature-name">—— {{postcard.petName || '蛋宝宝'}}</text>
+          <text class="signature-date">{{postcard.createDate}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="footer-actions">
+      <button class="ghost-btn" open-type="share">送给朋友</button>
+      <button class="primary-btn" bindtap="onEnter">我也要孵蛋宝宝</button>
+    </view>
+  </block>
+  </view>
+</view>

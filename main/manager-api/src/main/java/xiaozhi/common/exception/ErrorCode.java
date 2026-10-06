@@ -322,6 +322,7 @@ public interface ErrorCode {
     int IMAGE_GEN_TASK_NOT_FOUND = 10225; // 生成任务不存在
     int IMAGE_GEN_PHOTO_URL_INVALID = 10226; // 图片地址不合法
     int IMAGE_GEN_CHECK_SUBMIT_FAILED = 10227; // 内容安全校验提交失败，请稍后再试
+    int POSTCARD_NOT_FOUND = 10228; // 明信片不存在或已删除
 
     // 用户反馈相关错误码
     int FEEDBACK_SUBMIT_TOO_FREQUENTLY = 10330; // 反馈提交过于频繁，请稍后再试

@@ -302,6 +302,12 @@ public interface ErrorCode {
     int ITEM_INSUFFICIENT = 10321; // 道具数量不足
     int ITEM_CONSUME_FAILED = 10322; // 道具消耗失败
 
+    // 星星罐相关错误码
+    int STAR_BALANCE_INSUFFICIENT = 10340; // 星星余额不足
+    int STAR_REF_ID_REQUIRED = 10341; // 缺少业务单号(refId)
+    int STAR_AMOUNT_INVALID = 10342; // 星星数量必须为正整数
+    int STAR_PROTOTYPE_REQUIRED = 10343; // 旅行日记预订必须指定宠物原型
+
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败
     int OSS_DELETE_FILE_ERROR = 10401; // OSS删除文件失败

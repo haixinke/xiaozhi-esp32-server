@@ -19,14 +19,15 @@
               </div>
             </div>
 
-            <el-table
-              v-loading="loading"
-              :data="filteredData"
-              border
-              stripe
-              style="width: 100%;"
-              :header-cell-style="{ background: '#f5f7fa' }"
-            >
+            <div class="table-scroll">
+              <el-table
+                v-loading="loading"
+                :data="filteredData"
+                border
+                stripe
+                style="width: 100%;"
+                :header-cell-style="{ background: '#f5f7fa' }"
+              >
               <el-table-column prop="typeCode" label="类型编码" min-width="140" align="center"></el-table-column>
               <el-table-column prop="typeName" label="类型名称" min-width="160" align="center"></el-table-column>
               <el-table-column prop="capabilityMode" label="能力模式" min-width="100" align="center">
@@ -69,7 +70,8 @@
                   </el-button>
                 </template>
               </el-table-column>
-            </el-table>
+              </el-table>
+            </div>
           </el-card>
         </div>
       </div>
@@ -297,6 +299,14 @@ export default {
     flex: 1;
     overflow: hidden;
   }
+}
+
+/* 表格区域占满卡片剩余空间并内部滚动：祖先链全是定高 + overflow:hidden，
+   不加这一层时超屏行会被直接裁掉且无滚动条 */
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .evidence-time {

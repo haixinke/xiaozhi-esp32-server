@@ -114,15 +114,16 @@
               </span>
             </div>
 
-            <el-table
-              v-loading="loading"
-              :data="tableData"
-              border
-              stripe
-              style="width: 100%;"
-              :header-cell-style="{ background: '#f5f7fa' }"
-              @row-click="handleRowClick"
-              @selection-change="handleSelectionChange"
+            <div class="table-scroll">
+              <el-table
+                v-loading="loading"
+                :data="tableData"
+                border
+                stripe
+                style="width: 100%;"
+                :header-cell-style="{ background: '#f5f7fa' }"
+                @row-click="handleRowClick"
+                @selection-change="handleSelectionChange"
             >
               <el-table-column type="selection" width="45" align="center"></el-table-column>
               <el-table-column prop="assetNo" label="资产编号" min-width="160" align="center"></el-table-column>
@@ -145,7 +146,8 @@
                   <span class="hash-text">{{ truncateHash(row.schemeSha256) }}</span>
                 </template>
               </el-table-column>
-            </el-table>
+              </el-table>
+            </div>
 
             <div class="pagination-wrapper">
               <el-pagination
@@ -516,6 +518,14 @@ export default {
     flex: 1;
     overflow: hidden;
   }
+}
+
+/* 表格区域占满卡片剩余空间并内部滚动：祖先链全是定高 + overflow:hidden，
+   不加这一层时超屏行会被直接裁掉且无滚动条 */
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .pagination-wrapper {

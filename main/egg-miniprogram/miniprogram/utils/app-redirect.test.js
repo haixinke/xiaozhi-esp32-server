@@ -47,11 +47,11 @@ function bind(method) {
   // 未绑手机号 + 明信片页（带不带前导斜杠都要豁免）→ 不劫持
   reLaunchUrls = [];
   app._welcomeRedirecting = false;
-  bind('redirectUnboundToWelcome')('pages/postcard/postcard');
+  bind('redirectUnboundToWelcome')('packagePostcard/pages/postcard/postcard');
   assert.strictEqual(reLaunchUrls.length, 0, 'postcard must not be redirected');
   assert.strictEqual(app._welcomeRedirecting, false, 'flag must be reset for postcard');
 
-  bind('redirectUnboundToWelcome')('/pages/postcard/postcard');
+  bind('redirectUnboundToWelcome')('/packagePostcard/pages/postcard/postcard');
   assert.strictEqual(reLaunchUrls.length, 0, 'postcard with leading slash must not be redirected');
 
   // 已绑手机号 → 任何页都不动

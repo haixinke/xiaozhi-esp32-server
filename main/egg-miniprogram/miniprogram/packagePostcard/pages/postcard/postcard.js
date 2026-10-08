@@ -1,9 +1,15 @@
 // 明信片页：好友点开分享卡片直达，免授权查看（照片 + 文字）。
 // 本页刻意不依赖登录态：app.js 的 authReady/silentLogin 在后台静默进行，
 // 页面 onLoad 只按 shareId 拉公开数据渲染，未被 redirectUnboundToWelcome 劫持。
-const { getPublicPostcard } = require('../../utils/postcard-api');
+const { getPublicPostcard } = require('../../../utils/postcard-api');
 
 const SHARE_TITLE = '蛋宝宝给我寄了一张明信片';
+
+// 站酷快乐体涂鸦字体：走 CDN URL 加载（loadFontFace 不认代码包路径，readFile 也读不了
+// 包内文件，包内 ttf 无路可走）。域名需加入小程序 downloadFile 合法域名，工具开发阶段
+// 可在详情-本地设置勾选「不校验合法域名」绕过；正式发版前将字体转存自有 OSS 更稳。
+const FONT_FAMILY = 'ZCOOLKuaiLe';
+const FONT_URL = 'https://fastly.jsdelivr.net/gh/googlefonts/zcool-kuaile@master/fonts/ttf/ZCOOLKuaiLe-Regular.ttf';
 
 Page({
   data: {
@@ -12,6 +18,7 @@ Page({
   },
 
   onLoad(query) {
+    this.loadDoodleFont();
     const shareId = query && query.id;
     if (!shareId) {
       this.setData({ phase: 'missing' });
@@ -19,6 +26,22 @@ Page({
     }
     this._shareId = String(shareId);
     this.loadPostcard();
+  },
+
+  // 涂鸦字体：CDN URL 直载，失败静默回退 CSS 字体栈（不阻塞页面渲染）
+  loadDoodleFont() {
+    if (this._fontLoaded) {
+      return;
+    }
+    wx.loadFontFace({
+      family: FONT_FAMILY,
+      source: `url("${FONT_URL}")`,
+      global: true,
+      success: () => { this._fontLoaded = true; },
+      fail: (err) => {
+        console.warn('doodle font load fail', err && err.errMsg);
+      }
+    });
   },
 
   async loadPostcard() {
@@ -51,7 +74,7 @@ Page({
     const postcard = this.data.postcard;
     return {
       title: postcard && postcard.caption ? postcard.caption : SHARE_TITLE,
-      path: `/pages/postcard/postcard?id=${encodeURIComponent(this._shareId || '')}`,
+      path: `/packagePostcard/pages/postcard/postcard?id=${encodeURIComponent(this._shareId || '')}`,
       imageUrl: postcard && postcard.imageUrl
     };
   },

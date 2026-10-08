@@ -18,27 +18,31 @@
     <button class="ghost-btn" bindtap="onEnter">认识一下蛋宝宝</button>
   </view>
 
-  <!-- 就绪态：信纸卡片 -->
+  <!-- 就绪态：海报式大图（文案悬浮其上，eggbabe 角标 + 邮戳） -->
   <block wx:else>
-    <view class="postmark">
-      <view class="postmark-stamp">
-        <text class="postmark-text">{{postcard.prototype || '蛋宝宝'}} 寄</text>
-      </view>
-    </view>
-    <view class="card">
-      <image class="card-photo" src="{{postcard.imageUrl}}" mode="widthFix" />
-      <!-- 合规：AI 生成内容常驻标识（与 AI 写真页同口径） -->
-      <text class="ai-badge">图片由AI生成</text>
-      <view class="card-body">
-        <text class="card-caption">{{postcard.caption}}</text>
-        <view class="card-signature">
-          <text class="signature-name">—— {{postcard.petName || '蛋宝宝'}}</text>
-          <text class="signature-date">{{postcard.createDate}}</text>
+    <view class="hero">
+      <image class="hero-img" src="{{postcard.imageUrl}}" mode="aspectFill" />
+      <!-- 品牌角标：三颗蛋色点 + eggbabe 字标 -->
+      <view class="logo">
+        <view class="logo-mark">
+          <view class="dot dot-green"></view>
+          <view class="dot dot-yellow"></view>
+          <view class="dot dot-pink"></view>
         </view>
+        <text class="logo-word">eggbabe</text>
+      </view>
+      <!-- 邮戳：谁寄的 -->
+      <view class="postmark">
+        <view class="postmark-stamp">
+          <text class="postmark-text">{{postcard.petName || '蛋宝宝'}} 寄</text>
+        </view>
+      </view>
+      <!-- 悬浮文案：底部渐变蒙层上的涂鸦体 -->
+      <view class="caption-wrap">
+        <text class="caption-text">{{postcard.caption}}</text>
       </view>
     </view>
     <view class="footer-actions">
-      <button class="ghost-btn" open-type="share">送给朋友</button>
       <button class="primary-btn" bindtap="onEnter">我也要孵蛋宝宝</button>
     </view>
   </block>

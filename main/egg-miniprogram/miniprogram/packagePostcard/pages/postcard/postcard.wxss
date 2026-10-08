@@ -1,0 +1,211 @@
+/* 明信片页：海报式大图 + 悬浮涂鸦文案（色板遵循 DESIGN.md 三蛋色叙事） */
+.page {
+  min-height: 100vh;
+  background: #F3F1E8;
+}
+
+.content {
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+
+/* ===== 三态公共 ===== */
+.state-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 160rpx 0 64rpx;
+}
+
+.state-emoji {
+  font-size: 96rpx;
+  line-height: 1;
+}
+
+.loading-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background: #002900;
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.state-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #002900;
+}
+
+.state-sub {
+  font-size: 26rpx;
+  color: #8C8C88;
+}
+
+/* ===== 海报大图（占页面主体） ===== */
+.hero {
+  position: relative;
+  border-radius: 24rpx;
+  overflow: hidden;
+  /* 高度撑满首屏剩余空间，图片成为页面主角 */
+  height: calc(100vh - 460rpx);
+  min-height: 800rpx;
+  box-shadow: 0 26rpx 60rpx rgba(0, 41, 0, 0.16);
+}
+
+.hero-img {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== eggbabe 品牌角标（图片左上角） ===== */
+.logo {
+  position: absolute;
+  left: 24rpx;
+  top: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 253, 247, 0.88);
+  backdrop-filter: blur(8rpx);
+}
+
+/* 三颗蛋色圆点：青禾绿 / 晨露黄 / 桃粉霜，微错位如一窝蛋 */
+.logo-mark {
+  position: relative;
+  width: 36rpx;
+  height: 24rpx;
+}
+
+.logo-mark .dot {
+  position: absolute;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+}
+
+.dot-green {
+  left: 0;
+  top: 4rpx;
+  background: #ACC861;
+}
+
+.dot-yellow {
+  left: 10rpx;
+  top: 0;
+  background: #F1EC9A;
+  border: 1rpx solid #E5E3DF;
+}
+
+.dot-pink {
+  left: 20rpx;
+  top: 4rpx;
+  background: #FFC5BA;
+}
+
+/* 字标：圆体感小写（Google Sans 不含中文，纯英文场景可用系统圆体近似的回退栈） */
+.logo-word {
+  font-family: "Google Sans", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #3F5A47;
+  letter-spacing: 1rpx;
+}
+
+/* ===== 邮戳（图片右上角） ===== */
+.postmark {
+  position: absolute;
+  right: 24rpx;
+  top: 24rpx;
+}
+
+.postmark-stamp {
+  padding: 10rpx 20rpx;
+  border: 3rpx solid #FFFDF7;
+  border-radius: 8rpx;
+  transform: rotate(3deg);
+  background: rgba(0, 41, 0, 0.35);
+}
+
+.postmark-text {
+  font-size: 22rpx;
+  color: #FFFDF7;
+  letter-spacing: 2rpx;
+}
+
+/* ===== 悬浮文案（底部渐变蒙层） ===== */
+.caption-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 96rpx 36rpx 36rpx;
+  /* 自下而上墨绿深色渐变，保证白字可读 */
+  background: linear-gradient(180deg, rgba(0, 41, 0, 0) 0%, rgba(0, 41, 0, 0.45) 45%, rgba(0, 41, 0, 0.78) 100%);
+}
+
+/* 涂鸦可爱风：站酷快乐体（JS 加载）+ 回退栈，白贴纸底 + 轻微倾斜 */
+.caption-text {
+  display: inline-block;
+  padding: 16rpx 28rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 253, 247, 0.92);
+  color: #3C2D24;
+  font-size: 34rpx;
+  line-height: 1.6;
+  font-weight: 600;
+  font-family: "ZCOOLKuaiLe", "Yuanti SC", "YouYuan", "PingFang SC", "Microsoft YaHei", sans-serif;
+  transform: rotate(-2deg);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.12);
+}
+
+/* ===== 底部操作 ===== */
+.footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-top: 32rpx;
+}
+
+.primary-btn {
+  width: 100%;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 48rpx;
+  background: #002900;
+  color: #FFFFFF;
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+.ghost-btn {
+  width: 100%;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 48rpx;
+  background: #FFFFFF;
+  color: #002900;
+  font-size: 30rpx;
+  font-weight: 500;
+  border: 2rpx solid #002900;
+}
+
+/* 缺页态按钮宽度收窄，避免引导按钮喧宾夺主 */
+.state-wrap .primary-btn,
+.state-wrap .ghost-btn {
+  margin-top: 32rpx;
+  width: 60%;
+}

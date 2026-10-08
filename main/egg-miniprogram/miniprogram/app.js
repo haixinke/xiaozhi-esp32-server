@@ -6,7 +6,7 @@ const shareInvite = require('./utils/share-invite');
 const AUTH_FIELDS = ['token', 'userId', 'openid', 'isNewUser', 'hasPhone', 'agentId'];
 
 // 免登录公开页白名单：不受"未绑手机号踢回 welcome"约束（app 级守卫见 redirectUnboundToWelcome）
-const PUBLIC_PAGES = ['pages/welcome/welcome', 'pages/postcard/postcard'];
+const PUBLIC_PAGES = ['pages/welcome/welcome', 'packagePostcard/pages/postcard/postcard'];
 
 function loginWithWechat() {
   return new Promise((resolve, reject) => {

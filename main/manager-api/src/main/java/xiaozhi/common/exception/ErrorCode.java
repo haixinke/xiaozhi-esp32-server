@@ -306,7 +306,6 @@ public interface ErrorCode {
     int STAR_BALANCE_INSUFFICIENT = 10340; // 星星余额不足
     int STAR_REF_ID_REQUIRED = 10341; // 缺少业务单号(refId)
     int STAR_AMOUNT_INVALID = 10342; // 星星数量必须为正整数
-    int STAR_PROTOTYPE_REQUIRED = 10343; // 旅行日记预订必须指定宠物原型
 
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败

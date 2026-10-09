@@ -25,12 +25,6 @@ public class StarTransactionVO {
     @Schema(description = "操作后余额")
     private Long balanceAfter;
 
-    @Schema(description = "宠物原型(仅 travel)")
-    private String petPrototype;
-
-    @Schema(description = "履约状态: pending/fulfilled")
-    private String fulfillStatus;
-
     @Schema(description = "备注")
     private String remark;
 
@@ -44,8 +38,6 @@ public class StarTransactionVO {
         vo.setBizType(entity.getBizType());
         vo.setAmount(entity.getAmount());
         vo.setBalanceAfter(entity.getBalanceAfter());
-        vo.setPetPrototype(entity.getPetPrototype());
-        vo.setFulfillStatus(entity.getFulfillStatus());
         vo.setRemark(entity.getRemark());
         vo.setCreateDate(entity.getCreateDate());
         return vo;

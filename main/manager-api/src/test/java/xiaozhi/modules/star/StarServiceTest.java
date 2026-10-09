@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +34,7 @@ import xiaozhi.modules.star.service.StarService;
  * 星星罐 service 接缝集成测试（真实 dev 库，OceanBase MySQL 模式）。
  * 并发用例不加 @Transactional：工作线程独立事务需看到测试数据，参考 InviteConsumeConcurrencyTest。
  * 每个用例用独立随机 userId + 唯一 refId 隔离，AfterEach 清理本用例产生的行。
+ * 流水表不承载履约状态（ADR 0009），旅行预订/履约用例已随该决策移除。
  */
 @Import(TestArkServiceConfig.class)
 @SpringBootTest
@@ -83,7 +83,6 @@ class StarServiceTest {
         assertThat(txn.getType()).isEqualTo("earn");
         assertThat(txn.getAmount()).isEqualTo(5);
         assertThat(txn.getBalanceAfter()).isEqualTo(5);
-        assertThat(txn.getFulfillStatus()).isEqualTo("fulfilled");
     }
 
     @Test
@@ -117,17 +116,16 @@ class StarServiceTest {
     // ---- 票2：consume 扣减与余额保护 ----
 
     @Test
-    @DisplayName("consume 正常扣减：流水 amount 负、balance_after 正确、exchange 即 fulfilled")
+    @DisplayName("consume 正常扣减：流水 amount 负、balance_after 正确")
     void consume_normal_deducts() {
         long uid = newUser();
         starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 10, null);
-        StarTransactionEntity txn = starService.consume(uid, StarConsumeBizType.EXCHANGE, ref(), 4, null, "兑换");
+        StarTransactionEntity txn = starService.consume(uid, StarConsumeBizType.EXCHANGE, ref(), 4, "兑换");
 
         assertThat(starService.balance(uid)).isEqualTo(6);
         assertThat(txn.getType()).isEqualTo("consume");
         assertThat(txn.getAmount()).isEqualTo(-4);
         assertThat(txn.getBalanceAfter()).isEqualTo(6);
-        assertThat(txn.getFulfillStatus()).isEqualTo("fulfilled");
     }
 
     @Test
@@ -136,7 +134,7 @@ class StarServiceTest {
         long uid = newUser();
         starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 3, null);
 
-        assertThatThrownBy(() -> starService.consume(uid, StarConsumeBizType.EXCHANGE, ref(), 5, null, null))
+        assertThatThrownBy(() -> starService.consume(uid, StarConsumeBizType.EXCHANGE, ref(), 5, null))
                 .isInstanceOf(RenException.class);
 
         assertThat(starService.balance(uid)).isEqualTo(3);
@@ -150,8 +148,8 @@ class StarServiceTest {
         long uid = newUser();
         starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 10, null);
         String r = ref();
-        starService.consume(uid, StarConsumeBizType.LOTTERY, r, 4, null, null);
-        starService.consume(uid, StarConsumeBizType.LOTTERY, r, 4, null, null);
+        starService.consume(uid, StarConsumeBizType.LOTTERY, r, 4, null);
+        starService.consume(uid, StarConsumeBizType.LOTTERY, r, 4, null);
 
         assertThat(starService.balance(uid)).isEqualTo(6);
         assertThat(starTransactionDao.selectCount(new QueryWrapper<StarTransactionEntity>()
@@ -175,7 +173,7 @@ class StarServiceTest {
             pool.submit(() -> {
                 try {
                     start.await();
-                    starService.consume(uid, StarConsumeBizType.EXCHANGE, ref(), 4, null, null);
+                    starService.consume(uid, StarConsumeBizType.EXCHANGE, ref(), 4, null);
                     success.incrementAndGet();
                 } catch (Exception ignored) {
                     // 余额不足/幂等冲突均属预期
@@ -214,7 +212,7 @@ class StarServiceTest {
                 try {
                     start.await();
                     StarTransactionEntity txn =
-                            starService.consume(uid, StarConsumeBizType.EXCHANGE, r, 4, null, null);
+                            starService.consume(uid, StarConsumeBizType.EXCHANGE, r, 4, null);
                     if (txn != null && txn.getId() != null) {
                         ok.incrementAndGet();
                     }
@@ -237,89 +235,6 @@ class StarServiceTest {
                 .eq("user_id", uid).eq("ref_id", r))).isEqualTo(1L);
     }
 
-    // ---- 票3：旅行预订与履约 ----
-
-    @Test
-    @DisplayName("consume(travel) 缺 prototype 拒绝；有 prototype 写入 pending")
-    void consumeTravel_prototypeRequired_pending() {
-        long uid = newUser();
-        starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 10, null);
-
-        assertThatThrownBy(() -> starService.consume(uid, StarConsumeBizType.TRAVEL, ref(), 5, null, null))
-                .isInstanceOf(RenException.class);
-
-        StarTransactionEntity txn = starService.consume(uid, StarConsumeBizType.TRAVEL, ref(), 5, "KOI", null);
-        assertThat(txn.getFulfillStatus()).isEqualTo("pending");
-        assertThat(txn.getPetPrototype()).isEqualTo("KOI");
-        assertThat(starService.balance(uid)).isEqualTo(5);
-    }
-
-    @Test
-    @DisplayName("履约消耗最早 pending，回填日记ID，其余 pending 不动")
-    void fulfill_consumesEarliest_onlyOne() {
-        long uid = newUser();
-        starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 20, null);
-        starService.consume(uid, StarConsumeBizType.TRAVEL, ref(), 5, "KOI", null);
-        starService.consume(uid, StarConsumeBizType.TRAVEL, ref(), 5, "KOI", null);
-
-        Optional<StarTransactionEntity> fulfilled =
-                starService.consumePendingTravelPreorder(uid, "KOI", "diary-1");
-        assertThat(fulfilled).isPresent();
-        assertThat(fulfilled.get().getFulfillRefId()).isEqualTo("diary-1");
-        assertThat(fulfilled.get().getFulfillStatus()).isEqualTo("fulfilled");
-
-        // 还剩一笔 pending
-        assertThat(starTransactionDao.selectCount(new QueryWrapper<StarTransactionEntity>()
-                .eq("user_id", uid).eq("biz_type", "travel").eq("fulfill_status", "pending")))
-                .isEqualTo(1L);
-    }
-
-    @Test
-    @DisplayName("无 pending 预订：履约返回空，零写入")
-    void fulfill_noPending_empty() {
-        long uid = newUser();
-        Optional<StarTransactionEntity> result =
-                starService.consumePendingTravelPreorder(uid, "RABBIT", "diary-x");
-        assertThat(result).isEmpty();
-    }
-
-    @Test
-    @DisplayName("履约幂等：同笔流水不会被并发履约两次")
-    void fulfill_concurrent_onlyOnce() throws Exception {
-        long uid = newUser();
-        starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 10, null);
-        starService.consume(uid, StarConsumeBizType.TRAVEL, ref(), 5, "KOI", null);
-
-        int threads = 4;
-        ExecutorService pool = Executors.newFixedThreadPool(threads);
-        CountDownLatch start = new CountDownLatch(1);
-        CountDownLatch done = new CountDownLatch(threads);
-        AtomicInteger fulfilledCount = new AtomicInteger();
-
-        for (int i = 0; i < threads; i++) {
-            final int idx = i;
-            pool.submit(() -> {
-                try {
-                    start.await();
-                    if (starService.consumePendingTravelPreorder(uid, "KOI", "diary-" + idx).isPresent()) {
-                        fulfilledCount.incrementAndGet();
-                    }
-                } catch (Exception ignored) {
-                } finally {
-                    done.countDown();
-                }
-            });
-        }
-        start.countDown();
-        done.await();
-        pool.shutdown();
-
-        assertThat(fulfilledCount.get()).isEqualTo(1);
-        assertThat(starTransactionDao.selectCount(new QueryWrapper<StarTransactionEntity>()
-                .eq("user_id", uid).eq("biz_type", "travel").eq("fulfill_status", "fulfilled")))
-                .isEqualTo(1L);
-    }
-
     // ---- 票4：流水分页查询 ----
 
     @Test
@@ -327,7 +242,7 @@ class StarServiceTest {
     void transactions_pagedDesc_mixed() {
         long uid = newUser();
         starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 10, null);
-        starService.consume(uid, StarConsumeBizType.EXCHANGE, ref(), 3, null, null);
+        starService.consume(uid, StarConsumeBizType.EXCHANGE, ref(), 3, null);
         starService.earn(uid, StarEarnBizType.AD_REWARD, ref(), 2, null);
 
         var page = starService.transactions(uid, 1, 10);

@@ -17,10 +17,7 @@ import xiaozhi.modules.star.entity.StarAccountEntity;
 import xiaozhi.modules.star.entity.StarTransactionEntity;
 import xiaozhi.modules.star.enums.StarConsumeBizType;
 import xiaozhi.modules.star.enums.StarEarnBizType;
-import xiaozhi.modules.star.enums.StarFulfillStatus;
 import xiaozhi.modules.star.service.StarService;
-
-import java.util.Optional;
 
 /**
  * 星星罐服务实现。
@@ -28,6 +25,8 @@ import java.util.Optional;
  * 幂等设计（照 item 模块 grant 模式）：流水先写，唯一索引 (user_id, biz_type, ref_id) 撞键
  * 即幂等返回——此时事务尚未触碰余额，无需回滚。余额变动在流水插入成功后执行；
  * 余额不足/异常时事务回滚，连带已插入的流水一起撤销，保证账户与流水始终一致。
+ *
+ * 本模块只管资金变动（earn/consume/balance/transactions），不承载履约状态（ADR 0009）。
  */
 @Slf4j
 @Service
@@ -47,8 +46,7 @@ public class StarServiceImpl implements StarService {
         validate(userId, refId, amount);
         ensureAccount(userId);
 
-        StarTransactionEntity txn = buildTxn(userId, "earn", bizType.getCode(), refId, amount,
-                null, StarFulfillStatus.FULFILLED, remark);
+        StarTransactionEntity txn = buildTxn(userId, "earn", bizType.getCode(), refId, amount, remark);
         if (!insertTxnOrIdempotent(userId, bizType.getCode(), refId, txn)) {
             return txn; // 幂等命中，txn 为已有流水
         }
@@ -68,16 +66,10 @@ public class StarServiceImpl implements StarService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public StarTransactionEntity consume(Long userId, StarConsumeBizType bizType, String refId, long amount,
-                                         String petPrototype, String remark) {
+                                         String remark) {
         validate(userId, refId, amount);
-        if (bizType == StarConsumeBizType.TRAVEL && StringUtils.isBlank(petPrototype)) {
-            throw new RenException(ErrorCode.STAR_PROTOTYPE_REQUIRED);
-        }
 
-        StarFulfillStatus status = bizType.isAsyncFulfill()
-                ? StarFulfillStatus.PENDING : StarFulfillStatus.FULFILLED;
-        StarTransactionEntity txn = buildTxn(userId, "consume", bizType.getCode(), refId, -amount,
-                petPrototype, status, remark);
+        StarTransactionEntity txn = buildTxn(userId, "consume", bizType.getCode(), refId, -amount, remark);
         if (!insertTxnOrIdempotent(userId, bizType.getCode(), refId, txn)) {
             return txn; // 幂等命中，txn 为已有流水
         }
@@ -88,38 +80,6 @@ public class StarServiceImpl implements StarService {
         }
         fillBalanceAfter(txn, userId);
         return txn;
-    }
-
-    /** 履约旅行预订：最早 pending 流水原子置 fulfilled 并回填日记ID。 */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Optional<StarTransactionEntity> consumePendingTravelPreorder(Long userId, String prototype,
-                                                                        String diaryRefId) {
-        if (userId == null || StringUtils.isBlank(prototype)) {
-            return Optional.empty();
-        }
-        // 最早 pending（id 正序 = 创建时间正序）
-        StarTransactionEntity pending = starTransactionDao.selectOne(
-                new QueryWrapper<StarTransactionEntity>()
-                        .eq("user_id", userId)
-                        .eq("type", "consume")
-                        .eq("biz_type", StarConsumeBizType.TRAVEL.getCode())
-                        .eq("pet_prototype", prototype)
-                        .eq("fulfill_status", StarFulfillStatus.PENDING.getCode())
-                        .orderByAsc("id")
-                        .last("LIMIT 1"));
-        if (pending == null) {
-            return Optional.empty();
-        }
-        int affected = starTransactionDao.markFulfilled(pending.getId(), diaryRefId);
-        if (affected <= 0) {
-            // 并发下已被另一方履约
-            log.info("旅行预订已被并发履约：txnId={}", pending.getId());
-            return Optional.empty();
-        }
-        pending.setFulfillStatus(StarFulfillStatus.FULFILLED.getCode());
-        pending.setFulfillRefId(diaryRefId);
-        return Optional.of(pending);
     }
 
     @Override
@@ -192,9 +152,6 @@ public class StarServiceImpl implements StarService {
             txn.setId(existing.getId());
             txn.setAmount(existing.getAmount());
             txn.setBalanceAfter(existing.getBalanceAfter());
-            txn.setPetPrototype(existing.getPetPrototype());
-            txn.setFulfillStatus(existing.getFulfillStatus());
-            txn.setFulfillRefId(existing.getFulfillRefId());
             txn.setRemark(existing.getRemark());
             txn.setCreateDate(existing.getCreateDate());
             return false;
@@ -212,7 +169,7 @@ public class StarServiceImpl implements StarService {
     }
 
     private StarTransactionEntity buildTxn(Long userId, String type, String bizType, String refId, long amount,
-                                           String petPrototype, StarFulfillStatus status, String remark) {
+                                           String remark) {
         StarTransactionEntity txn = new StarTransactionEntity();
         txn.setUserId(userId);
         txn.setType(type);
@@ -220,8 +177,6 @@ public class StarServiceImpl implements StarService {
         txn.setRefId(refId);
         txn.setAmount(amount);
         txn.setBalanceAfter(0L); // 占位，余额变动后由 fillBalanceAfter 回填
-        txn.setPetPrototype(petPrototype);
-        txn.setFulfillStatus(status.getCode());
         txn.setRemark(remark);
         return txn;
     }

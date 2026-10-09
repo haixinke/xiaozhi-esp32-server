@@ -13,8 +13,8 @@ import java.util.Date;
 /**
  * 星星罐流水：earn/consume 单表，amount 带正负。
  * 幂等：唯一索引 (user_id, biz_type, ref_id)，refId 为调用方业务单号，强制非空。
- * 履约：即时场景(exchange/lottery)写入即 fulfilled；travel 预订写入 pending，
- * 故事引擎在旅行结束时消耗最早一笔 pending 并回填 fulfill_ref_id(日记ID)。
+ * 流水只承载资金变动；履约状态/履约产物/宠物原型等履约语义不在本表（ADR 0009），
+ * 由 refId 关联的业务对象承载，异步履约场景落地时再建对应实体。
  */
 @Data
 @TableName("ai_star_transaction")
@@ -42,15 +42,6 @@ public class StarTransactionEntity {
 
     @Schema(description = "操作后余额快照")
     private Long balanceAfter;
-
-    @Schema(description = "宠物原型(仅 travel 消费必填): KOI/RABBIT")
-    private String petPrototype;
-
-    @Schema(description = "履约状态: pending-待履约(仅travel), fulfilled-已履约")
-    private String fulfillStatus;
-
-    @Schema(description = "履约产物ID(如旅行日记ID),履约时回填")
-    private String fulfillRefId;
 
     @Schema(description = "备注")
     private String remark;

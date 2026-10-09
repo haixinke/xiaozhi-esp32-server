@@ -3075,8 +3075,8 @@
     "semantic_hash": "2f593a2563dc25cde134d224f3f885a6"
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/ErrorCode.java": {
-    "mtime": 1791449137.6328115,
-    "ast_hash": "7c8ce4000403bd554463ee10f106e8bf",
+    "mtime": 1791534939.09297,
+    "ast_hash": "02523a6095ccb554658f23859d3fdad7",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/RenException.java": {
@@ -5885,8 +5885,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1791449137.6332443,
-    "ast_hash": "cd982e77002c12ac1fd5628972faa971",
+    "mtime": 1791453730.616573,
+    "ast_hash": "89a52857d1f6a348c0d7db6ddb6fbaa8",
     "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/_common.sh": {
@@ -8250,12 +8250,12 @@
     "semantic_hash": ""
   },
   "main/manager-web/src/views/nfc/NfcAssetManagement.vue": {
-    "mtime": 1791452898.644616,
+    "mtime": 1791453739.0109618,
     "ast_hash": "ca7d8fed71fa457ee7aede4520bae64e",
     "semantic_hash": ""
   },
   "main/manager-web/src/views/nfc/NfcBatchManagement.vue": {
-    "mtime": 1791452898.644637,
+    "mtime": 1791453739.0113478,
     "ast_hash": "d71b3ef40977c6a777914bb4d8964364",
     "semantic_hash": ""
   },
@@ -8270,17 +8270,17 @@
     "semantic_hash": ""
   },
   "main/manager-web/src/views/nfc/NfcProductTypeManagement.vue": {
-    "mtime": 1791452898.644678,
+    "mtime": 1791453739.0117753,
     "ast_hash": "77d2d6eedbddf841e56f79736a074a94",
     "semantic_hash": ""
   },
   "main/manager-web/src/views/nfc/NfcSchemeManagement.vue": {
-    "mtime": 1791452898.644692,
+    "mtime": 1791453739.0121434,
     "ast_hash": "925ed18cbaba883aed8dc7b03947e4a7",
     "semantic_hash": ""
   },
   "main/manager-web/src/views/nfc/NfcWriteJobManagement.vue": {
-    "mtime": 1791452898.644706,
+    "mtime": 1791453739.0124252,
     "ast_hash": "561765f14cc447eebf04a741c75d3bb6",
     "semantic_hash": ""
   },
@@ -8812,6 +8812,66 @@
   "main/egg-miniprogram/miniprogram/pages/album/album.test.js": {
     "mtime": 1791209874.2676,
     "ast_hash": "d84a59efea4381106188d3c87ce2b66e",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/controller/StarController.java": {
+    "mtime": 1791453730.6127057,
+    "ast_hash": "7f65291faa1ba3c5f8f20f94b2ce7a8b",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/dao/StarAccountDao.java": {
+    "mtime": 1791453730.6129313,
+    "ast_hash": "90f77cba106415d4503170ef8c50d284",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/dao/StarTransactionDao.java": {
+    "mtime": 1791534906.3023975,
+    "ast_hash": "ffa914a083a844cf8c789bc7e89a2343",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/entity/StarAccountEntity.java": {
+    "mtime": 1791453730.6134107,
+    "ast_hash": "a7d4ea37f1d700c11ba70537e7b4b88b",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/entity/StarTransactionEntity.java": {
+    "mtime": 1791534784.0520499,
+    "ast_hash": "842dd833be7366ccea2f5a99714de13b",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/enums/StarConsumeBizType.java": {
+    "mtime": 1791534918.047051,
+    "ast_hash": "6573ae6a62d21b7abbf7af52c2f621a5",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/enums/StarEarnBizType.java": {
+    "mtime": 1791453730.6143885,
+    "ast_hash": "fa2d3fbba73ad537b03184a899f3d538",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/service/StarService.java": {
+    "mtime": 1791534835.6303082,
+    "ast_hash": "6133179db431a25e63a1fbd34a853bfd",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/service/impl/StarServiceImpl.java": {
+    "mtime": 1791534888.9177916,
+    "ast_hash": "6432ddc0fbc841ff984beee23654558a",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/vo/StarBalanceVO.java": {
+    "mtime": 1791453730.6153452,
+    "ast_hash": "6ec08a93b21675cc050db16a39f1a920",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/star/vo/StarTransactionVO.java": {
+    "mtime": 1791534906.4837348,
+    "ast_hash": "dd868747fe000a6ca7c06e11fd9acf06",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/star/StarServiceTest.java": {
+    "mtime": 1791535010.7898054,
+    "ast_hash": "33f4357004baa9352489b24773a611dc",
     "semantic_hash": ""
   }
 }

@@ -174,8 +174,3 @@ JDBC URL：`jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEn
 - 新增角色：在 `role` 字段增加新值（如 `viewer`），前端 `HeaderBar` 添加对应 `v-if` 条件。
 - 后端角色鉴权：如需服务端区分 admin/operator，可在 `Oauth2Realm` 中按 `role` 值注入不同权限标识。
 - 用户管理 UI 提权：如需在智控台直接设置角色，在用户管理页增加角色选择器，后端增加 `PUT /admin/user/role` 接口。
-
-## 业务文档
-
-- [蛋宝宝用户资料与头像 OSS 上传](docs/egg-user-profile-avatar.md) — `GET/PUT /wechat/profile`、`POST /wechat/avatar`，`ai_wechat_user` 画像字段，阿里云 OSS 头像公开 URL。
-- [蛋宝宝孵化闭环后端实现参考](docs/egg-pet-hatch-backend.md) — adopt/hatch-action/hatch 三段端点、Model X 时间模型（adopt 设基线、动作减时）、ai_pet_hatch_action 表、虚拟设备与 agent 个性注入、每日心情 todayMood（懒生成 LLM+静态兜底）、错误码、测试约定与后期开发指引。

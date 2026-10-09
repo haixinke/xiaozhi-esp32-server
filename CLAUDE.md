@@ -27,7 +27,7 @@
 | `main/egg-miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "蛋宝宝"微信小程序：孵化类AI宠物 |
 | `main/eggbabe-miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "蛋宝宝"微信小程序的UI静态设计项目，非实际运行 |
 
-每个子项目都有自己的 `CLAUDE.md`，包含详细的架构说明和常用命令。
+每个子项目的架构说明和常用命令见其目录下的 `CLAUDE.md`（`xiaozhi-server`、`manager-api`、`manager-web`、`egg-miniprogram` 已有；另见 `main/miniprogram/CLAUDE.md`）。
 
 ## 官方文档目录
 
@@ -38,23 +38,21 @@
 ```
 ┌──────────────┐     WebSocket      ┌─────────────────┐     HTTP      ┌─────────────────┐
 │ ESP32 设备    │◄──────────────────►│ xiaozhi-server  │◄───────────►│ LLM / TTS / ASR │
-│              │      端口 8000      │ (Python AI)     │   API       │   服务商         │
-└──────────────┘                    └────────┬────────┘             └─────────────────┘
+└──────────────┘                    │ (Python AI)     │   API       │   服务商         │
+                                    └────────┬────────┘             └─────────────────┘
                                              │
                                     ┌────────▼────────┐
                                     │  manager-api    │◄──── REST ────┐
                                     │  (Java Spring)  │               │
-                                    │  端口 8002       │◄── Oceanbase + Redis
-                                    └────────┬────────┘               │
+                                    └────────┬────────┘◄── Oceanbase + Redis
                                              │                        │
                                    ┌─────────┴──────────┐             │
                                    │                    │             │
                              ┌─────▼─────┐      ┌──────▼──────┐      │
                              │manager-web│      │manager-     │      │
                              │(Vue.js)   │      │mobile      │      │
-                             │端口 8001   │      │(Uni-app)   │      │
-                             └───────────┘      └─────────────┘      │
-                                                                      │
+                             └───────────┘      │(Uni-app)   │      │
+                                                └─────────────┘      │
                                                           ┌───────────▼──────────┐
                                                           │  mqtt-gateway (可选) │
                                                           │  MQTT + UDP 桥接     │
@@ -69,12 +67,7 @@ Python 服务端对所有 AI 流水线组件 (ASR、TTS、LLM、VAD、意图识�
 
 ### 配置加载流程
 
-`xiaozhi-server` 从三层配置读取 (后层覆盖前层)：
-1. `config.yaml` (已提交的默认配置)
-2. `data/.config.yaml` (本地密钥和覆盖配置，已加入 gitignore)
-3. 远程 `manager-api` 配置 (如果在 `data/.config.yaml` 中设置了 `manager-api.url`)
-
-Java API 向 Python 服务端暴露运行时配置，使得管理控制台无需重启即可调整 AI 参数。
+`xiaozhi-server` 三层配置（`config.yaml` → `data/.config.yaml` → 远程 `manager-api`）细节见 `main/xiaozhi-server/CLAUDE.md`。Java API 向 Python 服务端暴露运行时配置，使管理控制台无需重启即可调整 AI 参数。
 
 ## 关键文件
 
@@ -153,10 +146,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ### 5. Comment New Code
 
-**所有新增代码必须添加注释。**
+**所有新增代码需要添加注释。**
 
 - 类、接口、枚举：添加 Javadoc 说明其职责与业务语义。
-- 实体字段：沿用项目风格添加 `@Schema(description = "...")`。
 - 关键业务规则（概率、状态流转、并发幂等、边界条件等）：在对应代码处添加行内注释说明“为什么”，而非仅复述“做什么”。
 - 注释使用简洁中文；不改动既有逻辑，注释不得泄露密钥、token 等敏感信息。
 
@@ -173,13 +165,7 @@ Before ANY commit:
 
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+本项目在 `graphify-out/` 维护了代码知识图谱（用法由 PreToolUse hook 强制执行）。修改代码后运行 `graphify update .` 保持图谱最新（AST-only，无 API 成本）。
 
 ## Agent skills
 

@@ -100,25 +100,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### PowerMem SDK 源代码
 
-**PowerMem SDK 源代码位置**：`~/codes/github/powermem-1.1.0`
-
-这是 PowerMem v1.1.0 的完整源代码，包含：
-- 核心实现（`powermem/core/`）
-- 存储、LLM、Embedding 提供商（`powermem/storage/`、`powermem/llm/`、`powermem/embedding/`）
-- UserMemory 和 AsyncMemory 类
-- 向量存储和知识图谱存储逻辑
-
-**用途**：
-
-- 深入理解 PowerMem 的工作原理
-- 调试和排查 SDK 层面的问题
-- 查看用户画像提取和记忆存储的具体实现
-
-**关键文件**：
-
-- `powermem/core/async_memory.py` - AsyncMemory 类实现
-- `powermem/core/memory.py` - Memory 类实现
-- `powermem/storage/oceanbase/oceanbase_graph.py` - OceanBase 图谱存储
-- `powermem/storage/oceanbase/oceanbase_vector.py` - OceanBase 向量存储
-- `powermem/user_memory/user_memory.py` - UserMemory 类实现（用户画像）
-- `powermem/prompts/user_profile_prompts.py` - 用户画像提取提示词
+调试 PowerMem SDK 层问题（存储、LLM、Embedding provider、用户画像提取）时，读完整源代码：`~/codes/github/powermem-1.1.0`（PowerMem v1.1.0）。

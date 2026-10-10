@@ -3,7 +3,7 @@
 > 范围：`manager-api` 中蛋宝宝（egg）从领养到破壳的后端实现。供后期开发参考。
 > 关联：[`egg-miniprogram/docs/egg-pet-identity-and-hatch-api.md`](../../egg-miniprogram/docs/egg-pet-identity-and-hatch-api.md)（接口契约/草案）、[`egg-miniprogram/CLAUDE.md`](../../egg-miniprogram/CLAUDE.md)（小程序侧交互）。
 > 状态：adopt / hatch-action / hatch / `GET /pet/{id}` / 每日心情 todayMood 已落地并通过单测；OTA→xiaozhi-server WS 真机联调、AI 生图、旧端点 `@Deprecated` 迁移待做。
-> 领养名额规则：NFC 渠道同一原型（锦鲤/玉兔）全局限一只、可领养多只；邀请码渠道（本文 adopt 链路）仍限一只，属产品前期验证阶段的中间产物。原型占用全局判定、与渠道无关，详见根 `CONTEXT.md`「领养名额规则」。
+> 领养名额规则：NFC 渠道同一原型（锦鲤/玉兔）全局限一只、可领养多只；邀请码渠道（本文 adopt 链路）仍限一只，属产品前期验证阶段的中间产物。原型占用全局判定、与渠道无关，详见根 `GLOSSARY.md`「领养名额规则」。
 
 ## 1. 全景
 

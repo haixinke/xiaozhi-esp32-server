@@ -1,6 +1,6 @@
 # 蛋宝宝小程序 AI 生图功能实现计划
 
-> 日期：2026-09-17。前置调研见 [technical-research.md](./technical-research.md)（模型选型、微信合规依据均在其中，本文不重复）。术语定义见根 `CONTEXT.md`（AI 生图任务 / IP 参考图 / 预置文案）。
+> 日期：2026-09-17。前置调研见 [technical-research.md](./technical-research.md)（模型选型、微信合规依据均在其中，本文不重复）。术语定义见根 `GLOSSARY.md`（AI 生图任务 / IP 参考图 / 预置文案）。
 
 ## 1. 已确认决策
 

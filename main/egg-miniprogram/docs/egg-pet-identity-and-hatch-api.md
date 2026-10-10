@@ -67,7 +67,7 @@ public class PetAdoptDTO {
   2. 先建 `ai_pet`：`userId`、`nickname` 空、`prototype`(随机)、`hatchStatus=EGG`、`hatchStartTime=now`、`expectedHatchTime=now+7d`、`acceleratedMinutes=0`、`deviceId=null`、不生成 mbti/personality/avatar。
   3. 再核销 `inviteCode`（`InviteService.consume(code, userId)`，幂等）。核销失败（无效/过期/无剩余）抛异常 → 外层 `@Transactional(rollbackFor=Exception.class)` 回滚第 2 步的 insert，不产生孤儿蛋。
   4. 返回 `PetVO`（stage 对应前端 `waiting`）。
-- 错误：邀请码相关沿用 invite 的 `RenException`；`PET_ALREADY_EXISTS` 用于重复领养拦截（同原型重复 / 邀请码渠道超限额，见根 `CONTEXT.md`「领养名额规则」）。
+- 错误：邀请码相关沿用 invite 的 `RenException`；`PET_ALREADY_EXISTS` 用于重复领养拦截（同原型重复 / 邀请码渠道超限额，见根 `GLOSSARY.md`「领养名额规则」）。
 
 > 倒计时起点（Model X）：adopt 时即设基线 `hatchStartTime = now`、`expectedHatchTime = now + 7d`（见 §10.4）。hatch-action 不再写起点，只累加 `acceleratedMinutes` 并重算 `expectedHatchTime = hatchStartTime + 7d − acceleratedMinutes`。无动作蛋到 `adopt + 7d` 即可破壳，有动作蛋更早破壳。
 

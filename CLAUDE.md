@@ -152,7 +152,7 @@ Before ANY commit:
 
 ### Issue tracker
 
-Issues 跟踪在 GitHub Issues（origin: haixinke/xiaozhi-esp32-server），用 gh CLI 操作。See `docs/agents/issue-tracker.md`.
+Issues 跟踪在本地 `.scratch/` 下的 markdown 文件（单人维护，不走 GitHub Issues）。See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
@@ -160,5 +160,5 @@ Issues 跟踪在 GitHub Issues（origin: haixinke/xiaozhi-esp32-server），用 
 
 ### Domain docs
 
-单上下文布局：根 `CONTEXT.md` + `docs/adr/`（按需懒创建）。See `docs/agents/domain.md`.
+单上下文布局：根 `GLOSSARY.md` + `docs/adr/`（按需懒创建）。See `docs/agents/domain.md`.
 

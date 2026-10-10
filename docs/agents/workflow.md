@@ -18,7 +18,7 @@ User-invoked skill 可以调 model-invoked skill，但不可调另一个 user-in
 
 ### 1. /grill-with-docs — 拷问对齐
 
-每次做改动前使用。agent 反向连续追问设计，把歧义全部挤出；同时沉淀术语到 `CONTEXT.md`、重大决策写 ADR（`docs/adr/`）。
+每次做改动前使用。agent 反向连续追问设计，把歧义全部挤出；同时沉淀术语到 `GLOSSARY.md`、重大决策写 ADR（`docs/adr/`）。
 
 - 回答时使用项目领域术语，不用泛词 — 术语越准，后续 spec/ticket/代码命名越一致
 - 出口标准：聊到没有歧义分支为止

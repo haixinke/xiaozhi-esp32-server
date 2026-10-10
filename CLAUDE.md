@@ -12,8 +12,6 @@
 - **聊天服务** → `main/xiaozhi-server/`
 - **后端服务** → `main/manager-api/`
 - **智控台** → `main/manager-web/`
-- **移动服务** → `main/manager-mobile/`
-- **数字人项目** → `main/digital-human/`
 - **蛋宝宝小程序** → `main/egg-miniprogram/`
 - **蛋宝宝UI静态项目** → `main/eggbabe-miniprogram/`
 
@@ -22,8 +20,6 @@
 | `main/xiaozhi-server/` | Python 3.10 | 8000 (WS), 8003 (HTTP) | AI 核心：语音流水线 (ASR → LLM → TTS)，WebSocket 设备连接 |
 | `main/manager-api/` | Java 21 / Spring Boot 3.4.3 | 8002 (`/xiaozhi`) | 管理后台 REST API，设备注册，Python 服务端的配置来源 |
 | `main/manager-web/` | Vue.js 2 / Vue CLI | 8001 (dev) | Web 管理控制台 ("智控台") |
-| `main/manager-mobile/` | Uni-app / Vue 3 / Vite | — | 移动端管理后台 (H5、微信小程序、iOS、Android) |
-| `main/digital-human/` | HTML / CSS / JS / Python |  | 数字人项目：模拟 ESP32 终端设备，用于测试和演示语音交互功能 |
 | `main/egg-miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "蛋宝宝"微信小程序：孵化类AI宠物 |
 | `main/eggbabe-miniprogram/` | 微信小程序 (WXML/WXSS/JS) | — | "蛋宝宝"微信小程序的UI静态设计项目，非实际运行 |
 
@@ -36,28 +32,17 @@
 ## 高层架构
 
 ```
-┌──────────────┐     WebSocket      ┌─────────────────┐     HTTP      ┌─────────────────┐
-│ ESP32 设备    │◄──────────────────►│ xiaozhi-server  │◄───────────►│ LLM / TTS / ASR │
-└──────────────┘                    │ (Python AI)     │   API       │   服务商         │
-                                    └────────┬────────┘             └─────────────────┘
-                                             │
-                                    ┌────────▼────────┐
-                                    │  manager-api    │◄──── REST ────┐
-                                    │  (Java Spring)  │               │
-                                    └────────┬────────┘◄── Oceanbase + Redis
-                                             │                        │
-                                   ┌─────────┴──────────┐             │
-                                   │                    │             │
-                             ┌─────▼─────┐      ┌──────▼──────┐      │
-                             │manager-web│      │manager-     │      │
-                             │(Vue.js)   │      │mobile      │      │
-                             └───────────┘      │(Uni-app)   │      │
-                                                └─────────────┘      │
-                                                          ┌───────────▼──────────┐
-                                                          │  mqtt-gateway (可选) │
-                                                          │  MQTT + UDP 桥接     │
-                                                          └──────────────────────┘
+ESP32 设备 ──WebSocket(实时音频)──► xiaozhi-server (Python AI 核心)
+egg-miniprogram (蛋宝宝小程序) ──WebSocket(OTA 取凭证后直连,破壳后语音对话)──► xiaozhi-server
+egg-miniprogram ──HTTP REST(领养/孵化/设备绑定)──► manager-api (Java Spring)
+manager-api ──HTTP(运行时配置下发)──► xiaozhi-server
+xiaozhi-server ──HTTP API──► 外部服务商 (LLM / TTS / ASR)
+manager-api ──JDBC──► Oceanbase (业务库)
+manager-api ──► Redis (缓存/会话)
+xiaozhi-server ──PowerMem SDK──► Oceanbase (记忆: 向量/图谱存储)
 ```
+
+模块角色：`xiaozhi-server` 语音流水线（ASR→LLM→TTS）；`manager-api` 管理后台 + 配置源；`egg-miniprogram` 客户端，两条链路（领养孵化走 manager-api，语音对话直连 xiaozhi-server）。
 
 ### 数据流 (语音交互)
 

@@ -16,6 +16,8 @@ npm run test:unit    # 单元测试
 npm run check:i18n   # 国际化文案校验
 ```
 
+编辑 `.vue` 后 PostToolUse hook 自动跑 `scripts/check-vue-template.js` 编译校验 `<template>` 语法；手动全量校验：`npm run check:template -- src/views/foo.vue`。
+
 ## 用户角色与权限
 
 **角色模型（super_admin + role 字段、后端权限、提权 SQL）见 `../manager-api/CLAUDE.md`「用户角色与权限」**，本节只记前端细节。

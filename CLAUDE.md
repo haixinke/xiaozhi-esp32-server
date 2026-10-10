@@ -60,6 +60,12 @@ Python 服务端对所有 AI 流水线组件 (ASR、TTS、LLM、VAD、意图识�
 | `main/manager-web/vue.config.js` | Vue 构建配置，代理 `/xiaozhi` 到 `localhost:8002` |
 | `main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml` | Liquibase 迁移日志 |
 
+## 常用工具
+
+| 工具 | 用途 |
+|---|---|
+| `main/xiaozhi-server/venv/bin/python scripts/db-query.py "SELECT ..."` | 查开发库（Oceanbase）。密码从 `application-dev.yml` 读取，**禁止**在命令行 inline DB 密码。仅只读语句 (SELECT/SHOW/DESCRIBE/DESC/EXPLAIN)。本机未装 mysql 客户端。 |
+
 ## Behavioral Guidelines (All Languages)
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.

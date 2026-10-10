@@ -94,7 +94,7 @@ xiaozhi
 
 ### 数据库与迁移
 
-- **Liquibase** 驱动 schema 变更。主变更日志位于 `src/main/resources/db/changelog/db.changelog-master.yaml`。每个 changeset 引用一个带日期的 SQL 文件。修改表时，**新增 changeset + SQL 文件**；不要编辑已有 changeset。
+- **Liquibase** 驱动 schema 变更。主变更日志位于 `src/main/resources/db/changelog/db.changelog-master.yaml`。每个 changeset 引用一个带日期的 SQL 文件。修改表时，**新增 changeset + SQL 文件**；不要编辑已有 changeset——编辑已应用的 changeset 会改校验和，启动报 `Validation Failed: ... was: ... but is now ...`。本地开发库若已因此损坏，恢复方法：`UPDATE DATABASECHANGELOG SET MD5SUM=NULL;` 让 Liquibase 下次启动重算校验和。
 - **MyBatis-Plus** 配置：`id-type: ASSIGN_ID`，`map-underscore-to-camel-case: true`。实体扫描包：`xiaozhi.modules.*.entity`。Mapper XML 位置：`classpath*:/mapper/**/*.xml`。
 
 #### 开发环境数据库
@@ -111,7 +111,8 @@ xiaozhi
 
 JDBC URL：`jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true`
 
-命令行连接示例：`mysql -h127.0.0.1 -P2881 -uroot -p123456 egg_database`
+命令行连接：本机未装 mysql 客户端，用仓库脚本（密码从 `application-dev.yml` 读取，勿在命令行 inline 密码）：
+`main/xiaozhi-server/venv/bin/python scripts/db-query.py "SHOW TABLES"`（仅只读语句）
 
 ### 配置模式
 

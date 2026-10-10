@@ -25,10 +25,6 @@
 
 每个子项目的架构说明和常用命令见其目录下的 `CLAUDE.md`（`xiaozhi-server`、`manager-api`、`manager-web`、`egg-miniprogram` 已有；另见 `main/miniprogram/CLAUDE.md`）。
 
-## 官方文档目录
-
-`main/official-docs/` 用于存放项目的官方文档（如软著、专利等材料）。
-
 ## 高层架构
 
 ```

@@ -63,6 +63,8 @@ public enum UploadScene {
      * 大小写不敏感地解析场景码。
      *
      * <p>对客户端友好：前端常按自然语义传小写（如 {@code doodle}），而枚举常量名为大写。
+     * 按 pathPrefix 匹配而非枚举名——pathPrefix 含连字符（game-icon）时
+     * toUpperCase 无法映射到下划线枚举名（GAME_ICON）。
      * 匹配不到时返回 null，由调用方决定如何报错。
      *
      * @param code 场景码，允许任意大小写
@@ -72,10 +74,12 @@ public enum UploadScene {
         if (code == null || code.isBlank()) {
             return null;
         }
-        try {
-            return UploadScene.valueOf(code.trim().toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            return null;
+        String normalized = code.trim();
+        for (UploadScene scene : values()) {
+            if (scene.pathPrefix.equalsIgnoreCase(normalized)) {
+                return scene;
+            }
         }
+        return null;
     }
 }

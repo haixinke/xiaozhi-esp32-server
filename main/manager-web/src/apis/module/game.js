@@ -96,11 +96,15 @@ export default {
     },
 
     // 上传游戏图标（/upload/image 需要 Bearer 鉴权，走 RequestService 统一带 token）
+    // scene 为后端 @RequestParam query 参数，必须拼在 URL 上；放 FormData 后端读不到
     uploadImage(formData, callback, failCallback) {
         RequestService.sendRequest()
-            .url(`${getServiceUrl()}/upload/image`)
+            .url(`${getServiceUrl()}/upload/image?scene=game-icon`)
             .method('POST')
             .data(formData)
+            // header() 会整体替换默认 header（含 json content-type）；
+            // 传空对象让 flyio 检测到 FormData 后自动删掉 Content-Type，由浏览器生成 multipart boundary
+            .header({})
             .success((res) => {
                 RequestService.clearRequestTime()
                 callback(res)

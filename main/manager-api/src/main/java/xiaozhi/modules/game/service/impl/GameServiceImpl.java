@@ -79,6 +79,19 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
         deleteById(id);
     }
 
+    @Override
+    public List<GameVO> listEnabled(String entrance) {
+        QueryWrapper<GameEntity> wrapper = new QueryWrapper<>();
+        // 只返回启用游戏，停用配置不对小程序暴露
+        wrapper.eq("status", 1);
+        // 按入口过滤：FIND_IN_SET 精确匹配逗号分隔列表中的某一项，
+        // 避免 LIKE 把 "NOTE" 误匹配到未来可能存在的 "NOTE_XXX" 之类的前缀 code
+        wrapper.apply(StringUtils.isNotBlank(entrance), "FIND_IN_SET({0}, entrances)", entrance);
+        wrapper.orderByAsc("id");
+        List<GameEntity> entities = baseDao.selectList(wrapper);
+        return ConvertUtils.sourceToTarget(entities, GameVO.class);
+    }
+
     /**
      * 统一校验 save/update 的业务规则。
      * game_type 必须在 GAME_TYPE 字典中存在，防止配置指向无效类型；

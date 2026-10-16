@@ -1,5 +1,6 @@
 package xiaozhi.modules.game.service;
 
+import java.util.List;
 import java.util.Map;
 
 import xiaozhi.common.page.PageData;
@@ -49,4 +50,12 @@ public interface GameService extends BaseService<GameEntity> {
      * @param id 游戏ID
      */
     void delete(Long id);
+
+    /**
+     * 小程序端查询启用游戏列表（status=1）。
+     *
+     * @param entrance 入口枚举 code，可空；传入时只返回 entrances 包含该入口的游戏
+     * @return 启用游戏列表
+     */
+    List<GameVO> listEnabled(String entrance);
 }

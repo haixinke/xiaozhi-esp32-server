@@ -233,4 +233,58 @@ class GameServiceTest {
         assertThat(page.getTotal()).isGreaterThanOrEqualTo(1);
         assertThat(page.getList()).isNotEmpty();
     }
+
+    // ---- listEnabled（小程序端游戏列表） ----
+
+    /** 用唯一 gameType 前缀隔离本组用例，避免受库中既有数据影响 */
+    private Long saveTrackedWith(String gameType, String entrances, Integer status) {
+        GameDTO dto = validDTO();
+        dto.setGameType(gameType);
+        dto.setEntrances(entrances);
+        dto.setStatus(status);
+        return saveAndTrack(dto);
+    }
+
+    @Test
+    @DisplayName("listEnabled 不传入口：只返回启用游戏，停用游戏不出现")
+    void listEnabled_noEntrance_returnsOnlyEnabled() {
+        Long enabledId = saveTrackedWith("DRAW_TOGETHER", "NOTE,ACTIVITY", 1);
+        Long disabledId = saveTrackedWith("LISTEN_TO_YOU", "NOTE", 0);
+
+        List<GameVO> list = gameService.listEnabled(null);
+
+        List<Long> ids = list.stream().map(GameVO::getId).toList();
+        assertThat(ids).contains(enabledId);
+        assertThat(ids).doesNotContain(disabledId);
+        assertThat(list).allMatch(vo -> vo.getStatus() == 1);
+    }
+
+    @Test
+    @DisplayName("listEnabled 按入口过滤：匹配单入口与逗号分隔多入口的记录")
+    void listEnabled_withEntrance_filtersByContains() {
+        Long multiEntranceId = saveTrackedWith("DRAW_TOGETHER", "NOTE,ACTIVITY", 1);
+        Long singleEntranceId = saveTrackedWith("LISTEN_TO_YOU", "NOTE", 1);
+        Long otherEntranceId = saveTrackedWith("DRAW_TOGETHER", "ACTIVITY", 1);
+
+        List<GameVO> list = gameService.listEnabled("NOTE");
+
+        List<Long> ids = list.stream().map(GameVO::getId).toList();
+        // NOTE 应匹配 entrances 为 "NOTE" 和 "NOTE,ACTIVITY" 的记录
+        assertThat(ids).contains(multiEntranceId, singleEntranceId);
+        // 不应匹配只有 ACTIVITY 的记录
+        assertThat(ids).doesNotContain(otherEntranceId);
+    }
+
+    @Test
+    @DisplayName("listEnabled 入口过滤同时排除停用游戏")
+    void listEnabled_withEntrance_excludesDisabled() {
+        Long enabledId = saveTrackedWith("DRAW_TOGETHER", "NOTE", 1);
+        Long disabledId = saveTrackedWith("LISTEN_TO_YOU", "NOTE", 0);
+
+        List<GameVO> list = gameService.listEnabled("NOTE");
+
+        List<Long> ids = list.stream().map(GameVO::getId).toList();
+        assertThat(ids).contains(enabledId);
+        assertThat(ids).doesNotContain(disabledId);
+    }
 }

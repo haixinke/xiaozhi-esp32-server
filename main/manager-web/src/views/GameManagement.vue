@@ -85,9 +85,9 @@
         <el-form-item label="游戏图标">
           <el-upload
             class="icon-uploader"
-            :action="uploadUrl"
+            action="#"
+            :http-request="uploadIcon"
             :show-file-list="false"
-            :on-success="handleIconSuccess"
             :before-upload="beforeIconUpload"
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
           >
@@ -144,11 +144,6 @@ export default {
       editForm: this.emptyForm(),
       tableColumns: []
     };
-  },
-  computed: {
-    uploadUrl() {
-      return `${process.env.VUE_APP_API_BASE_URL}/upload/image?scene=game-icon`;
-    }
   },
   created() {
     this.tableColumns = [
@@ -296,12 +291,20 @@ export default {
         .catch(() => {});
     },
 
-    handleIconSuccess(res) {
-      if (res.code === 0) {
-        this.editForm.icon = res.data;
-      } else {
-        this.$message.error(res.msg || '上传失败');
-      }
+    // el-upload 自定义上传：经 RequestService 走统一鉴权（Bearer token），URL 与其他接口一致取 getServiceUrl()
+    uploadIcon(option) {
+      const formData = new FormData();
+      formData.append('file', option.file);
+      formData.append('scene', 'game-icon');
+      Api.game.uploadImage(formData, ({ data }) => {
+        if (data.code === 0) {
+          this.editForm.icon = data.data;
+        } else {
+          this.$message.error(data.msg || '上传失败');
+        }
+      }, () => {
+        this.$message.error('上传失败');
+      });
     },
 
     beforeIconUpload(file) {

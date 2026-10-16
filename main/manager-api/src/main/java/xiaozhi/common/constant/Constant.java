@@ -378,7 +378,11 @@ public interface Constant {
         /**
          * 手机区号
          */
-        MOBILE_AREA("MOBILE_AREA");
+        MOBILE_AREA("MOBILE_AREA"),
+        /**
+         * 游戏类型
+         */
+        GAME_TYPE("GAME_TYPE");
 
         private String value;
 

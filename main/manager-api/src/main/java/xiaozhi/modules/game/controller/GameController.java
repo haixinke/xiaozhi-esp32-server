@@ -23,6 +23,7 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
 import xiaozhi.common.validator.ValidatorUtils;
 import xiaozhi.common.validator.group.AddGroup;
+import xiaozhi.common.validator.group.DefaultGroup;
 import xiaozhi.common.validator.group.UpdateGroup;
 import xiaozhi.modules.game.dto.GameDTO;
 import xiaozhi.modules.game.service.GameService;
@@ -63,7 +64,7 @@ public class GameController {
     @Operation(summary = "新增游戏")
     @RequiresPermissions("sys:role:superAdmin")
     public Result<Void> save(@RequestBody GameDTO dto) {
-        ValidatorUtils.validateEntity(dto, AddGroup.class);
+        ValidatorUtils.validateEntity(dto, AddGroup.class, DefaultGroup.class);
         gameService.save(dto);
         return new Result<>();
     }
@@ -72,7 +73,7 @@ public class GameController {
     @Operation(summary = "更新游戏")
     @RequiresPermissions("sys:role:superAdmin")
     public Result<Void> update(@RequestBody GameDTO dto) {
-        ValidatorUtils.validateEntity(dto, UpdateGroup.class);
+        ValidatorUtils.validateEntity(dto, UpdateGroup.class, DefaultGroup.class);
         gameService.update(dto);
         return new Result<>();
     }

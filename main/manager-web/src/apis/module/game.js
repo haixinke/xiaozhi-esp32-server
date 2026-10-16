@@ -93,5 +93,29 @@ export default {
                     this.deleteGame(id, callback)
                 })
             }).send()
+    },
+
+    // 上传游戏图标（/upload/image 需要 Bearer 鉴权，走 RequestService 统一带 token）
+    uploadImage(formData, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/upload/image`)
+            .method('POST')
+            .data(formData)
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((res) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(res)
+                }
+            })
+            .networkFail((err) => {
+                console.error('上传游戏图标失败:', err)
+                if (failCallback) {
+                    failCallback(err)
+                }
+            }).send()
     }
 }

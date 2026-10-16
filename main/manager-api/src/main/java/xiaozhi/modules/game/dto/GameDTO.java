@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
@@ -33,12 +34,18 @@ public class GameDTO implements Serializable {
     private String gameType;
 
     @Schema(description = "赚取星星数")
+    @NotNull(message = "{game.earnStars.require}", groups = DefaultGroup.class)
+    @Min(value = 0, message = "{game.earnStars.min}", groups = DefaultGroup.class)
     private Integer earnStars;
 
     @Schema(description = "消耗星星数")
+    @NotNull(message = "{game.consumeStars.require}", groups = DefaultGroup.class)
+    @Min(value = 0, message = "{game.consumeStars.min}", groups = DefaultGroup.class)
     private Integer consumeStars;
 
     @Schema(description = "每日次数上限，0=不限")
+    @NotNull(message = "{game.dailyLimit.require}", groups = DefaultGroup.class)
+    @Min(value = 0, message = "{game.dailyLimit.min}", groups = DefaultGroup.class)
     private Integer dailyLimit;
 
     @Schema(description = "图标 OSS URL")

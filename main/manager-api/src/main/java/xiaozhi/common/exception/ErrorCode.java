@@ -307,6 +307,15 @@ public interface ErrorCode {
     int STAR_REF_ID_REQUIRED = 10341; // 缺少业务单号(refId)
     int STAR_AMOUNT_INVALID = 10342; // 星星数量必须为正整数
 
+    // 游戏管理相关错误码
+    int GAME_NOT_FOUND = 10350; // 游戏不存在
+    int GAME_TYPE_NOT_EXIST = 10351; // 游戏类型不存在
+    int GAME_ENTRANCE_REQUIRED = 10352; // 至少选择一个游戏入口
+    int GAME_ENTRANCE_INVALID = 10353; // 非法的游戏入口: {0}
+    int GAME_EARN_STARS_NEGATIVE = 10354; // 赚取星星数不能为负数
+    int GAME_CONSUME_STARS_NEGATIVE = 10355; // 消耗星星数不能为负数
+    int GAME_DAILY_LIMIT_NEGATIVE = 10356; // 每日次数上限不能为负数
+
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败
     int OSS_DELETE_FILE_ERROR = 10401; // OSS删除文件失败

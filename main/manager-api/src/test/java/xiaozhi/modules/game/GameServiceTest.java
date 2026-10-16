@@ -20,6 +20,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import xiaozhi.common.config.TestArkServiceConfig;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.PageData;
+import xiaozhi.common.validator.ValidatorUtils;
+import xiaozhi.common.validator.group.AddGroup;
+import xiaozhi.common.validator.group.DefaultGroup;
 import xiaozhi.modules.game.dao.GameDao;
 import xiaozhi.modules.game.dto.GameDTO;
 import xiaozhi.modules.game.entity.GameEntity;
@@ -152,6 +155,41 @@ class GameServiceTest {
         dto.setDailyLimit(-1);
 
         assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class);
+    }
+
+    // ---- DTO Bean Validation（控制器层 @NotNull 必填校验） ----
+
+    @Test
+    @DisplayName("DTO 数值字段为 null：Bean Validation 拒绝（@NotNull）")
+    void dto_nullNumericFields_rejectedByBeanValidation() {
+        GameDTO dto = validDTO();
+
+        // earnStars 为 null
+        dto.setEarnStars(null);
+        assertThatThrownBy(() -> ValidatorUtils.validateEntity(dto, AddGroup.class, DefaultGroup.class))
+                .isInstanceOf(RenException.class);
+        dto.setEarnStars(5);
+
+        // consumeStars 为 null
+        dto.setConsumeStars(null);
+        assertThatThrownBy(() -> ValidatorUtils.validateEntity(dto, AddGroup.class, DefaultGroup.class))
+                .isInstanceOf(RenException.class);
+        dto.setConsumeStars(0);
+
+        // dailyLimit 为 null
+        dto.setDailyLimit(null);
+        assertThatThrownBy(() -> ValidatorUtils.validateEntity(dto, AddGroup.class, DefaultGroup.class))
+                .isInstanceOf(RenException.class);
+    }
+
+    @Test
+    @DisplayName("DTO 数值字段为负数：Bean Validation 拒绝（@Min(0)）")
+    void dto_negativeNumericFields_rejectedByBeanValidation() {
+        GameDTO dto = validDTO();
+        dto.setEarnStars(-1);
+
+        assertThatThrownBy(() -> ValidatorUtils.validateEntity(dto, AddGroup.class, DefaultGroup.class))
                 .isInstanceOf(RenException.class);
     }
 

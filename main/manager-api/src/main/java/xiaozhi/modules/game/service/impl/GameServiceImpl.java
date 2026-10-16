@@ -11,6 +11,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
 import lombok.AllArgsConstructor;
+import xiaozhi.common.constant.Constant;
+import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.service.impl.BaseServiceImpl;
@@ -52,7 +54,7 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
     public GameVO get(Long id) {
         GameEntity entity = baseDao.selectById(id);
         if (entity == null) {
-            throw new RenException("游戏不存在");
+            throw new RenException(ErrorCode.GAME_NOT_FOUND);
         }
         return ConvertUtils.sourceToTarget(entity, GameVO.class);
     }
@@ -100,33 +102,33 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
      */
     private void validate(GameDTO dto) {
         // 校验 game_type 在 GAME_TYPE 字典中存在
-        List<SysDictDataItem> dictItems = sysDictDataService.getDictDataByType("GAME_TYPE");
+        List<SysDictDataItem> dictItems = sysDictDataService.getDictDataByType(Constant.DictType.GAME_TYPE.getValue());
         boolean typeExists = dictItems.stream()
                 .anyMatch(item -> item.getKey().equals(dto.getGameType()));
         if (!typeExists) {
-            throw new RenException("游戏类型不存在");
+            throw new RenException(ErrorCode.GAME_TYPE_NOT_EXIST);
         }
 
         // 校验 entrances 非空且全在枚举内
         if (StringUtils.isBlank(dto.getEntrances())) {
-            throw new RenException("至少选择一个游戏入口");
+            throw new RenException(ErrorCode.GAME_ENTRANCE_REQUIRED);
         }
         String[] entranceArr = dto.getEntrances().split(",");
         for (String entrance : entranceArr) {
             if (!GameEntranceEnum.codes().contains(entrance.trim())) {
-                throw new RenException("非法的游戏入口: " + entrance);
+                throw new RenException(ErrorCode.GAME_ENTRANCE_INVALID, entrance);
             }
         }
 
         // 校验数值字段非负
         if (dto.getEarnStars() != null && dto.getEarnStars() < 0) {
-            throw new RenException("赚取星星数不能为负数");
+            throw new RenException(ErrorCode.GAME_EARN_STARS_NEGATIVE);
         }
         if (dto.getConsumeStars() != null && dto.getConsumeStars() < 0) {
-            throw new RenException("消耗星星数不能为负数");
+            throw new RenException(ErrorCode.GAME_CONSUME_STARS_NEGATIVE);
         }
         if (dto.getDailyLimit() != null && dto.getDailyLimit() < 0) {
-            throw new RenException("每日次数上限不能为负数");
+            throw new RenException(ErrorCode.GAME_DAILY_LIMIT_NEGATIVE);
         }
     }
 }

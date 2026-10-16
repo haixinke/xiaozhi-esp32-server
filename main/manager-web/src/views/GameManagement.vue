@@ -64,73 +64,55 @@
     <el-dialog
       :title="editForm.id ? '编辑游戏' : '新增游戏'"
       :visible.sync="dialogVisible"
-      width="680px"
+      width="620px"
       :close-on-click-modal="false"
     >
-      <el-form label-position="top" class="edit-form">
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="游戏类型" required>
-              <el-select v-model="editForm.gameType" placeholder="请选择游戏类型" class="full-width">
-                <el-option v-for="item in gameTypeOptions" :key="item.key" :label="item.name" :value="item.key" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="游戏入口" required>
-              <el-checkbox-group v-model="editForm.entranceList">
-                <el-checkbox label="NOTE">小纸条</el-checkbox>
-                <el-checkbox label="ACTIVITY">活动</el-checkbox>
-              </el-checkbox-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="8">
-            <el-form-item label="赚取星星数">
-              <el-input-number v-model="editForm.earnStars" :min="0" class="full-width" controls-position="right" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="消耗星星数">
-              <el-input-number v-model="editForm.consumeStars" :min="0" class="full-width" controls-position="right" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="每日次数上限（0=不限）">
-              <el-input-number v-model="editForm.dailyLimit" :min="0" class="full-width" controls-position="right" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="游戏图标">
-              <el-upload
-                class="icon-uploader"
-                action="#"
-                :http-request="uploadIcon"
-                :show-file-list="false"
-                :before-upload="beforeIconUpload"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              >
-                <img v-if="editForm.icon" :src="editForm.icon" class="preview-icon" alt="" />
-                <el-button v-else size="small" type="primary">上传图标</el-button>
-              </el-upload>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="游戏说明">
-              <el-input
-                v-model="editForm.description"
-                type="textarea"
-                :rows="3"
-                maxlength="500"
-                show-word-limit
-                placeholder="游戏说明，可空"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-form label-position="left" label-width="140px" class="edit-form">
+        <el-form-item label="游戏类型" required>
+          <el-select v-model="editForm.gameType" placeholder="请选择游戏类型" class="form-control">
+            <el-option v-for="item in gameTypeOptions" :key="item.key" :label="item.name" :value="item.key" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="游戏入口" required>
+          <el-checkbox-group v-model="editForm.entranceList">
+            <el-checkbox label="NOTE">小纸条</el-checkbox>
+            <el-checkbox label="ACTIVITY">活动</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="赚取星星数">
+          <el-input-number v-model="editForm.earnStars" :min="0" class="form-control" controls-position="right" />
+        </el-form-item>
+        <el-form-item label="消耗星星数">
+          <el-input-number v-model="editForm.consumeStars" :min="0" class="form-control" controls-position="right" />
+        </el-form-item>
+        <el-form-item label="每日次数上限">
+          <el-input-number v-model="editForm.dailyLimit" :min="0" class="form-control" controls-position="right" />
+          <span class="form-tip">0 表示不限次数</span>
+        </el-form-item>
+        <el-form-item label="游戏图标">
+          <el-upload
+            class="icon-uploader"
+            action="#"
+            :http-request="uploadIcon"
+            :show-file-list="false"
+            :before-upload="beforeIconUpload"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          >
+            <img v-if="editForm.icon" :src="editForm.icon" class="preview-icon" alt="" />
+            <el-button v-else size="small" type="primary">上传图标</el-button>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="游戏说明">
+          <el-input
+            v-model="editForm.description"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="游戏说明，可空"
+            class="form-control"
+          />
+        </el-form-item>
       </el-form>
       <span slot="footer">
         <el-button size="small" @click="dialogVisible = false">取消</el-button>
@@ -495,14 +477,48 @@ export default {
   padding: 0 10px;
 }
 
-/* 数字输入框右置按钮时占满整列 */
+/* 标题列定宽、靠左，控件列从同一左边线开始（flex 替代 Element float，避免个别行错位） */
+.edit-form ::v-deep .el-form-item {
+  display: flex;
+  align-items: flex-start;
+}
+
+.edit-form ::v-deep .el-form-item__label {
+  flex: 0 0 140px;
+  width: 140px !important;
+  text-align: left;
+  float: none;
+  padding-right: 12px;
+}
+
+.edit-form ::v-deep .el-form-item__content {
+  flex: 1;
+  margin-left: 0 !important;
+  line-height: 40px;
+}
+
+/* 输入控件统一宽度 */
+.form-control {
+  width: 320px;
+}
+
+/* controls-position="right" 时按钮在输入框内，宽度设在内层 el-input 上才能整体对齐 */
 .edit-form ::v-deep .el-input-number {
-  width: 100%;
+  width: 320px;
+}
+
+.edit-form ::v-deep .el-input-number .el-input__inner {
+  text-align: left;
+}
+
+.form-tip {
+  margin-left: 10px;
+  color: #909399;
+  font-size: 12px;
 }
 
 .icon-uploader {
-  /* 与右侧说明 textarea 高度对齐，避免两行内容错位 */
-  min-height: 70px;
+  min-height: 40px;
   display: flex;
   align-items: center;
 }

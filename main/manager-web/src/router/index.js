@@ -330,6 +330,18 @@ const routes = [
       title: '反馈管理'
     }
   },
+  // 游戏管理页面路由
+  {
+    path: '/game-management',
+    name: 'GameManagement',
+    component: function () {
+      return import('../views/GameManagement.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      title: '游戏管理'
+    }
+  },
 ]
 const router = new VueRouter({
   base: process.env.VUE_APP_PUBLIC_PATH || '/',

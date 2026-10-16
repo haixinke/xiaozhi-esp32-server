@@ -19,7 +19,12 @@ public enum UploadScene {
     /**
      * AI生图用户照片。存放到 ai-gen/{userId}/ 路径下，与涂鸦作品隔离。
      */
-    AI_GEN("ai-gen", Set.of("image/png", "image/jpeg", "image/webp"), 5 * 1024 * 1024L);
+    AI_GEN("ai-gen", Set.of("image/png", "image/jpeg", "image/webp"), 5 * 1024 * 1024L),
+
+    /**
+     * 游戏管理 icon。存放到 game-icon/{userId}/ 路径下，支持 svg 矢量图标。
+     */
+    GAME_ICON("game-icon", Set.of("image/png", "image/jpeg", "image/webp", "image/svg+xml"), 2 * 1024 * 1024L);
 
     /**
      * OSS key 路径前缀，最终 key 形如 {pathPrefix}/{userId}/{uuid}.{ext}。

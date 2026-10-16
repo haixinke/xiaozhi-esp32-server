@@ -15,6 +15,7 @@ import addressBook from './module/addressBook.js'
 import pdcNfc from './module/pdcNfc.js'
 import storyEngine from './module/storyEngine.js'
 import feedback from './module/feedback.js'
+import game from './module/game.js'
 
 
 
@@ -51,5 +52,6 @@ export default {
     addressBook,
     pdcNfc,
     storyEngine,
-    feedback
+    feedback,
+    game
   }

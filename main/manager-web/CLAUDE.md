@@ -18,6 +18,24 @@ npm run check:i18n   # 国际化文案校验
 
 编辑 `.vue` 后 PostToolUse hook 自动跑 `scripts/check-vue-template.js` 编译校验 `<template>` 语法；手动全量校验：`npm run check:template -- src/views/foo.vue`。
 
+## Playwright 视觉验证（免登录）
+
+智控台页面需登录。跳过登录 UI：手动登录一次取 token，注入后直接访问目标页。
+
+1. 浏览器正常登录 → DevTools → Application → Local Storage → 复制 `token` 值。存到 gitignored 文件（如 `.env.test`），**禁止提交**。
+2. `add_init_script` 注入（须在 app JS 运行前生效）。路由守卫同时查 `token` 和 `userInfo`，两个都要预置，缺 `userInfo` 会跳回 /login：
+
+```js
+await page.addInitScript(token => {
+  localStorage.setItem('token', token);
+  localStorage.setItem('userInfo', JSON.stringify({ superAdmin: 1, role: 'admin' }));
+}, process.env.MANAGER_WEB_TOKEN);
+await page.goto('http://localhost:8001/#/game-management');
+await page.waitForLoadState('networkidle');
+```
+
+注意：token 会过期。注入突然失效时先重新拷贝新 token，再排查其他原因。本机 Playwright 用 **node**（Python 环境无 playwright 模块）。
+
 ## 用户角色与权限
 
 **角色模型（super_admin + role 字段、后端权限、提权 SQL）见 `../manager-api/CLAUDE.md`「用户角色与权限」**，本节只记前端细节。

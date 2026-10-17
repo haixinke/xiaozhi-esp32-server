@@ -4,6 +4,10 @@
 # 放行情形：管道右侧、复合命令中段（仍提示一次但不拦截，避免误伤合法组合）。
 INPUT=$(cat)
 CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+# 豁免：操作 node_modules 或日志文件时，Grep 工具反而不合适（慢/不搜依赖目录）
+if echo "$CMD" | grep -qE 'node_modules/|\.log\b|/logs/'; then
+  exit 0
+fi
 # 只拦命令开头的裸调用（^\s*cmd），管道/&& 之后的不拦
 if echo "$CMD" | grep -qE '^\s*(/\S+/)?(grep|cat|head|tail|sed|awk)\s'; then
   echo "优先用专用工具：Grep（搜索）、Read（读文件）、Edit（改文件），不要在 Bash 里直接 grep/cat/head/tail/sed/awk。确属合理用途（如处理命令输出）请加管道或注释说明。" >&2

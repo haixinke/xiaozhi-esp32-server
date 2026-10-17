@@ -315,6 +315,7 @@ public interface ErrorCode {
     int GAME_EARN_STARS_NEGATIVE = 10354; // 赚取星星数不能为负数
     int GAME_CONSUME_STARS_NEGATIVE = 10355; // 消耗星星数不能为负数
     int GAME_DAILY_LIMIT_NEGATIVE = 10356; // 每日次数上限不能为负数
+    int GAME_TYPE_ALREADY_EXISTS = 10357; // 该游戏类型已存在，不允许重复创建
 
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败

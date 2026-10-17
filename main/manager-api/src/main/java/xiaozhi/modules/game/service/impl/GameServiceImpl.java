@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,16 +64,34 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
     @Transactional(rollbackFor = Exception.class)
     public void save(GameDTO dto) {
         validate(dto);
+        // 同 game_type 只允许一条配置；DB 层由 uk_ai_game_game_type 唯一索引兜底
+        ensureGameTypeUnique(dto.getGameType(), null);
         GameEntity entity = ConvertUtils.sourceToTarget(dto, GameEntity.class);
-        insert(entity);
+        try {
+            insert(entity);
+        } catch (DuplicateKeyException e) {
+            // 并发场景：前置 count 检查后、insert 前另一事务抢先提交，由唯一索引兜底，转业务码
+            throw new RenException(ErrorCode.GAME_TYPE_ALREADY_EXISTS);
+        }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(GameDTO dto) {
         validate(dto);
+        // 目标行必须存在，避免 updateById 静默 0 行影响返回成功
+        if (baseDao.selectById(dto.getId()) == null) {
+            throw new RenException(ErrorCode.GAME_NOT_FOUND);
+        }
+        // 编辑场景允许 game_type 保持原值，需排除自身 id
+        ensureGameTypeUnique(dto.getGameType(), dto.getId());
         GameEntity entity = ConvertUtils.sourceToTarget(dto, GameEntity.class);
-        updateById(entity);
+        try {
+            updateById(entity);
+        } catch (DuplicateKeyException e) {
+            // 并发场景：前置 count 检查后、update 前另一事务抢先提交，由唯一索引兜底，转业务码
+            throw new RenException(ErrorCode.GAME_TYPE_ALREADY_EXISTS);
+        }
     }
 
     @Override
@@ -92,6 +111,21 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
         wrapper.orderByAsc("id");
         List<GameEntity> entities = baseDao.selectList(wrapper);
         return ConvertUtils.sourceToTarget(entities, GameVO.class);
+    }
+
+    /**
+     * 校验同一 game_type 不允许存在多条配置。
+     * DB 层已由 uk_ai_game_game_type 唯一索引兜底，此处前置拦截以返回友好错误码；
+     * excludeId 用于 update 场景排除自身，避免误判。
+     */
+    private void ensureGameTypeUnique(String gameType, Long excludeId) {
+        QueryWrapper<GameEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("game_type", gameType);
+        wrapper.ne(excludeId != null, "id", excludeId);
+        Long count = baseDao.selectCount(wrapper);
+        if (count > 0) {
+            throw new RenException(ErrorCode.GAME_TYPE_ALREADY_EXISTS);
+        }
     }
 
     /**

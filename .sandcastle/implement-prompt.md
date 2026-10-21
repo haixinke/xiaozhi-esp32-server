@@ -27,10 +27,16 @@ Pick the highest-priority open issue that is not blocked by another open issue.
 
 ## Workflow
 
+The following skills are installed in your environment — invoke them when the situation matches:
+
+- `tdd` — when writing new features or fixing bugs test-first (step 3 below)
+- `diagnosing-bugs` / `systematic-debugging` — when a test fails, a bug reproduces, or root cause is unclear
+- `verification-before-completion` — before you claim done in step 4 or output the completion signal
+
 1. **Explore** — read the issue carefully. Pull in the parent PRD if referenced. Read the relevant source files and tests before writing any code.
 2. **Plan** — decide what to change and why. Keep the change as small as possible.
-3. **Execute** — use RGR (Red → Green → Repeat → Refactor): write a failing test first, then write the implementation to pass it.
-4. **Verify** — run the project's checks before committing. For Java code under `main/manager-api/`: `./mvnw -pl . compile`. For Python under `main/xiaozhi-server/`: ensure the venv imports load. Fix any failures before proceeding.
+3. **Execute** — use RGR (Red → Green → Repeat → Refactor): write a failing test first, then write the implementation to pass it. Use the `tdd` skill to guide this.
+4. **Verify** — run the project's checks before committing. For Java code under `main/manager-api/`: `./mvnw -pl . compile`. For Python under `main/xiaozhi-server/`: ensure the venv imports load. Fix any failures before proceeding. Use `verification-before-completion` to confirm checks actually ran and passed — never claim "passed" without evidence.
 5. **Commit** — make a single git commit. The message MUST:
    - Start with `RALPH:` prefix
    - Include the task completed and any PRD reference

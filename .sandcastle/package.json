@@ -1,0 +1,12 @@
+{
+  "name": "sandcastle-runner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sandcastle": "tsx main.mts"
+  },
+  "devDependencies": {
+    "@ai-hero/sandcastle": "^0.12.0",
+    "tsx": "^4.19.0"
+  }
+}

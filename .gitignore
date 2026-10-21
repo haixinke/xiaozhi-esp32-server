@@ -239,3 +239,6 @@ main/eggbabe-miniprogram/
 
 # 本地 issue 跟踪（已改为 git 跟踪，供 sandcastle worktree 访问）
 # .scratch/
+
+# Claude Code worktree 产物（sandcastle / 本地 worktree 运行时使用）
+.claude/worktrees/

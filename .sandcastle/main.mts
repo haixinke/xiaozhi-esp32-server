@@ -4,6 +4,9 @@
 //                      dedicated branch, commits, signals completion.
 // Phase 2 (Review):    second sonnet agent reviews the branch diff, approves
 //                      or corrects directly on the branch.
+// Phase 3 (Merge):     host 把 review 后的 branch merge 回当前分支。
+//                      下一个 iteration 的 worktree 从新 HEAD 切出，
+//                      能看到前一个 issue 已 close，避免重复处理。
 //
 // Both phases share one sandbox via createSandbox() on a named branch.
 //
@@ -14,6 +17,10 @@
 
 import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 // 每个 outer loop 处理一个 issue；实现阶段没 commit 就停（backlog 空）。
 const MAX_ITERATIONS = 10;
@@ -62,6 +69,27 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     console.log("\nReview complete.");
   } finally {
     await sandbox.close();
+  }
+
+  // Phase 3: host 侧 merge —— 让下一轮 worktree 基于含最新 close 的 HEAD。
+  // --no-ff 保留分支历史，便于回溯每个 issue 的实现+review 边界。
+  // 冲突时退出（不自动解），让人工介入；已做的 commit 仍在 branch 上不丢。
+  try {
+    const { stdout } = await execFileAsync("git", [
+      "merge",
+      "--no-ff",
+      branch,
+      "-m",
+      `merge: ${branch}`,
+    ]);
+    console.log(`\nMerged ${branch}:`);
+    console.log(stdout);
+  } catch (err) {
+    console.error(`\nMerge failed for ${branch}. Resolve manually:`);
+    console.error(`  git status`);
+    console.error(`  # fix conflicts, then: git merge --continue`);
+    console.error(`  # or abort: git merge --abort && git branch -D ${branch}`);
+    throw err;
   }
 }
 

@@ -1,37 +1,68 @@
-import { run, claudeCode } from "@ai-hero/sandcastle";
+// Sequential Reviewer — implement-then-review loop
+//
+// Phase 1 (Implement): sonnet agent picks an open issue, works on it on a
+//                      dedicated branch, commits, signals completion.
+// Phase 2 (Review):    second sonnet agent reviews the branch diff, approves
+//                      or corrects directly on the branch.
+//
+// Both phases share one sandbox via createSandbox() on a named branch.
+//
+// Usage:
+//   npx tsx .sandcastle/main.mts
+// Or from .sandcastle/:
+//   npm run sandcastle
+
+import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 
-// Simple loop: an agent that picks open issues one by one and closes them.
-// Run this with: npx tsx .sandcastle/main.mts
-// Or add to package.json scripts: "sandcastle": "npx tsx .sandcastle/main.mts"
+// 每个 outer loop 处理一个 issue；实现阶段没 commit 就停（backlog 空）。
+const MAX_ITERATIONS = 10;
 
-await run({
-  // A name for this run, shown as a prefix in log output.
-  name: "worker",
+// 本仓不是 Node 项目：不跑 npm install / 不拷 node_modules。
 
-  // Sandbox provider — runs the agent inside an isolated container.
-  // .scratch/ 已入 git，worktree 自带；agent close 落 worktree 副本，
-  // merge-to-head 合并回 HEAD 时同步回 host 分支。
-  sandbox: docker(),
+for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
+  console.log(`\n=== Iteration ${iteration}/${MAX_ITERATIONS} ===\n`);
 
-  // 模型名必须在 CCR 路由表里（anthropic/claude-opus-4.6, anthropic/claude-sonnet-4.6, glm-5…），
-  // 否则 CCR 报 "Model not configured for target provider"。
-  agent: claudeCode("anthropic/claude-sonnet-4.6"),
+  const branch = `sandcastle/sequential-reviewer/${Date.now()}`;
 
-  // Path to the prompt file. Shell expressions inside are evaluated inside the
-  // sandbox at the start of each iteration, so the agent always sees fresh data.
-  promptFile: "./.sandcastle/prompt.md",
+  // implementer 和 reviewer 共享同一 sandbox + branch。
+  const sandbox = await sandcastle.createSandbox({
+    branch,
+    sandbox: docker(),
+  });
 
-  // Maximum number of iterations (agent invocations) to run in a session.
-  // Each iteration works on a single issue. Increase this to process more issues
-  // per run, or set it to 1 for a single-shot mode.
-  maxIterations: 3,
+  try {
+    // Phase 1: 实现。模型名必须在 CCR 路由表内。
+    const implement = await sandbox.run({
+      name: "implementer",
+      maxIterations: 1,
+      agent: sandcastle.claudeCode("anthropic/claude-sonnet-4.6"),
+      promptFile: "./.sandcastle/implement-prompt.md",
+    });
 
-  // Branch strategy — merge-to-head creates a temporary branch for the agent
-  // to work on, then merges the result back to HEAD when the run completes.
-  // This is required when using copyToWorktree, since head mode bind-mounts
-  // the host directory directly (no worktree to copy into).
-  branchStrategy: { type: "merge-to-head" },
+    if (!implement.commits.length) {
+      console.log("Implementation agent made no commits. Stopping.");
+      break;
+    }
 
-  // 本仓根无 package.json（非 Node 项目），不跑 npm install / 不拷 node_modules。
-});
+    console.log(`\nImplementation complete on branch: ${branch}`);
+    console.log(`Commits: ${implement.commits.length}`);
+
+    // Phase 2: review。
+    await sandbox.run({
+      name: "reviewer",
+      maxIterations: 1,
+      agent: sandcastle.claudeCode("anthropic/claude-sonnet-4.6"),
+      promptFile: "./.sandcastle/review-prompt.md",
+      promptArgs: {
+        BRANCH: branch,
+      },
+    });
+
+    console.log("\nReview complete.");
+  } finally {
+    await sandbox.close();
+  }
+}
+
+console.log("\nAll done.");

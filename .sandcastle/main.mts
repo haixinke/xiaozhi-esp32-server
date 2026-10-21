@@ -10,12 +10,13 @@ await run({
   name: "worker",
 
   // Sandbox provider — runs the agent inside an isolated container.
+  // .scratch/ 已入 git，worktree 自带；agent close 落 worktree 副本，
+  // merge-to-head 合并回 HEAD 时同步回 host 分支。
   sandbox: docker(),
 
-  // The agent provider. Pass a model string to claudeCode() — sonnet balances
-  // capability and speed for most tasks. Switch to claude-opus-4-8 for harder
-  // problems, or claude-haiku-4-5-20251001 for speed.
-  agent: claudeCode("claude-opus-4-8"),
+  // 模型名必须在 CCR 路由表里（anthropic/claude-opus-4.6, anthropic/claude-sonnet-4.6, glm-5…），
+  // 否则 CCR 报 "Model not configured for target provider"。
+  agent: claudeCode("anthropic/claude-sonnet-4.6"),
 
   // Path to the prompt file. Shell expressions inside are evaluated inside the
   // sandbox at the start of each iteration, so the agent always sees fresh data.

@@ -14,4 +14,4 @@
 
 ## Comments
 
-2026-10-22: 已完成。在 `DateUtilsTest` 追加 `format_withEpochDate_returnsDatePattern`（断 `\d{4}-\d{2}-\d{2}` 正则，避免时区漂移）与 `format_withNullDate_returnsNull` 两个纯 JUnit 5 测试；未改动生产代码。验证：manager-api 全量 `clean verify` 通过（963 tests, 0 failures），提交 `ceda02c5`。
+2026-10-22: 已完成。在 `DateUtilsTest` 追加 `format_withEpochDate_returnsDatePattern`（断 `\d{4}-\d{2}-\d{2}` 正则，避免时区漂移）与 `format_withNullDate_returnsNull` 两个纯 JUnit 5 测试；未改动生产代码。验证：manager-api 全量 `clean verify` 通过（963 tests, 0 failures），提交 `bc828c95`（取代不可从分支历史解析的初版提交 `ceda02c5`）。

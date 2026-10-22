@@ -56,9 +56,37 @@ mvn -B -ntp -f main/manager-api/pom.xml \
 review 新引入的 Java 变更也会触发门禁。初始化 hooks 不能代替这两次修改后的验证。
 
 验证命令由 host 编排程序决定并检查退出码；失败会停止运行，不自动 merge。
-日志保存到 `.sandcastle/logs/<commit>-<phase>-verify.log`，包含提交、命令、退出码和过滤敏感行后的输出。
+日志保存到 `.sandcastle/logs/<commit>-<phase>-<label>-verify.log`，包含提交、命令、退出码和过滤敏感行后的输出。
 两个阶段都要求 worktree 没有未提交改动，因此 issue close 和 Comments 也需要提交。
 合并使用验证过的 commit SHA；如果 host 分支或 HEAD 已变化，必须重新整理分支并验证。
+
+### 多子项目门禁矩阵
+
+本仓含四个子项目（manager-api / manager-web / egg-miniprogram / xiaozhi-server），
+`main.mts` 的 `CHECKS` 数组按 changed paths 分发检查命令。变更触碰多端时**取并集全部执行**：
+
+| Changed path 前缀 | 沙箱内执行的检查 |
+|---|---|
+| `main/manager-api/` | `mvn ... clean verify`（完整 Java 测试，排除 3 个 PDC NFC Testcontainers 测试） |
+| `main/manager-web/` | `npm run test:unit && npm run check:i18n && npm run check:template` |
+| `main/egg-miniprogram/` | `node scripts/verify-project.js` |
+| `main/xiaozhi-server/` | `python3.12 -m compileall -q core/ config/ plugins_func/`（仅语法级） |
+
+**关键陷阱：`sandbox.exec()` 非零 exitCode 是返回不抛出。** 每个 check 必须显式
+`if (result.exitCode !== 0) throw`，否则测试失败也会被静默跳过、merge 照常发生。
+README 示例里 `if (tests.exitCode !== 0) throw` 那行不是装饰，是门禁生效的必要条件。
+
+`manager-web` 的 `node_modules` 通过 `sandbox.onSandboxReady` hook 在容器启动后
+`npm ci --prefer-offline` 装入；host 的 `~/.npm` bind-mount 进容器当 tar 缓存。
+`xiaozhi-server` 只装 Python 3.12 解释器，不装 onnxruntime/powermem 等重依赖 ——
+门禁只做语法检查，需要跑 pytest 的 issue 在 prompt 里报告为 blocker，留 host 人工验证。
+
+镜像里的工具链版本必须与 host 推荐版本对齐：
+- JDK 21（manager-api）
+- Node 22（manager-web、egg-miniprogram 检查脚本）
+- Python **3.12**（xiaozhi-server；requirements.txt:2 与 CLAUDE.md 明确推荐）
+
+不要用 3.10 / 3.11 顶替 —— 语法门禁版本不一致会让容器内通过的代码在 host 挂掉，反之亦然。
 
 现有 Java 全量测试依赖 Testcontainers/Docker 和 OceanBase 等外部测试服务。
 本配置没有挂载 Docker socket，3 个 PDC NFC 集成测试（`PdcNfcTrustReleaseIntegrationTest` /
@@ -78,6 +106,8 @@ review 新引入的 Java 变更也会触发门禁。初始化 hooks 不能代替
 - **硬编码 `127.0.0.1`**：测试/配置里写死 loopback 的在容器内全失效。凡需跨容器访问的
   host/port 一律走 `${VAR:default}` 占位符，默认值保持 `127.0.0.1` 不影响 host 开发。
 - **InviteCodeGeneratorTest** 随机生成 10000 个码有概率碰撞，属既有 flake，非链路问题。
+- **README 列 `gh` 为镜像必需**，但本仓 tracker 走 `.scratch/`，当前镜像未装 `gh`；
+  将来迁 GitHub Issues 时需 `apt-get install gh` 或走官方 install script。
 
 运行编排器回归测试（使用临时 Git 仓库，替代外部 agent/容器，不调用真实模型）：
 

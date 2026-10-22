@@ -25,9 +25,11 @@ function runFixture(flags: Record<string, string> = {}, fromConfigDir = false) {
     writeFileSync(join(pkg, 'package.json'), JSON.stringify({
       type: 'module', exports: { '.': './index.mjs', './sandboxes/docker': './index.mjs' },
     }));
-    for (const tool of ['java', 'javac']) {
+    for (const tool of ['java', 'javac', 'python3.12']) {
       writeFileSync(join(root, 'bin', tool), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
     }
+    writeFileSync(join(root, 'bin/npm'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    writeFileSync(join(root, 'bin/node'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
     writeFileSync(join(root, 'bin/mvn'), `#!/bin/sh
 case "$*" in *--version*) exit 0 ;; esac
 printf '%s\\n' "$*" >> "$TEST_REPO/maven-calls.txt"
@@ -92,11 +94,14 @@ test('successful Java changes are verified after both agents, then merged', () =
   assert.deepEqual(steps.slice(0, 4).map((event) => event.name ?? 'verify'), ['implementer', 'verify', 'reviewer', 'verify']);
 });
 
-test('Maven cache is mounted read-write from the host home', () => {
+test('Maven and npm caches are mounted read-write from the host home', () => {
   const result = runFixture();
   assert.equal(result.status, 0, result.output);
   const options = result.events.find((event) => event.type === 'docker').options;
-  assert.deepEqual(options?.mounts, [{ hostPath: join(result.home, '.m2'), sandboxPath: '/home/agent/.m2', readonly: false }]);
+  assert.deepEqual(options?.mounts, [
+    { hostPath: join(result.home, '.m2'), sandboxPath: '/home/agent/.m2', readonly: false },
+    { hostPath: join(result.home, '.npm'), sandboxPath: '/home/agent/.npm', readonly: false },
+  ]);
 });
 
 test('running from .sandcastle still merges into the repository root', () => {
@@ -118,6 +123,28 @@ test('non-Java changes do not require Maven verification', () => {
   assert.notEqual(result.merges, '');
   assert.ok(!result.events.some((event) => event.type === 'exec' && event.command.includes('verify')));
 });
+
+// 多子项目门禁：变更落在哪个 prefix 就跑哪个 check，失败则拦截 merge。
+for (const [subproject, marker] of [
+  ['main/manager-web/', 'npm run test:unit'],
+  ['main/egg-miniprogram/', 'verify-project.js'],
+  ['main/xiaozhi-server/', 'compileall'],
+] as const) {
+  test(`${subproject} changes trigger the matching check and pass`, () => {
+    const result = runFixture({ TEST_SUBPROJECT: subproject });
+    assert.equal(result.status, 0, result.output);
+    assert.notEqual(result.merges, '');
+    const checkExecs = result.events.filter((event) => event.type === 'exec' && event.command.includes(marker));
+    assert.equal(checkExecs.length, 2, `expected ${marker} to run after implement and after review`);
+  });
+
+  test(`${subproject} check failure blocks merge`, () => {
+    const failKey = subproject.replace(/^main\//, '').replace(/\/$/, '');
+    const result = runFixture({ TEST_SUBPROJECT: subproject, TEST_FAIL_SUBPROJECT: failKey });
+    assert.notEqual(result.status, 0, result.output);
+    assert.equal(result.merges, '');
+  });
+}
 
 for (const flag of ['TEST_DIRTY', 'TEST_HOST_MOVED', 'TEST_CLOSE_FAIL', 'TEST_PREFLIGHT_FAIL', 'TEST_EXEC_ERROR', 'TEST_VERIFY_DIRTY', 'TEST_VERIFY_COMMIT', 'TEST_REBASE']) {
   test(`${flag} prevents merge`, () => {

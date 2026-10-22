@@ -2,11 +2,16 @@
 # architecture-independent distribution from its separate official image.
 FROM eclipse-temurin:21.0.12.1_1-jdk-jammy AS java-toolchain
 FROM maven:3.10.0-eclipse-temurin-21-noble AS maven-toolchain
+# xiaozhi-server 推荐 Python 3.12（requirements.txt:2、CLAUDE.md），
+# 语法级检查（compileall）必须用这个版本，否则门禁与 host 行为不一致。
+FROM python:3.12-slim-bookworm AS python-toolchain
 
 FROM node:22-bookworm
 
 COPY --from=java-toolchain /opt/java/openjdk /opt/java/openjdk
 COPY --from=maven-toolchain /usr/share/maven /usr/share/maven
+# python:slim 把解释器+pip 装在 /usr/local，整目录拷过去即可。
+COPY --from=python-toolchain /usr/local /usr/local
 
 ENV JAVA_HOME=/opt/java/openjdk
 ENV MAVEN_HOME=/usr/share/maven
@@ -16,10 +21,12 @@ ENV PATH="${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${PATH}"
 ENV LANG=C.utf8
 
 # Install system dependencies
-# deb.debian.org 国内直连不稳，apt 走 host 代理（仅 build 期生效）
+# deb.debian.org 国内直连不稳，apt 走 host 代理（仅 build 期生效）。
+# 但代理对部分源（bookworm-security）会返 502，遇 502 时退化直连重试。
 RUN echo 'Acquire::http::Proxy "http://host.docker.internal:7897";' > /etc/apt/apt.conf.d/99proxy \
  && echo 'Acquire::https::Proxy "http://host.docker.internal:7897";' >> /etc/apt/apt.conf.d/99proxy \
- && apt-get update && apt-get install -y \
+ && (apt-get update || (rm /etc/apt/apt.conf.d/99proxy && apt-get update)) \
+ && apt-get install -y \
   git \
   curl \
   jq \
@@ -27,7 +34,7 @@ RUN echo 'Acquire::http::Proxy "http://host.docker.internal:7897";' > /etc/apt/a
  && rm -rf /var/lib/apt/lists/* /etc/apt/apt.conf.d/99proxy
 
 # Fail the image build if the copied toolchain cannot run on this architecture.
-RUN java -version && javac -version && mvn -version
+RUN java -version && javac -version && mvn -version && python3.12 --version && python3.12 -c "import venv"
 
 # Issue tracker: .scratch/ markdown files via .sandcastle/bin/scratch-issues.sh
 # No extra CLI needed — bash + jq already installed above.

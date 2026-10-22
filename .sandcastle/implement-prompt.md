@@ -36,7 +36,19 @@ The following skills are installed in your environment — invoke them when the 
 1. **Explore** — read the issue carefully. Pull in the parent PRD if referenced. Read the relevant source files and tests before writing any code.
 2. **Plan** — decide what to change and why. Keep the change as small as possible.
 3. **Execute** — use RGR (Red → Green → Repeat → Refactor): write a failing test first, then write the implementation to pass it. Use the `tdd` skill to guide this.
-4. **Verify** — run the project's checks before committing. For changes under `main/manager-api/`, run from the repository root: `mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true -Dtest='!xiaozhi.modules.pdc.nfc.service.PdcNfcTrustReleaseIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcClaimInviteReplacementIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImportIntegrationTest' clean verify`. JDK 21 and Maven are installed; `/home/agent/.m2` is the writable host Maven cache. There is no `mvnw`. The three excluded PDC NFC tests require Testcontainers/Docker-in-Docker, which the sandbox does not provide — do not add them back, and do not disable any other tests to work around failures: report the dependency as a blocker and leave the issue open. The sandbox can reach the host's OceanBase and Redis via environment variables already configured. For Python under `main/xiaozhi-server/`: ensure the venv imports load. Fix any failures before proceeding. Use `verification-before-completion` to confirm checks actually ran and passed — never claim "passed" without evidence. The host runner independently repeats Java verification after implementation and review and blocks merging on failure.
+4. **Verify** — run the project's checks before committing. Verification is dispatched per subproject by changed paths (the host runner repeats these checks after implement and review, and blocks merging on failure). Match your changes to the rows that apply; run all matching rows:
+
+   | Changed path | Check command (from repo root) |
+   |---|---|
+   | `main/manager-api/` | `mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true -Dtest='!xiaozhi.modules.pdc.nfc.service.PdcNfcTrustReleaseIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcClaimInviteReplacementIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImportIntegrationTest' clean verify` |
+   | `main/manager-web/` | `cd main/manager-web && npm run test:unit && npm run check:i18n && npm run check:template` (node_modules is preinstalled by sandbox hook) |
+   | `main/egg-miniprogram/` | `node main/egg-miniprogram/scripts/verify-project.js` |
+   | `main/xiaozhi-server/` | `python3.12 -m compileall -q main/xiaozhi-server/core/ main/xiaozhi-server/config/ main/xiaozhi-server/plugins_func/` |
+
+   Notes:
+   - JDK 21 / Maven / Node 22 / Python 3.12 are preinstalled in the sandbox image; `/home/agent/.m2` is the writable host Maven cache. There is no `mvnw`. The three excluded PDC NFC tests require Testcontainers/Docker-in-Docker, which the sandbox does not provide — do not add them back, and do not disable any other tests to work around failures: report the dependency as a blocker and leave the issue open. The sandbox can reach the host's OceanBase and Redis via environment variables already configured.
+   - xiaozhi-server checks are syntax-only; the sandbox has no AI/ML deps installed. If the change needs pytest or runtime validation, state that explicitly as a blocker for host-side manual verification — do not claim it passed.
+   - Use `verification-before-completion` to confirm checks actually ran and passed — never claim "passed" without evidence.
 5. **Commit** — make a single git commit. The message MUST:
    - Start with `RALPH:` prefix
    - Include the task completed and any PRD reference

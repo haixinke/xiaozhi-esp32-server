@@ -30,7 +30,34 @@ const execFileAsync = promisify(execFile);
 const MAX_ITERATIONS = 10;
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const mavenCache = join(homedir(), ".m2");
-const verifyCommand = "mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true -Dtest='!xiaozhi.modules.pdc.nfc.service.PdcNfcTrustReleaseIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcClaimInviteReplacementIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImportIntegrationTest' clean verify";
+
+// 多子项目校验矩阵：按 changed paths 分发到对应子项目的检查命令。
+// 顺序即执行顺序，与 implement-prompt.md / review-prompt.md 中的描述保持一致。
+// 注意：sandbox.exec() 非零 exitCode 是返回不抛出，每个 check 必须显式判断。
+const CHECKS: Array<{ prefix: string; label: string; cmd: string }> = [
+  {
+    prefix: "main/manager-api/",
+    label: "manager-api (Java)",
+    cmd: "mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true -Dtest='!xiaozhi.modules.pdc.nfc.service.PdcNfcTrustReleaseIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcClaimInviteReplacementIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImportIntegrationTest' clean verify",
+  },
+  {
+    prefix: "main/manager-web/",
+    label: "manager-web (Vue2)",
+    // node_modules 由 sandbox.onSandboxReady hook 预装
+    cmd: "cd main/manager-web && npm run test:unit && npm run check:i18n && npm run check:template",
+  },
+  {
+    prefix: "main/egg-miniprogram/",
+    label: "egg-miniprogram (微信小程序)",
+    cmd: "node main/egg-miniprogram/scripts/verify-project.js",
+  },
+  {
+    prefix: "main/xiaozhi-server/",
+    label: "xiaozhi-server (Python)",
+    // 只做语法级检查；完整 pytest 依赖重（onnxruntime/powermem），留给 host 人工跑。
+    cmd: "python3.12 -m compileall -q main/xiaozhi-server/core/ main/xiaozhi-server/config/ main/xiaozhi-server/plugins_func/",
+  },
+];
 
 await mkdir(mavenCache, { recursive: true });
 
@@ -54,25 +81,33 @@ async function verify(sandbox: sandcastle.Sandbox, baseSha: string, phase: strin
     throw new Error("Sandbox no longer descends from the host baseline; merge blocked. Rebase and verify again.");
   }
   const changed = await git(sandbox.worktreePath, ["diff", "--name-only", "--no-renames", "-z", baseSha, sha]);
-  if (changed.split("\0").some((path) => path.startsWith("main/manager-api/"))) {
-    console.log(`Verifying manager-api after ${phase} (${sha})...`);
-    const result = await sandbox.exec(verifyCommand);
-    const logDir = join(repoRoot, ".sandcastle", "logs");
-    await mkdir(logDir, { recursive: true });
-    const logPath = join(logDir, `${sha}-${phase}-verify.log`);
+  const changedPaths = changed.split("\0").filter(Boolean);
+  const applicable = CHECKS.filter((c) => changedPaths.some((p) => p.startsWith(c.prefix)));
+
+  const logDir = join(repoRoot, ".sandcastle", "logs");
+  await mkdir(logDir, { recursive: true });
+
+  if (!applicable.length) {
+    console.log(`No subproject checks apply after ${phase}; verification skipped.`);
+  }
+
+  for (const check of applicable) {
+    console.log(`Verifying ${check.label} after ${phase} (${sha})...`);
+    const result = await sandbox.exec(check.cmd);
+    const logPath = join(logDir, `${sha}-${phase}-${check.label.split(" ")[0]}-verify.log`);
     // Test output may contain application configuration or credentials.
     const output = `${result.stdout}\n${result.stderr}`.split("\n").map((line) =>
       /password|passwd|secret|token|authorization|api[_-]?key|jdbc:|Bearer\s|:\/\/[^\s/]+:[^\s/]+@|eyJ[A-Za-z0-9_-]+\./i.test(line)
         ? "[redacted sensitive output]" : line,
     ).join("\n");
-    await writeFile(logPath, `commit=${sha}\ncommand=${verifyCommand}\nexitCode=${result.exitCode}\n${output}`, { mode: 0o600 });
+    await writeFile(logPath, `commit=${sha}\ncommand=${check.cmd}\nexitCode=${result.exitCode}\n${output}`, { mode: 0o600 });
+    // sandbox.exec() 非零 exitCode 是返回不抛出 —— 必须显式判断才能拦截 merge。
     if (result.exitCode !== 0) {
-      throw new Error(`manager-api verification failed after ${phase} (exit ${result.exitCode}); merge blocked. Log: ${logPath}`);
+      throw new Error(`${check.label} verification failed after ${phase} (exit ${result.exitCode}); merge blocked. Log: ${logPath}`);
     }
-    console.log(`Verification passed. Log: ${logPath}`);
-  } else {
-    console.log(`No manager-api changes after ${phase}; Java verification not applicable.`);
+    console.log(`  passed. Log: ${logPath}`);
   }
+
   await requireClean(sandbox.worktreePath);
   if (await git(sandbox.worktreePath, ["rev-parse", "HEAD"]) !== sha) {
     throw new Error("Sandbox HEAD changed during verification; merge blocked.");
@@ -93,20 +128,33 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     branch,
     cwd: repoRoot,
     sandbox: docker({
-      mounts: [{ hostPath: mavenCache, sandboxPath: "/home/agent/.m2", readonly: false }],
+      mounts: [
+        { hostPath: mavenCache, sandboxPath: "/home/agent/.m2", readonly: false },
+        // manager-web 的 npm 依赖缓存挂 host，容器内 npm ci 复用 tar 包不重下
+        { hostPath: join(homedir(), ".npm"), sandboxPath: "/home/agent/.npm", readonly: false },
+      ],
       env: {
         // 容器内 127.0.0.1 指自己，经 host.docker.internal 访问 host 上的 OceanBase / Redis
         DB_HOST: "host.docker.internal",
         REDIS_HOST: "host.docker.internal",
       },
     }),
+    hooks: {
+      sandbox: {
+        onSandboxReady: [
+          // manager-web 变更走 npm test 门禁，依赖必须在沙箱起来后先装好。
+          // 每次都装：worktree 是新的，npm ci 幂等。
+          { command: "cd main/manager-web && npm ci --prefer-offline --no-audit --no-fund", timeoutMs: 600_000 },
+        ],
+      },
+    },
   });
 
   let verifiedSha: string;
   try {
-    const preflight = await sandbox.exec('java -version && javac -version && mvn --version && test -w "$HOME/.m2"');
+    const preflight = await sandbox.exec('java -version && javac -version && mvn --version && python3.12 --version && test -w "$HOME/.m2"');
     if (preflight.exitCode !== 0) {
-      throw new Error("Java/Maven or writable ~/.m2 unavailable; rebuild the Sandcastle image and check cache permissions.");
+      throw new Error("Java/Maven/Python3.12 or writable ~/.m2 unavailable; rebuild the Sandcastle image and check cache permissions.");
     }
     // Phase 1: 实现。模型名必须在 CCR 路由表内。
     const implement = await sandbox.run({

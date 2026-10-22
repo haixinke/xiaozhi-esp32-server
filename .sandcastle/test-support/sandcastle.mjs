@@ -32,7 +32,13 @@ export async function createSandbox(options) {
         return { commits: [] };
       }
       if (name === 'implementer') {
-        change(process.env.TEST_NON_JAVA === '1' ? 'README.md' : 'main/manager-api/Example.java', 'implementation\n');
+        if (process.env.TEST_NON_JAVA === '1') {
+          change('README.md', 'implementation\n');
+        } else if (process.env.TEST_SUBPROJECT) {
+          change(`${process.env.TEST_SUBPROJECT}placeholder.txt`, 'implementation\n');
+        } else {
+          change('main/manager-api/Example.java', 'implementation\n');
+        }
       } else {
         if (process.env.TEST_REBASE === '1') git(worktreePath, 'reset', '--hard', 'HEAD~2');
         change('review.txt', 'review\n');
@@ -51,6 +57,19 @@ export async function createSandbox(options) {
       if (command.includes('verify') && process.env.TEST_EXEC_ERROR === '1') throw new Error('container execution failed');
       if (process.env.TEST_PREFLIGHT_FAIL === '1' && command.includes('java -version')) {
         return { exitCode: 127, stdout: '', stderr: 'java unavailable' };
+      }
+      // 多子项目门禁测试：指定子项目的关键命令失败
+      const failSubproject = process.env.TEST_FAIL_SUBPROJECT;
+      if (failSubproject) {
+        if (failSubproject === 'manager-web' && command.includes('npm run test:unit')) {
+          return { exitCode: 1, stdout: '', stderr: 'web tests failed' };
+        }
+        if (failSubproject === 'egg-miniprogram' && command.includes('verify-project.js')) {
+          return { exitCode: 1, stdout: '', stderr: 'miniprogram check failed' };
+        }
+        if (failSubproject === 'xiaozhi-server' && command.includes('compileall')) {
+          return { exitCode: 1, stdout: '', stderr: 'syntax error' };
+        }
       }
       try {
         const stdout = execFileSync('sh', ['-c', command], {

@@ -19,10 +19,12 @@ class PetAvatarPropertiesTest {
 
         String url = properties.randomAvatarUrl("锦鲤");
 
+        // 随机池含 index=0，恰好生成 fish-0.png 等于 FALLBACK_URL 是合法命中，
+        // 不能再断 isNotEqualTo(FALLBACK_URL)，否则 ~1/22 概率假失败。
+        // 格式匹配 + 范围断言已足够证明走了随机分支（fallback 分支的返回值不匹配该格式）。
         assertThat(url)
                 .startsWith(KOI_BASE_URL)
-                .matches("^" + KOI_BASE_URL + "fish-\\d+\\.png$")
-                .isNotEqualTo(FALLBACK_URL);
+                .matches("^" + KOI_BASE_URL + "fish-\\d+\\.png$");
         int index = extractIndex(url);
         assertThat(index).isBetween(0, 21);
     }
@@ -34,10 +36,11 @@ class PetAvatarPropertiesTest {
 
         String url = properties.randomAvatarUrl("玉兔");
 
+        // 同上：rabbit-0.png 与 FALLBACK_URL 前缀不同，本来就断不到，但保持两个用例对称、
+        // 都只断格式与范围，避免后续维护者误补一条会 flaky 的 fallback 不等断言。
         assertThat(url)
                 .startsWith(RABBIT_BASE_URL)
-                .matches("^" + RABBIT_BASE_URL + "rabbit-\\d+\\.png$")
-                .isNotEqualTo(FALLBACK_URL);
+                .matches("^" + RABBIT_BASE_URL + "rabbit-\\d+\\.png$");
         int index = extractIndex(url);
         assertThat(index).isBetween(0, 21);
     }

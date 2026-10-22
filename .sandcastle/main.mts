@@ -30,7 +30,7 @@ const execFileAsync = promisify(execFile);
 const MAX_ITERATIONS = 10;
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const mavenCache = join(homedir(), ".m2");
-const verifyCommand = "mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true clean verify";
+const verifyCommand = "mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true -Dtest='!xiaozhi.modules.pdc.nfc.service.PdcNfcTrustReleaseIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcClaimInviteReplacementIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImportIntegrationTest' clean verify";
 
 await mkdir(mavenCache, { recursive: true });
 

@@ -47,7 +47,7 @@ Review the code changes on branch `{{BRANCH}}` and improve code clarity, consist
 If you find improvements to make:
 
 1. Make the changes directly on this branch
-2. Run the project's checks to ensure nothing is broken. If the branch changes `main/manager-api/`, run from the repository root: `mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true clean verify`. JDK 21/Maven and the writable `/home/agent/.m2` cache are available; there is no `mvnw`. Missing Docker/database services are blockers, not a reason to skip tests.
+2. Run the project's checks to ensure nothing is broken. If the branch changes `main/manager-api/`, run from the repository root: `mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true -Dtest='!xiaozhi.modules.pdc.nfc.service.PdcNfcTrustReleaseIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcClaimInviteReplacementIntegrationTest,!xiaozhi.modules.pdc.nfc.service.PdcNfcWriteResultImportIntegrationTest' clean verify`. JDK 21/Maven and the writable `/home/agent/.m2` cache are available; there is no `mvnw`. The three excluded PDC NFC tests need Testcontainers/Docker-in-Docker, unavailable here — do not re-add them or skip other tests.
 3. Commit describing the refinements and leave no uncommitted changes. The host runner verifies the final committed code again and will refuse to merge on failure, even if you output the completion signal.
 
 If the code is already clean and well-structured, do nothing.

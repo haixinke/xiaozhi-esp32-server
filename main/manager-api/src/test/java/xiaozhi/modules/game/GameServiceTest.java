@@ -302,7 +302,7 @@ class GameServiceTest {
     void listEnabled_withEntrance_filtersByContains() {
         Long multiEntranceId = saveTrackedWith("DRAW_TOGETHER", "NOTE,ACTIVITY", 1);
         Long singleEntranceId = saveTrackedWith("LISTEN_TO_YOU", "NOTE", 1);
-        Long otherEntranceId = saveTrackedWith("DRAW_TOGETHER", "ACTIVITY", 1);
+        Long otherEntranceId = saveTrackedWith("MEET_YOU", "ACTIVITY", 1);
 
         List<GameVO> list = gameService.listEnabled("NOTE");
 

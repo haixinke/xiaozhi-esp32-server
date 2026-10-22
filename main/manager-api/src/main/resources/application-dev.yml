@@ -11,7 +11,8 @@ spring:
       #OceanBase (MySQL 兼容模式)
       driver-class-name: com.mysql.cj.jdbc.Driver
       # socketTimeout/connectTimeout 让失效连接快速失败，避免 OBProxy 静默关闭后写入挂起 10s
-      url: jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true&socketTimeout=5000&connectTimeout=5000
+      # DB_HOST 环境变量可覆盖主机地址（如容器内用 host.docker.internal）
+      url: jdbc:mysql://${DB_HOST:127.0.0.1}:2881/egg_database?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true&socketTimeout=5000&connectTimeout=5000
       username: root
       password: 123456
       initial-size: 10
@@ -42,7 +43,7 @@ spring:
             multi-statement-allow: true
   data:
     redis:
-      host: 127.0.0.1         # Redis服务器地址
+      host: ${REDIS_HOST:127.0.0.1}         # Redis服务器地址
       port: 6379              # Redis服务器连接端口
       password:              # Redis服务器连接密码（默认为空）
       database: 1            # Redis数据库索引（默认为0）

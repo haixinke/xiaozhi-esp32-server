@@ -4,7 +4,8 @@ spring:
     basename: i18n/messages
   data:
     redis:
-      host: localhost
+      # REDIS_HOST 环境变量可覆盖主机地址（如容器内用 host.docker.internal）
+      host: ${REDIS_HOST:localhost}
       port: 6379
       database: 0
       timeout: 10s

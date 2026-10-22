@@ -94,6 +94,11 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     cwd: repoRoot,
     sandbox: docker({
       mounts: [{ hostPath: mavenCache, sandboxPath: "/home/agent/.m2", readonly: false }],
+      env: {
+        // 容器内 127.0.0.1 指自己，经 host.docker.internal 访问 host 上的 OceanBase / Redis
+        DB_HOST: "host.docker.internal",
+        REDIS_HOST: "host.docker.internal",
+      },
     }),
   });
 

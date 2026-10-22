@@ -11,20 +11,17 @@ import org.junit.jupiter.api.Test;
 public class DateUtilsTest {
 
     @Test
-    public void millsToSecond_zero_returnsZeroPointZeroZeroZero() {
-        // 0 毫秒 → "0.000"
+    public void millsToSecond_zero() {
         assertEquals("0.000", DateUtils.millsToSecond(0));
     }
 
     @Test
-    public void millsToSecond_1500_returnsOnePointFiveZeroZero() {
-        // 1500 毫秒 → "1.500"
+    public void millsToSecond_1500ms() {
         assertEquals("1.500", DateUtils.millsToSecond(1500));
     }
 
     @Test
-    public void millsToSecond_123456_returns123PointFiveFiveSix() {
-        // 123456 毫秒 → "123.456"
+    public void millsToSecond_123456ms() {
         assertEquals("123.456", DateUtils.millsToSecond(123456));
     }
 }

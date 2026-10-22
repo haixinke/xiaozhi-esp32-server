@@ -160,7 +160,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     const implement = await sandbox.run({
       name: "implementer",
       maxIterations: 1,
-      agent: sandcastle.claudeCode("anthropic/claude-sonnet-4.6"),
+      agent: sandcastle.claudeCode("Kimi/k3"),
       promptFile: join(repoRoot, ".sandcastle", "implement-prompt.md"),
     });
 
@@ -178,7 +178,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     await sandbox.run({
       name: "reviewer",
       maxIterations: 1,
-      agent: sandcastle.claudeCode("anthropic/claude-sonnet-4.6"),
+      agent: sandcastle.claudeCode("Kimi/k3"),
       promptFile: join(repoRoot, ".sandcastle", "review-prompt.md"),
       promptArgs: {
         BRANCH: branch,

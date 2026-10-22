@@ -99,19 +99,21 @@ describe('pdcNfc API module', () => {
     const networkFailCount = (pdcNfcSource.match(/\.networkFail\(/g) || []).length
     const reAjaxCount = (pdcNfcSource.match(/RequestService\.reAjaxFun/g) || []).length
     // createProductType is an intentional stub (no backend endpoint, no network call).
-    // The other 24 methods handle networkFail. Auto-retry (reAjaxFun) is kept only for
-    // reads and idempotent writes (those carrying a requestId): the 7 mutating POSTs
+    // The other 27 methods handle networkFail. Auto-retry (reAjaxFun) is kept only for
+    // reads and idempotent writes (those carrying a requestId): the 8 mutating POSTs
     // without a fixed requestId (createBatch, startSchemeJob, retrySchemeJob,
-    // cancelSchemeJob, createWriteJob, cancelWriteJob, markManualAsset) fail fast instead,
+    // cancelSchemeJob, createWriteJob, cancelWriteJob, markManualAsset,
+    // trustReleaseWriteJob) fail fast instead,
     // because a blind retry after timeout could create duplicates.
-    assert.equal(networkFailCount, 24, 'expected 24 networkFail handlers')
+    assert.equal(networkFailCount, 27, 'expected 27 networkFail handlers')
     assert.equal(reAjaxCount, 16, 'expected 16 reAjaxFun calls')
   })
 
   it('mutating POSTs without requestId report failure instead of auto-retrying', () => {
     const failFastMessage = '请刷新确认'
     for (const name of ['createBatch', 'startSchemeJob', 'retrySchemeJob',
-      'cancelSchemeJob', 'createWriteJob', 'cancelWriteJob', 'markManualAsset']) {
+      'cancelSchemeJob', 'createWriteJob', 'cancelWriteJob', 'markManualAsset',
+      'trustReleaseWriteJob']) {
       const methodStart = pdcNfcSource.indexOf(`  ${name}(`)
       assert.ok(methodStart >= 0, `method ${name} not found`)
       const methodBody = pdcNfcSource.slice(methodStart, methodStart + 2000)

@@ -88,6 +88,19 @@ README 示例里 `if (tests.exitCode !== 0) throw` 那行不是装饰，是门�
 
 不要用 3.10 / 3.11 顶替 —— 语法门禁版本不一致会让容器内通过的代码在 host 挂掉，反之亦然。
 
+### 容器内**不要**启用 graphify hook
+
+根 `CLAUDE.md` 要求用 graphify 导航代码，这是给 host 交互式 Claude Code 的护栏
+（防跳过图谱直读文件）。容器 agent **不装 graphify CLI、不拷 `.claude/settings.json`**：
+
+- hooks 用 host 绝对路径（`/Users/minwang/...`），容器内不存在，拷过去 hook 报错会拦所有 Read/Grep
+- `graphify-out/` 是 gitignored 产物，worktree 里没有；stale graph 比没 graph 更糟
+- 容器 agent 走 issue-driven 流（issue 已点名目标文件），不需要全仓导航
+- `.claude/settings.json` 被根 `.gitignore` 的 `*.json` 误伤排除，本来就不入 git
+
+如果将来要做开放式探索任务（不是单 issue 修复），再考虑装；但那种任务本就不适合
+sandcastle 沙盒（沙盒是干脏活累活的，不是做架构决策的）。
+
 现有 Java 全量测试依赖 Testcontainers/Docker 和 OceanBase 等外部测试服务。
 本配置没有挂载 Docker socket，3 个 PDC NFC 集成测试（`PdcNfcTrustReleaseIntegrationTest` /
 `PdcNfcClaimInviteReplacementIntegrationTest` / `PdcNfcWriteResultImportIntegrationTest`）

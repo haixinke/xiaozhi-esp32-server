@@ -1,6 +1,6 @@
 # 门禁测试：xiaozhi-server 加一个空工具函数
 
-**Status:** open
+**Status:** resolved
 
 在 `main/xiaozhi-server/core/utils/` 下新增 `gate_test.py`，内容：
 
@@ -17,3 +17,7 @@ def gate_check_python() -> str:
 - 在 `main/xiaozhi-server/tests/` 下加 `test_gate_test.py`（pytest 风格，但只断言返回值）
 - 文件头注释说明这是 sandcastle 门禁测试文件
 - 不要改任何其它文件
+
+## Comments
+
+新增了 `core/utils/gate_test.py`（含 `gate_check_python()` 函数）和 `tests/test_gate_test.py`（pytest 断言返回值为 "ok"）。Python 3.12 compileall 验证通过，无语法错误。commit: b1b19ee6。

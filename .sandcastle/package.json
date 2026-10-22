@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sandcastle": "tsx main.mts"
+    "sandcastle": "tsx main.mts",
+    "test": "node --import tsx --test main.test.mts"
   },
   "devDependencies": {
     "@ai-hero/sandcastle": "^0.12.0",

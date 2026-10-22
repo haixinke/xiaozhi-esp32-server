@@ -1,4 +1,17 @@
+# Jammy's glibc is compatible with the Bookworm runtime. Copy only Maven's
+# architecture-independent distribution from its separate official image.
+FROM eclipse-temurin:21.0.12.1_1-jdk-jammy AS java-toolchain
+FROM maven:3.10.0-eclipse-temurin-21-noble AS maven-toolchain
+
 FROM node:22-bookworm
+
+COPY --from=java-toolchain /opt/java/openjdk /opt/java/openjdk
+COPY --from=maven-toolchain /usr/share/maven /usr/share/maven
+
+ENV JAVA_HOME=/opt/java/openjdk
+ENV MAVEN_HOME=/usr/share/maven
+ENV MAVEN_CONFIG=/home/agent/.m2
+ENV PATH="${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${PATH}"
 
 # Install system dependencies
 # deb.debian.org 国内直连不稳，apt 走 host 代理（仅 build 期生效）
@@ -8,7 +21,11 @@ RUN echo 'Acquire::http::Proxy "http://host.docker.internal:7897";' > /etc/apt/a
   git \
   curl \
   jq \
+  fontconfig \
  && rm -rf /var/lib/apt/lists/* /etc/apt/apt.conf.d/99proxy
+
+# Fail the image build if the copied toolchain cannot run on this architecture.
+RUN java -version && javac -version && mvn -version
 
 # Issue tracker: .scratch/ markdown files via .sandcastle/bin/scratch-issues.sh
 # No extra CLI needed — bash + jq already installed above.

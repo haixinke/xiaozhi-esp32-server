@@ -21,12 +21,53 @@ host: npx tsx .sandcastle/main.mts
   │
   ├─ docker create（镜像 sandcastle:xiaozhi-esp32-server）
   │    ├─ worktree bind-mount → /home/agent/workspace
+  │    ├─ host ~/.m2 bind-mount（读写）→ /home/agent/.m2
+  │    ├─ JDK 21 + Maven（镜像内预装）
   │    ├─ Claude CLI → ANTHROPIC_BASE_URL=http://host.docker.internal:3456
   │    │    └─ host CCR（绑 0.0.0.0:3456）→ OpenRouter / 智谱 / Kimi
   │    └─ skills 预装在 /home/agent/.claude/skills/
   │
   └─ 分支策略：每 issue 独立 branch（sandcastle/sequential-reviewer/<ts>）
-       └─ 人工 review 后合并（branch 策略，不自动 merge）
+       └─ implement → Java 验证 → review → Java 再验证 → host 自动合并已验证 commit
+```
+
+## Java 验证与 Maven 缓存
+
+`Dockerfile` 固定官方 Temurin JDK 21 和 Maven 版本，并在镜像构建时执行
+`java -version`、`javac -version`、`mvn -version`。修改后必须重建镜像，旧镜像不会自动获得工具链。
+`.dockerignore` 只允许 Dockerfile 和 skills 进入构建上下文，排除 `.env`、日志和 host 依赖。
+
+`main.mts` 自动创建宿主机 `~/.m2`，以读写方式挂载到 `/home/agent/.m2`。
+Maven 复用同一份 `repository/`，后续 iteration 不需要重新下载已有依赖；`clean` 只清理模块的构建产物，不清空依赖缓存。
+该挂载也包含已有的 `settings.xml` 等 Maven 配置，不要在日志中输出其内容。
+验证命令显式指定 `-Dmaven.repo.local=/home/agent/.m2/repository`，覆盖 settings 中可能存在的宿主机绝对路径。
+镜像的 agent UID/GID 必须与宿主机匹配；启动预检会检查工具链和缓存目录可写性。
+
+涉及 `main/manager-api/` 任意文件（包括删除、重命名）的变更，在 implement 和 review 之后分别执行：
+
+```bash
+mvn -B -ntp -f main/manager-api/pom.xml \
+  -Dmaven.repo.local=/home/agent/.m2/repository \
+  -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true clean verify
+```
+
+命令在容器的仓库根目录执行。项目没有 Maven Wrapper，且 POM 默认跳过测试，所以不能用
+`./mvnw` 或省略显式开启测试的参数。非 manager-api 变更不触发 Java 门禁，仍由 agent 执行对应模块检查。
+review 新引入的 Java 变更也会触发门禁。初始化 hooks 不能代替这两次修改后的验证。
+
+验证命令由 host 编排程序决定并检查退出码；失败会停止运行，不自动 merge。
+日志保存到 `.sandcastle/logs/<commit>-<phase>-verify.log`，包含提交、命令、退出码和过滤敏感行后的输出。
+两个阶段都要求 worktree 没有未提交改动，因此 issue close 和 Comments 也需要提交。
+合并使用验证过的 commit SHA；如果 host 分支或 HEAD 已变化，必须重新整理分支并验证。
+
+现有 Java 全量测试依赖 Testcontainers/Docker 和 OceanBase 等外部测试服务。
+本配置没有挂载 Docker socket，也没有自动提供数据库；未就绪时验证会失败并阻止合并。
+这表示测试环境需要准备，不应改成跳过测试来放行。
+
+运行编排器回归测试（使用临时 Git 仓库，替代外部 agent/容器，不调用真实模型）：
+
+```bash
+npm test --prefix .sandcastle
 ```
 
 ## 安装步骤（最终可用版本）

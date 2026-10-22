@@ -36,14 +36,14 @@ The following skills are installed in your environment — invoke them when the 
 1. **Explore** — read the issue carefully. Pull in the parent PRD if referenced. Read the relevant source files and tests before writing any code.
 2. **Plan** — decide what to change and why. Keep the change as small as possible.
 3. **Execute** — use RGR (Red → Green → Repeat → Refactor): write a failing test first, then write the implementation to pass it. Use the `tdd` skill to guide this.
-4. **Verify** — run the project's checks before committing. For Java code under `main/manager-api/`: `./mvnw -pl . compile`. For Python under `main/xiaozhi-server/`: ensure the venv imports load. Fix any failures before proceeding. Use `verification-before-completion` to confirm checks actually ran and passed — never claim "passed" without evidence.
+4. **Verify** — run the project's checks before committing. For changes under `main/manager-api/`, run from the repository root: `mvn -B -ntp -f main/manager-api/pom.xml -Dmaven.repo.local=/home/agent/.m2/repository -DskipTests=false -Dmaven.test.skip=false -DfailIfNoTests=true clean verify`. JDK 21 and Maven are installed; `/home/agent/.m2` is the writable host Maven cache. There is no `mvnw`. Do not disable tests to work around missing Docker/database services: report the dependency as a blocker and leave the issue open. For Python under `main/xiaozhi-server/`: ensure the venv imports load. Fix any failures before proceeding. Use `verification-before-completion` to confirm checks actually ran and passed — never claim "passed" without evidence. The host runner independently repeats Java verification after implementation and review and blocks merging on failure.
 5. **Commit** — make a single git commit. The message MUST:
    - Start with `RALPH:` prefix
    - Include the task completed and any PRD reference
    - List key decisions made
    - List files changed
    - Note any blockers for the next iteration
-6. **Close** — close the issue with `bash .sandcastle/bin/scratch-issues.sh close <ID>` where `<ID>` is the `id` field from the issue list (e.g. `game-management/issues/01-admin-game-crud`). Then append a short note under a `## Comments` heading in the issue file explaining what was done.
+6. **Close** — after verification and the implementation commit, close the issue with `bash .sandcastle/bin/scratch-issues.sh close <ID>` where `<ID>` is the `id` field from the issue list (e.g. `game-management/issues/01-admin-game-crud`). Then append a short note under a `## Comments` heading in the issue file explaining what was done. Amend your implementation commit to include the issue state and comment. Leave no uncommitted changes: the host gate rejects a dirty worktree, and these changes reach the host branch only after both verification gates pass.
 
 ## Rules
 

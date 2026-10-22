@@ -12,6 +12,8 @@ ENV JAVA_HOME=/opt/java/openjdk
 ENV MAVEN_HOME=/usr/share/maven
 ENV MAVEN_CONFIG=/home/agent/.m2
 ENV PATH="${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${PATH}"
+# 仓库含中文/国标号文件名，JVM 默认 POSIX locale 会把文件名转成 ? 导致 javac 扫描失败
+ENV LANG=C.utf8
 
 # Install system dependencies
 # deb.debian.org 国内直连不稳，apt 走 host 代理（仅 build 期生效）

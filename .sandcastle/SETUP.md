@@ -61,8 +61,23 @@ review 新引入的 Java 变更也会触发门禁。初始化 hooks 不能代替
 合并使用验证过的 commit SHA；如果 host 分支或 HEAD 已变化，必须重新整理分支并验证。
 
 现有 Java 全量测试依赖 Testcontainers/Docker 和 OceanBase 等外部测试服务。
-本配置没有挂载 Docker socket，也没有自动提供数据库；未就绪时验证会失败并阻止合并。
+本配置没有挂载 Docker socket，3 个 PDC NFC 集成测试（`PdcNfcTrustReleaseIntegrationTest` /
+`PdcNfcClaimInviteReplacementIntegrationTest` / `PdcNfcWriteResultImportIntegrationTest`）
+在验证命令中显式排除；其余测试经 `DB_HOST` / `REDIS_HOST` 环境变量连 host 服务。
 这表示测试环境需要准备，不应改成跳过测试来放行。
+
+### 踩坑补充（2026-10-22 联调）
+
+- **中文文件名**：POSIX locale 下 JVM 把国标号/中文文件名转成 `?`，javac 扫描源码目录报
+  `Malformed input`。Dockerfile 需 `ENV LANG=C.utf8`。
+- **测试数据污染**：`GameServiceTest` 每用例用同一 `gameType`，`ai_game.game_type`
+  唯一约束下一旦某用例中断残留数据，后续全挂。`@AfterEach` 清理要包住所有路径；
+  断言多条记录时 gameType 必须各不相同。
+- **Liquibase 部分应用**：changeset 标记 `EXECUTED` 但表实际缺失（如 `ai_star_transaction`），
+  验证报 `Table doesn't exist`。需手工补建并核对 `DATABASECHANGELOG` 一致性。
+- **硬编码 `127.0.0.1`**：测试/配置里写死 loopback 的在容器内全失效。凡需跨容器访问的
+  host/port 一律走 `${VAR:default}` 占位符，默认值保持 `127.0.0.1` 不影响 host 开发。
+- **InviteCodeGeneratorTest** 随机生成 10000 个码有概率碰撞，属既有 flake，非链路问题。
 
 运行编排器回归测试（使用临时 Git 仓库，替代外部 agent/容器，不调用真实模型）：
 

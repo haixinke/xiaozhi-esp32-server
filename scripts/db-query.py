@@ -35,6 +35,8 @@ def load_datasource(config_path: Path) -> dict:
         config = yaml.safe_load(f)
     druid = config["spring"]["datasource"]["druid"]
     url = druid["url"]
+    # 展开 Spring 占位符 ${VAR:default}（容器化测试时 DB_HOST 可被环境变量覆盖）
+    url = re.sub(r"\$\{[^}:]+:([^}]*)\}", r"\1", url)
     # jdbc:mysql://host:port/database?params —— 只取 host/port/database 三段
     match = re.match(r"jdbc:mysql://([^:/]+):(\d+)/([^?]+)", url)
     if not match:

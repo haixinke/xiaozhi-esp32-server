@@ -12,7 +12,9 @@ Starts the Sandcastle sequential-reviewer pipeline defined in `.sandcastle/main.
 3. Host merges the branch back only if both phases pass per-subproject verification gates.
 4. Loop repeats up to `MAX_ITERATIONS` (currently 10) or until backlog is empty.
 
-The model used by both agents is controlled by the `SANDCASTLE_MODEL` env var (defaults to `Kimi/k3`). The value must exist in the local CCR routing table; the container reaches CCR via `host.docker.internal:3456`.
+The model used by both agents is controlled by the `SANDCASTLE_MODEL` env var. The value must exist in the local CCR routing table; the container reaches CCR via `host.docker.internal:3456`.
+
+**The user MUST explicitly pick a model on every invocation — there is no default.** If the user did not name one, ask before doing anything else. Do not infer from context, do not fall back to what was used last time, do not pick one because it "seems right". Each run can burn hours of tokens on the wrong provider; an explicit choice is the only safeguard.
 
 ## Available Models
 
@@ -20,7 +22,7 @@ Only these three are known-good against the local CCR right now. Do not invent o
 
 | Key | `SANDCASTLE_MODEL` value | When to pick |
 |---|---|---|
-| `kimi` (default) | `Kimi/k3` | First choice. Direct Kimi coding plan. |
+| `kimi` | `Kimi/k3` | First choice. Direct Kimi coding plan. |
 | `glm` | `ModelRouter/qwen/ZHIPU/GLM-5.3` | Kimi quota exhausted, or user wants GLM. |
 | `kimi-via-router` | `ModelRouter/qwen/kimi-k3` | Kimi direct endpoint broken but ModelRouter upstream alive; backup Kimi channel. |
 
@@ -31,7 +33,7 @@ Aliases the user may say that map to the above:
 
 ## Steps
 
-1. **Pick the model.** If the user named one, map it via the table. If not, default to `Kimi/k3` and say so. If the user mentioned Kimi quota being exhausted, suggest `glm`.
+1. **Ask for the model — always.** If the user already named one in this invocation (including aliases from the table above), use it. Otherwise stop and ask with `AskUserQuestion`, presenting the three rows from the table as options. Do not proceed to step 2 until the user has picked one in this conversation turn. Even if they picked one last time, ask again — provider quota state changes between runs.
 
 2. **Pre-flight checks** (run all three, fail fast with a clear message):
    - Working tree clean: `git status --porcelain --untracked-files=all` must be empty. Sandcastle refuses to run on a dirty tree.

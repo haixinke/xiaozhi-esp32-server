@@ -31,6 +31,11 @@ const MAX_ITERATIONS = 10;
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const mavenCache = join(homedir(), ".m2");
 
+// 沙箱内 Claude Code 用的模型标识，须命中 CCR 路由表。
+// 通过环境变量覆盖：SANDCASTLE_MODEL=ModelRouter/qwen/ZHIPU/GLM-5.3 npx tsx .sandcastle/main.mts
+// 同时透传给容器 ANTHROPIC_MODEL，保证 agent 启动与子进程默认一致。
+const AGENT_MODEL = process.env.SANDCASTLE_MODEL ?? "Kimi/k3";
+
 // 多子项目校验矩阵：按 changed paths 分发到对应子项目的检查命令。
 // 顺序即执行顺序，与 implement-prompt.md / review-prompt.md 中的描述保持一致。
 // 注意：sandbox.exec() 非零 exitCode 是返回不抛出，每个 check 必须显式判断。
@@ -137,6 +142,9 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
         // 容器内 127.0.0.1 指自己，经 host.docker.internal 访问 host 上的 OceanBase / Redis
         DB_HOST: "host.docker.internal",
         REDIS_HOST: "host.docker.internal",
+        // 容器 Claude Code 默认模型。显式传入覆盖 .sandcastle/.env 里的静态值，
+        // 保证 SANDCASTLE_MODEL 命令行切换对子进程同样生效。
+        ANTHROPIC_MODEL: AGENT_MODEL,
       },
     }),
     hooks: {
@@ -157,10 +165,11 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
       throw new Error("Java/Maven/Python3.12 or writable ~/.m2 unavailable; rebuild the Sandcastle image and check cache permissions.");
     }
     // Phase 1: 实现。模型名必须在 CCR 路由表内。
+    console.log(`Using agent model: ${AGENT_MODEL}`);
     const implement = await sandbox.run({
       name: "implementer",
       maxIterations: 1,
-      agent: sandcastle.claudeCode("Kimi/k3"),
+      agent: sandcastle.claudeCode(AGENT_MODEL),
       promptFile: join(repoRoot, ".sandcastle", "implement-prompt.md"),
     });
 
@@ -178,7 +187,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     await sandbox.run({
       name: "reviewer",
       maxIterations: 1,
-      agent: sandcastle.claudeCode("Kimi/k3"),
+      agent: sandcastle.claudeCode(AGENT_MODEL),
       promptFile: join(repoRoot, ".sandcastle", "review-prompt.md"),
       promptArgs: {
         BRANCH: branch,

@@ -10,7 +10,7 @@ Starts the Sandcastle sequential-reviewer pipeline defined in `.sandcastle/main.
 1. Implementer agent picks one open issue from `.scratch/` and commits a fix on a worktree branch.
 2. Reviewer agent reviews the diff on the same branch.
 3. Host merges the branch back only if both phases pass per-subproject verification gates.
-4. Loop repeats up to `MAX_ITERATIONS` (currently 10) or until backlog is empty.
+4. Loop repeats up to `MAX_ITERATIONS` (currently 15) or until backlog is empty.
 
 The model used by both agents is controlled by the `SANDCASTLE_MODEL` env var. The value must exist in the local CCR routing table; the container reaches CCR via `host.docker.internal:3456`.
 
@@ -40,7 +40,7 @@ Aliases the user may say that map to the above:
    - CCR reachable: `curl -sf http://127.0.0.1:3456/health` returns `{"status":"ok"}`.
    - `.sandcastle/.env` exists and contains `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY`. Do NOT print the key.
 
-3. **Confirm scope with the user before launching**, because a run can burn significant tokens and modify many files: "Will run sandcastle with model `<value>` for up to 10 iterations on `.scratch/` backlog. OK?" Only skip this confirmation if the user explicitly said "just run it" / "直接跑".
+3. **Confirm scope with the user before launching**, because a run can burn significant tokens and modify many files: "Will run sandcastle with model `<value>` for up to 15 iterations on `.scratch/` backlog. OK?" Only skip this confirmation if the user explicitly said "just run it" / "直接跑".
 
 4. **Launch in the background** so the user keeps the terminal:
    ```

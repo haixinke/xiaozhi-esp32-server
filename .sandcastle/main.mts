@@ -27,7 +27,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 // 每个 outer loop 处理一个 issue；实现阶段没 commit 就停（backlog 空）。
-const MAX_ITERATIONS = 10;
+const MAX_ITERATIONS = 15;
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const mavenCache = join(homedir(), ".m2");
 

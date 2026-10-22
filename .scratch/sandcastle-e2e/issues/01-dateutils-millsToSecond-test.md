@@ -4,6 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** open
+**Status:** resolved
 
-- [ ] 新增 `main/manager-api/src/test/java/xiaozhi/common/utils/DateUtilsTest.java`，断言 millsToSecond 的 0 / 1500 / 123456 三个输入输出
+- [x] 新增 `main/manager-api/src/test/java/xiaozhi/common/utils/DateUtilsTest.java`，断言 millsToSecond 的 0 / 1500 / 123456 三个输入输出
+
+## Comments
+
+新增 `DateUtilsTest.java`，三个 JUnit 5 测试方法分别验证 `millsToSecond(0)`、`millsToSecond(1500)`、`millsToSecond(123456)` 的输出。无生产代码改动。Maven 全量验证通过：961 tests, 0 failures, BUILD SUCCESS。

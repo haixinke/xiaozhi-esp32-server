@@ -34,18 +34,21 @@ class PdcNfcLiquibaseIntegrationTest {
     /** 测试专用库：严禁指向开发库 egg_database，本类会清空表数据 */
     private static final String TEST_DATABASE = "egg_nfc_test";
 
+    /** 数据库主机，容器/CI 场景可通过环境变量 DB_HOST 覆盖 */
+    private static final String DB_HOST = System.getenv().getOrDefault("DB_HOST", "127.0.0.1");
+
     @BeforeAll
     static void setUp() throws Exception {
         // 先连服务器级创建测试库，再连测试库；
         // 历史上本测试直连 egg_database 并 delete 全表，会清掉开发数据，不得回退。
         try (Connection bootstrap = DriverManager.getConnection(
-                "jdbc:mysql://127.0.0.1:2881/?useSSL=false&allowPublicKeyRetrieval=true",
+                "jdbc:mysql://" + DB_HOST + ":2881/?useSSL=false&allowPublicKeyRetrieval=true",
                 "root", "123456");
              Statement stmt = bootstrap.createStatement()) {
             stmt.execute("CREATE DATABASE IF NOT EXISTS " + TEST_DATABASE);
         }
         connection = DriverManager.getConnection(
-                "jdbc:mysql://127.0.0.1:2881/" + TEST_DATABASE + "?useUnicode=true" +
+                "jdbc:mysql://" + DB_HOST + ":2881/" + TEST_DATABASE + "?useUnicode=true" +
                 "&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai" +
                 "&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true",
                 "root", "123456");

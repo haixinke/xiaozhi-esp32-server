@@ -57,8 +57,3 @@ Aliases the user may say that map to the above:
 - Stop a run: `TaskStop` on the background task ID, or `pkill -f "tsx .sandcastle/main.mts"` from the shell.
 - Inspect what an iteration committed: `git log --oneline sandcastle/sequential-reviewer/<ts>` (branch names are printed in the run output).
 - If a merge conflict blocked the loop, the script exits non-zero and prints manual-resolve steps — surface them verbatim to the user.
-
-## Notes
-
-- Do not edit `.sandcastle/.env` to "switch model" — `SANDCASTLE_MODEL` env var on the command line is the supported mechanism; `.env`'s `ANTHROPIC_MODEL` is only a fallback for ad-hoc container shells.
-- Verification gates in `main.mts` are path-based (`main/manager-api/`, `main/manager-web/`, `main/egg-miniprogram/`, `main/xiaozhi-server/`). A run that touches none of these paths will log "No subproject checks apply" and merge without running tests — flag this to the user if it happens unexpectedly.

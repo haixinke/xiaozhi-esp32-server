@@ -25,13 +25,13 @@ class InviteCodeGeneratorTest {
     }
 
     @Test
-    @DisplayName("generate 不包含歧义字符 0/1/I/O")
-    void generate_noAmbiguousChars() {
-        for (int i = 0; i < 500; i++) {
-            String code = InviteCodeGenerator.generate();
-            assertThat(code).doesNotContain("0").doesNotContain("1")
-                    .doesNotContain("O").doesNotContain("I");
-        }
+    @DisplayName("字母表排除歧义字符 0/1/I/O，且长度为 32")
+    void alphabet_excludesAmbiguousChars() {
+        // 直接断言 ALLOWED 常量，把"无歧义字符"这一规格钉死在定义上；
+        // 对随机生成的 5 位码断言 doesNotContain 永真（字母表决定），测不出回归。
+        assertThat(ALLOWED)
+                .hasSize(32)
+                .doesNotContain("0", "1", "I", "O");
     }
 
     @Test

@@ -1,7 +1,7 @@
 # Sandcastle 安装与配置实战记录
 
 > 本仓（xiaozhi-esp32-server）从零接入 [Sandcastle](https://github.com/mattpocock/sandcastle) 的完整过程，含所有踩坑与解决方案。
-> 日期：2026-10-21 · 分支：`f-sandcastle`
+> 日期：2026-10-21
 
 ## 目标
 
@@ -10,7 +10,7 @@
 - 容器隔离执行，不污染 host 工作目录
 - issue 来自本仓 `.scratch/` markdown 文件（非 GitHub Issues）
 - LLM 流量走本机 CCR 代理（`127.0.0.1:3456`），不直连 Anthropic
-- 容器内 agent 可使用指定的 4 个 skill
+- 容器内 agent 可使用指定的skill
 
 ## 最终架构
 
@@ -28,7 +28,7 @@ host: npx tsx .sandcastle/main.mts
   │    └─ skills 预装在 /home/agent/.claude/skills/
   │
   └─ 分支策略：每 issue 独立 branch（sandcastle/sequential-reviewer/<ts>）
-       └─ implement → Java 验证 → review → Java 再验证 → host 自动合并已验证 commit
+       └─ implement → 验证 → review → 再验证 → host 自动合并已验证 commit
 ```
 
 ## Java 验证与 Maven 缓存
@@ -84,9 +84,7 @@ README 示例里 `if (tests.exitCode !== 0) throw` 那行不是装饰，是门�
 镜像里的工具链版本必须与 host 推荐版本对齐：
 - JDK 21（manager-api）
 - Node 22（manager-web、egg-miniprogram 检查脚本）
-- Python **3.12**（xiaozhi-server；requirements.txt:2 与 CLAUDE.md 明确推荐）
-
-不要用 3.10 / 3.11 顶替 —— 语法门禁版本不一致会让容器内通过的代码在 host 挂掉，反之亦然。
+- Python **3.12**（xiaozhi-server；requirements.txt）
 
 ### 容器内**不要**启用 graphify hook
 
@@ -256,8 +254,6 @@ RUN echo 'Acquire::http::Proxy "http://host.docker.internal:7897";' > /etc/apt/a
 
 本仓不是 Node 项目，删掉模板里的 `copyToWorktree: ["node_modules"]` 和 `onSandboxReady: npm install` —— 否则容器里 `npm install` 找不到 `package.json` 直接失败。
 
-模型名改为 CCR 路由表内的：`anthropic/claude-sonnet-4.6`（不是 `claude-sonnet-4-6`）。
-
 ### 10. 构建镜像
 
 ```bash
@@ -271,6 +267,32 @@ docker build -t sandcastle:xiaozhi-esp32-server \
 ```
 
 **注意：** 从 `.sandcastle/` 目录跑，build context 里的 `claude-skills/` 才对得上 Dockerfile 的 COPY 路径。
+
+**脚本封装：** `scripts/run-build-sandcastle.sh` 把上面 3 步（sync-skills → cd → build）打包成一条命令，从仓根直接跑：
+
+```bash
+bash scripts/run-build-sandcastle.sh
+```
+
+### 10.1 推送镜像到 ACR（备份/恢复）
+
+镜像构建完成后，推到阿里云 ACR 个人实例做远程备份。Docker Desktop 故障或重装后，直接从 ACR 拉取即可恢复，无需重新构建。
+
+```bash
+bash scripts/run-push-sandcastle.sh   # 按提示输 ACR 密码
+```
+
+推送到 `crpi-wvrvx27whligoca7.cn-shanghai.personal.cr.aliyuncs.com/companion-ai/sandcastle:<git-short-sha>`，同时打 `latest` 标签。
+
+**恢复流程**（Docker Desktop 重装后）：
+
+```bash
+docker login crpi-wvrvx27whligoca7.cn-shanghai.personal.cr.aliyuncs.com -u <ACR用户名>
+docker pull  crpi-wvrvx27whligoca7.cn-shanghai.personal.cr.aliyuncs.com/companion-ai/sandcastle:latest
+docker tag   crpi-wvrvx27whligoca7.cn-shanghai.personal.cr.aliyuncs.com/companion-ai/sandcastle:latest sandcastle:xiaozhi-esp32-server
+```
+
+**架构：** 推上去的镜像 = 本机构建架构（Apple Silicon 是 arm64）。换 Intel 机器拉下来跑不动，需在目标架构重新构建。
 
 ### 11. 验证
 
@@ -291,6 +313,33 @@ docker run --rm --entrypoint claude \
 # 端到端跑一次（空 backlog 应直接 COMPLETE）
 npx tsx .sandcastle/main.mts
 ```
+
+### 12. 运行 sequential-reviewer（选模型）
+
+容器内 Claude Code 用的模型由 `SANDCASTLE_MODEL` 环境变量决定，值必须命中本机 CCR 路由表。
+`main.mts`读取该变量，并通过 `ANTHROPIC_MODEL` 透传到容器。
+
+**不要在 `.sandcastle/.env` 里改模型** —— env 命令行变量是唯一受支持的切换机制，`.env` 里静态值只作 fallback。
+
+```bash
+SANDCASTLE_MODEL=<value> npx tsx .sandcastle/main.mts
+```
+
+已知可用模型（CCR 路由表当前命中）：
+
+| Key | `SANDCASTLE_MODEL` | 用途 |
+|---|---|---|
+| `kimi` | `Kimi/k3` | 首选，直连 Kimi coding plan |
+| `glm` | `ModelRouter/qwen/ZHIPU/GLM-5.3` | Kimi 额度耗尽 / 想用 GLM |
+| `kimi-via-router` | `ModelRouter/qwen/kimi-k3` | Kimi 直连挂了但 ModelRouter 活着，备用通道 |
+
+iteration 1 开头的日志 `Using agent model: <value>` 可确认 env 生效。
+
+**Claude Code skill 封装：** 本仓注册了 `sandcastle-run` skill（`.claude/skills/sandcastle-run/SKILL.md`），
+在 Claude Code 里说"跑 sandcastle"会自动触发，流程包括：强制用户显式选模型 →
+前置检查（工作树干净 / CCR 可达 / `.env` 存在）→ 后台启动 `main.mts` → 报告 task id 和日志路径。
+skill 的"必须每次显式选模型"约束比代码严 —— 代码 fallback 到 `Kimi/k3`，skill 故意禁止 fallback，
+避免一次跑错供应商烧几小时 token。
 
 ---
 
@@ -432,14 +481,14 @@ RUN npm install -g @anthropic-ai/claude-code \
 ## 常用命令速查
 
 ```bash
-# 改完 Dockerfile 后重建
-./.sandcastle/sync-skills.sh
-cd .sandcastle && docker build -t sandcastle:xiaozhi-esp32-server \
-  --build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) \
-  --add-host=host.docker.internal:host-gateway .
+# 改完 Dockerfile 后重建（脚本等价于手动 3 步）
+bash scripts/run-build-sandcastle.sh
 
-# 跑 sequential-reviewer（从仓根）
-npx tsx .sandcastle/main.mts
+# 推镜像到 ACR（备份，Docker Desktop 故障后可直接 pull 恢复）
+bash scripts/run-push-sandcastle.sh
+
+# 跑 sequential-reviewer（从仓根；模型必须显式给）
+SANDCASTLE_MODEL=Kimi/k3 npx tsx .sandcastle/main.mts
 
 # 看实时日志
 tail -f .sandcastle/logs/<latest>.log

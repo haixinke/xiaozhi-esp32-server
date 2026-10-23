@@ -39,4 +39,17 @@ public class DateUtilsTest {
     public void format_withNullDate_returnsNull() {
         assertNull(DateUtils.format(null));
     }
+
+    @Test
+    public void parse_validDateTime_roundTrip() {
+        // round-trip 只依赖 pattern 本身，与系统时区无关
+        String text = "2026-10-23 14:05:06";
+        Date parsed = DateUtils.parse(text, DateUtils.DATE_TIME_PATTERN);
+        assertEquals(text, DateUtils.format(parsed, DateUtils.DATE_TIME_PATTERN));
+    }
+
+    @Test
+    public void parse_invalidDate_returnsNull() {
+        assertNull(DateUtils.parse("not-a-date", DateUtils.DATE_PATTERN));
+    }
 }

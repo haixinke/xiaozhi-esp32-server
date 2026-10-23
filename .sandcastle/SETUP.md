@@ -310,7 +310,7 @@ docker run --rm --entrypoint claude \
   --model "anthropic/claude-sonnet-4.6" \
   --print "List the skills available to you."
 
-# 端到端跑一次（空 backlog 应直接 COMPLETE）
+# 空 backlog 会直接退出；有 issue 时执行逐项实现、合并和最终审查
 npx tsx .sandcastle/main.mts
 ```
 
@@ -325,6 +325,12 @@ npx tsx .sandcastle/main.mts
 SANDCASTLE_MODEL=<value> npx tsx .sandcastle/main.mts
 ```
 
+可用 `SANDCASTLE_FEATURE=<feature-slug>` 限定一个 `.scratch/<feature-slug>/` 功能；未设置时处理当前所有未解决 issue。runner 在开始时固定目标 issue、对应 `spec.md`、当前分支和基线 commit，并把批次状态写到 `.sandcastle/logs/batch-*.json`。运行中断后，在同一分支再次执行会继续该批次；批次完成后下一次运行才会建立新范围。
+
+每个 issue 都须通过实现验证、只读审查报告和再次验证，才会合并。全部目标 issue 解决后，对整批累计变更执行检查和最终只读审查；确认有可修复阻塞问题时，最多自动修复两轮，每轮修复都重新验证、审查和合并，再对新的 head 重新执行最终审查。报告保存于 `.sandcastle/logs/<batch-id>/`，结论绑定 `baseSha`、`reviewedSha` 和目标 issue 列表。
+
+只有最终审查通过才输出 `Batch ... complete` 并以 0 退出。无进展、审查拒绝、必要验证缺失、迭代或修复达到上限都会以非 0 退出并保留报告供处理；批次状态中的 `lastOutcome` 记录 `no_progress`、`blocked`、`iteration_limit`、`repair_limit` 或 `failed`。现有 Python 命令仅检查语法，Java 有三个依赖 Docker 的集成测试被排除；涉及这些行为时，最终审查应标记未验证，补齐实际运行证据后再完成批次。
+
 已知可用模型（CCR 路由表当前命中）：
 
 | Key | `SANDCASTLE_MODEL` | 用途 |
@@ -333,7 +339,7 @@ SANDCASTLE_MODEL=<value> npx tsx .sandcastle/main.mts
 | `glm` | `ModelRouter/qwen/ZHIPU/GLM-5.3` | Kimi 额度耗尽 / 想用 GLM |
 | `kimi-via-router` | `ModelRouter/qwen/kimi-k3` | Kimi 直连挂了但 ModelRouter 活着，备用通道 |
 
-iteration 1 开头的日志 `Using agent model: <value>` 可确认 env 生效。
+运行时 `SANDCASTLE_MODEL` 会用于实现、审查和修复 agent。
 
 **Claude Code skill 封装：** 本仓注册了 `sandcastle-run` skill（`.claude/skills/sandcastle-run/SKILL.md`），
 在 Claude Code 里说"跑 sandcastle"会自动触发，流程包括：强制用户显式选模型 →
@@ -511,8 +517,11 @@ bash .sandcastle/bin/scratch-issues.sh close game-management/issues/01-admin-gam
 ├── .gitignore                # .env / logs/ / worktrees/ / node_modules/ / claude-skills/
 ├── Dockerfile                # 镜像定义
 ├── main.mts                  # sequential-reviewer 入口
+├── review-contract.mts       # 审查报告校验与合并门禁
 ├── implement-prompt.md       # implementer prompt
-├── review-prompt.md          # reviewer prompt
+├── review-prompt.md          # 单 issue / 修复后的只读审查
+├── final-review-prompt.md    # 整批最终审查
+├── fix-review-prompt.md      # 最终审查阻塞项修复
 ├── CODING_STANDARDS.md       # 审查标准（44 行精简版）
 ├── SETUP_ISSUE_TRACKER.md    # 模板自带，可删
 ├── SETUP.md                  # 本文档

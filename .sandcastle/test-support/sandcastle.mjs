@@ -1,11 +1,26 @@
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.env.TEST_REPO;
 const record = (event) => appendFileSync(join(root, 'events.jsonl'), JSON.stringify(event) + '\n');
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 let iteration = 0;
+let finalReviews = 0;
+let batchBaseSha;
+
+const issueIds = () => readdirSync(join(root, '.scratch/test-batch/issues'))
+  .filter((name) => name.endsWith('.md'))
+  .sort()
+  .map((name) => `test-batch/issues/${name.slice(0, -3)}`);
+const issuePath = (cwd, id) => join(cwd, '.scratch', `${id}.md`);
+const nextOpenIssue = (cwd) => issueIds().find((id) => !readFileSync(issuePath(cwd, id), 'utf8').includes('**Status:** resolved'));
+const reportOutput = (report) => `<review_report>${JSON.stringify(report)}</review_report>`;
+const verification = (promptArgs) => {
+  const checks = JSON.parse(promptArgs?.VERIFICATION_RESULTS ?? '[]');
+  return checks.length ? checks.map((check) => ({ command: check.command, status: check.status, evidence: check.logPath }))
+    : [{ command: 'manual review', status: 'passed', evidence: 'reviewed fixture change' }];
+};
 
 export const claudeCode = () => ({});
 export function docker(options) {
@@ -15,8 +30,13 @@ export function docker(options) {
 
 export async function createSandbox(options) {
   iteration += 1;
+  batchBaseSha ??= git(root, 'rev-parse', 'HEAD');
+  const startSha = git(root, 'rev-parse', 'HEAD');
   const worktreePath = join(root, `worktree-${iteration}`);
   git(root, 'worktree', 'add', '-b', options.branch, worktreePath);
+  record({ type: 'sandbox', branch: options.branch, startSha });
+  let currentIssueId;
+  let lastAgent;
   const change = (relativePath, text) => {
     const path = join(worktreePath, relativePath);
     mkdirSync(join(path, '..'), { recursive: true });
@@ -25,35 +45,97 @@ export async function createSandbox(options) {
   return {
     branch: options.branch,
     worktreePath,
-    async run({ name }) {
-      record({ type: 'agent', name });
-      if (iteration > 1 || process.env.TEST_NO_COMMITS === '1') {
+    async run({ name, promptArgs }) {
+      lastAgent = name;
+      record({ type: 'agent', name, startSha, promptArgs });
+      if (name === 'final-reviewer') {
+        finalReviews += 1;
+        const rejected = process.env.TEST_FINAL_ALWAYS_REJECT === '1' ||
+          (process.env.TEST_FINAL_REVIEW_RETRY === '1' && finalReviews === 1);
+        const missing = process.env.TEST_FINAL_MISSING_REQUIREMENT === '1';
+        const requiredIds = (promptArgs?.REQUIREMENT_IDS ?? '').split(',').filter(Boolean);
+        const coveredIds = process.env.TEST_NUMBERED_SPEC === '1' || process.env.TEST_OMIT_SPEC_CRITERION === '1'
+          ? issueIds() : requiredIds;
+        const report = {
+          baseSha: batchBaseSha,
+          reviewedSha: git(worktreePath, 'rev-parse', 'HEAD'),
+          issueIds: issueIds(),
+          verdict: rejected ? 'changes_required' : 'pass',
+          requirements: coveredIds.map((id, index) => ({
+            id,
+            status: missing && index === 0 ? 'missing' : 'met',
+            evidence: 'main/manager-api/Example.java and verification log',
+          })),
+          findings: rejected ? [{ severity: 'blocking', location: 'main/manager-api/Example.java', trigger: 'batch review', impact: 'behavior incomplete' }]
+            : process.env.TEST_SECURITY_FINDING === '1' ? [{ severity: 'advisory', location: 'main/manager-api/Example.java', trigger: 'token value exposed', impact: 'security review needed' }] : [],
+          verification: verification(promptArgs),
+        };
+        return { commits: [], stdout: reportOutput(report) };
+      }
+      if (name === 'implementer' && process.env.TEST_NO_COMMITS === '1') {
         if (process.env.TEST_DIRTY === '1') change('uncommitted.txt', 'unfinished\n');
-        return { commits: [] };
+        return { commits: [], stdout: '' };
       }
       if (name === 'implementer') {
+        currentIssueId = promptArgs?.ISSUE_ID ?? nextOpenIssue(worktreePath);
+        if (!currentIssueId) return { commits: [], stdout: '' };
+        if (process.env.TEST_MUTATE_SPEC === '1') change('.scratch/test-batch/spec.md', '# Weakened spec\n');
         if (process.env.TEST_NON_JAVA === '1') {
           change('README.md', 'implementation\n');
         } else if (process.env.TEST_SUBPROJECT) {
           change(`${process.env.TEST_SUBPROJECT}placeholder.txt`, 'implementation\n');
         } else {
-          change('main/manager-api/Example.java', 'implementation\n');
+          change('main/manager-api/Example.java', `implementation ${currentIssueId}\n`);
+        }
+        change(`.scratch/${currentIssueId}.md`, readFileSync(issuePath(worktreePath, currentIssueId), 'utf8').replace('**Status:** open', '**Status:** resolved'));
+        if (process.env.TEST_CLOSE_OTHER_ISSUE === '1') {
+          const other = issueIds().find((id) => id !== currentIssueId);
+          if (other) change(`.scratch/${other}.md`, readFileSync(issuePath(worktreePath, other), 'utf8').replace('**Status:** open', '**Status:** resolved'));
+        }
+      } else if (name === 'fixer') {
+        change('main/manager-api/Example.java', `implementation with final fix ${iteration}\n`);
+        if (process.env.TEST_FIX_REOPENS_ISSUE === '1') {
+          const id = issueIds()[0];
+          change(`.scratch/${id}.md`, readFileSync(issuePath(worktreePath, id), 'utf8').replace('**Status:** resolved', '**Status:** open'));
         }
       } else {
         if (process.env.TEST_REBASE === '1') git(worktreePath, 'reset', '--hard', 'HEAD~2');
-        change('review.txt', 'review\n');
-        if (process.env.TEST_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'reviewed Java\n');
+        if (process.env.TEST_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'reviewer unexpectedly modified Java\n');
       }
-      git(worktreePath, 'add', '.');
-      git(worktreePath, 'commit', '-m', name);
+      if (name === 'implementer' || name === 'fixer') {
+        git(worktreePath, 'add', '.');
+        git(worktreePath, 'commit', '-m', name);
+      }
       if (name === 'reviewer' && process.env.TEST_DIRTY === '1') change('uncommitted.txt', 'uncommitted\n');
       if (name === 'reviewer' && process.env.TEST_HOST_MOVED === '1') {
         git(root, 'commit', '--allow-empty', '-m', 'concurrent host change');
       }
-      return { commits: [{ sha: git(worktreePath, 'rev-parse', 'HEAD') }] };
+      let stdout = '';
+      if (name === 'reviewer' || name === 'fix-reviewer') {
+        if (process.env.TEST_REVIEW_MISSING_REPORT !== '1') {
+          const rejected = process.env.TEST_REVIEW_REJECT === '1';
+          stdout = reportOutput({
+            baseSha: startSha,
+            reviewedSha: git(worktreePath, 'rev-parse', 'HEAD'),
+            issueIds: name === 'fix-reviewer' ? issueIds() : [currentIssueId],
+            verdict: rejected ? 'changes_required' : 'pass',
+            requirements: (name === 'fix-reviewer' ? issueIds() : [currentIssueId]).map((id) => ({
+              id, status: 'met', evidence: 'issue implementation and verification log',
+            })),
+            findings: rejected ? [{ severity: 'blocking', location: 'main/manager-api/Example.java', trigger: 'issue review', impact: 'behavior incomplete' }] : [],
+            verification: process.env.TEST_REPORT_BOGUS_CHECK === '1'
+              ? [{ command: 'nonexistent check', status: 'passed', evidence: 'invented' }]
+              : verification(promptArgs),
+          });
+        }
+      }
+      return { commits: name === 'implementer' || name === 'fixer' ? [{ sha: git(worktreePath, 'rev-parse', 'HEAD') }] : [], stdout };
     },
     async exec(command) {
       record({ type: 'exec', command });
+      if (command.includes('verify') && process.env.TEST_FAIL_PHASE === 'review' && (lastAgent === 'reviewer' || lastAgent === 'fix-reviewer')) {
+        return { exitCode: 1, stdout: '', stderr: 'review verification failed' };
+      }
       if (command.includes('verify') && process.env.TEST_EXEC_ERROR === '1') throw new Error('container execution failed');
       if (process.env.TEST_PREFLIGHT_FAIL === '1' && command.includes('java -version')) {
         return { exitCode: 127, stdout: '', stderr: 'java unavailable' };

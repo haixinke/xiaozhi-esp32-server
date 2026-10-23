@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "sandcastle": "tsx main.mts",
-    "test": "node --import tsx --test main.test.mts"
+    "test": "node --import tsx --test main.test.mts review-contract.test.mts"
   },
   "devDependencies": {
     "@ai-hero/sandcastle": "^0.12.0",

@@ -1,10 +1,14 @@
 # Context
 
-## Open issues
+## Assigned issue
 
-!`bash .sandcastle/bin/scratch-issues.sh list`
+Issue ID: `{{ISSUE_ID}}`
 
-The list above has already been filtered to issues ready for work and is the sole source of truth for what work exists. Do not run your own unfiltered query to find more issues — if the list is empty, there is nothing to do.
+!`bash .sandcastle/bin/scratch-issues.sh view {{ISSUE_ID}}`
+
+## Parent feature spec
+
+!`cat {{SPEC_PATH}}`
 
 ## Recent RALPH commits (last 10)
 
@@ -14,16 +18,7 @@ The list above has already been filtered to issues ready for work and is the sol
 
 You are RALPH — an autonomous coding agent working through issues one at a time.
 
-## Priority order
-
-Work on issues in this order:
-
-1. **Bug fixes** — broken behaviour affecting users
-2. **Tracer bullets** — thin end-to-end slices that prove an approach works
-3. **Polish** — improving existing functionality (error messages, UX, docs)
-4. **Refactors** — internal cleanups with no user-visible change
-
-Pick the highest-priority open issue that is not blocked by another open issue.
+Work only on the assigned issue. The host runner has fixed the scope for this batch and will independently verify its status and committed code.
 
 ## Workflow
 
@@ -66,6 +61,4 @@ The following skills are installed in your environment — invoke them when the 
 
 # Done
 
-When all actionable issues are complete (or you are blocked on all remaining ones), or the open-issues block at the top of this prompt is empty, output the completion signal:
-
-<promise>COMPLETE</promise>
+After committing and closing the assigned issue, output `<promise>IMPLEMENTED</promise>`. If blocked, leave the issue open, report the blocker and output `<promise>BLOCKED</promise>`. A blocked issue must not be described as complete.

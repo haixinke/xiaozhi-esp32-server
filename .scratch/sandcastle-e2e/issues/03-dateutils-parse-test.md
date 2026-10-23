@@ -9,8 +9,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** open
+**Status:** resolved
 
 - [ ] 新增有效日期时间 round-trip 测试
 - [ ] 新增非法日期返回 `null` 测试
 - [ ] manager-api 全量 `clean verify` 通过
+
+## Comments
+
+- RALPH 迭代完成：在 `DateUtilsTest` 中追加两个纯单元测试——`parse_validDateTime_roundTrip`（用 `DATE_TIME_PATTERN` 解析 `2026-10-23 14:05:06` 再格式化 round-trip）与 `parse_invalidDate_returnsNull`（用 `DATE_PATTERN` 解析 `not-a-date` 返回 `null`）。未改生产代码。manager-api 全量 `clean verify` 通过：Tests run: 965, Failures: 0, Errors: 0。

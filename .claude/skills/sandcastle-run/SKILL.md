@@ -1,6 +1,6 @@
 ---
 name: sandcastle-run
-description: Trigger the Sandcastle sequential-reviewer loop (`.sandcastle/main.mts`) to autonomously work through `.scratch/` issues with a chosen LLM routed via local CCR. Use when the user asks to "run sandcastle", "让 sandcastle 干活", "跑 RALPH", "处理 scratch issue", or wants to pick a specific model (Kimi/k3, GLM-5.3, ModelRouter Kimi) for the autonomous run.
+description: Use when the user asks to run Sandcastle, 跑 RALPH, process scratch issues, or launch a specific feature with a CCR model.
 ---
 
 ## What This Does
@@ -9,8 +9,8 @@ Starts the Sandcastle sequential-reviewer pipeline defined in `.sandcastle/main.
 
 1. Implementer agent picks one open issue from `.scratch/` and commits a fix on a worktree branch.
 2. Reviewer agent reviews the diff on the same branch.
-3. Host merges the branch back only if both phases pass per-subproject verification gates.
-4. Loop repeats up to `MAX_ITERATIONS` (currently 15) or until backlog is empty.
+3. Host merges the branch back only after verification and a passing issue review.
+4. The loop repeats up to `MAX_ITERATIONS` (currently 15). Once all target issues are resolved, the runner verifies and reviews their cumulative changes on host HEAD. Blocking findings can trigger up to two verified repair rounds. Only `Batch ... complete` means the batch passed.
 
 The model used by both agents is controlled by the `SANDCASTLE_MODEL` env var. The value must exist in the local CCR routing table; the container reaches CCR via `host.docker.internal:3456`.
 
@@ -35,20 +35,22 @@ Aliases the user may say that map to the above:
 
 1. **Ask for the model — always.** If the user already named one in this invocation (including aliases from the table above), use it. Otherwise stop and ask with `AskUserQuestion`, presenting the three rows from the table as options. Do not proceed to step 2 until the user has picked one in this conversation turn. Even if they picked one last time, ask again — provider quota state changes between runs.
 
-2. **Pre-flight checks** (run all three, fail fast with a clear message):
+2. **Choose the issue scope.** If the user names a feature, set `SANDCASTLE_FEATURE` to its `.scratch/<feature>/` slug. If not, inspect `bash .sandcastle/bin/scratch-issues.sh list`. For one open feature, use that slug; for multiple open features, ask whether to run one feature or all. Leave `SANDCASTLE_FEATURE` unset only when the user chose all. An unset or empty value includes every open issue; a nonempty slug may contain only letters, digits, `_`, and `-`. The batch fixes its target issue list at start, so resuming must use the same feature and branch.
+
+3. **Pre-flight checks** (run all three, fail fast with a clear message):
    - Working tree clean: `git status --porcelain --untracked-files=all` must be empty. Sandcastle refuses to run on a dirty tree.
    - CCR reachable: `curl -sf http://127.0.0.1:3456/health` returns `{"status":"ok"}`.
    - `.sandcastle/.env` exists and contains `ANTHROPIC_BASE_URL` + `ANTHROPIC_API_KEY`. Do NOT print the key.
 
-3. **Confirm scope with the user before launching**, because a run can burn significant tokens and modify many files: "Will run sandcastle with model `<value>` for up to 15 iterations on `.scratch/` backlog. OK?" Only skip this confirmation if the user explicitly said "just run it" / "直接跑".
+4. **Check authorization for the selected external model.** The run sends relevant repository content to the selected CCR provider and can modify and merge files. Before launch, ensure the user has explicitly authorized that provider and scope in this request or earlier conversation. If either is missing, ask for it with the provider, feature scope, and maximum of 15 issue iterations stated. Do not repeat an approval already given. Respect an approval-system rejection; do not retry through another command path without the required authorization.
 
-4. **Launch in the background** so the user keeps the terminal:
+5. **Launch in the background** so the user keeps the terminal:
    ```
-   SANDCASTLE_MODEL=<value> npx tsx .sandcastle/main.mts
+   SANDCASTLE_FEATURE=<feature-slug> SANDCASTLE_MODEL=<value> npm --prefix .sandcastle run sandcastle
    ```
-   Use `run_in_background: true`. Log line `Using agent model: <value>` at the start of iteration 1 confirms the env var took effect — check for it in the early output.
+   Omit `SANDCASTLE_FEATURE=...` for an explicitly selected all-feature run. Use `run_in_background: true` where the host supports it. `npm --prefix .sandcastle` uses the runner's local `tsx` dependency.
 
-5. **Report back**: the background task ID, the chosen model, and where to watch progress (`.sandcastle/logs/` for per-phase verification logs; the branch name pattern `sandcastle/sequential-reviewer/<ts>` for inspecting intermediate commits).
+6. **Report back**: the background task ID (if available), feature scope, model, and `.sandcastle/logs/` path. Follow the process through its final exit: report `Batch ... complete` only on a zero exit, and include the final review report from `.sandcastle/logs/<batch-id>/`. On failure, report the saved batch outcome and log path. Intermediate commits use branches matching `sandcastle/sequential-reviewer/<ts>-<suffix>`.
 
 ## Abort / Inspect
 

@@ -342,8 +342,9 @@ SANDCASTLE_MODEL=<value> npx tsx .sandcastle/main.mts
 运行时 `SANDCASTLE_MODEL` 会用于实现、审查和修复 agent。
 
 **Claude Code skill 封装：** 本仓注册了 `sandcastle-run` skill（`.claude/skills/sandcastle-run/SKILL.md`），
-在 Claude Code 里说"跑 sandcastle"会自动触发，流程包括：强制用户显式选模型 →
-前置检查（工作树干净 / CCR 可达 / `.env` 存在）→ 后台启动 `main.mts` → 报告 task id 和日志路径。
+在 Claude Code 里说"跑 sandcastle"会自动触发，流程包括：显式选模型 →
+确定 `SANDCASTLE_FEATURE` 范围 → 前置检查（工作树干净 / CCR 可达 / `.env` 存在）→
+确认所选外部模型和范围的授权 → 后台启动 `main.mts` → 跟踪最终审查结果并报告日志路径。
 skill 的"必须每次显式选模型"约束比代码严 —— 代码 fallback 到 `Kimi/k3`，skill 故意禁止 fallback，
 避免一次跑错供应商烧几小时 token。
 

@@ -28,7 +28,8 @@ host: npx tsx .sandcastle/main.mts
   │    └─ skills 预装在 /home/agent/.claude/skills/
   │
   └─ 分支策略：每 issue 独立 branch（sandcastle/sequential-reviewer/<ts>）
-       └─ implement → 验证 → review → 再验证 → host 自动合并已验证 commit
+       └─ 成功实现：implement → 验证 → review → 再验证 → host 自动合并已验证 commit
+        BLOCKED：不进入验证和合并，记录后继续处理其他可执行 issue
 ```
 
 ## Java 验证与 Maven 缓存
@@ -120,7 +121,7 @@ sandcastle 沙盒（沙盒是干脏活累活的，不是做架构决策的）。
 - **README 列 `gh` 为镜像必需**，但本仓 tracker 走 `.scratch/`，当前镜像未装 `gh`；
   将来迁 GitHub Issues 时需 `apt-get install gh` 或走官方 install script。
 
-运行编排器回归测试（使用临时 Git 仓库，替代外部 agent/容器，不调用真实模型）：
+运行编排器回归测试（使用临时 Git 仓库，替代外部 agent/容器，不调用真实模型）。覆盖完成信号传递、BLOCKED 合并拦截、独立 issue 继续执行和批次状态记录：
 
 ```bash
 npm test --prefix .sandcastle
@@ -152,13 +153,14 @@ npx -y @ai-hero/sandcastle init \
 
 ID 格式：`<feature>/issues/<NN>-<slug>`。
 
-在 `implement-prompt.md` 把 sentinel 命令替换为：
+在 `implement-prompt.md` 把 issue 内容和父 feature spec 替换为：
 
 ```markdown
-!`bash .sandcastle/bin/scratch-issues.sh list`
+!`bash .sandcastle/bin/scratch-issues.sh view {{ISSUE_ID}}`
+!`cat {{SPEC_PATH}}`
 ```
 
-close 指引写进 workflow 第 6 步。
+runner 负责从 `.scratch/` 选择首个 `Blocked by:` 依赖均已解决的 issue，并传入 `ISSUE_ID` 和 `SPEC_PATH`；implementer 只处理分配到的 issue，不再自行从 issue list 挑选。close 指引写进 workflow 第 6 步。
 
 ### 3. 配置 .env
 
@@ -327,9 +329,20 @@ SANDCASTLE_MODEL=<value> npx tsx .sandcastle/main.mts
 
 可用 `SANDCASTLE_FEATURE=<feature-slug>` 限定一个 `.scratch/<feature-slug>/` 功能；未设置时处理当前所有未解决 issue。runner 在开始时固定目标 issue、对应 `spec.md`、当前分支和基线 commit，并把批次状态写到 `.sandcastle/logs/batch-*.json`。运行中断后，在同一分支再次执行会继续该批次；批次完成后下一次运行才会建立新范围。
 
-每个 issue 都须通过实现验证、只读审查报告和再次验证，才会合并。全部目标 issue 解决后，对整批累计变更执行检查和最终只读审查；确认有可修复阻塞问题时，最多自动修复两轮，每轮修复都重新验证、审查和合并，再对新的 head 重新执行最终审查。报告保存于 `.sandcastle/logs/<batch-id>/`，结论绑定 `baseSha`、`reviewedSha` 和目标 issue 列表。
+每个成功实现的 issue 都须通过实现验证、只读审查报告和再次验证，才会合并。runner 根据 `Blocked by:` 选择依赖已解决的 issue；implementer 成功后输出 `<promise>IMPLEMENTED</promise>`，reviewer、final-reviewer 和 fixer 完成时输出 `<promise>COMPLETE</promise>`，用于提前结束 agent 迭代。
 
-只有最终审查通过才输出 `Batch ... complete` 并以 0 退出。无进展、审查拒绝、必要验证缺失、迭代或修复达到上限都会以非 0 退出并保留报告供处理；批次状态中的 `lastOutcome` 记录 `no_progress`、`blocked`、`iteration_limit`、`repair_limit` 或 `failed`。现有 Python 命令仅检查语法，Java 有三个依赖 Docker 的集成测试被排除；涉及这些行为时，最终审查应标记未验证，补齐实际运行证据后再完成批次。
+implementer 遇到无法继续的外部依赖时输出 `<promise>BLOCKED</promise>`，且必须保持 worktree 干净、issue 未关闭、没有 commit：
+
+- BLOCKED 带 commit 或已关闭 issue：直接失败，禁止合并。
+- clean BLOCKED：记录到批次 manifest 的 `blockedIssueIds`，保存 `lastOutcome: "blocked"`，继续处理其他可执行 issue；已完成的其他 issue 仍须通过各自门禁后合并。
+- resume 时跳过已记录的 blocked issue，避免重复消耗 token。只要仍有 blocked issue，批次就不能标记 complete，最终以非 0 退出。
+- 无 commit 且没有 BLOCKED 信号，仍按 `no_progress` 失败处理。
+
+全部目标 issue 解决后，对整批累计变更执行检查和最终只读审查；确认有可修复阻塞问题时，最多自动修复两轮，每轮修复都重新验证、审查和合并，再对新的 head 重新执行最终审查。报告保存于 `.sandcastle/logs/<batch-id>/`，结论绑定 `baseSha`、`reviewedSha` 和目标 issue 列表。
+
+**外部依赖恢复后的重试：** runner 会持续跳过 manifest 中已记录的 blocked issue。先停止当前运行并备份对应 `.sandcastle/logs/batch-*.json`，再删除其中的 `blockedIssueIds` 字段（或移除要重试的 issue ID），随后在同一分支、使用相同 `SANDCASTLE_FEATURE` 恢复运行；不要删除整个批次状态，否则目标范围和 spec 冻结校验会重新建立。
+
+只有最终审查通过才输出 `Batch ... complete` 并以 0 退出。无进展、审查拒绝、必要验证缺失、存在 blocked issue、迭代或修复达到上限都会以非 0 退出并保留报告供处理；批次状态中的 `lastOutcome` 记录 `no_progress`、`blocked`、`iteration_limit`、`repair_limit` 或 `failed`。现有 Python 命令仅检查语法，Java 有三个依赖 Docker 的集成测试被排除；涉及这些行为时，最终审查应标记未验证，补齐实际运行证据后再完成批次。
 
 已知可用模型（CCR 路由表当前命中）：
 
@@ -518,6 +531,8 @@ bash .sandcastle/bin/scratch-issues.sh close game-management/issues/01-admin-gam
 ├── .gitignore                # .env / logs/ / worktrees/ / node_modules/ / claude-skills/
 ├── Dockerfile                # 镜像定义
 ├── main.mts                  # sequential-reviewer 入口
+├── main.test.mts             # runner 集成回归测试
+├── test-support/sandcastle.mjs # 测试替身：agent、容器与完成信号
 ├── review-contract.mts       # 审查报告校验与合并门禁
 ├── implement-prompt.md       # implementer prompt
 ├── review-prompt.md          # 单 issue / 修复后的只读审查

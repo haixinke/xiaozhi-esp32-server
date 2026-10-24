@@ -45,9 +45,9 @@ export async function createSandbox(options) {
   return {
     branch: options.branch,
     worktreePath,
-    async run({ name, promptArgs }) {
+    async run({ name, promptArgs, completionSignal }) {
       lastAgent = name;
-      record({ type: 'agent', name, startSha, promptArgs });
+      record({ type: 'agent', name, startSha, promptArgs, completionSignal });
       if (name === 'final-reviewer') {
         finalReviews += 1;
         const rejected = process.env.TEST_FINAL_ALWAYS_REJECT === '1' ||
@@ -71,6 +71,17 @@ export async function createSandbox(options) {
           verification: verification(promptArgs),
         };
         return { commits: [], stdout: reportOutput(report) };
+      }
+      if (name === 'implementer' && process.env.TEST_BLOCKED_WITH_COMMIT === '1') {
+        currentIssueId = promptArgs?.ISSUE_ID ?? nextOpenIssue(worktreePath);
+        change('main/manager-api/Example.java', `implementation ${currentIssueId}\n`);
+        change(`.scratch/${currentIssueId}.md`, readFileSync(issuePath(worktreePath, currentIssueId), 'utf8').replace('**Status:** open', '**Status:** resolved'));
+        git(worktreePath, 'add', '.');
+        git(worktreePath, 'commit', '-m', name);
+        return { commits: [{ sha: git(worktreePath, 'rev-parse', 'HEAD') }], stdout: '', completionSignal: '<promise>BLOCKED</promise>' };
+      }
+      if (name === 'implementer' && process.env.TEST_BLOCKED_CLEAN === '1' && (promptArgs?.ISSUE_ID ?? '').includes('01-example')) {
+        return { commits: [], stdout: 'blocked: external dependency unavailable', completionSignal: '<promise>BLOCKED</promise>' };
       }
       if (name === 'implementer' && process.env.TEST_NO_COMMITS === '1') {
         if (process.env.TEST_DIRTY === '1') change('uncommitted.txt', 'unfinished\n');
@@ -106,6 +117,11 @@ export async function createSandbox(options) {
         git(worktreePath, 'add', '.');
         git(worktreePath, 'commit', '-m', name);
       }
+      const withCompletion = (value) => ({
+        ...value,
+        completionSignal: (name === 'reviewer' || name === 'fix-reviewer' || name === 'fixer')
+          ? '<promise>COMPLETE</promise>' : undefined,
+      });
       if (name === 'reviewer' && process.env.TEST_DIRTY === '1') change('uncommitted.txt', 'uncommitted\n');
       if (name === 'reviewer' && process.env.TEST_HOST_MOVED === '1') {
         git(root, 'commit', '--allow-empty', '-m', 'concurrent host change');
@@ -129,7 +145,7 @@ export async function createSandbox(options) {
           });
         }
       }
-      return { commits: name === 'implementer' || name === 'fixer' ? [{ sha: git(worktreePath, 'rev-parse', 'HEAD') }] : [], stdout };
+      return withCompletion({ commits: name === 'implementer' || name === 'fixer' ? [{ sha: git(worktreePath, 'rev-parse', 'HEAD') }] : [], stdout });
     },
     async exec(command) {
       record({ type: 'exec', command });

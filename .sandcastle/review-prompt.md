@@ -19,6 +19,8 @@ Read each issue, its acceptance criteria, and the relevant feature spec. Inspect
 
 Report only concrete findings with a location, trigger, and impact. Mark a defect or missing required validation as `blocking`; use `advisory` for non-blocking suggestions. Do not mark unrun tests as passed. The host verification results above are the runner's executed checks; include their exact commands in `verification`. Host log paths are references only and may be inaccessible inside this sandbox. If no host checks apply, state what behavior was independently checked or mark it unverified. Never claim the change passes merely because the diff looks plausible.
 
+Emit `<promise>COMPLETE</promise>` once the report is finalized.
+
 Emit exactly one `<review_report>` tag containing a JSON object with this shape:
 
 ```json

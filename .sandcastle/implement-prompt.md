@@ -57,8 +57,10 @@ The following skills are installed in your environment — invoke them when the 
 - Work on **one issue per iteration**. Do not attempt multiple issues in a single iteration.
 - Do not close an issue until you have committed the fix and verified checks pass.
 - Do not leave commented-out code or TODO comments in committed code.
-- If you are blocked (missing context, failing tests you cannot fix, external dependency), leave a comment on the issue and move on — do not close it.
+- If you are blocked (missing context, failing tests you cannot fix, external dependency), do NOT commit and do NOT close the issue — report the blocker in your final message and output `<promise>BLOCKED</promise>`. The runner inspects the worktree and issue state directly.
 
 # Done
 
-After committing and closing the assigned issue, output `<promise>IMPLEMENTED</promise>`. If blocked, leave the issue open, report the blocker and output `<promise>BLOCKED</promise>`. A blocked issue must not be described as complete.
+After committing and closing the assigned issue, output `<promise>IMPLEMENTED</promise>`.
+
+If blocked, output `<promise>BLOCKED</promise>` instead. When blocked you MUST NOT commit anything and MUST NOT close the issue — leave the worktree clean, and put the blocker explanation in your final message (the host captures it in the run log). The runner treats any commit on a blocked issue, or a closed-but-unverified issue, as a batch failure. A blocked issue must not be described as complete.

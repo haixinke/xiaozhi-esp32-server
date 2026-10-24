@@ -185,6 +185,23 @@ for (const flag of ['TEST_DIRTY', 'TEST_HOST_MOVED', 'TEST_CLOSE_FAIL', 'TEST_PR
   });
 }
 
+test('completion signals are configured for implementer and review phases', () => {
+  const result = runFixture();
+  assert.equal(result.status, 0, result.output);
+  const implementer = result.events.find((event) => event.name === 'implementer');
+  const reviewer = result.events.find((event) => event.name === 'reviewer');
+  const finalReviewer = result.events.find((event) => event.name === 'final-reviewer');
+  assert.deepEqual(implementer.completionSignal, ['<promise>IMPLEMENTED</promise>', '<promise>BLOCKED</promise>']);
+  assert.deepEqual(reviewer.completionSignal, ['<promise>COMPLETE</promise>']);
+  assert.deepEqual(finalReviewer.completionSignal, ['<promise>COMPLETE</promise>']);
+});
+
+test('review and fix prompts require the COMPLETE completion signal', () => {
+  for (const file of ['review-prompt.md', 'final-review-prompt.md', 'fix-review-prompt.md']) {
+    assert.ok(readFileSync(join(source, file), 'utf8').includes('<promise>COMPLETE</promise>'), file);
+  }
+});
+
 test('an implementation without commits stops without reviewing or merging', () => {
   const result = runFixture({ TEST_NO_COMMITS: '1' });
   assert.notEqual(result.status, 0, result.output);
@@ -213,6 +230,24 @@ test('runner selects a ready issue before a lower-numbered blocked issue', () =>
   assert.equal(result.status, 0, result.output);
   const selected = result.events.filter((event) => event.name === 'implementer').map((event) => event.promptArgs.ISSUE_ID);
   assert.deepEqual(selected, ['test-batch/issues/02-follow-up', 'test-batch/issues/01-example']);
+});
+
+test('BLOCKED with a commit cannot merge', () => {
+  const result = runFixture({ TEST_BLOCKED_WITH_COMMIT: '1' });
+  assert.notEqual(result.status, 0, result.output);
+  assert.equal(result.merges, '');
+  assert.equal(result.batchState.lastOutcome, 'blocked');
+});
+
+test('a clean BLOCKED issue is recorded and the runner continues with other issues', () => {
+  const result = runFixture({ TEST_TWO_ISSUES: '1', TEST_BLOCKED_CLEAN: '1' });
+  assert.notEqual(result.status, 0, result.output);
+  assert.equal(result.batchState.lastOutcome, 'blocked');
+  assert.deepEqual(result.batchState.blockedIssueIds, ['test-batch/issues/01-example']);
+  const implementerIds = result.events.filter((event) => event.name === 'implementer').map((event) => event.promptArgs.ISSUE_ID);
+  assert.deepEqual(implementerIds, ['test-batch/issues/01-example', 'test-batch/issues/02-follow-up']);
+  assert.equal(implementerIds.filter((id) => id === 'test-batch/issues/01-example').length, 1);
+  assert.ok(result.log.includes('implementer'));
 });
 
 test('an implementer cannot close another target issue without its own review', () => {

@@ -31,6 +31,12 @@ import { assertReviewPass, parseReviewReport, type ReviewReport } from "./review
 const execFileAsync = promisify(execFile);
 
 // 每个 outer loop 处理一个 issue；无 commit 视为 no_progress 并阻止批次完成。
+// RALPH 完成信号。implementer 可成功(IMPLEMENTED)或受阻(BLOCKED)；
+// reviewer/fixer 只读或修复，只认 COMPLETE。
+const IMPLEMENT_SIGNALS = ["<promise>IMPLEMENTED</promise>", "<promise>BLOCKED</promise>"];
+const REVIEW_SIGNALS = ["<promise>COMPLETE</promise>"];
+const BLOCKED_SIGNAL = "<promise>BLOCKED</promise>";
+
 const MAX_ITERATIONS = 15;
 const MAX_FIX_ROUNDS = 2;
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -54,6 +60,8 @@ type Batch = {
   specRequirements: string[];
   status: "running" | "complete";
   lastOutcome?: "no_progress" | "blocked" | "iteration_limit" | "repair_limit" | "failed";
+  // 本批次中 agent 明确标记 BLOCKED 的 issue，重启后跳过，避免重复烧 token。
+  blockedIssueIds?: string[];
 };
 
 function digest(value: string) {
@@ -309,6 +317,7 @@ async function review(
   const result = await sandbox.run({
     name: options.name,
     maxIterations: 1,
+    completionSignal: REVIEW_SIGNALS,
     agent: sandcastle.claudeCode(AGENT_MODEL),
     promptFile: join(repoRoot, ".sandcastle", options.promptFile),
     promptArgs: {
@@ -357,25 +366,51 @@ async function mergeVerified(baseSha: string, branch: string, verifiedSha: strin
 
 async function runBatch(batch: Batch) {
   const hostBranch = batch.branch;
+  const blockedIssueIds = new Set(batch.blockedIssueIds ?? []);
+  let hitIterationLimit = true;
   for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     const pending = await pendingIssues(repoRoot, batch.issueIds);
-    if (!pending.length) break;
-    const issue = await readyIssue(pending);
-    if (!issue) throw new Error(`All remaining issues are blocked in batch ${batch.id}`);
+    const actionable = pending.filter(({ id }) => !blockedIssueIds.has(id));
+    if (!actionable.length) {
+      hitIterationLimit = false;
+      break;
+    }
+    const issue = await readyIssue(actionable);
+    if (!issue) {
+      hitIterationLimit = false;
+      break;
+    }
     console.log(`\n=== Issue ${iteration}/${MAX_ITERATIONS}: ${issue.id} ===\n`);
     const branch = branchName("sequential-reviewer");
     const baseSha = await git(repoRoot, ["rev-parse", "HEAD"]);
     const sandbox = await createSandbox(branch);
     let verifiedSha: string;
+    let cleanBlocked = false;
     try {
       await preflight(sandbox);
       const implement = await sandbox.run({
         name: "implementer",
         maxIterations: 1,
+        completionSignal: IMPLEMENT_SIGNALS,
         agent: sandcastle.claudeCode(AGENT_MODEL),
         promptFile: join(repoRoot, ".sandcastle", "implement-prompt.md"),
         promptArgs: { ISSUE_ID: issue.id, SPEC_PATH: batch.specPaths.find((path) => path.includes(`/${issue.id.split("/")[0]}/`)) ?? "" },
       });
+      if (implement.completionSignal === BLOCKED_SIGNAL) {
+        await requireClean(sandbox.worktreePath);
+        if (implement.commits.length) {
+          throw new Error(`Implementer reported BLOCKED with commits on ${issue.id}; merge blocked`);
+        }
+        if ((await issueStatus(sandbox.worktreePath, issue.id)).status === "resolved") {
+          throw new Error(`Implementer reported BLOCKED but closed ${issue.id}; batch remains incomplete`);
+        }
+        blockedIssueIds.add(issue.id);
+        batch.blockedIssueIds = [...blockedIssueIds];
+        await saveBatch({ ...batch, blockedIssueIds: batch.blockedIssueIds, lastOutcome: "blocked" });
+        console.log(`Issue ${issue.id} blocked; continuing with other issues.`);
+        cleanBlocked = true;
+        continue;
+      }
       if (!implement.commits.length) {
         await requireClean(sandbox.worktreePath);
         throw new Error(`No progress on ${issue.id}; batch remains incomplete`);
@@ -403,10 +438,19 @@ async function runBatch(batch: Batch) {
     } finally {
       await sandbox.close();
     }
+    if (cleanBlocked) continue;
     await mergeVerified(baseSha, branch, verifiedSha, hostBranch);
   }
-  if ((await pendingIssues(repoRoot, batch.issueIds)).length) {
+  if (hitIterationLimit && (await pendingIssues(repoRoot, batch.issueIds)).length) {
     throw new Error(`Iteration limit reached with unresolved issues in batch ${batch.id}`);
+  }
+  const unresolved = (await pendingIssues(repoRoot, batch.issueIds))
+    .filter(({ id }) => !blockedIssueIds.has(id));
+  if (unresolved.length) {
+    throw new Error(`All remaining issues are blocked in batch ${batch.id}: ${unresolved.map(({ id }) => id).join(", ")}`);
+  }
+  if (blockedIssueIds.size) {
+    throw new Error(`Batch ${batch.id} incomplete: blocked issues: ${[...blockedIssueIds].join(", ")}`);
   }
 
   for (let round = 0; round <= MAX_FIX_ROUNDS; round++) {
@@ -455,7 +499,7 @@ async function runBatch(batch: Batch) {
     try {
       await preflight(fixSandbox);
       const fix = await fixSandbox.run({
-        name: "fixer", maxIterations: 1, agent: sandcastle.claudeCode(AGENT_MODEL),
+        name: "fixer", maxIterations: 1, completionSignal: REVIEW_SIGNALS, agent: sandcastle.claudeCode(AGENT_MODEL),
         promptFile: join(repoRoot, ".sandcastle", "fix-review-prompt.md"),
         promptArgs: { REVIEWED_SHA: head, FINDINGS: JSON.stringify(report.findings), ISSUE_IDS: batch.issueIds.join(",") },
       });
@@ -485,6 +529,8 @@ if (batch) {
     const message = error instanceof Error ? error.message : String(error);
     const lastOutcome = message.startsWith("No progress") ? "no_progress"
       : message.startsWith("All remaining issues are blocked") ? "blocked"
+      : message.startsWith("Implementer reported BLOCKED") ? "blocked"
+      : message.startsWith("Batch ") && message.includes("incomplete: blocked issues") ? "blocked"
       : message.startsWith("Iteration limit") ? "iteration_limit"
       : message.startsWith("Final repair limit") ? "repair_limit" : "failed";
     await saveBatch({ ...batch, lastOutcome });

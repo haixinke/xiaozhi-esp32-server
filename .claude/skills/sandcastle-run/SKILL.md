@@ -7,7 +7,7 @@ description: Use when the user asks to run Sandcastle, 跑 RALPH, process scratc
 
 Starts the Sandcastle sequential-reviewer pipeline defined in `.sandcastle/main.mts`:
 
-1. Implementer agent picks one open issue from `.scratch/` and commits a fix on a worktree branch.
+1. The runner picks the first unblocked issue from `.scratch/` (via `Blocked by:` dependency resolution), then the implementer agent works that single issue and commits a fix on a worktree branch.
 2. Reviewer agent reviews the diff on the same branch.
 3. Host merges the branch back only after verification and a passing issue review.
 4. The loop repeats up to `MAX_ITERATIONS` (currently 15). Once all target issues are resolved, the runner verifies and reviews their cumulative changes on host HEAD. Blocking findings can trigger up to two verified repair rounds. Only `Batch ... complete` means the batch passed.

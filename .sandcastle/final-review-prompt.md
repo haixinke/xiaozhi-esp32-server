@@ -14,6 +14,8 @@ Read every feature spec and issue file. Build a requirement-to-implementation ma
 
 Check whether all promised functionality is present, tested and integrated. Pay particular attention to state transitions, access control, data contracts, failure paths, compatibility and duplicated or contradictory implementations. Include the exact executed host commands above in `verification`; host log paths are references and may be inaccessible from this sandbox. If required integration or runtime tests were skipped, mark the affected requirement unverified and explain what is needed.
 
+Emit `<promise>COMPLETE</promise>` once the report is finalized.
+
 Emit exactly one `<review_report>` tag with the same JSON shape as `.sandcastle/review-prompt.md`:
 
 ```json

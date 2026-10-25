@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import org.junit.jupiter.api.Test;
 
 /**
- * DateUtils 纯单元测试（millsToSecond、format 单参数重载）
+ * DateUtils 纯单元测试（millsToSecond、format 单参数重载、parse、getShortTime）
  * 不依赖 Spring 上下文、数据库或 Redis
  */
 public class DateUtilsTest {
@@ -51,5 +53,48 @@ public class DateUtilsTest {
     @Test
     public void parse_invalidDate_returnsNull() {
         assertNull(DateUtils.parse("not-a-date", DateUtils.DATE_PATTERN));
+    }
+
+    @Test
+    public void getShortTime_withNullDate_returnsNull() {
+        assertNull(DateUtils.getShortTime(null));
+    }
+
+    @Test
+    public void getShortTime_nowWithin10Seconds_returnsJustNow() {
+        // 传入当前时间，差值 ≤ 10 秒，返回“刚刚”
+        assertEquals("刚刚", DateUtils.getShortTime(new Date()));
+    }
+
+    @Test
+    public void getShortTime_30SecondsAgo_returnsSecondsAgo() {
+        // 容忍 1 秒时钟漂移：30 秒前允许 29 或 30
+        Date thatDate = Date.from(Instant.now().minus(30, ChronoUnit.SECONDS));
+        assertTrue(DateUtils.getShortTime(thatDate).matches("^(29|30)秒前$"));
+    }
+
+    @Test
+    public void getShortTime_5MinutesAgo_returnsMinutesAgo() {
+        Date thatDate = Date.from(Instant.now().minus(5 * 60, ChronoUnit.SECONDS));
+        assertTrue(DateUtils.getShortTime(thatDate).matches("^[45]分钟前$"));
+    }
+
+    @Test
+    public void getShortTime_2HoursAgo_returnsHoursAgo() {
+        Date thatDate = Date.from(Instant.now().minus(2 * 3600, ChronoUnit.SECONDS));
+        assertTrue(DateUtils.getShortTime(thatDate).matches("^[12]小时前$"));
+    }
+
+    @Test
+    public void getShortTime_3DaysAgo_returnsDaysAgo() {
+        Date thatDate = Date.from(Instant.now().minus(3L * 86400, ChronoUnit.SECONDS));
+        assertTrue(DateUtils.getShortTime(thatDate).matches("^[23]天前$"));
+    }
+
+    @Test
+    public void getShortTime_10DaysAgo_returnsFormattedDateTime() {
+        // 超过一周走 format 分支，结果与 DATE_TIME_PATTERN 格式化一致
+        Date thatDate = Date.from(Instant.now().minus(10L * 86400, ChronoUnit.SECONDS));
+        assertEquals(DateUtils.format(thatDate, DateUtils.DATE_TIME_PATTERN), DateUtils.getShortTime(thatDate));
     }
 }

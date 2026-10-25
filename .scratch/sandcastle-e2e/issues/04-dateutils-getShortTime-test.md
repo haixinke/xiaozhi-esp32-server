@@ -16,12 +16,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready
+**Status:** resolved
 
-- [ ] 新增 null 入参返回 null 测试
-- [ ] 新增 10 秒内返回"刚刚"测试
-- [ ] 新增秒/分钟/小时/天四个量级测试
-- [ ] 新增超过一周走 format 分支测试
-- [ ] manager-api 全量 `clean verify` 通过
+- [x] 新增 null 入参返回 null 测试
+- [x] 新增 10 秒内返回"刚刚"测试
+- [x] 新增秒/分钟/小时/天四个量级测试
+- [x] 新增超过一周走 format 分支测试
+- [x] manager-api 全量 `clean verify` 通过
 
 ## Comments
+
+在 `DateUtilsTest` 中追加了 `getShortTime` 的 7 个纯单元测试，覆盖 null 入参、"刚刚"（≤10 秒）、30 秒/5 分钟/2 小时/3 天四个量级（正则断言容忍 ±1 秒/±1 分钟时钟漂移），以及 10 天前走 `format` 分支。历史时间统一用 `Date.from(Instant.now().minus(seconds, ChronoUnit.SECONDS))` 构造，未硬编码固定日期，不依赖 Spring/数据库/Redis/网络/时区。全量 `clean verify` 通过：972 个测试，0 失败，覆盖率检查通过。

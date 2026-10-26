@@ -78,7 +78,7 @@ public class AgentChatHistoryBizServiceImpl implements AgentChatHistoryBizServic
         // 更新设备最后连接时间
         DeviceEntity device = deviceService.getDeviceByMacAddress(macAddress);
         if (device != null) {
-            deviceService.updateDeviceConnectionInfo(agentId, device.getId(), null);
+            deviceService.updateDeviceConnectionInfo(agentId, device.getId(), null, device.getUserId());
         } else {
             log.warn("聊天记录上报时，未找到mac地址为 {} 的设备", macAddress);
         }

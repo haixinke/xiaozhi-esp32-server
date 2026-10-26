@@ -18,6 +18,10 @@ services:
       # 默认挂载到项目外的 ~/dockervol/oceanbase/seekdb-data，避免数据被误拷入镜像或被 IDE/git 扫描
       # 可通过环境变量 OCEANBASE_DATA_DIR 覆盖，例：OCEANBASE_DATA_DIR=/data/seekdb docker compose up -d
       - ${OCEANBASE_DATA_DIR:-~/dockervol/oceanbase/seekdb-data}:/var/lib/oceanbase
+    # run/ 仅用于运行时 socket/PID，无需持久化
+    # Docker Desktop for Mac 的 bind mount 不支持 unix socket 绑定，必须用 tmpfs 隔离，否则 obshell daemon 启动失败
+    tmpfs:
+      - /var/lib/oceanbase/run
     healthcheck:
       # seekdb slim 镜像不含 obclient，改用 mysql 客户端做连通性探测
       test: ["CMD", "mysql", "-h127.0.0.1", "-P2881", "-uroot", "-p123456", "-e", "SELECT 1"]

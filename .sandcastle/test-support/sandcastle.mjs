@@ -47,7 +47,7 @@ export async function createSandbox(options) {
     worktreePath,
     async run({ name, promptArgs, completionSignal }) {
       lastAgent = name;
-      record({ type: 'agent', name, startSha, promptArgs, completionSignal });
+      record({ type: 'agent', name, startSha: git(worktreePath, 'rev-parse', 'HEAD'), promptArgs, completionSignal });
       if (name === 'final-reviewer') {
         finalReviews += 1;
         const rejected = process.env.TEST_FINAL_ALWAYS_REJECT === '1' ||
@@ -111,7 +111,20 @@ export async function createSandbox(options) {
         }
       } else {
         if (process.env.TEST_REBASE === '1') git(worktreePath, 'reset', '--hard', 'HEAD~2');
-        if (process.env.TEST_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'reviewer unexpectedly modified Java\n');
+        if (name === 'reviewer' && process.env.TEST_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'reviewer unexpectedly modified Java\n');
+        if (name === 'fix-reviewer' && process.env.TEST_FIX_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'final reviewer must remain read-only\n');
+        if (name === 'reviewer' && ['TEST_ISSUE_REVIEW_FIX', 'TEST_REVIEW_UNDECLARED_FIX', 'TEST_REVIEW_TWO_COMMITS', 'TEST_REVIEW_WRONG_FIX_SHA']
+          .some((flag) => process.env[flag] === '1')) {
+          const repairPath = process.env.TEST_NON_JAVA === '1' ? 'README.md' : 'main/manager-api/Example.java';
+          const regressionPath = process.env.TEST_NON_JAVA === '1' ? 'REGRESSION.md' : 'main/manager-api/ExampleTest.java';
+          change(repairPath, `implementation with issue review fix ${currentIssueId}\n`);
+          change(regressionPath, `regression coverage for ${currentIssueId}\n`);
+          git(worktreePath, 'add', repairPath, regressionPath);
+          git(worktreePath, 'commit', '-m', `fix: resolve review findings for ${currentIssueId}`);
+          if (process.env.TEST_REVIEW_TWO_COMMITS === '1') git(worktreePath, 'commit', '--allow-empty', '-m', 'unexpected second review commit');
+          // 模拟 reviewer 在修复提交后实际执行补丁自检，而非复用实现阶段 host 结果。
+          git(worktreePath, 'diff', '--check', promptArgs.BASE_SHA, 'HEAD');
+        }
       }
       if (name === 'implementer' || name === 'fixer') {
         git(worktreePath, 'add', '.');
@@ -130,18 +143,40 @@ export async function createSandbox(options) {
       if (name === 'reviewer' || name === 'fix-reviewer') {
         if (process.env.TEST_REVIEW_MISSING_REPORT !== '1') {
           const rejected = process.env.TEST_REVIEW_REJECT === '1';
+          const implementedSha = name === 'reviewer' ? promptArgs?.IMPLEMENTED_SHA ?? promptArgs?.REVIEWED_SHA ?? startSha : startSha;
+          const reviewedSha = git(worktreePath, 'rev-parse', 'HEAD');
+          const hasRepairCommit = name === 'reviewer' && reviewedSha !== implementedSha;
+          const declaresFix = name === 'reviewer' && (process.env.TEST_ISSUE_REVIEW_FIX === '1' ||
+            process.env.TEST_REVIEW_TWO_COMMITS === '1' || process.env.TEST_REVIEW_WRONG_FIX_SHA === '1' ||
+            process.env.TEST_REVIEW_MISSING_FIX === '1');
+          const fixes = declaresFix ? [{
+            location: 'main/manager-api/Example.java:1',
+            problem: 'confirmed blocking fixture defect',
+            resolution: 'minimal implementation correction with regression coverage',
+            commit: process.env.TEST_REVIEW_WRONG_FIX_SHA === '1' ? implementedSha : reviewedSha,
+            evidence: 'reviewer regression test and post-fix git diff check passed',
+          }] : [];
+          const advisory = name === 'reviewer' && process.env.TEST_ISSUE_REVIEW_ADVISORY === '1';
           stdout = reportOutput({
             baseSha: startSha,
-            reviewedSha: git(worktreePath, 'rev-parse', 'HEAD'),
+            reviewedSha,
             issueIds: name === 'fix-reviewer' ? issueIds() : [currentIssueId],
             verdict: rejected ? 'changes_required' : 'pass',
             requirements: (name === 'fix-reviewer' ? issueIds() : [currentIssueId]).map((id) => ({
               id, status: 'met', evidence: 'issue implementation and verification log',
             })),
-            findings: rejected ? [{ severity: 'blocking', location: 'main/manager-api/Example.java', trigger: 'issue review', impact: 'behavior incomplete' }] : [],
-            verification: process.env.TEST_REPORT_BOGUS_CHECK === '1'
+            fixes,
+            findings: rejected ? [{ severity: 'blocking', location: 'main/manager-api/Example.java', trigger: 'issue review', impact: 'behavior incomplete' }]
+              : advisory ? [{ severity: 'advisory', location: 'main/manager-api/Example.java:1', trigger: 'optional readability improvement', impact: 'no behavior impact' }] : [],
+              verification: process.env.TEST_REPORT_BOGUS_CHECK === '1'
               ? [{ command: 'nonexistent check', status: 'passed', evidence: 'invented' }]
-              : verification(promptArgs),
+              : hasRepairCommit
+                ? [{
+                    command: `git diff --check ${promptArgs.BASE_SHA} HEAD`,
+                    status: 'passed',
+                    evidence: 'reviewer ran the post-fix patch check',
+                  }]
+                : verification(promptArgs),
           });
         }
       }
@@ -153,6 +188,7 @@ export async function createSandbox(options) {
         return { exitCode: 1, stdout: '', stderr: 'review verification failed' };
       }
       if (command.includes('verify') && process.env.TEST_EXEC_ERROR === '1') throw new Error('container execution failed');
+      if (command.includes('verify') && process.env.TEST_REVIEW_EXEC_ERROR === '1' && lastAgent === 'reviewer') throw new Error('review container execution failed');
       if (process.env.TEST_PREFLIGHT_FAIL === '1' && command.includes('java -version')) {
         return { exitCode: 127, stdout: '', stderr: 'java unavailable' };
       }

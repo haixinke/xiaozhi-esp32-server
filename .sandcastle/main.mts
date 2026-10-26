@@ -2,8 +2,9 @@
 //
 // Phase 1 (Implement): agent works on the assigned issue on a dedicated branch,
 //                      commits, and closes that issue.
-// Phase 2 (Review):    a read-only agent reviews the committed branch and emits
-//                      a structured report bound to its SHA.
+// Phase 2 (Review):    a single-issue agent reviews the committed branch, may
+//                      commit one verified blocking fix, and emits a structured
+//                      report bound to its final SHA; final review stays read-only.
 // Phase 3 (Merge):     host 仅合并验证和审查都通过的 commit。
 //                      下一个 iteration 的 worktree 从新 HEAD 切出，
 //                      能看到前一个 issue 已 close，避免重复处理。
@@ -26,7 +27,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { assertReviewPass, parseReviewReport, type ReviewReport } from "./review-contract.mts";
+import { assertIssueReviewFixes, assertReviewPass, parseReviewReport, type ReviewReport } from "./review-contract.mts";
 
 const execFileAsync = promisify(execFile);
 
@@ -169,17 +170,48 @@ async function saveBatch(batch: Batch) {
   await writeFile(path, JSON.stringify(batch, null, 2), { mode: 0o600 });
 }
 
-async function saveReport(batch: Batch, name: string, report: ReviewReport) {
+// 通用审查产物沿用同一份脱敏规则；自检报告与 host 复验记录分开保存。
+async function saveArtifact(batch: Batch, name: string, artifact: unknown) {
   const path = join(logDir, batch.id, `${name}.json`);
   await mkdir(dirname(path), { recursive: true });
   const sensitive = /password|passwd|secret|token|authorization|api[_-]?key|jdbc:|Bearer\s|:\/\/[^\s/]+:[^\s/]+@|eyJ[A-Za-z0-9_-]+\./i;
-  const clean = JSON.stringify(report, (_key, value) =>
+  const clean = JSON.stringify(artifact, (_key, value) =>
     typeof value === "string" && sensitive.test(value) ? "[redacted sensitive output]" : value, 2);
   await writeFile(path, clean, { mode: 0o600 });
 }
 
+async function saveReport(batch: Batch, name: string, report: ReviewReport) {
+  await saveArtifact(batch, name, report);
+}
+
+type VerificationCheck = { command: string; label: string; logPath: string; status: "passed" };
+type HostVerification = { phase: "issue-review"; baseSha: string; reviewedSha: string;
+  issueIds: string[]; checks: VerificationCheck[] };
+
+async function saveHostVerification(batch: Batch, reportName: string, record: HostVerification) {
+  await saveArtifact(batch, `${reportName}-host-verification`, record);
+}
+
+// 仅用于可预期的单 issue 审查、提交形态和 host 复验门禁失败；基础设施异常不转换。
+class ReviewGateError extends Error {
+  constructor(issueId: string, reason: string, cause?: unknown) {
+    super(`Issue review gate failed (${issueId}): ${reason}`, { cause });
+    this.name = "ReviewGateError";
+  }
+}
+
+async function reviewGate<T>(issueId: string, reason: string, check: () => Promise<T> | T): Promise<T> {
+  try {
+    return await check();
+  } catch (error) {
+    if (error instanceof ReviewGateError) throw error;
+    if (error instanceof Error) throw new ReviewGateError(issueId, reason, error);
+    throw error;
+  }
+}
+
 // 多子项目校验矩阵：按 changed paths 分发到对应子项目的检查命令。
-// 顺序即执行顺序，与 implement-prompt.md / review-prompt.md 中的描述保持一致。
+// 顺序即执行顺序，与 implement-prompt.md / issue-review-prompt.md 中的描述保持一致。
 // 注意：sandbox.exec() 非零 exitCode 是返回不抛出，每个 check 必须显式判断。
 const CHECKS: Array<{ prefix: string; label: string; cmd: string }> = [
   {
@@ -305,6 +337,68 @@ async function preflight(sandbox: sandcastle.Sandbox) {
   }
 }
 
+async function assertOtherIssuesUnchanged(batch: Batch, cwd: string, issueId: string, phase: string) {
+  for (const otherId of batch.issueIds.filter((id) => id !== issueId)) {
+    const relative = join(".scratch", `${otherId}.md`);
+    if (await readFile(join(repoRoot, relative), "utf8") !== await readFile(join(cwd, relative), "utf8")) {
+      throw new Error(`${phase} changed another target issue without review: ${otherId}`);
+    }
+  }
+}
+
+async function reviewIssue(
+  sandbox: sandcastle.Sandbox,
+  batch: Batch,
+  options: { baseSha: string; implementedSha: string; issueId: string; reportName: string; checks: VerificationCheck[] },
+) {
+  await requireClean(sandbox.worktreePath);
+  const result = await sandbox.run({
+    name: "reviewer",
+    maxIterations: 1,
+    completionSignal: REVIEW_SIGNALS,
+    agent: sandcastle.claudeCode(AGENT_MODEL),
+    promptFile: join(repoRoot, ".sandcastle", "issue-review-prompt.md"),
+    promptArgs: {
+      BASE_SHA: options.baseSha,
+      IMPLEMENTED_SHA: options.implementedSha,
+      ISSUE_ID: options.issueId,
+      ISSUE_PATH: `.scratch/${options.issueId}.md`,
+      SPEC_PATHS: batch.specPaths.join(" "),
+      VERIFICATION_RESULTS: JSON.stringify(options.checks),
+    },
+  });
+  const reviewedSha = await git(sandbox.worktreePath, ["rev-parse", "HEAD"]);
+  let report: ReviewReport;
+  try {
+    report = parseReviewReport(result.stdout);
+  } catch (error) {
+    throw new ReviewGateError(options.issueId, "invalid or missing self-review report", error);
+  }
+  // 无论 reviewer verdict 如何，先落盘可解析报告，便于人工检查部分修复。
+  await saveReport(batch, options.reportName, report);
+  const worktree = await git(sandbox.worktreePath, ["status", "--porcelain", "--untracked-files=all"]);
+  if (worktree) throw new ReviewGateError(options.issueId, "reviewer left an unclean worktree");
+  try {
+    await git(sandbox.worktreePath, ["merge-base", "--is-ancestor", options.implementedSha, reviewedSha]);
+    await git(sandbox.worktreePath, ["merge-base", "--is-ancestor", options.baseSha, reviewedSha]);
+  } catch (error) {
+    throw new ReviewGateError(options.issueId, "repair history must descend from implementation and baseline", error);
+  }
+  const repairList = await git(sandbox.worktreePath, ["rev-list", "--reverse", `${options.implementedSha}..${reviewedSha}`]);
+  const repairCommits = repairList ? repairList.split("\n") : [];
+  // 先验证真实提交和范围，再判断 pass，避免失败报告掩盖越权或伪造 SHA。
+  await reviewGate(options.issueId, "declared fixes do not match repair commits", () =>
+    assertIssueReviewFixes(report, { implementedSha: options.implementedSha, reviewedSha, repairCommits }));
+  await assertOtherIssuesUnchanged(batch, sandbox.worktreePath, options.issueId, "Issue review");
+  const currentIssue = await issueStatus(sandbox.worktreePath, options.issueId);
+  if (currentIssue.status !== "resolved") throw new ReviewGateError(options.issueId, "current issue is not resolved");
+  await assertSpecsUnchanged(batch, sandbox.worktreePath);
+  // 自检只证明 reviewer 已执行的检查；修复后 host 结果由 runner 独立产生。
+  await reviewGate(options.issueId, "self-review did not pass", () =>
+    assertReviewPass(report, { baseSha: options.baseSha, reviewedSha, issueIds: [options.issueId] }));
+  return { report, reviewedSha };
+}
+
 async function review(
   sandbox: sandcastle.Sandbox,
   batch: Batch,
@@ -418,23 +512,32 @@ async function runBatch(batch: Batch) {
       if ((await issueStatus(sandbox.worktreePath, issue.id)).status !== "resolved") {
         throw new Error(`Implementation did not resolve ${issue.id}`);
       }
-      for (const otherId of batch.issueIds.filter((id) => id !== issue.id)) {
-        const relative = join(".scratch", `${otherId}.md`);
-        if (await readFile(join(repoRoot, relative), "utf8") !==
-            await readFile(join(sandbox.worktreePath, relative), "utf8")) {
-          throw new Error(`Implementation changed another target issue without review: ${otherId}`);
-        }
-      }
+      await assertOtherIssuesUnchanged(batch, sandbox.worktreePath, issue.id, "Implementation");
       await assertSpecsUnchanged(batch, sandbox.worktreePath);
       const implemented = await verify(sandbox, baseSha, "implement");
       verifiedSha = implemented.sha;
-      const reviewed = await review(sandbox, batch, {
-        name: "reviewer", promptFile: "review-prompt.md", baseSha,
-        issueIds: [issue.id], reportName: `issue-${iteration}`, checks: implemented.checks,
+      const reviewed = await reviewIssue(sandbox, batch, {
+        baseSha, implementedSha: implemented.sha, issueId: issue.id,
+        reportName: `issue-${iteration}`, checks: implemented.checks,
       });
-      assertReviewPass(reviewed.report, { baseSha, reviewedSha: verifiedSha, issueIds: [issue.id],
-        checkedCommands: implemented.checks.map((check) => check.command) });
-      verifiedSha = (await verify(sandbox, baseSha, "review")).sha;
+      let hostVerification: Awaited<ReturnType<typeof verify>>;
+      try {
+        // 第二段通过判定：只有 reviewer 最终 SHA 的独立 host 复验成功才可合并。
+        hostVerification = await verify(sandbox, baseSha, "review");
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith("Sandbox HEAD changed during verification;")) {
+          throw new ReviewGateError(issue.id, "post-review host verification failed", error);
+        }
+        throw error;
+      }
+      if (hostVerification.sha !== reviewed.reviewedSha) {
+        throw new ReviewGateError(issue.id, "host verification SHA changed");
+      }
+      verifiedSha = hostVerification.sha;
+      await saveHostVerification(batch, `issue-${iteration}`, {
+        phase: "issue-review", baseSha, reviewedSha: reviewed.reviewedSha,
+        issueIds: [issue.id], checks: hostVerification.checks,
+      });
     } finally {
       await sandbox.close();
     }

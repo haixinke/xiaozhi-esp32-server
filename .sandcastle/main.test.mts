@@ -24,7 +24,7 @@ function runFixture(flags: Record<string, string> = {}, fromConfigDir = false) {
     mkdirSync(join(root, '.scratch/test-batch/issues'), { recursive: true });
     copyFileSync(join(source, 'main.mts'), join(config, 'main.mts'));
     copyFileSync(join(source, 'bin/scratch-issues.sh'), join(config, 'bin/scratch-issues.sh'));
-    for (const file of ['review-contract.mts', 'implement-prompt.md', 'review-prompt.md', 'final-review-prompt.md', 'fix-review-prompt.md']) {
+    for (const file of ['review-contract.mts', 'implement-prompt.md', 'issue-review-prompt.md', 'review-prompt.md', 'final-review-prompt.md', 'fix-review-prompt.md']) {
       const path = join(source, file);
       if (existsSync(path)) copyFileSync(path, join(config, file));
     }
@@ -87,9 +87,10 @@ exit 0
       : [];
     const logRoot = join(config, 'logs');
     const reportDirs = existsSync(logRoot) ? readdirSync(logRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory()) : [];
-    const savedReports = reportDirs.flatMap((entry) => readdirSync(join(logRoot, entry.name))
+    const savedArtifacts = reportDirs.flatMap((entry) => readdirSync(join(logRoot, entry.name))
       .filter((name) => name.endsWith('.json'))
-      .map((name) => JSON.parse(readFileSync(join(logRoot, entry.name, name), 'utf8'))));
+      .map((name) => ({ name, ...JSON.parse(readFileSync(join(logRoot, entry.name, name), 'utf8')) })));
+    const savedReports = savedArtifacts.map(({ name: _name, ...report }) => report);
     const batchStatePath = join(logRoot, 'batch-main-all.json');
     const batchState = existsSync(batchStatePath) ? JSON.parse(readFileSync(batchStatePath, 'utf8')) : undefined;
     return {
@@ -100,6 +101,7 @@ exit 0
       log: git(root, 'log', '--format=%s'),
       head: git(root, 'rev-parse', 'HEAD'),
       savedReports,
+      savedArtifacts,
       batchState,
       home: join(root, 'home'),
     };
@@ -142,10 +144,92 @@ test('running from .sandcastle still merges into the repository root', () => {
   assert.notEqual(result.merges, '');
 });
 
-test('a reviewer mutation is rejected before merge', () => {
+test('an uncommitted reviewer mutation is rejected before merge', () => {
   const result = runFixture({ TEST_NON_JAVA: '1', TEST_REVIEW_JAVA: '1' });
   assert.notEqual(result.status, 0, result.output);
   assert.equal(result.merges, '');
+});
+
+test('an issue reviewer can commit one declared fix and merge after host reverification', () => {
+  const result = runFixture({ TEST_ISSUE_REVIEW_FIX: '1' });
+  assert.equal(result.status, 0, result.output);
+  assert.notEqual(result.merges, '');
+  const issueId = 'test-batch/issues/01-example';
+  assert.ok(result.log.includes(`fix: resolve review findings for ${issueId}`));
+  const report = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1.json');
+  assert.ok(report);
+  assert.equal(report.fixes[0].commit, report.reviewedSha);
+  const agents = result.events.filter((event) => event.type === 'agent');
+  assert.deepEqual(agents.map((event) => event.name), ['implementer', 'reviewer', 'final-reviewer']);
+  const reviewer = agents.find((event) => event.name === 'reviewer');
+  assert.equal(reviewer.promptArgs.IMPLEMENTED_SHA, reviewer.startSha);
+  assert.equal(reviewer.promptArgs.ISSUE_PATH, `.scratch/${issueId}.md`);
+  assert.ok(!reviewer.promptArgs.REVIEWED_SHA);
+  const verifyCount = result.events.filter((event) => event.type === 'exec' && event.command.includes('verify')).length;
+  assert.equal(verifyCount, 3, 'two issue verifications plus the final batch verification');
+});
+
+test('an issue review without findings adds no fix commit', () => {
+  const result = runFixture();
+  assert.equal(result.status, 0, result.output);
+  assert.ok(!result.log.includes('fix: resolve review findings for'));
+  const report = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1.json');
+  assert.deepEqual(report?.fixes, []);
+  assert.deepEqual(report?.findings, []);
+});
+
+test('an advisory-only issue review merges without a fix commit', () => {
+  const result = runFixture({ TEST_ISSUE_REVIEW_ADVISORY: '1' });
+  assert.equal(result.status, 0, result.output);
+  assert.ok(!result.log.includes('fix: resolve review findings for'));
+  const report = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1.json');
+  assert.deepEqual(report?.fixes, []);
+  assert.equal(report?.findings[0].severity, 'advisory');
+});
+
+test('undeclared, multiple, missing, or mismatched review commits cannot merge', async (t) => {
+  for (const flag of ['TEST_REVIEW_UNDECLARED_FIX', 'TEST_REVIEW_TWO_COMMITS', 'TEST_REVIEW_MISSING_FIX', 'TEST_REVIEW_WRONG_FIX_SHA']) {
+    await t.test(flag, () => {
+      const result = runFixture({ [flag]: '1' });
+      assert.notEqual(result.status, 0, result.output);
+      assert.equal(result.merges, '');
+      assert.ok(!result.output.includes(' complete at '));
+    });
+  }
+});
+
+test('sandbox execution failures are not mislabeled as review gate failures', () => {
+  const result = runFixture({ TEST_REVIEW_EXEC_ERROR: '1' });
+  assert.notEqual(result.status, 0, result.output);
+  assert.equal(result.merges, '');
+  assert.ok(result.output.includes('review container execution failed'));
+  assert.ok(!result.output.includes('Issue review gate failed'), result.output);
+});
+
+test('issue review persists self review and final host verification for the same SHA', () => {
+  const result = runFixture({ TEST_ISSUE_REVIEW_FIX: '1' });
+  assert.equal(result.status, 0, result.output);
+  const report = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1.json');
+  const host = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1-host-verification.json');
+  assert.ok(host);
+  assert.equal(host.reviewedSha, report?.reviewedSha);
+  assert.equal(host.phase, 'issue-review');
+  assert.deepEqual(host.issueIds, ['test-batch/issues/01-example']);
+  assert.deepEqual(host.checks.map((check: { command: string; status: string }) => ({ command: check.command, status: check.status })),
+    result.events.filter((event) => event.type === 'exec' && event.command.includes('verify')).slice(1, 2)
+      .map((event) => ({ command: event.command, status: 'passed' })));
+  assert.ok(host.checks.every((check: { label: string; logPath: string }) => check.label === 'manager-api (Java)' && check.logPath.includes(report.reviewedSha)));
+});
+
+test('a fixed non-Java change does not invent host checks', () => {
+  const result = runFixture({ TEST_NON_JAVA: '1', TEST_ISSUE_REVIEW_FIX: '1' });
+  assert.equal(result.status, 0, result.output);
+  const report = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1.json');
+  const host = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1-host-verification.json');
+  assert.ok(report?.verification.length);
+  assert.ok(report.verification.every((check: { evidence: string }) => check.evidence));
+  assert.deepEqual(host?.checks, []);
+  assert.ok(!result.output.includes('mvn -B'));
 });
 
 test('non-Java changes do not require Maven verification', () => {
@@ -197,7 +281,7 @@ test('completion signals are configured for implementer and review phases', () =
 });
 
 test('review and fix prompts require the COMPLETE completion signal', () => {
-  for (const file of ['review-prompt.md', 'final-review-prompt.md', 'fix-review-prompt.md']) {
+  for (const file of ['issue-review-prompt.md', 'review-prompt.md', 'final-review-prompt.md', 'fix-review-prompt.md']) {
     assert.ok(readFileSync(join(source, file), 'utf8').includes('<promise>COMPLETE</promise>'), file);
   }
 });
@@ -302,8 +386,8 @@ test('an implementer cannot weaken the frozen spec', () => {
   assert.equal(result.merges, '');
 });
 
-test('a review report cannot substitute an unexecuted check for the runner check', () => {
-  const result = runFixture({ TEST_REPORT_BOGUS_CHECK: '1' });
+test('a fabricated issue self-check cannot substitute for host reverification', () => {
+  const result = runFixture({ TEST_REPORT_BOGUS_CHECK: '1', TEST_FAIL_PHASE: 'review' });
   assert.notEqual(result.status, 0, result.output);
   assert.equal(result.merges, '');
 });
@@ -323,6 +407,13 @@ test('final fixes are verified and followed by a new review of the new head', ()
   assert.equal(finalReviews.length, 2);
   assert.notEqual(finalReviews[0].startSha, finalReviews[1].startSha);
   assert.ok(result.events.some((event) => event.name === 'fixer'));
+});
+
+test('final fix-review remains read-only', () => {
+  const result = runFixture({ TEST_FINAL_REVIEW_RETRY: '1', TEST_FIX_REVIEW_JAVA: '1' });
+  assert.notEqual(result.status, 0, result.output);
+  assert.ok(!result.output.includes(' complete at '));
+  assert.ok(result.events.some((event) => event.name === 'fix-reviewer'), result.output);
 });
 
 test('a fixer that reopens an issue cannot complete the batch', () => {

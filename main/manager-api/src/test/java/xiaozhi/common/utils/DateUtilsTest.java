@@ -56,6 +56,14 @@ public class DateUtilsTest {
     }
 
     @Test
+    public void parse_withExplicitOffsetAndMillis_returnsExactInstant() {
+        // 输入字符串自带 +08:00 显式时区偏移，解析结果与本机默认时区无关；
+        // 期望值用独立的 UTC 绝对时间，同时验证偏移换算正确和 .789 毫秒被保留
+        Date parsed = DateUtils.parse("2026-10-26T12:34:56.789+08:00", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        assertEquals(Date.from(Instant.parse("2026-10-26T04:34:56.789Z")), parsed);
+    }
+
+    @Test
     public void getShortTime_withNullDate_returnsNull() {
         assertNull(DateUtils.getShortTime(null));
     }

@@ -72,7 +72,7 @@ function digest(value: string) {
 async function assertSpecsUnchanged(batch: Batch, cwd: string) {
   for (const path of batch.specPaths) {
     if (digest(await readFile(join(cwd, path), "utf8")) !== batch.specHashes[path]) {
-      throw new Error(`Feature spec changed during batch: ${path}`);
+      throw new ReviewScopeError(`Feature spec changed during batch: ${path}`);
     }
   }
 }
@@ -86,7 +86,7 @@ async function issueStatus(cwd: string, id: string) {
   const path = join(cwd, ".scratch", `${id}.md`);
   const body = await readFile(path, "utf8");
   const status = body.match(/^\*?\*?Status:\*?\*?\s*(\S+)/im)?.[1];
-  if (!status) throw new Error(`Missing Status in ${id}`);
+  if (!status) throw new ReviewScopeError(`Missing Status in ${id}`);
   return { body, status };
 }
 
@@ -200,12 +200,29 @@ class ReviewGateError extends Error {
   }
 }
 
+// 验证失败类型只标记确定的条件不满足；进程、I/O 和 sandbox 异常保持原样。
+class VerificationError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "VerificationError";
+  }
+}
+
+class ReviewScopeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ReviewScopeError";
+  }
+}
+
 async function reviewGate<T>(issueId: string, reason: string, check: () => Promise<T> | T): Promise<T> {
   try {
     return await check();
   } catch (error) {
     if (error instanceof ReviewGateError) throw error;
-    if (error instanceof Error) throw new ReviewGateError(issueId, reason, error);
+    if (error instanceof ReviewScopeError || error instanceof VerificationError) {
+      throw new ReviewGateError(issueId, reason, error);
+    }
     throw error;
   }
 }
@@ -245,19 +262,19 @@ async function git(cwd: string, args: string[]) {
   return stdout.trim();
 }
 
-async function requireClean(cwd: string) {
+async function requireClean(cwd: string, ErrorClass: new (message: string) => Error = Error) {
   if (await git(cwd, ["status", "--porcelain", "--untracked-files=all"])) {
-    throw new Error(`Uncommitted changes in ${cwd}; commit or stash them before verification/merge.`);
+    throw new ErrorClass(`Uncommitted changes in ${cwd}; commit or stash them before verification/merge.`);
   }
 }
 
 async function verify(sandbox: sandcastle.Sandbox, baseSha: string, phase: string) {
-  await requireClean(sandbox.worktreePath);
+  await requireClean(sandbox.worktreePath, VerificationError);
   const sha = await git(sandbox.worktreePath, ["rev-parse", "HEAD"]);
   try {
     await git(sandbox.worktreePath, ["merge-base", "--is-ancestor", baseSha, sha]);
-  } catch {
-    throw new Error("Sandbox no longer descends from the host baseline; merge blocked. Rebase and verify again.");
+  } catch (error) {
+    throw new VerificationError("Sandbox no longer descends from the host baseline; merge blocked. Rebase and verify again.", { cause: error });
   }
   const changed = await git(sandbox.worktreePath, ["diff", "--name-only", "--no-renames", "-z", baseSha, sha]);
   const changedPaths = changed.split("\0").filter(Boolean);
@@ -282,15 +299,15 @@ async function verify(sandbox: sandcastle.Sandbox, baseSha: string, phase: strin
     await writeFile(logPath, `commit=${sha}\ncommand=${check.cmd}\nexitCode=${result.exitCode}\n${output}`, { mode: 0o600 });
     // sandbox.exec() 非零 exitCode 是返回不抛出 —— 必须显式判断才能拦截 merge。
     if (result.exitCode !== 0) {
-      throw new Error(`${check.label} verification failed after ${phase} (exit ${result.exitCode}); merge blocked. Log: ${logPath}`);
+      throw new VerificationError(`${check.label} verification failed after ${phase} (exit ${result.exitCode}); merge blocked. Log: ${logPath}`);
     }
     console.log(`  passed. Log: ${logPath}`);
     checks.push({ command: check.cmd, label: check.label, logPath, status: "passed" });
   }
 
-  await requireClean(sandbox.worktreePath);
+  await requireClean(sandbox.worktreePath, VerificationError);
   if (await git(sandbox.worktreePath, ["rev-parse", "HEAD"]) !== sha) {
-    throw new Error("Sandbox HEAD changed during verification; merge blocked.");
+    throw new VerificationError("Sandbox HEAD changed during verification; merge blocked.");
   }
   return { sha, checks };
 }
@@ -341,7 +358,7 @@ async function assertOtherIssuesUnchanged(batch: Batch, cwd: string, issueId: st
   for (const otherId of batch.issueIds.filter((id) => id !== issueId)) {
     const relative = join(".scratch", `${otherId}.md`);
     if (await readFile(join(repoRoot, relative), "utf8") !== await readFile(join(cwd, relative), "utf8")) {
-      throw new Error(`${phase} changed another target issue without review: ${otherId}`);
+      throw new ReviewScopeError(`${phase} changed another target issue without review: ${otherId}`);
     }
   }
 }
@@ -389,14 +406,24 @@ async function reviewIssue(
   // 先验证真实提交和范围，再判断 pass，避免失败报告掩盖越权或伪造 SHA。
   await reviewGate(options.issueId, "declared fixes do not match repair commits", () =>
     assertIssueReviewFixes(report, { implementedSha: options.implementedSha, reviewedSha, repairCommits }));
-  await assertOtherIssuesUnchanged(batch, sandbox.worktreePath, options.issueId, "Issue review");
-  const currentIssue = await issueStatus(sandbox.worktreePath, options.issueId);
+  await reviewGate(options.issueId, "another target issue changed", () =>
+    assertOtherIssuesUnchanged(batch, sandbox.worktreePath, options.issueId, "Issue review"));
+  const currentIssue = await reviewGate(options.issueId, "current issue status is invalid", () =>
+    issueStatus(sandbox.worktreePath, options.issueId));
   if (currentIssue.status !== "resolved") throw new ReviewGateError(options.issueId, "current issue is not resolved");
-  await assertSpecsUnchanged(batch, sandbox.worktreePath);
+  await reviewGate(options.issueId, "frozen spec changed", () => assertSpecsUnchanged(batch, sandbox.worktreePath));
   // 自检只证明 reviewer 已执行的检查；修复后 host 结果由 runner 独立产生。
   await reviewGate(options.issueId, "self-review did not pass", () =>
     assertReviewPass(report, { baseSha: options.baseSha, reviewedSha, issueIds: [options.issueId] }));
-  return { report, reviewedSha };
+  // 第二段通过判定：只有 reviewer 最终 SHA 的独立 host 复验成功才可合并。
+  const hostVerification = await reviewGate(options.issueId, "post-review host verification failed", () =>
+    verify(sandbox, options.baseSha, "review"));
+  if (hostVerification.sha !== reviewedSha) throw new ReviewGateError(options.issueId, "host verification SHA changed");
+  await saveHostVerification(batch, options.reportName, {
+    phase: "issue-review", baseSha: options.baseSha, reviewedSha,
+    issueIds: [options.issueId], checks: hostVerification.checks,
+  });
+  return { report, reviewedSha, checks: hostVerification.checks };
 }
 
 async function review(
@@ -520,24 +547,7 @@ async function runBatch(batch: Batch) {
         baseSha, implementedSha: implemented.sha, issueId: issue.id,
         reportName: `issue-${iteration}`, checks: implemented.checks,
       });
-      let hostVerification: Awaited<ReturnType<typeof verify>>;
-      try {
-        // 第二段通过判定：只有 reviewer 最终 SHA 的独立 host 复验成功才可合并。
-        hostVerification = await verify(sandbox, baseSha, "review");
-      } catch (error) {
-        if (error instanceof Error && error.message.startsWith("Sandbox HEAD changed during verification;")) {
-          throw new ReviewGateError(issue.id, "post-review host verification failed", error);
-        }
-        throw error;
-      }
-      if (hostVerification.sha !== reviewed.reviewedSha) {
-        throw new ReviewGateError(issue.id, "host verification SHA changed");
-      }
-      verifiedSha = hostVerification.sha;
-      await saveHostVerification(batch, `issue-${iteration}`, {
-        phase: "issue-review", baseSha, reviewedSha: reviewed.reviewedSha,
-        issueIds: [issue.id], checks: hostVerification.checks,
-      });
+      verifiedSha = reviewed.reviewedSha;
     } finally {
       await sandbox.close();
     }

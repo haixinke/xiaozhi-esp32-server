@@ -198,6 +198,34 @@ test('undeclared, multiple, missing, or mismatched review commits cannot merge',
   }
 });
 
+test('a legal fix followed by a host check failure is a review gate failure', () => {
+  const result = runFixture({ TEST_ISSUE_REVIEW_FIX: '1', TEST_FAIL_PHASE: 'review' });
+  assert.notEqual(result.status, 0, result.output);
+  assert.equal(result.merges, '');
+  assert.ok(result.output.includes('ReviewGateError: Issue review gate failed'), result.output);
+  assert.ok(result.output.includes('VerificationError:'), result.output);
+  assert.ok(result.output.includes('post-review host verification failed'), result.output);
+  assert.ok(!result.savedArtifacts.some((artifact) => artifact.name === 'issue-1-host-verification.json'));
+});
+
+test('expected issue review scope and spec failures use the review gate', async (t) => {
+  const cases = [
+    ['TEST_REVIEW_MUTATE_OTHER', 'another target issue'],
+    ['TEST_REVIEW_REOPEN_CURRENT', 'current issue is not resolved'],
+    ['TEST_REVIEW_MALFORMED_CURRENT', 'current issue status is invalid'],
+    ['TEST_REVIEW_MUTATE_SPEC', 'frozen spec changed'],
+  ] as const;
+  for (const [flag, reason] of cases) {
+    await t.test(flag, () => {
+      const result = runFixture({ [flag]: '1', ...(flag === 'TEST_REVIEW_MUTATE_OTHER' ? { TEST_TWO_ISSUES: '1' } : {}) });
+      assert.notEqual(result.status, 0, result.output);
+      assert.equal(result.merges, '');
+      assert.ok(result.output.includes('ReviewGateError: Issue review gate failed'), result.output);
+      assert.ok(result.output.includes(reason), result.output);
+    });
+  }
+});
+
 test('sandbox execution failures are not mislabeled as review gate failures', () => {
   const result = runFixture({ TEST_REVIEW_EXEC_ERROR: '1' });
   assert.notEqual(result.status, 0, result.output);

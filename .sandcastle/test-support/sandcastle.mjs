@@ -113,6 +113,22 @@ export async function createSandbox(options) {
         if (process.env.TEST_REBASE === '1') git(worktreePath, 'reset', '--hard', 'HEAD~2');
         if (name === 'reviewer' && process.env.TEST_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'reviewer unexpectedly modified Java\n');
         if (name === 'fix-reviewer' && process.env.TEST_FIX_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'final reviewer must remain read-only\n');
+        if (name === 'reviewer' && process.env.TEST_REVIEW_MUTATE_OTHER === '1') {
+          const other = issueIds().find((id) => id !== currentIssueId);
+          if (other) change(`.scratch/${other}.md`, `${readFileSync(issuePath(worktreePath, other), 'utf8')}\nReviewer mutation\n`);
+        }
+        if (name === 'reviewer' && process.env.TEST_REVIEW_REOPEN_CURRENT === '1') {
+          change(`.scratch/${currentIssueId}.md`, readFileSync(issuePath(worktreePath, currentIssueId), 'utf8').replace('**Status:** resolved', '**Status:** open'));
+        }
+        if (name === 'reviewer' && process.env.TEST_REVIEW_MALFORMED_CURRENT === '1') {
+          change(`.scratch/${currentIssueId}.md`, '# Missing status\n');
+        }
+        if (name === 'reviewer' && process.env.TEST_REVIEW_MUTATE_SPEC === '1') change('.scratch/test-batch/spec.md', '# Weakened by reviewer\n');
+        if (name === 'reviewer' && ['TEST_REVIEW_MUTATE_OTHER', 'TEST_REVIEW_REOPEN_CURRENT', 'TEST_REVIEW_MALFORMED_CURRENT', 'TEST_REVIEW_MUTATE_SPEC']
+          .some((flag) => process.env[flag] === '1')) {
+          git(worktreePath, 'add', '.');
+          git(worktreePath, 'commit', '-m', 'invalid reviewer scope mutation');
+        }
         if (name === 'reviewer' && ['TEST_ISSUE_REVIEW_FIX', 'TEST_REVIEW_UNDECLARED_FIX', 'TEST_REVIEW_TWO_COMMITS', 'TEST_REVIEW_WRONG_FIX_SHA']
           .some((flag) => process.env[flag] === '1')) {
           const repairPath = process.env.TEST_NON_JAVA === '1' ? 'README.md' : 'main/manager-api/Example.java';
@@ -148,7 +164,9 @@ export async function createSandbox(options) {
           const hasRepairCommit = name === 'reviewer' && reviewedSha !== implementedSha;
           const declaresFix = name === 'reviewer' && (process.env.TEST_ISSUE_REVIEW_FIX === '1' ||
             process.env.TEST_REVIEW_TWO_COMMITS === '1' || process.env.TEST_REVIEW_WRONG_FIX_SHA === '1' ||
-            process.env.TEST_REVIEW_MISSING_FIX === '1');
+            process.env.TEST_REVIEW_MISSING_FIX === '1' || process.env.TEST_REVIEW_MUTATE_OTHER === '1' ||
+            process.env.TEST_REVIEW_REOPEN_CURRENT === '1' || process.env.TEST_REVIEW_MALFORMED_CURRENT === '1' ||
+            process.env.TEST_REVIEW_MUTATE_SPEC === '1');
           const fixes = declaresFix ? [{
             location: 'main/manager-api/Example.java:1',
             problem: 'confirmed blocking fixture defect',

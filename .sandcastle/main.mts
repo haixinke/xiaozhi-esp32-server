@@ -227,6 +227,17 @@ async function reviewGate<T>(issueId: string, reason: string, check: () => Promi
   }
 }
 
+// 纯内存断言 helper（assertReviewPass / assertIssueReviewFixes）抛出的普通 Error 一律视为
+// 预期断言失败并转为 ReviewGateError；不会与 sandbox/Git/I/O 异常混淆，因为这些 helper 不发起外部调用。
+async function reviewAssertion<T>(issueId: string, reason: string, check: () => T | Promise<T>): Promise<T> {
+  try {
+    return await check();
+  } catch (error) {
+    if (error instanceof ReviewGateError) throw error;
+    throw new ReviewGateError(issueId, reason, error);
+  }
+}
+
 // 多子项目校验矩阵：按 changed paths 分发到对应子项目的检查命令。
 // 顺序即执行顺序，与 implement-prompt.md / issue-review-prompt.md 中的描述保持一致。
 // 注意：sandbox.exec() 非零 exitCode 是返回不抛出，每个 check 必须显式判断。
@@ -404,7 +415,7 @@ async function reviewIssue(
   const repairList = await git(sandbox.worktreePath, ["rev-list", "--reverse", `${options.implementedSha}..${reviewedSha}`]);
   const repairCommits = repairList ? repairList.split("\n") : [];
   // 先验证真实提交和范围，再判断 pass，避免失败报告掩盖越权或伪造 SHA。
-  await reviewGate(options.issueId, "declared fixes do not match repair commits", () =>
+  await reviewAssertion(options.issueId, "declared fixes do not match repair commits", () =>
     assertIssueReviewFixes(report, { implementedSha: options.implementedSha, reviewedSha, repairCommits }));
   await reviewGate(options.issueId, "another target issue changed", () =>
     assertOtherIssuesUnchanged(batch, sandbox.worktreePath, options.issueId, "Issue review"));
@@ -413,7 +424,7 @@ async function reviewIssue(
   if (currentIssue.status !== "resolved") throw new ReviewGateError(options.issueId, "current issue is not resolved");
   await reviewGate(options.issueId, "frozen spec changed", () => assertSpecsUnchanged(batch, sandbox.worktreePath));
   // 自检只证明 reviewer 已执行的检查；修复后 host 结果由 runner 独立产生。
-  await reviewGate(options.issueId, "self-review did not pass", () =>
+  await reviewAssertion(options.issueId, "self-review did not pass", () =>
     assertReviewPass(report, { baseSha: options.baseSha, reviewedSha, issueIds: [options.issueId] }));
   // 第二段通过判定：只有 reviewer 最终 SHA 的独立 host 复验成功才可合并。
   const hostVerification = await reviewGate(options.issueId, "post-review host verification failed", () =>
@@ -505,7 +516,7 @@ async function runBatch(batch: Batch) {
     const branch = branchName("sequential-reviewer");
     const baseSha = await git(repoRoot, ["rev-parse", "HEAD"]);
     const sandbox = await createSandbox(branch);
-    let verifiedSha: string;
+    let verifiedSha: string | undefined;
     let cleanBlocked = false;
     try {
       await preflight(sandbox);
@@ -543,16 +554,29 @@ async function runBatch(batch: Batch) {
       await assertSpecsUnchanged(batch, sandbox.worktreePath);
       const implemented = await verify(sandbox, baseSha, "implement");
       verifiedSha = implemented.sha;
-      const reviewed = await reviewIssue(sandbox, batch, {
-        baseSha, implementedSha: implemented.sha, issueId: issue.id,
-        reportName: `issue-${iteration}`, checks: implemented.checks,
-      });
-      verifiedSha = reviewed.reviewedSha;
+      // 预期门禁失败（reviewer 自检/范围/历史/复验）记录为 issue 失败并继续调度；
+      // 其他异常（实现验证、sandbox 清理、manifest 写入等）原样向上抛出。
+      try {
+        const reviewed = await reviewIssue(sandbox, batch, {
+          baseSha, implementedSha: implemented.sha, issueId: issue.id,
+          reportName: `issue-${iteration}`, checks: implemented.checks,
+        });
+        verifiedSha = reviewed.reviewedSha;
+      } catch (error) {
+        if (!(error instanceof ReviewGateError)) throw error;
+        blockedIssueIds.add(issue.id);
+        batch.blockedIssueIds = [...blockedIssueIds];
+        await saveBatch({ ...batch, blockedIssueIds: batch.blockedIssueIds, lastOutcome: "blocked" });
+        console.log(`Issue ${issue.id} review gate failed: ${error.message}`);
+        console.log(`Issue ${issue.id} blocked; continuing with other issues.`);
+        cleanBlocked = true;
+        verifiedSha = undefined;
+      }
     } finally {
       await sandbox.close();
     }
     if (cleanBlocked) continue;
-    await mergeVerified(baseSha, branch, verifiedSha, hostBranch);
+    if (verifiedSha) await mergeVerified(baseSha, branch, verifiedSha, hostBranch);
   }
   if (hitIterationLimit && (await pendingIssues(repoRoot, batch.issueIds)).length) {
     throw new Error(`Iteration limit reached with unresolved issues in batch ${batch.id}`);

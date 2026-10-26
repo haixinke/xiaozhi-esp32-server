@@ -380,3 +380,52 @@ const second = await run({
 - 沙箱 Dockerfile 需装 Python 3.10 / JDK 21 / Node（按子项目）
 - 把 `main/xiaozhi-server/data/.config.yaml` 通过 `copyToWorktree` 或 `host.onWorktreeReady` hook 拷进 worktree
 - 禁止 agent 碰生产密钥：`.sandcastle/.env` 只放 agent 自己的 token，业务密钥留 host
+
+## 9. 本仓 sequential-reviewer 单 issue 流程
+
+`.sandcastle/main.mts` 的 sequential-reviewer 把每个 issue 走完实现 → 单 issue 审查/修复 → host 复验 → 合并的闭环；任一环节失败时仅隔离当前 issue，不拖垮整个批次。
+
+### 9.1 单 issue 流程（无独立单 issue 复审）
+
+- implementer 在临时分支提交实现并把当前 issue 标记为 resolved；
+- 实现阶段 host 校验（`verify(sandbox, baseSha, "implement")`）通过后，reviewer 启动；
+- reviewer 在同一次执行内完成审查 + 可选的最小修复（最多一个修复 commit，主题 `fix: resolve review findings for <issue-id>`）；
+- 单 issue 没有独立 fixer / 第二 reviewer；修复和自检都在 reviewer 这一次执行里完成；
+- 修复后由 runner 在 host 上对 reviewer 最终 SHA 复验，通过才允许合并。
+
+### 9.2 两段式门禁
+
+- **reviewer 自检**：报告绑定实测最终 SHA，记录已修复 blocking、剩余 findings 和 verification 证据；
+- **runner 复验**：在 reviewer 报告之后独立执行 `verify(sandbox, baseSha, "review")`，并校验提交拓扑、issue/spec 范围、工作区干净等硬约束；
+- 两段都过才合并。reviewer 文本不会被视为 host 复验已通过的证据。
+
+### 9.3 报告与日志位置
+
+- 单 issue 自检报告：`.sandcastle/logs/<batch-id>/issue-<n>.json`；
+- 对应的 host 复验记录：`.sandcastle/logs/<batch-id>/issue-<n>-host-verification.json`；
+- 批次状态：`.sandcastle/logs/batch-<branch>-<feature|all>.json`；
+- 验证命令原始日志：`.sandcastle/logs/<sha>-<phase>-<label>-verify.log`；
+- 所有写入的报告/fixes 字段都会经过脱敏，密码、token、JDBC 等敏感串替换为 `[redacted sensitive output]`。
+
+### 9.4 失败语义：blockedIssueIds、依赖与部分完成
+
+- 单 issue 审查/修复/复验的**预期门禁失败**（报告不合法、范围/历史越权、工作区脏、host check 非零、HEAD 变化等）会作为 `ReviewGateError` 抛出；runner 捕获后：
+  - 当前 issue 不合并、host 上保持 open；
+  - 把 issue ID 加入 manifest 的 `blockedIssueIds` 并保存；
+  - 在 `finally` 中关闭当前 sandbox（清理失败仍会上抛）；
+  - 继续挑选下一个 ready issue。
+- 依赖被 blocked 的 issue 不会进入 ready 集合，因为 host 上 blocked issue 仍是 open，`Blocked by` 关系继续生效；
+- 批次结束时只要 `blockedIssueIds` 非空，就不进入 final-review、不标 complete，`lastOutcome` 为 `blocked`；
+- 实现阶段的失败、sandbox.exec 抛出、preflight、sandbox.close、manifest 写入等基础设施异常**不是** review gate 失败，会按原逻辑直接终止 runner。
+
+### 9.5 人工处理后重启
+
+- runner 重启时 `blockedIssueIds` 中的 issue 自动跳过，不会重复消耗模型调用；
+- 人工排查后需要重跑某个 blocked issue：编辑 `.sandcastle/logs/batch-<branch>-<feature|all>.json`，把对应 ID 从 `blockedIssueIds` 移除，再以同样命令重启 runner；不新增管理命令；
+- 整个 manifest 是普通 JSON，可用任意编辑器修改；保存即可生效。
+
+### 9.6 final-review 不变
+
+- 所有目标 issue 合并后进入 batch 级 `final-review`：只读 review + 必要时进入 fixer / fix-reviewer / host 复验的修复循环；
+- `MAX_FIX_ROUNDS = 2`，超过则终止为 `repair_limit`；
+- final-review / fix-reviewer 仍然只读，禁止修复 commit；只有单 issue 阶段的 reviewer 才能在范围内提交恰好一个修复 commit。

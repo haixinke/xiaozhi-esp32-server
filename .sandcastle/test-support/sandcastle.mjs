@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.env.TEST_REPO;
@@ -16,6 +16,11 @@ const issueIds = () => readdirSync(join(root, '.scratch/test-batch/issues'))
 const issuePath = (cwd, id) => join(cwd, '.scratch', `${id}.md`);
 const nextOpenIssue = (cwd) => issueIds().find((id) => !readFileSync(issuePath(cwd, id), 'utf8').includes('**Status:** resolved'));
 const reportOutput = (report) => `<review_report>${JSON.stringify(report)}</review_report>`;
+// 判断当前 issue 是否匹配 TEST_FAIL_REVIEW_ISSUE 指定的短 ID（如 01-example）
+const failSubprojectMatch = (flagValue, issueId) => {
+  if (!flagValue || !issueId) return false;
+  return issueId.endsWith(`/${flagValue}`) || issueId.includes(`/${flagValue}`);
+};
 const verification = (promptArgs) => {
   const checks = JSON.parse(promptArgs?.VERIFICATION_RESULTS ?? '[]');
   return checks.length ? checks.map((check) => ({ command: check.command, status: check.status, evidence: check.logPath }))
@@ -32,7 +37,12 @@ export async function createSandbox(options) {
   iteration += 1;
   batchBaseSha ??= git(root, 'rev-parse', 'HEAD');
   const startSha = git(root, 'rev-parse', 'HEAD');
-  const worktreePath = join(root, `worktree-${iteration}`);
+  // 跨重启 fixture：同目录下可能残留上次 runner 的 worktree-N，挑选一个未使用序号
+  let worktreeIndex = iteration;
+  while (true) {
+    const candidate = join(root, `worktree-${worktreeIndex++}`);
+    if (!existsSync(candidate)) { var worktreePath = candidate; break; }
+  }
   git(root, 'worktree', 'add', '-b', options.branch, worktreePath);
   record({ type: 'sandbox', branch: options.branch, startSha });
   let currentIssueId;
@@ -124,12 +134,19 @@ export async function createSandbox(options) {
           change(`.scratch/${currentIssueId}.md`, '# Missing status\n');
         }
         if (name === 'reviewer' && process.env.TEST_REVIEW_MUTATE_SPEC === '1') change('.scratch/test-batch/spec.md', '# Weakened by reviewer\n');
-        if (name === 'reviewer' && ['TEST_REVIEW_MUTATE_OTHER', 'TEST_REVIEW_REOPEN_CURRENT', 'TEST_REVIEW_MALFORMED_CURRENT', 'TEST_REVIEW_MUTATE_SPEC']
+        if (name === 'reviewer' && process.env.TEST_REVIEW_CLOSE_OTHER_ISSUE === '1') {
+          const other = issueIds().find((id) => id !== currentIssueId);
+          if (other) change(`.scratch/${other}.md`, readFileSync(issuePath(worktreePath, other), 'utf8').replace('**Status:** open', '**Status:** resolved'));
+        }
+        if (name === 'reviewer' && process.env.TEST_REVIEW_REOPEN_ISSUE === '1') {
+          change(`.scratch/${currentIssueId}.md`, readFileSync(issuePath(worktreePath, currentIssueId), 'utf8').replace('**Status:** resolved', '**Status:** open'));
+        }
+        if (name === 'reviewer' && ['TEST_REVIEW_MUTATE_OTHER', 'TEST_REVIEW_REOPEN_CURRENT', 'TEST_REVIEW_MALFORMED_CURRENT', 'TEST_REVIEW_MUTATE_SPEC', 'TEST_REVIEW_CLOSE_OTHER_ISSUE', 'TEST_REVIEW_REOPEN_ISSUE']
           .some((flag) => process.env[flag] === '1')) {
           git(worktreePath, 'add', '.');
           git(worktreePath, 'commit', '-m', 'invalid reviewer scope mutation');
         }
-        if (name === 'reviewer' && ['TEST_ISSUE_REVIEW_FIX', 'TEST_REVIEW_UNDECLARED_FIX', 'TEST_REVIEW_TWO_COMMITS', 'TEST_REVIEW_WRONG_FIX_SHA']
+        if (name === 'reviewer' && ['TEST_ISSUE_REVIEW_FIX', 'TEST_FIX_REJECT', 'TEST_REVIEW_UNDECLARED_FIX', 'TEST_REVIEW_TWO_COMMITS', 'TEST_REVIEW_WRONG_FIX_SHA']
           .some((flag) => process.env[flag] === '1')) {
           const repairPath = process.env.TEST_NON_JAVA === '1' ? 'README.md' : 'main/manager-api/Example.java';
           const regressionPath = process.env.TEST_NON_JAVA === '1' ? 'REGRESSION.md' : 'main/manager-api/ExampleTest.java';
@@ -158,33 +175,42 @@ export async function createSandbox(options) {
       let stdout = '';
       if (name === 'reviewer' || name === 'fix-reviewer') {
         if (process.env.TEST_REVIEW_MISSING_REPORT !== '1') {
-          const rejected = process.env.TEST_REVIEW_REJECT === '1';
+          // TEST_REVIEW_REJECT_FIRST: 仅第一个独立 issue 返回未解决 blocking
+          const isFirstIssue = currentIssueId && currentIssueId.includes('01-example');
+          const rejected = process.env.TEST_REVIEW_REJECT === '1' ||
+            (process.env.TEST_REVIEW_REJECT_FIRST === '1' && isFirstIssue);
+          const fixRejected = process.env.TEST_FIX_REJECT === '1';
           const implementedSha = name === 'reviewer' ? promptArgs?.IMPLEMENTED_SHA ?? promptArgs?.REVIEWED_SHA ?? startSha : startSha;
           const reviewedSha = git(worktreePath, 'rev-parse', 'HEAD');
           const hasRepairCommit = name === 'reviewer' && reviewedSha !== implementedSha;
           const declaresFix = name === 'reviewer' && (process.env.TEST_ISSUE_REVIEW_FIX === '1' ||
+            process.env.TEST_FIX_REJECT === '1' ||
             process.env.TEST_REVIEW_TWO_COMMITS === '1' || process.env.TEST_REVIEW_WRONG_FIX_SHA === '1' ||
             process.env.TEST_REVIEW_MISSING_FIX === '1' || process.env.TEST_REVIEW_MUTATE_OTHER === '1' ||
             process.env.TEST_REVIEW_REOPEN_CURRENT === '1' || process.env.TEST_REVIEW_MALFORMED_CURRENT === '1' ||
-            process.env.TEST_REVIEW_MUTATE_SPEC === '1');
+            process.env.TEST_REVIEW_MUTATE_SPEC === '1' || process.env.TEST_REVIEW_CLOSE_OTHER_ISSUE === '1' ||
+            process.env.TEST_REVIEW_REOPEN_ISSUE === '1');
+          // TEST_SECURITY_FIX: fixes 文本包含敏感样例，验证落盘脱敏
+          const securityFix = process.env.TEST_SECURITY_FIX === '1';
           const fixes = declaresFix ? [{
             location: 'main/manager-api/Example.java:1',
-            problem: 'confirmed blocking fixture defect',
+            problem: securityFix ? 'password=secret123 exposed in code' : 'confirmed blocking fixture defect',
             resolution: 'minimal implementation correction with regression coverage',
             commit: process.env.TEST_REVIEW_WRONG_FIX_SHA === '1' ? implementedSha : reviewedSha,
-            evidence: 'reviewer regression test and post-fix git diff check passed',
+            evidence: securityFix ? 'api_key=sk-ant-xxx verified' : 'reviewer regression test and post-fix git diff check passed',
           }] : [];
           const advisory = name === 'reviewer' && process.env.TEST_ISSUE_REVIEW_ADVISORY === '1';
+          const verdict = fixRejected ? 'changes_required' : rejected ? 'changes_required' : 'pass';
           stdout = reportOutput({
             baseSha: startSha,
             reviewedSha,
             issueIds: name === 'fix-reviewer' ? issueIds() : [currentIssueId],
-            verdict: rejected ? 'changes_required' : 'pass',
+            verdict,
             requirements: (name === 'fix-reviewer' ? issueIds() : [currentIssueId]).map((id) => ({
               id, status: 'met', evidence: 'issue implementation and verification log',
             })),
             fixes,
-            findings: rejected ? [{ severity: 'blocking', location: 'main/manager-api/Example.java', trigger: 'issue review', impact: 'behavior incomplete' }]
+            findings: (rejected || fixRejected) ? [{ severity: 'blocking', location: 'main/manager-api/Example.java', trigger: 'issue review', impact: 'behavior incomplete' }]
               : advisory ? [{ severity: 'advisory', location: 'main/manager-api/Example.java:1', trigger: 'optional readability improvement', impact: 'no behavior impact' }] : [],
               verification: process.env.TEST_REPORT_BOGUS_CHECK === '1'
               ? [{ command: 'nonexistent check', status: 'passed', evidence: 'invented' }]
@@ -203,6 +229,11 @@ export async function createSandbox(options) {
     async exec(command) {
       record({ type: 'exec', command });
       if (command.includes('verify') && process.env.TEST_FAIL_PHASE === 'review' && (lastAgent === 'reviewer' || lastAgent === 'fix-reviewer')) {
+        return { exitCode: 1, stdout: '', stderr: 'review verification failed' };
+      }
+      // TEST_FAIL_REVIEW_ISSUE: 仅指定 issue 的 review 后 host check 返回非零；实现阶段及其他 issue 不受影响
+      const failReviewIssue = process.env.TEST_FAIL_REVIEW_ISSUE;
+      if (command.includes('verify') && failSubprojectMatch(failReviewIssue, currentIssueId) && lastAgent === 'reviewer') {
         return { exitCode: 1, stdout: '', stderr: 'review verification failed' };
       }
       if (command.includes('verify') && process.env.TEST_EXEC_ERROR === '1') throw new Error('container execution failed');

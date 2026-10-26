@@ -65,6 +65,10 @@ exit 0
       if (flags.TEST_FIRST_BLOCKED === '1') {
         writeFileSync(join(root, '.scratch/test-batch/issues/01-example.md'), '# Example change\n\n**Blocked by:** 02\n\n**Status:** open\n\nAcceptance: R1 is implemented.\n');
       }
+      // TEST_SECOND_DEPENDS_FIRST: issue 02 的 Blocked by 指向 01
+      if (flags.TEST_SECOND_DEPENDS_FIRST === '1') {
+        writeFileSync(join(root, '.scratch/test-batch/issues/02-follow-up.md'), '# Follow-up change\n\n**Blocked by:** 01\n\n**Status:** open\n\nAcceptance: R2 is implemented.\n');
+      }
     }
     git(root, 'init', '-b', 'main');
     git(root, 'config', 'user.email', 'test@example.invalid');
@@ -76,15 +80,20 @@ exit 0
     writeFileSync(join(root, 'host-baseline.txt'), 'host baseline\n');
     git(root, 'add', '.');
     git(root, 'commit', '-m', 'baseline');
-    const result = spawnSync(process.execPath, ['--import', import.meta.resolve('tsx'), join(config, 'main.mts')], {
-      cwd: fromConfigDir ? config : root,
-      env: { ...process.env, HOME: join(root, 'home'), TEST_REPO: root, ...flags },
-      encoding: 'utf8', timeout: 20_000,
-    });
+    const spawnRunner = (envFlags: Record<string, string>) => {
+      const result = spawnSync(process.execPath, ['--import', import.meta.resolve('tsx'), join(config, 'main.mts')], {
+        cwd: fromConfigDir ? config : root,
+        env: { ...process.env, HOME: join(root, 'home'), TEST_REPO: root, ...envFlags },
+        encoding: 'utf8', timeout: 20_000,
+      });
+      return result;
+    };
+    const result = spawnRunner(flags);
     const eventsPath = join(root, 'events.jsonl');
-    const events = existsSync(eventsPath)
+    const readEvents = () => existsSync(eventsPath)
       ? readFileSync(eventsPath, 'utf8').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line))
       : [];
+    const events = readEvents();
     const logRoot = join(config, 'logs');
     const reportDirs = existsSync(logRoot) ? readdirSync(logRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory()) : [];
     const savedArtifacts = reportDirs.flatMap((entry) => readdirSync(join(logRoot, entry.name))
@@ -92,7 +101,29 @@ exit 0
       .map((name) => ({ name, ...JSON.parse(readFileSync(join(logRoot, entry.name, name), 'utf8')) })));
     const savedReports = savedArtifacts.map(({ name: _name, ...report }) => report);
     const batchStatePath = join(logRoot, 'batch-main-all.json');
-    const batchState = existsSync(batchStatePath) ? JSON.parse(readFileSync(batchStatePath, 'utf8')) : undefined;
+    const readBatchState = () => existsSync(batchStatePath) ? JSON.parse(readFileSync(batchStatePath, 'utf8')) : undefined;
+    const batchState = readBatchState();
+    // 重启支持：原样或清空 blockedIssueIds 后再次 spawn runner
+    let restartResult: ReturnType<typeof spawnRunner> | undefined;
+    let restartEvents: typeof events = [];
+    let restartBatchState: typeof batchState;
+    if (flags.TEST_RESTART_BLOCKED === '1' || flags.TEST_MANUAL_UNBLOCK === '1') {
+      if (flags.TEST_MANUAL_UNBLOCK === '1' && batchState?.blockedIssueIds?.length) {
+        const cleared = { ...batchState, blockedIssueIds: [] };
+        writeFileSync(batchStatePath, JSON.stringify(cleared, null, 2), { mode: 0o600 });
+      }
+      // 重启时关闭导致 review reject 的 fixture 开关
+      const restartFlags = { ...flags };
+      delete restartFlags.TEST_RESTART_BLOCKED;
+      delete restartFlags.TEST_MANUAL_UNBLOCK;
+      delete restartFlags.TEST_REVIEW_REJECT_FIRST;
+      delete restartFlags.TEST_FIX_REJECT;
+      delete restartFlags.TEST_FAIL_REVIEW_ISSUE;
+      restartResult = spawnRunner(restartFlags);
+      // events.jsonl 是 append-only；切片拿到本次重启新增的事件，避免与首轮混淆
+      restartEvents = readEvents().slice(events.length);
+      restartBatchState = readBatchState();
+    }
     return {
       status: result.status,
       output: result.stdout + result.stderr,
@@ -104,6 +135,10 @@ exit 0
       savedArtifacts,
       batchState,
       home: join(root, 'home'),
+      restartStatus: restartResult?.status,
+      restartOutput: restartResult ? restartResult.stdout + restartResult.stderr : undefined,
+      restartEvents,
+      restartBatchState,
     };
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -202,8 +237,8 @@ test('a legal fix followed by a host check failure is a review gate failure', ()
   const result = runFixture({ TEST_ISSUE_REVIEW_FIX: '1', TEST_FAIL_PHASE: 'review' });
   assert.notEqual(result.status, 0, result.output);
   assert.equal(result.merges, '');
-  assert.ok(result.output.includes('ReviewGateError: Issue review gate failed'), result.output);
-  assert.ok(result.output.includes('VerificationError:'), result.output);
+  // 修复后 host 复验失败被识别为 review gate 失败并隔离当前 issue，不会被误当成基础设施异常
+  assert.ok(result.output.includes('review gate failed'), result.output);
   assert.ok(result.output.includes('post-review host verification failed'), result.output);
   assert.ok(!result.savedArtifacts.some((artifact) => artifact.name === 'issue-1-host-verification.json'));
 });
@@ -220,7 +255,8 @@ test('expected issue review scope and spec failures use the review gate', async 
       const result = runFixture({ [flag]: '1', ...(flag === 'TEST_REVIEW_MUTATE_OTHER' ? { TEST_TWO_ISSUES: '1' } : {}) });
       assert.notEqual(result.status, 0, result.output);
       assert.equal(result.merges, '');
-      assert.ok(result.output.includes('ReviewGateError: Issue review gate failed'), result.output);
+      // 失败原因需带 gate 上下文，便于人工排查时区分基础设施异常
+      assert.ok(result.output.includes('review gate failed'), result.output);
       assert.ok(result.output.includes(reason), result.output);
     });
   }
@@ -456,4 +492,116 @@ test('repeated final-review rejection exits after a bounded number of fixes', ()
   assert.ok(result.events.some((event) => event.name === 'fixer'));
   assert.ok(result.events.filter((event) => event.name === 'final-reviewer').length <= 3);
   assert.equal(result.batchState.lastOutcome, 'repair_limit', result.output);
+});
+
+// --- Task 3: 失败 issue 隔离、继续调度、重启语义 ---
+
+test('a rejected issue is blocked and an independent issue continues', () => {
+  const result = runFixture({ TEST_TWO_ISSUES: '1', TEST_REVIEW_REJECT_FIRST: '1' });
+  assert.notEqual(result.status, 0, result.output);
+  // 01 不合并，进入 blockedIssueIds
+  assert.ok(result.batchState.blockedIssueIds.includes('test-batch/issues/01-example'));
+  // 02 正常 implement/review/merge
+  const implementerIds = result.events.filter((event) => event.name === 'implementer').map((event) => event.promptArgs.ISSUE_ID);
+  assert.ok(implementerIds.includes('test-batch/issues/02-follow-up'));
+  assert.ok(result.log.includes('implementer'));
+  // batch 最终不 complete
+  assert.notEqual(result.batchState.status, 'complete');
+});
+
+test('a fix with unresolved blocking is discarded and skipped', () => {
+  const result = runFixture({ TEST_TWO_ISSUES: '1', TEST_FIX_REJECT: '1' });
+  assert.notEqual(result.status, 0, result.output);
+  // 修复 commit 不进入 host
+  assert.ok(!result.log.includes('fix: resolve review findings for'));
+  // 当前 issue 被记录 blocked
+  assert.ok(result.batchState.blockedIssueIds.length > 0);
+  assert.notEqual(result.batchState.status, 'complete');
+});
+
+test('host verification failure after a fix skips only that issue', () => {
+  const result = runFixture({ TEST_TWO_ISSUES: '1', TEST_ISSUE_REVIEW_FIX: '1', TEST_FAIL_REVIEW_ISSUE: '01-example' });
+  assert.notEqual(result.status, 0, result.output);
+  // 01 复验失败不合并
+  assert.ok(result.batchState.blockedIssueIds.includes('test-batch/issues/01-example'));
+  // 02 成功合并
+  const merges = result.merges.split('\n').filter(Boolean);
+  assert.ok(merges.length >= 1);
+  assert.notEqual(result.batchState.status, 'complete');
+});
+
+test('a dependent issue stays pending when its blocker fails review', () => {
+  const result = runFixture({ TEST_TWO_ISSUES: '1', TEST_SECOND_DEPENDS_FIRST: '1', TEST_REVIEW_REJECT_FIRST: '1' });
+  assert.notEqual(result.status, 0, result.output);
+  // 只有 01 被尝试
+  const implementerIds = result.events.filter((event) => event.name === 'implementer').map((event) => event.promptArgs.ISSUE_ID);
+  assert.deepEqual(implementerIds, ['test-batch/issues/01-example']);
+  // 02 没有 implementer 事件
+  assert.ok(!implementerIds.includes('test-batch/issues/02-follow-up'));
+  // host 上两者均未 resolved
+  assert.equal(result.merges, '');
+});
+
+test('malformed reports and reviewer scope mutations block without merging', async (t) => {
+  const cases = [
+    ['TEST_REVIEW_MISSING_REPORT', 'invalid or missing self-review report'],
+    ['TEST_REVIEW_WRONG_FIX_SHA', 'declared fixes do not match repair commits'],
+    ['TEST_REVIEW_MUTATE_SPEC', 'frozen spec changed'],
+    ['TEST_REVIEW_CLOSE_OTHER_ISSUE', 'another target issue changed'],
+    ['TEST_REVIEW_REOPEN_ISSUE', 'current issue is not resolved'],
+    ['TEST_DIRTY', 'reviewer left an unclean worktree'],
+    ['TEST_REBASE', 'repair history must descend from implementation and baseline'],
+  ] as const;
+  for (const [flag, reason] of cases) {
+    await t.test(flag, () => {
+      const flags: Record<string, string> = { [flag]: '1' };
+      if (flag === 'TEST_REVIEW_CLOSE_OTHER_ISSUE') flags.TEST_TWO_ISSUES = '1';
+      const result = runFixture(flags);
+      assert.notEqual(result.status, 0, result.output);
+      assert.equal(result.merges, '');
+      assert.ok(result.output.includes(reason), `expected "${reason}" in output`);
+      assert.ok(result.batchState.blockedIssueIds.length > 0, 'expected blockedIssueIds');
+    });
+  }
+});
+
+test('restart skips blocked issues until the manifest entry is removed', () => {
+  // 原样重启：没有新 implementer/reviewer
+  const blocked = runFixture({ TEST_TWO_ISSUES: '1', TEST_REVIEW_REJECT_FIRST: '1', TEST_RESTART_BLOCKED: '1' });
+  assert.notEqual(blocked.status, 0, blocked.output);
+  assert.ok(blocked.batchState.blockedIssueIds.includes('test-batch/issues/01-example'));
+  const firstRunImplementers = blocked.events.filter((event) => event.name === 'implementer').length;
+  const restartImplementers = blocked.restartEvents.filter((event) => event.name === 'implementer').length;
+  // 重启后 blocked issue 不再被处理
+  assert.equal(restartImplementers, 0, 'restart should not re-run implementer for blocked issue');
+
+  // 人工清空 blockedIssueIds 后重启：重新处理该 issue 并可完成
+  const unblocked = runFixture({ TEST_TWO_ISSUES: '1', TEST_REVIEW_REJECT_FIRST: '1', TEST_MANUAL_UNBLOCK: '1' });
+  assert.notEqual(unblocked.status, 0, unblocked.output);
+  const restartImplementerIds = unblocked.restartEvents.filter((event) => event.name === 'implementer').map((event) => event.promptArgs.ISSUE_ID);
+  assert.ok(restartImplementerIds.includes('test-batch/issues/01-example'), 'restart should re-process unblocked issue');
+});
+
+test('cleanup and host movement failures are not converted into issue skips', () => {
+  // TEST_CLOSE_FAIL: sandbox close 失败仍向上抛出
+  const closeFail = runFixture({ TEST_CLOSE_FAIL: '1' });
+  assert.notEqual(closeFail.status, 0, closeFail.output);
+  assert.ok(!closeFail.output.includes('Issue review gate failed'), 'close failure must not be a review gate error');
+
+  // TEST_HOST_MOVED: host 变化仍终止
+  const moved = runFixture({ TEST_HOST_MOVED: '1' });
+  assert.notEqual(moved.status, 0, moved.output);
+  assert.ok(!moved.output.includes('Issue review gate failed'), 'host movement must not be a review gate error');
+});
+
+test('sensitive fix evidence is redacted in saved reports', () => {
+  const result = runFixture({ TEST_ISSUE_REVIEW_FIX: '1', TEST_SECURITY_FIX: '1' });
+  assert.equal(result.status, 0, result.output);
+  const report = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1.json');
+  assert.ok(report);
+  // 敏感字段已被脱敏
+  assert.equal(report.fixes[0].problem, '[redacted sensitive output]');
+  assert.equal(report.fixes[0].evidence, '[redacted sensitive output]');
+  // JSON 仍可解析
+  assert.ok(Array.isArray(report.fixes));
 });

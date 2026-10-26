@@ -21,6 +21,7 @@ export type ReviewReport = {
 type ReviewExpectation = Pick<ReviewReport, 'baseSha' | 'reviewedSha' | 'issueIds'> & {
   requirementIds?: string[];
   checkedCommands?: string[];
+  allowSkippedVerification?: boolean;
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -87,7 +88,10 @@ export function assertReviewPass(report: ReviewReport, expected: ReviewExpectati
     throw new Error('Review contains an unmet requirement or missing evidence');
   }
   if (report.findings.some((item) => item.severity === 'blocking')) throw new Error('Review contains blocking findings');
-  if (!report.verification.length || report.verification.some((item) => item.status !== 'passed' || !nonempty(item.evidence))) {
+  // 单 issue 的 skipped 表示 reviewer 如实声明未运行；仍须有通过的自检，且最终由 host 复验。
+  if (!report.verification.some((item) => item.status === 'passed' && nonempty(item.evidence)) ||
+      report.verification.some((item) => !nonempty(item.evidence) || item.status === 'failed' ||
+        (item.status === 'skipped' && !expected.allowSkippedVerification))) {
     throw new Error('Review verification failed or was skipped');
   }
   for (const command of expected.checkedCommands ?? []) {

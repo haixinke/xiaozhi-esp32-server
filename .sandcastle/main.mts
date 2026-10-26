@@ -425,7 +425,8 @@ async function reviewIssue(
   await reviewGate(options.issueId, "frozen spec changed", () => assertSpecsUnchanged(batch, sandbox.worktreePath));
   // 自检只证明 reviewer 已执行的检查；修复后 host 结果由 runner 独立产生。
   await reviewAssertion(options.issueId, "self-review did not pass", () =>
-    assertReviewPass(report, { baseSha: options.baseSha, reviewedSha, issueIds: [options.issueId] }));
+    assertReviewPass(report, { baseSha: options.baseSha, reviewedSha, issueIds: [options.issueId],
+      allowSkippedVerification: true }));
   // 第二段通过判定：只有 reviewer 最终 SHA 的独立 host 复验成功才可合并。
   const hostVerification = await reviewGate(options.issueId, "post-review host verification failed", () =>
     verify(sandbox, options.baseSha, "review"));

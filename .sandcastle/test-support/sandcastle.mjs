@@ -219,7 +219,11 @@ export async function createSandbox(options) {
                     command: `git diff --check ${promptArgs.BASE_SHA} HEAD`,
                     status: 'passed',
                     evidence: 'reviewer ran the post-fix patch check',
-                  }]
+                  }, ...(process.env.TEST_ISSUE_REVIEW_SKIPPED_CHECK === '1' ? [{
+                    command: 'full Maven verification',
+                    status: 'skipped',
+                    evidence: 'runner will verify the final SHA',
+                  }] : [])]
                 : verification(promptArgs),
           });
         }

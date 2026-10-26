@@ -204,6 +204,18 @@ test('an issue reviewer can commit one declared fix and merge after host reverif
   assert.equal(verifyCount, 3, 'two issue verifications plus the final batch verification');
 });
 
+test('an explained self-check skip does not prevent final host verification', () => {
+  const result = runFixture({ TEST_ISSUE_REVIEW_FIX: '1', TEST_ISSUE_REVIEW_SKIPPED_CHECK: '1' });
+  assert.equal(result.status, 0, result.output);
+  const report = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1.json');
+  const host = result.savedArtifacts.find((artifact) => artifact.name === 'issue-1-host-verification.json');
+  assert.equal(report?.verification.find((check: { status: string }) => check.status === 'skipped')?.evidence,
+    'runner will verify the final SHA');
+  assert.equal(host?.reviewedSha, report?.reviewedSha);
+  assert.ok(host?.checks.length > 0);
+  assert.notEqual(result.merges, '');
+});
+
 test('an issue review without findings adds no fix commit', () => {
   const result = runFixture();
   assert.equal(result.status, 0, result.output);

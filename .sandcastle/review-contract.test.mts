@@ -68,6 +68,34 @@ test('a pass report with no verification evidence cannot pass', () => {
   }), /verification/);
 });
 
+test('issue self-review accepts an explained skip only alongside a passed check', () => {
+  const expected = { baseSha: report().baseSha, reviewedSha: report().reviewedSha,
+    issueIds: report().issueIds, allowSkippedVerification: true };
+  const mixed = parseReviewReport(tagged({ ...report(), verification: [
+    { command: 'focused regression', status: 'passed', evidence: 'regression test passed' },
+    { command: 'full Maven verification', status: 'skipped', evidence: 'reserved for host verification' },
+  ] }));
+  assert.doesNotThrow(() => assertReviewPass(mixed, expected));
+
+  const skippedOnly = parseReviewReport(tagged({ ...report(), verification: [
+    { command: 'full Maven verification', status: 'skipped', evidence: 'reserved for host verification' },
+  ] }));
+  assert.throws(() => assertReviewPass(skippedOnly, expected), /verification/);
+
+  const failed = parseReviewReport(tagged({ ...report(), verification: [
+    { command: 'focused regression', status: 'passed', evidence: 'regression test passed' },
+    { command: 'full Maven verification', status: 'failed', evidence: 'test failure' },
+  ] }));
+  assert.throws(() => assertReviewPass(failed, expected), /verification/);
+
+  const unexplained = parseReviewReport(tagged({ ...report(), verification: [
+    { command: 'focused regression', status: 'passed', evidence: 'regression test passed' },
+    { command: 'full Maven verification', status: 'skipped', evidence: ' ' },
+  ] }));
+  assert.throws(() => assertReviewPass(unexplained, expected), /verification/);
+  assert.throws(() => assertReviewPass(mixed, { ...expected, allowSkippedVerification: false }), /verification/);
+});
+
 const implemented = 'b'.repeat(40);
 const repair = 'c'.repeat(40);
 // 无修复报告绑定实现 SHA；有修复报告绑定修复 commit

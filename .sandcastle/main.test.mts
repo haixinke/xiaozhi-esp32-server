@@ -482,15 +482,41 @@ test('final fixes are verified and followed by a new review of the new head', ()
   const finalReviews = result.events.filter((event) => event.name === 'final-reviewer');
   assert.equal(finalReviews.length, 2);
   assert.notEqual(finalReviews[0].startSha, finalReviews[1].startSha);
-  assert.ok(result.events.some((event) => event.name === 'fixer'));
+  assert.equal(result.events.filter((event) => event.name === 'fixer').length, 1);
+  assert.ok(!result.events.some((event) => event.name === 'fix-reviewer'));
+  const fixerIndex = result.events.findIndex((event) => event.name === 'fixer');
+  const closeIndex = result.events.findIndex((event, index) => index > fixerIndex && event.type === 'close');
+  assert.equal(result.events.slice(fixerIndex, closeIndex).filter((event) => event.type === 'exec' && event.command.includes('verify')).length, 1);
+  const report = result.savedArtifacts.find((artifact) => artifact.name === 'fix-0.json');
+  assert.ok(report, result.output);
+  assert.equal(report.baseSha, finalReviews[0].startSha);
+  assert.equal(report.fixes.length, 1);
+  assert.equal(report.fixes[0].commit, report.reviewedSha);
+  const host = result.savedArtifacts.find((artifact) => artifact.name === 'fix-0-host-verification.json');
+  assert.ok(host);
+  assert.equal(host.phase, 'final-fix');
+  assert.equal(host.reviewedSha, report.reviewedSha);
+  assert.equal(host.checks.length, 1);
 });
 
-test('final fix-review remains read-only', () => {
-  const result = runFixture({ TEST_FINAL_REVIEW_RETRY: '1', TEST_FIX_REVIEW_JAVA: '1' });
-  assert.notEqual(result.status, 0, result.output);
-  assert.ok(!result.output.includes(' complete at '));
-  assert.ok(result.events.some((event) => event.name === 'fix-reviewer'), result.output);
-});
+for (const flag of [
+  'TEST_FINAL_FIX_MISSING_REPORT', 'TEST_FINAL_FIX_MALFORMED_REPORT',
+  'TEST_FINAL_FIX_WRONG_SHA', 'TEST_FINAL_FIX_MISSING_FIXES',
+  'TEST_FINAL_FIX_MISSING_COVERAGE', 'TEST_FINAL_FIX_DIRTY',
+  'TEST_FINAL_FIX_BLOCKING', 'TEST_FINAL_FIX_HOST_FAIL',
+  'TEST_FINAL_FIX_TWO_COMMITS', 'TEST_FINAL_FIX_MUTATE_SPEC',
+  'TEST_FINAL_FIX_ISSUE_BODY', 'TEST_FINAL_FIX_EMPTY_COMMIT',
+]) {
+  test(`final repair gate rejects ${flag} before merging and closes sandbox`, () => {
+    const result = runFixture({ TEST_FINAL_REVIEW_RETRY: '1', [flag]: '1' });
+    assert.notEqual(result.status, 0, result.output);
+    assert.equal(result.merges.split('\n').filter(Boolean).length, 1, result.output);
+    assert.equal(result.events.filter((event) => event.name === 'final-reviewer').length, 1);
+    assert.ok(!result.events.some((event) => event.name === 'fix-reviewer'));
+    assert.equal(result.events.at(-1)?.type, 'close');
+    assert.notEqual(result.batchState.status, 'complete');
+  });
+}
 
 test('a fixer that reopens an issue cannot complete the batch', () => {
   const result = runFixture({ TEST_FINAL_REVIEW_RETRY: '1', TEST_FIX_REOPENS_ISSUE: '1' });
@@ -514,8 +540,8 @@ test('each final review reuses its sandbox for repair and closes before the next
     event.type === 'sandbox' || event.type === 'close' ||
     (event.type === 'agent' && ['final-reviewer', 'fixer', 'fix-reviewer'].includes(event.name)));
   assert.deepEqual(lifecycle.map((event) => event.type === 'agent' ? event.name : event.type), [
-    'sandbox', 'final-reviewer', 'fixer', 'fix-reviewer', 'close',
-    'sandbox', 'final-reviewer', 'fixer', 'fix-reviewer', 'close',
+    'sandbox', 'final-reviewer', 'fixer', 'close',
+    'sandbox', 'final-reviewer', 'fixer', 'close',
     'sandbox', 'final-reviewer', 'close',
   ]);
 });

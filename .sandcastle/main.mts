@@ -9,7 +9,8 @@
 //                      下一个 iteration 的 worktree 从新 HEAD 切出，
 //                      能看到前一个 issue 已 close，避免重复处理。
 // Phase 4 (Final):     review the complete batch on merged HEAD; blocking
-//                      findings may enter a bounded fix/re-review loop.
+//                      findings enter a bounded repair/self-review loop with
+//                      host verification and a fresh final review after merge.
 //
 // Both phases share one sandbox via createSandbox() on a named branch.
 //
@@ -185,7 +186,7 @@ async function saveReport(batch: Batch, name: string, report: ReviewReport) {
 }
 
 type VerificationCheck = { command: string; label: string; logPath: string; status: "passed" };
-type HostVerification = { phase: "issue-review"; baseSha: string; reviewedSha: string;
+type HostVerification = { phase: "issue-review" | "final-fix"; baseSha: string; reviewedSha: string;
   issueIds: string[]; checks: VerificationCheck[] };
 
 async function saveHostVerification(batch: Batch, reportName: string, record: HostVerification) {
@@ -625,19 +626,50 @@ async function runBatch(batch: Batch) {
         const fix = await sandbox.run({
           name: "fixer", maxIterations: 1, completionSignal: REVIEW_SIGNALS, agent: sandcastle.claudeCode(AGENT_MODEL),
           promptFile: join(repoRoot, ".sandcastle", "fix-review-prompt.md"),
-          promptArgs: { REVIEWED_SHA: head, FINDINGS: JSON.stringify(report.findings), ISSUE_IDS: batch.issueIds.join(",") },
+          promptArgs: {
+            REVIEWED_SHA: head, FINDINGS: JSON.stringify(report.findings), ISSUE_IDS: batch.issueIds.join(","),
+            ISSUE_PATHS: batch.issueIds.map((id) => `.scratch/${id}.md`).join(" "),
+            SPEC_PATHS: batch.specPaths.join(" "),
+            REQUIREMENT_IDS: [...batch.issueIds, ...batch.specRequirements].join(","),
+          },
         });
+        const fixReport = parseReviewReport(fix.stdout);
+        await saveReport(batch, `fix-${round}`, fixReport);
         if (!fix.commits.length) throw new Error("Final fixer made no commits");
-        await assertSpecsUnchanged(batch, sandbox.worktreePath);
-        const fixed = await verify(sandbox, head, `fix-${round}`);
-        verifiedSha = fixed.sha;
-        const fixReviewed = await review(sandbox, batch, {
-          name: "fix-reviewer", promptFile: "review-prompt.md", baseSha: head,
-          issueIds: batch.issueIds, reportName: `fix-${round}`, checks: fixed.checks,
+        await requireClean(sandbox.worktreePath);
+        const repairedSha = await git(sandbox.worktreePath, ["rev-parse", "HEAD"]);
+        await git(sandbox.worktreePath, ["merge-base", "--is-ancestor", head, repairedSha]);
+        const repairList = await git(sandbox.worktreePath, ["rev-list", "--reverse", `${head}..${repairedSha}`]);
+        assertIssueReviewFixes(fixReport, {
+          implementedSha: head, reviewedSha: repairedSha, repairCommits: repairList ? repairList.split("\n") : [],
         });
-        assertReviewPass(fixReviewed.report, { baseSha: head, reviewedSha: verifiedSha, issueIds: batch.issueIds,
-          checkedCommands: fixed.checks.map((check) => check.command) });
-        verifiedSha = (await verify(sandbox, head, `fix-review-${round}`)).sha;
+        if (await git(sandbox.worktreePath, ["rev-list", "--parents", "-n", "1", repairedSha]) !== `${repairedSha} ${head}`) {
+          throw new Error("Final repair must be a single ordinary commit on the reviewed HEAD");
+        }
+        const repairPaths = (await git(sandbox.worktreePath,
+          ["diff", "--name-only", "--no-renames", "-z", head, repairedSha])).split("\0").filter(Boolean);
+        if (!repairPaths.length) throw new Error("Final repair commit is empty");
+        if (batch.issueIds.some((id) => repairPaths.includes(`.scratch/${id}.md`))) {
+          throw new Error("Final fixer changed a target issue file");
+        }
+        for (const finding of report.findings.filter((item) => item.severity === "blocking")) {
+          if (!fixReport.fixes.some((item) => item.location === finding.location && item.problem === finding.trigger)) {
+            throw new Error(`Final self-review omitted a blocking finding: ${finding.location}`);
+          }
+        }
+        await assertSpecsUnchanged(batch, sandbox.worktreePath);
+        if ((await pendingIssues(sandbox.worktreePath, batch.issueIds)).length) {
+          throw new Error("Final fixer left target issues unresolved");
+        }
+        assertReviewPass(fixReport, { baseSha: head, reviewedSha: repairedSha, issueIds: batch.issueIds,
+          requirementIds: [...batch.issueIds, ...batch.specRequirements], allowSkippedVerification: true });
+        const fixed = await verify(sandbox, head, `final-fix-${round}`);
+        if (fixed.sha !== repairedSha) throw new Error("Final fix host verification SHA changed");
+        await saveHostVerification(batch, `fix-${round}`, {
+          phase: "final-fix", baseSha: head, reviewedSha: repairedSha,
+          issueIds: batch.issueIds, checks: fixed.checks,
+        });
+        verifiedSha = fixed.sha;
       }
     } finally {
       await sandbox.close();

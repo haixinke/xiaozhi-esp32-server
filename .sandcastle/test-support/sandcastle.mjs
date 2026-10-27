@@ -114,7 +114,15 @@ export async function createSandbox(options) {
           if (other) change(`.scratch/${other}.md`, readFileSync(issuePath(worktreePath, other), 'utf8').replace('**Status:** open', '**Status:** resolved'));
         }
       } else if (name === 'fixer') {
-        change('main/manager-api/Example.java', `implementation with final fix ${iteration}\n`);
+        if (process.env.TEST_FINAL_FIX_EMPTY_COMMIT !== '1') {
+          change('main/manager-api/Example.java', `implementation with final fix ${iteration}\n`);
+          change('main/manager-api/ExampleTest.java', `regression coverage ${iteration}\n`);
+        }
+        if (process.env.TEST_FINAL_FIX_ISSUE_BODY === '1') {
+          const id = issueIds()[0];
+          change(`.scratch/${id}.md`, `${readFileSync(issuePath(worktreePath, id), 'utf8')}\nWeakened acceptance criteria\n`);
+        }
+        if (process.env.TEST_FINAL_FIX_MUTATE_SPEC === '1') change('.scratch/test-batch/spec.md', '# Weakened spec\n');
         if (process.env.TEST_FIX_REOPENS_ISSUE === '1') {
           const id = issueIds()[0];
           change(`.scratch/${id}.md`, readFileSync(issuePath(worktreePath, id), 'utf8').replace('**Status:** resolved', '**Status:** open'));
@@ -122,7 +130,6 @@ export async function createSandbox(options) {
       } else {
         if (process.env.TEST_REBASE === '1') git(worktreePath, 'reset', '--hard', 'HEAD~2');
         if (name === 'reviewer' && process.env.TEST_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'reviewer unexpectedly modified Java\n');
-        if (name === 'fix-reviewer' && process.env.TEST_FIX_REVIEW_JAVA === '1') change('main/manager-api/Example.java', 'final reviewer must remain read-only\n');
         if (name === 'reviewer' && process.env.TEST_REVIEW_MUTATE_OTHER === '1') {
           const other = issueIds().find((id) => id !== currentIssueId);
           if (other) change(`.scratch/${other}.md`, `${readFileSync(issuePath(worktreePath, other), 'utf8')}\nReviewer mutation\n`);
@@ -161,19 +168,45 @@ export async function createSandbox(options) {
       }
       if (name === 'implementer' || name === 'fixer') {
         git(worktreePath, 'add', '.');
-        git(worktreePath, 'commit', '-m', name);
+        git(worktreePath, 'commit', '--allow-empty', '-m', name);
       }
       const withCompletion = (value) => ({
         ...value,
-        completionSignal: (name === 'reviewer' || name === 'fix-reviewer' || name === 'fixer')
+        completionSignal: (name === 'reviewer' || name === 'fixer')
           ? '<promise>COMPLETE</promise>' : undefined,
       });
       if (name === 'reviewer' && process.env.TEST_DIRTY === '1') change('uncommitted.txt', 'uncommitted\n');
       if (name === 'reviewer' && process.env.TEST_HOST_MOVED === '1') {
         git(root, 'commit', '--allow-empty', '-m', 'concurrent host change');
       }
+      if (name === 'fixer') {
+        const reviewedSha = git(worktreePath, 'rev-parse', 'HEAD');
+        if (process.env.TEST_FINAL_FIX_TWO_COMMITS === '1') git(worktreePath, 'commit', '--allow-empty', '-m', 'unexpected second final fix');
+        if (process.env.TEST_FINAL_FIX_DIRTY === '1') change('uncommitted.txt', 'unfinished repair\n');
+        if (process.env.TEST_FINAL_FIX_MISSING_REPORT === '1') return withCompletion({ commits: [{ sha: reviewedSha }], stdout: '' });
+        if (process.env.TEST_FINAL_FIX_MALFORMED_REPORT === '1') return withCompletion({ commits: [{ sha: reviewedSha }], stdout: '<review_report>{invalid}</review_report>' });
+        const findings = JSON.parse(promptArgs.FINDINGS ?? '[]');
+        const fixes = findings.filter((finding) => finding.severity === 'blocking').map((finding) => ({
+          location: finding.location,
+          problem: process.env.TEST_FINAL_FIX_MISSING_COVERAGE === '1' ? 'unrelated defect' : finding.trigger,
+          resolution: 'corrected implementation and added regression coverage',
+          commit: reviewedSha,
+          evidence: 'post-fix patch check passed',
+        }));
+        git(worktreePath, 'diff', '--check', promptArgs.REVIEWED_SHA, 'HEAD');
+        return withCompletion({ commits: [{ sha: reviewedSha }], stdout: reportOutput({
+          baseSha: promptArgs.REVIEWED_SHA,
+          reviewedSha: process.env.TEST_FINAL_FIX_WRONG_SHA === '1' ? promptArgs.REVIEWED_SHA : git(worktreePath, 'rev-parse', 'HEAD'),
+          issueIds: issueIds(),
+          verdict: 'pass',
+          requirements: (promptArgs.REQUIREMENT_IDS ?? issueIds().join(',')).split(',').filter(Boolean).map((id) => ({ id, status: 'met', evidence: 'repair regression coverage' })),
+          fixes: process.env.TEST_FINAL_FIX_MISSING_FIXES === '1' ? [] : fixes,
+          findings: process.env.TEST_FINAL_FIX_BLOCKING === '1' ? findings : [],
+          verification: [{ command: `git diff --check ${promptArgs.REVIEWED_SHA} HEAD`, status: 'passed', evidence: 'post-fix patch check passed' }],
+        }) });
+      }
       let stdout = '';
-      if (name === 'reviewer' || name === 'fix-reviewer') {
+      if (name === 'reviewer') {
         if (process.env.TEST_REVIEW_MISSING_REPORT !== '1') {
           // TEST_REVIEW_REJECT_FIRST: 仅第一个独立 issue 返回未解决 blocking
           const isFirstIssue = currentIssueId && currentIssueId.includes('01-example');
@@ -204,9 +237,9 @@ export async function createSandbox(options) {
           stdout = reportOutput({
             baseSha: startSha,
             reviewedSha,
-            issueIds: name === 'fix-reviewer' ? issueIds() : [currentIssueId],
+            issueIds: [currentIssueId],
             verdict,
-            requirements: (name === 'fix-reviewer' ? issueIds() : [currentIssueId]).map((id) => ({
+            requirements: ([currentIssueId]).map((id) => ({
               id, status: 'met', evidence: 'issue implementation and verification log',
             })),
             fixes,
@@ -232,9 +265,10 @@ export async function createSandbox(options) {
     },
     async exec(command) {
       record({ type: 'exec', command });
-      if (command.includes('verify') && process.env.TEST_FAIL_PHASE === 'review' && (lastAgent === 'reviewer' || lastAgent === 'fix-reviewer')) {
+      if (command.includes('verify') && process.env.TEST_FAIL_PHASE === 'review' && lastAgent === 'reviewer') {
         return { exitCode: 1, stdout: '', stderr: 'review verification failed' };
       }
+      if (command.includes('verify') && lastAgent === 'fixer' && process.env.TEST_FINAL_FIX_HOST_FAIL === '1') return { exitCode: 1, stdout: '', stderr: 'final fix verification failed' };
       // TEST_FAIL_REVIEW_ISSUE: 仅指定 issue 的 review 后 host check 返回非零；实现阶段及其他 issue 不受影响
       const failReviewIssue = process.env.TEST_FAIL_REVIEW_ISSUE;
       if (command.includes('verify') && failSubprojectMatch(failReviewIssue, currentIssueId) && lastAgent === 'reviewer') {

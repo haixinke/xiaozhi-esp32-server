@@ -342,6 +342,18 @@ const routes = [
       title: '游戏管理'
     }
   },
+  // 小物件管理页面路由
+  {
+    path: '/small-object-management',
+    name: 'SmallObjectManagement',
+    component: function () {
+      return import('../views/SmallObjectManagement.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      title: '小物件管理'
+    }
+  },
 ]
 const router = new VueRouter({
   base: process.env.VUE_APP_PUBLIC_PATH || '/',

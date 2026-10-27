@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="xiaozhi.modules.smallobject.dao.SmallObjectDao">
+
+    <!--
+      分页查询未删除的小物件，按物件类型的字典 sort 升序。
+      sort 取自 JOIN sys_dict_data，物件表自身不存排序字段——字典已有排序，再存一份就是两处真相。
+      类型已在字典中被删除时 LEFT JOIN 无匹配行、d.sort 为 NULL：
+      用 "d.sort IS NULL ASC" 把这类记录排到末尾，其余按 sort 升序；
+      同一 sort 或多条无 sort 记录用 o.id 兜底，保证分页顺序稳定。
+    -->
+    <select id="selectPageOrderByDictSort" resultType="xiaozhi.modules.smallobject.entity.SmallObjectEntity">
+        SELECT o.*
+        FROM ai_small_object o
+        LEFT JOIN sys_dict_type t
+               ON t.dict_type = #{dictType}
+        LEFT JOIN sys_dict_data d
+               ON d.dict_type_id = t.id
+              AND d.dict_value = o.object_type
+        WHERE o.deleted = 0
+        ORDER BY (d.sort IS NULL) ASC, d.sort ASC, o.id ASC
+    </select>
+
+</mapper>

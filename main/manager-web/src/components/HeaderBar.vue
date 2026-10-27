@@ -192,12 +192,12 @@
 
         <!-- 运营管理 -->
         <el-dropdown v-if="userInfo.superAdmin" trigger="click" class="equipment-management more-dropdown" :class="{
-          'active-tab': $route.path === '/story-engine-management' || $route.path === '/feedback-management' || $route.path === '/game-management'
+          'active-tab': $route.path === '/story-engine-management' || $route.path === '/feedback-management' || $route.path === '/game-management' || $route.path === '/small-object-management'
         }" @visible-change="handleContentDropdownVisibleChange">
           <span class="el-dropdown-link">
             <img loading="lazy" alt="" src="@/assets/header/param_management.png" :style="{
               filter:
-                $route.path === '/story-engine-management' || $route.path === '/feedback-management' || $route.path === '/game-management'
+                $route.path === '/story-engine-management' || $route.path === '/feedback-management' || $route.path === '/game-management' || $route.path === '/small-object-management'
                   ? 'brightness(0) invert(1)'
                   : 'None',
             }" />
@@ -213,6 +213,9 @@
             </el-dropdown-item>
             <el-dropdown-item @click.native="handleRouter('gameManagement')">
               游戏管理
+            </el-dropdown-item>
+            <el-dropdown-item @click.native="handleRouter('smallObjectManagement')">
+              小物件管理
             </el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
@@ -295,6 +298,7 @@ export default {
         storyEngineManagement: "/story-engine-management",
         feedbackManagement: "/feedback-management",
         gameManagement: "/game-management",
+        smallObjectManagement: "/small-object-management",
       }
     };
   },

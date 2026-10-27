@@ -67,6 +67,56 @@ export default {
             }).send()
     },
 
+    // 更新小物件（全量更新类型、图片、故事）
+    // 与 save 一样必须注册 fail 回调复位保存按钮，理由同上
+    updateSmallObject(data, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/small-object/update`)
+            .method('PUT')
+            .data(data)
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((res) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(res)
+                }
+            })
+            .networkFail((err) => {
+                console.error('更新小物件失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.updateSmallObject(data, callback, failCallback)
+                })
+            }).send()
+    },
+
+    // 启用/停用：只提交 id 与目标状态，不回传图片与故事，
+    // 避免并发下用陈旧副本覆盖他人刚改过的故事内容
+    updateSmallObjectStatus(data, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/small-object/update-status`)
+            .method('PUT')
+            .data(data)
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((res) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(res)
+                }
+            })
+            .networkFail((err) => {
+                console.error('切换小物件状态失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.updateSmallObjectStatus(data, callback, failCallback)
+                })
+            }).send()
+    },
+
     // 上传物件图片（/upload/image 需要 Bearer 鉴权，走 RequestService 统一带 token）
     // scene 为后端 @RequestParam query 参数，必须拼在 URL 上；放 FormData 后端读不到
     uploadImage(formData, callback, failCallback) {

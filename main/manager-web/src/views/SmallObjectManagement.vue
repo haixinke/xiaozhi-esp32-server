@@ -39,15 +39,27 @@
                   {{ scope.row.status === 1 ? '启用' : '停用' }}
                 </el-tag>
               </template>
+              <template slot="actions" slot-scope="scope">
+                <el-button type="text" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                <!-- 列表内直接切换启用/停用：只提交 id 与目标状态，不回传图片与故事 -->
+                <el-button
+                  type="text"
+                  size="small"
+                  :class="scope.row.status === 1 ? 'danger-text' : 'success-text'"
+                  @click="handleToggleStatus(scope.row)"
+                >
+                  {{ scope.row.status === 1 ? '停用' : '启用' }}
+                </el-button>
+              </template>
             </CustomTable>
           </el-card>
         </div>
       </div>
     </div>
 
-    <!-- 新增小物件弹窗（本片只实现新增；编辑回填与改类型由后续票实现） -->
+    <!-- 新增/编辑小物件弹窗：编辑态回填当前值，标题与按钮文案随模式区分 -->
     <el-dialog
-      title="新增小物件"
+      :title="isEditMode ? '编辑小物件' : '新增小物件'"
       :visible.sync="dialogVisible"
       width="620px"
       :close-on-click-modal="false"
@@ -97,7 +109,9 @@
       </el-form>
       <span slot="footer">
         <el-button size="small" @click="dialogVisible = false">取消</el-button>
-        <el-button size="small" type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <el-button size="small" type="primary" :loading="saving" @click="handleSave">
+          {{ isEditMode ? '保存修改' : '保存' }}
+        </el-button>
       </span>
     </el-dialog>
     <el-footer><VersionFooter/></el-footer>
@@ -132,9 +146,14 @@ export default {
     };
   },
   computed: {
-    // 新增时只列出尚未被占用的类型；占用判断来自后端，不靠前端分页数据推算
+    // 编辑态：id 非空即为编辑
+    isEditMode() {
+      return this.editForm.id != null;
+    },
+    // 新增时只列出尚未被占用的类型；编辑时把当前类型强制加回可选列表——
+    // 当前类型被自身占用，不能因为 used=true 被过滤掉。占用判断来自后端，不靠前端分页数据推算
     availableTypeOptions() {
-      return this.typeOptions.filter(item => !item.used);
+      return this.typeOptions.filter(item => !item.used || (this.isEditMode && item.key === this.editForm.objectType));
     }
   },
   created() {
@@ -142,7 +161,8 @@ export default {
       { prop: 'imageUrl', label: '图片', align: 'center', slot: 'imageUrl' },
       { prop: 'objectTypeName', label: '类型名称', align: 'center', slot: 'objectTypeName' },
       { prop: 'status', label: '状态', align: 'center', slot: 'status' },
-      { prop: 'updateDate', label: '更新时间', align: 'center' }
+      { prop: 'updateDate', label: '更新时间', align: 'center' },
+      { prop: 'actions', label: '操作', align: 'center', slot: 'actions' }
     ];
     this.fetchObjectList();
   },
@@ -218,6 +238,36 @@ export default {
       });
     },
 
+    // 编辑：回填当前类型、图片、故事；类型下拉会先刷新，当前类型由 availableTypeOptions 强制保留
+    handleEdit(row) {
+      this.editForm = {
+        id: row.id,
+        objectType: row.objectType,
+        imageUrl: row.imageUrl,
+        story: row.story
+      };
+      this.fetchObjectTypes(() => {
+        this.dialogVisible = true;
+      });
+    },
+
+    // 列表内启用/停用：只提交 id 与目标状态，不回传图片与故事
+    handleToggleStatus(row) {
+      const targetStatus = row.status === 1 ? 0 : 1;
+      const actionText = targetStatus === 1 ? '启用' : '停用';
+      Api.smallObject.updateSmallObjectStatus({ id: row.id, status: targetStatus }, ({ data }) => {
+        if (data.code === 0) {
+          this.$message.success(actionText + '成功');
+          this.fetchObjectList();
+        } else {
+          this.$message.error(data.msg || actionText + '失败');
+        }
+      }, ({ data }) => {
+        // 后端业务拒绝走 fail 分支，把后端返回的错误信息展示出来
+        this.$message.error((data && data.msg) || actionText + '失败');
+      });
+    },
+
     // el-upload 自定义上传：经 RequestService 走统一鉴权（Bearer token），场景为 small-object
     uploadImage(option) {
       const formData = new FormData();
@@ -267,14 +317,23 @@ export default {
       }
 
       this.saving = true;
-      Api.smallObject.saveSmallObject({
-        objectType: this.editForm.objectType,
-        imageUrl: this.editForm.imageUrl,
-        story: this.editForm.story
-      }, ({ data }) => {
+      // 新增与编辑共用一个弹窗：编辑走 update（带 id），新增走 save
+      const request = this.isEditMode
+        ? Api.smallObject.updateSmallObject
+        : Api.smallObject.saveSmallObject;
+      const payload = Object.assign(
+        {
+          objectType: this.editForm.objectType,
+          imageUrl: this.editForm.imageUrl,
+          story: this.editForm.story
+        },
+        this.isEditMode ? { id: this.editForm.id } : null
+      );
+      const successText = this.isEditMode ? '更新成功' : '新增成功';
+      request.call(Api.smallObject, payload, ({ data }) => {
         this.saving = false;
         if (data.code === 0) {
-          this.$message.success('新增成功');
+          this.$message.success(successText);
           this.dialogVisible = false;
           this.fetchObjectList();
         } else {
@@ -389,5 +448,13 @@ export default {
   margin-left: 10px;
   color: #909399;
   font-size: 12px;
+}
+
+.danger-text {
+  color: #f56c6c;
+}
+
+.success-text {
+  color: #67c23a;
 }
 </style>

@@ -42,6 +42,25 @@ public interface SmallObjectService extends BaseService<SmallObjectEntity> {
     void save(SmallObjectDTO dto);
 
     /**
+     * 更新小物件（全量更新类型、图片、故事）。
+     * 记录不存在或已软删时抛「物件不存在」，不做静默成功；
+     * 类型唯一性校验排除自身 id——保留原类型不算重复占用。
+     *
+     * @param dto 更新请求，id 必填
+     */
+    void update(SmallObjectDTO dto);
+
+    /**
+     * 仅更新启用/停用状态。
+     * 独立于 update 是刻意的：状态切换只提交 id 与目标状态，不读写图片与故事，
+     * 避免并发下用陈旧副本覆盖他人刚改过的故事内容。
+     *
+     * @param id     小物件 ID
+     * @param status 目标状态：1 启用，0 停用
+     */
+    void updateStatus(Long id, Integer status);
+
+    /**
      * 查询可选物件类型列表，供新增弹窗的类型下拉使用。
      * 每个字典小类返回 key、显示名与是否已被未删除物件占用。
      *

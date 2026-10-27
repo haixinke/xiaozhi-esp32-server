@@ -439,6 +439,141 @@ class SmallObjectServiceTest {
         assertThat(count).isZero();
     }
 
+    // ---- 更新 ----
+
+    /** 构造针对已有记录的更新 DTO */
+    private SmallObjectDTO updateDTO(Long id, String objectType) {
+        SmallObjectDTO dto = validDTO(objectType);
+        dto.setId(id);
+        dto.setImageUrl("https://oss.example.com/small-object/updated.png");
+        dto.setStory("更新后的故事");
+        return dto;
+    }
+
+    @Test
+    @DisplayName("update 正常更新：图片与故事被替换，状态保持原值")
+    void update_normal_replacesImageAndStory() {
+        String type = createObjectType("TEST_TYPE_UPD_OK", "可更新类型", 1);
+        Long id = saveAndTrack(validDTO(type));
+
+        smallObjectService.update(updateDTO(id, type));
+
+        SmallObjectEntity saved = smallObjectDao.selectById(id);
+        assertThat(saved.getImageUrl()).isEqualTo("https://oss.example.com/small-object/updated.png");
+        assertThat(saved.getStory()).isEqualTo("更新后的故事");
+        assertThat(saved.getObjectType()).isEqualTo(type);
+        assertThat(saved.getStatus()).isEqualTo(1);
+        assertThat(saved.getDeleted()).isZero();
+    }
+
+    @Test
+    @DisplayName("update 改为已被其他记录占用的类型：被拒绝，原记录不变")
+    void update_toOccupiedType_rejected() {
+        String typeA = createObjectType("TEST_TYPE_UPD_OCC_A", "占用A", 1);
+        String typeB = createObjectType("TEST_TYPE_UPD_OCC_B", "占用B", 2);
+        Long idA = saveAndTrack(validDTO(typeA));
+        saveAndTrack(validDTO(typeB));
+
+        assertThatThrownBy(() -> smallObjectService.update(updateDTO(idA, typeB)))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_TYPE_ALREADY_USED);
+
+        // 校验失败不得写入半条数据：A 的记录保持原样
+        SmallObjectEntity unchanged = smallObjectDao.selectById(idA);
+        assertThat(unchanged.getObjectType()).isEqualTo(typeA);
+        assertThat(unchanged.getStory()).isEqualTo("这是一段物件背后的故事");
+    }
+
+    @Test
+    @DisplayName("update 保留自身类型：不报类型重复")
+    void update_keepOwnType_allowed() {
+        String type = createObjectType("TEST_TYPE_UPD_SELF", "自身类型", 1);
+        Long id = saveAndTrack(validDTO(type));
+
+        smallObjectService.update(updateDTO(id, type));
+
+        assertThat(smallObjectDao.selectById(id).getStory()).isEqualTo("更新后的故事");
+    }
+
+    @Test
+    @DisplayName("update 改为未被占用的类型：成功，旧类型随之释放")
+    void update_toFreeType_succeeds() {
+        String typeA = createObjectType("TEST_TYPE_UPD_FREE_A", "迁出类型", 1);
+        String typeB = createObjectType("TEST_TYPE_UPD_FREE_B", "迁入类型", 2);
+        Long id = saveAndTrack(validDTO(typeA));
+
+        smallObjectService.update(updateDTO(id, typeB));
+
+        SmallObjectEntity saved = smallObjectDao.selectById(id);
+        assertThat(saved.getObjectType()).isEqualTo(typeB);
+        // 旧类型已释放，可被新记录占用
+        assertThat(smallObjectService.listObjectTypes().stream()
+                .filter(item -> typeA.equals(item.getKey()))
+                .findFirst().orElseThrow().getUsed()).isFalse();
+    }
+
+    @Test
+    @DisplayName("update 不存在的 id：返回物件不存在，不做静默成功")
+    void update_missingId_throwsNotFound() {
+        String type = createObjectType("TEST_TYPE_UPD_MISSING", "无主类型", 1);
+
+        assertThatThrownBy(() -> smallObjectService.update(updateDTO(-1L, type)))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("update 已软删的记录：按不存在处理")
+    void update_deletedRecord_throwsNotFound() {
+        String type = createObjectType("TEST_TYPE_UPD_DELETED", "已删更新类型", 1);
+        Long deletedId = createObject(type, 1, 1);
+
+        assertThatThrownBy(() -> smallObjectService.update(updateDTO(deletedId, type)))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+    }
+
+    // ---- 状态切换 ----
+
+    @Test
+    @DisplayName("updateStatus 只改状态：图片与故事保持原值")
+    void updateStatus_onlyChangesStatus() {
+        String type = createObjectType("TEST_TYPE_STATUS_ONLY", "状态类型", 1);
+        Long id = saveAndTrack(validDTO(type));
+
+        smallObjectService.updateStatus(id, 0);
+
+        SmallObjectEntity saved = smallObjectDao.selectById(id);
+        assertThat(saved.getStatus()).isEqualTo(0);
+        // 状态切换不回传图片与故事，必须保持原值，避免覆盖他人刚改过的内容
+        assertThat(saved.getImageUrl()).isEqualTo("https://oss.example.com/small-object/42/abc.png");
+        assertThat(saved.getStory()).isEqualTo("这是一段物件背后的故事");
+    }
+
+    @Test
+    @DisplayName("updateStatus 不存在的 id：返回物件不存在")
+    void updateStatus_missingId_throwsNotFound() {
+        assertThatThrownBy(() -> smallObjectService.updateStatus(-1L, 0))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("updateStatus 已软删的记录：按不存在处理")
+    void updateStatus_deletedRecord_throwsNotFound() {
+        String type = createObjectType("TEST_TYPE_STATUS_DELETED", "已删状态类型", 1);
+        Long deletedId = createObject(type, 1, 1);
+
+        assertThatThrownBy(() -> smallObjectService.updateStatus(deletedId, 0))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+    }
+
     // ---- 可选物件类型 ----
 
     @Test

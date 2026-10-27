@@ -20,10 +20,10 @@ function saveMethodSource() {
   return apiSource.slice(start, end === -1 ? undefined : end)
 }
 
-/** 截出 handleSave 中调用 saveSmallObject 的那段代码 */
+/** 截出 handleSave 中发起保存请求的那段代码（新增与编辑共用一个请求分发） */
 function saveCallSiteSource() {
-  const start = viewSource.indexOf('Api.smallObject.saveSmallObject(')
-  assert.notEqual(start, -1, 'SmallObjectManagement.vue 应调用 saveSmallObject')
+  const start = viewSource.indexOf('const request = this.isEditMode')
+  assert.notEqual(start, -1, 'SmallObjectManagement.vue 的 handleSave 应按模式分发 save/update 请求')
   const end = viewSource.indexOf('\n    }', start)
   return viewSource.slice(start, end === -1 ? undefined : end)
 }
@@ -40,9 +40,11 @@ describe('small object create - rejected save must not lock the dialog', () => {
     assert.match(source, /failCallback\(/)
   })
 
-  it('create dialog passes a fail callback to saveSmallObject', () => {
+  it('save call passes both success and fail callbacks', () => {
     const source = saveCallSiteSource()
-    const callbacks = source.match(/\}\s*,\s*\(\{\s*data\s*\}\)\s*=>\s*\{/g) || []
+    const callStart = source.indexOf('request.call(')
+    assert.notEqual(callStart, -1, '保存应通过 request.call 分发到 save/update')
+    const callbacks = source.slice(callStart).match(/\(\{\s*data\s*\}\)\s*=>\s*\{/g) || []
     assert.equal(callbacks.length, 2, '保存调用应同时传入 success 与 fail 两个回调')
   })
 

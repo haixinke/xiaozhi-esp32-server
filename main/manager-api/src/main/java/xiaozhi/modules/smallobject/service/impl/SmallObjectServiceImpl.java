@@ -91,8 +91,41 @@ public class SmallObjectServiceImpl extends BaseServiceImpl<SmallObjectDao, Smal
     }
 
     @Override
-    public List<SmallObjectTypeVO> listObjectTypes() {
-        List<SysDictDataItem> dictItems = sysDictDataService
+    @Transactional(rollbackFor = Exception.class)
+    public void update(SmallObjectDTO dto) {
+        if (dto == null || dto.getId() == null) {
+            throw new RenException(ErrorCode.PARAM_VALUE_NULL);
+        }
+        SmallObjectEntity entity = selectUndeleted(dto.getId());
+        if (entity == null) {
+            // 不存在与已删除同样按「物件不存在」处理，不做静默成功
+            throw new RenException(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+        }
+        validateForUpdate(dto);
+        entity.setObjectType(StringUtils.trim(dto.getObjectType()));
+        entity.setImageUrl(dto.getImageUrl());
+        entity.setStory(dto.getStory());
+        // 状态不在全量更新范围内：启用/停用只能走 updateStatus，避免编辑弹窗覆盖他人在列表里刚切换的状态
+        updateById(entity);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateStatus(Long id, Integer status) {
+        if (id == null || status == null) {
+            throw new RenException(ErrorCode.PARAM_VALUE_NULL);
+        }
+        SmallObjectEntity entity = selectUndeleted(id);
+        if (entity == null) {
+            throw new RenException(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+        }
+        // 只写状态字段，图片与故事保持原值
+        entity.setStatus(status);
+        updateById(entity);
+    }
+
+    @Override
+    public List<SmallObjectTypeVO> listObjectTypes() {        List<SysDictDataItem> dictItems = sysDictDataService
                 .getDictDataByType(Constant.DictType.SMALL_OBJECT_TYPE.getValue());
         if (dictItems == null || dictItems.isEmpty()) {
             return List.of();
@@ -142,6 +175,43 @@ public class SmallObjectServiceImpl extends BaseServiceImpl<SmallObjectDao, Smal
             throw new RenException("物件故事最多" + SmallObjectDTO.STORY_MAX_LENGTH + "字");
         }
         // 落库前统一去掉类型两端空白，避免 "TYPE" 与 "TYPE " 被当成两个类型
+        dto.setObjectType(objectType);
+    }
+
+    /**
+     * 校验更新请求的业务规则，与新增的差异仅在唯一性：排除自身 id 后再查占用，
+     * 因此保留原类型不会被误判为重复，改为其他未占用类型也可通过。
+     */
+    private void validateForUpdate(SmallObjectDTO dto) {
+        String objectType = StringUtils.trimToNull(dto.getObjectType());
+        if (objectType == null) {
+            throw new RenException(ErrorCode.PARAM_VALUE_NULL);
+        }
+        // 类型必须存在于 SMALL_OBJECT_TYPE 字典（不信前端下拉）
+        List<SysDictDataItem> dictItems = sysDictDataService
+                .getDictDataByType(Constant.DictType.SMALL_OBJECT_TYPE.getValue());
+        boolean typeExists = dictItems != null && dictItems.stream()
+                .anyMatch(item -> objectType.equals(item.getKey()));
+        if (!typeExists) {
+            throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_NOT_EXIST);
+        }
+        // 同类型在未删除记录中只允许一条；排除自身 id，保留原类型不报重复
+        Long occupied = baseDao.selectCount(new QueryWrapper<SmallObjectEntity>()
+                .eq("object_type", objectType)
+                .eq("deleted", 0)
+                .ne("id", dto.getId()));
+        if (occupied != null && occupied > 0) {
+            throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_ALREADY_USED);
+        }
+        if (StringUtils.isBlank(dto.getImageUrl())) {
+            throw new RenException("物件图片不能为空");
+        }
+        if (StringUtils.isBlank(dto.getStory())) {
+            throw new RenException("物件故事不能为空");
+        }
+        if (dto.getStory().length() > SmallObjectDTO.STORY_MAX_LENGTH) {
+            throw new RenException("物件故事最多" + SmallObjectDTO.STORY_MAX_LENGTH + "字");
+        }
         dto.setObjectType(objectType);
     }
 

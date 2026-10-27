@@ -3075,8 +3075,8 @@
     "semantic_hash": "2f593a2563dc25cde134d224f3f885a6"
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/ErrorCode.java": {
-    "mtime": 1793107464.49904,
-    "ast_hash": "802a50d9fc66914fd5c807cd4d953e32",
+    "mtime": 1793115048.885257,
+    "ast_hash": "6705e8047961be4774ea093d72974bdd",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/RenException.java": {
@@ -8895,8 +8895,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/controller/SmallObjectController.java": {
-    "mtime": 1793113435.9053276,
-    "ast_hash": "1bf5efef5d88dbd3a80c95be8685878b",
+    "mtime": 1793114764.3637245,
+    "ast_hash": "88fd2565d5ce490503385dd51d77ca36",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/dao/SmallObjectDao.java": {
@@ -8920,8 +8920,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/service/impl/SmallObjectServiceImpl.java": {
-    "mtime": 1793113387.3318865,
-    "ast_hash": "972866bebeab51c41f4cdddd29913114",
+    "mtime": 1793115094.7591488,
+    "ast_hash": "b614d184ff9ed6f9d476b2b726ec9e14",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/vo/SmallObjectTypeVO.java": {
@@ -8935,18 +8935,18 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/smallobject/SmallObjectServiceTest.java": {
-    "mtime": 1793113450.2881625,
-    "ast_hash": "3dfd9d628ac11dd8bf4f2770045d1651",
+    "mtime": 1793115063.7336004,
+    "ast_hash": "236138b840d7a316db0e3f3179e63308",
     "semantic_hash": ""
   },
   "main/manager-web/src/apis/module/smallObject.js": {
-    "mtime": 1793113435.9669635,
-    "ast_hash": "ee92cbadf53a01a52287d5ab14d75ddd",
+    "mtime": 1793114726.5975833,
+    "ast_hash": "dd034872b12e8e8c25779ef22594011a",
     "semantic_hash": ""
   },
   "main/manager-web/src/views/SmallObjectManagement.vue": {
-    "mtime": 1793113518.4615986,
-    "ast_hash": "f2363300161a2e407fd3dfc76072bddf",
+    "mtime": 1793114732.859117,
+    "ast_hash": "cb2a04394fdb9d03d80ace5214045ee5",
     "semantic_hash": ""
   },
   "main/manager-web/tests/smallObjectCreate.test.mjs": {
@@ -8955,8 +8955,13 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/dto/SmallObjectStatusDTO.java": {
-    "mtime": 1793113255.8964875,
-    "ast_hash": "df2c4d63d9c55dc1b6faaf88eb4341c9",
+    "mtime": 1793114691.9140925,
+    "ast_hash": "a55b1290372c8876aa329619362df49d",
+    "semantic_hash": ""
+  },
+  "main/manager-web/tests/smallObjectDelete.test.mjs": {
+    "mtime": 1793114892.588907,
+    "ast_hash": "0f9c2968f66f4439954150723d50546d",
     "semantic_hash": ""
   }
 }

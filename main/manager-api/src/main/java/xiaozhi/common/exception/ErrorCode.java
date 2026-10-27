@@ -319,6 +319,8 @@ public interface ErrorCode {
 
     // 小物件管理相关错误码（10360 起独立连续区间，接在游戏管理 1035x 之后）
     int SMALL_OBJECT_NOT_FOUND = 10360; // 物件不存在
+    int SMALL_OBJECT_TYPE_NOT_EXIST = 10361; // 物件类型不存在
+    int SMALL_OBJECT_TYPE_ALREADY_USED = 10362; // 该物件类型已被占用
 
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败

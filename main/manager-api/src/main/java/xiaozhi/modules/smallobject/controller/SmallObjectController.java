@@ -1,10 +1,13 @@
 package xiaozhi.modules.smallobject.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,12 +21,16 @@ import xiaozhi.common.constant.Constant;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
 import xiaozhi.common.validator.ValidatorUtils;
+import xiaozhi.common.validator.group.AddGroup;
+import xiaozhi.common.validator.group.DefaultGroup;
+import xiaozhi.modules.smallobject.dto.SmallObjectDTO;
 import xiaozhi.modules.smallobject.service.SmallObjectService;
+import xiaozhi.modules.smallobject.vo.SmallObjectTypeVO;
 import xiaozhi.modules.smallobject.vo.SmallObjectVO;
 
 /**
  * 小物件管理（运营管理菜单下的「小物件管理」子项）。
- * 本片只提供只读接口；新增/编辑/删除由后续票补齐。
+ * 本片提供只读列表/详情与新增；编辑、状态切换、删除由后续票补齐。
  */
 @AllArgsConstructor
 @RestController
@@ -50,5 +57,21 @@ public class SmallObjectController {
     public Result<SmallObjectVO> get(@PathVariable("id") Long id) {
         SmallObjectVO vo = smallObjectService.get(id);
         return new Result<SmallObjectVO>().ok(vo);
+    }
+
+    @PostMapping("/save")
+    @Operation(summary = "新增小物件")
+    @RequiresPermissions("sys:role:superAdmin")
+    public Result<Void> save(@RequestBody SmallObjectDTO dto) {
+        ValidatorUtils.validateEntity(dto, AddGroup.class, DefaultGroup.class);
+        smallObjectService.save(dto);
+        return new Result<>();
+    }
+
+    @GetMapping("/object-types")
+    @Operation(summary = "查询可选物件类型（含是否已被占用）")
+    @RequiresPermissions("sys:role:superAdmin")
+    public Result<List<SmallObjectTypeVO>> objectTypes() {
+        return new Result<List<SmallObjectTypeVO>>().ok(smallObjectService.listObjectTypes());
     }
 }

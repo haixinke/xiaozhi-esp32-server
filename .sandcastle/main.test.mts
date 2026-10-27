@@ -506,6 +506,20 @@ test('repeated final-review rejection exits after a bounded number of fixes', ()
   assert.equal(result.batchState.lastOutcome, 'repair_limit', result.output);
 });
 
+test('each final review reuses its sandbox for repair and closes before the next round', () => {
+  const result = runFixture({ TEST_FINAL_ALWAYS_REJECT: '1' });
+  assert.equal(result.batchState.lastOutcome, 'repair_limit', result.output);
+  const firstFinal = result.events.findIndex((event) => event.type === 'sandbox' && event.branch.includes('/final-review/'));
+  const lifecycle = result.events.slice(firstFinal).filter((event) =>
+    event.type === 'sandbox' || event.type === 'close' ||
+    (event.type === 'agent' && ['final-reviewer', 'fixer', 'fix-reviewer'].includes(event.name)));
+  assert.deepEqual(lifecycle.map((event) => event.type === 'agent' ? event.name : event.type), [
+    'sandbox', 'final-reviewer', 'fixer', 'fix-reviewer', 'close',
+    'sandbox', 'final-reviewer', 'fixer', 'fix-reviewer', 'close',
+    'sandbox', 'final-reviewer', 'close',
+  ]);
+});
+
 // --- Task 3: 失败 issue 隔离、继续调度、重启语义 ---
 
 test('a rejected issue is blocked and an independent issue continues', () => {

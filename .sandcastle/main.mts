@@ -593,32 +593,62 @@ async function runBatch(batch: Batch) {
 
   for (let round = 0; round <= MAX_FIX_ROUNDS; round++) {
     const head = await git(repoRoot, ["rev-parse", "HEAD"]);
-    const sandbox = await createSandbox(branchName("final-review"));
-    let report: ReviewReport;
-    let finalChecks: string[] = [];
+    const branch = branchName("final-review");
+    const sandbox = await createSandbox(branch);
+    let verifiedSha: string | undefined;
     try {
       await preflight(sandbox);
       await assertSpecsUnchanged(batch, sandbox.worktreePath);
       const verified = await verify(sandbox, batch.baseSha, `final-${round}`);
-      finalChecks = verified.checks.map((check) => check.command);
+      const finalChecks = verified.checks.map((check) => check.command);
       const reviewed = await review(sandbox, batch, {
         name: "final-reviewer", promptFile: "final-review-prompt.md", baseSha: batch.baseSha,
         issueIds: batch.issueIds, reportName: `final-${round}`, checks: verified.checks,
         requirementIds: [...batch.issueIds, ...batch.specRequirements],
       });
-      report = reviewed.report;
+      const report = reviewed.report;
       if (reviewed.reviewedSha !== head) throw new Error("Final review did not inspect host HEAD");
       await requireClean(sandbox.worktreePath);
+      if (await git(repoRoot, ["rev-parse", "HEAD"]) !== head ||
+          await git(repoRoot, ["symbolic-ref", "--short", "HEAD"]) !== hostBranch) {
+        throw new Error("Host HEAD changed during final review; report invalid");
+      }
+      if (report.verdict === "pass") {
+        assertReviewPass(report, { baseSha: batch.baseSha, reviewedSha: head, issueIds: batch.issueIds,
+          requirementIds: [...batch.issueIds, ...batch.specRequirements], checkedCommands: finalChecks });
+      } else {
+        if (report.verdict !== "changes_required" || !report.findings.some((finding) => finding.severity === "blocking")) {
+          throw new Error(`Final review blocked at ${head}; inspect report in ${join(logDir, batch.id)}`);
+        }
+        if (round === MAX_FIX_ROUNDS) throw new Error(`Final repair limit reached for batch ${batch.id}`);
+
+        const fix = await sandbox.run({
+          name: "fixer", maxIterations: 1, completionSignal: REVIEW_SIGNALS, agent: sandcastle.claudeCode(AGENT_MODEL),
+          promptFile: join(repoRoot, ".sandcastle", "fix-review-prompt.md"),
+          promptArgs: { REVIEWED_SHA: head, FINDINGS: JSON.stringify(report.findings), ISSUE_IDS: batch.issueIds.join(",") },
+        });
+        if (!fix.commits.length) throw new Error("Final fixer made no commits");
+        await assertSpecsUnchanged(batch, sandbox.worktreePath);
+        const fixed = await verify(sandbox, head, `fix-${round}`);
+        verifiedSha = fixed.sha;
+        const fixReviewed = await review(sandbox, batch, {
+          name: "fix-reviewer", promptFile: "review-prompt.md", baseSha: head,
+          issueIds: batch.issueIds, reportName: `fix-${round}`, checks: fixed.checks,
+        });
+        assertReviewPass(fixReviewed.report, { baseSha: head, reviewedSha: verifiedSha, issueIds: batch.issueIds,
+          checkedCommands: fixed.checks.map((check) => check.command) });
+        verifiedSha = (await verify(sandbox, head, `fix-review-${round}`)).sha;
+      }
     } finally {
       await sandbox.close();
     }
-    if (await git(repoRoot, ["rev-parse", "HEAD"]) !== head ||
-        await git(repoRoot, ["symbolic-ref", "--short", "HEAD"]) !== hostBranch) {
-      throw new Error("Host HEAD changed during final review; report invalid");
-    }
-    if (report.verdict === "pass") {
-      assertReviewPass(report, { baseSha: batch.baseSha, reviewedSha: head, issueIds: batch.issueIds,
-        requirementIds: [...batch.issueIds, ...batch.specRequirements], checkedCommands: finalChecks });
+    if (verifiedSha) {
+      await mergeVerified(head, branch, verifiedSha, hostBranch);
+    } else {
+      if (await git(repoRoot, ["rev-parse", "HEAD"]) !== head ||
+          await git(repoRoot, ["symbolic-ref", "--short", "HEAD"]) !== hostBranch) {
+        throw new Error("Host HEAD changed during final review; report invalid");
+      }
       if ((await pendingIssues(repoRoot, batch.issueIds)).length) {
         throw new Error("Final review cannot complete while target issues remain open");
       }
@@ -626,36 +656,6 @@ async function runBatch(batch: Batch) {
       console.log(`Batch ${batch.id} complete at ${head}`);
       return;
     }
-    if (report.verdict !== "changes_required" || !report.findings.some((finding) => finding.severity === "blocking")) {
-      throw new Error(`Final review blocked at ${head}; inspect report in ${join(logDir, batch.id)}`);
-    }
-    if (round === MAX_FIX_ROUNDS) throw new Error(`Final repair limit reached for batch ${batch.id}`);
-
-    const branch = branchName("final-fix");
-    const fixSandbox = await createSandbox(branch);
-    let verifiedSha: string;
-    try {
-      await preflight(fixSandbox);
-      const fix = await fixSandbox.run({
-        name: "fixer", maxIterations: 1, completionSignal: REVIEW_SIGNALS, agent: sandcastle.claudeCode(AGENT_MODEL),
-        promptFile: join(repoRoot, ".sandcastle", "fix-review-prompt.md"),
-        promptArgs: { REVIEWED_SHA: head, FINDINGS: JSON.stringify(report.findings), ISSUE_IDS: batch.issueIds.join(",") },
-      });
-      if (!fix.commits.length) throw new Error("Final fixer made no commits");
-      await assertSpecsUnchanged(batch, fixSandbox.worktreePath);
-      const fixed = await verify(fixSandbox, head, `fix-${round}`);
-      verifiedSha = fixed.sha;
-      const reviewed = await review(fixSandbox, batch, {
-        name: "fix-reviewer", promptFile: "review-prompt.md", baseSha: head,
-        issueIds: batch.issueIds, reportName: `fix-${round}`, checks: fixed.checks,
-      });
-      assertReviewPass(reviewed.report, { baseSha: head, reviewedSha: verifiedSha, issueIds: batch.issueIds,
-        checkedCommands: fixed.checks.map((check) => check.command) });
-      verifiedSha = (await verify(fixSandbox, head, `fix-review-${round}`)).sha;
-    } finally {
-      await fixSandbox.close();
-    }
-    await mergeVerified(head, branch, verifiedSha, hostBranch);
   }
 }
 

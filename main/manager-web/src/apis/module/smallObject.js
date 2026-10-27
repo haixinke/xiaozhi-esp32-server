@@ -22,5 +22,68 @@ export default {
                     this.getSmallObjectPage(params, callback)
                 })
             }).send()
+    },
+
+    // 查询可选物件类型（含 used 占用标记），供新增弹窗的类型下拉使用
+    getObjectTypes(callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/small-object/object-types`)
+            .method('GET')
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) => {
+                console.error('获取物件类型失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.getObjectTypes(callback)
+                })
+            }).send()
+    },
+
+    // 新增小物件
+    saveSmallObject(data, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/small-object/save`)
+            .method('POST')
+            .data(data)
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) => {
+                console.error('新增小物件失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.saveSmallObject(data, callback)
+                })
+            }).send()
+    },
+
+    // 上传物件图片（/upload/image 需要 Bearer 鉴权，走 RequestService 统一带 token）
+    // scene 为后端 @RequestParam query 参数，必须拼在 URL 上；放 FormData 后端读不到
+    uploadImage(formData, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/upload/image?scene=small-object`)
+            .method('POST')
+            .data(formData)
+            // header() 会整体替换默认 header（含 json content-type）；
+            // 传空对象让 flyio 检测到 FormData 后自动删掉 Content-Type，由浏览器生成 multipart boundary
+            .header({})
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((res) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(res)
+                }
+            })
+            .networkFail((err) => {
+                console.error('上传物件图片失败:', err)
+                if (failCallback) {
+                    failCallback(err)
+                }
+            }).send()
     }
 }

@@ -1,10 +1,14 @@
 package xiaozhi.modules.smallobject.service.impl;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -17,8 +21,10 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.utils.ConvertUtils;
 import xiaozhi.modules.smallobject.dao.SmallObjectDao;
+import xiaozhi.modules.smallobject.dto.SmallObjectDTO;
 import xiaozhi.modules.smallobject.entity.SmallObjectEntity;
 import xiaozhi.modules.smallobject.service.SmallObjectService;
+import xiaozhi.modules.smallobject.vo.SmallObjectTypeVO;
 import xiaozhi.modules.smallobject.vo.SmallObjectVO;
 import xiaozhi.modules.sys.service.SysDictDataService;
 import xiaozhi.modules.sys.vo.SysDictDataItem;
@@ -69,6 +75,91 @@ public class SmallObjectServiceImpl extends BaseServiceImpl<SmallObjectDao, Smal
         QueryWrapper<SmallObjectEntity> wrapper = new QueryWrapper<>();
         wrapper.eq("id", id).eq("deleted", 0);
         return baseDao.selectOne(wrapper);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void save(SmallObjectDTO dto) {
+        validateForCreate(dto);
+        SmallObjectEntity entity = ConvertUtils.sourceToTarget(dto, SmallObjectEntity.class);
+        // 新增一律为未删除；状态未传时默认启用，与表默认值一致
+        entity.setDeleted(0);
+        if (entity.getStatus() == null) {
+            entity.setStatus(1);
+        }
+        insert(entity);
+    }
+
+    @Override
+    public List<SmallObjectTypeVO> listObjectTypes() {
+        List<SysDictDataItem> dictItems = sysDictDataService
+                .getDictDataByType(Constant.DictType.SMALL_OBJECT_TYPE.getValue());
+        if (dictItems == null || dictItems.isEmpty()) {
+            return List.of();
+        }
+        // 一次性取出所有已占用类型，避免为每个小类各查一次库
+        Set<String> usedTypes = usedObjectTypes();
+        return dictItems.stream()
+                .map(item -> new SmallObjectTypeVO(item.getKey(), item.getName(), usedTypes.contains(item.getKey())))
+                .toList();
+    }
+
+    /**
+     * 校验新增请求的业务规则。
+     * 类型必须在字典中存在，防止前端下拉被绕过写入野类型；
+     * 同一类型在未删除记录中只允许一条——本表不建 DB 唯一索引（软删下会阻止删除后重建），
+     * 唯一性只能由这里承担；图片与故事非空、故事不超长在 Service 再兜一次。
+     */
+    private void validateForCreate(SmallObjectDTO dto) {
+        if (dto == null) {
+            throw new RenException(ErrorCode.PARAM_VALUE_NULL);
+        }
+        String objectType = StringUtils.trimToNull(dto.getObjectType());
+        if (objectType == null) {
+            throw new RenException(ErrorCode.PARAM_VALUE_NULL);
+        }
+        // 类型必须存在于 SMALL_OBJECT_TYPE 字典（不信前端下拉）
+        List<SysDictDataItem> dictItems = sysDictDataService
+                .getDictDataByType(Constant.DictType.SMALL_OBJECT_TYPE.getValue());
+        boolean typeExists = dictItems != null && dictItems.stream()
+                .anyMatch(item -> objectType.equals(item.getKey()));
+        if (!typeExists) {
+            throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_NOT_EXIST);
+        }
+        // 同类型在未删除记录中只允许一条
+        if (usedObjectTypes().contains(objectType)) {
+            throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_ALREADY_USED);
+        }
+        // 图片与故事必填、故事不超长。HTTP 入口已由 DTO 注解先拦一道，
+        // 这里是 Service 自己的兜底（Service 是唯一安全边界），文案与 validation 文案保持一致
+        if (StringUtils.isBlank(dto.getImageUrl())) {
+            throw new RenException("物件图片不能为空");
+        }
+        if (StringUtils.isBlank(dto.getStory())) {
+            throw new RenException("物件故事不能为空");
+        }
+        if (dto.getStory().length() > SmallObjectDTO.STORY_MAX_LENGTH) {
+            throw new RenException("物件故事最多" + SmallObjectDTO.STORY_MAX_LENGTH + "字");
+        }
+        // 落库前统一去掉类型两端空白，避免 "TYPE" 与 "TYPE " 被当成两个类型
+        dto.setObjectType(objectType);
+    }
+
+    /**
+     * 查询已被未删除物件占用的类型集合。
+     * 软删语义下必须显式带 deleted = 0，否则删掉的记录会永久占用该类型。
+     */
+    private Set<String> usedObjectTypes() {
+        List<SmallObjectEntity> rows = baseDao.selectList(new QueryWrapper<SmallObjectEntity>()
+                .select("DISTINCT object_type")
+                .eq("deleted", 0));
+        Set<String> types = new HashSet<>();
+        for (SmallObjectEntity row : rows) {
+            if (row.getObjectType() != null) {
+                types.add(row.getObjectType());
+            }
+        }
+        return types;
     }
 
     /**

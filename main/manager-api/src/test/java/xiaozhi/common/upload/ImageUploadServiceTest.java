@@ -147,6 +147,40 @@ class ImageUploadServiceTest {
     }
 
     @Test
+    @DisplayName("小物件场景：允许 png/jpeg/webp，不允许 svg，上限 2MB，路径前缀 small-object")
+    void uploadScene_smallObject_allowsRasterOnly() {
+        UploadScene scene = UploadScene.fromCode("small-object");
+
+        assertThat(scene).isEqualTo(UploadScene.SMALL_OBJECT);
+        assertThat(scene.getPathPrefix()).isEqualTo("small-object");
+        assertThat(scene.getAllowedTypes()).containsExactlyInAnyOrder("image/png", "image/jpeg", "image/webp");
+        // 不收 svg：扩展名映射不支持，会产出缺扩展名的 OSS key
+        assertThat(scene.getAllowedTypes()).doesNotContain("image/svg+xml");
+        assertThat(scene.getMaxSize()).isEqualTo(2 * 1024 * 1024L);
+    }
+
+    @Test
+    @DisplayName("小物件场景：正常上传 key 落在 small-object/{userId}/ 下")
+    void uploadImage_smallObjectScene_usesDedicatedPath() throws Exception {
+        when(file.getBytes()).thenReturn(new byte[] { 1, 2, 3 });
+
+        String url = imageUploadService.uploadImage(42L, file, UploadScene.SMALL_OBJECT);
+
+        assertThat(url).startsWith("https://oss.eggbabe.com/small-object/42/");
+        assertThat(url).endsWith(".png");
+    }
+
+    @Test
+    @DisplayName("小物件场景：svg 被拒绝")
+    void uploadImage_smallObjectScene_rejectsSvg() {
+        when(file.getContentType()).thenReturn("image/svg+xml");
+
+        assertThatThrownBy(() -> imageUploadService.uploadImage(1L, file, UploadScene.SMALL_OBJECT))
+                .isInstanceOf(RenException.class)
+                .satisfies(ex -> assertThat(((RenException) ex).getCode()).isEqualTo(ErrorCode.IMAGE_FILE_TYPE_ERROR));
+    }
+
+    @Test
     @DisplayName("fromCode - 大小写不敏感解析场景码")
     void fromCode_caseInsensitive_resolvesEnum() {
         assertThat(UploadScene.fromCode("doodle")).isEqualTo(UploadScene.DOODLE);

@@ -26,8 +26,10 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.common.redis.RedisKeys;
 import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.modules.smallobject.dao.SmallObjectDao;
+import xiaozhi.modules.smallobject.dto.SmallObjectDTO;
 import xiaozhi.modules.smallobject.entity.SmallObjectEntity;
 import xiaozhi.modules.smallobject.service.SmallObjectService;
+import xiaozhi.modules.smallobject.vo.SmallObjectTypeVO;
 import xiaozhi.modules.smallobject.vo.SmallObjectVO;
 import xiaozhi.modules.sys.dao.SysDictDataDao;
 import xiaozhi.modules.sys.dao.SysDictTypeDao;
@@ -320,5 +322,188 @@ class SmallObjectServiceTest {
                 .orElseThrow();
 
         assertThat(vo.getObjectTypeName()).isEqualTo("TEST_TYPE_DICT_GONE");
+    }
+
+    // ---- 新增 ----
+
+    /** 构造合法的新增 DTO，单个用例可按需覆盖字段 */
+    private SmallObjectDTO validDTO(String objectType) {
+        SmallObjectDTO dto = new SmallObjectDTO();
+        dto.setObjectType(objectType);
+        dto.setImageUrl("https://oss.example.com/small-object/42/abc.png");
+        dto.setStory("这是一段物件背后的故事");
+        return dto;
+    }
+
+    /** 保存并登记新行 id，供 AfterEach 物理清理 */
+    private Long saveAndTrack(SmallObjectDTO dto) {
+        smallObjectService.save(dto);
+        SmallObjectEntity entity = smallObjectDao.selectOne(new QueryWrapper<SmallObjectEntity>()
+                .eq("object_type", dto.getObjectType()).orderByDesc("id").last("LIMIT 1"));
+        assertThat(entity).isNotNull();
+        objectIds.add(entity.getId());
+        return entity.getId();
+    }
+
+    @Test
+    @DisplayName("save 正常新增：图片与故事正确落库，默认启用且未删除")
+    void save_normal_persistsImageAndStory() {
+        String type = createObjectType("TEST_TYPE_SAVE_OK", "可保存类型", 1);
+        SmallObjectDTO dto = validDTO(type);
+
+        Long id = saveAndTrack(dto);
+
+        SmallObjectEntity saved = smallObjectDao.selectById(id);
+        assertThat(saved.getObjectType()).isEqualTo(type);
+        assertThat(saved.getImageUrl()).isEqualTo("https://oss.example.com/small-object/42/abc.png");
+        assertThat(saved.getStory()).isEqualTo("这是一段物件背后的故事");
+        assertThat(saved.getStatus()).isEqualTo(1);
+        assertThat(saved.getDeleted()).isZero();
+    }
+
+    @Test
+    @DisplayName("save 同一类型第二次保存：被拒绝并返回类型已被占用")
+    void save_duplicateType_rejected() {
+        String type = createObjectType("TEST_TYPE_SAVE_DUP", "重复类型", 1);
+        saveAndTrack(validDTO(type));
+
+        assertThatThrownBy(() -> smallObjectService.save(validDTO(type)))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_TYPE_ALREADY_USED);
+    }
+
+    @Test
+    @DisplayName("save 类型不在 SMALL_OBJECT_TYPE 字典中：被拒绝并返回类型不存在")
+    void save_unknownType_rejected() {
+        SmallObjectDTO dto = validDTO("TEST_TYPE_NOT_IN_DICT");
+
+        assertThatThrownBy(() -> smallObjectService.save(dto))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_TYPE_NOT_EXIST);
+    }
+
+    @Test
+    @DisplayName("save 故事超过 2000 字：被拒绝，且不落库")
+    void save_storyTooLong_rejected() {
+        String type = createObjectType("TEST_TYPE_SAVE_LONG", "超长故事类型", 1);
+        SmallObjectDTO dto = validDTO(type);
+        dto.setStory("字".repeat(2001));
+
+        assertThatThrownBy(() -> smallObjectService.save(dto))
+                .isInstanceOf(RenException.class);
+        assertNoRecordSaved(type);
+    }
+
+    @Test
+    @DisplayName("save 故事正好 2000 字：允许保存（边界值不被误杀）")
+    void save_storyAtMaxLength_allowed() {
+        String type = createObjectType("TEST_TYPE_SAVE_MAX", "边界故事类型", 1);
+        SmallObjectDTO dto = validDTO(type);
+        dto.setStory("字".repeat(2000));
+
+        Long id = saveAndTrack(dto);
+
+        assertThat(smallObjectDao.selectById(id).getStory()).hasSize(2000);
+    }
+
+    @Test
+    @DisplayName("save 图片为空：被拒绝，且不落库")
+    void save_blankImage_rejected() {
+        String type = createObjectType("TEST_TYPE_SAVE_NO_IMG", "缺图类型", 1);
+        SmallObjectDTO dto = validDTO(type);
+        dto.setImageUrl(" ");
+
+        assertThatThrownBy(() -> smallObjectService.save(dto))
+                .isInstanceOf(RenException.class);
+        assertNoRecordSaved(type);
+    }
+
+    @Test
+    @DisplayName("save 故事为空：被拒绝，且不落库")
+    void save_blankStory_rejected() {
+        String type = createObjectType("TEST_TYPE_SAVE_NO_STORY", "缺故事类型", 1);
+        SmallObjectDTO dto = validDTO(type);
+        dto.setStory("  ");
+
+        assertThatThrownBy(() -> smallObjectService.save(dto))
+                .isInstanceOf(RenException.class);
+        assertNoRecordSaved(type);
+    }
+
+    /** 断言某类型在未删除记录中没有落库，防止校验失败却写入了半条数据 */
+    private void assertNoRecordSaved(String objectType) {
+        Long count = smallObjectDao.selectCount(new QueryWrapper<SmallObjectEntity>()
+                .eq("object_type", objectType).eq("deleted", 0));
+        assertThat(count).isZero();
+    }
+
+    // ---- 可选物件类型 ----
+
+    @Test
+    @DisplayName("object-types 返回字典小类的 key/name，并标记未占用者为 used=false")
+    void objectTypes_marksUnusedType() {
+        String type = createObjectType("TEST_TYPE_OPT_FREE", "空闲类型", 1);
+
+        SmallObjectTypeVO option = smallObjectService.listObjectTypes().stream()
+                .filter(item -> type.equals(item.getKey()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(option.getName()).isEqualTo("空闲类型");
+        assertThat(option.getUsed()).isFalse();
+    }
+
+    @Test
+    @DisplayName("object-types 已被未删除物件占用的类型标记 used=true")
+    void objectTypes_marksUsedType() {
+        String type = createObjectType("TEST_TYPE_OPT_USED", "占用类型", 1);
+        createObject(type, 1, 0);
+
+        SmallObjectTypeVO option = smallObjectService.listObjectTypes().stream()
+                .filter(item -> type.equals(item.getKey()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(option.getUsed()).isTrue();
+    }
+
+    @Test
+    @DisplayName("object-types 已软删的记录不算占用：类型重新可选")
+    void objectTypes_ignoresDeletedRecords() {
+        String type = createObjectType("TEST_TYPE_OPT_DELETED", "已删占用类型", 1);
+        createObject(type, 1, 1);
+
+        SmallObjectTypeVO option = smallObjectService.listObjectTypes().stream()
+                .filter(item -> type.equals(item.getKey()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(option.getUsed()).isFalse();
+    }
+
+    @Test
+    @DisplayName("object-types 只包含 SMALL_OBJECT_TYPE 小类，不混入其他字典大类")
+    void objectTypes_onlyContainsSmallObjectTypes() {
+        String type = createObjectType("TEST_TYPE_OPT_SCOPE", "作用域类型", 1);
+        // 在另一个字典大类下挂一个小类，验证它不会混进物件类型下拉
+        SysDictTypeEntity otherType = sysDictTypeDao.selectOne(
+                new QueryWrapper<SysDictTypeEntity>()
+                        .ne("dict_type", Constant.DictType.SMALL_OBJECT_TYPE.getValue())
+                        .last("LIMIT 1"));
+        assertThat(otherType).as("dev 库应至少存在另一个字典大类").isNotNull();
+        SysDictDataEntity foreign = new SysDictDataEntity();
+        foreign.setDictTypeId(otherType.getId());
+        foreign.setDictValue("TEST_TYPE_FOREIGN_SCOPE");
+        foreign.setDictLabel("外域小类");
+        foreign.setSort(1);
+        sysDictDataDao.insert(foreign);
+        dictDataIds.add(foreign.getId());
+
+        List<SmallObjectTypeVO> options = smallObjectService.listObjectTypes();
+
+        assertThat(options).extracting(SmallObjectTypeVO::getKey).contains(type);
+        assertThat(options).extracting(SmallObjectTypeVO::getKey).doesNotContain("TEST_TYPE_FOREIGN_SCOPE");
     }
 }

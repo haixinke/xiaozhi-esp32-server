@@ -24,7 +24,14 @@ public enum UploadScene {
     /**
      * 游戏管理 icon。存放到 game-icon/{userId}/ 路径下，支持 svg 矢量图标。
      */
-    GAME_ICON("game-icon", Set.of("image/png", "image/jpeg", "image/webp", "image/svg+xml"), 2 * 1024 * 1024L);
+    GAME_ICON("game-icon", Set.of("image/png", "image/jpeg", "image/webp", "image/svg+xml"), 2 * 1024 * 1024L),
+
+    /**
+     * 小物件管理图片。存放到 small-object/{userId}/ 路径下，与游戏图标、涂鸦作品隔离。
+     * 不支持 svg：小物件图片是内容展示图，且 ImageUploadService 的扩展名映射不含 svg，
+     * 放开白名单会产出缺扩展名的 OSS key。
+     */
+    SMALL_OBJECT("small-object", Set.of("image/png", "image/jpeg", "image/webp"), 2 * 1024 * 1024L);
 
     /**
      * OSS key 路径前缀，最终 key 形如 {pathPrefix}/{userId}/{uuid}.{ext}。

@@ -8,8 +8,7 @@
             <div class="operation-header">
               <h2 class="page-title">小物件管理</h2>
               <div class="right-operations">
-                <!-- 新增功能由后续迭代实现，本片只占位展示入口 -->
-                <CustomButton icon="el-icon-plus" type="confirm" size="small">
+                <CustomButton icon="el-icon-plus" type="confirm" size="small" @click="handleAdd">
                   新增小物件
                 </CustomButton>
               </div>
@@ -45,6 +44,62 @@
         </div>
       </div>
     </div>
+
+    <!-- 新增小物件弹窗（本片只实现新增；编辑回填与改类型由后续票实现） -->
+    <el-dialog
+      title="新增小物件"
+      :visible.sync="dialogVisible"
+      width="620px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-position="left" label-width="110px" class="edit-form">
+        <el-form-item label="物件类型" required>
+          <!-- 数据源是 object-types 接口而非字典全量：字典里混有固件类型、手机区号等非物件类型。
+               已被占用的类型不出现在下拉里，前端分页视角看不到跨页占用，由后端 used 标记决定 -->
+          <el-select v-model="editForm.objectType" placeholder="请选择物件类型" class="form-control">
+            <el-option
+              v-for="item in availableTypeOptions"
+              :key="item.key"
+              :label="item.name"
+              :value="item.key"
+            />
+          </el-select>
+          <span v-if="typeOptions.length && !availableTypeOptions.length" class="form-tip">
+            所有物件类型都已被占用，请先在字典管理中新增小类
+          </span>
+        </el-form-item>
+        <el-form-item label="物件图片" required>
+          <el-upload
+            class="icon-uploader"
+            action="#"
+            :http-request="uploadImage"
+            :show-file-list="false"
+            :before-upload="beforeImageUpload"
+            accept="image/png,image/jpeg,image/webp"
+          >
+            <img v-if="editForm.imageUrl" :src="editForm.imageUrl" class="preview-image" alt="" />
+            <el-button v-else size="small" type="primary">上传图片</el-button>
+          </el-upload>
+          <span class="form-tip">支持 png/jpeg/webp，大小不超过 2MB</span>
+        </el-form-item>
+        <el-form-item label="物件故事" required>
+          <!-- 纯文本多行输入，maxlength + show-word-limit 提供字数统计；后端仍完整校验 -->
+          <el-input
+            v-model="editForm.story"
+            type="textarea"
+            :rows="6"
+            maxlength="2000"
+            show-word-limit
+            placeholder="填写物件背后的故事，最多 2000 字"
+            class="form-control"
+          />
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button size="small" @click="dialogVisible = false">取消</el-button>
+        <el-button size="small" type="primary" :loading="saving" @click="handleSave">保存</el-button>
+      </span>
+    </el-dialog>
     <el-footer><VersionFooter/></el-footer>
   </div>
 </template>
@@ -68,8 +123,19 @@ export default {
       total: 0,
       tableColumns: [],
       // 请求序号：分页/页大小快速切换时，丢弃过期响应，避免旧结果覆盖新查询
-      requestSequence: 0
+      requestSequence: 0,
+      // 全部字典小类（含 used 标记），下拉再按 used 过滤出未占用的
+      typeOptions: [],
+      dialogVisible: false,
+      saving: false,
+      editForm: this.emptyForm()
     };
+  },
+  computed: {
+    // 新增时只列出尚未被占用的类型；占用判断来自后端，不靠前端分页数据推算
+    availableTypeOptions() {
+      return this.typeOptions.filter(item => !item.used);
+    }
   },
   created() {
     this.tableColumns = [
@@ -118,6 +184,103 @@ export default {
         this.currentPage = page;
         this.fetchObjectList();
       }
+    },
+
+    emptyForm() {
+      return {
+        id: null,
+        objectType: '',
+        imageUrl: '',
+        story: ''
+      };
+    },
+
+    // 类型下拉数据源：object-types 接口（含占用标记），调用字典全量会混入非物件类型
+    fetchObjectTypes(callback) {
+      Api.smallObject.getObjectTypes(({ data }) => {
+        if (data.code === 0) {
+          this.typeOptions = data.data || [];
+        } else {
+          this.typeOptions = [];
+          this.$message.error(data.msg || '获取物件类型失败');
+        }
+        if (callback) {
+          callback();
+        }
+      });
+    },
+
+    handleAdd() {
+      this.editForm = this.emptyForm();
+      // 每次打开都重新拉取，避免刚被别人占用的类型仍出现在下拉里
+      this.fetchObjectTypes(() => {
+        this.dialogVisible = true;
+      });
+    },
+
+    // el-upload 自定义上传：经 RequestService 走统一鉴权（Bearer token），场景为 small-object
+    uploadImage(option) {
+      const formData = new FormData();
+      formData.append('file', option.file);
+      Api.smallObject.uploadImage(formData, ({ data }) => {
+        if (data.code === 0) {
+          this.editForm.imageUrl = data.data;
+        } else {
+          this.$message.error(data.msg || '上传失败');
+        }
+      }, () => {
+        this.$message.error('上传失败');
+      });
+    },
+
+    beforeImageUpload(file) {
+      // 前端预校验只为体验，后端 UploadScene 白名单仍是安全边界
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        this.$message.error('仅支持 png/jpeg/webp 格式');
+        return false;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        this.$message.error('文件大小不能超过 2MB');
+        return false;
+      }
+      return true;
+    },
+
+    handleSave() {
+      // 提交前提示；后端仍完整校验（前端校验是体验，不是安全边界）
+      if (!this.editForm.objectType) {
+        this.$message.warning('请选择物件类型');
+        return;
+      }
+      if (!this.editForm.imageUrl) {
+        this.$message.warning('请上传物件图片');
+        return;
+      }
+      if (!this.editForm.story || !this.editForm.story.trim()) {
+        this.$message.warning('请填写物件故事');
+        return;
+      }
+      if (this.editForm.story.length > 2000) {
+        this.$message.warning('物件故事最多 2000 字');
+        return;
+      }
+
+      this.saving = true;
+      Api.smallObject.saveSmallObject({
+        objectType: this.editForm.objectType,
+        imageUrl: this.editForm.imageUrl,
+        story: this.editForm.story
+      }, ({ data }) => {
+        this.saving = false;
+        if (data.code === 0) {
+          this.$message.success('新增成功');
+          this.dialogVisible = false;
+          this.fetchObjectList();
+        } else {
+          this.$message.error(data.msg || '保存失败');
+        }
+      });
     }
   }
 };
@@ -207,5 +370,19 @@ export default {
   width: 32px;
   height: 32px;
   object-fit: contain;
+}
+
+.preview-image {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+}
+
+.form-tip {
+  margin-left: 10px;
+  color: #909399;
+  font-size: 12px;
 }
 </style>

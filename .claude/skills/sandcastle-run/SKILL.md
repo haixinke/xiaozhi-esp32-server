@@ -18,22 +18,24 @@ The model used by both agents is controlled by the `SANDCASTLE_MODEL` env var. T
 
 ## Available Models
 
-Only these three are known-good against the local CCR right now. Do not invent others — if the user names something outside this list, call it out and ask which of the three to use.
+Only these four are known-good against the local CCR right now. Do not invent others — if the user names something outside this list, call it out and ask which of the four to use.
 
 | Key | `SANDCASTLE_MODEL` value | When to pick |
 |---|---|---|
 | `kimi` | `Kimi/k3` | First choice. Direct Kimi coding plan. |
 | `glm` | `ModelRouter/qwen/ZHIPU/GLM-5.3` | Kimi quota exhausted, or user wants GLM. |
 | `kimi-via-router` | `ModelRouter/qwen/kimi-k3` | Kimi direct endpoint broken but ModelRouter upstream alive; backup Kimi channel. |
+| `deepseek` | `ModelRouter/qwen/deepseek-v4.1-flash-1017` | User wants DeepSeek, or wants a cheaper/faster ModelRouter channel. |
 
 Aliases the user may say that map to the above:
 - "kimi" / "k3" / "默认" → `Kimi/k3`
 - "glm" / "glm5.3" / "智谱" / "zhipu" → `ModelRouter/qwen/ZHIPU/GLM-5.3`
 - "kimi 备用" / "router kimi" / "modelrouter kimi" → `ModelRouter/qwen/kimi-k3`
+- "deepseek" / "deepseek flash" / "v4.1 flash" / "ds" → `ModelRouter/qwen/deepseek-v4.1-flash-1017`
 
 ## Steps
 
-1. **Ask for the model — always.** If the user already named one in this invocation (including aliases from the table above), use it. Otherwise stop and ask with `AskUserQuestion`, presenting the three rows from the table as options. Do not proceed to step 2 until the user has picked one in this conversation turn. Even if they picked one last time, ask again — provider quota state changes between runs.
+1. **Ask for the model — always.** If the user already named one in this invocation (including aliases from the table above), use it. Otherwise stop and ask with `AskUserQuestion`, presenting the four rows from the table as options. Do not proceed to step 2 until the user has picked one in this conversation turn. Even if they picked one last time, ask again — provider quota state changes between runs.
 
 2. **Choose the issue scope.** If the user names a feature, set `SANDCASTLE_FEATURE` to its `.scratch/<feature>/` slug. If not, inspect `bash .sandcastle/bin/scratch-issues.sh list`. For one open feature, use that slug; for multiple open features, ask whether to run one feature or all. Leave `SANDCASTLE_FEATURE` unset only when the user chose all. An unset or empty value includes every open issue; a nonempty slug may contain only letters, digits, `_`, and `-`. The batch fixes its target issue list at start, so resuming must use the same feature and branch.
 

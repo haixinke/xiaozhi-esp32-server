@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +26,10 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.redis.RedisKeys;
 import xiaozhi.common.redis.RedisUtils;
+import xiaozhi.common.validator.ValidatorUtils;
 import xiaozhi.modules.smallobject.dao.SmallObjectDao;
 import xiaozhi.modules.smallobject.dto.SmallObjectDTO;
+import xiaozhi.modules.smallobject.dto.SmallObjectStatusDTO;
 import xiaozhi.modules.smallobject.entity.SmallObjectEntity;
 import xiaozhi.modules.smallobject.service.SmallObjectService;
 import xiaozhi.modules.smallobject.vo.SmallObjectTypeVO;
@@ -392,7 +395,9 @@ class SmallObjectServiceTest {
         dto.setStory("字".repeat(2001));
 
         assertThatThrownBy(() -> smallObjectService.save(dto))
-                .isInstanceOf(RenException.class);
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_STORY_TOO_LONG);
         assertNoRecordSaved(type);
     }
 
@@ -416,7 +421,9 @@ class SmallObjectServiceTest {
         dto.setImageUrl(" ");
 
         assertThatThrownBy(() -> smallObjectService.save(dto))
-                .isInstanceOf(RenException.class);
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_IMAGE_REQUIRED);
         assertNoRecordSaved(type);
     }
 
@@ -428,7 +435,9 @@ class SmallObjectServiceTest {
         dto.setStory("  ");
 
         assertThatThrownBy(() -> smallObjectService.save(dto))
-                .isInstanceOf(RenException.class);
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_STORY_REQUIRED);
         assertNoRecordSaved(type);
     }
 
@@ -543,6 +552,13 @@ class SmallObjectServiceTest {
     void updateStatus_onlyChangesStatus() {
         String type = createObjectType("TEST_TYPE_STATUS_ONLY", "状态类型", 1);
         Long id = saveAndTrack(validDTO(type));
+        // 先把 update_date 改成一个明显过去的时间，才能验证定向 UPDATE 确实刷新了它
+        // （定向 UPDATE 传实体而非 null，MetaObjectHandler 才会自动填充）
+        Date staleDate = new Date(0L);
+        SmallObjectEntity stale = new SmallObjectEntity();
+        stale.setId(id);
+        stale.setUpdateDate(staleDate);
+        smallObjectDao.updateById(stale);
 
         smallObjectService.updateStatus(id, 0);
 
@@ -551,6 +567,21 @@ class SmallObjectServiceTest {
         // 状态切换不回传图片与故事，必须保持原值，避免覆盖他人刚改过的内容
         assertThat(saved.getImageUrl()).isEqualTo("https://oss.example.com/small-object/42/abc.png");
         assertThat(saved.getStory()).isEqualTo("这是一段物件背后的故事");
+        assertThat(saved.getUpdateDate()).isAfter(staleDate);
+    }
+
+    @Test
+    @DisplayName("updateStatus 状态越界：Service 兜底拒绝，不落库")
+    void updateStatus_outOfRangeStatus_rejectedByService() {
+        String type = createObjectType("TEST_TYPE_STATUS_SVC_RANGE", "服务层状态越界类型", 1);
+        Long id = saveAndTrack(validDTO(type));
+
+        // HTTP 入口的 @Min/@Max 是第一道，Service 仍需兜底（Service 是唯一安全边界）
+        assertThatThrownBy(() -> smallObjectService.updateStatus(id, 5))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_STATUS_INVALID);
+        assertThat(smallObjectDao.selectById(id).getStatus()).isEqualTo(1);
     }
 
     @Test
@@ -572,6 +603,23 @@ class SmallObjectServiceTest {
                 .isInstanceOf(RenException.class)
                 .extracting(e -> ((RenException) e).getCode())
                 .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("DTO 状态越界（status=5）：Bean Validation 拒绝，0/1 放行")
+    void dto_statusOutOfWhitelist_rejectedByBeanValidation() {
+        SmallObjectStatusDTO dto = new SmallObjectStatusDTO();
+        dto.setId(1L);
+
+        // 状态只允许 0/1，越界值必须在入口被拦下，否则列表展示与筛选都会失去意义
+        dto.setStatus(5);
+        assertThatThrownBy(() -> ValidatorUtils.validateEntity(dto))
+                .isInstanceOf(RenException.class);
+
+        dto.setStatus(0);
+        ValidatorUtils.validateEntity(dto);
+        dto.setStatus(1);
+        ValidatorUtils.validateEntity(dto);
     }
 
     // ---- 删除 ----

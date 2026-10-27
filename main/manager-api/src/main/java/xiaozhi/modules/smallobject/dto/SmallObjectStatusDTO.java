@@ -3,6 +3,8 @@ package xiaozhi.modules.smallobject.dto;
 import java.io.Serializable;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -21,5 +23,8 @@ public class SmallObjectStatusDTO implements Serializable {
 
     @Schema(description = "目标状态：1 启用，0 停用")
     @NotNull(message = "{smallObject.status.require}")
+    // 状态只允许 0/1，避免绕过前端写入非法值（如 5）让列表展示与筛选都失去意义
+    @Min(value = 0, message = "{smallObject.status.range}")
+    @Max(value = 1, message = "{smallObject.status.range}")
     private Integer status;
 }

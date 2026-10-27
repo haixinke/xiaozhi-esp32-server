@@ -210,16 +210,17 @@ export default {
     },
 
     // 删除为软删且不提供恢复入口，需二次确认；成功后刷新列表让记录消失
+    // 后端业务拒绝（记录已被他人删除/不存在）走 fail 分支，success 里只会收到 code === 0
     handleDelete(row) {
       this.$confirm('确定删除该小物件吗？', '提示', { type: 'warning' })
         .then(() => {
-          Api.smallObject.deleteSmallObject(row.id, ({ data }) => {
-            if (data.code === 0) {
-              this.$message.success('删除成功');
-              this.fetchObjectList();
-            } else {
-              this.$message.error(data.msg || '删除失败');
-            }
+          Api.smallObject.deleteSmallObject(row.id, () => {
+            this.$message.success('删除成功');
+            this.fetchObjectList();
+          }, ({ data }) => {
+            this.$message.error((data && data.msg) || '删除失败');
+            // 失败时也刷新：记录可能已被他人删除，列表需要回到最新状态
+            this.fetchObjectList();
           });
         })
         .catch(() => {});

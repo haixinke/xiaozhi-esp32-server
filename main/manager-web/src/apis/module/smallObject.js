@@ -118,7 +118,9 @@ export default {
     },
 
     // 删除小物件（软删，删除后列表与详情均按不存在处理）
-    deleteSmallObject(id, callback) {
+    // 必须注册 fail 回调：后端业务拒绝（记录已被他人删除/不存在）返回 HTTP 200 + code != 0，
+    // httpRequest 走 fail 分支而不调用 success，页面需要据此提示失败而不是静默无反应
+    deleteSmallObject(id, callback, failCallback) {
         RequestService.sendRequest()
             .url(`${getServiceUrl()}/admin/small-object/delete/${id}`)
             .method('DELETE')
@@ -126,10 +128,16 @@ export default {
                 RequestService.clearRequestTime()
                 callback(res)
             })
+            .fail((res) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(res)
+                }
+            })
             .networkFail((err) => {
                 console.error('删除小物件失败:', err)
                 RequestService.reAjaxFun(() => {
-                    this.deleteSmallObject(id, callback)
+                    this.deleteSmallObject(id, callback, failCallback)
                 })
             }).send()
     },

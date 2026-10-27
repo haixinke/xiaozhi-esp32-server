@@ -321,6 +321,10 @@ public interface ErrorCode {
     int SMALL_OBJECT_NOT_FOUND = 10360; // 物件不存在
     int SMALL_OBJECT_TYPE_NOT_EXIST = 10361; // 物件类型不存在
     int SMALL_OBJECT_TYPE_ALREADY_USED = 10362; // 该物件类型已被占用
+    int SMALL_OBJECT_IMAGE_REQUIRED = 10363; // 物件图片不能为空
+    int SMALL_OBJECT_STORY_REQUIRED = 10364; // 物件故事不能为空
+    int SMALL_OBJECT_STORY_TOO_LONG = 10365; // 物件故事最多2000字
+    int SMALL_OBJECT_STATUS_INVALID = 10366; // 物件状态只能为启用或停用
 
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败

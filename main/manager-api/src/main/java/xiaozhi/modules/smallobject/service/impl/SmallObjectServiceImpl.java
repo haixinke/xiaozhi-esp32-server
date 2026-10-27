@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
 import lombok.AllArgsConstructor;
@@ -115,17 +116,28 @@ public class SmallObjectServiceImpl extends BaseServiceImpl<SmallObjectDao, Smal
         if (id == null || status == null) {
             throw new RenException(ErrorCode.PARAM_VALUE_NULL);
         }
-        SmallObjectEntity entity = selectUndeleted(id);
-        if (entity == null) {
+        // 状态白名单 0/1：HTTP 入口已由 DTO 的 @Min/@Max 拦一道，
+        // 这里是 Service 的兜底（Service 是唯一安全边界，与 GameServiceImpl 的数值校验一致）
+        if (status < 0 || status > 1) {
+            throw new RenException(ErrorCode.SMALL_OBJECT_STATUS_INVALID);
+        }
+        // 只把 status 放入待更新实体，生成单条定向 UPDATE：不读全量再写回，
+        // 因此不会用本请求读到的陈旧副本覆盖他人刚编辑的图片/故事。
+        // 传实体（而非 null）是为了保留 MetaObjectHandler 对 updater/update_date 的自动填充
+        SmallObjectEntity changes = new SmallObjectEntity();
+        changes.setStatus(status);
+        // 条件带 deleted = 0：已删记录与不存在同样影响 0 行，统一报物件不存在
+        UpdateWrapper<SmallObjectEntity> wrapper = new UpdateWrapper<SmallObjectEntity>()
+                .eq("id", id)
+                .eq("deleted", 0);
+        if (!update(changes, wrapper)) {
             throw new RenException(ErrorCode.SMALL_OBJECT_NOT_FOUND);
         }
-        // 只写状态字段，图片与故事保持原值
-        entity.setStatus(status);
-        updateById(entity);
     }
 
     @Override
-    public List<SmallObjectTypeVO> listObjectTypes() {        List<SysDictDataItem> dictItems = sysDictDataService
+    public List<SmallObjectTypeVO> listObjectTypes() {
+        List<SysDictDataItem> dictItems = sysDictDataService
                 .getDictDataByType(Constant.DictType.SMALL_OBJECT_TYPE.getValue());
         if (dictItems == null || dictItems.isEmpty()) {
             return List.of();
@@ -140,62 +152,58 @@ public class SmallObjectServiceImpl extends BaseServiceImpl<SmallObjectDao, Smal
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        // 软删只置位 deleted=1，行保留在库中；对已删除或不存在的 id 不做幂等成功，
-        // 与详情同样的「已删除 = 不存在」语义，统一走 selectUndeleted 过滤
-        SmallObjectEntity entity = selectUndeleted(id);
-        if (entity == null) {
+        // 软删只把 deleted 置 1，行保留在库中；同样是定向 UPDATE，不读全量再写回，
+        // 避免把并发编辑中的图片/故事用陈旧副本覆盖。条件带 deleted = 0：
+        // 对已删除或不存在的 id 影响 0 行，与详情同样的「已删除 = 不存在」语义
+        SmallObjectEntity changes = new SmallObjectEntity();
+        changes.setDeleted(1);
+        UpdateWrapper<SmallObjectEntity> wrapper = new UpdateWrapper<SmallObjectEntity>()
+                .eq("id", id)
+                .eq("deleted", 0);
+        if (!update(changes, wrapper)) {
             throw new RenException(ErrorCode.SMALL_OBJECT_NOT_FOUND);
         }
-        entity.setDeleted(1);
-        updateById(entity);
     }
 
     /**
-     * 校验新增请求的业务规则。
-     * 类型必须在字典中存在，防止前端下拉被绕过写入野类型；
-     * 同一类型在未删除记录中只允许一条——本表不建 DB 唯一索引（软删下会阻止删除后重建），
-     * 唯一性只能由这里承担；图片与故事非空、故事不超长在 Service 再兜一次。
+     * 校验新增请求的业务规则：公共校验 + 类型唯一性（新增时无自身可排除）。
      */
     private void validateForCreate(SmallObjectDTO dto) {
         if (dto == null) {
             throw new RenException(ErrorCode.PARAM_VALUE_NULL);
         }
-        String objectType = StringUtils.trimToNull(dto.getObjectType());
-        if (objectType == null) {
-            throw new RenException(ErrorCode.PARAM_VALUE_NULL);
-        }
-        // 类型必须存在于 SMALL_OBJECT_TYPE 字典（不信前端下拉）
-        List<SysDictDataItem> dictItems = sysDictDataService
-                .getDictDataByType(Constant.DictType.SMALL_OBJECT_TYPE.getValue());
-        boolean typeExists = dictItems != null && dictItems.stream()
-                .anyMatch(item -> objectType.equals(item.getKey()));
-        if (!typeExists) {
-            throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_NOT_EXIST);
-        }
-        // 同类型在未删除记录中只允许一条
-        if (usedObjectTypes().contains(objectType)) {
-            throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_ALREADY_USED);
-        }
-        // 图片与故事必填、故事不超长。HTTP 入口已由 DTO 注解先拦一道，
-        // 这里是 Service 自己的兜底（Service 是唯一安全边界），文案与 validation 文案保持一致
-        if (StringUtils.isBlank(dto.getImageUrl())) {
-            throw new RenException("物件图片不能为空");
-        }
-        if (StringUtils.isBlank(dto.getStory())) {
-            throw new RenException("物件故事不能为空");
-        }
-        if (dto.getStory().length() > SmallObjectDTO.STORY_MAX_LENGTH) {
-            throw new RenException("物件故事最多" + SmallObjectDTO.STORY_MAX_LENGTH + "字");
-        }
-        // 落库前统一去掉类型两端空白，避免 "TYPE" 与 "TYPE " 被当成两个类型
-        dto.setObjectType(objectType);
+        ensureTypeUnique(validateCommon(dto), null);
     }
 
     /**
-     * 校验更新请求的业务规则，与新增的差异仅在唯一性：排除自身 id 后再查占用，
+     * 校验更新请求的业务规则：公共校验 + 唯一性（排除自身 id 后再查占用），
      * 因此保留原类型不会被误判为重复，改为其他未占用类型也可通过。
      */
     private void validateForUpdate(SmallObjectDTO dto) {
+        ensureTypeUnique(validateCommon(dto), dto.getId());
+    }
+
+    /**
+     * 同一类型在未删除记录中只允许一条。
+     * 本表不建 DB 唯一索引（软删下会阻止删除后重建），唯一性只能由这里承担；
+     * excludeId 用于更新场景排除自身，避免保留原类型时误判为重复。
+     */
+    private void ensureTypeUnique(String objectType, Long excludeId) {
+        Long occupied = baseDao.selectCount(new QueryWrapper<SmallObjectEntity>()
+                .eq("object_type", objectType)
+                .eq("deleted", 0)
+                .ne(excludeId != null, "id", excludeId));
+        if (occupied != null && occupied > 0) {
+            throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_ALREADY_USED);
+        }
+    }
+
+    /**
+     * 新增与更新共用的校验：类型非空且在 SMALL_OBJECT_TYPE 字典中存在、图片与故事非空、故事不超长。
+     * 返回去掉两端空白后的类型值，并回写 dto，避免 "TYPE" 与 "TYPE " 被当成两个类型。
+     * 图片/故事必填在 HTTP 入口已由 DTO 注解先拦一道，这里是 Service 的兜底（Service 是唯一安全边界）。
+     */
+    private String validateCommon(SmallObjectDTO dto) {
         String objectType = StringUtils.trimToNull(dto.getObjectType());
         if (objectType == null) {
             throw new RenException(ErrorCode.PARAM_VALUE_NULL);
@@ -208,24 +216,18 @@ public class SmallObjectServiceImpl extends BaseServiceImpl<SmallObjectDao, Smal
         if (!typeExists) {
             throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_NOT_EXIST);
         }
-        // 同类型在未删除记录中只允许一条；排除自身 id，保留原类型不报重复
-        Long occupied = baseDao.selectCount(new QueryWrapper<SmallObjectEntity>()
-                .eq("object_type", objectType)
-                .eq("deleted", 0)
-                .ne("id", dto.getId()));
-        if (occupied != null && occupied > 0) {
-            throw new RenException(ErrorCode.SMALL_OBJECT_TYPE_ALREADY_USED);
-        }
         if (StringUtils.isBlank(dto.getImageUrl())) {
-            throw new RenException("物件图片不能为空");
+            throw new RenException(ErrorCode.SMALL_OBJECT_IMAGE_REQUIRED);
         }
         if (StringUtils.isBlank(dto.getStory())) {
-            throw new RenException("物件故事不能为空");
+            throw new RenException(ErrorCode.SMALL_OBJECT_STORY_REQUIRED);
         }
         if (dto.getStory().length() > SmallObjectDTO.STORY_MAX_LENGTH) {
-            throw new RenException("物件故事最多" + SmallObjectDTO.STORY_MAX_LENGTH + "字");
+            throw new RenException(ErrorCode.SMALL_OBJECT_STORY_TOO_LONG,
+                    String.valueOf(SmallObjectDTO.STORY_MAX_LENGTH));
         }
         dto.setObjectType(objectType);
+        return objectType;
     }
 
     /**

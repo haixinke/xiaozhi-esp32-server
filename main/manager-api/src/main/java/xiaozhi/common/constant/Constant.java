@@ -382,7 +382,11 @@ public interface Constant {
         /**
          * 游戏类型
          */
-        GAME_TYPE("GAME_TYPE");
+        GAME_TYPE("GAME_TYPE"),
+        /**
+         * 小物件类型（小类由运营在字典管理中维护，不预置）
+         */
+        SMALL_OBJECT_TYPE("SMALL_OBJECT_TYPE");
 
         private String value;
 

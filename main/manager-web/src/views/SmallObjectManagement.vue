@@ -280,6 +280,11 @@ export default {
         } else {
           this.$message.error(data.msg || '保存失败');
         }
+      }, ({ data }) => {
+        // 后端业务拒绝走 fail 分支（HTTP 200 + code != 0），不经过 success 回调；
+        // 这里必须复位 saving，否则 el-button 的 loading 会让保存按钮永久禁用，无法改后重试
+        this.saving = false;
+        this.$message.error((data && data.msg) || '保存失败');
       });
     }
   }

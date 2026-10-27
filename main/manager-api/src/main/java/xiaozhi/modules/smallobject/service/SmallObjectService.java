@@ -48,4 +48,12 @@ public interface SmallObjectService extends BaseService<SmallObjectEntity> {
      * @return 物件类型列表，顺序与字典管理页一致
      */
     List<SmallObjectTypeVO> listObjectTypes();
+
+    /**
+     * 删除小物件（软删：仅置位 deleted=1，行保留在库中）。
+     * 删除语义为「已删除 = 不存在」：对不存在或已软删的 id 返回物件不存在，不做幂等成功。
+     *
+     * @param id 小物件 ID
+     */
+    void delete(Long id);
 }

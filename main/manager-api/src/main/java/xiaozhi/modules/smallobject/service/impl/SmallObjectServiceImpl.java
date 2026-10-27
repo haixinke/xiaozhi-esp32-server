@@ -104,6 +104,19 @@ public class SmallObjectServiceImpl extends BaseServiceImpl<SmallObjectDao, Smal
                 .toList();
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Long id) {
+        // 软删只置位 deleted=1，行保留在库中；对已删除或不存在的 id 不做幂等成功，
+        // 与详情同样的「已删除 = 不存在」语义，统一走 selectUndeleted 过滤
+        SmallObjectEntity entity = selectUndeleted(id);
+        if (entity == null) {
+            throw new RenException(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+        }
+        entity.setDeleted(1);
+        updateById(entity);
+    }
+
     /**
      * 校验新增请求的业务规则。
      * 类型必须在字典中存在，防止前端下拉被绕过写入野类型；

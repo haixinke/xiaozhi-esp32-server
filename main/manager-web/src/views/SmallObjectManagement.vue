@@ -19,7 +19,8 @@
               :columns="tableColumns"
               :loading="loading"
               :show-selection="false"
-              :show-operations="false"
+              :show-operations="true"
+              operations-label="操作"
               :total="total"
               :current-page="currentPage"
               :page-size="pageSize"
@@ -38,6 +39,11 @@
                 <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" size="mini">
                   {{ scope.row.status === 1 ? '启用' : '停用' }}
                 </el-tag>
+              </template>
+              <template slot="operations" slot-scope="scope">
+                <el-button size="mini" type="text" class="delete-btn" @click="handleDelete(scope.row)">
+                  删除
+                </el-button>
               </template>
             </CustomTable>
           </el-card>
@@ -184,6 +190,22 @@ export default {
         this.currentPage = page;
         this.fetchObjectList();
       }
+    },
+
+    // 删除为软删且不提供恢复入口，需二次确认；成功后刷新列表让记录消失
+    handleDelete(row) {
+      this.$confirm('确定删除该小物件吗？', '提示', { type: 'warning' })
+        .then(() => {
+          Api.smallObject.deleteSmallObject(row.id, ({ data }) => {
+            if (data.code === 0) {
+              this.$message.success('删除成功');
+              this.fetchObjectList();
+            } else {
+              this.$message.error(data.msg || '删除失败');
+            }
+          });
+        })
+        .catch(() => {});
     },
 
     emptyForm() {
@@ -375,6 +397,10 @@ export default {
   width: 32px;
   height: 32px;
   object-fit: contain;
+}
+
+.delete-btn {
+  color: #f56c6c !important;
 }
 
 .preview-image {

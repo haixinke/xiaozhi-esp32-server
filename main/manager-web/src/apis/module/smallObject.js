@@ -117,6 +117,23 @@ export default {
             }).send()
     },
 
+    // 删除小物件（软删，删除后列表与详情均按不存在处理）
+    deleteSmallObject(id, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/small-object/delete/${id}`)
+            .method('DELETE')
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) => {
+                console.error('删除小物件失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.deleteSmallObject(id, callback)
+                })
+            }).send()
+    },
+
     // 上传物件图片（/upload/image 需要 Bearer 鉴权，走 RequestService 统一带 token）
     // scene 为后端 @RequestParam query 参数，必须拼在 URL 上；放 FormData 后端读不到
     uploadImage(formData, callback, failCallback) {

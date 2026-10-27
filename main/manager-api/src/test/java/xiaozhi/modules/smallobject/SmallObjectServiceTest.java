@@ -574,6 +574,91 @@ class SmallObjectServiceTest {
                 .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
     }
 
+    // ---- 删除 ----
+
+    @Test
+    @DisplayName("delete 已存在的记录：软删置位（行仍在库中），之后 get 报物件不存在")
+    void delete_existingRecord_softDeletesRow() {
+        String type = createObjectType("TEST_TYPE_DEL_SOFT", "软删类型", 1);
+        Long id = saveAndTrack(validDTO(type));
+
+        smallObjectService.delete(id);
+
+        // 行仍在库中且 deleted=1：软删不是物理删除
+        SmallObjectEntity row = smallObjectDao.selectById(id);
+        assertThat(row).isNotNull();
+        assertThat(row.getDeleted()).isEqualTo(1);
+        // 已删除 = 不存在
+        assertThatThrownBy(() -> smallObjectService.get(id))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("delete 不存在的 id：报物件不存在，不做幂等成功")
+    void delete_missingId_throwsNotFound() {
+        assertThatThrownBy(() -> smallObjectService.delete(-1L))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("delete 重复删除同一 id：第二次仍报物件不存在")
+    void delete_twiceSecond_throwsNotFound() {
+        String type = createObjectType("TEST_TYPE_DEL_TWICE", "重复删除类型", 1);
+        Long id = saveAndTrack(validDTO(type));
+        smallObjectService.delete(id);
+
+        assertThatThrownBy(() -> smallObjectService.delete(id))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.SMALL_OBJECT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("delete 删除后分页不再返回该记录")
+    void delete_removesRecordFromPage() {
+        String type = createObjectType("TEST_TYPE_DEL_PAGE", "删除后分页类型", 1);
+        Long id = saveAndTrack(validDTO(type));
+
+        smallObjectService.delete(id);
+
+        List<Long> ids = pageAll().getList().stream().map(SmallObjectVO::getId).toList();
+        assertThat(ids).doesNotContain(id);
+    }
+
+    @Test
+    @DisplayName("delete 删除某类型后可再为同一类型新建物件（软删不阻挠重建）")
+    void delete_allowsRecreateSameType() {
+        String type = createObjectType("TEST_TYPE_DEL_RECREATE", "可重建类型", 1);
+        Long oldId = saveAndTrack(validDTO(type));
+        smallObjectService.delete(oldId);
+
+        // 软删的记录不再占用该类型，同一类型应能重建
+        Long newId = saveAndTrack(validDTO(type));
+        assertThat(newId).isNotEqualTo(oldId);
+        // 重建后新记录可见
+        SmallObjectVO vo = smallObjectService.get(newId);
+        assertThat(vo.getObjectType()).isEqualTo(type);
+    }
+
+    @Test
+    @DisplayName("delete 删除后该类型重新出现在可选类型列表中（used=false）")
+    void delete_freesTypeInObjectTypes() {
+        String type = createObjectType("TEST_TYPE_DEL_FREE", "释放类型", 1);
+        Long id = saveAndTrack(validDTO(type));
+
+        smallObjectService.delete(id);
+
+        SmallObjectTypeVO option = smallObjectService.listObjectTypes().stream()
+                .filter(item -> type.equals(item.getKey()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(option.getUsed()).isFalse();
+    }
+
     // ---- 可选物件类型 ----
 
     @Test

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,7 +34,7 @@ import xiaozhi.modules.smallobject.vo.SmallObjectVO;
 
 /**
  * 小物件管理（运营管理菜单下的「小物件管理」子项）。
- * 本片提供只读列表/详情、新增、编辑与状态切换；删除由后续票补齐。
+ * 本片提供只读列表/详情、新增、编辑、状态切换与删除。
  */
 @AllArgsConstructor
 @RestController
@@ -94,5 +95,13 @@ public class SmallObjectController {
     @RequiresPermissions("sys:role:superAdmin")
     public Result<List<SmallObjectTypeVO>> objectTypes() {
         return new Result<List<SmallObjectTypeVO>>().ok(smallObjectService.listObjectTypes());
+    }
+
+    @DeleteMapping("/delete/{id}")
+    @Operation(summary = "删除小物件（软删，列表与详情按不存在处理）")
+    @RequiresPermissions("sys:role:superAdmin")
+    public Result<Void> delete(@PathVariable("id") Long id) {
+        smallObjectService.delete(id);
+        return new Result<>();
     }
 }

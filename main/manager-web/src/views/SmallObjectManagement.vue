@@ -19,7 +19,8 @@
               :columns="tableColumns"
               :loading="loading"
               :show-selection="false"
-              :show-operations="false"
+              :show-operations="true"
+              operations-label="操作"
               :total="total"
               :current-page="currentPage"
               :page-size="pageSize"
@@ -39,7 +40,7 @@
                   {{ scope.row.status === 1 ? '启用' : '停用' }}
                 </el-tag>
               </template>
-              <template slot="actions" slot-scope="scope">
+              <template slot="operations" slot-scope="scope">
                 <el-button type="text" size="small" @click="handleEdit(scope.row)">编辑</el-button>
                 <!-- 列表内直接切换启用/停用：只提交 id 与目标状态，不回传图片与故事 -->
                 <el-button
@@ -49,6 +50,9 @@
                   @click="handleToggleStatus(scope.row)"
                 >
                   {{ scope.row.status === 1 ? '停用' : '启用' }}
+                </el-button>
+                <el-button size="mini" type="text" class="delete-btn" @click="handleDelete(scope.row)">
+                  删除
                 </el-button>
               </template>
             </CustomTable>
@@ -161,8 +165,7 @@ export default {
       { prop: 'imageUrl', label: '图片', align: 'center', slot: 'imageUrl' },
       { prop: 'objectTypeName', label: '类型名称', align: 'center', slot: 'objectTypeName' },
       { prop: 'status', label: '状态', align: 'center', slot: 'status' },
-      { prop: 'updateDate', label: '更新时间', align: 'center' },
-      { prop: 'actions', label: '操作', align: 'center', slot: 'actions' }
+      { prop: 'updateDate', label: '更新时间', align: 'center' }
     ];
     this.fetchObjectList();
   },
@@ -204,6 +207,22 @@ export default {
         this.currentPage = page;
         this.fetchObjectList();
       }
+    },
+
+    // 删除为软删且不提供恢复入口，需二次确认；成功后刷新列表让记录消失
+    handleDelete(row) {
+      this.$confirm('确定删除该小物件吗？', '提示', { type: 'warning' })
+        .then(() => {
+          Api.smallObject.deleteSmallObject(row.id, ({ data }) => {
+            if (data.code === 0) {
+              this.$message.success('删除成功');
+              this.fetchObjectList();
+            } else {
+              this.$message.error(data.msg || '删除失败');
+            }
+          });
+        })
+        .catch(() => {});
     },
 
     emptyForm() {
@@ -434,6 +453,10 @@ export default {
   width: 32px;
   height: 32px;
   object-fit: contain;
+}
+
+.delete-btn {
+  color: #f56c6c !important;
 }
 
 .preview-image {

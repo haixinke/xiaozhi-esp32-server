@@ -35,12 +35,22 @@ class InviteCodeGeneratorTest {
     }
 
     @Test
-    @DisplayName("generate 2000 次无重复")
-    void generate_uniqueOver10000() {
+    @DisplayName("generate 2000 次的重复数在生日碰撞预期内")
+    void generate_duplicatesWithinBirthdayBound() {
+        // 5 位码的字母表有 32 个字符，码空间 32^5 ≈ 3355 万；
+        // 2000 次抽样的生日碰撞期望约 0.06 次，硬断言"零重复"约 6% 概率随机失败。
+        // 因此改为断言重复次数不超过 5（λ=0.06 时 P(X>=6) ≈ 5e-11），
+        // 既消除 flaky，又能在生成器退化（重复率上升）时仍然报警。
+        final int samples = 2000;
+        final int maxDuplicates = 5;
         Set<String> seen = new HashSet<>();
-        for (int i = 0; i < 2000; i++) {
+        int duplicates = 0;
+        for (int i = 0; i < samples; i++) {
             String code = InviteCodeGenerator.generate();
-            assertThat(seen.add(code)).as("重复码: %s", code).isTrue();
+            if (!seen.add(code)) {
+                duplicates++;
+            }
         }
+        assertThat(duplicates).as("重复数超过生日碰撞预期").isLessThanOrEqualTo(maxDuplicates);
     }
 }

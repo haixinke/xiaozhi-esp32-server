@@ -18,7 +18,8 @@
 ```
 装 sandbox → 容器内 Claude 实现 → host 跑测试门禁 → 容器内 Claude 审查（可修一次）
 → host 复验 → 合并到 host → 下一个 issue → 全部完成后对整批做最终审查
-→ 有问题就让容器内 Claude 修 → 再审查 → 合并 → 再最终审查（最多 2 轮修复）
+→ 有问题就在同一个 sandbox 里让 Claude 修复并自审 → host 复验 → 合并
+→ 再开新 sandbox 做最终审查（最多 2 轮修复，即最多 3 次最终审查）
 ```
 
 ---
@@ -54,7 +55,7 @@
 
 ### 2.2 沙箱长什么样
 
-`createSandbox()`（`main.mts:330`）每次调用做两件事：
+`createSandbox()`（`main.mts:331`）每次调用做两件事：
 
 1. 在 host 的 `.sandcastle/worktrees/` 下按指定分支创建 **git worktree**。
 2. 启动 Docker 容器，把 worktree bind-mount 到 `/home/agent/workspace`。
@@ -82,13 +83,15 @@ hooks: { sandbox: { onSandboxReady: [
 
 **worktree 是独立的**：每个 sandbox 从**当前 host HEAD** 切出来。合并不进 host 之前，容器里发生的一切对下一个 sandbox 不可见。
 
-### 2.3 为什么必须两个 sandbox 才够
+### 2.3 sandbox 与 Claude 进程的账
 
-一个 issue 的处理里其实用了 **1 个 sandbox**（实现 + 审查在同一个 worktree 上串行），但 **2 个 Claude 进程**。最终阶段每一轮用 **3 个 sandbox**（final-review 一个，final-fix 一个；下一轮又是新的 final-review）。原因：
+- **每个 issue：1 个 sandbox + 2 个 Claude 进程**。实现和审查在同一个 worktree 上串行，所以复用 sandbox；但两次 `sandbox.run()` 是彼此独立的新进程。
+- **最终阶段每轮：1 个 sandbox + 1~2 个 Claude 进程**。最终审查一个进程；若给出 `changes_required`，**在同一个 sandbox、同一个分支上**再起一个 fixer 进程，由它修复并自审。
+- **最坏情况 3 轮**（round 0/1/2），每轮 1 个 sandbox = **3 个 sandbox**，Claude 进程最多 3 次审查 + 2 次修复 = **5 个**。
 
-- 审查要基于实现后的同一个 worktree，所以复用。
-- 最终审查要对齐 host HEAD，而修复在另一个分支上做，所以拆开。
-- sandbox 关闭后 worktree 一并清理，所以下一轮必然是新 worktree。
+为什么最终审查和修复能共用一个 sandbox：fixer 的修复 commit 就是 `head` 的直接子提交，host 用 `rev-list --parents` 校验父子关系后，直接在这个 SHA 上跑 `verify()` 并合并该分支。不需要额外 worktree。
+
+为什么每轮仍必须新开 sandbox：`close()` 会清理 worktree，且新一轮的最终审查必须基于**合并后的新 host HEAD**，不能复用上一轮的分支。
 
 ---
 
@@ -104,12 +107,12 @@ npx tsx .sandcastle/main.mts          # 或 cd .sandcastle && npm run sandcastle
 
 | 变量 | 作用 |
 |---|---|
-| `SANDCASTLE_MODEL` | 覆盖 `AGENT_MODEL`，默认 `Kimi/k3`（`main.mts:49`）。必须命中 CCR 路由表。 |
-| `SANDCASTLE_FEATURE` | 只处理某个 feature 目录下的 issue，例如 `game-management`（`main.mts:50`）。只允许 `[a-zA-Z0-9_-]`。 |
+| `SANDCASTLE_MODEL` | 覆盖 `AGENT_MODEL`，默认 `Kimi/k3`（`main.mts:50`）。必须命中 CCR 路由表。 |
+| `SANDCASTLE_FEATURE` | 只处理某个 feature 目录下的 issue，例如 `game-management`（`main.mts:51`）。只允许 `[a-zA-Z0-9_-]`。 |
 
-### 3.2 `loadBatch()`（`main.mts:122`）
+### 3.2 `loadBatch()`（`main.mts:123`）
 
-**第一步永远是 `requireClean(repoRoot)`（`main.mts:276`）**：host 工作区必须干净（`git status --porcelain --untracked-files=all` 为空），否则直接抛错。这是防止把未提交改动混进基线。
+**第一步永远是 `requireClean(repoRoot)`（`main.mts:277`）**：host 工作区必须干净（`git status --porcelain --untracked-files=all` 为空），否则直接抛错。这是防止把未提交改动混进基线。
 
 然后：
 
@@ -126,7 +129,7 @@ npx tsx .sandcastle/main.mts          # 或 cd .sandcastle && npm run sandcastle
      - `issueIds`、`specRequirements` 是数组，`specHashes` 存在
      - 每个 issue 文件都还能读到、ID 格式合法
      - `git merge-base --is-ancestor baseSha currentSha`（基线还在当前历史里）
-     - `assertSpecsUnchanged()`（`main.mts:72`）：每个 spec 文件当前 sha256 与记录一致
+     - `assertSpecsUnchanged()`（`main.mts:73`）：每个 spec 文件当前 sha256 与记录一致
      - 通过 → **直接返回旧 batch，跳过扫描**
    - 不存在或 `status === "complete"` → **新建批次**。
 4. 新建批次：
@@ -136,14 +139,14 @@ npx tsx .sandcastle/main.mts          # 或 cd .sandcastle && npm run sandcastle
    - 无 issue → 返回 `undefined`，主流程打印 `No open issues in scope; nothing to review.` 并退出。
    - 收集 spec 路径：`.scratch/<feature>/spec.md`（去重）。
    - 计算每个 spec 的 sha256 → `specHashes`（用于后面检测 spec 是否被偷偷改动）。
-   - 解析 `specRequirements`（`main.mts:150`），三种写法：
+   - 解析 `specRequirements`（`main.mts:151`），三种写法：
      - `1. xxx` → `.scratch/x/spec.md#1`
      - `R1: xxx` → `.scratch/x/spec.md#R1`
      - `- [ ] xxx` → `.scratch/x/spec.md#L<行号>`
      - 一条都没解析到 → `.scratch/x/spec.md#document`
    - 生成 `batch.id = <时间戳>-<HEAD 前 8 位>`，写盘（`mode: 0o600`）。
 
-`Batch` 结构（`main.mts:54`）：
+`Batch` 结构（`main.mts:55`）：
 
 ```ts
 {
@@ -154,7 +157,7 @@ npx tsx .sandcastle/main.mts          # 或 cd .sandcastle && npm run sandcastle
 }
 ```
 
-### 3.3 `runBatch()` 外层循环（`main.mts:500`）
+### 3.3 `runBatch()` 外层循环（`main.mts:501`）
 
 ```ts
 for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++)  // MAX_ITERATIONS = 15
@@ -162,15 +165,15 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++)  // MAX_ITERAT
 
 每轮：
 
-1. `pendingIssues(repoRoot, batch.issueIds)`（`main.mts:93`）—— 重新读 `.scratch`，挑出 `Status` 不是 `resolved` 的。
+1. `pendingIssues(repoRoot, batch.issueIds)`（`main.mts:94`）—— 重新读 `.scratch`，挑出 `Status` 不是 `resolved` 的。
 2. 去掉 `blockedIssueIds` 里的。
 3. 空 → 退出循环。
-4. `readyIssue(...)`（`main.mts:98`）—— 解析 issue 里的 `Blocked by:` 行，阻塞项可以写完整 ID 或两位/三位编号（`05` 会在同 feature 的 `issues/` 里找 `05-*.md`）。所有 blocker 都已 resolved 才算 ready。一个都没有 → 退出循环。
+4. `readyIssue(...)`（`main.mts:99`）—— 解析 issue 里的 `Blocked by:` 行，阻塞项可以写完整 ID 或两位/三位编号（`05` 会在同 feature 的 `issues/` 里找 `05-*.md`）。所有 blocker 都已 resolved 才算 ready。一个都没有 → 退出循环。
 5. 打日志 `=== Issue N/15: <id> ===`
 6. `baseSha = host HEAD`
-7. `branch = sandcastle/sequential-reviewer/<时间戳>-<随机6位>`（`main.mts:326`）
+7. `branch = sandcastle/sequential-reviewer/<时间戳>-<随机6位>`（`main.mts:327`）
 8. `createSandbox(branch)` —— **开新 sandbox**
-9. `preflight(sandbox)`（`main.mts:361`）：`java -version && javac -version && mvn --version && python3.12 --version && test -w "$HOME/.m2"`。失败 → 抛错，整批终止（说明镜像或缓存权限坏了）。
+9. `preflight(sandbox)`（`main.mts:362`）：`java -version && javac -version && mvn --version && python3.12 --version && test -w "$HOME/.m2"`。失败 → 抛错，整批终止（说明镜像或缓存权限坏了）。
 
 注意 `MAX_ITERATIONS` 是**处理 issue 的个数上限**，不是重试次数。15 个 issue 还没处理完就抛 `Iteration limit reached`。
 
@@ -178,7 +181,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++)  // MAX_ITERAT
 
 ## 4. Phase 1：实现（容器内 Claude 进程 #1）
 
-`main.mts:524`
+`main.mts:525`
 
 ```ts
 const implement = await sandbox.run({
@@ -220,25 +223,25 @@ const implement = await sandbox.run({
 
 ### 4.1 实现后的 host 门禁
 
-`main.mts:532-556`，全部在 host 侧判断：
+`main.mts:533-553`，全部在 host 侧判断：
 
 | 检查 | 代码 | 失败后果 |
 |---|---|---|
-| 信号是 `BLOCKED` | `main.mts:532` | 见下 |
-| 无 commit | `main.mts:547` | 抛 `No progress on <id>`，整批终止 |
-| issue 仍是未关闭 | `main.mts:551` | 抛 `Implementation did not resolve <id>` |
-| 动了别的 issue 文件 | `assertOtherIssuesUnchanged`（`main.mts:368`） | 抛 `ReviewScopeError` |
+| 信号是 `BLOCKED` | `main.mts:533` | 见下 |
+| 无 commit | `main.mts:548` | 抛 `No progress on <id>`，整批终止 |
+| issue 仍是未关闭 | `main.mts:552` | 抛 `Implementation did not resolve <id>` |
+| 动了别的 issue 文件 | `assertOtherIssuesUnchanged`（`main.mts:369`） | 抛 `ReviewScopeError` |
 | 改了 spec | `assertSpecsUnchanged` | 抛 `ReviewScopeError` |
 | 测试门禁 | `verify(sandbox, baseSha, "implement")` | 抛 `VerificationError` |
 
-`BLOCKED` 分支（`main.mts:532`）比较严格：
+`BLOCKED` 分支（`main.mts:533`）比较严格：
 
 - worktree 必须干净；
 - **有 commit → 直接失败**（"Implementer reported BLOCKED with commits"）；
 - issue 被关了 → 也失败；
 - 都合格 → 加入 `blockedIssueIds`，`saveBatch(lastOutcome: "blocked")`，`continue` 处理下一个 issue。
 
-### 4.2 `verify()`（`main.mts:282`）—— host 独立门禁
+### 4.2 `verify()`（`main.mts:283`）—— host 独立门禁
 
 这是整个流程最重要的"不信 agent"环节。它不接收 agent 的任何断言，自己跑一遍：
 
@@ -246,7 +249,7 @@ const implement = await sandbox.run({
 2. `sha = git rev-parse HEAD`。
 3. `merge-base --is-ancestor baseSha sha` —— 分支必须仍从基线派生。
 4. `git diff --name-only --no-renames -z baseSha sha` → 变更文件列表。
-5. 按前缀匹配 `CHECKS`（`main.mts:244`），只跑命中子项目的检查：
+5. 按前缀匹配 `CHECKS`（`main.mts:245`），只跑命中子项目的检查：
 
 | 前缀 | label | 命令 |
 |---|---|---|
@@ -269,7 +272,7 @@ const implement = await sandbox.run({
 
 ## 5. Phase 2：单 issue 审查（容器内 Claude 进程 #2）
 
-`reviewIssue()`（`main.mts:377`）
+`reviewIssue()`（`main.mts:378`）
 
 ```ts
 const result = await sandbox.run({
@@ -318,7 +321,7 @@ const result = await sandbox.run({
 
 ### 5.2 host 侧校验（顺序很重要）
 
-`main.mts:398-438`：
+`main.mts:399-439`：
 
 | 步骤 | 函数 | 检查内容 | 失败类型 |
 |---|---|---|---|
@@ -351,7 +354,7 @@ const result = await sandbox.run({
 
 ### 5.3 审查门禁失败怎么处理
 
-`main.mts:560-575`：
+`main.mts:561-576`：
 
 ```ts
 try {
@@ -369,9 +372,9 @@ try {
 - **`ReviewGateError`**（预期内的审查/范围/历史/复验失败）→ 记入 `blockedIssueIds`，跳过这个 issue，继续下一个。sandbox 照样关闭，**不合并**。
 - **其他异常**（sandbox 清理、git I/O、manifest 写盘）→ 原样抛出，整批失败。
 
-`reviewGate()`（`main.mts:218`）负责把 `ReviewScopeError` / `VerificationError` 包成 `ReviewGateError`；基础设施异常保持原样。`reviewAssertion()`（`main.mts:232`）把纯内存断言的普通 `Error` 也转成 `ReviewGateError`。
+`reviewGate()`（`main.mts:219`）负责把 `ReviewScopeError` / `VerificationError` 包成 `ReviewGateError`；基础设施异常保持原样。`reviewAssertion()`（`main.mts:233`）把纯内存断言的普通 `Error` 也转成 `ReviewGateError`。
 
-### 5.4 合并（`mergeVerified`，`main.mts:475`）
+### 5.4 合并（`mergeVerified`，`main.mts:476`）
 
 ```ts
 async function mergeVerified(baseSha, branch, verifiedSha, hostBranch) {
@@ -384,41 +387,44 @@ async function mergeVerified(baseSha, branch, verifiedSha, hostBranch) {
 
 冲突时打印处理指引并抛出，不自动解决。
 
-`runBatch` 里 sandbox 一定在 `finally { await sandbox.close(); }` 中关闭（`main.mts:576`），关闭后 worktree 清理。
+`runBatch` 里 sandbox 一定在 `finally { await sandbox.close(); }` 中关闭（`main.mts:577`），关闭后 worktree 清理。
 
 ---
 
 ## 6. Phase 4：最终审查与修复循环
 
-只有在所有 issue 都处理完（或全部 blocked 并抛错）之后才进入。`main.mts:585-593` 先做收尾判断：
+只有在所有 issue 都处理完（或全部 blocked 并抛错）之后才进入。`main.mts:583-593` 先做收尾判断：
 
+- `hitIterationLimit` 且仍有 pending → 抛 `Iteration limit reached...`
 - 还有未 blocked 的 pending → 抛 `All remaining issues are blocked...`
 - 有 blocked → 抛 `Batch ... incomplete: blocked issues: ...`
 
-然后 `main.mts:594`：
+然后 `main.mts:595`：
 
 ```ts
 for (let round = 0; round <= MAX_FIX_ROUNDS; round++)   // MAX_FIX_ROUNDS = 2
 ```
 
-最坏情况：3 次最终审查 + 2 次修复。
+round 走 0、1、2：**最多 3 次最终审查 + 2 次修复**。round 2 若仍是 `changes_required` + blocking，直接抛 `Final repair limit reached`，不再修。
 
 ### 6.1 final-review sandbox（每轮新建）
 
-`main.mts:595-614`
+`main.mts:595-690`
 
 1. `head = host HEAD`
 2. `createSandbox(branchName("final-review"))` —— **新 sandbox、新 worktree**
 3. `preflight`
 4. `assertSpecsUnchanged`
 5. `verify(sandbox, batch.baseSha, "final-N")` —— **对整批累积 diff** 跑 CHECKS，基线是批次开始时的 `baseSha`
-6. 调 `review()`，见下
-7. `reviewedSha` 必须等于 `head`
-8. `requireClean`
-9. `finally` 关 sandbox
-10. 关完再检查 host HEAD / 分支没变
+6. 调 `review()`，见 6.2
+7. `reviewedSha` 必须等于 `head`（`main.mts:611`）
+8. `requireClean(sandbox.worktreePath)`（`main.mts:612`）
+9. 校验 host HEAD 与分支未变（`main.mts:613-616`）
+10. `pass` → `assertReviewPass`（`main.mts:617-619`）；否则进 6.3/6.4 判定
+11. `finally { await sandbox.close(); }`（`main.mts:674-676`）
+12. 关掉之后：有 `verifiedSha`（走了修复）→ `mergeVerified`；没有（`pass`）→ 再确认无 pending issue，`saveBatch({status:"complete"})` 并 `return`（`main.mts:677-690`）
 
-### 6.2 `review()`（`main.mts:441`）—— 通用只读审查
+### 6.2 `review()`（`main.mts:442`）—— 通用只读审查
 
 ```ts
 await sandbox.run({
@@ -450,31 +456,32 @@ if (HEAD !== reviewedSha) throw "final-reviewer changed HEAD; read-only review r
 
 `final-review-prompt.md` 的额外要求：从 **spec** 出发建需求映射，包括**没有任何 issue 提到**的需求；检查状态流转、访问控制、数据契约、失败路径、兼容性、重复或矛盾实现；`REQUIREMENT_IDS` 里每个 ID 都要有对应 `requirements` 行。
 
-### 6.3 结论分支（`main.mts:619-632`）
+### 6.3 结论分支（`main.mts:617-624`）
 
 | `verdict` | 条件 | 动作 |
 |---|---|---|
 | `pass` | — | `assertReviewPass`（含 `requirementIds` 和 `checkedCommands`）→ 确认无 pending issue → `saveBatch(status: "complete")` → **返回，批次结束** |
-| `changes_required` + 有 blocking | `round < MAX_FIX_ROUNDS` | 进入修复 |
+| `changes_required` + 有 blocking | `round < MAX_FIX_ROUNDS` | 进入 **6.4 修复**，复用当前 sandbox |
 | 其他 | 既不是 pass 也没有 blocking 可修 | 抛 `Final review blocked at <sha>`，人工看 `.sandcastle/logs/<batchId>/` |
 | `changes_required` + 有 blocking | `round === MAX_FIX_ROUNDS` | 抛 `Final repair limit reached` |
 
-### 6.4 修复：第二个新 sandbox（`main.mts:634-657`）
+### 6.4 修复：**复用同一个 sandbox**（`main.mts:626-672`）
 
-1. `branch = sandcastle/final-fix/<ts>-<rand>`
-2. `createSandbox(branch)` —— **又一个新 sandbox**，从当前 host HEAD 切
-3. `preflight`
-4. 跑 fixer：
+关键点：这里**不新建 sandbox**。修复沿用刚才那次最终审查的 sandbox 和分支，只是再起一个 Claude 进程。
+
+1. `sandbox.run({ name: "fixer", ... })` —— **新开 1 个 Claude 进程**
    ```ts
-   fixSandbox.run({
+   sandbox.run({
      name: "fixer",
      maxIterations: 1,
      completionSignal: REVIEW_SIGNALS,
+     agent: claudeCode(AGENT_MODEL),
      promptFile: ".sandcastle/fix-review-prompt.md",
      promptArgs: {
        REVIEWED_SHA: head,
        FINDINGS: JSON.stringify(report.findings),
-       ISSUE_IDS: batch.issueIds.join(","),
+       ISSUE_IDS, ISSUE_PATHS, SPEC_PATHS,
+       REQUIREMENT_IDS: issue + spec 需求项,
      },
    });
    ```
@@ -483,38 +490,38 @@ if (HEAD !== reviewedSha) throw "final-reviewer changed HEAD; read-only review r
    | 提示词文件 | `.sandcastle/fix-review-prompt.md` |
    | Claude CLI 进程 | **新开 1 个** |
    | 能改代码 | 能 |
+   | 是否独自审查自己 | 是，**在同一个会话内自审**，不另起 reviewer |
 
-   提示词很短：拿到 `findings` JSON，先写失败回归测试复现，再做最小修复；不许削弱/删除/跳过测试；跑对应子项目检查；提交并保持工作区干净；修不了就说明阻塞且不提交；完成输出 `<promise>COMPLETE</promise>`。
-5. 无 commit → 抛 `Final fixer made no commits`
-6. `assertSpecsUnchanged`
-7. `verify(fixSandbox, head, "fix-N")` —— 基线是修复前的 host HEAD，只校验修复 diff
-8. 复检：
-   ```ts
-   review(fixSandbox, batch, {
-     name: "fix-reviewer",
-     promptFile: "review-prompt.md",
-     baseSha: head,
-     issueIds: batch.issueIds,
-     reportName: `fix-${round}`,
-     checks: fixed.checks,
-   });
-   ```
-   | 项 | 值 |
-   |---|---|
-   | 提示词文件 | `.sandcastle/review-prompt.md` |
-   | Claude CLI 进程 | **新开 1 个** |
-   | 能改代码 | **不能**，只读 |
-   | `REQUIREMENT_IDS` | 未传 → 默认退化为 `issueIds` |
+   提示词要求 fixer 一次做完：读 spec/issue/CODING_STANDARDS → 对每个确认缺陷先写失败回归测试 → 最小修复 → 提交**恰好一个非空 commit**（`{{REVIEWED_SHA}}` 之后，不改历史）→ 自审修复、调用方、跨 issue 影响 → 确认所有 batch 需求仍成立 → 对最终 HEAD 跑相关检查 → 输出 `<review_report>`。
 
-   `review-prompt.md` 与 `final-review-prompt.md` 的差别：前者只审 `BASE_SHA..REVIEWED_SHA`（即修复片段）并要求"不能因为 diff 看起来合理就判通过"，未运行的测试不能标 passed；后者审整批并要覆盖 spec 需求项。
-9. `assertReviewPass(report, { baseSha: head, reviewedSha: verifiedSha, issueIds, checkedCommands })`
-   - 注意这里**不传** `allowSkippedVerification`，所以任何 `skipped` 都会判失败
-   - 这步抛的是**普通 Error**，不是 `ReviewGateError`，不会被降级成 issue blocked，而是整批 `failed`
-10. `verify(fixSandbox, head, "fix-review-N")` 再跑一遍 —— 防止 review 期间代码漂移
-11. `finally` 关 fixSandbox
-12. `mergeVerified(head, branch, verifiedSha, hostBranch)`
+   报告里必须为**每一条**被修的 blocking finding 提供 `fixes` 行，`location` 和 `problem` 要**逐字复制**原 finding 的 `location` 和 `trigger`——host 靠这个精确匹配。
+
+2. `parseReviewReport(fix.stdout)` → `saveReport(batch, "fix-N", fixReport)` —— 先落盘
+3. 无 commit → `Final fixer made no commits`
+4. `requireClean`；`repairedSha = rev-parse HEAD`
+5. `merge-base --is-ancestor head repairedSha`
+6. `assertIssueReviewFixes(fixReport, { implementedSha: head, reviewedSha: repairedSha, repairCommits })` —— 恰好 1 个修复 commit 且等于 HEAD，所有 `fixes[].commit` 都指向它
+7. **父子关系**：`rev-list --parents -n 1 repairedSha` 必须等于 `"<repairedSha> <head>"` → 必须是 `head` 的**直接**、**单个**、**普通** commit（禁 merge commit、禁止多级提交）
+8. 修复 diff 非空（`diff --name-only head repairedSha`）
+9. 修复不得触碰任何目标 issue 文件（`.scratch/<id>.md`）
+10. **覆盖性检查**：最终审查报告里每条 `blocking` finding，都必须在 `fixReport.fixes` 里有 `location` 和 `problem` 都相同的条目，否则 `Final self-review omitted a blocking finding`
+11. `assertSpecsUnchanged`
+12. `pendingIssues(sandbox.worktreePath, ...)` 必须为空 → 不许修复过程中把 issue 重新打开
+13. `assertReviewPass(fixReport, { baseSha: head, reviewedSha: repairedSha, issueIds, requirementIds: issue+spec, allowSkippedVerification: true })`
+    - **允许 `skipped`**：fixer 自审时可能跑不了某些检查，如实标 `skipped` 即可，因为紧接着 host 会独立复验
+    - 抛的是**普通 Error**，不是 `ReviewGateError`，所以不会被降级成 issue blocked，而是整批 `failed`
+14. `verify(sandbox, head, "final-fix-N")` —— host 独立复验修复后的 SHA；`fixed.sha` 必须等于 `repairedSha`
+15. `saveHostVerification(..., phase: "final-fix")` → `fix-N-host-verification.json`
+16. `finally` 关 sandbox
+17. `mergeVerified(head, branch, verifiedSha, hostBranch)`
 
 下一轮从**新的** host HEAD 重新切 final-review sandbox，所以第二轮审查能看到已合并的修复。
+
+### 6.5 为什么修复能复用审查 sandbox
+
+- 审查是只读的：`review()` 已断言 HEAD 未变且工作区干净，所以 fixer 接手时分支仍精确停在 `head`。
+- fixer 的修复 commit 是 `head` 的直接子提交，host 校验父子关系后直接在这个分支上合并，不需要另起 worktree。
+- 少开一个 sandbox = 少一次 `npm ci`、少一次 `preflight`、少一次 `verify`（旧流程在独立 fix sandbox 里会再跑一遍）。
 
 ---
 
@@ -522,11 +529,11 @@ if (HEAD !== reviewedSha) throw "final-reviewer changed HEAD; read-only review r
 
 | 文件 | 用于 | 函数调用处 | 新 Claude 进程 | 可否改代码 | 完成信号 | 注入参数 |
 |---|---|---|---|---|---|---|
-| `implement-prompt.md` | Phase 1 实现 | `main.mts:524` | 是 | 是 | `IMPLEMENTED` / `BLOCKED` | `ISSUE_ID`, `SPEC_PATH` |
-| `issue-review-prompt.md` | Phase 2 单 issue 审查 | `main.mts:388` | 是 | 是（最多 1 个修复 commit） | `COMPLETE` | `BASE_SHA`, `IMPLEMENTED_SHA`, `ISSUE_ID`, `ISSUE_PATH`, `SPEC_PATHS`, `VERIFICATION_RESULTS` |
-| `final-review-prompt.md` | Phase 4 批次最终审查 | `main.mts:604` 经 `review()` | 是 | 否（只读） | `COMPLETE` | `BASE_SHA`, `REVIEWED_SHA`, `ISSUE_IDS`, `ISSUE_PATHS`, `SPEC_PATHS`, `REQUIREMENT_IDS`, `VERIFICATION_RESULTS` |
-| `fix-review-prompt.md` | Phase 4 按 findings 修复 | `main.mts:639` | 是 | 是 | `COMPLETE` | `REVIEWED_SHA`, `FINDINGS`, `ISSUE_IDS` |
-| `review-prompt.md` | Phase 4 修复后复检 | `main.mts:648` 经 `review()` | 是 | 否（只读） | `COMPLETE` | `BASE_SHA`, `REVIEWED_SHA`, `ISSUE_IDS`, `ISSUE_PATHS`, `SPEC_PATHS`, `REQUIREMENT_IDS`, `VERIFICATION_RESULTS` |
+| `implement-prompt.md` | Phase 1 实现 | `main.mts:525` | 是 | 是 | `IMPLEMENTED` / `BLOCKED` | `ISSUE_ID`, `SPEC_PATH` |
+| `issue-review-prompt.md` | Phase 2 单 issue 审查 | `main.mts:384` | 是 | 是（最多 1 个修复 commit） | `COMPLETE` | `BASE_SHA`, `IMPLEMENTED_SHA`, `ISSUE_ID`, `ISSUE_PATH`, `SPEC_PATHS`, `VERIFICATION_RESULTS` |
+| `final-review-prompt.md` | Phase 4 批次最终审查 | `main.mts:605` 经 `review()` | 是 | 否（只读） | `COMPLETE` | `BASE_SHA`, `REVIEWED_SHA`, `ISSUE_IDS`, `ISSUE_PATHS`, `SPEC_PATHS`, `REQUIREMENT_IDS`, `VERIFICATION_RESULTS` |
+| `fix-review-prompt.md` | Phase 4 按 findings 修复 + 自审 | `main.mts:626` | 是 | 是（恰好 1 个修复 commit） | `COMPLETE` | `REVIEWED_SHA`, `FINDINGS`, `ISSUE_IDS`, `ISSUE_PATHS`, `SPEC_PATHS`, `REQUIREMENT_IDS` |
+| `review-prompt.md` | **当前流程未使用**（`review()` 仍支持，供外部复用） | — | — | — | — | — |
 
 共有约定：
 
@@ -544,7 +551,7 @@ if (HEAD !== reviewedSha) throw "final-reviewer changed HEAD; read-only review r
 |---|---|---|---|---|
 | 批次状态 | `.sandcastle/logs/batch-<branch>-<feature>.json` | `main.mts`（`loadBatch` / `saveBatch`） | 下次启动的 `loadBatch`（续跑） | 否（`logs/` 被 gitignore） |
 | 审查报告 | `.sandcastle/logs/<batchId>/issue-N.json`、`final-N.json`、`fix-N.json` | `saveReport` → `saveArtifact` | 人 | 否 |
-| host 复验记录 | `.sandcastle/logs/<batchId>/issue-N-host-verification.json` | `saveHostVerification` | 人 | 否 |
+| host 复验记录 | `.sandcastle/logs/<batchId>/issue-N-host-verification.json`、`fix-N-host-verification.json`（`phase: "final-fix"`） | `saveHostVerification` | 人 | 否 |
 | 测试门禁日志 | `.sandcastle/logs/<sha>-<phase>-<label>-verify.log` | `verify()` | 人 | 否 |
 | Claude 会话日志 | `.sandcastle/logs/sandcastle-<phase>-<ts>-<rand>-<agent>.log`（auto-generated） | Sandcastle 内部（默认 file 模式） | 人 / 调试 | 否 |
 | git worktree | `.sandcastle/worktrees/...` | `createSandbox` | 对应 sandbox（bind-mount） | 否（`worktrees/` 被 gitignore） |
@@ -554,7 +561,7 @@ if (HEAD !== reviewedSha) throw "final-reviewer changed HEAD; read-only review r
 
 ### 8.2 关键：**进程之间不共享内存，只共享文件**
 
-三个 Claude 进程之间没有任何上下文传递。所谓"传递"只有三条路：
+所有 Claude 进程之间没有任何上下文传递——包括同一个 sandbox 里的 final-reviewer 和 fixer，它们也是两次独立的 `claude` 调用。所谓"传递"只有三条路：
 
 1. **git 提交** —— 实现/修复代码、issue 关闭状态。
 2. **`promptArgs` 字符串** —— host 把上一个阶段的 SHA、测试结果 JSON 拼进下一个提示词。
@@ -577,24 +584,26 @@ host  git merge --no-ff reviewed
 final-reviewer  promptArgs = { BASE_SHA=batch.baseSha, REVIEWED_SHA=host HEAD, 全部 issue, 全部 spec 需求 }
    │  host: 落盘 final-N.json
    ▼
-(若 changes_required) fixer  promptArgs = { REVIEWED_SHA, FINDINGS=JSON(report.findings) }
-   │  host: verify(fix 分支)
+(若 changes_required + blocking)
+   │
+fixer（同一个 sandbox）  promptArgs = { REVIEWED_SHA, FINDINGS=JSON(report.findings), 全部 issue/spec 需求 }
+   │  产出: 1 个修复 commit + 自审 <review_report>
+   │  host: 落盘 fix-N.json、assertIssueReviewFixes、父子关系校验、
+   │        覆盖性校验、spec 未变、issue 全 resolved、assertReviewPass
+   │        (allowSkippedVerification)，再 verify(fix 分支) 独立复验
    ▼
-fix-reviewer  promptArgs = { BASE_SHA=修复前 HEAD, REVIEWED_SHA=fix HEAD, VERIFICATION_RESULTS }
-   │  host: assertReviewPass + 再 verify
-   ▼
-host  git merge --no-ff fix
+host  git merge --no-ff 修复分支
    │
    ▼
-下一轮 final-reviewer（看到的是新 HEAD）
+下一轮 final-reviewer（新 sandbox，看到的是新 HEAD）
 ```
 
 ### 8.3 敏感信息
 
 两处脱敏，正则相同：
 
-- `saveArtifact`（`main.mts:174`）：序列化报告时把命中敏感模式的字符串值替换成 `[redacted sensitive output]`。
-- `verify()`（`main.mts:306`）：写测试日志时逐行替换。
+- `saveArtifact`（`main.mts:175`）：序列化报告时把命中敏感模式的字符串值替换成 `[redacted sensitive output]`。
+- `verify()`（`main.mts:307`）：写测试日志时逐行替换。
 
 模式覆盖 `password|passwd|secret|token|authorization|api[_-]?key|jdbc:|Bearer <token>|URL 中的 user:pass|JWT(eyJ...)`。所有落盘文件都是 `mode: 0o600`。
 
@@ -606,13 +615,15 @@ host  git merge --no-ff fix
 
 | 类型 | 含义 | 处理 |
 |---|---|---|
-| `ReviewGateError` | 预期内的门禁失败（报告不合法、范围越界、历史不符、复验失败） | 该 issue 记为 blocked，继续下一个 issue |
+| `ReviewGateError` | 预期内的门禁失败（报告不合法、范围越界、历史不符、复验失败）。**只在 Phase 2 被捕获** | 该 issue 记为 blocked，继续下一个 issue |
 | `ReviewScopeError` | spec 被改、issue ID 非法、缺少 Status、动了别的 issue | 由 `reviewGate` 包成 `ReviewGateError`；直接调用处则向上抛 |
 | `VerificationError` | 工作区脏、基线不祖先、测试失败、HEAD 漂移 | 由 `reviewGate` 包成 `ReviewGateError`；实现阶段和最终阶段直接抛 |
 
 基础设施异常（Docker、文件 I/O、网络）**不**被转换，一律向上抛，整批终止。
 
-### 9.2 顶层错误归类（`main.mts:662-676`）
+注意 Phase 4 内部没有任何 `reviewGate` / `reviewAssertion` 包装。那里的所有断言抛的都是原始类型：`ReviewGateError`（如果本身就是）、`ReviewScopeError`（spec 变了）、`VerificationError`（host 复验失败）或普通 `Error`（`assertReviewPass` / `assertIssueReviewFixes` / 形状门禁）。**它们全部终止整批，不会被降级成单个 issue blocked。**
+
+### 9.2 顶层错误归类（`main.mts:700-705`）
 
 ```ts
 try { await runBatch(batch); }
@@ -681,25 +692,23 @@ host main.mts
 │
 ├─ (全部 issue 完成)
 │
-└─ Final loop (round 0..2)
+└─ Final loop (round 0..2, 每轮 1 个新 sandbox)
     ├─ createSandbox(final-review)            → 新 worktree
     ├─ verify(sandbox, batch.baseSha, final-N)
     ├─ review(final-reviewer)                 → ★ Claude 进程
     │      .sandcastle/final-review-prompt.md
     │      saveReport(final-N.json)
     ├─ pass → status=complete, return
-    ├─ changes_required + blocking:
-    │   ├─ createSandbox(final-fix)           → 又一个新 worktree
-    │   ├─ run(fixer)                         → ★ Claude 进程
+    ├─ changes_required + blocking（round < 2）:
+    │   ├─ run(fixer) 同一 sandbox           → ★ Claude 进程
     │   │      .sandcastle/fix-review-prompt.md
-    │   │      promptArgs 含 FINDINGS
-    │   ├─ verify(fixSandbox, head, fix-N)
-    │   ├─ review(fix-reviewer)               → ★ Claude 进程
-    │   │      .sandcastle/review-prompt.md
-    │   ├─ assertReviewPass(无 skipped 容忍)
-    │   ├─ verify(fixSandbox, head, fix-review-N)
+    │   │      promptArgs 含 FINDINGS + 全部 issue/spec 需求
+    │   │      产出: 1 个修复 commit + 自审 <review_report>
+    │   ├─ assertIssueReviewFixes + 父子关系 + 覆盖性 + spec + issue 状态
+    │   ├─ assertReviewPass(allowSkippedVerification: true)
+    │   ├─ verify(sandbox, head, final-fix-N) + saveHostVerification(final-fix)
     │   └─ mergeVerified(head, ...)
-    └─ 下一轮
+    └─ round 2 仍有 blocking → 抛 Final repair limit
 ```
 
 ---
@@ -715,7 +724,10 @@ host main.mts
 7. **以为 `MAX_ITERATIONS` 是重试次数。** 是 issue 数量上限，默认 15。
 8. **`promptFile` 相对路径按 `process.cwd()` 解析**，`main.mts` 里传的是 `join(repoRoot, ...)` 绝对路径，所以从哪个目录启动都能跑（但 `requireClean`、`git` 都以 `repoRoot` 为 cwd）。
 9. **xiaozhi-server 的门禁只是 `compileall`**，不是 pytest。需要运行时的验证必须在 issue 里显式说明留给 host 人工验证。
-10. **最终修复的复检失败不是 blocked，是整批 failed。** `assertReviewPass` 那里不捕获，直接冒到顶层。
+10. **最终修复的自审失败不是 blocked，是整批 failed。** `assertReviewPass` 那里不捕获，直接冒到顶层。
+11. **以为最终阶段的 fixer 会另起一个 reviewer。** 不会。它在同一个 sandbox、同一个会话里自审并产出 `<review_report>`，host 靠"每条 blocking finding 都必须出现在 `fixes` 里"来防止漏修。
+12. **以为最终修复可以提交多个 commit。** 不行。`rev-list --parents -n 1` 校验它必须是 `head` 的直接、单个、普通 commit，merge commit 也会被拒。
+13. **`review-prompt.md` 已不在主流程里。** 文件还在，`review()` 也还支持，但当前没有任何调用点传它。
 
 ---
 
@@ -728,8 +740,8 @@ host main.mts
 | `.sandcastle/implement-prompt.md` | Phase 1 提示词 |
 | `.sandcastle/issue-review-prompt.md` | Phase 2 提示词 |
 | `.sandcastle/final-review-prompt.md` | Phase 4 最终审查提示词 |
-| `.sandcastle/fix-review-prompt.md` | Phase 4 修复提示词 |
-| `.sandcastle/review-prompt.md` | Phase 4 修复后复检提示词 |
+| `.sandcastle/fix-review-prompt.md` | Phase 4 修复 + 自审提示词（同一会话内完成两件事） |
+| `.sandcastle/review-prompt.md` | 保留但当前主流程未调用；`review()` 仍可接受任意提示词文件 |
 | `.sandcastle/CODING_STANDARDS.md` | 所有审查提示词引用的代码规范 |
 | `.sandcastle/bin/scratch-issues.sh` | `.scratch/` tracker 适配器：`list` / `view` / `close` |
 | `.sandcastle/Dockerfile` | 沙箱镜像（JDK 21 / Maven / Node 22 / Python 3.12 / Claude CLI） |

@@ -30,6 +30,14 @@ host: npx tsx .sandcastle/main.mts
   └─ 分支策略：每 issue 独立 branch（sandcastle/sequential-reviewer/<ts>）
        └─ 成功实现：implement → 验证 → review → 再验证 → host 自动合并已验证 commit
         BLOCKED：不进入验证和合并，记录后继续处理其他可执行 issue
+
+最终阶段（全部 issue 完成后）：
+  每轮新开一个 final-review worktree
+       ├─ 整批累积 diff 验证 → final-reviewer 只读审查
+       └─ changes_required + blocking：同一个 sandbox 内再起 fixer
+            → fixer 修复 + 自审并输出 <review_report> → host 门禁
+            → host 验证 → 合并该分支 → 下一轮重新审查新 HEAD
+          最多 3 轮审查（MAX_FIX_ROUNDS = 2）
 ```
 
 ## Java 验证与 Maven 缓存
@@ -58,6 +66,7 @@ review 新引入的 Java 变更也会触发门禁。初始化 hooks 不能代替
 
 验证命令由 host 编排程序决定并检查退出码；失败会停止运行，不自动 merge。
 日志保存到 `.sandcastle/logs/<commit>-<phase>-<label>-verify.log`，包含提交、命令、退出码和过滤敏感行后的输出。
+phase 取值：`implement`、`review`（单 issue 阶段）、`final-N`（整批最终审查）、`final-fix-N`（最终修复）。
 两个阶段都要求 worktree 没有未提交改动，因此 issue close 和 Comments 也需要提交。
 合并使用验证过的 commit SHA；如果 host 分支或 HEAD 已变化，必须重新整理分支并验证。
 
@@ -142,6 +151,8 @@ npx -y @ai-hero/sandcastle init \
 生成 `.sandcastle/`：Dockerfile、main.mts、implement-prompt.md、review-prompt.md、CODING_STANDARDS.md、.env.example、.gitignore。
 
 **注意：** `--issue-tracker custom` 不自动 build 镜像（其他 tracker 会），并且留 `SETUP_ISSUE_TRACKER.md` 提示你手动接线。
+
+> 模板生成的 `review-prompt.md` 在本仓库**已不在主流程里**。当前流程见 `.sandcastle/FLOW.md` 与下方文件清单；该文件仍保留，`main.mts` 的 `review()` 仍可接受任意提示词文件。
 
 ### 2. 接入本仓 .scratch issue tracker
 
@@ -338,7 +349,7 @@ implementer 遇到无法继续的外部依赖时输出 `<promise>BLOCKED</promis
 - resume 时跳过已记录的 blocked issue，避免重复消耗 token。只要仍有 blocked issue，批次就不能标记 complete，最终以非 0 退出。
 - 无 commit 且没有 BLOCKED 信号，仍按 `no_progress` 失败处理。
 
-全部目标 issue 解决后，对整批累计变更执行检查和最终只读审查；确认有可修复阻塞问题时，最多自动修复两轮，每轮修复都重新验证、审查和合并，再对新的 head 重新执行最终审查。报告保存于 `.sandcastle/logs/<batch-id>/`，结论绑定 `baseSha`、`reviewedSha` 和目标 issue 列表。
+全部目标 issue 解决后，对整批累计变更执行检查和最终只读审查；确认有可修复阻塞问题时，最多自动修复两轮（`MAX_FIX_ROUNDS = 2`，即最多 3 次最终审查）。修复不与审查共享 agent 会话：fixer 在**同一个 sandbox / 同一个分支**里完成修复并在同一会话内自审，输出 `<review_report>`；host 依次校验报告结构、恰好一个直接父提交为被审查 HEAD 的修复 commit、blocking finding 逐条覆盖、spec 未变、issue 仍全部 resolved，再独立跑 `verify()` 后合并，然后对新的 head 重新执行最终审查。报告保存于 `.sandcastle/logs/<batch-id>/`，结论绑定 `baseSha`、`reviewedSha` 和目标 issue 列表。
 
 **外部依赖恢复后的重试：** runner 会持续跳过 manifest 中已记录的 blocked issue。先停止当前运行并备份对应 `.sandcastle/logs/batch-*.json`，再删除其中的 `blockedIssueIds` 字段（或移除要重试的 issue ID），随后在同一分支、使用相同 `SANDCASTLE_FEATURE` 恢复运行；不要删除整个批次状态，否则目标范围和 spec 冻结校验会重新建立。
 
@@ -513,6 +524,15 @@ SANDCASTLE_MODEL=Kimi/k3 npx tsx .sandcastle/main.mts
 # 看实时日志
 tail -f .sandcastle/logs/<latest>.log
 
+# 查批次状态（续跑依据；blockedIssueIds 会让对应 issue 被跳过）
+cat .sandcastle/logs/batch-*.json
+
+# 查看某批次的审查报告与 host 复验记录
+ls .sandcastle/logs/<batchId>/
+
+# 只处理某个 feature
+SANDCASTLE_MODEL=Kimi/k3 SANDCASTLE_FEATURE=game-management npx tsx .sandcastle/main.mts
+
 # 清理 agent 留下的分支
 git branch | grep "sandcastle/" | xargs git branch -D
 
@@ -521,6 +541,10 @@ bash .sandcastle/bin/scratch-issues.sh list
 bash .sandcastle/bin/scratch-issues.sh view game-management/issues/01-admin-game-crud
 bash .sandcastle/bin/scratch-issues.sh close game-management/issues/01-admin-game-crud
 ```
+
+## 流程文档
+
+各阶段执行哪个函数、用哪个提示词文件、是否新开 Claude CLI 进程、中间产物如何共享传递，见 **`.sandcastle/FLOW.md`**。
 
 ## 文件清单
 
@@ -532,15 +556,18 @@ bash .sandcastle/bin/scratch-issues.sh close game-management/issues/01-admin-gam
 ├── Dockerfile                # 镜像定义
 ├── main.mts                  # sequential-reviewer 入口
 ├── main.test.mts             # runner 集成回归测试
-├── test-support/sandcastle.mjs # 测试替身：agent、容器与完成信号
 ├── review-contract.mts       # 审查报告校验与合并门禁
-├── implement-prompt.md       # implementer prompt
-├── review-prompt.md          # 单 issue / 修复后的只读审查
-├── final-review-prompt.md    # 整批最终审查
-├── fix-review-prompt.md      # 最终审查阻塞项修复
+├── FLOW.md                   # 完整处理流程详解（阶段、函数、提示词、进程、产物）
+├── test-support/sandcastle.mjs # 测试替身：agent、容器与完成信号
+├── implement-prompt.md       # Phase 1 implementer prompt
+├── issue-review-prompt.md    # Phase 2 单 issue 审查（可提交一个修复 commit）
+├── final-review-prompt.md    # Phase 4 整批最终审查（只读）
+├── fix-review-prompt.md      # Phase 4 修复 + 同一会话内自审
+├── review-prompt.md          # 模板遗留：当前主流程未调用，review() 仍可接受
 ├── CODING_STANDARDS.md       # 审查标准（44 行精简版）
 ├── SETUP_ISSUE_TRACKER.md    # 模板自带，可删
 ├── SETUP.md                  # 本文档
+├── sandcastle-guide.md       # Sandcastle 库本身的用法说明
 ├── sync-skills.sh            # 从本机同步 skill 到 build context
 ├── bin/scratch-issues.sh     # .scratch tracker 适配器
 ├── package.json              # host 依赖（@ai-hero/sandcastle + tsx）
@@ -549,4 +576,20 @@ bash .sandcastle/bin/scratch-issues.sh close game-management/issues/01-admin-gam
     ├── diagnosing-bugs/
     ├── systematic-debugging/
     └── verification-before-completion/
+```
+
+运行时产物（均 gitignored）：
+
+```
+.sandcastle/
+├── .env                      # CCR key
+├── logs/
+│   ├── batch-<branch>-<feature>.json          # 批次状态，用于续跑
+│   └── <batchId>/
+│       ├── issue-N.json                       # 单 issue 审查报告
+│       ├── issue-N-host-verification.json     # host 复验记录
+│       ├── final-N.json                       # 最终审查报告
+│       ├── fix-N.json                         # 修复 + 自审报告
+│       └── fix-N-host-verification.json       # phase: "final-fix"
+└── worktrees/                # createSandbox 生成，close() 后清理
 ```

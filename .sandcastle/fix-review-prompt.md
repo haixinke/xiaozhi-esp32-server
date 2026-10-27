@@ -14,6 +14,8 @@ Read the feature specs, issue files, affected code and tests, @.sandcastle/CODIN
 
 Commit the complete repair and its regression tests as exactly one nonempty commit after `{{REVIEWED_SHA}}`. Do not amend, reset, rebase, merge, or rewrite existing history. Leave a clean worktree. Self-review the committed repair, its callers and cross-issue impact, and confirm all batch issue/spec requirements still hold. Run the affected checks against this final HEAD. Report only checks actually executed; an unrun check must be `skipped` with a reason. A pass needs passing self-check evidence, all requirements met with evidence, and no unresolved blocking findings. The runner independently validates your report and runs its checks after you finish; do not claim those future runner checks have passed.
 
+Record the regression test's failure before the repair and its result after the repair in the corresponding `fixes.evidence`. The `verification` array describes checks against the final committed HEAD only: include actual failures and explain skipped checks, but do not include the expected pre-repair failure as a final-HEAD failure. Checks run against the previous HEAD do not prove the repair passes.
+
 Emit `<promise>COMPLETE</promise>` once and exactly one `<review_report>` tag containing:
 
 ```json

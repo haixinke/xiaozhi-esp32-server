@@ -17,6 +17,7 @@ import storyEngine from './module/storyEngine.js'
 import feedback from './module/feedback.js'
 import game from './module/game.js'
 import smallObject from './module/smallObject.js'
+import listenQuestion from './module/listenQuestion.js'
 
 
 
@@ -55,5 +56,6 @@ export default {
     storyEngine,
     feedback,
     game,
-    smallObject
+    smallObject,
+    listenQuestion
   }

@@ -183,24 +183,24 @@ public class ListenImportServiceImpl implements ListenImportService {
             List<ListenGroupEntity> dbGroups = listenGroupDao.selectList(new QueryWrapper<ListenGroupEntity>()
                     .select("id", "category_code", "name").in("category_code", categoryIds));
             List<Long> dbGroupIds = new ArrayList<>();
-            Map<Long, String> dbGroupKeyById = new HashMap<>();
+            // 直接以组实体映射，避免用 "categoryCode name" 空格拼接键——组名含空格时 indexOf(' ') 会切错
+            Map<Long, ListenGroupEntity> dbGroupById = new HashMap<>();
             for (ListenGroupEntity group : dbGroups) {
                 dbGroupNames.computeIfAbsent(group.getCategoryCode(), k -> new HashSet<>()).add(group.getName());
                 dbGroupIds.add(group.getId());
-                dbGroupKeyById.put(group.getId(), group.getCategoryCode() + " " + group.getName());
+                dbGroupById.put(group.getId(), group);
             }
             if (!dbGroupIds.isEmpty()) {
                 List<ListenQuestionEntity> dbQuestions = listenQuestionDao.selectList(
                         new QueryWrapper<ListenQuestionEntity>().select("group_id", "text")
                                 .in("group_id", dbGroupIds));
                 for (ListenQuestionEntity question : dbQuestions) {
-                    String key = dbGroupKeyById.get(question.getGroupId());
-                    if (key == null) {
+                    ListenGroupEntity group = dbGroupById.get(question.getGroupId());
+                    if (group == null) {
                         continue;
                     }
-                    int sep = key.indexOf(' ');
-                    dbQuestionTexts.computeIfAbsent(key.substring(0, sep), k -> new HashMap<>())
-                            .computeIfAbsent(key.substring(sep + 1), k -> new HashSet<>())
+                    dbQuestionTexts.computeIfAbsent(group.getCategoryCode(), k -> new HashMap<>())
+                            .computeIfAbsent(group.getName(), k -> new HashSet<>())
                             .add(question.getText());
                 }
             }

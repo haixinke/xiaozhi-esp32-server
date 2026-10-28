@@ -116,7 +116,7 @@ class ListenGroupEditDeleteServiceTest {
         entity.setGroupId(groupId);
         entity.setText(text);
         entity.setType("SINGLE");
-        entity.setOptionsJson("{\"options\":[{\"key\":\"A\",\"text\":\"甲\"}]}");
+        entity.setOptionsJson("[{\"key\":\"A\",\"text\":\"甲\"}]");
         entity.setSortOrder(sortOrder);
         listenQuestionDao.insert(entity);
         return entity.getId();
@@ -173,10 +173,10 @@ class ListenGroupEditDeleteServiceTest {
 
         List<ListenQuestionEntity> questions = questionsOf(groupId);
         assertThat(questions).hasSize(2);
-        // 更新路径：id 保持稳定，题干已更新，options_json 已重写为 5 个选项
+        // 更新路径：id 保持稳定，题干已更新，options_json 已重写为 5 个选项的裸数组（与导入路径格式一致）
         assertThat(questions.get(0).getId()).isEqualTo(keepId);
         assertThat(questions.get(0).getText()).isEqualTo("保留题-新题干");
-        assertThat(questions.get(0).getOptionsJson()).contains("\"E\"");
+        assertThat(questions.get(0).getOptionsJson()).startsWith("[").contains("\"E\"").doesNotContain("\"options\"");
         // 新增路径：生成了新 id
         assertThat(questions.get(1).getId()).isNotNull().isNotEqualTo(keepId);
         assertThat(questions.get(1).getText()).isEqualTo("新增题");

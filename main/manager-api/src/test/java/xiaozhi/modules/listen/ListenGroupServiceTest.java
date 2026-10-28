@@ -117,9 +117,10 @@ class ListenGroupServiceTest {
         entity.setGroupId(groupId);
         entity.setText(text);
         entity.setType("SINGLE");
+        // options_json 统一为裸数组 [{key,text}]（spec/DDL 注释格式；DB 无存量包装形态数据）
         entity.setOptionsJson(
-                "{\"options\":[{\"key\":\"A\",\"text\":\"甲\"},{\"key\":\"B\",\"text\":\"乙\"},"
-                        + "{\"key\":\"C\",\"text\":\"丙\"},{\"key\":\"D\",\"text\":\"丁\"},{\"key\":\"E\",\"text\":\"戊\"}]}");
+                "[{\"key\":\"A\",\"text\":\"甲\"},{\"key\":\"B\",\"text\":\"乙\"},"
+                        + "{\"key\":\"C\",\"text\":\"丙\"},{\"key\":\"D\",\"text\":\"丁\"},{\"key\":\"E\",\"text\":\"戊\"}]");
         entity.setSortOrder(sortOrder);
         listenQuestionDao.insert(entity);
         questionIds.add(entity.getId());

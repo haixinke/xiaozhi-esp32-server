@@ -133,7 +133,7 @@ class ListenMigrationIntegrationTest {
         insertQuestion(200L, 20L, "题干");
 
         String firstKey = jdbc.queryForObject(
-                "select JSON_UNQUOTE(JSON_EXTRACT(options_json, '$.options[0].key')) " +
+                "select JSON_UNQUOTE(JSON_EXTRACT(options_json, '$[0].key')) " +
                         "from ai_listen_question where id = 200",
                 String.class);
         assertThat(firstKey).isEqualTo("A");
@@ -221,7 +221,7 @@ class ListenMigrationIntegrationTest {
                         "(id, group_id, text, type, options_json, sort_order, create_date) " +
                         "values (?, ?, ?, 'SINGLE', ?, 0, ?)",
                 id, groupId, text,
-                "{\"options\":[{\"key\":\"A\",\"text\":\"选项A\"},{\"key\":\"B\",\"text\":\"选项B\"}]}",
+                "[{\"key\":\"A\",\"text\":\"选项A\"},{\"key\":\"B\",\"text\":\"选项B\"}]",
                 new Date());
     }
 }

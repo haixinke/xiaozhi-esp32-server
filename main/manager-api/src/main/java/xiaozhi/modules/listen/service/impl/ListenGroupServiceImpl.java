@@ -149,7 +149,7 @@ public class ListenGroupServiceImpl extends BaseServiceImpl<ListenGroupDao, List
                 .forEach(entity -> listenQuestionDao.deleteById(entity.getId()));
     }
 
-    /** 用 DTO 内容填充题目实体（新建与更新共用）；选项序列化为 {\"options\":[{key,text}]} 与存量导入文件一致 */
+    /** 用 DTO 内容填充题目实体（新建与更新共用）；选项序列化为裸数组 [{key,text}]，与 spec/DDL 注释及导入路径一致 */
     private void fillQuestion(ListenQuestionEntity entity, ListenGroupSaveDTO.Question question) {
         entity.setText(question.getText());
         entity.setType(question.getType());
@@ -158,7 +158,7 @@ public class ListenGroupServiceImpl extends BaseServiceImpl<ListenGroupDao, List
             List<Map<String, String>> options = question.getOptions().stream()
                     .map(option -> Map.of("key", option.getKey(), "text", option.getText()))
                     .collect(Collectors.toList());
-            entity.setOptionsJson(OBJECT_MAPPER.writeValueAsString(Map.of("options", options)));
+            entity.setOptionsJson(OBJECT_MAPPER.writeValueAsString(options));
         } catch (Exception e) {
             // DTO 校验已保证 options 非空且字段非空，序列化失败属内部错误而非业务异常
             throw new RenException(ErrorCode.INTERNAL_SERVER_ERROR, e);
@@ -198,7 +198,7 @@ public class ListenGroupServiceImpl extends BaseServiceImpl<ListenGroupDao, List
     }
 
     /**
-     * 解析选项 JSON。库内格式为 {"options":[{"key":"A","text":"..."}]}（与存量导入文件一致）；
+     * 解析选项 JSON。库内格式为裸数组 [{"key":"A","text":"..."}]（与 spec/DDL 注释及导入路径一致）；
      * 解析失败按空列表处理——本期只读展示，坏数据不应让整个详情页 500，由导入期的校验兜底格式。
      */
     private List<ListenGroupDetailVO.Option> parseOptions(String optionsJson) {
@@ -206,9 +206,7 @@ public class ListenGroupServiceImpl extends BaseServiceImpl<ListenGroupDao, List
             return List.of();
         }
         try {
-            JsonNode root = OBJECT_MAPPER.readTree(optionsJson);
-            // 兼容两种形态：{"options":[...]} 包装与裸数组 [...]
-            JsonNode array = root.isArray() ? root : root.path("options");
+            JsonNode array = OBJECT_MAPPER.readTree(optionsJson);
             if (!array.isArray()) {
                 return List.of();
             }

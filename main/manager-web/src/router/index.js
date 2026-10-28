@@ -354,6 +354,18 @@ const routes = [
       title: '小物件管理'
     }
   },
+  // 题库运营页面路由
+  {
+    path: '/listen-question-bank',
+    name: 'ListenQuestionBank',
+    component: function () {
+      return import('../views/ListenQuestionBank.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      title: '题库运营'
+    }
+  },
 ]
 const router = new VueRouter({
   base: process.env.VUE_APP_PUBLIC_PATH || '/',

@@ -118,6 +118,12 @@ pet:
     # 任务直接 创建→生成→成功。生产必须保持 false，否则未过审图片直接可见
     skip-media-check: ${PET_IMAGE_GEN_SKIP_MEDIA_CHECK:true}
 
+# 听你说小游戏：每日可答题组数上限（按用户、Asia/Shanghai 自然日；0 或负数表示不限）
+# 默认值与 ListenAnswerServiceImpl 构造器的 @Value 兜底值必须一致：
+# 测试类路径下的 application.yml 会整体遮蔽本文件，测试实际读的是 @Value 兜底值
+listen:
+  daily-group-limit: ${LISTEN_DAILY_GROUP_LIMIT:5}
+
 # AI宠物头像配置
 # 按原型配置 OSS 基础 URL、文件名前缀与可用数量，破壳时随机生成头像 URL
   avatar:

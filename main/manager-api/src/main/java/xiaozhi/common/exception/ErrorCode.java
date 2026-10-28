@@ -337,6 +337,7 @@ public interface ErrorCode {
     int LISTEN_QUESTION_TEXT_DUPLICATE = 10381; // 同一题目分组下已存在相同题干的题目
     int LISTEN_ALL_ANSWERED = 10382; // 所有题目分组都已答过，无题可抽
     int LISTEN_CUSTOM_TEXT_TOO_LONG = 10383; // 自定义文本答案最多200字
+    int LISTEN_DAILY_LIMIT_REACHED = 10384; // 今日答题组数已用完
 
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败

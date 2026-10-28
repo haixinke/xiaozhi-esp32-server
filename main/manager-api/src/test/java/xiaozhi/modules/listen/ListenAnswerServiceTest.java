@@ -283,6 +283,69 @@ class ListenAnswerServiceTest {
                 .isEqualTo(ErrorCode.LISTEN_CUSTOM_TEXT_TOO_LONG);
     }
 
+    /** 造 n 个各含一题的题组，返回组 id 列表（用于每日额度用例） */
+    private List<Long> createGroupsWithOneQuestion(String categoryPrefix, int n) {
+        String category = createCategory(categoryPrefix, "额度测试大类" + categoryPrefix);
+        List<Long> groups = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            Long group = createGroup(category, "额度组" + i, i);
+            createQuestion(group, "额度题" + i, 1);
+            groups.add(group);
+        }
+        return groups;
+    }
+
+    /** 答题组（组内单题选 A），用于消耗额度 */
+    private void answerGroup(Long groupId) {
+        Long questionId = listenQuestionDao.selectOne(new QueryWrapper<ListenQuestionEntity>()
+                .eq("group_id", groupId)).getId();
+        listenAnswerService.submitAnswers(TEST_USER_ID,
+                submitDTO(groupId, List.of(answerItem(questionId, "A", null))));
+    }
+
+    @Test
+    @DisplayName("额度：今日答满 5 组后 draw 抛 LISTEN_DAILY_LIMIT_REACHED")
+    void drawRejectsWhenDailyLimitReached() {
+        List<Long> groups = createGroupsWithOneQuestion("TEST_ANS_H", 5);
+        groups.forEach(this::answerGroup);
+
+        assertThatThrownBy(() -> listenAnswerService.draw(TEST_USER_ID))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.LISTEN_DAILY_LIMIT_REACHED);
+    }
+
+    @Test
+    @DisplayName("额度：今日答满 5 组后第 6 组提交被拒且不落库")
+    void submitRejectsSixthGroupWhenDailyLimitReached() {
+        List<Long> groups = createGroupsWithOneQuestion("TEST_ANS_I", 6);
+        groups.subList(0, 5).forEach(this::answerGroup);
+        Long sixth = groups.get(5);
+        Long sixthQuestion = listenQuestionDao.selectOne(new QueryWrapper<ListenQuestionEntity>()
+                .eq("group_id", sixth)).getId();
+
+        assertThatThrownBy(() -> listenAnswerService.submitAnswers(TEST_USER_ID,
+                submitDTO(sixth, List.of(answerItem(sixthQuestion, "A", null)))))
+                .isInstanceOf(RenException.class)
+                .extracting(e -> ((RenException) e).getCode())
+                .isEqualTo(ErrorCode.LISTEN_DAILY_LIMIT_REACHED);
+
+        // 被拒的组不产生任何答题记录
+        assertThat(listenAnswerDao.selectCount(new QueryWrapper<ListenAnswerEntity>()
+                .eq("user_id", TEST_USER_ID)
+                .eq("group_id", sixth))).isZero();
+    }
+
+    @Test
+    @DisplayName("额度：答满 5 组后重提已答组不被拦截（幂等重试不该报额度用尽）")
+    void resubmitAnsweredGroupNotBlockedByDailyLimit() {
+        List<Long> groups = createGroupsWithOneQuestion("TEST_ANS_J", 5);
+        groups.forEach(this::answerGroup);
+
+        // 不抛异常即为通过：已答组不占新额度，也不受上限拦截
+        answerGroup(groups.get(0));
+    }
+
     @Test
     @DisplayName("提交：questionId 不属于 groupId 抛 LISTEN_QUESTION_NOT_FOUND（防止污染按组排除索引）")
     void submitRejectsMismatchedGroupAndQuestion() {

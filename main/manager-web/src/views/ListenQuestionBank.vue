@@ -34,6 +34,8 @@
             >
               <template slot="operations" slot-scope="scope">
                 <el-button type="text" size="small" @click="handleView(scope.row)">查看题目</el-button>
+                <el-button type="text" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button type="text" size="small" class="danger-btn" @click="handleDeleteGroup(scope.row)">删除</el-button>
               </template>
             </CustomTable>
           </el-card>
@@ -41,7 +43,7 @@
       </div>
     </div>
 
-    <!-- 组内题目只读查看：题干 + A-E 选项，本期不提供编辑 -->
+    <!-- 组内题目只读查看：题干 + A-E 选项 -->
     <el-dialog
       :title="detailTitle"
       :visible.sync="detailVisible"
@@ -62,6 +64,57 @@
       </div>
       <span slot="footer">
         <el-button size="small" @click="detailVisible = false">关闭</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 题组编辑弹窗：组名 + 组内全部题目（题干 + 各 5 选项），整组一次性提交 -->
+    <el-dialog
+      title="编辑题组"
+      :visible.sync="editVisible"
+      width="820px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+    >
+      <div v-loading="editLoading">
+        <div class="edit-group-name">
+          <span class="edit-label">题组名称</span>
+          <el-input v-model="editForm.name" maxlength="50" placeholder="请输入题组名称" style="width: 320px" />
+        </div>
+        <div v-for="(question, index) in editForm.questions" :key="question.id || `new-${index}`" class="question-block">
+          <div class="edit-question-header">
+            <span class="edit-label">题目 {{ index + 1 }}</span>
+            <el-button
+              type="text"
+              size="small"
+              class="danger-btn"
+              :disabled="editForm.questions.length <= 1"
+              @click="handleRemoveEditQuestion(index)"
+            >删除本题</el-button>
+          </div>
+          <el-input
+            v-model="question.text"
+            maxlength="200"
+            placeholder="请输入题干"
+            class="edit-question-text"
+          />
+          <div class="edit-option-list">
+            <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="edit-option-item">
+              <span class="option-key">{{ option.key }}</span>
+              <el-input v-model="option.text" maxlength="100" placeholder="选项文本" />
+            </div>
+          </div>
+        </div>
+        <el-button
+          v-if="editForm.questions.length < 5"
+          type="text"
+          size="small"
+          icon="el-icon-plus"
+          @click="handleAddEditQuestion"
+        >添加题目（最多 5 题）</el-button>
+      </div>
+      <span slot="footer">
+        <el-button size="small" @click="editVisible = false">取消</el-button>
+        <el-button type="primary" size="small" :loading="editSaving" @click="handleSaveEdit">保存</el-button>
       </span>
     </el-dialog>
     <el-footer><VersionFooter/></el-footer>
@@ -93,7 +146,13 @@ export default {
       detailVisible: false,
       detailLoading: false,
       detailTitle: "",
-      detailQuestions: []
+      detailQuestions: [],
+      // 编辑弹窗：整组表单（组名 + 组内全部题目），整组一次性提交
+      editVisible: false,
+      editLoading: false,
+      editSaving: false,
+      editGroupId: null,
+      editForm: { name: "", questions: [] }
     };
   },
   created() {
@@ -181,6 +240,150 @@ export default {
           this.$message.error(data.msg || '获取题组详情失败');
         }
       });
+    },
+
+    // 打开编辑弹窗：复用组详情接口取回全量题目，深拷贝避免编辑直接改动只读态数据
+    handleEdit(row) {
+      this.editGroupId = row.id;
+      this.editForm = { name: row.name, questions: [] };
+      this.editLoading = true;
+      this.editVisible = true;
+      Api.listenQuestion.getGroupDetail(row.id, ({ data }) => {
+        this.editLoading = false;
+        if (data.code !== 0) {
+          this.$message.error(data.msg || '获取题组详情失败');
+          return;
+        }
+        const questions = ((data.data && data.data.questions) || []).map((question, index) => ({
+          id: question.id,
+          text: question.text,
+          type: question.type,
+          sortOrder: index + 1,
+          options: (question.options || []).map((option) => ({ key: option.key, text: option.text }))
+        }));
+        this.editForm = { name: data.data.name, questions };
+      });
+    },
+
+    // 选项键固定 A-E，按当前下标生成
+    buildOptionKeys() {
+      return ['A', 'B', 'C', 'D', 'E'];
+    },
+
+    // 新增一道空题（带默认 5 个空选项），追加在末尾
+    handleAddEditQuestion() {
+      this.editForm.questions.push({
+        id: null,
+        text: '',
+        type: 'SINGLE',
+        sortOrder: this.editForm.questions.length + 1,
+        options: this.buildOptionKeys().map((key) => ({ key, text: '' }))
+      });
+    },
+
+    // 从编辑表单移除一道题；若该题已有 id，需经确认后单题物理删除（不可恢复）
+    handleRemoveEditQuestion(index) {
+      const question = this.editForm.questions[index];
+      if (question.id) {
+        this.$confirm(
+          `题目「${question.text || `第 ${index + 1} 题`}」将被物理删除，不可恢复。确认删除？`,
+          '删除确认',
+          { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+        ).then(() => {
+          Api.listenQuestion.deleteQuestion(question.id, ({ data }) => {
+            if (data.code === 0) {
+              this.editForm.questions.splice(index, 1);
+              this.$message.success('题目已删除');
+            } else {
+              this.$message.error(data.msg || '删除题目失败');
+            }
+          });
+        }).catch(() => {});
+        return;
+      }
+      // 未落库的新题直接移除
+      this.editForm.questions.splice(index, 1);
+    },
+
+    // 保存前校验：组名非空、至少一题、题干与选项文本均非空、题干不重复（前端先行提示，后端判重兜底）
+    validateEditForm() {
+      if (!this.editForm.name || !this.editForm.name.trim()) {
+        this.$message.error('请输入题组名称');
+        return false;
+      }
+      if (this.editForm.questions.length === 0) {
+        this.$message.error('题组至少包含一道题目');
+        return false;
+      }
+      const texts = new Set();
+      for (let i = 0; i < this.editForm.questions.length; i++) {
+        const question = this.editForm.questions[i];
+        if (!question.text || !question.text.trim()) {
+          this.$message.error(`第 ${i + 1} 题的题干不能为空`);
+          return false;
+        }
+        const normalized = question.text.trim();
+        if (texts.has(normalized)) {
+          this.$message.error(`题干「${normalized}」在组内重复`);
+          return false;
+        }
+        texts.add(normalized);
+        for (let j = 0; j < question.options.length; j++) {
+          if (!question.options[j].text || !question.options[j].text.trim()) {
+            this.$message.error(`第 ${i + 1} 题的选项 ${question.options[j].key} 不能为空`);
+            return false;
+          }
+        }
+      }
+      return true;
+    },
+
+    // 整组一次性提交：sortOrder 按当前展示顺序重排；带 id 的保留 id（后端更新保 id），无 id 的新增
+    handleSaveEdit() {
+      if (!this.validateEditForm()) {
+        return;
+      }
+      this.editSaving = true;
+      const payload = {
+        name: this.editForm.name.trim(),
+        questions: this.editForm.questions.map((question, index) => ({
+          id: question.id,
+          text: question.text.trim(),
+          type: question.type,
+          sortOrder: index + 1,
+          options: question.options.map((option) => ({ key: option.key, text: option.text.trim() }))
+        }))
+      };
+      Api.listenQuestion.updateGroup(this.editGroupId, payload, ({ data }) => {
+        this.editSaving = false;
+        if (data.code === 0) {
+          this.$message.success('保存成功');
+          this.editVisible = false;
+          this.fetchGroupList();
+        } else {
+          this.$message.error(data.msg || '保存题组失败');
+        }
+      }, () => {
+        this.editSaving = false;
+      });
+    },
+
+    // 整组物理删除：二次确认且文案明示不可恢复
+    handleDeleteGroup(row) {
+      this.$confirm(
+        `题组「${row.name}」及其全部 ${row.questionCount} 道题目将被物理删除，不可恢复。确认删除？`,
+        '删除确认',
+        { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+      ).then(() => {
+        Api.listenQuestion.deleteGroup(row.id, ({ data }) => {
+          if (data.code === 0) {
+            this.$message.success('题组已删除');
+            this.fetchGroupList();
+          } else {
+            this.$message.error(data.msg || '删除题组失败');
+          }
+        });
+      }).catch(() => {});
     }
   }
 };
@@ -296,5 +499,44 @@ export default {
 .option-key {
   font-weight: 600;
   color: #5778ff;
+}
+
+.danger-btn {
+  color: #f56c6c;
+}
+
+.edit-group-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 12px;
+}
+
+.edit-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.edit-question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.edit-question-text {
+  margin: 6px 0 10px;
+}
+
+.edit-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 16px;
+}
+
+.edit-option-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

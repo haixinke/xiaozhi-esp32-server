@@ -43,5 +43,63 @@ export default {
                     this.getGroupDetail(id, callback)
                 })
             }).send()
+    },
+
+    // 整组编辑保存：一次性 PUT 组名 + 组内全部题目（带 id 更新 / 无 id 新增 / 缺失物理删除）
+    updateGroup(id, payload, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/listen/group/${id}`)
+            .method('PUT')
+            .data(payload)
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((err) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(err)
+                }
+            })
+            .networkFail((err) => {
+                console.error('保存题组失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.updateGroup(id, payload, callback, failCallback)
+                })
+            }).send()
+    },
+
+    // 整组物理删除（含组内题目，不可恢复）
+    deleteGroup(id, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/listen/group/${id}`)
+            .method('DELETE')
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) => {
+                console.error('删除题组失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.deleteGroup(id, callback)
+                })
+            }).send()
+    },
+
+    // 单题物理删除（不可恢复）
+    deleteQuestion(id, callback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/listen/question/${id}`)
+            .method('DELETE')
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .networkFail((err) => {
+                console.error('删除题目失败:', err)
+                RequestService.reAjaxFun(() => {
+                    this.deleteQuestion(id, callback)
+                })
+            }).send()
     }
 }

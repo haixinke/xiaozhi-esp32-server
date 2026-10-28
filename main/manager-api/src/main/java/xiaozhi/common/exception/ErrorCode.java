@@ -329,6 +329,9 @@ public interface ErrorCode {
     // 听你说题库相关错误码（10370 起独立连续区间，接在小物件管理 1036x 之后）
     int LISTEN_GROUP_NOT_FOUND = 10370; // 题目分组不存在
     int LISTEN_QUESTION_NOT_FOUND = 10371; // 题目不存在
+    // 10372-10379 预留给题库导入（ticket 03）；编辑判重从 10380 起，避免与并行开发冲突
+    int LISTEN_GROUP_NAME_DUPLICATE = 10380; // 同一大类下已存在同名题目分组
+    int LISTEN_QUESTION_TEXT_DUPLICATE = 10381; // 同一题目分组下已存在相同题干的题目
 
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败

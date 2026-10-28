@@ -22,6 +22,31 @@ describe('listen question bank - wiring', () => {
     assert.match(moduleSource, /\/admin\/listen\/group\/\$\{id\}/)
   })
 
+  it('listenQuestion module exposes edit and delete endpoints', async () => {
+    const moduleSource = await read('../src/apis/module/listenQuestion.js')
+    assert.match(moduleSource, /updateGroup/)
+    assert.match(moduleSource, /deleteGroup/)
+    assert.match(moduleSource, /deleteQuestion/)
+    // 单题删除走 /question/{id}
+    assert.match(moduleSource, /\/admin\/listen\/question\/\$\{id\}/)
+    // 整组保存用 PUT
+    assert.match(moduleSource, /method\('PUT'\)/)
+  })
+
+  it('page wires edit dialog and delete confirmations with physical-delete wording', async () => {
+    const viewSource = await read('../src/views/ListenQuestionBank.vue')
+    assert.match(viewSource, /handleEdit\(/)
+    assert.match(viewSource, /handleDeleteGroup\(/)
+    assert.match(viewSource, /handleRemoveEditQuestion\(/)
+    assert.match(viewSource, /handleSaveEdit\(/)
+    // 删除二次确认文案必须明示物理删除不可恢复
+    assert.match(viewSource, /物理删除，不可恢复/)
+    // 编辑弹窗整组提交
+    assert.match(viewSource, /Api\.listenQuestion\.updateGroup\(/)
+    assert.match(viewSource, /Api\.listenQuestion\.deleteGroup\(/)
+    assert.match(viewSource, /Api\.listenQuestion\.deleteQuestion\(/)
+  })
+
   it('registers the question bank route with requiresAuth', () => {
     assert.match(routerSource, /path:\s*'\/listen-question-bank'/)
     const routeStart = routerSource.indexOf("path: '/listen-question-bank'")

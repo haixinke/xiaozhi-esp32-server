@@ -4,7 +4,11 @@
 
 **Blocked by:** 01 (字典与建表)
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Answer
+
+已实现（commit d569d290 on listen/02-browse-groups）。后端：ListenGroupController（page + detail，超管）、Service（大类过滤、题数聚合、字典翻译带 code 回落、options_json 解析）、错误码 10370/10371 + 7 i18n 文件。前端：ListenQuestionBank.vue（大类 Tab + 题组分页 + 只读题目弹窗）、路由 /listen-question-bank、HeaderBar 题库运营菜单、API 模块、5 条接线测试。验证：后端 58 测试绿，前端 146/146 绿。注：10371（题不存在）留给 ticket 04 单题删除用。
 
 - [ ] `GET /admin/listen/group/page?categoryCode=` 题组分页，超管权限
 - [ ] `GET /admin/listen/group/{id}` 组详情含组内题目与选项，超管权限

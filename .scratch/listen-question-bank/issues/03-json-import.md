@@ -4,7 +4,11 @@
 
 **Blocked by:** 02 (题组浏览)
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Answer
+
+已实现并合入 integration（merge 46cf59c3）。后端：ListenImportController（POST /admin/listen/import）、ListenImportService（解析→结构校验→字典校验→判重→单事务写入，批量查无 N+1）、ListenImportException 携冲突明细 + 专属 handler（10373）、错误码 10372-10374 + 7 i18n。前端：导入按钮（el-upload）、成功统计提示、10373 冲突明细弹窗。验证：listen 模块 29/29 绿，前端 148/148 绿。取舍：RenException 无 data 字段，新增子类携带冲突明细，是对 common 层唯一侵入点。
 
 - [ ] `POST /admin/listen/import`（multipart JSON），超管权限
 - [ ] 大类字典校验：不存在 → 整单拒绝

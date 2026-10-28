@@ -4,7 +4,11 @@
 
 **Blocked by:** 02 (题组浏览)
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Answer
+
+已实现（commit 5dd00638 on listen/04-edit-and-delete，已解与 ticket 03 的 9 处冲突：错误码 03 占 10372-10374、04 占 10380-10381，前端文件取并集）。后端：updateGroup 单事务 diff（更新保 id/新增/缺失物理删，写前判重排除自身）、deleteGroup 级联、deleteQuestion（10371）；错误码 10380/10381 + 7 i18n。前端：编辑弹窗（组名+题干+选项）、单题/整组删除、确认文案明示物理删除不可恢复。测试：Listen*Test 37/37 绿，前端 150/150 绿。
 
 - [ ] `PUT /admin/listen/group/{id}` 整组保存（diff：更新保 id / 新增 / 物理删除），单事务，超管权限
 - [ ] `DELETE /admin/listen/group/{id}` 整组物理删除（含组内题目）

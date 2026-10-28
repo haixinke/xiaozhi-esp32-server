@@ -4,7 +4,11 @@
 
 **Blocked by:** 02 (题组浏览)
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Answer
+
+已实现（commit 5dd00638，merge 8a680de9 入 integration）。updateGroup 单事务 diff（保 id 更新/新增/缺失物理删，判重排除自身）、deleteGroup 级联、deleteQuestion（10371）；错误码 10380/10381 + 7 i18n。前端编辑弹窗+单题/整组删除+物理删除确认文案。37/37 后端、150/150 前端绿。
 
 - [ ] `PUT /admin/listen/group/{id}` 整组保存（diff：更新保 id / 新增 / 物理删除），单事务，超管权限
 - [ ] `DELETE /admin/listen/group/{id}` 整组物理删除（含组内题目）

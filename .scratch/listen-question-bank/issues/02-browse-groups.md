@@ -4,7 +4,11 @@
 
 **Blocked by:** 01 (字典与建表)
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Answer
+
+已实现（commit d569d290，merge 5770a930 入 integration）。后端：page+detail 接口、字典翻译带 code 回落、10370/10371 + 7 i18n。前端：ListenQuestionBank.vue 大类 Tab+题组分页+只读弹窗、路由、菜单三处接线。后端 58 测试绿，前端 146/146 绿。
 
 - [ ] `GET /admin/listen/group/page?categoryCode=` 题组分页，超管权限
 - [ ] `GET /admin/listen/group/{id}` 组详情含组内题目与选项，超管权限

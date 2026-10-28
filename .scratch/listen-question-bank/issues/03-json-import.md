@@ -4,7 +4,11 @@
 
 **Blocked by:** 02 (题组浏览)
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Answer
+
+已实现（merge 46cf59c3 入 integration）。ListenImportController/Service：解析→结构校验→字典校验→判重→单事务写入；ListenImportException 携冲突明细（10373）；错误码 10372-10374 + 7 i18n。前端导入按钮+成功统计+冲突明细弹窗。29/29 后端、148/148 前端绿。
 
 - [ ] `POST /admin/listen/import`（multipart JSON），超管权限
 - [ ] 大类字典校验：不存在 → 整单拒绝

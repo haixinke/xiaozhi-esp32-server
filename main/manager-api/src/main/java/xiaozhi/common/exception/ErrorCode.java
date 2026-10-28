@@ -326,6 +326,16 @@ public interface ErrorCode {
     int SMALL_OBJECT_STORY_TOO_LONG = 10365; // 物件故事最多2000字
     int SMALL_OBJECT_STATUS_INVALID = 10366; // 物件状态只能为启用或停用
 
+    // 听你说题库相关错误码（10370 起独立连续区间，接在小物件管理 1036x 之后）
+    // 10370-10371 题库通用（组/题不存在）；10372-10374 题库导入（ticket 03）；10380-10381 编辑判重（避开并行开发段）
+    int LISTEN_GROUP_NOT_FOUND = 10370; // 题目分组不存在
+    int LISTEN_QUESTION_NOT_FOUND = 10371; // 题目不存在
+    int LISTEN_CATEGORY_NOT_EXIST = 10372; // 题目大类不存在
+    int LISTEN_IMPORT_CONFLICT = 10373; // 题库导入存在重复数据
+    int LISTEN_IMPORT_INVALID_FORMAT = 10374; // 题库导入文件格式非法
+    int LISTEN_GROUP_NAME_DUPLICATE = 10380; // 同一大类下已存在同名题目分组
+    int LISTEN_QUESTION_TEXT_DUPLICATE = 10381; // 同一题目分组下已存在相同题干的题目
+
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败
     int OSS_DELETE_FILE_ERROR = 10401; // OSS删除文件失败

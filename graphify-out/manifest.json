@@ -1445,8 +1445,8 @@
     "semantic_hash": "5a74f40290066b57035fbbc3a818a39b"
   },
   "main/manager-web/src/apis/api.js": {
-    "mtime": 1793104093.7670534,
-    "ast_hash": "b3c3911868fe9a2023eef23ebe661ae5",
+    "mtime": 1793169160.8127306,
+    "ast_hash": "a6f2040b831f5877245f5d61df2ecd5b",
     "semantic_hash": ""
   },
   "main/manager-web/src/apis/module/device.js": {
@@ -1720,8 +1720,8 @@
     "semantic_hash": "9c68733080a0754ec775949f64733ad3"
   },
   "main/manager-web/src/components/HeaderBar.vue": {
-    "mtime": 1793104093.7672975,
-    "ast_hash": "3d7f393d65a08f5b2ed96f3f4c52ac24",
+    "mtime": 1793169160.813184,
+    "ast_hash": "33f980f671f62e5e434e9bba02716632",
     "semantic_hash": ""
   },
   "main/manager-web/src/components/VoicePrintDialog.vue": {
@@ -1900,8 +1900,8 @@
     "semantic_hash": "bcc42fb331c1803068cfc69182fa4a95"
   },
   "main/manager-web/src/router/index.js": {
-    "mtime": 1793104093.7674472,
-    "ast_hash": "8e4167be158d187dda3491cadca08577",
+    "mtime": 1793169160.8134537,
+    "ast_hash": "a3842294210e5457b42012e0f13018c8",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/common/redis/RedisSerializationTest.java": {
@@ -2000,7 +2000,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/invite/util/InviteCodeGeneratorTest.java": {
-    "mtime": 1793098558.2028952,
+    "mtime": 1793145341.5030665,
     "ast_hash": "4d1250025b924590e36f4698ea76dadb",
     "semantic_hash": ""
   },
@@ -3040,8 +3040,8 @@
     "semantic_hash": "7d08616eb142eb3a2fca3ee4dfc91a96"
   },
   "main/manager-api/src/main/java/xiaozhi/common/constant/Constant.java": {
-    "mtime": 1793104093.7625332,
-    "ast_hash": "a79c53beff2c74c030a8b4a5fd3d736a",
+    "mtime": 1793169160.8056076,
+    "ast_hash": "9052f4463be5104201043bf813b7eb4e",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/oss/OssService.java": {
@@ -3075,8 +3075,8 @@
     "semantic_hash": "2f593a2563dc25cde134d224f3f885a6"
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/ErrorCode.java": {
-    "mtime": 1793115048.885257,
-    "ast_hash": "6705e8047961be4774ea093d72974bdd",
+    "mtime": 1793169160.8057578,
+    "ast_hash": "c82d26f74ba02dde02f67a33bbae29b3",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/RenException.java": {
@@ -3085,9 +3085,9 @@
     "semantic_hash": "b3c789f6359d5ee71de77ee07ebd33c6"
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/RenExceptionHandler.java": {
-    "mtime": 1776309435.454987,
-    "ast_hash": "179b430034f60adc3c19418285d35757",
-    "semantic_hash": "179b430034f60adc3c19418285d35757"
+    "mtime": 1793169160.8064544,
+    "ast_hash": "6910d86215377ee2a8e8a55bc41a5d81",
+    "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/interceptor/DataFilterInterceptor.java": {
     "mtime": 1788424931.3590035,
@@ -5885,8 +5885,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1793104093.7644844,
-    "ast_hash": "b81814d51518cd81ea25621cb221187a",
+    "mtime": 1793169160.8104315,
+    "ast_hash": "8fca1d4a6749e50b7e40937e864cd3d0",
     "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/_common.sh": {
@@ -6445,7 +6445,7 @@
     "semantic_hash": "83cf39f605a49f1fba0a8fa51b862e4e"
   },
   "main/manager-api/src/main/java/xiaozhi/common/upload/UploadScene.java": {
-    "mtime": 1793107464.499455,
+    "mtime": 1793145341.4977272,
     "ast_hash": "f0bebfb73dc6dc742dc5a8781a675a40",
     "semantic_hash": ""
   },
@@ -6860,7 +6860,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/common/upload/ImageUploadServiceTest.java": {
-    "mtime": 1793107464.5028229,
+    "mtime": 1793145341.5029862,
     "ast_hash": "c3a4cbd8a1458630c27828989b8830e8",
     "semantic_hash": ""
   },
@@ -8750,7 +8750,7 @@
     "semantic_hash": ""
   },
   "main/manager-web/scripts/check-vue-template.js": {
-    "mtime": 1793095183.7755039,
+    "mtime": 1793145341.5033963,
     "ast_hash": "e5683798d4f03ab701c74feeb002e37e",
     "semantic_hash": ""
   },
@@ -8895,73 +8895,193 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/controller/SmallObjectController.java": {
-    "mtime": 1793114764.3637245,
+    "mtime": 1793145341.4980006,
     "ast_hash": "88fd2565d5ce490503385dd51d77ca36",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/dao/SmallObjectDao.java": {
-    "mtime": 1793104093.7635396,
+    "mtime": 1793145341.498085,
     "ast_hash": "9cbe3ba727eca363f847eb175bcf24e9",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/dto/SmallObjectDTO.java": {
-    "mtime": 1793113255.896219,
+    "mtime": 1793145341.498151,
     "ast_hash": "8381fc8fcfd7a4e6eec44afd31322114",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/entity/SmallObjectEntity.java": {
-    "mtime": 1793104093.7636716,
+    "mtime": 1793145341.498516,
     "ast_hash": "75b326e66663a552cbf51da1e01b90c1",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/service/SmallObjectService.java": {
-    "mtime": 1793113387.331715,
+    "mtime": 1793145341.4988506,
     "ast_hash": "f8c1f9bd427085de3b40dc5e6ea624fe",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/service/impl/SmallObjectServiceImpl.java": {
-    "mtime": 1793115094.7591488,
+    "mtime": 1793145341.4991236,
     "ast_hash": "b614d184ff9ed6f9d476b2b726ec9e14",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/vo/SmallObjectTypeVO.java": {
-    "mtime": 1793107464.5000515,
+    "mtime": 1793145341.4991927,
     "ast_hash": "574e4d51a41bdf76f558de81c6c14659",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/vo/SmallObjectVO.java": {
-    "mtime": 1793104093.7640512,
+    "mtime": 1793145341.4992394,
     "ast_hash": "94dbcc5268436df9321803ce3c6642e4",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/smallobject/SmallObjectServiceTest.java": {
-    "mtime": 1793115063.7336004,
+    "mtime": 1793145341.5032885,
     "ast_hash": "236138b840d7a316db0e3f3179e63308",
     "semantic_hash": ""
   },
   "main/manager-web/src/apis/module/smallObject.js": {
-    "mtime": 1793114726.5975833,
+    "mtime": 1793145341.503709,
     "ast_hash": "dd034872b12e8e8c25779ef22594011a",
     "semantic_hash": ""
   },
   "main/manager-web/src/views/SmallObjectManagement.vue": {
-    "mtime": 1793114732.859117,
+    "mtime": 1793145341.5041924,
     "ast_hash": "cb2a04394fdb9d03d80ace5214045ee5",
     "semantic_hash": ""
   },
   "main/manager-web/tests/smallObjectCreate.test.mjs": {
-    "mtime": 1793113255.8999076,
+    "mtime": 1793145341.5044215,
     "ast_hash": "af45f21ff1fa983bd377663e5a949b86",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/smallobject/dto/SmallObjectStatusDTO.java": {
-    "mtime": 1793114691.9140925,
+    "mtime": 1793145341.4984353,
     "ast_hash": "a55b1290372c8876aa329619362df49d",
     "semantic_hash": ""
   },
   "main/manager-web/tests/smallObjectDelete.test.mjs": {
-    "mtime": 1793114892.588907,
+    "mtime": 1793145341.5045872,
     "ast_hash": "0f9c2968f66f4439954150723d50546d",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/dao/ListenGroupDao.java": {
+    "mtime": 1793169160.8072245,
+    "ast_hash": "ed527a99eee2630f1d4ff90a3f71daba",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/dao/ListenQuestionDao.java": {
+    "mtime": 1793169160.8074605,
+    "ast_hash": "46b027382ebef7b2b2c44623bee63d9c",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/entity/ListenGroupEntity.java": {
+    "mtime": 1793169160.80796,
+    "ast_hash": "cdd8349ead9598a2bc906fd05aa2d63a",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/entity/ListenQuestionEntity.java": {
+    "mtime": 1793169160.8082078,
+    "ast_hash": "8da1b092b961c9f282e7e8531c9e22db",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/listen/ListenMigrationIntegrationTest.java": {
+    "mtime": 1793169160.8123488,
+    "ast_hash": "1871861c7376ae812be509bece9afff0",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/listen/ListenSchemaContractTest.java": {
+    "mtime": 1793169160.8125167,
+    "ast_hash": "6d0c1151da8de543dfc37fdbb2378a94",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/controller/ListenGroupController.java": {
+    "mtime": 1793169160.806718,
+    "ast_hash": "7dc873ea072fad4b657705229df4ca79",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/controller/ListenImportController.java": {
+    "mtime": 1793169160.8069677,
+    "ast_hash": "e75a257901febf15b46d601ea954be9b",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/exception/ListenImportException.java": {
+    "mtime": 1793169160.8084471,
+    "ast_hash": "e81eb780fa36692f32db97faf1450f38",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/service/ListenGroupService.java": {
+    "mtime": 1793169160.8087099,
+    "ast_hash": "c2ea0c003bf1b3f705de4d8e7b2bae10",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/service/ListenImportService.java": {
+    "mtime": 1793169160.8089128,
+    "ast_hash": "bc80ac287325f1ae61b1b4d592f34a7f",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/service/impl/ListenGroupServiceImpl.java": {
+    "mtime": 1793169160.8090527,
+    "ast_hash": "64f64e92e336fdd23c6cadc3886afb1b",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/service/impl/ListenImportServiceImpl.java": {
+    "mtime": 1793169160.8091846,
+    "ast_hash": "5859743fbcfe71ade33a9b7e8ce16eac",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/vo/ListenGroupDetailVO.java": {
+    "mtime": 1793169160.8095632,
+    "ast_hash": "93e69b108d73c41b3b55327e5ac8bcec",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/vo/ListenGroupVO.java": {
+    "mtime": 1793169160.8097153,
+    "ast_hash": "87321bd99e4d016de03a3fd70a37f162",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/vo/ListenImportConflictVO.java": {
+    "mtime": 1793169160.8098726,
+    "ast_hash": "04747336f9904a4f95974d3c2815f589",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/vo/ListenImportResultVO.java": {
+    "mtime": 1793169160.8100433,
+    "ast_hash": "8b45f89944bdad46a639b2c1c487f8f3",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/listen/ListenGroupServiceTest.java": {
+    "mtime": 1793169160.8120215,
+    "ast_hash": "29684c6b74720e34a894c0de0584629f",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/listen/ListenImportServiceTest.java": {
+    "mtime": 1793169160.8122427,
+    "ast_hash": "f87207cc55060df06e64567c2138fcab",
+    "semantic_hash": ""
+  },
+  "main/manager-web/src/apis/module/listenQuestion.js": {
+    "mtime": 1793169160.8129277,
+    "ast_hash": "1690c9524e5ade7047beb0b3f0c1e977",
+    "semantic_hash": ""
+  },
+  "main/manager-web/src/views/ListenQuestionBank.vue": {
+    "mtime": 1793169160.813673,
+    "ast_hash": "00e4784e5c960148e278ea2a4572cafe",
+    "semantic_hash": ""
+  },
+  "main/manager-web/tests/listenQuestionBank.test.mjs": {
+    "mtime": 1793169160.81389,
+    "ast_hash": "7b033f9b957eb9a8a6537f4cf26785f4",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/listen/dto/ListenGroupSaveDTO.java": {
+    "mtime": 1793169160.80773,
+    "ast_hash": "c7a961732b0c13fb7f3230bd9437e339",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/listen/ListenGroupEditDeleteServiceTest.java": {
+    "mtime": 1793169160.811891,
+    "ast_hash": "66323df5866f0cba8e809d49a95badf0",
     "semantic_hash": ""
   }
 }

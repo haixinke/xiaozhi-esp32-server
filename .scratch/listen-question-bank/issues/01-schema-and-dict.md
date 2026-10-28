@@ -8,7 +8,7 @@
 
 ## Answer
 
-已实现并合入 integration（commit eda872cb）。偏差：排序列名 `sort_order`（实体 `sortOrder`）——`order` 是 MySQL 保留字且仓库惯例 `sort_order`。测试：ListenSchemaContractTest + ListenMigrationIntegrationTest，52 全绿。
+已实现并合入 integration（commit eda872cb on listen/01-schema-and-dict）。偏差：排序列名为 `sort_order`（实体 `sortOrder`）——`order` 是 MySQL 保留字，且仓库惯例为 `sort_order`。测试：`ListenSchemaContractTest` + `ListenMigrationIntegrationTest`（OceanBase 测试库 egg_listen_test 验证联合唯一约束与幂等字典初始化），52 测试全绿。
 
 - [ ] `sys_dict_type` 新增 LISTEN_CATEGORY（id 108），Liquibase 幂等初始化
 - [ ] `Constant.DictType` 新增 LISTEN_CATEGORY 枚举

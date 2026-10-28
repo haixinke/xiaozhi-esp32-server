@@ -386,7 +386,11 @@ public interface Constant {
         /**
          * 小物件类型（小类由运营在字典管理中维护，不预置）
          */
-        SMALL_OBJECT_TYPE("SMALL_OBJECT_TYPE");
+        SMALL_OBJECT_TYPE("SMALL_OBJECT_TYPE"),
+        /**
+         * 听你说题目大类（小类由运营在字典管理中维护，不预置）
+         */
+        LISTEN_CATEGORY("LISTEN_CATEGORY");
 
         private String value;
 

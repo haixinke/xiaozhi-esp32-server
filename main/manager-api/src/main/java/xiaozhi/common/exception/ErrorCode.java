@@ -335,6 +335,8 @@ public interface ErrorCode {
     int LISTEN_IMPORT_INVALID_FORMAT = 10374; // 题库导入文件格式非法
     int LISTEN_GROUP_NAME_DUPLICATE = 10380; // 同一大类下已存在同名题目分组
     int LISTEN_QUESTION_TEXT_DUPLICATE = 10381; // 同一题目分组下已存在相同题干的题目
+    int LISTEN_ALL_ANSWERED = 10382; // 所有题目分组都已答过，无题可抽
+    int LISTEN_CUSTOM_TEXT_TOO_LONG = 10383; // 自定义文本答案最多200字
 
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败

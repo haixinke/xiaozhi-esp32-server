@@ -43,5 +43,33 @@ export default {
                     this.getGroupDetail(id, callback)
                 })
             }).send()
+    },
+
+    // 增量导入题库 JSON（multipart）。成功返回 {groupCount, questionCount}；
+    // 判重冲突时 code=10373 且 data 为冲突明细列表，由调用方弹窗展示
+    importBank(formData, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/listen/import`)
+            .method('POST')
+            .data(formData)
+            // header() 会整体替换默认 header（含 json content-type）；
+            // 传空对象让 flyio 检测到 FormData 后自动删掉 Content-Type，由浏览器生成 multipart boundary
+            .header({})
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((res) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(res)
+                }
+            })
+            .networkFail((err) => {
+                console.error('导入题库失败:', err)
+                if (failCallback) {
+                    failCallback(err)
+                }
+            }).send()
     }
 }

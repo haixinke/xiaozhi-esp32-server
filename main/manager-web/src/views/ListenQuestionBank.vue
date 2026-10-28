@@ -7,6 +7,15 @@
           <el-card class="params-card" shadow="never">
             <div class="operation-header">
               <h2 class="page-title">题库运营</h2>
+              <!-- 增量导入：el-upload 自定义上传走统一鉴权；判重冲突时弹窗展示明细 -->
+              <el-upload
+                :show-file-list="false"
+                accept=".json,application/json"
+                :http-request="uploadQuestionBank"
+                :before-upload="beforeBankUpload"
+              >
+                <el-button type="primary" size="small" :loading="importing">导入题库</el-button>
+              </el-upload>
             </div>
             <!-- 大类 Tab：从字典 LISTEN_CATEGORY 实时读取并翻译名称，字典管理里改名后同步生效 -->
             <el-tabs v-model="activeCategory" class="category-tabs" @tab-click="handleCategoryChange">
@@ -64,6 +73,29 @@
         <el-button size="small" @click="detailVisible = false">关闭</el-button>
       </span>
     </el-dialog>
+    <!-- 导入失败冲突明细：整单拒绝，未写入任何内容，运营修正文件后重传 -->
+    <el-dialog
+      title="导入失败：存在重复数据"
+      :visible.sync="conflictVisible"
+      width="640px"
+      :close-on-click-modal="false"
+    >
+      <div class="conflict-tip">以下数据与题库已有内容或文件内部重复，整个文件未写入。请修正后重新导入。</div>
+      <el-table :data="conflictList" size="small" max-height="420">
+        <el-table-column prop="categoryCode" label="题目大类" width="140" />
+        <el-table-column prop="groupName" label="题组" width="160" />
+        <el-table-column label="冲突内容" min-width="200">
+          <template slot-scope="scope">
+            <span v-if="scope.row.type === 'GROUP_NAME'">组名「{{ scope.row.groupName }}」</span>
+            <span v-else>题干「{{ scope.row.questionText }}」</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="reason" label="冲突原因" min-width="160" />
+      </el-table>
+      <span slot="footer">
+        <el-button size="small" @click="conflictVisible = false">知道了</el-button>
+      </span>
+    </el-dialog>
     <el-footer><VersionFooter/></el-footer>
   </div>
 </template>
@@ -93,7 +125,11 @@ export default {
       detailVisible: false,
       detailLoading: false,
       detailTitle: "",
-      detailQuestions: []
+      detailQuestions: [],
+      importing: false,
+      // 导入失败冲突明细（整单拒绝制，见后端 10373）
+      conflictVisible: false,
+      conflictList: []
     };
   },
   created() {
@@ -165,6 +201,43 @@ export default {
         this.currentPage = page;
         this.fetchGroupList();
       }
+    },
+
+    // 导入前置校验：只收 JSON 文件
+    beforeBankUpload(file) {
+      const isJson = file.type === 'application/json' || /\.json$/i.test(file.name);
+      if (!isJson) {
+        this.$message.error('仅支持 JSON 文件');
+        return false;
+      }
+      return true;
+    },
+
+    // el-upload 自定义上传：经 RequestService 走统一鉴权（Bearer token）
+    uploadQuestionBank(option) {
+      const formData = new FormData();
+      formData.append('file', option.file);
+      this.importing = true;
+      Api.listenQuestion.importBank(formData, ({ data }) => {
+        this.importing = false;
+        if (data.code === 0) {
+          // 成功明确提示写入统计（N 组 M 题），并刷新当前大类列表
+          this.$message.success(`导入成功：写入 ${data.data.groupCount} 组 ${data.data.questionCount} 题`);
+          this.fetchGroupList();
+        } else if (data.code === 10373) {
+          // 判重冲突：弹窗逐条展示冲突明细，库内零写入
+          this.conflictList = data.data || [];
+          this.conflictVisible = true;
+        } else {
+          this.$message.error({
+            message: data.msg || '导入失败',
+            showClose: true
+          });
+        }
+      }, () => {
+        this.importing = false;
+        this.$message.error('导入失败，请稍后重试');
+      });
     },
 
     // 只读查看：组详情接口返回组内全部题目与解析后的选项
@@ -296,5 +369,11 @@ export default {
 .option-key {
   font-weight: 600;
   color: #5778ff;
+}
+
+.conflict-tip {
+  margin-bottom: 12px;
+  color: #e6a23c;
+  font-size: 13px;
 }
 </style>

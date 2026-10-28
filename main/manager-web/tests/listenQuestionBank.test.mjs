@@ -22,6 +22,28 @@ describe('listen question bank - wiring', () => {
     assert.match(moduleSource, /\/admin\/listen\/group\/\$\{id\}/)
   })
 
+  it('listenQuestion module exposes the import endpoint as multipart upload', async () => {
+    const moduleSource = await read('../src/apis/module/listenQuestion.js')
+    assert.match(moduleSource, /\/admin\/listen\/import/)
+    // multipart：FormData + header({}) 让浏览器生成 boundary（同 smallObject.uploadImage 先例）
+    assert.match(moduleSource, /FormData/)
+    assert.match(moduleSource, /\.header\(\{\}\)/)
+  })
+
+  it('question bank page wires the import upload with success stats and conflict dialog', async () => {
+    const viewSource = await read('../src/views/ListenQuestionBank.vue')
+    // el-upload 自定义上传 + 导入按钮
+    assert.match(viewSource, /el-upload/)
+    assert.match(viewSource, /:http-request="uploadQuestionBank"/)
+    assert.match(viewSource, /导入题库/)
+    // 成功提示写入统计（N 组 M 题）
+    assert.match(viewSource, /groupCount/)
+    assert.match(viewSource, /questionCount/)
+    // 失败弹窗展示冲突明细
+    assert.match(viewSource, /conflictVisible/)
+    assert.match(viewSource, /conflictList/)
+  })
+
   it('registers the question bank route with requiresAuth', () => {
     assert.match(routerSource, /path:\s*'\/listen-question-bank'/)
     const routeStart = routerSource.indexOf("path: '/listen-question-bank'")

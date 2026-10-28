@@ -12,7 +12,7 @@ CREATE TABLE `ai_listen_answer` (
   `group_id` BIGINT NOT NULL COMMENT '所属题目分组ID(ai_listen_group.id，冗余列)',
   `question_id` BIGINT NOT NULL COMMENT '题目ID(ai_listen_question.id)',
   `option_key` CHAR(1) NOT NULL COMMENT '所选选项(A-E)',
-  `custom_text` VARCHAR(200) NULL COMMENT '自定义文本答案(选E"都不是"时可填，非强制，最长200字)',
+  `custom_text` VARCHAR(200) NULL COMMENT '答案文本：选A-D时冗余存选项文本，选E时存用户输入(可空，最长200字)',
   `creator` BIGINT NULL COMMENT '创建者',
   `create_date` DATETIME NULL COMMENT '创建时间',
   `updater` BIGINT NULL COMMENT '更新者',

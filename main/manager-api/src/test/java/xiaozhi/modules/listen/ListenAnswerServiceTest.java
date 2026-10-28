@@ -218,7 +218,7 @@ class ListenAnswerServiceTest {
     }
 
     @Test
-    @DisplayName("提交：整组答案正确落库，optionKey 与 customText 各归其位")
+    @DisplayName("提交：整组答案正确落库，选A-D冗余存选项文本，选E存用户输入")
     void submitPersistsAnswers() {
         String category = createCategory("TEST_ANS_D", "答题测试大类D");
         Long group = createGroup(category, "提交组", 1);
@@ -237,9 +237,11 @@ class ListenAnswerServiceTest {
         assertThat(saved).hasSize(2);
         ListenAnswerEntity first = saved.get(0).getQuestionId().equals(q1) ? saved.get(0) : saved.get(1);
         ListenAnswerEntity second = saved.get(0).getQuestionId().equals(q2) ? saved.get(0) : saved.get(1);
+        // 选 C：option_key=C，custom_text 冗余选项文本「丙」
         assertThat(first.getOptionKey()).isEqualTo("C");
-        assertThat(first.getCustomText()).isNull();
+        assertThat(first.getCustomText()).isEqualTo("丙");
         assertThat(first.getGroupId()).isEqualTo(group);
+        // 选 E + 用户输入：option_key=E，custom_text=用户文本
         assertThat(second.getOptionKey()).isEqualTo("E");
         assertThat(second.getCustomText()).isEqualTo("我想自己说点什么");
     }
@@ -262,7 +264,8 @@ class ListenAnswerServiceTest {
                 .eq("question_id", question));
         assertThat(saved).hasSize(1);
         assertThat(saved.get(0).getOptionKey()).isEqualTo("A");
-        assertThat(saved.get(0).getCustomText()).isNull();
+        // 选 A：custom_text 冗余选项文本「甲」，第二次提交被幂等忽略
+        assertThat(saved.get(0).getCustomText()).isEqualTo("甲");
     }
 
     @Test

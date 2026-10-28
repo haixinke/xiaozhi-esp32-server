@@ -45,7 +45,8 @@ public class ListenAnswerEntity extends BaseEntity {
     private String optionKey;
 
     /**
-     * 自定义文本答案：选 E「都不是」时可填，非强制，最长 200 字
+     * 答案文本：选 A-D 时冗余存选项文本（方便后续直接查看答案），
+     * 选 E「都不是」时存用户输入（可空，非强制，最长 200 字）
      */
     private String customText;
 

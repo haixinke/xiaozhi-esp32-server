@@ -79,10 +79,19 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
     public void submitAnswers(Long userId, ListenAnswerSubmitDTO dto) {
         // 校验 questionId 确实属于 groupId：冗余 group_id 列支撑抽题按组排除，
         // 错配会污染排除索引（UNIQUE 约束兜不住），必须拒绝
-        Set<Long> questionIdsInGroup = listenQuestionDao.selectObjs(new QueryWrapper<ListenQuestionEntity>()
-                .select("id")
-                .eq("group_id", dto.getGroupId()))
-                .stream().map(o -> ((Number) o).longValue()).collect(Collectors.toSet());
+        List<ListenQuestionEntity> questionsInGroup = listenQuestionDao.selectList(
+                new QueryWrapper<ListenQuestionEntity>().eq("group_id", dto.getGroupId()));
+        Set<Long> questionIdsInGroup = questionsInGroup.stream()
+                .map(ListenQuestionEntity::getId).collect(Collectors.toSet());
+        // 题目 id -> 选项 key -> 选项文本，用于选 A-D 时回填 custom_text（方便后续查看答案）
+        java.util.Map<Long, java.util.Map<String, String>> optionTextByQuestion = new java.util.HashMap<>();
+        for (ListenQuestionEntity question : questionsInGroup) {
+            java.util.Map<String, String> textByKey = new java.util.HashMap<>();
+            for (ListenDrawVO.Option option : parseOptions(question.getOptionsJson())) {
+                textByKey.put(option.getKey(), option.getText());
+            }
+            optionTextByQuestion.put(question.getId(), textByKey);
+        }
         for (ListenAnswerSubmitDTO.AnswerItem item : dto.getAnswers()) {
             if (!questionIdsInGroup.contains(item.getQuestionId())) {
                 throw new RenException(ErrorCode.LISTEN_QUESTION_NOT_FOUND);
@@ -96,7 +105,14 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
             entity.setGroupId(dto.getGroupId());
             entity.setQuestionId(item.getQuestionId());
             entity.setOptionKey(item.getOptionKey());
-            entity.setCustomText(item.getCustomText());
+            // 选 A-D 时把选项文本冗余进 custom_text，方便后续直接查看答案；
+            // 选 E 时用用户输入文本（可空，选 E 不强制输入）
+            String customText = item.getCustomText();
+            if (StringUtils.isBlank(customText)) {
+                customText = optionTextByQuestion.getOrDefault(item.getQuestionId(), java.util.Map.of())
+                        .get(item.getOptionKey());
+            }
+            entity.setCustomText(customText);
             try {
                 listenAnswerDao.insert(entity);
             } catch (DuplicateKeyException e) {

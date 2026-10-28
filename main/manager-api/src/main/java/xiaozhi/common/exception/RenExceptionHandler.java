@@ -15,6 +15,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.utils.MessageUtils;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.listen.exception.ListenImportException;
+import xiaozhi.modules.listen.vo.ListenImportConflictVO;
 
 /**
  * 异常处理器
@@ -33,6 +35,18 @@ public class RenExceptionHandler {
     public Result<Void> handleRenException(RenException ex) {
         Result<Void> result = new Result<>();
         result.error(ex.getCode(), ex.getMsg());
+
+        return result;
+    }
+
+    /**
+     * 题库导入判重冲突：除 code/msg 外附带冲突明细列表，前端弹窗逐条展示
+     */
+    @ExceptionHandler(ListenImportException.class)
+    public Result<List<ListenImportConflictVO>> handleListenImportException(ListenImportException ex) {
+        Result<List<ListenImportConflictVO>> result = new Result<>();
+        result.error(ex.getCode(), ex.getMsg());
+        result.setData(ex.getConflicts());
 
         return result;
     }

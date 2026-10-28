@@ -9,6 +9,7 @@
               <h2 class="page-title">题库运营</h2>
               <!-- 增量导入：el-upload 自定义上传走统一鉴权；判重冲突时弹窗展示明细 -->
               <el-upload
+                action="#"
                 :show-file-list="false"
                 accept=".json,application/json"
                 :http-request="uploadQuestionBank"

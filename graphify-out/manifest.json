@@ -1920,7 +1920,7 @@
     "semantic_hash": "0db2b0785f478984bcc1b6bf8c0a3d32"
   },
   "main/manager-api/src/test/java/xiaozhi/common/oss/OssServiceTest.java": {
-    "mtime": 1791209874.2781239,
+    "mtime": 1793177821.1446497,
     "ast_hash": "7bb7f32278eb9b3d485dc1fa0982c06a",
     "semantic_hash": ""
   },
@@ -3075,8 +3075,8 @@
     "semantic_hash": "2f593a2563dc25cde134d224f3f885a6"
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/ErrorCode.java": {
-    "mtime": 1793174313.741791,
-    "ast_hash": "ddfe090e13b76335bfb74dd456ffef45",
+    "mtime": 1793179830.1889675,
+    "ast_hash": "7b3ac1f62f5f5616ed50440146cbfeb3",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/RenException.java": {
@@ -5880,13 +5880,13 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/resources/application.yml": {
-    "mtime": 1791015651.0028918,
-    "ast_hash": "540347f4b886f7e41e32075bedf1f610",
+    "mtime": 1793179877.4962232,
+    "ast_hash": "1bcb556f451ccec161759b969209fdcd",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1793174313.7419612,
-    "ast_hash": "c127a0a098d1c33f8bfa6286fa941df9",
+    "mtime": 1793179886.8467286,
+    "ast_hash": "40fc2f2b6ca7b94eeef2d48fd782a9c1",
     "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/_common.sh": {
@@ -8050,7 +8050,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/crypto/ClaimRefProtectionTest.java": {
-    "mtime": 1788425021.1456437,
+    "mtime": 1793177821.1453018,
     "ast_hash": "6a8c105c3b6d181f23a2ef57ce6031ab",
     "semantic_hash": ""
   },
@@ -8070,7 +8070,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcAssetStateMachineTest.java": {
-    "mtime": 1788425021.146155,
+    "mtime": 1793177821.1454492,
     "ast_hash": "1edcb3b03e60b3b85cd48098a66ab58e",
     "semantic_hash": ""
   },
@@ -8085,22 +8085,22 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimConcurrencyIntegrationTest.java": {
-    "mtime": 1788425021.1464682,
+    "mtime": 1793177821.1457257,
     "ast_hash": "605296942d8537aa1369d554e745c251",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimPreviewServiceTest.java": {
-    "mtime": 1791209874.280024,
+    "mtime": 1793177821.1460664,
     "ast_hash": "852c85980e2f22200812779f201eb2ea",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimRateLimiterTest.java": {
-    "mtime": 1788425021.1469183,
+    "mtime": 1793177821.1462045,
     "ast_hash": "dcdce128b8aedd3226e2f474c71dfb71",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimServiceTest.java": {
-    "mtime": 1791209874.2802882,
+    "mtime": 1793177821.146374,
     "ast_hash": "b085ebe726ed5681cb2d0b876a380b60",
     "semantic_hash": ""
   },
@@ -8110,7 +8110,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcJobStateMachineTest.java": {
-    "mtime": 1790988530.6178937,
+    "mtime": 1793177821.1464908,
     "ast_hash": "4e062b17f1d31612a15391b8dd4762c7",
     "semantic_hash": ""
   },
@@ -8625,7 +8625,7 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/pdc/nfc/service/PdcNfcClaimInviteReplacementIntegrationTest.java": {
-    "mtime": 1791209874.2798002,
+    "mtime": 1793177821.145832,
     "ast_hash": "5d6fda8dd5d851594399cdaf462a1bb1",
     "semantic_hash": ""
   },
@@ -9100,8 +9100,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/listen/entity/ListenAnswerEntity.java": {
-    "mtime": 1793173751.0937696,
-    "ast_hash": "91f3cb754114b71cb91a3ed507e78218",
+    "mtime": 1793176206.0403059,
+    "ast_hash": "ac92ed4a1cedd419d84e5bb5a3046f26",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/listen/service/ListenAnswerService.java": {
@@ -9110,8 +9110,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/listen/service/impl/ListenAnswerServiceImpl.java": {
-    "mtime": 1793174973.5280304,
-    "ast_hash": "466f1fc1ab3630887491bee7102c236c",
+    "mtime": 1793179923.9800987,
+    "ast_hash": "6b7f0e0c30aa0d194c749d0efdc5a8fc",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/listen/vo/ListenDrawVO.java": {
@@ -9120,8 +9120,13 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/listen/ListenAnswerServiceTest.java": {
-    "mtime": 1793174992.0492196,
-    "ast_hash": "70f770b69c38510d9f44e7f2691284f7",
+    "mtime": 1793179812.0758758,
+    "ast_hash": "5dc3dcac0373c49ee5d97545f27f41be",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/common/support/MessageSourceCacheResetExtension.java": {
+    "mtime": 1793177876.3804688,
+    "ast_hash": "28d0556dc089191bf9b3c6c7012ce608",
     "semantic_hash": ""
   }
 }

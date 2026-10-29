@@ -366,6 +366,18 @@ const routes = [
       title: '题库运营'
     }
   },
+  // 小纸条管理页面路由
+  {
+    path: '/daily-note-management',
+    name: 'DailyNoteManagement',
+    component: function () {
+      return import('../views/DailyNoteManagement.vue')
+    },
+    meta: {
+      requiresAuth: true,
+      title: '小纸条管理'
+    }
+  },
 ]
 const router = new VueRouter({
   base: process.env.VUE_APP_PUBLIC_PATH || '/',

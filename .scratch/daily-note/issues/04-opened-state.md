@@ -4,7 +4,11 @@
 
 **Blocked by:** 02 JSON 导入与同日期覆盖；03 当日小纸条与随机游戏接口
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Comments
+
+- 2026-10-29: Implemented on feat/daily-note-04 (commits fd689166, caa8184d), merged to feat/daily-note (b9071e84). DailyNote* tests 44/44 green; full suite 1123 run with only the two known pre-existing failures. Deviation: controller contract test extends ticket 03's direct-invocation seam instead of new MockMvc setup.
 
 - [ ] 按已确认设计建立 `ai_daily_note_opened`：雪花 BIGINT 主键；`user_id BIGINT NOT NULL`；`note_date DATE NOT NULL`；`opened_at DATETIME NOT NULL`；`create_date DATETIME NULL`；联合唯一索引 `(user_id, note_date)`；不加 `note_date` 单列索引。
 - [ ] 用户主键已核实为 BIGINT；不保存 `note_id`，不建外键，不级联删除打开记录。

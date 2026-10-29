@@ -4,7 +4,11 @@
 
 **Blocked by:** 01 小纸条手工管理
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Comments
+
+- 2026-10-29: Implemented on feat/daily-note-02 (commits bba43e18, 490ec139). DailyNote* tests all green, frontend 157/157 + template check + build pass. Error codes 10393–10395. 并发唯一键冲突路径留待人工验证；人工验证清单待验证。
 
 - [ ] 管理端提供 multipart 字段 `file` 的 JSON 导入接口及智控台上传入口，沿用统一响应和超级管理员权限。
 - [ ] 页面明确展示导入格式：顶层为非空数组，每项仅允许 `date`、`title`、`content`、可选 `solarTerm`；日期严格 `yyyy-MM-dd`，正文换行在 JSON 中使用 `\n` 转义。

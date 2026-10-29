@@ -4,7 +4,11 @@
 
 **Blocked by:** 01 小纸条手工管理
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+## Comments
+
+- 2026-10-29: Implemented on feat/daily-note-03 (commits 4a6c554e, 9b52279f). DailyNote* tests 20/20 green; full mvn suite shows only the two known pre-existing failures. Deviations noted in implementer report (test fixture game types MEET_YOU/TRAVEL; sideline helper for pre-existing NOTE games; controller contract test via mockStatic SecurityUser).
 
 - [ ] 接口无客户端日期参数，服务器按 `Asia/Shanghai` 得到当天完整日期；用户身份来自 Token，使用普通用户权限。
 - [ ] 仅匹配当天完整 `DATE`，不按服务器默认时区解释，也不在其他年份的同月同日重复。

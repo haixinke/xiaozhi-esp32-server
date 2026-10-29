@@ -4,7 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** claimed
+**Status:** resolved
+
+## Comments
+
+- 2026-10-29: Implemented on feat/daily-note-01 (commits 00fcf0eb, f68eb657, b04721bf), all backend/frontend checks green. 人工验证清单待验证。Pre-existing unrelated failures in GameServiceTest / ListenImportServiceTest confirmed on integration tip.
 
 - [ ] 按已确认设计建立 `ai_daily_note`：雪花 BIGINT 主键；`note_date DATE NOT NULL`；`title VARCHAR(50) NOT NULL`；`content VARCHAR(200) NOT NULL`；`solar_term VARCHAR(50) NULL`；`creator`、`create_date`、`updater`、`update_date` 审计字段；`note_date` 唯一索引；无软删字段。
 - [ ] Liquibase 只追加 changeSet，不修改已有 changeSet。

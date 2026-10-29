@@ -3,13 +3,17 @@ package xiaozhi.modules.game;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -18,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import xiaozhi.common.config.TestArkServiceConfig;
+import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.validator.ValidatorUtils;
@@ -28,24 +33,91 @@ import xiaozhi.modules.game.dto.GameDTO;
 import xiaozhi.modules.game.entity.GameEntity;
 import xiaozhi.modules.game.service.GameService;
 import xiaozhi.modules.game.vo.GameVO;
+import xiaozhi.modules.sys.dao.SysDictDataDao;
+import xiaozhi.modules.sys.dao.SysDictTypeDao;
+import xiaozhi.modules.sys.dto.SysDictDataDTO;
+import xiaozhi.modules.sys.entity.SysDictDataEntity;
+import xiaozhi.modules.sys.entity.SysDictTypeEntity;
+import xiaozhi.modules.sys.service.SysDictDataService;
 
 /**
  * 游戏管理 Service 集成测试（真实 dev 库）。
  * 每个用例独立数据，AfterEach 清理本用例产生的行。
+ *
+ * <p>ai_game.game_type 唯一索引 + GAME_TYPE 字典校验意味着测试不能使用真实游戏类型：
+ * 真实类型（如 DRAW_TOGETHER）随时可能被运营在智控台配置，导致 save 报 10357。
+ * 因此本类在 @BeforeAll 向 GAME_TYPE 字典注入专用测试类型，@AfterAll 删除，
+ * 使测试与真实运维数据互不干扰。
  */
 @Import(TestArkServiceConfig.class)
 @SpringBootTest
 @ActiveProfiles("dev")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("游戏管理服务集成测试")
 class GameServiceTest {
+
+    /** 专用测试游戏类型，仅在本类执行期间存在于 GAME_TYPE 字典中 */
+    private static final List<String> TEST_GAME_TYPES = List.of("TEST_GAME_A", "TEST_GAME_B", "TEST_GAME_C");
+    private static final String PRIMARY_GAME_TYPE = TEST_GAME_TYPES.get(0);
 
     @Autowired
     private GameService gameService;
     @Autowired
     private GameDao gameDao;
+    @Autowired
+    private SysDictDataService sysDictDataService;
+    @Autowired
+    private SysDictDataDao sysDictDataDao;
+    @Autowired
+    private SysDictTypeDao sysDictTypeDao;
+
+    /** GAME_TYPE 字典类型 id，由 @BeforeAll 从库中查出 */
+    private Long gameTypeDictTypeId;
 
     /** 本用例产生的 game id 集合，统一清理 */
-    private final List<Long> touchedIds = new java.util.ArrayList<>();
+    private final List<Long> touchedIds = new ArrayList<>();
+
+    /**
+     * 向 GAME_TYPE 字典注入专用测试类型。
+     * 若上次异常退出残留同名项，先复用（记录其 id 以便 @AfterAll 一并清理）。
+     */
+    @BeforeAll
+    void ensureTestGameTypes() {
+        SysDictTypeEntity dictType = sysDictTypeDao.selectOne(
+                new QueryWrapper<SysDictTypeEntity>().eq("dict_type", Constant.DictType.GAME_TYPE.getValue()));
+        gameTypeDictTypeId = dictType.getId();
+
+        for (int i = 0; i < TEST_GAME_TYPES.size(); i++) {
+            String code = TEST_GAME_TYPES.get(i);
+            Long exists = sysDictDataDao.selectCount(new QueryWrapper<SysDictDataEntity>()
+                    .eq("dict_type_id", gameTypeDictTypeId)
+                    .eq("dict_value", code));
+            if (exists != null && exists > 0) {
+                // 残留项直接复用，避免重复插入
+                continue;
+            }
+            SysDictDataDTO dto = new SysDictDataDTO();
+            dto.setDictTypeId(gameTypeDictTypeId);
+            dto.setDictLabel("测试游戏类型" + (char) ('A' + i));
+            dto.setDictValue(code);
+            dto.setSort(90 + i);
+            // 走 service 而非直接 insert：顺带失效 Redis 中的字典缓存
+            sysDictDataService.save(dto);
+        }
+    }
+
+    /** 删除专用测试类型及其残留游戏配置，不触碰真实运维数据 */
+    @AfterAll
+    void removeTestGameTypes() {
+        gameDao.delete(new QueryWrapper<GameEntity>().in("game_type", TEST_GAME_TYPES));
+
+        List<SysDictDataEntity> testDictItems = sysDictDataDao.selectList(new QueryWrapper<SysDictDataEntity>()
+                .eq("dict_type_id", gameTypeDictTypeId)
+                .in("dict_value", TEST_GAME_TYPES));
+        if (!testDictItems.isEmpty()) {
+            sysDictDataService.delete(testDictItems.stream().map(SysDictDataEntity::getId).toArray(Long[]::new));
+        }
+    }
 
     @AfterEach
     void cleanup() {
@@ -55,10 +127,10 @@ class GameServiceTest {
         touchedIds.clear();
     }
 
-    /** 构造合法 DTO，快速创建一条游戏记录 */
+    /** 构造合法 DTO，快速创建一条游戏记录（使用专用测试类型，避开真实数据） */
     private GameDTO validDTO() {
         GameDTO dto = new GameDTO();
-        dto.setGameType("DRAW_TOGETHER");
+        dto.setGameType(PRIMARY_GAME_TYPE);
         dto.setEarnStars(5);
         dto.setConsumeStars(0);
         dto.setDailyLimit(3);
@@ -88,7 +160,7 @@ class GameServiceTest {
 
         GameVO vo = gameService.get(id);
         assertThat(vo).isNotNull();
-        assertThat(vo.getGameType()).isEqualTo("DRAW_TOGETHER");
+        assertThat(vo.getGameType()).isEqualTo(PRIMARY_GAME_TYPE);
         assertThat(vo.getEarnStars()).isEqualTo(5);
         assertThat(vo.getConsumeStars()).isEqualTo(0);
         assertThat(vo.getDailyLimit()).isEqualTo(3);
@@ -274,7 +346,7 @@ class GameServiceTest {
 
     // ---- listEnabled（小程序端游戏列表） ----
 
-    /** 用唯一 gameType 前缀隔离本组用例，避免受库中既有数据影响 */
+    /** 用专用测试 gameType 隔离本组用例，避免受库中既有数据影响 */
     private Long saveTrackedWith(String gameType, String entrances, Integer status) {
         GameDTO dto = validDTO();
         dto.setGameType(gameType);
@@ -286,8 +358,8 @@ class GameServiceTest {
     @Test
     @DisplayName("listEnabled 不传入口：只返回启用游戏，停用游戏不出现")
     void listEnabled_noEntrance_returnsOnlyEnabled() {
-        Long enabledId = saveTrackedWith("DRAW_TOGETHER", "NOTE,ACTIVITY", 1);
-        Long disabledId = saveTrackedWith("LISTEN_TO_YOU", "NOTE", 0);
+        Long enabledId = saveTrackedWith(TEST_GAME_TYPES.get(0), "NOTE,ACTIVITY", 1);
+        Long disabledId = saveTrackedWith(TEST_GAME_TYPES.get(1), "NOTE", 0);
 
         List<GameVO> list = gameService.listEnabled(null);
 
@@ -300,9 +372,9 @@ class GameServiceTest {
     @Test
     @DisplayName("listEnabled 按入口过滤：匹配单入口与逗号分隔多入口的记录")
     void listEnabled_withEntrance_filtersByContains() {
-        Long multiEntranceId = saveTrackedWith("DRAW_TOGETHER", "NOTE,ACTIVITY", 1);
-        Long singleEntranceId = saveTrackedWith("LISTEN_TO_YOU", "NOTE", 1);
-        Long otherEntranceId = saveTrackedWith("MEET_YOU", "ACTIVITY", 1);
+        Long multiEntranceId = saveTrackedWith(TEST_GAME_TYPES.get(0), "NOTE,ACTIVITY", 1);
+        Long singleEntranceId = saveTrackedWith(TEST_GAME_TYPES.get(1), "NOTE", 1);
+        Long otherEntranceId = saveTrackedWith(TEST_GAME_TYPES.get(2), "ACTIVITY", 1);
 
         List<GameVO> list = gameService.listEnabled("NOTE");
 
@@ -316,8 +388,8 @@ class GameServiceTest {
     @Test
     @DisplayName("listEnabled 入口过滤同时排除停用游戏")
     void listEnabled_withEntrance_excludesDisabled() {
-        Long enabledId = saveTrackedWith("DRAW_TOGETHER", "NOTE", 1);
-        Long disabledId = saveTrackedWith("LISTEN_TO_YOU", "NOTE", 0);
+        Long enabledId = saveTrackedWith(TEST_GAME_TYPES.get(0), "NOTE", 1);
+        Long disabledId = saveTrackedWith(TEST_GAME_TYPES.get(1), "NOTE", 0);
 
         List<GameVO> list = gameService.listEnabled("NOTE");
 

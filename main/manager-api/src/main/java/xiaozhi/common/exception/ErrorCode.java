@@ -339,6 +339,16 @@ public interface ErrorCode {
     int LISTEN_CUSTOM_TEXT_TOO_LONG = 10383; // 自定义文本答案最多200字
     int LISTEN_DAILY_LIMIT_REACHED = 10384; // 今日答题组数已用完
 
+    // 小纸条（每日内容）错误码，独立号段，不复用题库号段
+    int DAILY_NOTE_NOT_FOUND = 10385; // 小纸条不存在
+    int DAILY_NOTE_DATE_CONFLICT = 10386; // 该日期已存在小纸条
+    int DAILY_NOTE_INVALID_DATE = 10387; // 日期必须是合法的完整年月日
+    int DAILY_NOTE_TITLE_REQUIRED = 10388; // 标题不能为空
+    int DAILY_NOTE_TITLE_TOO_LONG = 10389; // 标题最多50字
+    int DAILY_NOTE_CONTENT_REQUIRED = 10390; // 正文不能为空
+    int DAILY_NOTE_CONTENT_TOO_LONG = 10391; // 正文最多200字
+    int DAILY_NOTE_SOLAR_TERM_TOO_LONG = 10392; // 节气最多50字
+
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败
     int OSS_DELETE_FILE_ERROR = 10401; // OSS删除文件失败

@@ -1,5 +1,6 @@
 package xiaozhi.modules.dailynote.entity;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
@@ -23,9 +24,11 @@ import xiaozhi.common.entity.BaseEntity;
 public class DailyNoteEntity extends BaseEntity {
 
     /**
-     * 完整日期（数据库 DATE 语义），全局唯一
+     * 完整日期（数据库 DATE 语义），全局唯一。
+     * 用 LocalDate 而非 java.util.Date：与 JDBC DATE 的映射按日历日直接对应（getObject/setObject），
+     * 不经过毫秒时间戳与默认时区换算，导入比对的日期键不会因 JVM 与数据库时区不一致而错位。
      */
-    private Date noteDate;
+    private LocalDate noteDate;
 
     /**
      * 标题，去首尾空白后 1-50 个 Unicode 字符

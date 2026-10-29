@@ -3,7 +3,6 @@ package xiaozhi.modules.dailynote.service.impl;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -107,7 +106,7 @@ public class DailyNoteServiceImpl extends BaseServiceImpl<DailyNoteDao, DailyNot
      * 业务校验先查后写，数据库 note_date 唯一约束兜底并发写入。
      */
     private void fillEntity(DailyNoteEntity entity, DailyNoteSaveDTO dto, Long excludeId) {
-        Date noteDate = toSqlDate(dto.getNoteDate());
+        LocalDate noteDate = toSqlDate(dto.getNoteDate());
         QueryWrapper<DailyNoteEntity> conflict = new QueryWrapper<DailyNoteEntity>().eq("note_date", noteDate);
         if (excludeId != null) {
             conflict.ne("id", excludeId);
@@ -126,22 +125,15 @@ public class DailyNoteServiceImpl extends BaseServiceImpl<DailyNoteDao, DailyNot
 
     /**
      * 解析严格 yyyy-MM-dd 的完整日期，非法或不存在（如 2 月 30 日）一律拒绝。
-     * 解析走 LocalDate + STRICT 校验，再转 java.sql.Date（JDBC DATE 语义，不含时分秒）。
+     * 返回 LocalDate：纯日历日，MyBatis 映射 DATE 列时不涉及时区换算。
      */
-    private Date toSqlDate(String raw) {
+    private LocalDate toSqlDate(String raw) {
         String text = StringUtils.trimToNull(raw);
         if (text == null) {
             throw new RenException(ErrorCode.DAILY_NOTE_INVALID_DATE);
         }
-        LocalDate localDate;
         try {
-            localDate = LocalDate.parse(text, STRICT_DATE_FORMATTER);
-        } catch (Exception e) {
-            throw new RenException(ErrorCode.DAILY_NOTE_INVALID_DATE);
-        }
-        try {
-            // java.sql.Date.valueOf 走默认时区但只取日历日，符合"数据库 DATE 语义"
-            return java.sql.Date.valueOf(localDate);
+            return LocalDate.parse(text, STRICT_DATE_FORMATTER);
         } catch (Exception e) {
             throw new RenException(ErrorCode.DAILY_NOTE_INVALID_DATE);
         }

@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 
 import xiaozhi.common.config.TestArkServiceConfig;
 import xiaozhi.modules.dailynote.dao.DailyNoteDao;
@@ -137,7 +138,7 @@ class DailyNoteTodayServiceTest {
     /** 直接落库一份小纸条（绕过管理 Service 的日期冲突校验，聚焦查询行为） */
     private void insertNote(String date, String title) {
         DailyNoteEntity entity = new DailyNoteEntity();
-        entity.setNoteDate(java.sql.Date.valueOf(date));
+        entity.setNoteDate(LocalDate.parse(date));
         entity.setTitle(title);
         entity.setContent("正文-" + title);
         entity.setSolarTerm("霜降");
@@ -364,7 +365,7 @@ class DailyNoteTodayServiceTest {
         insertOpened(USER_A, "2160-08-04");
 
         // 导入整项覆盖同日期内容（保留记录身份）
-        dailyNoteDao.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<DailyNoteEntity>()
+        dailyNoteDao.update(null, new UpdateWrapper<DailyNoteEntity>()
                 .eq("id", noteIds.get(0))
                 .set("title", "新标题")
                 .set("content", "新正文"));

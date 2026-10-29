@@ -58,6 +58,8 @@ public class RenExceptionHandler {
      */
     @ExceptionHandler(DailyNoteImportException.class)
     public Result<List<DailyNoteImportErrorVO>> handleDailyNoteImportException(DailyNoteImportException ex) {
+        // 只记汇总（错误条数），不记明细与堆栈：明细随响应下发运营，无需重复进日志
+        log.warn("Daily note import rejected: {} invalid item(s)", ex.getErrors().size());
         Result<List<DailyNoteImportErrorVO>> result = new Result<>();
         result.error(ex.getCode(), ex.getMsg());
         result.setData(ex.getErrors());

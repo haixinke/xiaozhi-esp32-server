@@ -68,12 +68,15 @@ public class DailyNoteTodayServiceImpl implements DailyNoteTodayService {
         }
 
         // 已打开检查先于游戏选择：用户已打开当日内容时直接返回空，
-        // 不再随机选游戏（否则白白消耗一次随机且语义上"返回了部分状态"）
-        Long openedCount = dailyNoteOpenedDao.selectCount(new QueryWrapper<DailyNoteOpenedEntity>()
-                .eq("user_id", userId)
-                .eq("note_date", java.sql.Date.valueOf(today)));
-        if (openedCount > 0) {
-            return null;
+        // 不再随机选游戏（否则白白消耗一次随机且语义上"返回了部分状态"）。
+        // userId 为空（未登录调用方）时显式跳过该检查，不依赖 MyBatis eq(null) 生成 IS NULL 的语义
+        if (userId != null) {
+            Long openedCount = dailyNoteOpenedDao.selectCount(new QueryWrapper<DailyNoteOpenedEntity>()
+                    .eq("user_id", userId)
+                    .eq("note_date", java.sql.Date.valueOf(today)));
+            if (openedCount > 0) {
+                return null;
+            }
         }
 
         // 复用游戏服务的启用状态与 NOTE 入口过滤能力，不复制游戏配置

@@ -1,6 +1,7 @@
 package xiaozhi.modules.dailynote.vo;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -21,8 +22,9 @@ public class DailyNoteVO implements Serializable {
     private Long id;
 
     @Schema(description = "完整日期")
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
-    private Date noteDate;
+    // LocalDate 是纯日历日，无时区概念，序列化无需指定 timezone
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate noteDate;
 
     @Schema(description = "标题")
     private String title;

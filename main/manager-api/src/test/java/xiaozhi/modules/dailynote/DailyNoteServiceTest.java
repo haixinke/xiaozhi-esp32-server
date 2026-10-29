@@ -3,9 +3,8 @@ package xiaozhi.modules.dailynote;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +89,7 @@ class DailyNoteServiceTest {
 
         DailyNoteVO vo = dailyNoteService.get(id);
 
-        assertThat(vo.getNoteDate()).isEqualTo(java.sql.Date.valueOf("2160-01-01"));
+        assertThat(vo.getNoteDate()).isEqualTo(LocalDate.parse("2160-01-01"));
         assertThat(vo.getTitle()).isEqualTo("标题");
         assertThat(vo.getContent()).isEqualTo("第一行\n第二行");
         assertThat(vo.getSolarTerm()).isEqualTo("霜降");
@@ -167,7 +166,7 @@ class DailyNoteServiceTest {
         dailyNoteService.update(id, dto);
 
         DailyNoteVO vo = dailyNoteService.get(id);
-        assertThat(vo.getNoteDate()).isEqualTo(java.sql.Date.valueOf("2160-04-05"));
+        assertThat(vo.getNoteDate()).isEqualTo(LocalDate.parse("2160-04-05"));
         assertThat(vo.getTitle()).isEqualTo("新标题");
         assertThat(vo.getContent()).isEqualTo("新内容");
         // 节气纯空白视为未填，存 null

@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -72,7 +72,7 @@ class DailyNoteImportServiceTest {
     /** 直接落库一份小纸条（绕过 Service 校验，用于铺底数据），返回 id */
     private Long seedNote(String date, String title, String content, String solarTerm) {
         DailyNoteEntity entity = new DailyNoteEntity();
-        entity.setNoteDate(java.sql.Date.valueOf(date));
+        entity.setNoteDate(LocalDate.parse(date));
         entity.setTitle(title);
         entity.setContent(content);
         entity.setSolarTerm(solarTerm);
@@ -137,8 +137,9 @@ class DailyNoteImportServiceTest {
         assertThat(result.getAddedCount()).isEqualTo(1);
         assertThat(result.getOverwrittenCount()).isEqualTo(1);
 
-        // 覆盖：记录身份保留，内容整项更新（含节气从有值覆盖为 null）
+        // 覆盖：记录身份与日期键保留（日期键必须与写入时一致，不因时区换算错位），内容整项更新
         DailyNoteEntity overwritten = dailyNoteDao.selectById(existingId);
+        assertThat(overwritten.getNoteDate().toString()).isEqualTo("2170-02-01");
         assertThat(overwritten.getTitle()).isEqualTo("新标题");
         assertThat(overwritten.getContent()).isEqualTo("新内容");
         assertThat(overwritten.getSolarTerm()).isNull();

@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -62,9 +63,6 @@ public class DailyNoteImportServiceImpl implements DailyNoteImportService {
 
     /** 手工保存的严格日期解析器（uuuu-MM-dd + STRICT），导入与手工保存同一规则 */
     private static final DateTimeFormatter STRICT_DATE_FORMATTER = DailyNoteServiceImpl.STRICT_DATE_FORMATTER;
-
-    /** 库内日期键格式化：与文件内 dateKey（yyyy-MM-dd）对齐，用于同日期覆盖判定 */
-    private static final java.text.SimpleDateFormat DATE_KEY_FORMAT = new java.text.SimpleDateFormat("yyyy-MM-dd");
 
     /** 解析导入文件用的共享 ObjectMapper（线程安全，可复用） */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -173,7 +171,7 @@ public class DailyNoteImportServiceImpl implements DailyNoteImportService {
         if (errors.size() > errorCountBefore) {
             return null;
         }
-        return new ValidatedItem(date.toString(), java.sql.Date.valueOf(date), title, content, solarTerm);
+        return new ValidatedItem(date.toString(), date, title, content, solarTerm);
     }
 
     /** 日期：必填字符串，严格 yyyy-MM-dd 且为真实存在的完整日期 */
@@ -253,9 +251,10 @@ public class DailyNoteImportServiceImpl implements DailyNoteImportService {
             List<DailyNoteEntity> existing = dailyNoteDao.selectList(
                     new QueryWrapper<DailyNoteEntity>().in("note_date", dateKeys));
             for (DailyNoteEntity entity : existing) {
-                // noteDate 是 java.util.Date，toString() 返回 "Thu Feb 01 ..." 而非 yyyy-MM-dd；
-                // 必须用 SQL DATE 语义格式化，否则与文件内日期键对不上，同日期会被误判为新增
-                existingByDate.put(DATE_KEY_FORMAT.format(entity.getNoteDate()), entity);
+                // noteDate 是 LocalDate（纯日历日，无默认时区换算），toString() 即 yyyy-MM-dd，
+                // 与文件内 dateKey 直接可比；不要用 SimpleDateFormat（非线程安全且按默认时区格式化，
+                // JVM 与数据库时区不一致时会把日期键错位，同日期覆盖被误判为新增）
+                existingByDate.put(entity.getNoteDate().toString(), entity);
             }
         }
 
@@ -265,9 +264,15 @@ public class DailyNoteImportServiceImpl implements DailyNoteImportService {
             for (ValidatedItem item : validated) {
                 DailyNoteEntity existing = existingByDate.get(item.dateKey());
                 if (existing != null) {
+                    // 防御性断言：覆盖必须发生在"确实是同一条目"上。
+                    // 日期键构建曾按时区格式化（可能错位），此处用 LocalDate 纯日历日比对兜底；
+                    // 断言失败说明比对逻辑有 bug，必须暴露而不是静默写错行
+                    if (!existing.getNoteDate().toString().equals(item.dateKey())) {
+                        throw new IllegalStateException("小纸条导入日期键比对错位");
+                    }
                     // 整项覆盖：用 UpdateWrapper 显式 SET，允许把节气从有值覆盖为 null
                     // （updateById 默认忽略 null 字段，达不到"整项覆盖"语义）
-                    dailyNoteDao.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<DailyNoteEntity>()
+                    dailyNoteDao.update(null, new UpdateWrapper<DailyNoteEntity>()
                             .eq("id", existing.getId())
                             .set("title", item.title())
                             .set("content", item.content())
@@ -304,8 +309,8 @@ public class DailyNoteImportServiceImpl implements DailyNoteImportService {
         return vo;
     }
 
-    /** 校验通过的条目（dateKey 为 yyyy-MM-dd 字符串，用于查重与库内比对） */
-    private record ValidatedItem(String dateKey, java.sql.Date noteDate, String title, String content,
+    /** 校验通过的条目（dateKey 为 yyyy-MM-dd 字符串，用于查重与库内比对；noteDate 为纯日历日） */
+    private record ValidatedItem(String dateKey, LocalDate noteDate, String title, String content,
             String solarTerm) {
     }
 }

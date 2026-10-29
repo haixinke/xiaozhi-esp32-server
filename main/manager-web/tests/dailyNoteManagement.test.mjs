@@ -16,10 +16,11 @@ describe('daily note management - wiring', () => {
     assert.match(apiIndexSource, /^\s+dailyNote\s*,/m)
   })
 
-  it('dailyNote module exposes page, detail, create, update and delete endpoints', async () => {
+  it('dailyNote module exposes page, detail, create, update, delete and import endpoints', async () => {
     const moduleSource = await read('../src/apis/module/dailyNote.js')
     assert.match(moduleSource, /\/admin\/daily-note\/page/)
     assert.match(moduleSource, /\/admin\/daily-note\/\$\{id\}/)
+    assert.match(moduleSource, /\/admin\/daily-note\/import/)
     assert.match(moduleSource, /method\('GET'\)/)
     assert.match(moduleSource, /method\('POST'\)/)
     assert.match(moduleSource, /method\('PUT'\)/)
@@ -29,6 +30,7 @@ describe('daily note management - wiring', () => {
     assert.match(moduleSource, /create/)
     assert.match(moduleSource, /update/)
     assert.match(moduleSource, /remove/)
+    assert.match(moduleSource, /importNotes/)
   })
 
   it('page wires list, date filter, shared create/edit form and physical-delete confirmation', async () => {
@@ -49,6 +51,38 @@ describe('daily note management - wiring', () => {
     assert.match(viewSource, /物理删除，不可恢复/)
     assert.match(viewSource, /row\.noteDate/)
     assert.match(viewSource, /row\.title/)
+  })
+
+  it('page wires JSON import: upload entry, format docs, example, result stats and error list', async () => {
+    const viewSource = await read('../src/views/DailyNoteManagement.vue')
+    // 上传入口与导入 API
+    assert.match(viewSource, /导入 JSON/)
+    assert.match(viewSource, /el-upload/)
+    assert.match(viewSource, /uploadImportFile/)
+    assert.match(viewSource, /beforeImportUpload/)
+    assert.match(viewSource, /Api\.dailyNote\.importNotes\(/)
+    // 格式说明：字段白名单、日期格式、换行转义、资源限制、同日期覆盖语义
+    assert.match(viewSource, /date.*title.*content.*solarTerm/)
+    assert.match(viewSource, /yyyy-MM-dd/)
+    assert.match(viewSource, /\\n/)
+    assert.match(viewSource, /1 MB/)
+    assert.match(viewSource, /1000 条/)
+    assert.match(viewSource, /整项覆盖/)
+    // 可复制示例：2026-10-29 含节气与两行正文、2026-10-30 solarTerm null
+    assert.match(viewSource, /copyImportExample/)
+    assert.match(viewSource, /2026-10-29/)
+    assert.match(viewSource, /2026-10-30/)
+    assert.match(viewSource, /今天也辛苦了。\\n记得早点休息。/)
+    assert.match(viewSource, /solarTerm:\s*null/)
+    // 结果统计与逐行错误明细
+    assert.match(viewSource, /addedCount/)
+    assert.match(viewSource, /overwrittenCount/)
+    assert.match(viewSource, /importErrors/)
+    assert.match(viewSource, /err\.row/)
+    assert.match(viewSource, /err\.field/)
+    assert.match(viewSource, /err\.reason/)
+    // 条目级校验失败错误码（10394）分支
+    assert.match(viewSource, /10394/)
   })
 
   it('registers the daily note route with requiresAuth', () => {

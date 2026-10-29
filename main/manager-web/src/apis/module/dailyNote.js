@@ -108,5 +108,33 @@ export default {
                     this.remove(id, callback)
                 })
             }).send()
+    },
+
+    // JSON 批量导入小纸条（multipart）。成功返回 {addedCount, overwrittenCount}；
+    // 条目级校验失败时 code=10394 且 data 为逐行错误明细列表 [{row, field, reason}]
+    importNotes(formData, callback, failCallback) {
+        RequestService.sendRequest()
+            .url(`${getServiceUrl()}/admin/daily-note/import`)
+            .method('POST')
+            .data(formData)
+            // header() 会整体替换默认 header（含 json content-type）；
+            // 传空对象让 flyio 检测到 FormData 后自动删掉 Content-Type，由浏览器生成 multipart boundary
+            .header({})
+            .success((res) => {
+                RequestService.clearRequestTime()
+                callback(res)
+            })
+            .fail((res) => {
+                RequestService.clearRequestTime()
+                if (failCallback) {
+                    failCallback(res)
+                }
+            })
+            .networkFail((err) => {
+                console.error('导入小纸条失败:', err)
+                if (failCallback) {
+                    failCallback(err)
+                }
+            }).send()
     }
 }

@@ -52,5 +52,11 @@ class DailyNoteControllerPermissionContractTest {
         Method delete = DailyNoteController.class.getMethod("delete", Long.class);
         assertThat(delete.getAnnotation(DeleteMapping.class).value()).containsExactly("/{id}");
         assertThat(delete.getAnnotation(RequiresPermissions.class).value()).containsExactly(SUPER_ADMIN_PERM);
+
+        // JSON 导入：multipart file，沿用超级管理员权限
+        Method importNotes = DailyNoteController.class.getMethod("importNotes",
+                org.springframework.web.multipart.MultipartFile.class);
+        assertThat(importNotes.getAnnotation(PostMapping.class).value()).containsExactly("/import");
+        assertThat(importNotes.getAnnotation(RequiresPermissions.class).value()).containsExactly(SUPER_ADMIN_PERM);
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,13 +24,15 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
 import xiaozhi.common.validator.ValidatorUtils;
 import xiaozhi.modules.dailynote.dto.DailyNoteSaveDTO;
+import xiaozhi.modules.dailynote.service.DailyNoteImportService;
 import xiaozhi.modules.dailynote.service.DailyNoteService;
+import xiaozhi.modules.dailynote.vo.DailyNoteImportResultVO;
 import xiaozhi.modules.dailynote.vo.DailyNoteVO;
 
 /**
  * 小纸条管理（运营管理菜单下的「小纸条管理」）。
- * 分页浏览、按完整日期精确查询、新增、编辑和按 ID 物理删除；
- * 全部接口要求超级管理员权限。JSON 导入在后续 ticket 落地。
+ * 分页浏览、按完整日期精确查询、新增、编辑、按 ID 物理删除和 JSON 批量导入；
+ * 全部接口要求超级管理员权限。
  */
 @AllArgsConstructor
 @RestController
@@ -38,6 +41,7 @@ import xiaozhi.modules.dailynote.vo.DailyNoteVO;
 public class DailyNoteController {
 
     private final DailyNoteService dailyNoteService;
+    private final DailyNoteImportService dailyNoteImportService;
 
     @GetMapping("/page")
     @Operation(summary = "分页查询小纸条列表（默认日期倒序）")
@@ -83,5 +87,12 @@ public class DailyNoteController {
     public Result<Void> delete(@PathVariable("id") Long id) {
         dailyNoteService.delete(id);
         return new Result<>();
+    }
+
+    @PostMapping("/import")
+    @Operation(summary = "JSON 批量导入小纸条（同日期整项覆盖；任一条目无效整批零写入，返回行号错误明细）")
+    @RequiresPermissions("sys:role:superAdmin")
+    public Result<DailyNoteImportResultVO> importNotes(@RequestParam("file") MultipartFile file) {
+        return new Result<DailyNoteImportResultVO>().ok(dailyNoteImportService.importNotes(file));
     }
 }

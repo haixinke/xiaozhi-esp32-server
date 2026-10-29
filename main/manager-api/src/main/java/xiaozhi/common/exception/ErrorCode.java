@@ -349,6 +349,11 @@ public interface ErrorCode {
     int DAILY_NOTE_CONTENT_TOO_LONG = 10391; // 正文最多200字
     int DAILY_NOTE_SOLAR_TERM_TOO_LONG = 10392; // 节气最多50字
 
+    // 小纸条 JSON 导入错误码（10393-10395，延续小纸条 1038x 号段）
+    int DAILY_NOTE_IMPORT_CONFLICT = 10393; // 导入与并发写入日期冲突，整批回滚
+    int DAILY_NOTE_IMPORT_INVALID = 10394; // 导入文件存在无效条目（详见逐行错误明细）
+    int DAILY_NOTE_IMPORT_INVALID_FORMAT = 10395; // 导入文件格式非法（空文件/非JSON/非UTF-8/超限等）
+
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败
     int OSS_DELETE_FILE_ERROR = 10401; // OSS删除文件失败

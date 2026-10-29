@@ -37,7 +37,7 @@ import xiaozhi.modules.dailynote.vo.DailyNoteVO;
 public class DailyNoteServiceImpl extends BaseServiceImpl<DailyNoteDao, DailyNoteEntity>
         implements DailyNoteService {
 
-    /** 标题最大 Unicode 字符数 */
+    /** 标题最大 Unicode 字符数（包级可见：导入与手工保存共用同一上限） */
     static final int TITLE_MAX_LENGTH = 50;
     /** 正文最大 Unicode 字符数 */
     static final int CONTENT_MAX_LENGTH = 200;
@@ -46,9 +46,10 @@ public class DailyNoteServiceImpl extends BaseServiceImpl<DailyNoteDao, DailyNot
 
     /**
      * 严格日期格式：uuuu-MM-dd + STRICT，拒绝 2026-02-30 之类不存在的日期；
-     * 同时要求解析结果无剩余字符，拒绝 2026-1-1、2026/01/01 等非规范输入
+     * 同时要求解析结果无剩余字符，拒绝 2026-1-1、2026/01/01 等非规范输入。
+     * 包级可见：JSON 导入与手工保存共用同一日期规则。
      */
-    private static final DateTimeFormatter STRICT_DATE_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd")
+    static final DateTimeFormatter STRICT_DATE_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd")
             .withResolverStyle(ResolverStyle.STRICT);
 
     @Override

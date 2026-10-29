@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import xiaozhi.modules.dailynote.dao.DailyNoteDao;
+import xiaozhi.modules.dailynote.dao.DailyNoteOpenedDao;
 import xiaozhi.modules.dailynote.entity.DailyNoteEntity;
+import xiaozhi.modules.dailynote.entity.DailyNoteOpenedEntity;
 import xiaozhi.modules.dailynote.service.DailyNoteTodayService;
 import xiaozhi.modules.dailynote.vo.DailyNoteTodayVO;
 import xiaozhi.modules.game.enums.GameEntranceEnum;
@@ -30,6 +32,7 @@ import xiaozhi.modules.game.vo.GameVO;
 public class DailyNoteTodayServiceImpl implements DailyNoteTodayService {
 
     private final DailyNoteDao dailyNoteDao;
+    private final DailyNoteOpenedDao dailyNoteOpenedDao;
     private final GameService gameService;
 
     /**
@@ -38,9 +41,11 @@ public class DailyNoteTodayServiceImpl implements DailyNoteTodayService {
      */
     private Clock clock;
 
-    public DailyNoteTodayServiceImpl(DailyNoteDao dailyNoteDao, GameService gameService,
+    public DailyNoteTodayServiceImpl(DailyNoteDao dailyNoteDao, DailyNoteOpenedDao dailyNoteOpenedDao,
+            GameService gameService,
             @Qualifier("dailyNoteClock") Clock clock) {
         this.dailyNoteDao = dailyNoteDao;
+        this.dailyNoteOpenedDao = dailyNoteOpenedDao;
         this.gameService = gameService;
         this.clock = clock;
     }
@@ -52,13 +57,22 @@ public class DailyNoteTodayServiceImpl implements DailyNoteTodayService {
 
     @Override
     public DailyNoteTodayVO today(Long userId) {
-        // userId 本期不参与过滤：已打开状态在后续票据接入，届时在此按用户+日期判断
+        // "当天"由服务器时钟决定；已打开状态按用户+完整日期隔离
         LocalDate today = LocalDate.now(clock);
 
         DailyNoteEntity note = dailyNoteDao.selectOne(
                 new QueryWrapper<DailyNoteEntity>().eq("note_date", java.sql.Date.valueOf(today)));
         // 当日无小纸条：成功空响应，不返回部分内容
         if (note == null) {
+            return null;
+        }
+
+        // 已打开检查先于游戏选择：用户已打开当日内容时直接返回空，
+        // 不再随机选游戏（否则白白消耗一次随机且语义上"返回了部分状态"）
+        Long openedCount = dailyNoteOpenedDao.selectCount(new QueryWrapper<DailyNoteOpenedEntity>()
+                .eq("user_id", userId)
+                .eq("note_date", java.sql.Date.valueOf(today)));
+        if (openedCount > 0) {
             return null;
         }
 

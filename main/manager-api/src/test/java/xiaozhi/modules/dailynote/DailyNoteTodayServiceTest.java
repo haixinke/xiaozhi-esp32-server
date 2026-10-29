@@ -26,7 +26,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import xiaozhi.common.config.TestArkServiceConfig;
 import xiaozhi.modules.dailynote.dao.DailyNoteDao;
+import xiaozhi.modules.dailynote.dao.DailyNoteOpenedDao;
 import xiaozhi.modules.dailynote.entity.DailyNoteEntity;
+import xiaozhi.modules.dailynote.entity.DailyNoteOpenedEntity;
 import xiaozhi.modules.dailynote.service.DailyNoteTodayService;
 import xiaozhi.modules.dailynote.service.impl.DailyNoteTodayServiceImpl;
 import xiaozhi.modules.dailynote.vo.DailyNoteTodayVO;
@@ -51,7 +53,13 @@ class DailyNoteTodayServiceTest {
     @Autowired
     private DailyNoteDao dailyNoteDao;
     @Autowired
+    private DailyNoteOpenedDao dailyNoteOpenedDao;
+    @Autowired
     private GameDao gameDao;
+
+    /** 本用例使用的专用用户 ID（远离真实用户区间），统一清理 */
+    private static final long USER_A = 9_999_000_001L;
+    private static final long USER_B = 9_999_000_002L;
 
     /** 本用例创建的小纸条 id 与游戏 id，统一清理 */
     private final List<Long> noteIds = new ArrayList<>();
@@ -96,6 +104,19 @@ class DailyNoteTodayServiceTest {
             }
         });
         sidelinedGames.clear();
+        // 已打开记录按本用例专用用户清理
+        dailyNoteOpenedDao.delete(new QueryWrapper<DailyNoteOpenedEntity>()
+                .in("user_id", USER_A, USER_B)
+                .ge("note_date", java.sql.Date.valueOf("2160-01-01")));
+    }
+
+    /** 直接落库一条已打开记录（聚焦查询行为，不经过标记接口） */
+    private void insertOpened(long userId, String date) {
+        DailyNoteOpenedEntity entity = new DailyNoteOpenedEntity();
+        entity.setUserId(userId);
+        entity.setNoteDate(java.sql.Date.valueOf(date));
+        entity.setOpenedAt(new java.util.Date());
+        dailyNoteOpenedDao.insert(entity);
     }
 
     /** 临时停用所有本用例之外、启用且带 NOTE 入口的既有游戏，使合格集合只含本用例数据 */
@@ -282,5 +303,74 @@ class DailyNoteTodayServiceTest {
         assertThat(next).isNotNull();
         assertThat(next.getDate()).isEqualTo("2160-07-02");
         assertThat(next.getTitle()).isEqualTo("后一天");
+    }
+
+    @Test
+    @DisplayName("已打开用户查询返回空：当日内容与游戏都在也不返回；未打开用户不受影响（跨设备由用户维度保证）")
+    void openedUserSeesNullOthersUnaffected() {
+        atShanghaiNoon("2160-08-01");
+        insertNote("2160-08-01", "标题");
+        insertGame("MEET_YOU", "NOTE", 1);
+        sidelinePreExistingNoteGames();
+        insertOpened(USER_A, "2160-08-01");
+
+        // 已打开用户：即使内容与游戏齐备也返回空
+        assertThat(dailyNoteTodayService.today(USER_A)).isNull();
+        // 其他用户：不受 A 的已打开状态影响
+        assertThat(dailyNoteTodayService.today(USER_B)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("已打开状态次日不继承：昨天打开过的用户今天仍可查询")
+    void openedStateNotInheritedNextDay() {
+        atShanghaiNoon("2160-08-02");
+        insertNote("2160-08-02", "昨天");
+        insertGame("MEET_YOU", "NOTE", 1);
+        sidelinePreExistingNoteGames();
+        // 用户打开的是昨天的小纸条
+        insertOpened(USER_A, "2160-08-01");
+
+        assertThat(dailyNoteTodayService.today(USER_A)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("内容删除期间查询为空，同日重建后原已打开用户仍为空、新用户可查看")
+    void deleteAndRecreateKeepsOpenedState() {
+        atShanghaiNoon("2160-08-03");
+        insertNote("2160-08-03", "旧内容");
+        insertGame("MEET_YOU", "NOTE", 1);
+        sidelinePreExistingNoteGames();
+        insertOpened(USER_A, "2160-08-03");
+
+        // 物理删除当日内容：所有用户查询都为空
+        noteIds.forEach(dailyNoteDao::deleteById);
+        noteIds.clear();
+        assertThat(dailyNoteTodayService.today(USER_A)).isNull();
+        assertThat(dailyNoteTodayService.today(USER_B)).isNull();
+
+        // 同日重建（新 id）：原已打开用户仍为空，新用户可见
+        insertNote("2160-08-03", "重建内容");
+        assertThat(dailyNoteTodayService.today(USER_A)).isNull();
+        assertThat(dailyNoteTodayService.today(USER_B)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("内容同日覆盖不重置已打开：更新内容字段后已打开用户仍返回空")
+    void overwriteDoesNotResetOpenedState() {
+        atShanghaiNoon("2160-08-04");
+        insertNote("2160-08-04", "旧标题");
+        insertGame("MEET_YOU", "NOTE", 1);
+        sidelinePreExistingNoteGames();
+        insertOpened(USER_A, "2160-08-04");
+
+        // 导入整项覆盖同日期内容（保留记录身份）
+        dailyNoteDao.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<DailyNoteEntity>()
+                .eq("id", noteIds.get(0))
+                .set("title", "新标题")
+                .set("content", "新正文"));
+
+        assertThat(dailyNoteTodayService.today(USER_A)).isNull();
+        assertThat(dailyNoteTodayService.today(USER_B)).isNotNull();
+        assertThat(dailyNoteTodayService.today(USER_B).getTitle()).isEqualTo("新标题");
     }
 }

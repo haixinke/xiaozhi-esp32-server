@@ -9194,6 +9194,41 @@
     "ast_hash": "b3fc41feddf0edd516e8ed1e9e9c3a19",
     "semantic_hash": ""
   },
+  "main/manager-api/src/main/java/xiaozhi/modules/dailynote/config/DailyNoteConfig.java": {
+    "mtime": 1793253426.2818716,
+    "ast_hash": "27dcca531e2db22d63c27cde3783232e",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/dailynote/controller/DailyNoteAppController.java": {
+    "mtime": 1793253426.281974,
+    "ast_hash": "8a6039ce0290c3fe5ca3b81ec589a3a3",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/dailynote/service/DailyNoteTodayService.java": {
+    "mtime": 1793253426.2820673,
+    "ast_hash": "e4ce9a286c260c036bf7aa6f8ae5648c",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/dailynote/service/impl/DailyNoteTodayServiceImpl.java": {
+    "mtime": 1793253426.282162,
+    "ast_hash": "e0a1ec3bbe8a47e129219813fff4114a",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/dailynote/vo/DailyNoteTodayVO.java": {
+    "mtime": 1793253426.2822511,
+    "ast_hash": "2e358262ea6ae6db749cb249da43fb1b",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/dailynote/DailyNoteAppControllerTest.java": {
+    "mtime": 1793253426.2823532,
+    "ast_hash": "a87a244cae99ab3b99137ad24dc02f90",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/dailynote/DailyNoteTodayServiceTest.java": {
+    "mtime": 1793253426.2825127,
+    "ast_hash": "671fd73f107880d6e0f215bc21949a17",
+    "semantic_hash": ""
+  },
   "main/manager-api/src/main/java/xiaozhi/modules/dailynote/exception/DailyNoteImportException.java": {
     "mtime": 1793252044.6974049,
     "ast_hash": "005f71e3f176e6e92047c542807214ba",

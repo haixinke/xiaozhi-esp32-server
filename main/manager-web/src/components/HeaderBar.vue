@@ -192,12 +192,12 @@
 
         <!-- 运营管理 -->
         <el-dropdown v-if="userInfo.superAdmin" trigger="click" class="equipment-management more-dropdown" :class="{
-          'active-tab': $route.path === '/story-engine-management' || $route.path === '/feedback-management' || $route.path === '/game-management' || $route.path === '/small-object-management' || $route.path === '/listen-question-bank'
+          'active-tab': $route.path === '/story-engine-management' || $route.path === '/feedback-management' || $route.path === '/game-management' || $route.path === '/small-object-management' || $route.path === '/listen-question-bank' || $route.path === '/daily-note-management'
         }" @visible-change="handleContentDropdownVisibleChange">
           <span class="el-dropdown-link">
             <img loading="lazy" alt="" src="@/assets/header/param_management.png" :style="{
               filter:
-                $route.path === '/story-engine-management' || $route.path === '/feedback-management' || $route.path === '/game-management' || $route.path === '/small-object-management' || $route.path === '/listen-question-bank'
+                $route.path === '/story-engine-management' || $route.path === '/feedback-management' || $route.path === '/game-management' || $route.path === '/small-object-management' || $route.path === '/listen-question-bank' || $route.path === '/daily-note-management'
                   ? 'brightness(0) invert(1)'
                   : 'None',
             }" />
@@ -219,6 +219,9 @@
             </el-dropdown-item>
             <el-dropdown-item @click.native="handleRouter('listenQuestionBank')">
               题库运营
+            </el-dropdown-item>
+            <el-dropdown-item @click.native="handleRouter('dailyNoteManagement')">
+              小纸条管理
             </el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
@@ -303,6 +306,7 @@ export default {
         gameManagement: "/game-management",
         smallObjectManagement: "/small-object-management",
         listenQuestionBank: "/listen-question-bank",
+        dailyNoteManagement: "/daily-note-management",
       }
     };
   },

@@ -15,6 +15,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.utils.MessageUtils;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.dailynote.exception.DailyNoteImportException;
+import xiaozhi.modules.dailynote.vo.DailyNoteImportErrorVO;
 import xiaozhi.modules.listen.exception.ListenImportException;
 import xiaozhi.modules.listen.vo.ListenImportConflictVO;
 
@@ -47,6 +49,20 @@ public class RenExceptionHandler {
         Result<List<ListenImportConflictVO>> result = new Result<>();
         result.error(ex.getCode(), ex.getMsg());
         result.setData(ex.getConflicts());
+
+        return result;
+    }
+
+    /**
+     * 小纸条导入校验失败：除 code/msg 外附带逐行错误明细（行号、字段、原因），前端列表展示
+     */
+    @ExceptionHandler(DailyNoteImportException.class)
+    public Result<List<DailyNoteImportErrorVO>> handleDailyNoteImportException(DailyNoteImportException ex) {
+        // 只记汇总（错误条数），不记明细与堆栈：明细随响应下发运营，无需重复进日志
+        log.warn("Daily note import rejected: {} invalid item(s)", ex.getErrors().size());
+        Result<List<DailyNoteImportErrorVO>> result = new Result<>();
+        result.error(ex.getCode(), ex.getMsg());
+        result.setData(ex.getErrors());
 
         return result;
     }

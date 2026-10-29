@@ -339,6 +339,21 @@ public interface ErrorCode {
     int LISTEN_CUSTOM_TEXT_TOO_LONG = 10383; // 自定义文本答案最多200字
     int LISTEN_DAILY_LIMIT_REACHED = 10384; // 今日答题组数已用完
 
+    // 小纸条（每日内容）错误码，独立号段，不复用题库号段
+    int DAILY_NOTE_NOT_FOUND = 10385; // 小纸条不存在
+    int DAILY_NOTE_DATE_CONFLICT = 10386; // 该日期已存在小纸条
+    int DAILY_NOTE_INVALID_DATE = 10387; // 日期必须是合法的完整年月日
+    int DAILY_NOTE_TITLE_REQUIRED = 10388; // 标题不能为空
+    int DAILY_NOTE_TITLE_TOO_LONG = 10389; // 标题最多50字
+    int DAILY_NOTE_CONTENT_REQUIRED = 10390; // 正文不能为空
+    int DAILY_NOTE_CONTENT_TOO_LONG = 10391; // 正文最多200字
+    int DAILY_NOTE_SOLAR_TERM_TOO_LONG = 10392; // 节气最多50字
+
+    // 小纸条 JSON 导入错误码（10393-10395，延续小纸条 1038x 号段）
+    int DAILY_NOTE_IMPORT_CONFLICT = 10393; // 导入与并发写入日期冲突，整批回滚
+    int DAILY_NOTE_IMPORT_INVALID = 10394; // 导入文件存在无效条目（详见逐行错误明细）
+    int DAILY_NOTE_IMPORT_INVALID_FORMAT = 10395; // 导入文件格式非法（空文件/非JSON/非UTF-8/超限等）
+
     // OSS相关错误码
     int OSS_DOWNLOAD_FILE_ERROR = 10400; // OSS下载文件失败
     int OSS_DELETE_FILE_ERROR = 10401; // OSS删除文件失败

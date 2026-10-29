@@ -18,6 +18,7 @@ import feedback from './module/feedback.js'
 import game from './module/game.js'
 import smallObject from './module/smallObject.js'
 import listenQuestion from './module/listenQuestion.js'
+import dailyNote from './module/dailyNote.js'
 
 
 
@@ -57,5 +58,6 @@ export default {
     feedback,
     game,
     smallObject,
+    dailyNote,
     listenQuestion
   }

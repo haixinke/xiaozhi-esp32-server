@@ -13,11 +13,9 @@ public interface DailyNoteTodayService {
     /**
      * 查询服务器"当天"的小纸条与一个随机合格游戏。
      *
-     * @param userId 当前认证用户 ID（来自 Token）。
-     *               本期已打开状态尚未接入（后续票据落地），查询不受其影响；
-     *               保留该参数作为接缝，届时在此按用户+日期过滤已打开记录，
-     *               控制器与路由契约无需变化。
-     * @return 当日内容与随机游戏；当日无小纸条或无合格游戏时返回 null
+     * @param userId 当前认证用户 ID（来自 Token）；
+     *               已打开状态按用户+完整日期过滤，已打开当日内容的用户返回 null
+     * @return 当日内容与随机游戏；当日无小纸条、用户已打开或无合格游戏时返回 null
      */
     DailyNoteTodayVO today(Long userId);
 }

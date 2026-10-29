@@ -1,6 +1,10 @@
 # 小纸条管理与当日接口 (Daily Note Management and Today API)
 
-Status: ready-for-agent
+Status: resolved
+
+## Comments
+
+- 2026-10-29: All 4 tickets implemented and merged into integration branch feat/daily-note (worktree ../xiaozhi-esp32-server-daily-note), code review fixes applied (ac6a7418), DailyNote* tests 44/44 green. 人工验证清单待验证（智控台页面 + 导入交互）。Not pushed; 蛋宝宝小程序接入属后续工作。
 
 ## Problem Statement
 

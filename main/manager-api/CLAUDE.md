@@ -131,6 +131,11 @@ JDBC URL：`jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEn
 
 ## 开发约定
 
+### 测试规则
+
+- **定向测试优先**：修复后先跑 `mvn test -Dtest=TargetTest` 验证，再跑全量确认无回归，避免重复跑。
+- **测试数据隔离**：测试不得硬编码真实业务数据（如游戏类型 `DRAW_TOGETHER`）。使用专用测试字典项或 mock，避免撞真实 dev DB 唯一键。
+
 ### 定时任务大数据处理铁律
 
 **业务定时任务需要大量处理数据时，必须采用批量/分页方式，禁止一次性全表查询加载到内存。**

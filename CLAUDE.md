@@ -154,6 +154,8 @@ Before ANY commit:
 
 本项目在 `graphify-out/` 维护了代码知识图谱（用法由 PreToolUse hook 强制执行）。修改代码后运行 `graphify update .` 保持图谱最新（AST-only，无 API 成本）。
 
+**提交规则**：graphify 产物（`graphify-out/` 下所有文件）单独提交，不与业务代码混合。业务提交前先 `git reset -q graphify-out`，业务提交后再单独提交图谱更新。
+
 ## Agent skills
 
 ### Issue tracker

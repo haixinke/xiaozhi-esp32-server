@@ -13,4 +13,14 @@ if echo "$INPUT" | jq -e '.tool_input.command // empty' >/dev/null 2>&1; then
     exit 0
   fi
 fi
-echo "$INPUT" | /Users/minwang/.local/bin/graphify hook-guard search
+# 调用 graphify hook-guard，并追加项目特定的查询提示
+RESULT=$(echo "$INPUT" | /Users/minwang/.local/bin/graphify hook-guard search 2>&1)
+
+# 如果 graphify 有输出，追加 --context 提示
+if echo "$RESULT" | grep -q "additionalContext"; then
+  # 提取原始提示并增强
+  ENHANCED=$(echo "$RESULT" | sed 's/Only grep after graphify has oriented you, or to modify\/debug specific lines\./Only grep after graphify has oriented you, or to modify\/debug specific lines. TIP: Use --context "path\/to\/module" to narrow results (e.g. --context "main\/manager-api")./')
+  echo "$ENHANCED"
+else
+  echo "$RESULT"
+fi

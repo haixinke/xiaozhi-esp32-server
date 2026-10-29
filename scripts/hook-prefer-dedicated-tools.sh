@@ -9,7 +9,8 @@ if echo "$CMD" | grep -qE 'node_modules/|\.log\b|/logs/'; then
   exit 0
 fi
 # 只拦命令开头的裸调用（^\s*cmd），管道/&& 之后的不拦
-if echo "$CMD" | grep -qE '^\s*(/\S+/)?(grep|cat|head|tail|sed|awk)\s'; then
+# rg 是专用搜索工具，豁免
+if echo "$CMD" | grep -qE '^\s*(/\S+/)?(grep|cat|head|tail|sed|awk)\s' && ! echo "$CMD" | grep -qE '^\s*(/\S+/)?rg\s'; then
   echo "优先用专用工具：Grep（搜索）、Read（读文件）、Edit（改文件），不要在 Bash 里直接 grep/cat/head/tail/sed/awk。确属合理用途（如处理命令输出）请加管道或注释说明。" >&2
   exit 2
 fi

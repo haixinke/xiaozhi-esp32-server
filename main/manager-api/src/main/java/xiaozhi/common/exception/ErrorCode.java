@@ -316,6 +316,7 @@ public interface ErrorCode {
     int GAME_CONSUME_STARS_NEGATIVE = 10355; // 消耗星星数不能为负数
     int GAME_DAILY_LIMIT_NEGATIVE = 10356; // 每日次数上限不能为负数
     int GAME_TYPE_ALREADY_EXISTS = 10357; // 该游戏类型已存在，不允许重复创建
+    int GAME_EARN_CONSUME_CONFLICT = 10358; // 赚取星星数与消耗星星数不能同时大于零
 
     // 小物件管理相关错误码（10360 起独立连续区间，接在游戏管理 1035x 之后）
     int SMALL_OBJECT_NOT_FOUND = 10360; // 物件不存在

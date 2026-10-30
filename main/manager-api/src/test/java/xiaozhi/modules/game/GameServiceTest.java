@@ -23,6 +23,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import xiaozhi.common.config.TestArkServiceConfig;
 import xiaozhi.common.constant.Constant;
+import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.validator.ValidatorUtils;
@@ -228,6 +229,102 @@ class GameServiceTest {
 
         assertThatThrownBy(() -> gameService.save(dto))
                 .isInstanceOf(RenException.class);
+    }
+
+    // ---- 奖励与消费互斥校验（ticket 01） ----
+
+    @Test
+    @DisplayName("save earnStars 与 consumeStars 同时为正：拒绝且不落库")
+    void save_earnAndConsumeBothPositive_rejected() {
+        GameDTO dto = validDTO();
+        dto.setEarnStars(5);
+        dto.setConsumeStars(3);
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_EARN_CONSUME_CONFLICT));
+        // 拒绝后不得写入任何配置
+        assertThat(gameDao.selectCount(new QueryWrapper<GameEntity>().eq("game_type", dto.getGameType())))
+                .isZero();
+    }
+
+    @Test
+    @DisplayName("save 三种合法奖扣配置：正奖励零消耗、零奖励正消耗、双零免费均可保存")
+    void save_validEarnConsumeCombinations_accepted() {
+        // 正奖励 + 零消耗
+        GameDTO earnOnly = validDTO();
+        earnOnly.setEarnStars(5);
+        earnOnly.setConsumeStars(0);
+        saveAndTrack(earnOnly);
+
+        // 零奖励 + 正消耗
+        GameDTO consumeOnly = validDTO();
+        consumeOnly.setGameType(TEST_GAME_TYPES.get(1));
+        consumeOnly.setEarnStars(0);
+        consumeOnly.setConsumeStars(3);
+        saveAndTrack(consumeOnly);
+
+        // 双零免费游戏
+        GameDTO free = validDTO();
+        free.setGameType(TEST_GAME_TYPES.get(2));
+        free.setEarnStars(0);
+        free.setConsumeStars(0);
+        saveAndTrack(free);
+    }
+
+    @Test
+    @DisplayName("update 改为奖扣同时为正：拒绝且原配置保持不变")
+    void update_earnAndConsumeBothPositive_rejectedAndUnchanged() {
+        Long id = saveAndTrack(validDTO());
+
+        GameDTO dto = validDTO();
+        dto.setId(id);
+        dto.setEarnStars(8);
+        dto.setConsumeStars(2);
+        assertThatThrownBy(() -> gameService.update(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_EARN_CONSUME_CONFLICT));
+
+        // 拒绝后原配置保持不变
+        GameVO vo = gameService.get(id);
+        assertThat(vo.getEarnStars()).isEqualTo(5);
+        assertThat(vo.getConsumeStars()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("update 双零与奖扣互换等合法组合：保存成功")
+    void update_validEarnConsumeCombinations_accepted() {
+        // 双零免费
+        Long id = saveAndTrack(validDTO());
+        GameDTO dto = validDTO();
+        dto.setId(id);
+        dto.setEarnStars(0);
+        dto.setConsumeStars(0);
+        gameService.update(dto);
+        assertThat(gameService.get(id).getEarnStars()).isZero();
+        assertThat(gameService.get(id).getConsumeStars()).isZero();
+
+        // 奖励改消费（奖扣互换，仍保持互斥）
+        dto.setEarnStars(0);
+        dto.setConsumeStars(4);
+        gameService.update(dto);
+        assertThat(gameService.get(id).getEarnStars()).isZero();
+        assertThat(gameService.get(id).getConsumeStars()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("save 互斥冲突叠加负数：仍按原有非负规则拒绝，互斥规则不放宽非法值")
+    void save_conflictCombinedWithNegative_rejectedByNonNegativeRule() {
+        GameDTO dto = validDTO();
+        dto.setEarnStars(-1);
+        dto.setConsumeStars(3);
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_EARN_STARS_NEGATIVE));
     }
 
     // ---- DTO Bean Validation（控制器层 @NotNull 必填校验） ----

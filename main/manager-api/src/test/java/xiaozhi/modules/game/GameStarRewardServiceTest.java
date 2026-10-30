@@ -132,6 +132,7 @@ class GameStarRewardServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(GameStarRewardResult.Status.NEW_REWARD);
         assertThat(result.getRewardedStars()).isEqualTo(7);
+        assertThat(result.getNewRewardedStars()).isEqualTo(7);
         assertThat(result.getTransactionId()).isNotNull();
         assertThat(starService.balance(uid)).isEqualTo(7);
 
@@ -159,6 +160,9 @@ class GameStarRewardServiceTest {
         assertThat(second.getStatus()).isEqualTo(GameStarRewardResult.Status.ALREADY_REWARDED);
         assertThat(third.getStatus()).isEqualTo(GameStarRewardResult.Status.ALREADY_REWARDED);
         assertThat(second.getRewardedStars()).isEqualTo(7);
+        // 已领取语义：原奖励数量为 7，本次新增数量为 0
+        assertThat(second.getNewRewardedStars()).isZero();
+        assertThat(third.getNewRewardedStars()).isZero();
         assertThat(second.getTransactionId()).isEqualTo(first.getTransactionId());
 
         assertThat(rewardRecordCount(uid)).isEqualTo(1);
@@ -327,6 +331,7 @@ class GameStarRewardServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(GameStarRewardResult.Status.NO_REWARD);
         assertThat(result.getRewardedStars()).isZero();
+        assertThat(result.getNewRewardedStars()).isZero();
         assertThat(result.getTransactionId()).isNull();
         // 免费游戏不创建星星账户、不产生任何星星业务数据
         assertThat(starAccountDao.selectCount(

@@ -35,11 +35,12 @@ import xiaozhi.modules.star.vo.DailyRewardResult;
  * 2) 北京时间日期在取得锁后确定，避免锁等待跨过日界时按旧日期发奖。
  * 3) 先分配奖励记录雪花 ID 作为钱包业务单号（refId），钱包入账取得流水 ID 后再写奖励记录，
  *    保证奖励记录与流水严格一对一；两者同事务提交，任一步失败整体回滚，重试可重新领取。
- * 4) 每日联合唯一约束为兜底：并发下撞键即另一事务已结算，重查返回原结果。
+ * 4) 每日联合唯一约束为兜底：账户行锁已串行化同用户结算，正常不会撞键；
+ *    万一撞键说明并发下另一事务已提交，直接失败回滚，由调用方重试。
  *
  * 金额策略按来源区分（spec 标准内部接口职责）：
  * 小纸条（DAILY_NOTE）按连续规则计算：昨天有成功奖励则 min(昨天数量+1, 17)，否则 11；
- * 游戏（GAME）奖励金额由游戏奖励入口按当前有效配置在账户行锁内算出，
+ * 游戏（GAME）奖励金额由游戏奖励入口按当前有效配置在决策回调（锁前）算出，
  * 本能力不参与游戏金额推导，连续规则不适用于游戏。
  */
 @Slf4j
@@ -81,7 +82,7 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
     /**
      * REQUIRED 传播：可被小纸条打开事务等外层事务编排（打开记录+奖励+流水原子提交）。
      *
-     * 本入口仅承载连续金额策略（小纸条）：游戏奖励的固定金额在账户行锁内由配置决定，
+     * 本入口仅承载连续金额策略（小纸条）：游戏奖励的固定金额在决策回调中由配置决定，
      * 游戏业务请走 GameStarRewardService，不得走本入口套用连续规则。
      */
     @Override
@@ -99,35 +100,13 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
     }
 
     /**
-     * 结算决策：在确认当天未领取后被调用一次。award(amount) 按金额入账；
-     * skip() 表示本次无需星星变动（如免费/消费型游戏），
-     * 不写奖励记录、不调钱包，也不占当天奖励资格。
-     * 决策结果不持久化：跳过后当日后续请求仍会重新决策，保证免费游戏改奖励型后可领。
+     * {@inheritDoc}
+     *
+     * 并发与事务顺序：决策回调在取得账户行锁之前执行（读取配置的普通读），
+     * 拿锁后对当天奖励记录做复查，最终以 (user_id, source_type, source_key, reward_date)
+     * 唯一约束兜底；撞键即并发下另一事务已提交，直接失败回滚，不返回伪成功。
      */
-    public record ClaimDecision(boolean award, long amount) {
-        public static ClaimDecision award(long amount) {
-            return new ClaimDecision(true, amount);
-        }
-
-        public static ClaimDecision skip() {
-            return new ClaimDecision(false, 0);
-        }
-    }
-
-    /**
-     * 结算决策回调：在游戏奖励等按配置定额的入口中读取当前配置并做防御性校验；
-     * 已领取分支永远不触发配置读取，保证重试返回原结果。
-     */
-    @FunctionalInterface
-    public interface ClaimDecider {
-        ClaimDecision decide(Long userId, String sourceType, String sourceKey, LocalDate rewardDate);
-    }
-
-    /**
-     * 领取核心：先查当天记录（已领取直接返回原快照，不调用决策），
-     * 未领取才决策；award 时建户加锁、复查后入账并落奖励记录，skip 直接返回不发生任何写入。
-     * 供游戏奖励等按配置定额的入口复用资格与入账机制。
-     */
+    @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
     public DailyRewardResult claimWithDecision(Long userId, DailyRewardSourceType type, String sourceKey,
             ClaimDecider decider) {
@@ -184,14 +163,10 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
             starDailyRewardDao.insert(reward);
         } catch (DuplicateKeyException e) {
             // 兜底分支：账户行锁已串行化同用户结算，正常不会撞键；
-            // 万一撞键说明另一事务已提交当天奖励，重查返回原结果，不重复发奖
-            StarDailyRewardEntity committed = selectReward(userId, normalizedType, sourceKey, today);
-            if (committed == null) {
-                throw new IllegalStateException("每日奖励唯一键冲突但记录不存在: userId=" + userId);
-            }
-            log.info("每日奖励并发撞键，返回已结算结果: userId={}, source={}/{}", userId, normalizedType, sourceKey);
-            return DailyRewardResult.alreadyClaimed(committed.getAmount(), committed.getStarTransactionId(),
-                    committed.getId(), today);
+            // 万一撞键说明唯一约束兜底生效，此时钱包流水已写入，
+            // 不能返回"已领取"伪成功（那会让调用方拿到未实际入账的原流水），
+            // 直接失败并回滚整个事务，由调用方重试拿真实结果
+            throw e;
         }
         return DailyRewardResult.awarded(amount, txn.getId(), rewardId, today);
     }

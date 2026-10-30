@@ -70,6 +70,7 @@
             type="date"
             value-format="yyyy-MM-dd"
             placeholder="选择日期"
+            class="form-date-picker"
             style="width: 200px"
           />
         </el-form-item>
@@ -492,6 +493,10 @@ export default {
     flex: 1;
     overflow: hidden;
   }
+}
+
+.form-date-picker {
+  display: block;
 }
 
 .danger-btn {

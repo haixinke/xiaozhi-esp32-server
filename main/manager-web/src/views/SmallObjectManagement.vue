@@ -62,13 +62,19 @@
     </div>
 
     <!-- 新增/编辑小物件弹窗：编辑态回填当前值，标题与按钮文案随模式区分 -->
-    <el-dialog
+    <CustomDialog
       :title="isEditMode ? '编辑小物件' : '新增小物件'"
       :visible.sync="dialogVisible"
-      width="620px"
-      :close-on-click-modal="false"
+      width="680px"
+      :destroy-on-close="false"
+      :confirm-loading="saving"
+      :confirm-text="isEditMode ? '保存修改' : '保存'"
+      @confirm="handleSave"
     >
-      <el-form label-position="left" label-width="110px" class="edit-form">
+      <el-form label-position="top" class="edit-form">
+        <div class="form-section">
+          <div class="section-heading">基本信息</div>
+          <div class="form-grid">
         <el-form-item label="物件类型" required>
           <!-- 数据源是 object-types 接口而非字典全量：字典里混有固件类型、手机区号等非物件类型。
                已被占用的类型不出现在下拉里，前端分页视角看不到跨页占用，由后端 used 标记决定 -->
@@ -94,10 +100,11 @@
             accept="image/png,image/jpeg,image/webp"
           >
             <img v-if="editForm.imageUrl" :src="editForm.imageUrl" class="preview-image" alt="" />
-            <el-button v-else size="small" type="primary">上传图片</el-button>
+            <CustomButton v-else size="small">上传图片</CustomButton>
           </el-upload>
           <span class="form-tip">支持 png/jpeg/webp，大小不超过 2MB</span>
         </el-form-item>
+          </div>
         <el-form-item label="物件故事" required>
           <!-- 纯文本多行输入，maxlength + show-word-limit 提供字数统计；后端仍完整校验 -->
           <el-input
@@ -110,14 +117,9 @@
             class="form-control"
           />
         </el-form-item>
+        </div>
       </el-form>
-      <span slot="footer">
-        <el-button size="small" @click="dialogVisible = false">取消</el-button>
-        <el-button size="small" type="primary" :loading="saving" @click="handleSave">
-          {{ isEditMode ? '保存修改' : '保存' }}
-        </el-button>
-      </span>
-    </el-dialog>
+    </CustomDialog>
     <el-footer><VersionFooter/></el-footer>
   </div>
 </template>
@@ -128,9 +130,10 @@ import HeaderBar from "@/components/HeaderBar.vue";
 import VersionFooter from "@/components/VersionFooter.vue";
 import CustomButton from "@/components/CustomButton.vue";
 import CustomTable from "@/components/CustomTable.vue";
+import CustomDialog from "@/components/CustomDialog.vue";
 
 export default {
-  components: { HeaderBar, VersionFooter, CustomButton, CustomTable },
+  components: { HeaderBar, VersionFooter, CustomButton, CustomTable, CustomDialog },
   data() {
     return {
       objectList: [],
@@ -468,10 +471,52 @@ export default {
   border-radius: 4px;
 }
 
+.edit-form {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding: 0 4px;
+}
+
+.form-section + .form-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eef3fd;
+}
+
+.section-heading {
+  margin-bottom: 16px;
+  color: #3d4566;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+
+.edit-form ::v-deep .el-form-item {
+  margin-bottom: 16px;
+}
+
+.edit-form ::v-deep .el-form-item__label {
+  padding: 0 0 6px;
+  line-height: 20px;
+  color: #3d4566;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+}
+
 .form-tip {
-  margin-left: 10px;
-  color: #909399;
+  display: block;
+  margin-top: 4px;
+  color: #818cae;
   font-size: 12px;
+  line-height: 18px;
 }
 
 .danger-text {

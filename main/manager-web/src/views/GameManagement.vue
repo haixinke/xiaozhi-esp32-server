@@ -61,13 +61,19 @@
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog
+    <CustomDialog
       :title="editForm.id ? '编辑游戏' : '新增游戏'"
       :visible.sync="dialogVisible"
-      width="620px"
-      :close-on-click-modal="false"
+      width="680px"
+      :destroy-on-close="false"
+      :confirm-loading="saving"
+      confirm-text="保存"
+      @confirm="handleSave"
     >
-      <el-form label-position="left" label-width="140px" class="edit-form">
+      <el-form label-position="top" class="edit-form">
+        <div class="form-section">
+          <div class="section-heading">基本信息</div>
+          <div class="form-grid">
         <el-form-item label="游戏类型" required>
           <el-select v-model="editForm.gameType" placeholder="请选择游戏类型" class="form-control">
             <el-option v-for="item in gameTypeOptions" :key="item.key" :label="item.name" :value="item.key" />
@@ -79,6 +85,11 @@
             <el-checkbox label="ACTIVITY">活动</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="section-heading">游戏规则</div>
+          <div class="form-grid">
         <el-form-item label="赚取星星数">
           <el-input-number v-model="editForm.earnStars" :min="0" class="form-control" controls-position="right" />
         </el-form-item>
@@ -89,6 +100,10 @@
           <el-input-number v-model="editForm.dailyLimit" :min="0" class="form-control" controls-position="right" />
           <span class="form-tip">0 表示不限次数</span>
         </el-form-item>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="section-heading">展示信息</div>
         <el-form-item label="游戏图标">
           <el-upload
             class="icon-uploader"
@@ -99,7 +114,7 @@
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
           >
             <img v-if="editForm.icon" :src="editForm.icon" class="preview-icon" alt="" />
-            <el-button v-else size="small" type="primary">上传图标</el-button>
+            <CustomButton v-else size="small">上传图标</CustomButton>
           </el-upload>
         </el-form-item>
         <el-form-item label="游戏说明">
@@ -113,12 +128,9 @@
             class="form-control"
           />
         </el-form-item>
+        </div>
       </el-form>
-      <span slot="footer">
-        <el-button size="small" @click="dialogVisible = false">取消</el-button>
-        <el-button size="small" type="primary" :loading="saving" @click="handleSave">保存</el-button>
-      </span>
-    </el-dialog>
+    </CustomDialog>
     <el-footer><VersionFooter/></el-footer>
   </div>
 </template>
@@ -129,9 +141,10 @@ import HeaderBar from "@/components/HeaderBar.vue";
 import VersionFooter from "@/components/VersionFooter.vue";
 import CustomButton from "@/components/CustomButton.vue";
 import CustomTable from "@/components/CustomTable.vue";
+import CustomDialog from "@/components/CustomDialog.vue";
 
 export default {
-  components: { HeaderBar, VersionFooter, CustomButton, CustomTable },
+  components: { HeaderBar, VersionFooter, CustomButton, CustomTable, CustomDialog },
   data() {
     return {
       gameList: [],
@@ -469,42 +482,49 @@ export default {
   object-fit: contain;
 }
 
-.full-width {
-  width: 100%;
-}
-
 .edit-form {
-  padding: 0 10px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding: 0 4px;
 }
 
-/* 标题列定宽、靠左，控件列从同一左边线开始（flex 替代 Element float，避免个别行错位） */
+.form-section + .form-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eef3fd;
+}
+
+.section-heading {
+  margin-bottom: 16px;
+  color: #3d4566;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+
 .edit-form ::v-deep .el-form-item {
-  display: flex;
-  align-items: flex-start;
+  margin-bottom: 16px;
 }
 
 .edit-form ::v-deep .el-form-item__label {
-  flex: 0 0 140px;
-  width: 140px !important;
-  text-align: left;
-  float: none;
-  padding-right: 12px;
+  padding: 0 0 6px;
+  line-height: 20px;
+  color: #3d4566;
+  font-weight: 500;
 }
 
 .edit-form ::v-deep .el-form-item__content {
-  flex: 1;
-  margin-left: 0 !important;
   line-height: 40px;
 }
 
-/* 输入控件统一宽度 */
-.form-control {
-  width: 320px;
-}
-
-/* controls-position="right" 时按钮在输入框内，宽度设在内层 el-input 上才能整体对齐 */
+.form-control,
 .edit-form ::v-deep .el-input-number {
-  width: 320px;
+  width: 100%;
 }
 
 .edit-form ::v-deep .el-input-number .el-input__inner {
@@ -512,14 +532,17 @@ export default {
 }
 
 .form-tip {
-  margin-left: 10px;
-  color: #909399;
+  display: block;
+  color: #818cae;
   font-size: 12px;
+  line-height: 18px;
+  margin-top: 4px;
 }
 
 .icon-uploader {
   min-height: 40px;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 </style>

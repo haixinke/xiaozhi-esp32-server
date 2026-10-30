@@ -7,12 +7,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
-import xiaozhi.modules.game.dao.GameDao;
 import xiaozhi.modules.game.entity.GameEntity;
 import xiaozhi.modules.game.service.GameStarRewardService;
 import xiaozhi.modules.game.vo.GameStarRewardResult;
 import xiaozhi.modules.star.enums.DailyRewardSourceType;
-import xiaozhi.modules.star.service.impl.StarDailyRewardServiceImpl;
+import xiaozhi.modules.star.service.StarDailyRewardService;
 import xiaozhi.modules.star.vo.DailyRewardResult;
 
 /**
@@ -30,8 +29,8 @@ import xiaozhi.modules.star.vo.DailyRewardResult;
 @RequiredArgsConstructor
 public class GameStarRewardServiceImpl implements GameStarRewardService {
 
-    private final GameDao gameDao;
-    private final StarDailyRewardServiceImpl starDailyRewardService;
+    private final StarDailyRewardService starDailyRewardService;
+    private final GameSettlementValidator gameSettlementValidator;
 
     @Override
     public GameStarRewardResult claimGameReward(Long userId, String gameType) {
@@ -60,29 +59,19 @@ public class GameStarRewardServiceImpl implements GameStarRewardService {
     }
 
     /**
-     * 锁内结算决策：按当前配置决定发奖金额或跳过。
+     * 结算决策（在每日奖励能力的账户行锁之前执行）：按当前配置决定发奖金额或跳过。
+     * 并发正确性不依赖本决策在锁内——锁内会复查当天奖励记录，
+     * (user_id, source_type, source_key, reward_date) 唯一约束兜底并发撞键。
      * 免费双零与消费型游戏返回 skip（无星星变动、不占资格）；
      * 游戏不存在、停用、奖扣冲突配置抛业务异常，整天不发生任何星星写入。
      */
-    private StarDailyRewardServiceImpl.ClaimDecision decideAward(String gameType) {
-        GameEntity game = gameDao.selectByGameType(gameType);
-        if (game == null) {
-            throw new RenException(ErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() == null || game.getStatus() != 1) {
-            throw new RenException(ErrorCode.GAME_DISABLED);
-        }
-        int earn = game.getEarnStars() == null ? 0 : game.getEarnStars();
-        int consume = game.getConsumeStars() == null ? 0 : game.getConsumeStars();
-        // 存量冲突配置（奖扣同时为正）防御性拒绝：不静默采用奖励金额。
-        // 保存期互斥校验由游戏管理侧负责，这里兜底历史脏数据
-        if (earn > 0 && consume > 0) {
-            throw new RenException(ErrorCode.GAME_STAR_CONFIG_CONFLICT);
-        }
+    private StarDailyRewardService.ClaimDecision decideAward(String gameType) {
+        GameEntity game = gameSettlementValidator.requireSettleableGame(gameType);
+        int earn = gameSettlementValidator.earnStars(game);
         // 免费双零或消费型游戏调用奖励入口：跳过，不建账户、不写奖励记录与流水、不占资格
         if (earn == 0) {
-            return StarDailyRewardServiceImpl.ClaimDecision.skip();
+            return StarDailyRewardService.ClaimDecision.skip();
         }
-        return StarDailyRewardServiceImpl.ClaimDecision.award(earn);
+        return StarDailyRewardService.ClaimDecision.award(earn);
     }
 }

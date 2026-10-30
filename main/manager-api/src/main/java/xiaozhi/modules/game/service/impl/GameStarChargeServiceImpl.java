@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
-import xiaozhi.modules.game.dao.GameDao;
 import xiaozhi.modules.game.entity.GameEntity;
 import xiaozhi.modules.game.service.GameStarChargeService;
 import xiaozhi.modules.game.vo.GameStarChargeResult;
@@ -48,9 +47,9 @@ import xiaozhi.modules.star.enums.StarConsumeBizType;
 @RequiredArgsConstructor
 public class GameStarChargeServiceImpl implements GameStarChargeService {
 
-    private final GameDao gameDao;
     private final StarAccountDao starAccountDao;
     private final StarTransactionDao starTransactionDao;
+    private final GameSettlementValidator gameSettlementValidator;
 
     /** 自引用代理，保证 doCharge 的 REQUIRES_NEW 事务经代理生效 */
     private final org.springframework.context.ApplicationContext applicationContext;
@@ -82,21 +81,9 @@ public class GameStarChargeServiceImpl implements GameStarChargeService {
             return GameStarChargeResult.alreadyCharged(-existing.getAmount(), existing.getId());
         }
 
-        // 以下为新扣费路径：游戏必须存在且启用
-        GameEntity game = gameDao.selectByGameType(gameType);
-        if (game == null) {
-            throw new RenException(ErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() == null || game.getStatus() != 1) {
-            throw new RenException(ErrorCode.GAME_DISABLED);
-        }
-        int earn = game.getEarnStars() == null ? 0 : game.getEarnStars();
-        int consume = game.getConsumeStars() == null ? 0 : game.getConsumeStars();
-        // 存量冲突配置（奖扣同时为正）防御性拒绝：不静默采用消费金额。
-        // 保存期互斥校验由游戏管理侧负责，这里兜底历史脏数据
-        if (earn > 0 && consume > 0) {
-            throw new RenException(ErrorCode.GAME_STAR_CONFIG_CONFLICT);
-        }
+        // 以下为新扣费路径：游戏必须存在、启用且奖扣配置不冲突
+        GameEntity game = gameSettlementValidator.requireSettleableGame(gameType);
+        int consume = gameSettlementValidator.consumeStars(game);
         // 免费双零或奖励型游戏调用扣费入口：直接跳过，不建账户、不写流水
         if (consume == 0) {
             return GameStarChargeResult.noCharge();

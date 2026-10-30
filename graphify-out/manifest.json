@@ -3075,8 +3075,8 @@
     "semantic_hash": "2f593a2563dc25cde134d224f3f885a6"
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/ErrorCode.java": {
-    "mtime": 1793366349.9892836,
-    "ast_hash": "66f3d29b5ba66a4e17104586ce642940",
+    "mtime": 1793367696.255637,
+    "ast_hash": "49748756d3e307e70806cd9e670e04bd",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/RenException.java": {
@@ -8665,8 +8665,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/star/enums/StarConsumeBizType.java": {
-    "mtime": 1793366350.0795221,
-    "ast_hash": "c22b4358970fda3f594778399dabf0ca",
+    "mtime": 1793367696.2650168,
+    "ast_hash": "b2598b361944ed0c817b0dc682804315",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/star/enums/StarEarnBizType.java": {
@@ -8710,8 +8710,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/dao/GameDao.java": {
-    "mtime": 1793366350.0131927,
-    "ast_hash": "fe6155fec47f54f24550dea3a7329eef",
+    "mtime": 1793367696.2578042,
+    "ast_hash": "09a3ed5e51e94b5e1c9f70264d796b7f",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/dto/GameDTO.java": {
@@ -8735,8 +8735,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/service/impl/GameServiceImpl.java": {
-    "mtime": 1793366350.0136015,
-    "ast_hash": "b4153ab97d65c06b750540465c1f9a45",
+    "mtime": 1793367696.2609794,
+    "ast_hash": "89adb15f9659bd11cc82f6e4cffd9eda",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/vo/GameVO.java": {
@@ -8745,8 +8745,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/game/GameServiceTest.java": {
-    "mtime": 1793366350.1187503,
-    "ast_hash": "12defe16f11e586186e305fc44a8563e",
+    "mtime": 1793367696.2692728,
+    "ast_hash": "d0f12f89ecaea5952a2b53ea52ee0796",
     "semantic_hash": ""
   },
   "main/manager-web/scripts/check-vue-template.js": {
@@ -9125,8 +9125,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/common/support/MessageSourceCacheResetExtension.java": {
-    "mtime": 1793367374.7572045,
-    "ast_hash": "aa748833745039d70a2658bc34daf074",
+    "mtime": 1793367719.740333,
+    "ast_hash": "cb302f102483f8a831692581a39b59e7",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/dailynote/controller/DailyNoteController.java": {
@@ -9282,6 +9282,26 @@
   "main/manager-api/src/test/java/xiaozhi/modules/dailynote/DailyNoteOpenedServiceTest.java": {
     "mtime": 1793366350.116655,
     "ast_hash": "a27572342cb6ea925e91fc7d3c4c69a6",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/game/service/GameStarChargeService.java": {
+    "mtime": 1793367696.2588766,
+    "ast_hash": "4c2198ba2e7a1785162fb0d5d53d398c",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/game/service/impl/GameStarChargeServiceImpl.java": {
+    "mtime": 1793367696.2620158,
+    "ast_hash": "014faf5776fbaebd80ffc90f308230d3",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/game/vo/GameStarChargeResult.java": {
+    "mtime": 1793367696.2629764,
+    "ast_hash": "89fd6e65851334b38e57fef295e5b60c",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/game/GameStarChargeServiceTest.java": {
+    "mtime": 1793367696.2703652,
+    "ast_hash": "8a675f5f5d08beb3be06add37a3187e7",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/star/dao/StarDailyRewardDao.java": {

@@ -317,6 +317,11 @@ public interface ErrorCode {
     int GAME_DAILY_LIMIT_NEGATIVE = 10356; // 每日次数上限不能为负数
     int GAME_TYPE_ALREADY_EXISTS = 10357; // 该游戏类型已存在，不允许重复创建
 
+    // 游戏星星结算相关错误码（10368 起，避开 10358-10367 给其他游戏结算票使用，避免并行开发冲突）
+    int GAME_CHARGE_SESSION_REQUIRED = 10368; // 缺少局次业务单号(playSessionId)
+    int GAME_DISABLED = 10369; // 游戏已停用
+    int GAME_STAR_CONFIG_CONFLICT = 10375; // 游戏奖励与消费配置冲突，需修正后才能结算
+
     // 小物件管理相关错误码（10360 起独立连续区间，接在游戏管理 1035x 之后）
     int SMALL_OBJECT_NOT_FOUND = 10360; // 物件不存在
     int SMALL_OBJECT_TYPE_NOT_EXIST = 10361; // 物件类型不存在

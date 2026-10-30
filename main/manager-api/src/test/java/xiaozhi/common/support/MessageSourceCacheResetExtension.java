@@ -39,10 +39,15 @@ public class MessageSourceCacheResetExtension implements AfterAllCallback {
             SpringContextUtils.applicationContext = realApplicationContext;
         }
 
-        // 下游缓存置 null：MessageUtils 懒初始化，下次调用时按当时（已恢复的）上下文重新解析
-        Field field = MessageUtils.class.getDeclaredField("messageSource");
-        field.setAccessible(true);
-        field.set(null, null);
+        // MessageUtils 已不缓存 messageSource（每次 getBean 重新解析），
+        // 老版本字节码才带该静态字段；存在则置 null，不存在直接跳过
+        try {
+            Field field = MessageUtils.class.getDeclaredField("messageSource");
+            field.setAccessible(true);
+            field.set(null, null);
+        } catch (NoSuchFieldException e) {
+            // 无缓存字段，无需清理
+        }
     }
 
     /** 真实 Spring 上下文（非 null 且非 Mockito mock） */

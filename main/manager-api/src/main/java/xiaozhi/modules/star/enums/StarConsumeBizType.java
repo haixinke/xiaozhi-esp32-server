@@ -9,7 +9,9 @@ public enum StarConsumeBizType {
     /** 兑换 */
     EXCHANGE("exchange"),
     /** 抽奖 */
-    LOTTERY("lottery");
+    LOTTERY("lottery"),
+    /** 游戏按局扣费 */
+    GAME_PLAY("game_play");
 
     private final String code;
 

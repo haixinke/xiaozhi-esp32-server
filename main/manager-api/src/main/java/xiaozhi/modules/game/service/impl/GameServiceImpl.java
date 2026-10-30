@@ -30,7 +30,7 @@ import xiaozhi.modules.sys.vo.SysDictDataItem;
 /**
  * 游戏配置 Service 实现。
  * 校验规则：game_type 必须在 GAME_TYPE 字典中存在、entrances 非空且全在枚举内、
- * earn_stars/consume_stars/daily_limit 非负。
+ * earn_stars/consume_stars/daily_limit 非负，且 earn_stars 与 consume_stars 互斥（不得同时大于零）。
  */
 @Service
 @AllArgsConstructor
@@ -163,6 +163,14 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
         }
         if (dto.getDailyLimit() != null && dto.getDailyLimit() < 0) {
             throw new RenException(ErrorCode.GAME_DAILY_LIMIT_NEGATIVE);
+        }
+
+        // 校验奖励与消费互斥：同一游戏只能赚星或扣星，两者同时为正说明配置语义矛盾；
+        // 双零为合法免费游戏。null 视为 0（与 @NotNull 缺省值兼容），负数已被上方规则拦截
+        int earn = dto.getEarnStars() == null ? 0 : dto.getEarnStars();
+        int consume = dto.getConsumeStars() == null ? 0 : dto.getConsumeStars();
+        if (earn > 0 && consume > 0) {
+            throw new RenException(ErrorCode.GAME_EARN_CONSUME_CONFLICT);
         }
     }
 }

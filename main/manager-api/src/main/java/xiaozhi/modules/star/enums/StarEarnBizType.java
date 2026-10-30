@@ -15,7 +15,11 @@ public enum StarEarnBizType {
     /** 活动奖励 */
     ACTIVITY("activity"),
     /** 后台补发(运营人工) */
-    ADMIN_GRANT("admin_grant");
+    ADMIN_GRANT("admin_grant"),
+    /** 小纸条每日奖励(每日奖励记录ID作refId，与签到等旧业务单号不碰撞) */
+    DAILY_NOTE("daily_note"),
+    /** 游戏每日奖励(每日奖励记录ID作refId，与小纸条来源互不碰撞) */
+    GAME_REWARD("game_reward");
 
     private final String code;
 

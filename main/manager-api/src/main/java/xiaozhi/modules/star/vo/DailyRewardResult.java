@@ -12,8 +12,11 @@ import lombok.Data;
 @Data
 public class DailyRewardResult {
 
-    /** 本次是否新入账（false = 当天已领取，命中既有奖励记录） */
+    /** 本次是否新入账（false = 当天已领取命中既有记录，或本次被决策跳过） */
     private boolean awarded;
+
+    /** 本次是否被锁内决策跳过（如免费/消费型游戏）：无记录、无流水、不占资格 */
+    private boolean skipped;
 
     /** 本次结算归属的奖励数量；已结算时返回首次结算的数量快照 */
     private long amount;
@@ -41,6 +44,16 @@ public class DailyRewardResult {
             LocalDate rewardDate) {
         DailyRewardResult result = awarded(amount, transactionId, rewardId, rewardDate);
         result.setAwarded(false);
+        return result;
+    }
+
+    /** 跳过结果：无金额、无流水、无奖励记录，调用方映射为“无需星星变动” */
+    public static DailyRewardResult skipped(LocalDate rewardDate) {
+        DailyRewardResult result = new DailyRewardResult();
+        result.setAwarded(false);
+        result.setSkipped(true);
+        result.setAmount(0);
+        result.setRewardDate(rewardDate);
         return result;
     }
 }

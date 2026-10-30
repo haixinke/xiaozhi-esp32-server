@@ -53,6 +53,8 @@ class StarDailyRewardServiceTest {
     @Autowired
     private StarDailyRewardDao starDailyRewardDao;
     @Autowired
+    private StarDailyRewardServiceImpl starDailyRewardServiceImpl;
+    @Autowired
     private StarTransactionDao starTransactionDao;
     @Autowired
     private StarAccountDao starAccountDao;
@@ -166,29 +168,37 @@ class StarDailyRewardServiceTest {
     }
 
     @Test
-    @DisplayName("昨天非本来源奖励不参与连续：其他来源昨天的奖励不影响小纸条从 11 起")
+    @DisplayName("昨天非本来源奖励不参与连续：游戏来源昨天的奖励不影响小纸条从 11 起")
     void otherSource_doesNotCountTowardStreak() {
         atShanghaiNoon("2160-04-01");
-        DailyRewardResult game = starDailyRewardService.claimDailyReward(USER_A, "GAME", "draw_together");
-        assertThat(game.getAmount()).isEqualTo(11);
+        DailyRewardResult game = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "draw_together",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(5));
+        assertThat(game.getAmount()).isEqualTo(5);
 
         atShanghaiNoon("2160-04-02");
-        // 小纸条来源昨天没有成功奖励，应从 11 起；游戏来源连续 +1
+        // 小纸条来源昨天没有成功奖励，应从 11 起；游戏来源固定金额不随天数变
         DailyRewardResult note = starDailyRewardService.claimDailyReward(USER_A, "DAILY_NOTE", "DAILY_NOTE");
         assertThat(note.getAmount()).isEqualTo(11);
-        DailyRewardResult gameDay2 = starDailyRewardService.claimDailyReward(USER_A, "GAME", "draw_together");
-        assertThat(gameDay2.getAmount()).isEqualTo(12);
+        DailyRewardResult gameDay2 = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "draw_together",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(5));
+        assertThat(gameDay2.getAmount()).isEqualTo(5);
 
         // 两来源各一条奖励记录，互不占资格
         assertThat(rewardsOf(USER_A)).hasSize(3);
     }
 
     @Test
-    @DisplayName("不同 source_key 各自独立计算每日资格与连续")
+    @DisplayName("不同 source_key 各自独立计算每日资格")
     void distinctSourceKeys_independent() {
         atShanghaiNoon("2160-05-01");
-        DailyRewardResult g1 = starDailyRewardService.claimDailyReward(USER_A, "GAME", "draw_together");
-        DailyRewardResult g2 = starDailyRewardService.claimDailyReward(USER_A, "GAME", "listen_to_you");
+        DailyRewardResult g1 = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "draw_together",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(5));
+        DailyRewardResult g2 = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "listen_to_you",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(8));
         assertThat(g1.isAwarded()).isTrue();
         assertThat(g2.isAwarded()).isTrue();
         assertThat(rewardsOf(USER_A)).hasSize(2);
@@ -350,6 +360,107 @@ class StarDailyRewardServiceTest {
     void sourceKey_tooLong_rejected() {
         String tooLong = "k".repeat(65);
         assertThatThrownBy(() -> starDailyRewardService.claimDailyReward(USER_A, "GAME", tooLong))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(rewardsOf(USER_A)).isEmpty();
+    }
+
+    // ---- 锁内决策重载（游戏奖励金额策略，ticket 03） ----
+
+    @Test
+    @DisplayName("固定金额决策：按回调金额入账，不套用连续规则，隔日仍发同一固定金额")
+    void decision_claimsExactly_noStreak() {
+        atShanghaiNoon("2161-01-10");
+        DailyRewardResult day1 = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "fixed_game",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(7));
+        assertThat(day1.isAwarded()).isTrue();
+        assertThat(day1.getAmount()).isEqualTo(7);
+
+        // 隔日再领：固定金额不随连续天数 +1
+        atShanghaiNoon("2161-01-11");
+        DailyRewardResult day2 = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "fixed_game",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(7));
+        assertThat(day2.isAwarded()).isTrue();
+        assertThat(day2.getAmount()).isEqualTo(7);
+
+        StarAccountEntity account = starAccountDao.selectOne(
+                new QueryWrapper<StarAccountEntity>().eq("user_id", USER_A));
+        assertThat(account.getBalance()).isEqualTo(14);
+        assertThat(rewardsOf(USER_A)).hasSize(2);
+
+        // 钱包流水业务类型为 game_reward，区别于小纸条
+        StarTransactionEntity txn = starTransactionDao.selectById(day1.getTransactionId());
+        assertThat(txn.getBizType()).isEqualTo("game_reward");
+        assertThat(txn.getAmount()).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("固定金额当日重领：返回原金额快照，决策回调不再执行")
+    void decision_sameDay_returnsOriginalSnapshot() {
+        atShanghaiNoon("2161-02-10");
+        DailyRewardResult first = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "fixed_game",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(7));
+
+        // 模拟配置上调后重试：回调若执行会抛错，验证已领取分支不触发决策
+        DailyRewardResult retry = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "fixed_game",
+                (uid, type, key, date) -> {
+                    throw new IllegalStateException("已领取后不应再决策");
+                });
+        assertThat(retry.isAwarded()).isFalse();
+        assertThat(retry.getAmount()).isEqualTo(7);
+        assertThat(retry.getTransactionId()).isEqualTo(first.getTransactionId());
+
+        assertThat(rewardsOf(USER_A)).hasSize(1);
+        StarAccountEntity account = starAccountDao.selectOne(
+                new QueryWrapper<StarAccountEntity>().eq("user_id", USER_A));
+        assertThat(account.getBalance()).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("决策金额非法：零或负数拒绝（零金额应使用 skip 决策表达）")
+    void decision_nonPositiveAmount_rejected() {
+        assertThatThrownBy(() -> starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "fixed_game",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(0)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "fixed_game",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(-3)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(rewardsOf(USER_A)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("跳过决策：无奖励记录、无流水、不建账户，当日后续发奖决策仍可领取")
+    void decision_skip_writesNothing_keepsEligibility() {
+        atShanghaiNoon("2161-03-10");
+        DailyRewardResult skipped = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "fixed_game",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.skip());
+        assertThat(skipped.isSkipped()).isTrue();
+        assertThat(skipped.isAwarded()).isFalse();
+
+        assertThat(rewardsOf(USER_A)).isEmpty();
+        assertThat(starTransactionDao.selectCount(new QueryWrapper<StarTransactionEntity>()
+                .eq("user_id", USER_A))).isZero();
+        assertThat(starAccountDao.selectCount(new QueryWrapper<StarAccountEntity>()
+                .eq("user_id", USER_A))).isZero();
+
+        // 跳过不占资格：同一来源当日后续决策为发奖时正常入账
+        DailyRewardResult awarded = starDailyRewardServiceImpl.claimWithDecision(USER_A,
+                xiaozhi.modules.star.enums.DailyRewardSourceType.GAME, "fixed_game",
+                (uid, type, key, date) -> StarDailyRewardServiceImpl.ClaimDecision.award(5));
+        assertThat(awarded.isAwarded()).isTrue();
+        assertThat(awarded.getAmount()).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("连续入口拒绝游戏来源：GAME 必须走锁内决策，防止金额随天数漂移")
+    void streakEntry_rejectsGameSource() {
+        assertThatThrownBy(() -> starDailyRewardService.claimDailyReward(USER_A, "GAME", "draw_together"))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(rewardsOf(USER_A)).isEmpty();
     }

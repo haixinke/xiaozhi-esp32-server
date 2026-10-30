@@ -37,8 +37,10 @@ import xiaozhi.modules.star.vo.DailyRewardResult;
  *    保证奖励记录与流水严格一对一；两者同事务提交，任一步失败整体回滚，重试可重新领取。
  * 4) 每日联合唯一约束为兜底：并发下撞键即另一事务已结算，重查返回原结果。
  *
- * 小纸条连续金额规则：昨天有成功奖励则 min(昨天数量+1, 17)，否则 11；
- * 不需要回溯完整历史，也不存连续天数。
+ * 金额策略按来源区分（spec 标准内部接口职责）：
+ * 小纸条（DAILY_NOTE）按连续规则计算：昨天有成功奖励则 min(昨天数量+1, 17)，否则 11；
+ * 游戏（GAME）奖励金额由游戏奖励入口按当前有效配置在账户行锁内算出，
+ * 本能力不参与游戏金额推导，连续规则不适用于游戏。
  */
 @Slf4j
 @Service
@@ -77,39 +79,93 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
     }
 
     /**
-     * REQUIRED 传播：可被小纸条打开事务等外层事务编排（打开记录+奖励+流水原子提交），
-     * 也可独立成事务供其他游戏直接调用。
+     * REQUIRED 传播：可被小纸条打开事务等外层事务编排（打开记录+奖励+流水原子提交）。
+     *
+     * 本入口仅承载连续金额策略（小纸条）：游戏奖励的固定金额在账户行锁内由配置决定，
+     * 游戏业务请走 GameStarRewardService，不得走本入口套用连续规则。
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
     public DailyRewardResult claimDailyReward(Long userId, String sourceType, String sourceKey) {
         DailyRewardSourceType type = DailyRewardSourceType.parse(sourceType);
+        String normalizedKey = normalizeSourceKey(sourceKey);
+        if (type != DailyRewardSourceType.DAILY_NOTE) {
+            // 连续规则只属于小纸条；游戏来源的金额在锁内由配置决定，防止误用导致金额随天数漂移
+            throw new IllegalArgumentException("游戏奖励请通过 GameStarRewardService 领取");
+        }
+        return claimWithDecision(userId, type, normalizedKey,
+                (uid, normalizedType, key, today) -> ClaimDecision.award(
+                        streakAmount(uid, normalizedType, key, today)));
+    }
+
+    /**
+     * 结算决策：在确认当天未领取后被调用一次。award(amount) 按金额入账；
+     * skip() 表示本次无需星星变动（如免费/消费型游戏），
+     * 不写奖励记录、不调钱包，也不占当天奖励资格。
+     * 决策结果不持久化：跳过后当日后续请求仍会重新决策，保证免费游戏改奖励型后可领。
+     */
+    public record ClaimDecision(boolean award, long amount) {
+        public static ClaimDecision award(long amount) {
+            return new ClaimDecision(true, amount);
+        }
+
+        public static ClaimDecision skip() {
+            return new ClaimDecision(false, 0);
+        }
+    }
+
+    /**
+     * 结算决策回调：在游戏奖励等按配置定额的入口中读取当前配置并做防御性校验；
+     * 已领取分支永远不触发配置读取，保证重试返回原结果。
+     */
+    @FunctionalInterface
+    public interface ClaimDecider {
+        ClaimDecision decide(Long userId, String sourceType, String sourceKey, LocalDate rewardDate);
+    }
+
+    /**
+     * 领取核心：先查当天记录（已领取直接返回原快照，不调用决策），
+     * 未领取才决策；award 时建户加锁、复查后入账并落奖励记录，skip 直接返回不发生任何写入。
+     * 供游戏奖励等按配置定额的入口复用资格与入账机制。
+     */
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+    public DailyRewardResult claimWithDecision(Long userId, DailyRewardSourceType type, String sourceKey,
+            ClaimDecider decider) {
         if (userId == null) {
             throw new IllegalArgumentException("userId 不能为空");
         }
-        if (sourceKey == null || sourceKey.isBlank() || sourceKey.length() > SOURCE_KEY_MAX_LENGTH) {
-            throw new IllegalArgumentException("sourceKey 不能为空且长度不能超过 " + SOURCE_KEY_MAX_LENGTH);
-        }
         // 落库使用规范值：来源类型统一大写枚举名，避免大小写差异形成两份每日资格
         String normalizedType = type.name();
-        String normalizedKey = sourceKey.trim();
 
-        // 先确保账户存在（并发建户冲突忽略），再锁账户行串行化本用户的奖励结算
-        ensureAccount(userId);
-        starAccountDao.selectByUserIdForUpdate(userId);
-
-        // 锁内用当前读：当天已领取则返回原结果，不重新计算金额
+        // 锁内用当前读：当天已领取则返回原结果，不重新决策
         LocalDate today = LocalDate.now(clock);
-        StarDailyRewardEntity existing = selectReward(userId, normalizedType, normalizedKey, today);
+        StarDailyRewardEntity existing = selectReward(userId, normalizedType, sourceKey, today);
         if (existing != null) {
             return DailyRewardResult.alreadyClaimed(existing.getAmount(), existing.getStarTransactionId(),
                     existing.getId(), today);
         }
 
-        // 连续金额只看昨天同一来源的成功奖励：有则 +1 封顶，无（含中断）回 11
-        StarDailyRewardEntity yesterday = selectReward(userId, normalizedType, normalizedKey, today.minusDays(1));
-        long amount = yesterday == null ? BASE_AMOUNT
-                : Math.min(yesterday.getAmount() + DAILY_INCREMENT, MAX_AMOUNT);
+        // 当天未领取：结算决策（游戏奖励在此读配置并校验）
+        ClaimDecision decision = decider.decide(userId, normalizedType, sourceKey, today);
+        if (!decision.award()) {
+            // 跳过场景：不写奖励记录、不调钱包、不占资格，账户也不必创建
+            return DailyRewardResult.skipped(today);
+        }
+        long amount = decision.amount();
+        if (amount <= 0) {
+            // 每日奖励表 amount 必须大于 0；零金额应使用 skip 决策表达
+            throw new IllegalArgumentException("奖励金额必须大于 0");
+        }
+
+        // 确认发奖后才建户并加锁：免费/消费型游戏不产生任何星星业务数据
+        ensureAccount(userId);
+        starAccountDao.selectByUserIdForUpdate(userId);
+        // 拿锁后复查：等待锁期间另一事务可能已完成当天发奖，按已领取返回原结果
+        existing = selectReward(userId, normalizedType, sourceKey, today);
+        if (existing != null) {
+            return DailyRewardResult.alreadyClaimed(existing.getAmount(), existing.getStarTransactionId(),
+                    existing.getId(), today);
+        }
 
         // 先分配奖励记录 ID 作钱包业务单号；钱包入账成功后再写奖励记录，一对一关联
         long rewardId = snowflake.nextId();
@@ -120,7 +176,7 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
         reward.setId(rewardId);
         reward.setUserId(userId);
         reward.setSourceType(normalizedType);
-        reward.setSourceKey(normalizedKey);
+        reward.setSourceKey(sourceKey);
         reward.setRewardDate(java.sql.Date.valueOf(today));
         reward.setAmount(amount);
         reward.setStarTransactionId(txn.getId());
@@ -129,20 +185,34 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
         } catch (DuplicateKeyException e) {
             // 兜底分支：账户行锁已串行化同用户结算，正常不会撞键；
             // 万一撞键说明另一事务已提交当天奖励，重查返回原结果，不重复发奖
-            StarDailyRewardEntity committed = selectReward(userId, normalizedType, normalizedKey, today);
+            StarDailyRewardEntity committed = selectReward(userId, normalizedType, sourceKey, today);
             if (committed == null) {
                 throw new IllegalStateException("每日奖励唯一键冲突但记录不存在: userId=" + userId);
             }
-            log.info("每日奖励并发撞键，返回已结算结果: userId={}, source={}/{}", userId, normalizedType, normalizedKey);
+            log.info("每日奖励并发撞键，返回已结算结果: userId={}, source={}/{}", userId, normalizedType, sourceKey);
             return DailyRewardResult.alreadyClaimed(committed.getAmount(), committed.getStarTransactionId(),
                     committed.getId(), today);
         }
         return DailyRewardResult.awarded(amount, txn.getId(), rewardId, today);
     }
 
+    /** 参数规范化：来源 key 去空白并校验长度上限 */
+    private String normalizeSourceKey(String sourceKey) {
+        if (sourceKey == null || sourceKey.isBlank() || sourceKey.length() > SOURCE_KEY_MAX_LENGTH) {
+            throw new IllegalArgumentException("sourceKey 不能为空且长度不能超过 " + SOURCE_KEY_MAX_LENGTH);
+        }
+        return sourceKey.trim();
+    }
+
+    /** 小纸条连续金额：只看昨天同一来源的成功奖励，有则 +1 封顶，无（含中断）回 11 */
+    private long streakAmount(Long userId, String sourceType, String sourceKey, LocalDate today) {
+        StarDailyRewardEntity yesterday = selectReward(userId, sourceType, sourceKey, today.minusDays(1));
+        return yesterday == null ? BASE_AMOUNT
+                : Math.min(yesterday.getAmount() + DAILY_INCREMENT, MAX_AMOUNT);
+    }
+
     /**
-     * 各来源使用独立钱包业务类型，refId 为每日奖励记录雪花 ID，天然不与签到等旧业务单号碰撞；
-     * 游戏奖励的固定金额由游戏业务按配置算出后传入（票据03），本能力只负责资格与入账。
+     * 各来源使用独立钱包业务类型，refId 为每日奖励记录雪花 ID，天然不与签到等旧业务单号碰撞。
      */
     private StarEarnBizType walletBizType(DailyRewardSourceType type) {
         return type == DailyRewardSourceType.DAILY_NOTE ? StarEarnBizType.DAILY_NOTE

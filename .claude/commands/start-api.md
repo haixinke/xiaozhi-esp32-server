@@ -7,8 +7,9 @@
 2. 如果有正在运行的进程，先杀掉该进程（使用 `kill` 或 `pkill`）。如果端口 8002 被占用，也杀掉占用该端口的进程。
 3. 进入 `main/manager-api/` 目录，执行编译打包：
    ```bash
-   cd /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api && mvn clean package -DskipTests
+   cd /Users/minwang/codes/github/xiaozhi-esp32-server/main/manager-api && mvn clean package -Dmaven.test.skip=true
    ```
+   注意：必须用 `-Dmaven.test.skip=true`，不能用 `-DskipTests`。后者只跳过测试执行但仍编译测试代码，`clean` 后测试类引用的主类 `.class` 尚未生成，会报"错误的类文件/找不到符号"（已知竞态）。
 4. 检查编译结果，如果编译失败则停止执行并输出错误信息。如果编译成功，继续下一步。
 5. 确保 `logs/` 目录存在（不存在则创建），然后使用 `nohup` 在后台启动后端服务：
    ```bash

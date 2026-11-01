@@ -268,6 +268,10 @@ const storyApiMock = {
   }
 };
 
+const starApiMock = {
+  getBalance: async () => ({ balance: 0 })
+};
+
 const app = {
   globalData: { authReady: null },
   async ensureLogin() {
@@ -291,6 +295,7 @@ Module._load = function (request, parent, isMain) {
     if (request === '../../utils/environment-state') return environmentStateMock;
     if (request === '../../utils/doodle-api') return doodleApiMock;
     if (request === '../../utils/story-api') return storyApiMock;
+    if (request === '../../utils/star-api') return starApiMock;
     if (request === '../../config/pre-hatch-assets') return preHatchAssetsMock;
   }
   return originalLoad.call(this, request, parent, isMain);

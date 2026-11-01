@@ -19,6 +19,9 @@ public class GameVO implements Serializable {
     @Schema(description = "游戏类型")
     private String gameType;
 
+    @Schema(description = "游戏类型名称(字典 GAME_TYPE 的 dict_label，翻译不到时为原始 code)")
+    private String gameTypeName;
+
     @Schema(description = "赚取星星数")
     private Integer earnStars;
 

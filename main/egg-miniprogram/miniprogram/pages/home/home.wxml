@@ -161,12 +161,8 @@
             <text class="daily-note-letter__title">{{dailyNoteSnapshot.title}}</text>
             <text wx:if="{{dailyNoteSnapshot.solarTerm}}" class="daily-note-letter__solar-term">{{dailyNoteSnapshot.solarTerm}}</text>
             <text class="daily-note-letter__content">{{dailyNoteSnapshot.content}}</text>
-            <view wx:if="{{dailyNoteSnapshot.game}}" class="daily-note-letter__game" aria-role="button" aria-label="游戏邀请：{{dailyNoteSnapshot.game.description || '小游戏'}}" bindtap="onDailyNoteGameTap">
-              <image wx:if="{{dailyNoteSnapshot.game.icon}}" class="daily-note-letter__game-icon" src="{{dailyNoteSnapshot.game.icon}}" mode="aspectFit" />
-              <view class="daily-note-letter__game-info">
-                <text class="daily-note-letter__game-desc">{{dailyNoteSnapshot.game.description || '来一起玩个小游戏吧'}}</text>
-                <text wx:if="{{dailyNoteSnapshot.game.earnStars > 0}}" class="daily-note-letter__game-stars">可得 {{dailyNoteSnapshot.game.earnStars}} 颗星星</text>
-              </view>
+            <view wx:if="{{dailyNoteSnapshot.game}}" class="daily-note-letter__game" aria-role="button" aria-label="游戏邀请：{{dailyNoteSnapshot.game.gameTypeName || '小游戏'}}" bindtap="onDailyNoteGameTap">
+              {{dailyNoteSnapshot.game.gameTypeName || '小游戏'}}
             </view>
           </view>
         </view>

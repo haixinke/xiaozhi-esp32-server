@@ -545,6 +545,13 @@ async function run() {
     'post-hatch home must render the story window hotspot');
   assert.ok(homeTemplate.includes('wx:if="{{storyWindowAvailable}}"'),
     'the story window hotspot must be gated by storyWindowAvailable');
+  // 小纸条游戏邀请：仅游戏类型名的胶囊按钮，不渲染图标与可得星星数
+  assert.ok(homeTemplate.includes('{{dailyNoteSnapshot.game.gameTypeName || \'小游戏\'}}'),
+    'daily-note game button shows only the game type name');
+  assert.ok(!homeTemplate.includes('dailyNoteSnapshot.game.icon'),
+    'daily-note game button must not render the game icon');
+  assert.ok(!homeTemplate.includes('dailyNoteSnapshot.game.earnStars'),
+    'daily-note game button must not render the earnable star count');
   // 指示点可点选（方案D）：去掉 pointer-events: none 后提供 100% 可靠换宠入口
   assert.ok(homeTemplate.includes('bindtap="onPetDotTap"'),
     'pet switch dots must be tappable to switch pets');
@@ -1738,7 +1745,7 @@ async function run() {
     title: '今日小纸条',
     content: '第一行\n第二行',
     solarTerm: '立冬',
-    game: { gameType: 'LISTEN_TO_YOU', icon: 'https://oss.example/icon.png', description: '听你说', earnStars: 5 }
+    game: { gameType: 'LISTEN_TO_YOU', gameTypeName: '听你说', icon: 'https://oss.example/icon.png', description: '听你说', earnStars: 5 }
   };
   const notePage = makePage();
   notePage.setData({ pet: { id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' } });

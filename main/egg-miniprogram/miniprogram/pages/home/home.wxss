@@ -149,9 +149,6 @@
 .daily-note-letter__title { display: block; color: #35483C; font-family: "Kaiti SC", "STKaiti", serif; font-size: 42rpx; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
 .daily-note-letter__solar-term { display: block; margin-top: 8rpx; color: #946E64; font-family: "Kaiti SC", "STKaiti", serif; font-size: 24rpx; line-height: 1.4; }
 .daily-note-letter__content { display: block; margin-top: 18rpx; color: #5A675E; font-family: "Kaiti SC", "STKaiti", serif; font-size: 27rpx; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
-/* 游戏邀请行：图标 + 说明 + 可赚星星数 */
-.daily-note-letter__game { margin-top: 36rpx; display: flex; align-items: center; gap: 20rpx; padding: 20rpx 24rpx; border-radius: 16rpx; background: rgba(53,90,67,.06); }
-.daily-note-letter__game-icon { flex: none; width: 72rpx; height: 72rpx; border-radius: 12rpx; }
-.daily-note-letter__game-info { min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
-.daily-note-letter__game-desc { color: #355A43; font-family: "Kaiti SC", "STKaiti", serif; font-size: 27rpx; line-height: 1.45; overflow-wrap: anywhere; }
-.daily-note-letter__game-stars { color: #946E64; font-size: 24rpx; line-height: 1.4; }
+/* 游戏邀请：仅游戏类型名的胶囊按钮（对齐静态项目 app-button secondary-soft 变体） */
+.daily-note-letter__game { margin-top: 36rpx; max-width: 560rpx; min-height: 72rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 10rpx 40rpx; border: 3rpx solid rgba(0,41,0,.24); border-radius: 999rpx; color: #002900; font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif; font-size: 30rpx; font-weight: 600; line-height: 1.3; }
+.daily-note-letter__game:active { opacity: .9; transform: scale(.98); }

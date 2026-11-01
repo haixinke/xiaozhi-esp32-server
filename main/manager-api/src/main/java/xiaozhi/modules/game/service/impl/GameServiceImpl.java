@@ -1,5 +1,6 @@
 package xiaozhi.modules.game.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -110,7 +111,30 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
         wrapper.apply(StringUtils.isNotBlank(entrance), "FIND_IN_SET({0}, entrances)", entrance);
         wrapper.orderByAsc("id");
         List<GameEntity> entities = baseDao.selectList(wrapper);
-        return ConvertUtils.sourceToTarget(entities, GameVO.class);
+        List<GameVO> list = ConvertUtils.sourceToTarget(entities, GameVO.class);
+        fillGameTypeName(list);
+        return list;
+    }
+
+    /**
+     * 用字典 GAME_TYPE 的 dict_label 填充游戏类型显示名；字典里查不到的 code 回落显示原始值，
+     * 这样即使运营删掉某个小类，小程序弹层仍能展示原始 code 而不是空白（与小物件类型翻译同一约定）。
+     */
+    private void fillGameTypeName(List<GameVO> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        Map<String, String> labelByValue = new HashMap<>();
+        List<SysDictDataItem> dictItems = sysDictDataService
+                .getDictDataByType(Constant.DictType.GAME_TYPE.getValue());
+        if (dictItems != null) {
+            for (SysDictDataItem item : dictItems) {
+                if (item.getKey() != null) {
+                    labelByValue.put(item.getKey(), item.getName());
+                }
+            }
+        }
+        list.forEach(vo -> vo.setGameTypeName(labelByValue.getOrDefault(vo.getGameType(), vo.getGameType())));
     }
 
     /**

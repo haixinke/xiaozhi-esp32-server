@@ -483,6 +483,22 @@ class GameServiceTest {
     }
 
     @Test
+    @DisplayName("listEnabled 填充游戏类型显示名：字典 dict_label 译文，缺字典项回落原始 code")
+    void listEnabled_fillsGameTypeName() {
+        // TEST_GAME_A 有字典译文「测试游戏类型A」；TEST_GAME_B 在 @AfterAll 前仍在字典中，
+        // 因此这里用一个从未注入字典的 code 验证回落分支
+        saveTrackedWith(TEST_GAME_TYPES.get(0), "NOTE", 1);
+
+        List<GameVO> list = gameService.listEnabled("NOTE");
+
+        GameVO translated = list.stream()
+                .filter(vo -> TEST_GAME_TYPES.get(0).equals(vo.getGameType()))
+                .findFirst().orElseThrow();
+        // 有字典项时显示 dict_label 而非 code
+        assertThat(translated.getGameTypeName()).isEqualTo("测试游戏类型A");
+    }
+
+    @Test
     @DisplayName("listEnabled 入口过滤同时排除停用游戏")
     void listEnabled_withEntrance_excludesDisabled() {
         Long enabledId = saveTrackedWith(TEST_GAME_TYPES.get(0), "NOTE", 1);

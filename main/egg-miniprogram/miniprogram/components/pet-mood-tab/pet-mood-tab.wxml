@@ -4,6 +4,11 @@
   aria-label="{{expanded ? petName + '，今日心情，' + moodLabel + '，' + moodText + '，点击收起' : petName + '，今日心情，' + moodLabel + '，点击查看完整心情'}}"
   bindtap="onToggle"
 >
+  <view wx:if="{{starBalance !== null}}" class="pet-mood-tab__stars">
+    <image class="pet-mood-tab__star-icon" src="/assets/ui/companion-star-neutral.png" mode="aspectFit" />
+    <text class="pet-mood-tab__star-amount">{{starBalance}}</text>
+  </view>
+  <text wx:if="{{companionDays !== null}}" class="pet-mood-tab__days">连续一起 {{companionDays}} 天</text>
   <text wx:if="{{nameInteractive}}" class="pet-mood-tab__name pet-mood-tab__name--interactive" catchtap="onNameTap">{{petName}}</text>
   <text wx:else class="pet-mood-tab__name">{{petName}}</text>
   <view class="pet-mood-tab__mood-summary">

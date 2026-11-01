@@ -8,6 +8,7 @@ const incubationEnv = require('../../utils/incubation-environment');
 const envState = require('../../utils/environment-state');
 const doodleApi = require('../../utils/doodle-api');
 const storyApi = require('../../utils/story-api');
+const starApi = require('../../utils/star-api');
 const remoteImage = require('../../utils/remote-image');
 const { INTERACTION_ICONS, SCENE_OPTIONS } = require('../../config/pre-hatch-assets');
 
@@ -114,6 +115,8 @@ Page({
     stageText: '',
     countdown: '',
     dailyStatus: null,
+    // 星星罐余额（用户级）：仅破壳后加载展示；null 表示未加载/加载失败（隐藏星星行）
+    starBalance: null,
     feedback: '',
     cuddleProgress: 0,
     actionLabel: '孵化修炼手册',
@@ -363,6 +366,8 @@ Page({
       const list = await get('/pet/list');
       this.setData({ petRestoreError: '' });
       if (Array.isArray(list) && list.length > 0) {
+        // 星星余额与宠物列表并发拉取：仅当前端存在破壳宠物时发请求；失败静默降级（隐藏星星行）
+        this.loadStarBalance(list.some((vo) => vo && vo.hatchStatus === 'HATCHED'));
         // 多宠物：按领养时间正序排列（先领的在最上），整批写入按 petId 隔离的本地缓存；
         // 列表接口已过滤已删除宠物(deleted_at=0)，前端无需再过滤。
         // petType 为 prototype 的 WXML 别名（原型链保留属性禁止直接绑定，见 CLAUDE.md），供指示点 aria-label 使用
@@ -384,7 +389,7 @@ Page({
         this.renderPet(pet);
         if (shouldRestoreDoodle || previousPetId !== String(pet.id)) this.restoreDoodleArt(pet);
       } else {
-        this.setData({ pets: [], currentPetIndex: 0 });
+        this.setData({ pets: [], currentPetIndex: 0, starBalance: null });
         this.syncPendingInvite(null);
       }
     } catch (error) {
@@ -395,6 +400,22 @@ Page({
     } finally {
       if (!this._petRestoreFinished) this.finishPetRestore();
     }
+  },
+
+  // 拉取星星罐余额：仅破壳后调用；失败静默降级为 null（首页星星行隐藏，不影响其他数据）
+  loadStarBalance(shouldLoad) {
+    if (!shouldLoad) {
+      if (this.data.starBalance !== null) this.setData({ starBalance: null });
+      return;
+    }
+    starApi.getBalance()
+      .then((res) => {
+        const balance = res && Number.isFinite(Number(res.balance)) ? Number(res.balance) : null;
+        this.setData({ starBalance: balance });
+      })
+      .catch(() => {
+        this.setData({ starBalance: null });
+      });
   },
 
   finishPetRestore(data) {

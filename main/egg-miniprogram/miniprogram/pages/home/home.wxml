@@ -117,6 +117,8 @@
           mood-label="{{dailyStatus.mood}}"
           mood-text="{{dailyStatus.line}}"
           name-interactive="{{true}}"
+          star-balance="{{starBalance}}"
+          companion-days="{{pet.companionDays}}"
           bindnametap="onPetNameTap"
         />
         <room-clock />

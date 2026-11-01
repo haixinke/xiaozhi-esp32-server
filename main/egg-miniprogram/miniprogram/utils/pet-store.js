@@ -223,7 +223,9 @@ function mapPetFromVO(vo) {
     bloodType: vo.bloodType || '',
     avatarUrl: vo.avatarUrl || '',
     collectionCards: vo.collectionCards || [],
-    sceneUrl: vo.sceneUrl || ''
+    sceneUrl: vo.sceneUrl || '',
+    // 连续陪伴天数：用户级、按小纸条打开记录现算，后端未下发时按 0 处理
+    companionDays: Number.isFinite(vo.companionDays) ? vo.companionDays : 0
   };
   if (existing && Array.isArray(existing._hatchActions)) pet._hatchActions = existing._hatchActions;
   return pet;

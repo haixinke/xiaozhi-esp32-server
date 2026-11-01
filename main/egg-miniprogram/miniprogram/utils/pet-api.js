@@ -3,7 +3,7 @@ const { get, post, put } = require('./request');
 // 后端 PetVO 字段：id, userId, deviceId, nickname, birthDate, bazi, wuxing, zodiac,
 // mbti, personality, personalityBrief, todayMood, todayMoodDate, todayMoodSentence,
 // hatchStatus(EGG/HATCHED), hatchStartTime, expectedHatchTime, hatchedAt, acceleratedMinutes,
-// avatarUrl, prototype, gender, bloodType, createDate
+// avatarUrl, prototype, gender, bloodType, createDate, companionDays（连续陪伴天数，用户级现算）
 function adoptPet(inviteCode) {
   return post('/pet/adopt', { inviteCode });
 }

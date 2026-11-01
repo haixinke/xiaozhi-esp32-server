@@ -321,3 +321,15 @@ assert.strictEqual(petStore.getPetById('pet-b'), null, 'replacePets 后被移除
 petStore.replacePets([]);
 assert.strictEqual(petStore.getAllPets().length, 0, 'replacePets 空数组清空缓存');
 console.log('pet-store getPetById/getAllPets/replacePets: PASS');
+
+// --- mapPetFromVO: companionDays（连续陪伴天数，用户级）映射 ---
+// 正常下发：透传数值
+const withDays = petStore.mapPetFromVO({ ...eggVO, id: 'pet-days-1', companionDays: 7 });
+assert.strictEqual(withDays.companionDays, 7, 'companionDays 正常透传');
+// 0 是合法值（昨天无记录），不能落回默认外的值
+const zeroDays = petStore.mapPetFromVO({ ...eggVO, id: 'pet-days-2', companionDays: 0 });
+assert.strictEqual(zeroDays.companionDays, 0, 'companionDays=0 保留');
+// 后端未下发（undefined/缺失）：兜底 0
+const missingDays = petStore.mapPetFromVO({ ...eggVO, id: 'pet-days-3' });
+assert.strictEqual(missingDays.companionDays, 0, 'companionDays 缺失时兜底 0');
+console.log('pet-store mapPetFromVO companionDays: PASS');

@@ -8,7 +8,11 @@ Component({
     petName: { type: String, value: '还没有名字' },
     moodLabel: { type: String, value: '' },
     moodText: { type: String, value: '' },
-    nameInteractive: { type: Boolean, value: false }
+    nameInteractive: { type: Boolean, value: false },
+    // 星星总数（用户级星星罐余额）：null 表示未加载/加载失败，隐藏星星行
+    starBalance: { type: null, value: null },
+    // 连续陪伴天数（用户级）：null 表示无数据，隐藏天数行
+    companionDays: { type: null, value: null }
   },
 
   data: {

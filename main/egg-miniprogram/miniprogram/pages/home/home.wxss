@@ -147,7 +147,6 @@
 .daily-note-letter::after { content: ""; position: absolute; right: -1rpx; top: -1rpx; width: 48rpx; height: 48rpx; background: linear-gradient(225deg, #E5D8BD 0, #E5D8BD 49%, rgba(128,105,75,.16) 50%, rgba(128,105,75,.07) 55%, transparent 56%); }
 .daily-note-letter__close { position: absolute; right: 14rpx; top: 12rpx; width: 72rpx; height: 72rpx; display: flex; align-items: center; justify-content: center; font-size: 40rpx; color: #5A675E; }
 .daily-note-letter__title { display: block; color: #35483C; font-family: "Kaiti SC", "STKaiti", serif; font-size: 42rpx; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-.daily-note-letter__solar-term { display: block; margin-top: 8rpx; color: #946E64; font-family: "Kaiti SC", "STKaiti", serif; font-size: 24rpx; line-height: 1.4; }
 .daily-note-letter__content { display: block; margin-top: 18rpx; color: #5A675E; font-family: "Kaiti SC", "STKaiti", serif; font-size: 27rpx; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
 /* 游戏邀请：仅游戏类型名的胶囊按钮（对齐静态项目 app-button secondary-soft 变体） */
 .daily-note-letter__game { margin-top: 36rpx; max-width: 560rpx; min-height: 72rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 10rpx 40rpx; border: 3rpx solid rgba(0,41,0,.24); border-radius: 999rpx; color: #002900; font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif; font-size: 30rpx; font-weight: 600; line-height: 1.3; }

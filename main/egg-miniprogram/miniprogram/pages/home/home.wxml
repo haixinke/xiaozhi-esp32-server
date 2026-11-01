@@ -159,7 +159,6 @@
           <view class="daily-note-letter" catchtap="noop">
             <view class="daily-note-letter__close" aria-role="button" aria-label="关闭小纸条" bindtap="onDailyNoteClose">×</view>
             <text class="daily-note-letter__title">{{dailyNoteSnapshot.title}}</text>
-            <text wx:if="{{dailyNoteSnapshot.solarTerm}}" class="daily-note-letter__solar-term">{{dailyNoteSnapshot.solarTerm}}</text>
             <text class="daily-note-letter__content">{{dailyNoteSnapshot.content}}</text>
             <view wx:if="{{dailyNoteSnapshot.game}}" class="daily-note-letter__game" aria-role="button" aria-label="游戏邀请：{{dailyNoteSnapshot.game.gameTypeName || '小游戏'}}" bindtap="onDailyNoteGameTap">
               {{dailyNoteSnapshot.game.gameTypeName || '小游戏'}}

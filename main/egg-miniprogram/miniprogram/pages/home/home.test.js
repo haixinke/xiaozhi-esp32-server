@@ -1744,7 +1744,6 @@ async function run() {
     date: '2026-11-01',
     title: '今日小纸条',
     content: '第一行\n第二行',
-    solarTerm: '立冬',
     game: { gameType: 'LISTEN_TO_YOU', gameTypeName: '听你说', icon: 'https://oss.example/icon.png', description: '听你说', earnStars: 5 }
   };
   const notePage = makePage();
@@ -1800,7 +1799,7 @@ async function run() {
 
   // 打开失败：Toast 提示，dailyNote 保留（红点不销）
   resetScenario();
-  dailyNoteTodayResult = { date: '2026-11-01', title: 't', content: 'c', solarTerm: '', game: null };
+  dailyNoteTodayResult = { date: '2026-11-01', title: 't', content: 'c', game: null };
   dailyNoteOpenedError = new Error('opened failed');
   const openFailPage = makePage();
   requestGetResult = [{ id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' }];
@@ -1813,7 +1812,7 @@ async function run() {
 
   // 重复打开返回 awarded=false：不展示 +N
   resetScenario();
-  dailyNoteTodayResult = { date: '2026-11-01', title: 't', content: 'c', solarTerm: '', game: null };
+  dailyNoteTodayResult = { date: '2026-11-01', title: 't', content: 'c', game: null };
   dailyNoteOpenedResult = { awarded: false, amount: 0 };
   const repeatPage = makePage();
   requestGetResult = [{ id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' }];

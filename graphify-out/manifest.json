@@ -5260,8 +5260,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1793199726.2503476,
-    "ast_hash": "f686e5e0c83acd7b82bfec799ced804f",
+    "mtime": 1793513341.7742536,
+    "ast_hash": "4d993247c43de74dbc5d17e5aae086ce",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5405,13 +5405,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1791209874.2706187,
-    "ast_hash": "39a9632143270fa93f06a665bc20fc1b",
+    "mtime": 1793521171.9416723,
+    "ast_hash": "23e78d6cc3d632456210b838398348fb",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1793513016.7880144,
-    "ast_hash": "9db66ca29f60aaba74deb15d37611252",
+    "mtime": 1793517498.7234893,
+    "ast_hash": "ec301fbbd011dc1cdf8ce3f6130b0d57",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -9195,8 +9195,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/dailynote/controller/DailyNoteAppController.java": {
-    "mtime": 1793258925.754774,
-    "ast_hash": "09379d5dfe3ff5dceb56c2f8a512b3a5",
+    "mtime": 1793517498.7247164,
+    "ast_hash": "93bc8be18b1d36407d85c79a3c8c8c1d",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/dailynote/service/DailyNoteTodayService.java": {
@@ -9215,8 +9215,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/dailynote/DailyNoteAppControllerTest.java": {
-    "mtime": 1793258925.7625775,
-    "ast_hash": "26bb2900702103bd368aab83c0981e92",
+    "mtime": 1793517498.7253695,
+    "ast_hash": "2c0e51aaa00207d9a8138319138f8c1d",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/dailynote/DailyNoteTodayServiceTest.java": {
@@ -9265,18 +9265,18 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/dailynote/service/DailyNoteOpenedService.java": {
-    "mtime": 1793258925.757394,
-    "ast_hash": "bcc536a4af49d6518c8e3259704e6cfe",
+    "mtime": 1793517498.7249134,
+    "ast_hash": "be731a1964cce9232dc31917a1acdb82",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/dailynote/service/impl/DailyNoteOpenedServiceImpl.java": {
-    "mtime": 1793500259.0671113,
-    "ast_hash": "a7bac076ef5f88a571de5a1851ce8530",
+    "mtime": 1793517498.7251275,
+    "ast_hash": "56f2758486e0eb1a2a59296805d0f820",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/dailynote/DailyNoteOpenedServiceTest.java": {
-    "mtime": 1793258925.7633443,
-    "ast_hash": "a27572342cb6ea925e91fc7d3c4c69a6",
+    "mtime": 1793517498.7256198,
+    "ast_hash": "cb0ff635edbd137a812d5ff3b776eefe",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/service/GameStarChargeService.java": {
@@ -9330,8 +9330,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/dailynote/DailyNoteOpenedRewardTest.java": {
-    "mtime": 1793500259.075921,
-    "ast_hash": "fffb07e9515786fae28d0914b407abf1",
+    "mtime": 1793521481.070142,
+    "ast_hash": "edf1a82753081df896d27588cdb26701",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/star/StarDailyRewardLiquibaseContractTest.java": {
@@ -9397,6 +9397,21 @@
   "main/manager-api/src/test/java/xiaozhi/common/support/MessageSourceMockSupport.java": {
     "mtime": 1793511463.2416039,
     "ast_hash": "e46603bf513d4b55f13473142273d73f",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/daily-note-api.js": {
+    "mtime": 1793516930.0047786,
+    "ast_hash": "1213ffc76c8b31d990cf8832169199d3",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/daily-note-api.test.js": {
+    "mtime": 1793516915.197745,
+    "ast_hash": "639b11119ad06af171b2d6e43f9e1c8c",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/assets/ui/3d-actions/ui_3d_scene_message_envelope_96_v01.webp": {
+    "mtime": 1793516942.8034477,
+    "ast_hash": "54e7911e175079cd03576b03f9f916c0",
     "semantic_hash": ""
   }
 }

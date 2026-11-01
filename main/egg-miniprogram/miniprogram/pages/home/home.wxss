@@ -126,3 +126,32 @@
 .scene-tester-option--active { background: #EEF3E5; color: #36513C; font-weight: 600; }
 .scene-tester-option-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scene-tester-option-check { flex: none; margin-left: 8rpx; color: #36513C; }
+
+/* ===== 小纸条信封入口（左下按钮位二态之一，样式与静态项目 life-scene 对齐） ===== */
+.story-chat-button--envelope { position: relative; background: #F4F5EC; border-color: rgba(255,255,255,.92); box-shadow: 0 6rpx 16rpx rgba(34,45,36,.12), inset 0 2rpx 3rpx rgba(255,255,255,.9); }
+.daily-note-unread-dot { position: absolute; right: 2rpx; top: 2rpx; width: 16rpx; height: 16rpx; border-radius: 50%; background: #D9463C; }
+/* 纸飞机飞入：clip-path 折纸形状，1s 淡出消散 */
+.daily-note-plane { position: absolute; width: 48rpx; height: 48rpx; left: 32rpx; top: 30rpx; background: #FFF9EB; clip-path: polygon(0 32%, 100% 0, 65% 100%, 45% 58%); animation: daily-note-plane 1s ease-out both; pointer-events: none; }
+.daily-note-envelope--arriving { animation: daily-note-envelope 1s ease-out both; }
+@keyframes daily-note-plane { 0% { opacity: 1; transform: scale(.92); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(.98); } }
+@keyframes daily-note-envelope { 0%, 35% { opacity: 0; transform: scale(.95); } 100% { opacity: 1; transform: scale(1); } }
+
+/* ===== 小纸条弹层（信纸样式移植自静态项目 today-companion-letter，裁掉记忆收集等杂项） ===== */
+.daily-note-overlay { position: fixed; z-index: 400; inset: 0; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: calc(80rpx + env(safe-area-inset-top)) 30rpx calc(48rpx + env(safe-area-inset-bottom)); background: rgba(29,34,30,.38); }
+.daily-note-stage { position: relative; width: 100%; }
+.daily-note-award { position: absolute; left: 50%; bottom: 100%; margin-bottom: 20rpx; transform: translateX(-50%); pointer-events: none; }
+.daily-note-award__plus { color: #FFDD79; font-size: 44rpx; font-weight: 700; line-height: 68rpx; white-space: nowrap; text-shadow: 0 2rpx 8rpx rgba(72,50,12,.35); animation: daily-note-award-plus .85s cubic-bezier(.2,.9,.3,1) .3s both; }
+@keyframes daily-note-award-plus { 0% { opacity: 0; transform: translate3d(-44rpx, 20rpx, 0) rotate(-160deg) scale(.5); } 40% { opacity: 1; transform: translate3d(4rpx, -14rpx, 0) rotate(10deg) scale(1.08); } 65% { transform: translate3d(0, 4rpx, 0) rotate(-4deg) scale(.97); } 85% { transform: translate3d(0, -2rpx, 0) rotate(1deg) scale(1.01); } 100% { opacity: 1; transform: translate3d(0, 0, 0) rotate(0) scale(1); } }
+/* 信纸：米色底 + 左侧装订线 + 右上折角 */
+.daily-note-letter { position: relative; width: 100%; max-height: 72vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 42rpx 42rpx 38rpx 66rpx; border: 1rpx solid rgba(126,103,73,.18); border-radius: 8rpx; background: linear-gradient(90deg, transparent 0, transparent 42rpx, rgba(184,105,84,.15) 43rpx, rgba(184,105,84,.15) 45rpx, transparent 46rpx), #FFF9EB; box-shadow: 0 26rpx 64rpx rgba(32,28,23,.28); color: #35483C; }
+.daily-note-letter::after { content: ""; position: absolute; right: -1rpx; top: -1rpx; width: 48rpx; height: 48rpx; background: linear-gradient(225deg, #E5D8BD 0, #E5D8BD 49%, rgba(128,105,75,.16) 50%, rgba(128,105,75,.07) 55%, transparent 56%); }
+.daily-note-letter__close { position: absolute; right: 14rpx; top: 12rpx; width: 72rpx; height: 72rpx; display: flex; align-items: center; justify-content: center; font-size: 40rpx; color: #5A675E; }
+.daily-note-letter__title { display: block; color: #35483C; font-family: "Kaiti SC", "STKaiti", serif; font-size: 42rpx; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.daily-note-letter__solar-term { display: block; margin-top: 8rpx; color: #946E64; font-family: "Kaiti SC", "STKaiti", serif; font-size: 24rpx; line-height: 1.4; }
+.daily-note-letter__content { display: block; margin-top: 18rpx; color: #5A675E; font-family: "Kaiti SC", "STKaiti", serif; font-size: 27rpx; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+/* 游戏邀请行：图标 + 说明 + 可赚星星数 */
+.daily-note-letter__game { margin-top: 36rpx; display: flex; align-items: center; gap: 20rpx; padding: 20rpx 24rpx; border-radius: 16rpx; background: rgba(53,90,67,.06); }
+.daily-note-letter__game-icon { flex: none; width: 72rpx; height: 72rpx; border-radius: 12rpx; }
+.daily-note-letter__game-info { min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
+.daily-note-letter__game-desc { color: #355A43; font-family: "Kaiti SC", "STKaiti", serif; font-size: 27rpx; line-height: 1.45; overflow-wrap: anywhere; }
+.daily-note-letter__game-stars { color: #946E64; font-size: 24rpx; line-height: 1.4; }

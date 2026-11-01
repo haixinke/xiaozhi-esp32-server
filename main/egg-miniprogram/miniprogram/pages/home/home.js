@@ -9,6 +9,7 @@ const envState = require('../../utils/environment-state');
 const doodleApi = require('../../utils/doodle-api');
 const storyApi = require('../../utils/story-api');
 const starApi = require('../../utils/star-api');
+const dailyNoteApi = require('../../utils/daily-note-api');
 const remoteImage = require('../../utils/remote-image');
 const { INTERACTION_ICONS, SCENE_OPTIONS } = require('../../config/pre-hatch-assets');
 
@@ -60,6 +61,13 @@ const CHAT_ENTRY_ICONS = {
   'KOI': '/assets/ui/3d-actions/ui_3d_scene_chat_boon_koi_96_v02.png'
 };
 const CHAT_ENTRY_ICON_FALLBACK = '/assets/ui/3d-actions/ui_3d_scene_find_home_egg_96_v01_p8_v01.png';
+
+// 小纸条信封入口 icon 与抵达音效（与静态项目 life-scene 同素材；必须用 PNG：部分真机 image 无法解码 webp）
+const DAILY_NOTE_ENVELOPE_ICON = '/assets/ui/3d-actions/ui_3d_scene_message_envelope_96_v01.png';
+const DAILY_NOTE_LETTER_SOUND_SRC = '/assets/ui/3d-actions/letter-arrival.mp3';
+// 抵达动效节奏：音效延迟 450ms 播放，纸飞机动画 1s，1050ms 统一收尾（与静态项目一致）
+const DAILY_NOTE_SOUND_DELAY_MS = 450;
+const DAILY_NOTE_ARRIVAL_DURATION_MS = 1050;
 
 // 破壳后右下角 AI 写真入口 icon
 // TODO(design): AI写真暂无相机图标素材，暂用贴纸图标占位，待设计补齐后替换
@@ -117,6 +125,19 @@ Page({
     dailyStatus: null,
     // 星星罐余额（用户级）：仅破壳后加载展示；null 表示未加载/加载失败（隐藏星星行）
     starBalance: null,
+    // 当日小纸条（DailyNoteTodayVO）；null 表示无内容/已打开/加载失败——入口位显示聊天 icon
+    dailyNote: null,
+    // 信封抵达动效进行中（纸飞机 + 信封淡入）；false 后不再重播，同日只播一次
+    dailyNoteArriving: false,
+    // 小纸条弹层显隐与本次实发星星（0/null 不展示 +N）
+    dailyNoteVisible: false,
+    dailyNoteAwardedStars: 0,
+    // 弹层展示快照：打开成功后 dailyNote 清空（入口回聊天 icon），弹层内容须靠快照维持
+    dailyNoteSnapshot: null,
+    // 信封入口 icon
+    dailyNoteEnvelopeIcon: DAILY_NOTE_ENVELOPE_ICON,
+    // 打开接口进行中：防重复点击
+    dailyNoteOpening: false,
     feedback: '',
     cuddleProgress: 0,
     actionLabel: '孵化修炼手册',
@@ -307,6 +328,7 @@ Page({
     this.clearStoryCaptionRotation();
     this.clearStoryCaptionToast();
     this._stopStoryInertia();
+    this.stopDailyNoteArrival();
   },
 
   onUnload() {
@@ -315,6 +337,7 @@ Page({
     this.clearStoryCaptionRotation();
     this.clearStoryCaptionToast();
     this._stopStoryInertia();
+    this.stopDailyNoteArrival();
     clearTimeout(this.cuddleTimer);
     clearTimeout(this.feedbackTimer);
     clearInterval(this.cuddleTicker);
@@ -366,8 +389,11 @@ Page({
       const list = await get('/pet/list');
       this.setData({ petRestoreError: '' });
       if (Array.isArray(list) && list.length > 0) {
+        const hasHatched = list.some((vo) => vo && vo.hatchStatus === 'HATCHED');
         // 星星余额与宠物列表并发拉取：仅当前端存在破壳宠物时发请求；失败静默降级（隐藏星星行）
-        this.loadStarBalance(list.some((vo) => vo && vo.hatchStatus === 'HATCHED'));
+        this.loadStarBalance(hasHatched);
+        // 当日小纸条与星星余额并列挂载：仅破壳后可得（未破壳无信封入口）
+        this.loadDailyNote(hasHatched);
         // 多宠物：按领养时间正序排列（先领的在最上），整批写入按 petId 隔离的本地缓存；
         // 列表接口已过滤已删除宠物(deleted_at=0)，前端无需再过滤。
         // petType 为 prototype 的 WXML 别名（原型链保留属性禁止直接绑定，见 CLAUDE.md），供指示点 aria-label 使用
@@ -416,6 +442,104 @@ Page({
       .catch(() => {
         this.setData({ starBalance: null });
       });
+  },
+
+  // 拉取当日小纸条：仅破壳后调用；无内容/已打开/失败一律回退 null（入口位显示聊天 icon，不打扰用户）
+  loadDailyNote(shouldLoad) {
+    if (!shouldLoad) {
+      if (this.data.dailyNote !== null) this.setData({ dailyNote: null });
+      return;
+    }
+    dailyNoteApi.getToday()
+      .then((note) => {
+        const hadNote = !!this.data.dailyNote;
+        this.setData({ dailyNote: note || null });
+        // 信封从无到有（当日首次进入首页）才播抵达动效；同日 onShow 重复拉取不重播
+        if (!hadNote && note) this.playDailyNoteArrival();
+      })
+      .catch(() => {
+        this.setData({ dailyNote: null });
+      });
+  },
+
+  // 信封抵达动效：纸飞机动画 + 延迟播放音效，1050ms 统一收尾；同日只播一次（本地日期标记）
+  playDailyNoteArrival() {
+    const todayKey = this.dailyNoteLocalDate();
+    if (this._dailyNoteArrivalDate === todayKey) return;
+    this._dailyNoteArrivalDate = todayKey;
+    this.setData({ dailyNoteArriving: true });
+    try {
+      if (typeof wx.createInnerAudioContext === 'function') {
+        const audio = wx.createInnerAudioContext();
+        audio.src = DAILY_NOTE_LETTER_SOUND_SRC;
+        audio.volume = 0.25;
+        audio.obeyMuteSwitch = true;
+        this._dailyNoteAudio = audio;
+        if (audio.onError) audio.onError(() => this.releaseDailyNoteSound());
+        this._dailyNoteSoundTimer = setTimeout(() => {
+          if (this._dailyNoteAudio) { try { this._dailyNoteAudio.play(); } catch (error) {} }
+        }, DAILY_NOTE_SOUND_DELAY_MS);
+      }
+    } catch (error) {
+      this.releaseDailyNoteSound();
+    }
+    this._dailyNoteArrivalTimer = setTimeout(() => {
+      this.setData({ dailyNoteArriving: false });
+      this.releaseDailyNoteSound();
+    }, DAILY_NOTE_ARRIVAL_DURATION_MS);
+  },
+
+  // 本地日期键（yyyy-MM-dd）：仅用于"同日抵达动效只播一次"的客户端标记，业务日期以后端为准
+  dailyNoteLocalDate() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${now.getFullYear()}-${month}-${day}`;
+  },
+
+  releaseDailyNoteSound() {
+    if (!this._dailyNoteAudio) return;
+    try { this._dailyNoteAudio.stop(); this._dailyNoteAudio.destroy(); } catch (error) {}
+    this._dailyNoteAudio = null;
+  },
+
+  stopDailyNoteArrival() {
+    clearTimeout(this._dailyNoteArrivalTimer);
+    clearTimeout(this._dailyNoteSoundTimer);
+    this.releaseDailyNoteSound();
+    if (this.data.dailyNoteArriving) this.setData({ dailyNoteArriving: false });
+  },
+
+  // 点击信封：先弹层再调打开接口领奖；成功展示 +N 并刷新星星罐余额，失败 Toast 且保留红点可重试
+  async onDailyNoteTap() {
+    if (!this.data.dailyNote || this.data.dailyNoteOpening) return;
+    this.setData({
+      dailyNoteVisible: true,
+      dailyNoteSnapshot: this.data.dailyNote,
+      dailyNoteOpening: true,
+      dailyNoteAwardedStars: 0
+    });
+    try {
+      const result = await dailyNoteApi.markOpened();
+      const amount = result && result.awarded && Number.isFinite(Number(result.amount)) ? Number(result.amount) : 0;
+      this.setData({ dailyNoteAwardedStars: amount, dailyNoteOpening: false });
+      // 打开成功当日入口回聊天 icon：清空纸条，下次 onShow 拉取返回空维持该态
+      this.setData({ dailyNote: null });
+      this.loadStarBalance(true);
+    } catch (error) {
+      // 失败保留 dailyNote 与红点，用户可重试；弹层可关闭
+      this.setData({ dailyNoteOpening: false });
+      wx.showToast({ title: '打开失败，请重试', icon: 'none' });
+    }
+  },
+
+  onDailyNoteClose() {
+    this.setData({ dailyNoteVisible: false, dailyNoteAwardedStars: 0, dailyNoteSnapshot: null });
+  },
+
+  // 游戏邀请：小游戏页面尚未上线，本期只提示
+  onDailyNoteGameTap() {
+    wx.showToast({ title: '敬请期待', icon: 'none' });
   },
 
   finishPetRestore(data) {

@@ -14,6 +14,7 @@ import xiaozhi.modules.dailynote.service.DailyNoteOpenedService;
 import xiaozhi.modules.dailynote.service.DailyNoteTodayService;
 import xiaozhi.modules.dailynote.vo.DailyNoteTodayVO;
 import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.star.vo.DailyRewardResult;
 
 /**
  * 小纸条（小程序端）：当日查询与标记已打开接口。
@@ -39,11 +40,10 @@ public class DailyNoteAppController {
     }
 
     @PostMapping("/opened")
-    @Operation(summary = "标记当日小纸条已打开（重复或并发上报幂等，成功返回空数据）")
+    @Operation(summary = "标记当日小纸条已打开（重复或并发上报幂等；首次有效打开返回实发星星数，重复/无内容返回 awarded=false、amount=0）")
     @RequiresPermissions("sys:role:normal")
-    public Result<Void> opened() {
+    public Result<DailyRewardResult> opened() {
         // 无请求正文：用户 ID 来自 Token，日期由服务器时钟决定，客户端均不可指定
-        dailyNoteOpenedService.markOpened(SecurityUser.getUserId());
-        return new Result<Void>().ok(null);
+        return new Result<DailyRewardResult>().ok(dailyNoteOpenedService.markOpened(SecurityUser.getUserId()));
     }
 }

@@ -1,5 +1,7 @@
 package xiaozhi.modules.dailynote.service;
 
+import xiaozhi.modules.star.vo.DailyRewardResult;
+
 /**
  * 用户已打开记录 Service（应用端）。
  * "当天"由服务器按 Asia/Shanghai 决定，用户 ID 只来自认证 Token；
@@ -14,6 +16,9 @@ public interface DailyNoteOpenedService {
      * 重复或并发上报幂等：成功且不改变首次打开时间，唯一键冲突视为成功。
      *
      * @param userId 当前认证用户 ID（来自 Token）
+     * @return 本次奖励结算结果：首次有效打开发奖时 awarded=true 且 amount 为实发星星数；
+     *         当天已打开、当日无内容、并发冲突三个非发奖分支统一返回 awarded=false、amount=0
+     *         （不多查历史金额快照，调用方不得据此补发展示）
      */
-    void markOpened(Long userId);
+    DailyRewardResult markOpened(Long userId);
 }

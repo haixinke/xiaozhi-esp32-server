@@ -30,6 +30,7 @@ let requestGetCalls = 0;
 let requestGetResult = [];
 let requestGetPromise = null;
 let requestGetError = null;
+let starBalanceCalls = 0;
 let savedPetVO = null;
 let showTabBarCalls = 0;
 let storedPet = null;
@@ -70,6 +71,12 @@ let lastSaveDoodleShellOperations = null;
 let getDoodleShellResult = null;
 let getDoodleShellCalls = 0;
 let storyStateResult = null;
+let dailyNoteTodayResult = null;
+let dailyNoteTodayError = null;
+let dailyNoteTodayCalls = 0;
+let dailyNoteOpenedResult = { awarded: true, amount: 11 };
+let dailyNoteOpenedError = null;
+let dailyNoteOpenedCalls = 0;
 let storyStateError = null;
 let getStoryStateCalls = 0;
 let lastStoryStatePetId = null;
@@ -268,8 +275,25 @@ const storyApiMock = {
   }
 };
 
+// 隔离星星接口，避免冷启动测试落入真实 request/auth 的微信存储依赖
 const starApiMock = {
-  getBalance: async () => ({ balance: 0 })
+  getBalance: async () => {
+    starBalanceCalls += 1;
+    return { balance: 0 };
+  }
+};
+
+const dailyNoteApiMock = {
+  getToday: async () => {
+    dailyNoteTodayCalls += 1;
+    if (dailyNoteTodayError) throw dailyNoteTodayError;
+    return dailyNoteTodayResult;
+  },
+  markOpened: async () => {
+    dailyNoteOpenedCalls += 1;
+    if (dailyNoteOpenedError) throw dailyNoteOpenedError;
+    return dailyNoteOpenedResult;
+  }
 };
 
 const app = {
@@ -296,6 +320,7 @@ Module._load = function (request, parent, isMain) {
     if (request === '../../utils/doodle-api') return doodleApiMock;
     if (request === '../../utils/story-api') return storyApiMock;
     if (request === '../../utils/star-api') return starApiMock;
+    if (request === '../../utils/daily-note-api') return dailyNoteApiMock;
     if (request === '../../config/pre-hatch-assets') return preHatchAssetsMock;
   }
   return originalLoad.call(this, request, parent, isMain);
@@ -366,6 +391,7 @@ function resetScenario() {
   requestGetResult = [];
   requestGetPromise = null;
   requestGetError = null;
+  starBalanceCalls = 0;
   savedPetVO = null;
   showTabBarCalls = 0;
   storedPet = null;
@@ -410,6 +436,12 @@ function resetScenario() {
   storyStateError = null;
   getStoryStateCalls = 0;
   lastStoryStatePetId = null;
+  dailyNoteTodayResult = null;
+  dailyNoteTodayError = null;
+  dailyNoteTodayCalls = 0;
+  dailyNoteOpenedResult = { awarded: true, amount: 11 };
+  dailyNoteOpenedError = null;
+  dailyNoteOpenedCalls = 0;
   cachedPetsArg = null;
   setActivePetCalls = 0;
   lastActivePet = null;
@@ -1697,6 +1729,91 @@ async function run() {
   pageInertia.onHide();
   assert.strictEqual(pageInertia._storyInertiaTimer, null, 'onHide stops the inertia timer');
   assert.ok(clearedIntervals.includes(inertiaTimerId), 'onHide clears the inertia interval');
+
+  // ===== 小纸条信封入口 =====
+  // 破壳且有未读小纸条：dailyNote 就位并播抵达动效
+  resetScenario();
+  dailyNoteTodayResult = {
+    date: '2026-11-01',
+    title: '今日小纸条',
+    content: '第一行\n第二行',
+    solarTerm: '立冬',
+    game: { gameType: 'LISTEN_TO_YOU', icon: 'https://oss.example/icon.png', description: '听你说', earnStars: 5 }
+  };
+  const notePage = makePage();
+  notePage.setData({ pet: { id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' } });
+  requestGetResult = [{ id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' }];
+  await notePage.loadPetFromServer();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.strictEqual(dailyNoteTodayCalls, 1, 'hatched pet triggers today query');
+  assert.deepStrictEqual(notePage.data.dailyNote, dailyNoteTodayResult, 'today note is stored');
+  assert.strictEqual(notePage.data.dailyNoteArriving, true, 'arrival animation plays on first note');
+
+  // 打开成功：弹层快照、+N、清空 dailyNote、重拉星星余额
+  const starCallsBeforeOpen = starBalanceCalls;
+  await notePage.onDailyNoteTap();
+  assert.strictEqual(dailyNoteOpenedCalls, 1, 'tap triggers opened call');
+  assert.strictEqual(notePage.data.dailyNoteVisible, true, 'overlay shows on tap');
+  assert.deepStrictEqual(notePage.data.dailyNoteSnapshot, dailyNoteTodayResult, 'snapshot keeps overlay content');
+  assert.strictEqual(notePage.data.dailyNoteAwardedStars, 11, 'awarded stars come from opened response');
+  assert.strictEqual(notePage.data.dailyNote, null, 'dailyNote cleared after successful open');
+  assert.ok(starBalanceCalls > starCallsBeforeOpen, 'star balance refetches after open');
+
+  // 关闭弹层：快照清空
+  notePage.onDailyNoteClose();
+  assert.strictEqual(notePage.data.dailyNoteVisible, false, 'overlay closes');
+  assert.strictEqual(notePage.data.dailyNoteSnapshot, null, 'snapshot cleared on close');
+
+  // 已打开/无内容：today 返回 null，入口回聊天 icon，不播动效
+  resetScenario();
+  dailyNoteTodayResult = null;
+  const openedPage = makePage();
+  requestGetResult = [{ id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' }];
+  await openedPage.loadPetFromServer();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.strictEqual(openedPage.data.dailyNote, null, 'null today falls back to chat icon');
+  assert.strictEqual(openedPage.data.dailyNoteArriving, false, 'no arrival animation without note');
+
+  // 查询失败：静默回退 null
+  resetScenario();
+  dailyNoteTodayError = new Error('network');
+  const failPage = makePage();
+  requestGetResult = [{ id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' }];
+  await failPage.loadPetFromServer();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.strictEqual(failPage.data.dailyNote, null, 'today query failure falls back silently');
+
+  // 未破壳：不发起 today 查询
+  resetScenario();
+  const eggPage = makePage();
+  requestGetResult = [{ id: 'pet-2', hatchStatus: 'EGG', prototype: '玉兔' }];
+  await eggPage.loadPetFromServer();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.strictEqual(dailyNoteTodayCalls, 0, 'egg stage does not query today');
+
+  // 打开失败：Toast 提示，dailyNote 保留（红点不销）
+  resetScenario();
+  dailyNoteTodayResult = { date: '2026-11-01', title: 't', content: 'c', solarTerm: '', game: null };
+  dailyNoteOpenedError = new Error('opened failed');
+  const openFailPage = makePage();
+  requestGetResult = [{ id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' }];
+  await openFailPage.loadPetFromServer();
+  await new Promise((resolve) => setImmediate(resolve));
+  await openFailPage.onDailyNoteTap();
+  assert.strictEqual(toastTitle, '打开失败，请重试', 'open failure toasts');
+  assert.deepStrictEqual(openFailPage.data.dailyNote, dailyNoteTodayResult, 'dailyNote kept for retry');
+  assert.strictEqual(openFailPage.data.dailyNoteAwardedStars, 0, 'no awarded stars on failure');
+
+  // 重复打开返回 awarded=false：不展示 +N
+  resetScenario();
+  dailyNoteTodayResult = { date: '2026-11-01', title: 't', content: 'c', solarTerm: '', game: null };
+  dailyNoteOpenedResult = { awarded: false, amount: 0 };
+  const repeatPage = makePage();
+  requestGetResult = [{ id: 'pet-1', hatchStatus: 'HATCHED', prototype: '玉兔' }];
+  await repeatPage.loadPetFromServer();
+  await new Promise((resolve) => setImmediate(resolve));
+  await repeatPage.onDailyNoteTap();
+  assert.strictEqual(repeatPage.data.dailyNoteAwardedStars, 0, 'not-awarded repeat shows no +N');
 
   console.log('home.test.js: ALL PASS');
 }

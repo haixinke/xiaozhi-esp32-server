@@ -18,6 +18,7 @@ import xiaozhi.modules.dailynote.entity.DailyNoteEntity;
 import xiaozhi.modules.dailynote.entity.DailyNoteOpenedEntity;
 import xiaozhi.modules.dailynote.service.DailyNoteOpenedService;
 import xiaozhi.modules.star.service.StarDailyRewardService;
+import xiaozhi.modules.star.vo.DailyRewardResult;
 
 /**
  * 用户已打开记录 Service 实现。
@@ -59,17 +60,18 @@ public class DailyNoteOpenedServiceImpl implements DailyNoteOpenedService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void markOpened(Long userId) {
+    public DailyRewardResult markOpened(Long userId) {
         LocalDate today = LocalDate.now(clock);
         java.sql.Date todayDate = java.sql.Date.valueOf(today);
 
         // 已打开记录存在：幂等成功，首次打开时间不变。
-        // 该分支同时承载历史兼容：上线前已打开的用户当天不补发奖励，从次日首次有效打开开始领取
+        // 该分支同时承载历史兼容：上线前已打开的用户当天不补发奖励，从次日首次有效打开开始领取。
+        // 返回 amount=0 而非历史金额快照：多查一次当日奖励记录只为展示，业务上无消费者
         DailyNoteOpenedEntity existing = dailyNoteOpenedDao.selectOne(new QueryWrapper<DailyNoteOpenedEntity>()
                 .eq("user_id", userId)
                 .eq("note_date", todayDate));
         if (existing != null) {
-            return;
+            return notAwarded(today);
         }
 
         // 当日小纸条不存在时不写记录不发奖：提前标记不得隐藏后续补录的当日内容；
@@ -77,7 +79,7 @@ public class DailyNoteOpenedServiceImpl implements DailyNoteOpenedService {
         Long noteCount = dailyNoteDao.selectCount(
                 new QueryWrapper<DailyNoteEntity>().eq("note_date", todayDate));
         if (noteCount == 0) {
-            return;
+            return notAwarded(today);
         }
 
         DailyNoteOpenedEntity entity = new DailyNoteOpenedEntity();
@@ -89,10 +91,19 @@ public class DailyNoteOpenedServiceImpl implements DailyNoteOpenedService {
         } catch (DuplicateKeyException e) {
             // 并发重复上报撞联合唯一键：已有记录即视为成功，原记录与首次时间不变；
             // 发奖由并发胜出方完成，本事务不发奖（胜出方未提交时每日奖励唯一约束兜底）
-            return;
+            return notAwarded(today);
         }
 
         // 同事务发奖：奖励记录与钱包流水随本事务原子提交，失败整体回滚不留半成功状态
-        starDailyRewardService.claimDailyReward(userId, DAILY_NOTE_SOURCE, DAILY_NOTE_SOURCE);
+        return starDailyRewardService.claimDailyReward(userId, DAILY_NOTE_SOURCE, DAILY_NOTE_SOURCE);
+    }
+
+    /** 非发奖分支的统一结果：未入账、未跳过、金额为 0，仅奖励日期标识当天 */
+    private static DailyRewardResult notAwarded(LocalDate today) {
+        DailyRewardResult result = new DailyRewardResult();
+        result.setAwarded(false);
+        result.setAmount(0);
+        result.setRewardDate(today);
+        return result;
     }
 }

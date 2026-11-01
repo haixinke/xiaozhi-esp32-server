@@ -131,9 +131,14 @@
         </view>
       </view>
 
-      <!-- 左下角聊天入口：与静态项目一致的圆形 icon 按钮，按原型选图；仅"在家"大场景显示 -->
+      <!-- 左下角入口位二态切换：有未读小纸条显示信封（红点），否则显示聊天 icon；仅"在家"大场景显示 -->
       <view wx:if="{{storyAtHome}}" class="story-chat-entry">
-        <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
+        <view wx:if="{{dailyNote}}" class="story-chat-button story-chat-button--envelope" hover-class="story-chat-button--pressed" aria-role="button" aria-label="打开今日小纸条" bindtap="onDailyNoteTap">
+          <view wx:if="{{dailyNoteArriving}}" class="daily-note-plane" aria-hidden="true"></view>
+          <image class="story-chat-icon {{dailyNoteArriving ? 'daily-note-envelope--arriving' : ''}}" src="{{dailyNoteEnvelopeIcon}}" mode="aspectFill" />
+          <view class="daily-note-unread-dot" aria-hidden="true"></view>
+        </view>
+        <view wx:else class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
           <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFill" />
         </view>
       </view>
@@ -142,6 +147,28 @@
       <view class="story-photo-entry">
         <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和蛋宝宝拍写真" bindtap="onPhotoEntryTap">
           <image class="story-chat-icon" src="{{photoEntryIcon}}" mode="aspectFill" />
+        </view>
+      </view>
+
+      <!-- 今日小纸条弹层：标题/正文/节气/关联游戏邀请；打开成功展示实发星星 -->
+      <view wx:if="{{dailyNoteVisible && dailyNoteSnapshot}}" class="daily-note-overlay" aria-role="dialog" aria-label="今日小纸条" catchtouchmove="noop">
+        <view class="daily-note-stage">
+          <view wx:if="{{dailyNoteAwardedStars > 0}}" class="daily-note-award" aria-label="获得 {{dailyNoteAwardedStars}} 颗星星">
+            <text class="daily-note-award__plus">+{{dailyNoteAwardedStars}}</text>
+          </view>
+          <view class="daily-note-letter" catchtap="noop">
+            <view class="daily-note-letter__close" aria-role="button" aria-label="关闭小纸条" bindtap="onDailyNoteClose">×</view>
+            <text class="daily-note-letter__title">{{dailyNoteSnapshot.title}}</text>
+            <text wx:if="{{dailyNoteSnapshot.solarTerm}}" class="daily-note-letter__solar-term">{{dailyNoteSnapshot.solarTerm}}</text>
+            <text class="daily-note-letter__content">{{dailyNoteSnapshot.content}}</text>
+            <view wx:if="{{dailyNoteSnapshot.game}}" class="daily-note-letter__game" aria-role="button" aria-label="游戏邀请：{{dailyNoteSnapshot.game.description || '小游戏'}}" bindtap="onDailyNoteGameTap">
+              <image wx:if="{{dailyNoteSnapshot.game.icon}}" class="daily-note-letter__game-icon" src="{{dailyNoteSnapshot.game.icon}}" mode="aspectFit" />
+              <view class="daily-note-letter__game-info">
+                <text class="daily-note-letter__game-desc">{{dailyNoteSnapshot.game.description || '来一起玩个小游戏吧'}}</text>
+                <text wx:if="{{dailyNoteSnapshot.game.earnStars > 0}}" class="daily-note-letter__game-stars">可得 {{dailyNoteSnapshot.game.earnStars}} 颗星星</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
     </block>

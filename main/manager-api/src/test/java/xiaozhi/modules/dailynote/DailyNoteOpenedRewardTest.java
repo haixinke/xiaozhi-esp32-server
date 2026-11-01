@@ -41,6 +41,7 @@ import xiaozhi.modules.star.entity.StarAccountEntity;
 import xiaozhi.modules.star.entity.StarDailyRewardEntity;
 import xiaozhi.modules.star.entity.StarTransactionEntity;
 import xiaozhi.modules.star.service.impl.StarDailyRewardServiceImpl;
+import xiaozhi.modules.star.vo.DailyRewardResult;
 
 /**
  * 小纸条打开接口的星星奖励链路集成测试（真实 dev 库）。
@@ -174,12 +175,19 @@ class DailyNoteOpenedRewardTest {
         CountDownLatch ready = new CountDownLatch(threads);
         CountDownLatch go = new CountDownLatch(1);
         AtomicInteger failures = new AtomicInteger();
+        AtomicInteger awarded = new AtomicInteger();
         for (int i = 0; i < threads; i++) {
             pool.submit(() -> {
                 ready.countDown();
                 try {
                     go.await();
-                    dailyNoteOpenedService.markOpened(USER_A);
+                    DailyRewardResult result = dailyNoteOpenedService.markOpened(USER_A);
+                    // 同一奖励只允许一个并发调用方收到新入账结果，其余必须明确未发奖且金额为零
+                    if (result.isAwarded()) {
+                        awarded.incrementAndGet();
+                    } else {
+                        assertThat(result.getAmount()).isZero();
+                    }
                 } catch (Exception e) {
                     failures.incrementAndGet();
                 }
@@ -194,6 +202,7 @@ class DailyNoteOpenedRewardTest {
         dailyNoteOpenedService.markOpened(USER_A);
 
         assertThat(failures.get()).isZero();
+        assertThat(awarded.get()).isOne();
         assertThat(dailyNoteOpenedDao.selectCount(new QueryWrapper<DailyNoteOpenedEntity>()
                 .eq("user_id", USER_A)
                 .eq("note_date", java.sql.Date.valueOf("2160-03-10")))).isEqualTo(1);

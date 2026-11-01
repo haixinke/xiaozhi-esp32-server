@@ -22,6 +22,7 @@ import xiaozhi.modules.dailynote.service.DailyNoteOpenedService;
 import xiaozhi.modules.dailynote.service.DailyNoteTodayService;
 import xiaozhi.modules.dailynote.vo.DailyNoteTodayVO;
 import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.star.vo.DailyRewardResult;
 
 /**
  * 当日小纸条应用端控制器契约测试。
@@ -88,20 +89,22 @@ class DailyNoteAppControllerTest {
     }
 
     @Test
-    @DisplayName("opened 将 Token 解析出的用户 ID 传给标记 Service，返回统一空数据成功结果")
-    void openedPassesTokenUserIdAndReturnsEmptySuccess() {
+    @DisplayName("opened 将 Token 解析出的用户 ID 传给标记 Service，奖励结算结果原样包装进统一信封")
+    void openedPassesTokenUserIdAndWrapsRewardResult() {
         DailyNoteOpenedService openedService = mock(DailyNoteOpenedService.class);
         DailyNoteAppController controller = new DailyNoteAppController(mock(DailyNoteTodayService.class),
                 openedService);
+        DailyRewardResult expected = DailyRewardResult.awarded(11, 1001L, 2002L, java.time.LocalDate.now());
+        when(openedService.markOpened(7L)).thenReturn(expected);
 
         try (MockedStatic<SecurityUser> security = mockStatic(SecurityUser.class)) {
             security.when(SecurityUser::getUserId).thenReturn(7L);
 
-            Result<Void> result = controller.opened();
+            Result<DailyRewardResult> result = controller.opened();
 
             assertThat(result.getCode()).isZero();
             assertThat(result.getMsg()).isEqualTo("success");
-            assertThat(result.getData()).isNull();
+            assertThat(result.getData()).isSameAs(expected);
             verify(openedService).markOpened(7L);
         }
     }

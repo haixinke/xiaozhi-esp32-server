@@ -34,6 +34,14 @@ import xiaozhi.modules.dailynote.entity.DailyNoteEntity;
 import xiaozhi.modules.dailynote.entity.DailyNoteOpenedEntity;
 import xiaozhi.modules.dailynote.service.DailyNoteOpenedService;
 import xiaozhi.modules.dailynote.service.impl.DailyNoteOpenedServiceImpl;
+import xiaozhi.modules.star.dao.StarAccountDao;
+import xiaozhi.modules.star.dao.StarDailyRewardDao;
+import xiaozhi.modules.star.dao.StarTransactionDao;
+import xiaozhi.modules.star.entity.StarAccountEntity;
+import xiaozhi.modules.star.entity.StarDailyRewardEntity;
+import xiaozhi.modules.star.entity.StarTransactionEntity;
+import xiaozhi.modules.star.service.impl.StarDailyRewardServiceImpl;
+import xiaozhi.modules.star.vo.DailyRewardResult;
 
 /**
  * 用户已打开记录 Service 集成测试（真实 dev 库）。
@@ -52,6 +60,15 @@ class DailyNoteOpenedServiceTest {
     private DailyNoteOpenedDao dailyNoteOpenedDao;
     @Autowired
     private DailyNoteDao dailyNoteDao;
+    /** 发奖 Service 与打开 Service 共享 dailyNoteClock Bean，拨钟需两侧同步（同 DailyNoteOpenedRewardTest） */
+    @Autowired
+    private StarDailyRewardServiceImpl starDailyRewardServiceImpl;
+    @Autowired
+    private StarDailyRewardDao starDailyRewardDao;
+    @Autowired
+    private StarTransactionDao starTransactionDao;
+    @Autowired
+    private StarAccountDao starAccountDao;
 
     /** 本用例使用的专用用户 ID（远离真实用户区间），统一清理 */
     private static final long USER_A = 9_999_000_001L;
@@ -60,12 +77,13 @@ class DailyNoteOpenedServiceTest {
     private final List<Long> openedIds = new ArrayList<>();
     private final List<Long> noteIds = new ArrayList<>();
 
-    /** 把被测 Service 的可替换时钟拨到指定日期的正午（Asia/Shanghai），远离日界 */
+    /** 把被测 Service 的可替换时钟拨到指定日期的正午（Asia/Shanghai），远离日界；发奖侧同步拨 */
     private void atShanghaiNoon(String date) {
         LocalDate day = LocalDate.parse(date);
         Instant noon = day.atTime(12, 0).atZone(ZoneId.of("Asia/Shanghai")).toInstant();
-        ((DailyNoteOpenedServiceImpl) dailyNoteOpenedService)
-                .setClock(Clock.fixed(noon, ZoneId.of("Asia/Shanghai")));
+        Clock fixed = Clock.fixed(noon, ZoneId.of("Asia/Shanghai"));
+        ((DailyNoteOpenedServiceImpl) dailyNoteOpenedService).setClock(fixed);
+        starDailyRewardServiceImpl.setClock(fixed);
     }
 
     @BeforeEach
@@ -83,6 +101,13 @@ class DailyNoteOpenedServiceTest {
                 .in("user_id", USER_A, USER_B)
                 .ge("note_date", java.sql.Date.valueOf("2160-01-01")));
         openedIds.clear();
+        // 打开即发奖后本类用户会产生星星数据，一并清理
+        starDailyRewardDao.delete(new QueryWrapper<StarDailyRewardEntity>()
+                .in("user_id", USER_A, USER_B));
+        starTransactionDao.delete(new QueryWrapper<StarTransactionEntity>()
+                .in("user_id", USER_A, USER_B));
+        starAccountDao.delete(new QueryWrapper<StarAccountEntity>()
+                .in("user_id", USER_A, USER_B));
     }
 
     /** 直接落库一份小纸条（聚焦已打开行为，不经过管理 Service 校验） */
@@ -115,6 +140,50 @@ class DailyNoteOpenedServiceTest {
         assertThat(record.getUserId()).isEqualTo(USER_A);
         assertThat(record.getOpenedAt()).isNotNull();
         openedIds.add(record.getId());
+    }
+
+    @Test
+    @DisplayName("首次有效打开：返回发奖结果 awarded=true 且金额为首日 11 颗")
+    void firstMarkReturnsAwardedAmount() {
+        atShanghaiNoon("2160-01-21");
+        insertNote("2160-01-21", "今日小纸条");
+
+        DailyRewardResult result = dailyNoteOpenedService.markOpened(USER_A);
+
+        assertThat(result).isNotNull();
+        assertThat(result.isAwarded()).isTrue();
+        assertThat(result.getAmount()).isEqualTo(11);
+        DailyNoteOpenedEntity record = findOpened(USER_A, "2160-01-21");
+        assertThat(record).isNotNull();
+        openedIds.add(record.getId());
+    }
+
+    @Test
+    @DisplayName("同日重复标记：返回 awarded=false 且 amount=0，不补发也不查历史快照")
+    void repeatMarkReturnsNotAwardedZeroAmount() {
+        atShanghaiNoon("2160-01-22");
+        insertNote("2160-01-22", "标题");
+
+        DailyRewardResult first = dailyNoteOpenedService.markOpened(USER_A);
+        DailyNoteOpenedEntity record = findOpened(USER_A, "2160-01-22");
+        openedIds.add(record.getId());
+        DailyRewardResult second = dailyNoteOpenedService.markOpened(USER_A);
+
+        assertThat(first.isAwarded()).isTrue();
+        assertThat(second.isAwarded()).isFalse();
+        assertThat(second.getAmount()).isZero();
+    }
+
+    @Test
+    @DisplayName("当日无小纸条：返回 awarded=false 且 amount=0 的成功空操作结果")
+    void noNoteReturnsNotAwardedZeroAmount() {
+        atShanghaiNoon("2160-01-23");
+
+        DailyRewardResult result = dailyNoteOpenedService.markOpened(USER_A);
+
+        assertThat(result).isNotNull();
+        assertThat(result.isAwarded()).isFalse();
+        assertThat(result.getAmount()).isZero();
     }
 
     @Test

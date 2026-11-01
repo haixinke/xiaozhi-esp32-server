@@ -11,8 +11,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -22,12 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.MessageSource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import xiaozhi.common.exception.RenException;
-import xiaozhi.common.utils.MessageUtils;
+import xiaozhi.common.support.MessageSourceMockSupport;
 
 @ExtendWith(MockitoExtension.class)
 class PdcNfcClaimRateLimiterTest {
@@ -40,14 +37,10 @@ class PdcNfcClaimRateLimiterTest {
 
     private PdcNfcClaimRateLimiter rateLimiter;
 
+    // MessageUtils 现从 SpringContextUtils 现取 messageSource，改为挂 mock ApplicationContext
     @BeforeAll
-    static void initMessageSource() throws Exception {
-        MessageSource mockSource = mock(MessageSource.class);
-        lenient().when(mockSource.getMessage(anyString(), any(), any(), any(Locale.class)))
-                .thenReturn("mock message");
-        Field field = MessageUtils.class.getDeclaredField("messageSource");
-        field.setAccessible(true);
-        field.set(null, mockSource);
+    static void initMessageSource() {
+        MessageSourceMockSupport.install();
     }
 
     @BeforeEach

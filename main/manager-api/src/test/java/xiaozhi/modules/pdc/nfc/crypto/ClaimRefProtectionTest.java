@@ -5,21 +5,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.MessageSource;
 import xiaozhi.common.exception.RenException;
-import xiaozhi.common.utils.MessageUtils;
+import xiaozhi.common.support.MessageSourceMockSupport;
 import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 
-import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class ClaimRefProtectionTest {
 
@@ -27,14 +21,10 @@ class ClaimRefProtectionTest {
     private PdcNfcIdentifierGenerator generator;
     private PdcNfcProperties properties;
 
+    // MessageUtils 现从 SpringContextUtils 现取 messageSource，改为挂 mock ApplicationContext
     @BeforeAll
-    static void initMessageSource() throws Exception {
-        MessageSource mockSource = mock(MessageSource.class);
-        when(mockSource.getMessage(anyString(), any(), any(), any(Locale.class)))
-                .thenReturn("mock message");
-        Field field = MessageUtils.class.getDeclaredField("messageSource");
-        field.setAccessible(true);
-        field.set(null, mockSource);
+    static void initMessageSource() {
+        MessageSourceMockSupport.install();
     }
 
     @BeforeEach

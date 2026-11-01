@@ -3,22 +3,14 @@ package xiaozhi.modules.pdc.nfc.service;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.MessageSource;
 import xiaozhi.common.exception.RenException;
-import xiaozhi.common.utils.MessageUtils;
+import xiaozhi.common.support.MessageSourceMockSupport;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcBatchStatus;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcSchemeJobStatus;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcWriteJobStatus;
 
-import java.lang.reflect.Field;
-import java.util.Locale;
-
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class PdcNfcJobStateMachineTest {
 
@@ -26,14 +18,10 @@ class PdcNfcJobStateMachineTest {
     private PdcNfcSchemeJobStateMachine schemeJobStateMachine;
     private PdcNfcWriteJobStateMachine writeJobStateMachine;
 
+    // MessageUtils 现从 SpringContextUtils 现取 messageSource，改为挂 mock ApplicationContext
     @BeforeAll
-    static void initMessageSource() throws Exception {
-        MessageSource mockSource = mock(MessageSource.class);
-        when(mockSource.getMessage(anyString(), any(), any(), any(Locale.class)))
-                .thenReturn("mock message");
-        Field field = MessageUtils.class.getDeclaredField("messageSource");
-        field.setAccessible(true);
-        field.set(null, mockSource);
+    static void initMessageSource() {
+        MessageSourceMockSupport.install();
     }
 
     @BeforeEach

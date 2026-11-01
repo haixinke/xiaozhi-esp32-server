@@ -13,7 +13,7 @@
 - **后端服务** → `main/manager-api/`
 - **智控台** → `main/manager-web/`
 - **蛋宝宝小程序** → `main/egg-miniprogram/`
-- **蛋宝宝UI静态项目** → `main/eggbabe-miniprogram/`
+- **UI静态项目** → `main/eggbabe-miniprogram/`
 
 | 子项目 | 语言 / 技术栈 | 端口 | 用途 |
 |---|---|---|---|

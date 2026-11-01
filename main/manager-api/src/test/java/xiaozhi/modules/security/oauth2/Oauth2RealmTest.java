@@ -38,12 +38,11 @@ class Oauth2RealmTest {
 
     /**
      * 还原全局静态字段，避免污染同 JVM 内其他测试类。
+     * （MessageUtils 已不缓存 messageSource 字段，无需再清）
      */
     @AfterAll
     static void restoreSpringContext() {
         ReflectionTestUtils.setField(SpringContextUtils.class, "applicationContext", null);
-        // MessageUtils 内部缓存了 messageSource 静态引用，一并清掉
-        ReflectionTestUtils.setField(xiaozhi.common.utils.MessageUtils.class, "messageSource", null);
     }
 
     /**

@@ -11,10 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,12 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.MessageSource;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 
 import xiaozhi.common.exception.RenException;
-import xiaozhi.common.utils.MessageUtils;
+import xiaozhi.common.support.MessageSourceMockSupport;
 import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 import xiaozhi.modules.pdc.nfc.crypto.ClaimRefProtection;
 import xiaozhi.modules.pdc.nfc.dao.PdcNfcAssetDao;
@@ -63,14 +60,10 @@ class PdcNfcClaimPreviewServiceTest {
 
     private PdcNfcClaimServiceImpl claimService;
 
+    // MessageUtils 现从 SpringContextUtils 现取 messageSource，改为挂 mock ApplicationContext
     @BeforeAll
-    static void initMessageSource() throws Exception {
-        MessageSource mockSource = mock(MessageSource.class);
-        lenient().when(mockSource.getMessage(anyString(), any(), any(), any(Locale.class)))
-                .thenReturn("mock message");
-        Field field = MessageUtils.class.getDeclaredField("messageSource");
-        field.setAccessible(true);
-        field.set(null, mockSource);
+    static void initMessageSource() {
+        MessageSourceMockSupport.install();
     }
 
     @BeforeEach

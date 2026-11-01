@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
-import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -44,7 +43,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInt
 
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
-import xiaozhi.common.utils.MessageUtils;
+import xiaozhi.common.support.MessageSourceMockSupport;
 import xiaozhi.modules.dailynote.service.CompanionDaysService;
 import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
@@ -87,17 +86,10 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
     @Autowired private PetDao petDao;
     @Autowired private PdcNfcClaimService claimService;
 
+    // MessageUtils 现从 SpringContextUtils 现取 messageSource，改为挂 mock ApplicationContext
     @BeforeAll
-    static void initMessageSource() throws Exception {
-        MessageSource mockSource = mock(MessageSource.class);
-        lenient().when(mockSource.getMessage(anyString(),
-                org.mockito.ArgumentMatchers.any(),
-                anyString(),
-                org.mockito.ArgumentMatchers.any(Locale.class)))
-                .thenAnswer(invocation -> invocation.getArgument(2));
-        Field field = MessageUtils.class.getDeclaredField("messageSource");
-        field.setAccessible(true);
-        field.set(null, mockSource);
+    static void initMessageSource() {
+        MessageSourceMockSupport.install();
     }
 
     /** schema 只建一次（静态标记），用例间只清业务行 */

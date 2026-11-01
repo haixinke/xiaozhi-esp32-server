@@ -74,6 +74,7 @@ class PetServiceImplCreateEggTest {
     @Mock private PetCollectionCardService petCollectionCardService;
     @Mock private PetSceneProperties petSceneProperties;
     @Mock private WechatPhoneGate wechatPhoneGate;
+    @Mock private xiaozhi.modules.dailynote.service.CompanionDaysService companionDaysService;
 
     private PetServiceImpl petService;
 
@@ -83,7 +84,8 @@ class PetServiceImplCreateEggTest {
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
-                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, wechatPhoneGate, null);
+                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, wechatPhoneGate, null,
+                companionDaysService);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 

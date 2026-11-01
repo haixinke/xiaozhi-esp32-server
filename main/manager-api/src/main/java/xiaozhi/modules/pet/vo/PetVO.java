@@ -92,6 +92,9 @@ public class PetVO {
     @Schema(description = "今日心情一句话")
     private String todayMoodSentence;
 
+    @Schema(description = "连续陪伴天数（用户级，按小纸条打开记录现算，中断从1重计，断档当天显示昨天的数）")
+    private Integer companionDays;
+
     @Schema(description = "创建时间")
     private Date createDate;
 }

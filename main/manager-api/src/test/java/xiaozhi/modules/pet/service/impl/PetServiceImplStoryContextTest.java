@@ -40,13 +40,15 @@ class PetServiceImplStoryContextTest {
     private PetDao petDao;
     @Mock
     private PetStoryQueryService petStoryQueryService;
+    @Mock
+    private xiaozhi.modules.dailynote.service.CompanionDaysService companionDaysService;
 
     private PetServiceImpl petService;
 
     @BeforeEach
     void setUp() {
         petService = new PetServiceImpl(petDao, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, petStoryQueryService);
+                null, null, null, null, null, null, petStoryQueryService, companionDaysService);
     }
 
     /** 今日心情已生成(refreshTodayMood 直接短路),避免依赖 LLM */

@@ -30,6 +30,7 @@ import xiaozhi.modules.agent.service.AgentContextProviderService;
 import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
+import xiaozhi.modules.dailynote.service.CompanionDaysService;
 import xiaozhi.modules.invite.service.InviteService;
 import xiaozhi.modules.llm.service.LLMService;
 import xiaozhi.modules.pet.constant.MoodActingGuide;
@@ -97,6 +98,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final PetSceneProperties petSceneProperties;
     private final WechatPhoneGate wechatPhoneGate;
     private final PetStoryQueryService petStoryQueryService;
+    private final CompanionDaysService companionDaysService;
 
     @Value("${pet.quick-hatch.code:}")
     private String quickHatchCode;
@@ -834,6 +836,8 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         vo.setPersonalityBrief(pet.getPersonalityBrief());
         vo.setTodayMoodDate(pet.getTodayMoodDate());
         vo.setTodayMoodSentence(pet.getTodayMoodSentence());
+        // 连续陪伴天数：用户级口径，随宠物视图统一下发，切换宠物数值不变
+        vo.setCompanionDays(companionDaysService.companionDays(pet.getUserId()));
         vo.setCreateDate(pet.getCreateDate());
         return vo;
     }

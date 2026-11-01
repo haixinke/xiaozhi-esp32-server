@@ -49,13 +49,14 @@ class PetServiceImplUpdatePetTest {
 
     @Mock private PetDao petDao;
     @Mock private PetCollectionCardService petCollectionCardService;
+    @Mock private xiaozhi.modules.dailynote.service.CompanionDaysService companionDaysService;
 
     private PetServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new PetServiceImpl(petDao, null, null, null, null, null, null, null, null,
-                null, null, null, petCollectionCardService, null, null, null);
+                null, null, null, petCollectionCardService, null, null, null, companionDaysService);
     }
 
     private PetEntity eggPet() {
@@ -105,5 +106,20 @@ class PetServiceImplUpdatePetTest {
         // Act & Assert
         assertThatThrownBy(() -> service.updatePet(USER_ID, PET_ID, "小蛋壳"))
                 .isInstanceOf(RenException.class);
+    }
+
+    @Test
+    @DisplayName("updatePet - 返回的 PetVO 带连续陪伴天数（用户级，由 CompanionDaysService 计算）")
+    void updatePet_returnsPetVOWithCompanionDays() {
+        // Arrange
+        PetEntity pet = eggPet();
+        when(petDao.selectById(PET_ID)).thenReturn(pet);
+        when(companionDaysService.companionDays(USER_ID)).thenReturn(7);
+
+        // Act
+        PetVO vo = service.updatePet(USER_ID, PET_ID, "小蛋壳");
+
+        // Assert
+        assertThat(vo.getCompanionDays()).isEqualTo(7);
     }
 }

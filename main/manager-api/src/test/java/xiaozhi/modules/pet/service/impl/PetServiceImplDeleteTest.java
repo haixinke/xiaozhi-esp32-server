@@ -63,13 +63,14 @@ class PetServiceImplDeleteTest {
 
     @Mock private PetDao petDao;
     @Mock private PetCollectionCardService petCollectionCardService;
+    @Mock private xiaozhi.modules.dailynote.service.CompanionDaysService companionDaysService;
 
     private PetServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new PetServiceImpl(petDao, null, null, null, null, null, null, null, null,
-                null, null, null, petCollectionCardService, null, null, null);
+                null, null, null, petCollectionCardService, null, null, null, companionDaysService);
     }
 
     /** 构造一只未删除的蛋（deletedAt=0），todayMoodDate 置为今天以跳过今日心情懒刷新 */

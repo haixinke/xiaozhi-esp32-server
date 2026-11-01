@@ -45,6 +45,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInt
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.MessageUtils;
+import xiaozhi.modules.dailynote.service.CompanionDaysService;
 import xiaozhi.modules.pdc.nfc.config.PdcNfcProperties;
 import xiaozhi.modules.pdc.nfc.constant.PdcNfcAssetStatus;
 import xiaozhi.modules.pdc.nfc.crypto.ClaimRefProtection;
@@ -314,8 +315,11 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
         @Primary
         PetService petService(PetDao petDao, WechatPhoneGate wechatPhoneGate,
                               PetCollectionCardService petCollectionCardService) {
+            // toVO 会调用 companionDays，NPE 防护：mock 返回 0
+            CompanionDaysService companionDaysService = mock(CompanionDaysService.class);
             return new PetServiceImpl(petDao, null, null, null, null, null, null, null,
-                    null, null, null, null, petCollectionCardService, null, wechatPhoneGate, null);
+                    null, null, null, null, petCollectionCardService, null, wechatPhoneGate, null,
+                    companionDaysService);
         }
     }
 }

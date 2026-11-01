@@ -76,6 +76,7 @@ class PetServiceImplTodayMoodTest {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private xiaozhi.modules.pet.service.PetCollectionCardService petCollectionCardService;
     @Mock private xiaozhi.modules.pet.config.PetSceneProperties petSceneProperties;
+    @Mock private xiaozhi.modules.dailynote.service.CompanionDaysService companionDaysService;
 
     private PetServiceImpl petService;
 
@@ -85,7 +86,8 @@ class PetServiceImplTodayMoodTest {
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
-                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, null, null);
+                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, null, null,
+                companionDaysService);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 

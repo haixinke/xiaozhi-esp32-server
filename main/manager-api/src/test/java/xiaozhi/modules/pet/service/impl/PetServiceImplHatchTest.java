@@ -81,6 +81,7 @@ class PetServiceImplHatchTest {
     @Mock private xiaozhi.modules.pet.service.PetCollectionCardService petCollectionCardService;
     @Mock private xiaozhi.modules.pet.config.PetSceneProperties petSceneProperties;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private xiaozhi.modules.dailynote.service.CompanionDaysService companionDaysService;
 
     private PetServiceImpl petService;
 
@@ -90,7 +91,8 @@ class PetServiceImplHatchTest {
         PetCollectionCardProperties collectionCardProperties = buildCollectionCardProperties();
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
-                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, null, null);
+                avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, null, null,
+                companionDaysService);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
         when(petSceneProperties.randomSceneUrl(anyString())).thenReturn("https://oss.eggbabe.com/default-scenes/fish/scenes-fish-0.jpg");
         // LLM 不可用 → deriveMbti 走兜底(INFP)，不调 LLM

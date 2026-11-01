@@ -75,6 +75,7 @@ class PetServiceImplBirthTest {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private PetCollectionCardService petCollectionCardService;
     @Mock private PetSceneProperties petSceneProperties;
+    @Mock private xiaozhi.modules.dailynote.service.CompanionDaysService companionDaysService;
 
     private PetServiceImpl petService;
 
@@ -83,7 +84,7 @@ class PetServiceImplBirthTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 new PetAvatarProperties(), new PetCollectionCardProperties(), petCollectionCardService,
-                petSceneProperties, null, null);
+                petSceneProperties, null, null, companionDaysService);
         when(llmService.isAvailable()).thenReturn(false);
     }
 

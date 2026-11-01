@@ -82,6 +82,7 @@ class PetServiceImplAdoptTest {
     @Mock private xiaozhi.modules.pet.service.PetCollectionCardService petCollectionCardService;
     @Mock private xiaozhi.modules.pet.config.PetSceneProperties petSceneProperties;
     @Mock private WechatPhoneGate wechatPhoneGate;
+    @Mock private xiaozhi.modules.dailynote.service.CompanionDaysService companionDaysService;
 
     private PetServiceImpl petService;
 
@@ -92,7 +93,7 @@ class PetServiceImplAdoptTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties,
-                wechatPhoneGate, null);
+                wechatPhoneGate, null, companionDaysService);
         setQuickHatchCode(DEMO_QUICK_HATCH_CODE);
         when(wechatPhoneGate.canAccess(any())).thenReturn(true);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());

@@ -84,7 +84,7 @@ class PetServiceImplBirthTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 new PetAvatarProperties(), new PetCollectionCardProperties(), petCollectionCardService,
-                petSceneProperties, null, null, companionDaysService);
+                petSceneProperties, null, null, companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, null));
         when(llmService.isAvailable()).thenReturn(false);
     }
 

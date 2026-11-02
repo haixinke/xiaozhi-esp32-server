@@ -93,7 +93,7 @@ class PetServiceImplAdoptTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties,
-                wechatPhoneGate, null, companionDaysService);
+                wechatPhoneGate, null, companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, wechatPhoneGate));
         setQuickHatchCode(DEMO_QUICK_HATCH_CODE);
         when(wechatPhoneGate.canAccess(any())).thenReturn(true);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
@@ -261,7 +261,7 @@ class PetServiceImplAdoptTest {
         Long userId = 1004L;
         PetAdoptDTO dto = new PetAdoptDTO();
         dto.setInviteCode("CODE-EXISTS");
-        when(petDao.exists(any())).thenReturn(true);
+        when(petDao.selectList(any())).thenReturn(java.util.List.of(occupiedPet()));
 
         assertThatThrownBy(() -> petService.adopt(userId, dto))
                 .isInstanceOf(RenException.class)
@@ -368,7 +368,7 @@ class PetServiceImplAdoptTest {
     @Test
     @DisplayName("adopt - 名额检查过滤已删除宠物（仅 deleted_at=0 占位）")
     void adopt_existCheckFiltersDeletedPets() {
-        when(petDao.exists(any(QueryWrapper.class))).thenReturn(true);
+        when(petDao.selectList(any(QueryWrapper.class))).thenReturn(java.util.List.of(occupiedPet()));
 
         assertThatThrownBy(() -> petService.adopt(1001L, new PetAdoptDTO()))
                 .isInstanceOf(RenException.class)
@@ -376,7 +376,7 @@ class PetServiceImplAdoptTest {
                         .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
 
         ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
-        verify(petDao).exists(captor.capture());
+        verify(petDao).selectList(captor.capture());
         assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
     }
 
@@ -385,7 +385,7 @@ class PetServiceImplAdoptTest {
     void adopt_existCheckCoversAllChannels() {
         // 渠道互斥（双向）：邀请码渠道限一只，已有任何来源（含 NFC）的未删宠物即拦截。
         // 该语义靠检查条件「不含 prototype/source 过滤」成立，锁定防止误改成按原型限定
-        when(petDao.exists(any(QueryWrapper.class))).thenReturn(true);
+        when(petDao.selectList(any(QueryWrapper.class))).thenReturn(java.util.List.of(occupiedPet()));
 
         assertThatThrownBy(() -> petService.adopt(1001L, new PetAdoptDTO()))
                 .isInstanceOf(RenException.class)
@@ -393,10 +393,19 @@ class PetServiceImplAdoptTest {
                         .isEqualTo(ErrorCode.PET_ALREADY_EXISTS));
 
         ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
-        verify(petDao).exists(captor.capture());
+        verify(petDao).selectList(captor.capture());
         String sqlSegment = captor.getValue().getSqlSegment();
         assertThat(sqlSegment).contains("deleted_at =");
         assertThat(sqlSegment).doesNotContain("prototype");
         assertThat(sqlSegment).doesNotContain("source");
+    }
+    /** 名额占用的已有宠物事实，避免依赖 DAO exists 的具体实现。 */
+    private PetEntity occupiedPet() {
+        PetEntity pet = new PetEntity();
+        pet.setId("occupied");
+        pet.setPrototype("锦鲤");
+        pet.setSource("NFC");
+        pet.setDeletedAt(0L);
+        return pet;
     }
 }

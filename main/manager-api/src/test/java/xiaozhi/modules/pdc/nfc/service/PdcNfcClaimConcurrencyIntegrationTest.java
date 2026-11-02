@@ -37,6 +37,7 @@ import xiaozhi.modules.pdc.nfc.service.PdcNfcManualWriteService;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcClaimServiceImpl;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.service.PetService;
+import xiaozhi.modules.pet.service.NfcAdoptionResult;
 import xiaozhi.modules.pet.vo.PetVO;
 import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
@@ -108,8 +109,8 @@ class PdcNfcClaimConcurrencyIntegrationTest {
         petA.setId("pet-A");
         PetVO petB = new PetVO();
         petB.setId("pet-B");
-        when(petService.createEgg(eq(userA), anyString())).thenReturn(petA);
-        when(petService.createEgg(eq(userB), anyString())).thenReturn(petB);
+        when(petService.claimNfcEgg(eq(userA), anyString())).thenReturn(new NfcAdoptionResult(petA, false));
+        when(petService.claimNfcEgg(eq(userB), anyString())).thenReturn(new NfcAdoptionResult(petB, false));
 
         when(assetDao.markClaimed(eq(1L), eq(1), eq(userA), anyString()))
                 .thenAnswer(inv -> lockCounter.compareAndSet(1, 0) ? 1 : 0);

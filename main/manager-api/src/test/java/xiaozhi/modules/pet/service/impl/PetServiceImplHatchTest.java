@@ -92,7 +92,7 @@ class PetServiceImplHatchTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, null, null,
-                companionDaysService);
+                companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, null));
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
         when(petSceneProperties.randomSceneUrl(anyString())).thenReturn("https://oss.eggbabe.com/default-scenes/fish/scenes-fish-0.jpg");
         // LLM 不可用 → deriveMbti 走兜底(INFP)，不调 LLM

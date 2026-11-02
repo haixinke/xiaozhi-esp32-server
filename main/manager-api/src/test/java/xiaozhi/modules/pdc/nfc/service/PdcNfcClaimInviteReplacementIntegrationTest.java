@@ -5,13 +5,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
@@ -33,8 +37,12 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.MessageSource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -62,6 +70,8 @@ import xiaozhi.modules.pet.entity.PetEntity;
 import xiaozhi.modules.pet.service.PetCollectionCardService;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.service.impl.PetServiceImpl;
+import xiaozhi.modules.pet.service.impl.PetAdoptionModule;
+import xiaozhi.modules.llm.service.LLMService;
 import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 /**
@@ -85,6 +95,9 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
     @Autowired private PdcNfcClaimRecordDao claimRecordDao;
     @Autowired private PetDao petDao;
     @Autowired private PdcNfcClaimService claimService;
+    @Autowired private LLMService llmService;
+    @Autowired private PetAdoptionModule adoptionModule;
+    @Autowired private PlatformTransactionManager transactionManager;
 
     // MessageUtils 现从 SpringContextUtils 现取 messageSource，改为挂 mock ApplicationContext
     @BeforeAll
@@ -132,7 +145,12 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
             batchDao.insert(batch);
             schemaInitialized = true;
         }
-        // 每个用例清场：只清本测试用到的三张表
+        // 用户行锁与生产共用 sys_user 主键；此隔离 schema 只需该列。
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        jdbc.execute("CREATE TABLE IF NOT EXISTS sys_user (id BIGINT PRIMARY KEY)");
+        jdbc.update("INSERT IGNORE INTO sys_user(id) VALUES (?)", USER_ID);
+        reset(llmService);
+        // 每个用例只清本测试使用的业务行
         petDao.delete(new QueryWrapper<PetEntity>().eq("user_id", USER_ID));
         claimRecordDao.delete(new QueryWrapper<PdcNfcClaimRecordEntity>()
                 .eq("asset_id", ASSET_ID));
@@ -155,6 +173,10 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
         // 邀请码宠物逻辑删除：行保留、deleted_at>0
         PetEntity invitePet = petDao.selectById("pet-invite-yt");
         assertThat(invitePet.getDeletedAt()).isGreaterThan(0L);
+        // 今日心情故意缺失，领取只能变更领养事实，不能因展示补齐而发出外部调用。
+        assertThat(invitePet.getTodayMood()).isNull();
+        assertThat(invitePet.getTodayMoodDate()).isNull();
+        verifyNoInteractions(llmService);
 
         // NFC 宠物已建：source=NFC、未删除
         List<PetEntity> alivePets = petDao.selectList(new QueryWrapper<PetEntity>()
@@ -195,7 +217,114 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
                 .isEqualTo(PdcNfcAssetStatus.ACTIVE.name());
     }
 
-    /** 插入一只未删除宠物；todayMood 置为已生成，跳过 listByUserId 的今日心情懒刷新（不依赖 LLM mock） */
+    @Test
+    @DisplayName("心情缺失的已有宠物：本人卡与幂等回放均返回存量数据，不调用 LLM")
+    void replayAndClaimedBySelfNeverRefreshMissingMood() {
+        PdcNfcClaimResultVO first = claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
+        String petId = ((xiaozhi.modules.pet.vo.PetVO) first.pet()).getId();
+
+        PdcNfcClaimResultVO replay = claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
+        PdcNfcClaimResultVO self = claimService.confirm(USER_ID, VALID_CLAIM_REF, UUID.randomUUID());
+
+        assertThat(((xiaozhi.modules.pet.vo.PetVO) replay.pet()).getId()).isEqualTo(petId);
+        assertThat(((xiaozhi.modules.pet.vo.PetVO) self.pet()).getId()).isEqualTo(petId);
+        assertThat(replay.replacedInvitePet()).isFalse();
+        assertThat(self.claimStatus()).isEqualTo("CLAIMED_BY_SELF");
+        assertThat(petDao.selectById(petId).getTodayMoodDate()).isNull();
+        verifyNoInteractions(llmService);
+    }
+
+    @Test
+    @DisplayName("预览重复原型时不刷新心情且不消耗资产")
+    void previewOfOwnedPrototypeKeepsStoredMood() {
+        insertPet("pet-owned-missing-mood", "玉兔", "NFC");
+
+        var result = claimService.preview(USER_ID, VALID_CLAIM_REF);
+
+        assertThat(result.claimStatus()).isEqualTo("ALREADY_OWNED");
+        assertThat(petDao.selectById("pet-owned-missing-mood").getTodayMoodDate()).isNull();
+        assertThat(assetDao.selectById(ASSET_ID).getStatus()).isEqualTo("ACTIVE");
+        verifyNoInteractions(llmService);
+    }
+
+    @Test
+    @DisplayName("领取记录写入失败：邀请码替换与新蛋一起回滚")
+    void claimRecordFailureRestoresReplacedInvitePet() {
+        insertPet("pet-invite-rollback", "玉兔", "INVITE_CODE");
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        // 在真实数据库中拒绝领取记录，验证此前完成的宠物变更也受同一事务保护。
+        jdbc.execute("CREATE TRIGGER reject_test_claim BEFORE INSERT ON pdc_nfc_claim_record "
+                + "FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'test claim failure'");
+        try {
+            assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
+                    .isInstanceOf(RuntimeException.class);
+            assertThat(petDao.selectById("pet-invite-rollback").getDeletedAt()).isZero();
+            assertThat(petDao.selectCount(new QueryWrapper<PetEntity>().eq("user_id", USER_ID)))
+                    .isEqualTo(1);
+            assertThat(claimRecordDao.selectCount(new QueryWrapper<PdcNfcClaimRecordEntity>()
+                    .eq("asset_id", ASSET_ID))).isZero();
+            assertThat(assetDao.selectById(ASSET_ID).getStatus()).isEqualTo("ACTIVE");
+            verifyNoInteractions(llmService);
+        } finally {
+            jdbc.execute("DROP TRIGGER reject_test_claim");
+        }
+    }
+
+    @Test
+    @DisplayName("跨渠道并发：NFC 在旧快照下等待邀请码提交，仍须替换后只保留 NFC 宠物")
+    void concurrentChannelsUseCurrentReadAfterUserLock() throws Exception {
+        CountDownLatch inviteWritten = new CountDownLatch(1);
+        CountDownLatch nfcSnapshotReady = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        TransactionTemplate inviteTx = new TransactionTemplate(transactionManager);
+        TransactionTemplate nfcTx = new TransactionTemplate(transactionManager);
+        nfcTx.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
+        try {
+            var invite = executor.submit(() -> inviteTx.execute(status -> {
+                PetEntity pet = adoptionModule.createInviteEgg(USER_ID, "锦鲤");
+                inviteWritten.countDown();
+                await(nfcSnapshotReady);
+                return pet;
+            }));
+            var nfc = executor.submit(() -> {
+                await(inviteWritten);
+                return nfcTx.execute(status -> {
+                    // 已插入的邀请码尚未提交：先建立不含该行的 RR 快照，再竞争同一个用户锁。
+                    assertThat(petDao.selectCount(new QueryWrapper<PetEntity>().eq("user_id", USER_ID)))
+                            .isZero();
+                    nfcSnapshotReady.countDown();
+                    return adoptionModule.claimNfcEgg(USER_ID, "玉兔");
+                });
+            });
+            PetEntity invitePet = invite.get(20, TimeUnit.SECONDS);
+            PetAdoptionModule.NfcEgg outcome = nfc.get(20, TimeUnit.SECONDS);
+
+            assertThat(outcome.replacedInvitePet()).isTrue();
+            assertThat(petDao.selectById(invitePet.getId()).getDeletedAt()).isPositive();
+            List<PetEntity> active = petDao.selectList(new QueryWrapper<PetEntity>()
+                    .eq("user_id", USER_ID).eq("deleted_at", 0));
+            assertThat(active).hasSize(1);
+            assertThat(active.get(0).getSource()).isEqualTo("NFC");
+            assertThat(active.get(0).getPrototype()).isEqualTo("玉兔");
+            verifyNoInteractions(llmService);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /** 并发测试只等待明确事件，超时立即失败，避免失去因果关系的固定 sleep。 */
+    private static void await(CountDownLatch latch) {
+        try {
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("adoption transaction coordination timed out");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("adoption transaction interrupted", e);
+        }
+    }
+
+    /** 插入心情尚未生成的未删除宠物，确保领取无需展示路径也能完成。 */
     private void insertPet(String id, String prototype, String source) {
         PetEntity pet = new PetEntity();
         pet.setId(id);
@@ -207,8 +336,6 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
         pet.setAcceleratedMinutes(0);
         pet.setHatchStartTime(new Date());
         pet.setExpectedHatchTime(new Date());
-        pet.setTodayMood("平静");
-        pet.setTodayMoodDate(LocalDate.now(ZoneId.of("Asia/Shanghai")));
         pet.setCreator(USER_ID);
         pet.setCreateDate(new Date());
         petDao.insert(pet);
@@ -245,7 +372,7 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
             TransactionAutoConfiguration.class,
             MybatisPlusAutoConfiguration.class
     })
-    @Import({PdcNfcClaimServiceImpl.class})
+    @Import({PdcNfcClaimServiceImpl.class, PetAdoptionModule.class})
     static class TestConfig {
 
         @Bean
@@ -267,6 +394,7 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
         @Bean
         WechatPhoneGate wechatPhoneGate() {
             WechatPhoneGate gate = mock(WechatPhoneGate.class);
+            lenient().when(gate.canAccess(org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
             lenient().when(gate.hasBoundWechatPhone(org.mockito.ArgumentMatchers.anyLong()))
                     .thenReturn(true);
             return gate;
@@ -298,20 +426,23 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
             return service;
         }
 
-        /**
-         * 真实 PetServiceImpl：只有 PetDao 用真实实例（事务语义是本次测试目标），
-         * 其余依赖全部 mock——createEgg/deleteByUserId/listByUserId 路径不触达它们
-         * （今日心情懒刷新已由测试数据的 todayMood 置为已生成而跳过）。
-         */
+        /** LLM 是外部依赖，测试通过零交互断言阻止领取触发展示生成。 */
+        @Bean
+        LLMService llmService() {
+            return mock(LLMService.class);
+        }
+
+        /** 真实宠物与领养 implementation，共享隔离数据库及 Spring 事务代理。 */
         @Bean
         @Primary
         PetService petService(PetDao petDao, WechatPhoneGate wechatPhoneGate,
-                              PetCollectionCardService petCollectionCardService) {
+                              PetCollectionCardService petCollectionCardService,
+                              PetAdoptionModule adoptionModule, LLMService llmService) {
             // toVO 会调用 companionDays，NPE 防护：mock 返回 0
             CompanionDaysService companionDaysService = mock(CompanionDaysService.class);
-            return new PetServiceImpl(petDao, null, null, null, null, null, null, null,
+            return new PetServiceImpl(petDao, null, llmService, null, null, null, null, null,
                     null, null, null, null, petCollectionCardService, null, wechatPhoneGate, null,
-                    companionDaysService);
+                    companionDaysService, adoptionModule);
         }
     }
 }

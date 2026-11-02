@@ -56,7 +56,7 @@ class PetServiceImplUpdatePetTest {
     @BeforeEach
     void setUp() {
         service = new PetServiceImpl(petDao, null, null, null, null, null, null, null, null,
-                null, null, null, petCollectionCardService, null, null, null, companionDaysService);
+                null, null, null, petCollectionCardService, null, null, null, companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, null));
     }
 
     private PetEntity eggPet() {

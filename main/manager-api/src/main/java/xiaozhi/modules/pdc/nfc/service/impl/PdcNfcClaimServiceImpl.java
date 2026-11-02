@@ -34,6 +34,7 @@ import xiaozhi.modules.pdc.nfc.service.PdcNfcManualWriteService;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimPreviewVO;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.service.PetService;
+import xiaozhi.modules.pet.service.NfcAdoptionResult;
 import xiaozhi.modules.pet.vo.PetVO;
 import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
@@ -140,7 +141,8 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             // 并带上已有宠物（前端「去看看它」跳转）。只统计 NFC 来源——邀请码宠物不挡
             // NFC 领取（走 confirm 的渠道互斥替换，ADR 0007）；资产保持 ACTIVE 可被他人领取。
             // CLAIMED_BY_SELF（碰自己的卡）不走此分支，直达行为不变
-            PetVO ownedSamePrototype = findOwnedNfcPetOfPrototype(userId, asset.getPrototype());
+            // 查询失败必须返回错误，不能把未知资格当成可领取；客户端可按原入口重试。
+            PetVO ownedSamePrototype = petService.findOwnedNfcPet(userId, asset.getPrototype());
             if (ownedSamePrototype != null) {
                 return new PdcNfcClaimPreviewVO(
                         null, null, PdcNfcClaimPreviewVO.STATUS_ALREADY_OWNED, ownedSamePrototype);
@@ -160,7 +162,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
                 Object pet = null;
                 if (asset.getPetId() != null) {
                     try {
-                        PetVO petVO = petService.getById(userId, asset.getPetId());
+                        PetVO petVO = petService.getStoredById(userId, asset.getPetId());
                         pet = petVO;
                     } catch (Exception e) {
                         log.warn("[NFC-CLAIM] Failed to fetch pet for assetId={}, petId={}",
@@ -247,13 +249,11 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             throw new RenException(ErrorCode.PDC_NFC_ASSET_UNAVAILABLE);
         }
 
-        // 9. 渠道互斥（ADR 0007）：同事务静默逻辑删除该用户未删的邀请码宠物。
-        //    必须先于 createEgg——createEgg 的按原型名额检查统计所有来源，
-        //    同原型邀请码宠物不先删会挡住替换流程。原始数据保留在库（deleted_at 标记）。
-        boolean replacedInvitePet = logicallyDeleteInviteCodePets(userId);
-
-        // 10. Create pet (same transaction)
-        PetVO pet = petService.createEgg(userId, asset.getPrototype());
+        // 9. pet 侧统一承担名额、渠道替换和建蛋；加入当前领取事务，失败整单回滚。
+        // 资格与返回快照仅读取数据库，不触发今日心情生成或 LLM 调用。
+        NfcAdoptionResult adoption = petService.claimNfcEgg(userId, asset.getPrototype());
+        PetVO pet = adoption.pet();
+        boolean replacedInvitePet = adoption.replacedInvitePet();
 
         // 11. Insert claim record
         PdcNfcClaimRecordEntity record = new PdcNfcClaimRecordEntity();
@@ -277,28 +277,6 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
                 asset.getId(), userId, pet.getId(), replacedInvitePet);
 
         return PdcNfcClaimResultVO.claimed(pet, replacedInvitePet);
-    }
-
-    /**
-     * 渠道互斥（ADR 0007）：逻辑删除用户名下全部未删的邀请码来源宠物，返回是否发生过替换。
-     * 只删 INVITE_CODE 来源——NFC 宠物是正式渠道资产，不动。任一步失败向上抛，
-     * 由 confirm 的 @Transactional 整体回滚（不建蛋、不写领取记录、不消耗资产）。
-     */
-    private boolean logicallyDeleteInviteCodePets(Long userId) {
-        List<PetVO> pets = petService.listByUserId(userId);
-        if (pets == null || pets.isEmpty()) {
-            return false;
-        }
-        boolean replaced = false;
-        for (PetVO pet : pets) {
-            if ("INVITE_CODE".equals(pet.getSource())) {
-                petService.deleteByUserId(userId, pet.getId());
-                replaced = true;
-                log.info("[NFC-CLAIM-CONFIRM] 渠道互斥：邀请码宠物被 NFC 领养替换, userId={}, petId={}",
-                        userId, pet.getId());
-            }
-        }
-        return replaced;
     }
 
     private void requireClaimEnabledAndPhone(Long userId) {
@@ -346,7 +324,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
         PetVO pet = null;
         if (record.getPetId() != null) {
             try {
-                pet = petService.getById(record.getUserId(), record.getPetId());
+                pet = petService.getStoredById(record.getUserId(), record.getPetId());
             } catch (Exception e) {
                 log.warn("[NFC-CLAIM-CONFIRM] Failed to load pet for replay: petId={}", record.getPetId(), e);
             }
@@ -360,32 +338,9 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             return null;
         }
         try {
-            return petService.getById(userId, petId);
+            return petService.getStoredById(userId, petId);
         } catch (Exception e) {
             log.warn("[NFC-CLAIM-CONFIRM] Failed to load pet: userId={}, petId={}", userId, petId, e);
-            return null;
-        }
-    }
-
-    /**
-     * 查用户已持有的同原型 NFC 来源宠物（重复原型拦截判定）。只统计 source=NFC：
-     * 邀请码宠物与 NFC 渠道互斥但不拦截（confirm 内替换删除，ADR 0007）。
-     * 查询失败时按未持有处理并记 warn，不阻断 preview 主链路——真正的并发兜底在
-     * createEgg 的按原型唯一索引冲突转换（PET_ALREADY_EXISTS）。
-     */
-    private PetVO findOwnedNfcPetOfPrototype(Long userId, String prototype) {
-        try {
-            List<PetVO> pets = petService.listByUserId(userId);
-            if (pets == null) {
-                return null;
-            }
-            return pets.stream()
-                    .filter(pet -> "NFC".equals(pet.getSource()))
-                    .filter(pet -> prototype != null && prototype.equals(pet.getPrototype()))
-                    .findFirst()
-                    .orElse(null);
-        } catch (Exception e) {
-            log.warn("[NFC-CLAIM] Failed to check owned pets for userId={}", userId, e);
             return null;
         }
     }

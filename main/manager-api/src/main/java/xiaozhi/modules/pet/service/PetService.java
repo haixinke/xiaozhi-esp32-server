@@ -27,6 +27,15 @@ public interface PetService extends BaseService<PetEntity> {
      */
     PetVO createEgg(Long userId, String prototype);
 
+    /** NFC 领取：名额、邀请码替换与建蛋在同一事务中完成。 */
+    NfcAdoptionResult claimNfcEgg(Long userId, String prototype);
+
+    /** 查询同原型 NFC 宠物，只读已有心情；查询异常向外传播。 */
+    PetVO findOwnedNfcPet(Long userId, String prototype);
+
+    /** NFC 本人卡与幂等回放读取，不触发心情刷新。 */
+    PetVO getStoredById(Long userId, String petId);
+
     /**
      * 破壳：EGG 态蛋到点后破壳。
      * 校验 hatchStatus==EGG 且 now>=expectedHatchTime(adopt 设 now+7d，无动作蛋到点即破)。

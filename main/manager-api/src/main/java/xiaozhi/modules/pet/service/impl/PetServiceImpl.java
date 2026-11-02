@@ -49,6 +49,7 @@ import xiaozhi.modules.pet.config.PetSceneProperties;
 import xiaozhi.modules.pet.event.CollectionCardGenerationEvent;
 import xiaozhi.modules.pet.service.PetCollectionCardService;
 import xiaozhi.modules.pet.service.PetService;
+import xiaozhi.modules.pet.service.NfcAdoptionResult;
 import xiaozhi.modules.pet.util.MbtiParser;
 import xiaozhi.modules.pet.util.MoodDecider;
 import xiaozhi.modules.pet.util.PetBirthCalculator;
@@ -99,6 +100,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     private final WechatPhoneGate wechatPhoneGate;
     private final PetStoryQueryService petStoryQueryService;
     private final CompanionDaysService companionDaysService;
+    private final PetAdoptionModule adoptionModule;
 
     @Value("${pet.quick-hatch.code:}")
     private String quickHatchCode;
@@ -304,64 +306,38 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
     private static final String MOOD_ZONE_ID = "Asia/Shanghai";
 
-    /** 宠物创建来源：邀请码(激活码)领养 */
-    private static final String SOURCE_INVITE_CODE = "INVITE_CODE";
-    /** 宠物创建来源：NFC 触碰领取 */
-    private static final String SOURCE_NFC = "NFC";
     /** 宠物创建来源：设备出生 */
     private static final String SOURCE_DEVICE_BIRTH = "DEVICE_BIRTH";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PetVO createEgg(Long userId, String prototype) {
-        // 领养名额规则：NFC 渠道同用户跨原型多只、同原型限一只（与 adopt() 的全渠道一只不同，
-        // 此处检查按原型限定）。预检查拦截常规重复领养；catch 兜底预检查与插入之间的并发窗口（唯一索引冲突）。
-        requireCreatableEggInput(userId, prototype);
-        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
-        existWrapper.eq("user_id", userId);
-        existWrapper.eq("prototype", prototype);
-        // 逻辑删除的宠物不占领养名额：删除后可再领养
-        existWrapper.eq("deleted_at", 0);
-        if (petDao.exists(existWrapper)) {
-            throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
-        }
-        PetEntity pet;
-        try {
-            pet = buildAndInsertEgg(userId, prototype, SOURCE_NFC);
-        } catch (DuplicateKeyException e) {
-            throw new RenException(ErrorCode.PET_ALREADY_EXISTS, e);
-        }
-        return toVO(pet);
+        return toVO(adoptionModule.createNfcEgg(userId, prototype));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public NfcAdoptionResult claimNfcEgg(Long userId, String prototype) {
+        PetAdoptionModule.NfcEgg result = adoptionModule.claimNfcEgg(userId, prototype);
+        return new NfcAdoptionResult(toVO(result.pet()), result.replacedInvitePet());
+    }
+
+    @Override
+    public PetVO findOwnedNfcPet(Long userId, String prototype) {
+        PetEntity pet = adoptionModule.findOwnedNfcPet(userId, prototype);
+        return pet == null ? null : toVO(pet);
+    }
+
+    @Override
+    public PetVO getStoredById(Long userId, String petId) {
+        return toVO(adoptionModule.getStoredById(userId, petId));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PetVO adopt(Long userId, PetAdoptDTO dto) {
-        if (userId == null) {
-            throw new RenException(ErrorCode.USER_NOT_LOGIN);
-        }
-        if (!wechatPhoneGate.canAccess(userId)) {
-            throw new RenException(ErrorCode.FORBIDDEN);
-        }
-
-        QueryWrapper<PetEntity> existWrapper = new QueryWrapper<>();
-        existWrapper.eq("user_id", userId);
-        // 逻辑删除的宠物不占领养名额：删除后可再领养
-        existWrapper.eq("deleted_at", 0);
-        if (petDao.exists(existWrapper)) {
-            throw new RenException(ErrorCode.PET_ALREADY_EXISTS);
-        }
-
-        // 1. 先建蛋(EGG)：不建 device/agent，不生成任何破壳档案
-        //    device_id=NULL 已由 changeset 202607101500 放宽
-        //    Model X: adopt 即为破壳时间基线，写 hatchStartTime=now, expectedHatchTime=now+7d
         String prototype = PROTOTYPES.get(ThreadLocalRandom.current().nextInt(PROTOTYPES.size()));
-        PetEntity pet;
-        try {
-            pet = buildAndInsertEgg(userId, prototype, SOURCE_INVITE_CODE);
-        } catch (DuplicateKeyException e) {
-            throw new RenException(ErrorCode.PET_ALREADY_EXISTS, e);
-        }
+        PetEntity pet = adoptionModule.createInviteEgg(userId, prototype);
         Date now = pet.getHatchStartTime();
 
         // 2. 核销邀请码(REQUIRES_NEW)。
@@ -383,35 +359,6 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         log.info("蛋领养成功 userId={}, petId={}, prototype={}", userId, pet.getId(), prototype);
         refreshTodayMood(pet);
         return toVO(pet);
-    }
-
-    /**
-     * 纯数据库建蛋：校验 userId 和 prototype，创建 EGG 态 PetEntity 并插入，返回实体。
-     * 不发起任何外部调用，不刷新今日心情。加入调用方事务。
-     * source 记录创建来源（邀请码领养 / NFC 领取），由调用方按入口传入。
-     */
-    private PetEntity buildAndInsertEgg(Long userId, String prototype, String source) {
-        requireCreatableEggInput(userId, prototype);
-        Date now = new Date();
-        PetEntity pet = new PetEntity();
-        pet.setUserId(userId);
-        pet.setPrototype(prototype);
-        pet.setSource(source);
-        pet.setHatchStatus(HATCH_STATUS_EGG);
-        pet.setHatchStartTime(now);
-        pet.setExpectedHatchTime(new Date(now.getTime() + SEVEN_DAYS_MS));
-        pet.setAcceleratedMinutes(0);
-        pet.setCreator(userId);
-        petDao.insert(pet);
-        return pet;
-    }
-
-    /** 建蛋入参校验：userId 必填、原型必须合法 */
-    private void requireCreatableEggInput(Long userId, String prototype) {
-        if (userId == null) {
-            throw new RenException(ErrorCode.USER_NOT_LOGIN);
-        }
-        requireValidPrototype(prototype);
     }
 
     private void requireValidPrototype(String prototype) {
@@ -552,24 +499,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteByUserId(Long userId, String petId) {
-        PetEntity pet = petDao.selectById(petId);
-        // 统一语义「已删除=不存在」：不存在、已删除、非本人一律 PET_NOT_FOUND，
-        // 不泄露他人宠物的存在性
-        if (pet == null || pet.isDeleted() || !userId.equals(pet.getUserId())) {
-            throw new RenException(ErrorCode.PET_NOT_FOUND);
-        }
-        // 逻辑删除：只写删除时间戳，数据行保留（审计与人工恢复用）；关联数据不级联
-        // 唯一索引 (user_id, prototype, deleted_at) 下同用户同原型两次删除理论上可撞同一毫秒，
-        // 撞唯一键时取更大的时间戳重试一次；仍失败则向外抛错，不无限重试
-        pet.setDeletedAt(System.currentTimeMillis());
-        pet.setUpdater(userId);
-        try {
-            petDao.updateById(pet);
-        } catch (DuplicateKeyException e) {
-            log.warn("宠物删除时间戳撞唯一键，取新值重试: petId={}", petId);
-            pet.setDeletedAt(Math.max(System.currentTimeMillis(), pet.getDeletedAt() + 1));
-            petDao.updateById(pet);
-        }
+        adoptionModule.deleteByUserId(userId, petId);
     }
 
     @Override

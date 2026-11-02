@@ -87,7 +87,7 @@ class PetServiceImplChangeSceneTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, null, null,
-                companionDaysService);
+                companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, null));
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 

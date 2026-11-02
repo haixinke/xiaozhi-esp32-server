@@ -48,7 +48,7 @@ class PetServiceImplStoryContextTest {
     @BeforeEach
     void setUp() {
         petService = new PetServiceImpl(petDao, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, petStoryQueryService, companionDaysService);
+                null, null, null, null, null, null, petStoryQueryService, companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, null));
     }
 
     /** 今日心情已生成(refreshTodayMood 直接短路),避免依赖 LLM */

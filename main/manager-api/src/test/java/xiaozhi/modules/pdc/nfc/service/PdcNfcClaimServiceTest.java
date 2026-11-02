@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -25,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -44,6 +42,7 @@ import xiaozhi.modules.pdc.nfc.service.PdcNfcManualWriteService;
 import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcClaimServiceImpl;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.service.PetService;
+import xiaozhi.modules.pet.service.NfcAdoptionResult;
 import xiaozhi.modules.pet.vo.PetVO;
 import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
@@ -96,14 +95,14 @@ class PdcNfcClaimServiceTest {
         PetVO petVO = new PetVO();
         petVO.setId("pet-abc");
         petVO.setPrototype("jade_rabbit");
-        when(petService.createEgg(USER_ID, "jade_rabbit")).thenReturn(petVO);
+        when(petService.claimNfcEgg(USER_ID, "jade_rabbit")).thenReturn(new NfcAdoptionResult(petVO, false));
         when(assetDao.markClaimed(eq(1L), eq(1), eq(USER_ID), eq("pet-abc"))).thenReturn(1);
 
         PdcNfcClaimResultVO result = claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
 
         assertThat(result.claimStatus()).isEqualTo("CLAIMED");
         assertThat(result.pet()).isNotNull();
-        verify(petService).createEgg(USER_ID, "jade_rabbit");
+        verify(petService).claimNfcEgg(USER_ID, "jade_rabbit");
         verify(claimRecordDao).insert(any(PdcNfcClaimRecordEntity.class));
         verify(assetDao).markClaimed(1L, 1, USER_ID, "pet-abc");
     }
@@ -119,7 +118,7 @@ class PdcNfcClaimServiceTest {
 
         PetVO petVO = new PetVO();
         petVO.setId("pet-abc");
-        when(petService.createEgg(USER_ID, "jade_rabbit")).thenReturn(petVO);
+        when(petService.claimNfcEgg(USER_ID, "jade_rabbit")).thenReturn(new NfcAdoptionResult(petVO, false));
         when(assetDao.markClaimed(1L, 1, USER_ID, "pet-abc")).thenReturn(1);
 
         claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
@@ -139,7 +138,7 @@ class PdcNfcClaimServiceTest {
         PdcNfcAssetEntity asset = createActiveAsset();
         when(assetDao.selectByClaimHashesForUpdate(any(Collection.class))).thenReturn(List.of(asset));
         when(claimRecordDao.findByUserAndRequest(eq(USER_ID), anyString())).thenReturn(Optional.empty());
-        when(petService.createEgg(USER_ID, "jade_rabbit")).thenThrow(new RuntimeException("pet creation failed"));
+        when(petService.claimNfcEgg(USER_ID, "jade_rabbit")).thenThrow(new RuntimeException("pet creation failed"));
 
         assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
                 .isInstanceOf(RuntimeException.class)
@@ -171,11 +170,15 @@ class PdcNfcClaimServiceTest {
 
         PetVO petVO = new PetVO();
         petVO.setId("pet-abc");
-        when(petService.getById(USER_ID, "pet-abc")).thenReturn(petVO);
+        when(petService.getStoredById(USER_ID, "pet-abc")).thenReturn(petVO);
 
         PdcNfcClaimResultVO result = claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
 
         assertThat(result.claimStatus()).isEqualTo("CLAIMED");
+        assertThat(result.replacedInvitePet()).isFalse();
+        verify(petService).getStoredById(USER_ID, "pet-abc");
+        verify(petService, never()).getById(any(), anyString());
+        verify(petService, never()).claimNfcEgg(any(), anyString());
         verify(petService, never()).createEgg(any(), anyString());
         verify(assetDao, never()).markClaimed(any(), any(), any(), anyString());
     }
@@ -219,7 +222,7 @@ class PdcNfcClaimServiceTest {
 
         PetVO petVO = new PetVO();
         petVO.setId("pet-abc");
-        when(petService.getById(USER_ID, "pet-abc")).thenReturn(petVO);
+        when(petService.getStoredById(USER_ID, "pet-abc")).thenReturn(petVO);
 
         PdcNfcClaimResultVO result = claimService.confirm(USER_ID, VALID_CLAIM_REF, DIFFERENT_REQUEST_ID);
 
@@ -272,7 +275,7 @@ class PdcNfcClaimServiceTest {
 
     @Test
     void confirmUserAlreadyOwnsPetPropagatesPetAlreadyExists() {
-        // 一人一宠：用户已领养过蛋宝宝，再碰激活卡领取时 createEgg 抛 10206，
+        // 同原型名额已占用：领养 module 抛 10206，
         // 必须原样透出（前端据此展示"已领取过"面板），且不产生领取记录、不核销资产
         setupAllGatesEnabled();
         when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
@@ -284,7 +287,7 @@ class PdcNfcClaimServiceTest {
         // 提前构造异常：RenException 构造会走 MessageUtils（mock），
         // 放在 thenThrow 参数里会打断 Mockito stubbing 链
         RenException alreadyExists = new RenException(ErrorCode.PET_ALREADY_EXISTS);
-        when(petService.createEgg(USER_ID, "jade_rabbit")).thenThrow(alreadyExists);
+        when(petService.claimNfcEgg(USER_ID, "jade_rabbit")).thenThrow(alreadyExists);
 
         assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
                 .isInstanceOf(RenException.class)
@@ -307,7 +310,7 @@ class PdcNfcClaimServiceTest {
 
         PetVO petVO = new PetVO();
         petVO.setId("pet-abc");
-        when(petService.createEgg(USER_ID, "jade_rabbit")).thenReturn(petVO);
+        when(petService.claimNfcEgg(USER_ID, "jade_rabbit")).thenReturn(new NfcAdoptionResult(petVO, false));
         when(assetDao.markClaimed(1L, 1, USER_ID, "pet-abc")).thenReturn(0);
 
         assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
@@ -326,113 +329,43 @@ class PdcNfcClaimServiceTest {
     }
 
     @Test
-    void confirmWithInvitePetReplacesItInSameTransaction() {
-        // 渠道互斥（ADR 0007）：NFC 领养成功前，同事务静默逻辑删除未删的邀请码宠物，
-        // 且删除必须先于 createEgg——否则 createEgg 的按原型名额检查会被同原型邀请码宠物挡住
+    void confirmReturnsReplacementOutcomeFromPetModule() {
+        // 资产编排只消费领养结果，不再承担邀请码删除或展示查询。
         setupAllGatesEnabled();
         when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
         when(assetDao.selectByClaimHashesForUpdate(any(Collection.class)))
                 .thenReturn(List.of(createActiveAsset()));
         when(claimRecordDao.findByUserAndRequest(eq(USER_ID), anyString())).thenReturn(Optional.empty());
-
-        PetVO invitePet = new PetVO();
-        invitePet.setId("pet-invite");
-        invitePet.setPrototype("jade_rabbit");
-        invitePet.setSource("INVITE_CODE");
-        when(petService.listByUserId(USER_ID)).thenReturn(List.of(invitePet));
-
-        PetVO nfcPet = new PetVO();
-        nfcPet.setId("pet-nfc");
-        when(petService.createEgg(USER_ID, "jade_rabbit")).thenReturn(nfcPet);
+        PetVO pet = new PetVO();
+        pet.setId("pet-nfc");
+        when(petService.claimNfcEgg(USER_ID, "jade_rabbit"))
+                .thenReturn(new NfcAdoptionResult(pet, true));
         when(assetDao.markClaimed(1L, 1, USER_ID, "pet-nfc")).thenReturn(1);
 
         PdcNfcClaimResultVO result = claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
 
-        // 删除先于建蛋（同事务内顺序语义）
-        InOrder inOrder = inOrder(petService);
-        inOrder.verify(petService).deleteByUserId(USER_ID, "pet-invite");
-        inOrder.verify(petService).createEgg(USER_ID, "jade_rabbit");
-        // 响应带替换标记，供前端成功页轻提示
         assertThat(result.replacedInvitePet()).isTrue();
-    }
-
-    @Test
-    void confirmWithoutInvitePetDoesNotDeleteAnything() {
-        setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
-        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
-        when(assetDao.selectByClaimHashesForUpdate(any(Collection.class)))
-                .thenReturn(List.of(createActiveAsset()));
-        when(claimRecordDao.findByUserAndRequest(eq(USER_ID), anyString())).thenReturn(Optional.empty());
-        when(petService.listByUserId(USER_ID)).thenReturn(List.of());
-
-        PetVO petVO = new PetVO();
-        petVO.setId("pet-abc");
-        when(petService.createEgg(USER_ID, "jade_rabbit")).thenReturn(petVO);
-        when(assetDao.markClaimed(1L, 1, USER_ID, "pet-abc")).thenReturn(1);
-
-        PdcNfcClaimResultVO result = claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
-
+        assertThat(result.pet()).isSameAs(pet);
+        verify(petService, never()).listByUserId(any());
         verify(petService, never()).deleteByUserId(any(), anyString());
-        assertThat(result.replacedInvitePet()).isFalse();
+        verify(petService, never()).createEgg(any(), anyString());
     }
 
     @Test
-    void confirmDeletesOnlyInviteCodePetsNotNfcPets() {
-        // 用户已有 NFC 玉兔 + 邀请码锦鲤，再领 NFC 锦鲤：只删邀请码宠物，NFC 宠物不动
-        setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
-        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
-
-        PdcNfcAssetEntity asset = createActiveAsset();
-        asset.setPrototype("koi");
-        when(assetDao.selectByClaimHashesForUpdate(any(Collection.class))).thenReturn(List.of(asset));
-        when(claimRecordDao.findByUserAndRequest(eq(USER_ID), anyString())).thenReturn(Optional.empty());
-
-        PetVO nfcRabbit = new PetVO();
-        nfcRabbit.setId("pet-nfc-rabbit");
-        nfcRabbit.setPrototype("jade_rabbit");
-        nfcRabbit.setSource("NFC");
-        PetVO inviteKoi = new PetVO();
-        inviteKoi.setId("pet-invite-koi");
-        inviteKoi.setPrototype("koi");
-        inviteKoi.setSource("INVITE_CODE");
-        when(petService.listByUserId(USER_ID)).thenReturn(List.of(nfcRabbit, inviteKoi));
-
-        PetVO newPet = new PetVO();
-        newPet.setId("pet-nfc-koi");
-        when(petService.createEgg(USER_ID, "koi")).thenReturn(newPet);
-        when(assetDao.markClaimed(1L, 1, USER_ID, "pet-nfc-koi")).thenReturn(1);
-
-        claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID);
-
-        verify(petService).deleteByUserId(USER_ID, "pet-invite-koi");
-        verify(petService, never()).deleteByUserId(eq(USER_ID), eq("pet-nfc-rabbit"));
-    }
-
-    @Test
-    void invitePetDeletionFailureRollsBackWholeClaim() {
-        // 事务完整性：邀请码宠物删除失败 → 不建蛋、不写领取记录、不消耗资产
+    void adoptionFailureDoesNotWriteClaimRecordOrConsumeAsset() {
+        // 替换或建蛋的任一步失败，领取记录和资产消费都不能继续。
         setupAllGatesEnabled();
         when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
         when(assetDao.selectByClaimHashesForUpdate(any(Collection.class)))
                 .thenReturn(List.of(createActiveAsset()));
         when(claimRecordDao.findByUserAndRequest(eq(USER_ID), anyString())).thenReturn(Optional.empty());
-
-        PetVO invitePet = new PetVO();
-        invitePet.setId("pet-invite");
-        invitePet.setSource("INVITE_CODE");
-        when(petService.listByUserId(USER_ID)).thenReturn(List.of(invitePet));
-        org.mockito.Mockito.doThrow(new RuntimeException("delete failed"))
-                .when(petService).deleteByUserId(USER_ID, "pet-invite");
+        when(petService.claimNfcEgg(USER_ID, "jade_rabbit"))
+                .thenThrow(new IllegalStateException("adoption failed"));
 
         assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("delete failed");
-
-        verify(petService, never()).createEgg(any(), anyString());
+                .isInstanceOf(IllegalStateException.class).hasMessage("adoption failed");
         verify(claimRecordDao, never()).insert(any(PdcNfcClaimRecordEntity.class));
         verify(assetDao, never()).markClaimed(any(), any(), any(), anyString());
     }

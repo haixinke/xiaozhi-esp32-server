@@ -118,6 +118,12 @@ JDBC URL：`jdbc:mysql://127.0.0.1:2881/egg_database?useUnicode=true&characterEn
 
 系统参数保存在 `sys_params` 表中，并缓存到 Redis。`SysParamsService` 提供 `getValue(String paramCode, Boolean fromCache)` 和 `getValueObject(String paramCode, Class<T> clazz)` 用于类型化读取。`ConfigService` 将这些参数聚合成结构化配置载荷，供 `xiaozhi-server` 消费。
 
+### 宠物领养
+
+领养名额、渠道互斥与建蛋集中在 pet 侧的领养 module。NFC 领取编排只处理资产、领取记录和安全门禁，通过一次领养调用完成邀请码宠物替换与 NFC 建蛋，继续加入同一事务；邀请码领养沿用各自名额与核销规则。并发领养按用户串行化，并保留宠物唯一索引兜底。
+
+NFC 资格查询和已有宠物返回仅读取存储快照，不刷新今日心情、不调用 LLM；主页与详情仍按需刷新。资格查询失败应进入既有错误与重试流程，不得降级为“可领取”。测试需覆盖心情缺失、跨渠道并发、重放以及任一步失败整体回滚，数据库行为使用隔离 MySQL 验证。
+
 ### 错误码
 
 所有错误码集中在 `xiaozhi.common.exception.ErrorCode`。格式：5 位数字，前 2 位标识模块，后 3 位标识具体错误。错误消息通过 i18n 解析（`i18n/messages*.properties`）。

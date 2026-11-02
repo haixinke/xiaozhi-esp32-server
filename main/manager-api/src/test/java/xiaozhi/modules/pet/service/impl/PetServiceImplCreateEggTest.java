@@ -85,7 +85,7 @@ class PetServiceImplCreateEggTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, wechatPhoneGate, null,
-                companionDaysService);
+                companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, wechatPhoneGate));
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 
@@ -190,7 +190,7 @@ class PetServiceImplCreateEggTest {
     @DisplayName("createEgg 用户已有同原型宠物时抛 PET_ALREADY_EXISTS，不再插库")
     void createEggWhenUserAlreadyHasPetThrows() {
         // 同原型限一只（领养名额规则）：预检查命中即拒绝
-        when(petDao.exists(any())).thenReturn(true);
+        when(petDao.selectList(any())).thenReturn(java.util.List.of(occupiedPet()));
 
         assertThatThrownBy(() -> petService.createEgg(1008L, "锦鲤"))
                 .isInstanceOf(RenException.class)
@@ -205,22 +205,21 @@ class PetServiceImplCreateEggTest {
         // 领养名额规则：NFC 渠道同用户跨原型多只、同原型限一只。
         // 检查条件必须同时带 user_id + prototype + deleted_at=0，
         // 否则已有玉兔的用户无法再领锦鲤（退化成一人一宠）
-        when(petDao.exists(any(QueryWrapper.class))).thenReturn(false);
+        when(petDao.selectList(any(QueryWrapper.class))).thenReturn(java.util.List.of());
 
         petService.createEgg(1010L, "锦鲤");
 
         ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
-        verify(petDao).exists(captor.capture());
+        verify(petDao).selectList(captor.capture());
         QueryWrapper<PetEntity> wrapper = captor.getValue();
-        assertThat(wrapper.getSqlSegment()).contains("prototype =");
-        assertThat(wrapper.getParamNameValuePairs()).containsValue("锦鲤");
+        assertThat(wrapper.getSqlSegment()).contains("user_id =", "deleted_at =", "FOR UPDATE");
     }
 
     @Test
     @DisplayName("createEgg 同原型宠物已逻辑删除时不占名额，可重新创建")
     void createEgg_deletedSamePrototypePet_doesNotOccupyQuota() {
         // 已删除=不存在：同原型已删宠物被 deleted_at=0 条件过滤，exists 返回 false
-        when(petDao.exists(any(QueryWrapper.class))).thenReturn(false);
+        when(petDao.selectList(any(QueryWrapper.class))).thenReturn(java.util.List.of());
 
         PetVO result = petService.createEgg(1011L, "玉兔");
 
@@ -234,7 +233,7 @@ class PetServiceImplCreateEggTest {
     @DisplayName("createEgg 并发竞态撞唯一索引时抛 PET_ALREADY_EXISTS")
     void createEggDuplicateKeyRaceThrows() {
         // 预检查后、插入前的并发窗口：唯一索引冲突兜底转换为业务错误码
-        when(petDao.exists(any())).thenReturn(false);
+        when(petDao.selectList(any())).thenReturn(java.util.List.of());
         when(petDao.insert(any(PetEntity.class)))
                 .thenThrow(new org.springframework.dao.DuplicateKeyException("uk_pet_user"));
 
@@ -285,13 +284,53 @@ class PetServiceImplCreateEggTest {
     @Test
     @DisplayName("createEgg - 名额检查过滤已删除宠物（NFC claim 路径共用此检查）")
     void createEgg_existCheckFiltersDeletedPets() {
-        when(petDao.exists(any(QueryWrapper.class))).thenReturn(true);
+        when(petDao.selectList(any(QueryWrapper.class))).thenReturn(java.util.List.of(occupiedPet()));
 
         assertThatThrownBy(() -> petService.createEgg(1001L, "锦鲤"))
                 .isInstanceOf(RenException.class);
 
         ArgumentCaptor<QueryWrapper<PetEntity>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
-        verify(petDao).exists(captor.capture());
+        verify(petDao).selectList(captor.capture());
         assertThat(captor.getValue().getSqlSegment()).contains("deleted_at =");
+    }
+    @Test
+    @DisplayName("NFC 已有宠物查询返回库存心情，不触发任何心情写入或 LLM")
+    void nfcOwnedReadDoesNotRefreshMood() {
+        PetEntity pet = occupiedPet();
+        pet.setUserId(1001L);
+        pet.setTodayMood("平静");
+        pet.setTodayMoodDate(java.time.LocalDate.now().minusDays(1));
+        when(petDao.selectOne(any(QueryWrapper.class))).thenReturn(pet);
+
+        PetVO result = petService.findOwnedNfcPet(1001L, "锦鲤");
+
+        assertThat(result.getTodayMood()).isEqualTo("平静");
+        assertThat(result.getTodayMoodDate()).isEqualTo(pet.getTodayMoodDate());
+        verifyNoInteractions(llmService, chatHistoryDao, eventPublisher);
+        verify(petDao, org.mockito.Mockito.never()).updateById(any(PetEntity.class));
+    }
+
+    @Test
+    @DisplayName("NFC 重放返回库存空心情，普通详情仍可负责之后刷新")
+    void storedReadDoesNotGenerateMissingMood() {
+        PetEntity pet = occupiedPet();
+        pet.setUserId(1001L);
+        when(petDao.selectById("occupied")).thenReturn(pet);
+
+        PetVO result = petService.getStoredById(1001L, "occupied");
+
+        assertThat(result.getTodayMood()).isNull();
+        verifyNoInteractions(llmService, chatHistoryDao, eventPublisher);
+        verify(petDao, org.mockito.Mockito.never()).updateById(any(PetEntity.class));
+    }
+
+    /** 名额占用的已有宠物事实，避免依赖 DAO exists 的具体实现。 */
+    private PetEntity occupiedPet() {
+        PetEntity pet = new PetEntity();
+        pet.setId("occupied");
+        pet.setPrototype("锦鲤");
+        pet.setSource("NFC");
+        pet.setDeletedAt(0L);
+        return pet;
     }
 }

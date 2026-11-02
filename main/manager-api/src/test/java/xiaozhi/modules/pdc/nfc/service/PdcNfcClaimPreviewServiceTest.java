@@ -294,7 +294,7 @@ class PdcNfcClaimPreviewServiceTest {
         PetVO petVO = new PetVO();
         petVO.setId("pet-123");
         petVO.setNickname("小白兔");
-        when(petService.getById(USER_ID, "pet-123")).thenReturn(petVO);
+        when(petService.getStoredById(USER_ID, "pet-123")).thenReturn(petVO);
 
         PdcNfcBatchEntity batch = new PdcNfcBatchEntity();
         batch.setId(10L);
@@ -309,6 +309,8 @@ class PdcNfcClaimPreviewServiceTest {
 
         assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_CLAIMED_BY_SELF);
         assertThat(result.pet()).isNotNull();
+        verify(petService, never()).getById(any(), anyString());
+        verify(petService, never()).listByUserId(any());
     }
 
     @Test
@@ -359,7 +361,7 @@ class PdcNfcClaimPreviewServiceTest {
         ownedPet.setId("pet-owned");
         ownedPet.setPrototype("jade_rabbit");
         ownedPet.setSource("NFC");
-        when(petService.listByUserId(USER_ID)).thenReturn(List.of(ownedPet));
+        when(petService.findOwnedNfcPet(USER_ID, "jade_rabbit")).thenReturn(ownedPet);
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
@@ -385,7 +387,7 @@ class PdcNfcClaimPreviewServiceTest {
         ownedPet.setId("pet-koi");
         ownedPet.setPrototype("koi");
         ownedPet.setSource("NFC");
-        when(petService.listByUserId(USER_ID)).thenReturn(List.of(ownedPet));
+        when(petService.findOwnedNfcPet(USER_ID, "jade_rabbit")).thenReturn(null);
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
@@ -410,7 +412,7 @@ class PdcNfcClaimPreviewServiceTest {
         invitePet.setId("pet-invite");
         invitePet.setPrototype("jade_rabbit");
         invitePet.setSource("INVITE_CODE");
-        when(petService.listByUserId(USER_ID)).thenReturn(List.of(invitePet));
+        when(petService.findOwnedNfcPet(USER_ID, "jade_rabbit")).thenReturn(null);
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
@@ -434,13 +436,15 @@ class PdcNfcClaimPreviewServiceTest {
 
         PetVO petVO = new PetVO();
         petVO.setId("pet-123");
-        when(petService.getById(USER_ID, "pet-123")).thenReturn(petVO);
+        when(petService.getStoredById(USER_ID, "pet-123")).thenReturn(petVO);
 
         PdcNfcClaimPreviewVO result = claimService.preview(USER_ID, VALID_CLAIM_REF);
 
         // CLAIMED_BY_SELF 分支不经一人一宠检查，直达行为不变
         assertThat(result.claimStatus()).isEqualTo(PdcNfcClaimPreviewVO.STATUS_CLAIMED_BY_SELF);
         assertThat(result.pet()).isNotNull();
+        verify(petService, never()).getById(any(), anyString());
+        verify(petService, never()).listByUserId(any());
     }
 
     @Test
@@ -513,6 +517,23 @@ class PdcNfcClaimPreviewServiceTest {
 
         assertThatThrownBy(() -> claimService.preview(USER_ID, VALID_CLAIM_REF))
                 .isInstanceOf(RenException.class);
+    }
+
+    @Test
+    void eligibilityQueryFailureMustNotBecomeClaimable() {
+        // 名额未查明不能显示可领取：让客户端通过通用错误处理提示重试。
+        setupAllGatesEnabled();
+        when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
+        PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
+        asset.setId(1L);
+        asset.setPrototype("jade_rabbit");
+        asset.setStatus("ACTIVE");
+        when(assetDao.selectList(any(Wrapper.class))).thenReturn(List.of(asset));
+        when(petService.findOwnedNfcPet(USER_ID, "jade_rabbit")).thenThrow(new IllegalStateException("eligibility unavailable"));
+
+        assertThatThrownBy(() -> claimService.preview(USER_ID, VALID_CLAIM_REF))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("eligibility unavailable");
     }
 
     private void setupAllGatesEnabled() {

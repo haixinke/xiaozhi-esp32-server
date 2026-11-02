@@ -246,4 +246,11 @@ public class RedisKeys {
         return "pdc:nfc:claim:contention:asset:" + assetId + ":" + epochTenMinute;
     }
 
+    /**
+     * 听你说·答题反馈文案 Key（LLM 生成结果，TTL 5 分钟）
+     */
+    public static String getListenFeedbackKey(Long userId, Long groupId) {
+        return "listen:feedback:" + userId + ":" + groupId;
+    }
+
 }

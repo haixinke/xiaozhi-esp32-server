@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ import xiaozhi.modules.listen.entity.ListenAnswerEntity;
 import xiaozhi.modules.listen.entity.ListenGroupEntity;
 import xiaozhi.modules.listen.entity.ListenQuestionEntity;
 import xiaozhi.modules.listen.service.ListenAnswerService;
+import xiaozhi.modules.listen.service.ListenFeedbackService;
 import xiaozhi.modules.listen.vo.ListenDrawVO;
 import xiaozhi.modules.listen.vo.ListenSubmitResultVO;
 
@@ -52,6 +54,9 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
     /** 游戏星星结算能力：整组提交成功后按游戏管理配置的 earnStars 发当日首次完成奖励 */
     private final GameStarRewardService gameStarRewardService;
 
+    /** 事件发布：答题落库事务提交后触发反馈文案生成（异步，不阻塞本事务） */
+    private final ApplicationEventPublisher eventPublisher;
+
     /** 每日可答题组数上限，默认 5（0 或负数视为不限） */
     private final int dailyGroupLimit;
 
@@ -73,11 +78,13 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
             ListenQuestionDao listenQuestionDao,
             ListenAnswerDao listenAnswerDao,
             GameStarRewardService gameStarRewardService,
+            ApplicationEventPublisher eventPublisher,
             @Value("${listen.daily-group-limit:5}") int dailyGroupLimit) {
         this.listenGroupDao = listenGroupDao;
         this.listenQuestionDao = listenQuestionDao;
         this.listenAnswerDao = listenAnswerDao;
         this.gameStarRewardService = gameStarRewardService;
+        this.eventPublisher = eventPublisher;
         this.dailyGroupLimit = dailyGroupLimit;
     }
 
@@ -125,7 +132,8 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
         // LISTEN_QUESTION_NOT_FOUND，不会被「今日次数已用完」盖住。事务会回滚，不会留半截数据。
         // 已答过的组（无论哪天答的）重提是幂等空操作，不占新额度、不受上限拦截，
         // 否则用户网络重试会被误报「今日次数已用完」。
-        if (!hasAnsweredGroup(userId, dto.getGroupId())) {
+        boolean alreadyAnswered = hasAnsweredGroup(userId, dto.getGroupId());
+        if (!alreadyAnswered) {
             ensureDailyQuotaAvailable(userId);
         }
         // 题目 id -> 选项 key -> 选项文本，用于选 A-D 时回填 custom_text（方便后续查看答案）
@@ -163,6 +171,10 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
             } catch (DuplicateKeyException e) {
                 // 幂等：UNIQUE (user_id, question_id) 冲突说明该题已答过，忽略本行（网络重试/双击安全）
             }
+        }
+        // 事务提交后异步生成个性化反馈文案（LLM 慢/挂不影响本响应；重提幂等空操作不重复生成）
+        if (!alreadyAnswered) {
+            eventPublisher.publishEvent(new ListenFeedbackService.FeedbackRequestedEvent(userId, dto.getGroupId(), dto.getAnswers()));
         }
         return buildSubmitResult(userId);
     }

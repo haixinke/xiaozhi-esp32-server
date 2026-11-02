@@ -9,12 +9,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.listen.dto.ListenAnswerSubmitDTO;
 import xiaozhi.modules.listen.service.ListenAnswerService;
+import xiaozhi.modules.listen.service.ListenFeedbackService;
 import xiaozhi.modules.listen.vo.ListenDrawVO;
+import xiaozhi.modules.listen.vo.ListenFeedbackVO;
 import xiaozhi.modules.listen.vo.ListenSubmitResultVO;
 import xiaozhi.modules.security.user.SecurityUser;
 
@@ -29,6 +32,7 @@ import xiaozhi.modules.security.user.SecurityUser;
 public class ListenAnswerController {
 
     private final ListenAnswerService listenAnswerService;
+    private final ListenFeedbackService listenFeedbackService;
 
     @GetMapping("/draw")
     @Operation(summary = "随机抽取一组未答过的题目")
@@ -50,5 +54,15 @@ public class ListenAnswerController {
         Long userId = SecurityUser.getUserId();
         ListenSubmitResultVO result = listenAnswerService.submitAnswers(userId, dto);
         return new Result<ListenSubmitResultVO>().ok(result);
+    }
+
+    @GetMapping("/feedback")
+    @Operation(summary = "查询某组的个性化反馈文案（LLM 异步生成，前端轮询；未就绪时 feedback 为 null）")
+    @RequiresPermissions("sys:role:normal")
+    public Result<ListenFeedbackVO> getFeedback(@RequestParam("groupId") Long groupId) {
+        Long userId = SecurityUser.getUserId();
+        ListenFeedbackVO vo = new ListenFeedbackVO();
+        vo.setFeedback(listenFeedbackService.getFeedback(userId, groupId));
+        return new Result<ListenFeedbackVO>().ok(vo);
     }
 }

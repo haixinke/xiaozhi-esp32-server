@@ -30,7 +30,7 @@
         <text class="kicker">{{groupName}}</text>
         <view class="feedback-quote">
           <image class="quote-mark" src="/assets/icons/listen-quote-mark.svg" mode="aspectFit" aria-hidden="true" />
-          <text class="feedback-quote-copy" aria-live="polite">谢谢你愿意说给我听。</text>
+          <text class="feedback-quote-copy" aria-live="polite">{{feedbackText}}</text>
         </view>
         <text wx:if="{{error}}" class="error" aria-role="alert">{{error}}</text>
         <view class="feedback-pet-stage">

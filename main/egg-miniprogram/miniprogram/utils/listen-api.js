@@ -22,7 +22,15 @@ function submitAnswers(groupId, answers) {
   return post('/listen/answers', { groupId, answers });
 }
 
+// 查询某组的个性化反馈文案（LLM 异步生成，5 分钟内可取）。
+// 返回 ListenFeedbackVO: { feedback }；未就绪/已过期/生成失败时 feedback 为 null，
+// 前端应回落到固定文案。
+function getFeedback(groupId) {
+  return get('/listen/feedback', { groupId });
+}
+
 module.exports = {
   draw,
-  submitAnswers
+  submitAnswers,
+  getFeedback
 };

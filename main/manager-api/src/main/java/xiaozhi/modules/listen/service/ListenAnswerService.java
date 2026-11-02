@@ -2,6 +2,7 @@ package xiaozhi.modules.listen.service;
 
 import xiaozhi.modules.listen.dto.ListenAnswerSubmitDTO;
 import xiaozhi.modules.listen.vo.ListenDrawVO;
+import xiaozhi.modules.listen.vo.ListenSubmitResultVO;
 
 /**
  * 听你说·小程序答题 Service。
@@ -22,9 +23,11 @@ public interface ListenAnswerService {
     /**
      * 整组提交答案。幂等：(user_id, question_id) 已存在则忽略该条，整体仍成功。
      * 仅校验 customText 长度（≤200 字）；不校验文本必须对应 E 选项（信任前端只在选 E 时传文本）。
+     * 提交成功后按游戏管理配置的 earnStars 结算当日首次完成奖励，结果随响应返回。
      *
      * @param userId 当前用户 ID
      * @param dto    组 ID + 组内各题答案
+     * @return 星星结算结果（本次新增星星数 + 奖励语义）
      */
-    void submitAnswers(Long userId, ListenAnswerSubmitDTO dto);
+    ListenSubmitResultVO submitAnswers(Long userId, ListenAnswerSubmitDTO dto);
 }

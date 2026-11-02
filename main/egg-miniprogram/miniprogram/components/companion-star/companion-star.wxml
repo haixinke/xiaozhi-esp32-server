@@ -1,0 +1,25 @@
+<view
+  class="companion-star companion-star--{{mode}} {{pulse ? 'companion-star--pulse' : ''}} {{reducedMotion ? 'companion-star--reduced' : ''}}"
+  style="width:{{size}}rpx;height:{{size}}rpx;"
+  aria-hidden="true"
+>
+  <view wx:if="{{!reducedMotion && mode !== 'accent'}}" class="companion-star__halo"></view>
+  <view class="companion-star__body">
+    <image class="companion-star__pose companion-star__pose--neutral" src="{{neutralSrc}}" mode="aspectFit"></image>
+    <image wx:if="{{mode === 'award' && !reducedMotion}}" class="companion-star__pose companion-star__pose--squeezed" src="{{squeezedSrc}}" mode="aspectFit"></image>
+  </view>
+  <block wx:if="{{mode === 'award' && !reducedMotion}}">
+    <view class="companion-star__spark companion-star__spark--1"></view>
+    <view class="companion-star__spark companion-star__spark--2"></view>
+    <view class="companion-star__spark companion-star__spark--3"></view>
+    <view class="companion-star__spark companion-star__spark--4"></view>
+    <view class="companion-star__spark companion-star__spark--5"></view>
+    <view class="companion-star__spark companion-star__spark--6"></view>
+    <view class="companion-star__spark companion-star__spark--7"></view>
+  </block>
+  <block wx:if="{{mode === 'room' && pulse && !reducedMotion}}">
+    <view class="companion-star__dust companion-star__dust--1"></view>
+    <view class="companion-star__dust companion-star__dust--2"></view>
+    <view class="companion-star__dust companion-star__dust--3"></view>
+  </block>
+</view>

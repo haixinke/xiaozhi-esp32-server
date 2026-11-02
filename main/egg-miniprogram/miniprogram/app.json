@@ -24,7 +24,8 @@
     "pages/terms/terms",
     "pages/chat-settings/chat-settings",
     "pages/feedback/feedback",
-    "pages/age-range/age-range"
+    "pages/age-range/age-range",
+    "pages/listen/listen"
   ],
   "tabBar": {
     "custom": true,

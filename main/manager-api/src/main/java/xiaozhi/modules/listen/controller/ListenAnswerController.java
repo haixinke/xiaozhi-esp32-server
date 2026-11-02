@@ -15,6 +15,7 @@ import xiaozhi.common.utils.Result;
 import xiaozhi.modules.listen.dto.ListenAnswerSubmitDTO;
 import xiaozhi.modules.listen.service.ListenAnswerService;
 import xiaozhi.modules.listen.vo.ListenDrawVO;
+import xiaozhi.modules.listen.vo.ListenSubmitResultVO;
 import xiaozhi.modules.security.user.SecurityUser;
 
 /**
@@ -45,9 +46,9 @@ public class ListenAnswerController {
     @PostMapping("/answers")
     @Operation(summary = "整组提交答案")
     @RequiresPermissions("sys:role:normal")
-    public Result<Void> submitAnswers(@Valid @RequestBody ListenAnswerSubmitDTO dto) {
+    public Result<ListenSubmitResultVO> submitAnswers(@Valid @RequestBody ListenAnswerSubmitDTO dto) {
         Long userId = SecurityUser.getUserId();
-        listenAnswerService.submitAnswers(userId, dto);
-        return new Result<Void>().ok(null);
+        ListenSubmitResultVO result = listenAnswerService.submitAnswers(userId, dto);
+        return new Result<ListenSubmitResultVO>().ok(result);
     }
 }

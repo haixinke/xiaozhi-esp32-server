@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
+import xiaozhi.modules.game.service.GameStarRewardService;
+import xiaozhi.modules.game.vo.GameStarRewardResult;
 import xiaozhi.modules.listen.dao.ListenAnswerDao;
 import xiaozhi.modules.listen.dao.ListenGroupDao;
 import xiaozhi.modules.listen.dao.ListenQuestionDao;
@@ -29,6 +31,7 @@ import xiaozhi.modules.listen.entity.ListenGroupEntity;
 import xiaozhi.modules.listen.entity.ListenQuestionEntity;
 import xiaozhi.modules.listen.service.ListenAnswerService;
 import xiaozhi.modules.listen.vo.ListenDrawVO;
+import xiaozhi.modules.listen.vo.ListenSubmitResultVO;
 
 /**
  * 听你说·小程序答题 Service 实现。
@@ -39,9 +42,15 @@ import xiaozhi.modules.listen.vo.ListenDrawVO;
 @Slf4j
 public class ListenAnswerServiceImpl implements ListenAnswerService {
 
+    /** 听你说游戏类型 code（字典 GAME_TYPE 的 code），作为游戏每日首次完成奖励的结算标识 */
+    private static final String GAME_TYPE_LISTEN_TO_YOU = "LISTEN_TO_YOU";
+
     private final ListenGroupDao listenGroupDao;
     private final ListenQuestionDao listenQuestionDao;
     private final ListenAnswerDao listenAnswerDao;
+
+    /** 游戏星星结算能力：整组提交成功后按游戏管理配置的 earnStars 发当日首次完成奖励 */
+    private final GameStarRewardService gameStarRewardService;
 
     /** 每日可答题组数上限，默认 5（0 或负数视为不限） */
     private final int dailyGroupLimit;
@@ -63,10 +72,12 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
     public ListenAnswerServiceImpl(ListenGroupDao listenGroupDao,
             ListenQuestionDao listenQuestionDao,
             ListenAnswerDao listenAnswerDao,
+            GameStarRewardService gameStarRewardService,
             @Value("${listen.daily-group-limit:5}") int dailyGroupLimit) {
         this.listenGroupDao = listenGroupDao;
         this.listenQuestionDao = listenQuestionDao;
         this.listenAnswerDao = listenAnswerDao;
+        this.gameStarRewardService = gameStarRewardService;
         this.dailyGroupLimit = dailyGroupLimit;
     }
 
@@ -102,7 +113,7 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void submitAnswers(Long userId, ListenAnswerSubmitDTO dto) {
+    public ListenSubmitResultVO submitAnswers(Long userId, ListenAnswerSubmitDTO dto) {
         // 校验 questionId 确实属于 groupId：冗余 group_id 列支撑抽题按组排除，
         // 错配会污染排除索引（UNIQUE 约束兜不住），必须拒绝
         List<ListenQuestionEntity> questionsInGroup = listenQuestionDao.selectList(
@@ -153,6 +164,22 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
                 // 幂等：UNIQUE (user_id, question_id) 冲突说明该题已答过，忽略本行（网络重试/双击安全）
             }
         }
+        return buildSubmitResult(userId);
+    }
+
+    /**
+     * 提交成功后的星星结算：按游戏管理配置的 earnStars 发当日首次完成奖励。
+     * <p>
+     * 结算能力本身幂等（同一 userId+游戏类型+北京自然日最多一份），重复提交/网络重试
+     * 会命中「当日已领取」返回原结果而不重复入账，故无需在此先判是否新答组。
+     * 奖励金额固定为 earnStars，不随连续天数递增；免费双零或消费型游戏配置下不发星。
+     */
+    private ListenSubmitResultVO buildSubmitResult(Long userId) {
+        GameStarRewardResult reward = gameStarRewardService.claimGameReward(userId, GAME_TYPE_LISTEN_TO_YOU);
+        ListenSubmitResultVO vo = new ListenSubmitResultVO();
+        vo.setAwardedStars(reward.getNewRewardedStars());
+        vo.setRewardStatus(reward.getStatus().name());
+        return vo;
     }
 
     /**

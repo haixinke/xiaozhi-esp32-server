@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "听你说",
+  "usingComponents": {
+    "nav-bar": "../../components/nav-bar/nav-bar",
+    "companion-star": "../../components/companion-star/companion-star"
+  }
+}

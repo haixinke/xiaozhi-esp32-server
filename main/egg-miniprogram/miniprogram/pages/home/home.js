@@ -537,8 +537,13 @@ Page({
     this.setData({ dailyNoteVisible: false, dailyNoteAwardedStars: 0, dailyNoteSnapshot: null });
   },
 
-  // 游戏邀请：小游戏页面尚未上线，本期只提示
+  // 游戏邀请：按游戏类型分发；听你说跳听你说页，其余类型本期只提示
   onDailyNoteGameTap() {
+    const game = this.data.dailyNoteSnapshot && this.data.dailyNoteSnapshot.game;
+    if (game && game.gameType === 'LISTEN_TO_YOU') {
+      wx.navigateTo({ url: '/pages/listen/listen' });
+      return;
+    }
     wx.showToast({ title: '敬请期待', icon: 'none' });
   },
 

@@ -1,6 +1,17 @@
 # Refactor: options_json 解析逻辑三处合一
 
-Status: ready-for-agent
+Status: resolved
+
+## Answer
+
+已落地：新增 `xiaozhi.modules.listen.util.ListenOptionsParser`（`Option(key, text)` record + `parse()` 静态方法，空/坏 JSON/非数组统一返回空 List + warn 日志）。三处调用点各自薄映射到目标类型：
+
+- `ListenAnswerServiceImpl`：`submitAnswers` 的选项文本回填 + `toQuestionVo` 抽到 VO
+- `ListenGroupServiceImpl`：`toQuestionVo` 抽到 VO（顺带补上了原先缺失的 warn 日志，行为不变）
+- `ListenFeedbackService`：转 Map 喂 prompt 组装
+
+新增 `ListenOptionsParserTest` 5 条用例（正常解析 / 空输入 / 非数组 / 坏 JSON / 缺字段容忍）。
+`mvn test -Dtest='Listen*Test'` 64 个全绿。
 Type: task
 
 ## Problem

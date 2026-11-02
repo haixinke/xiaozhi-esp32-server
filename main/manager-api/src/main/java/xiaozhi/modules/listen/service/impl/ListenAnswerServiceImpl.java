@@ -15,8 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.exception.ErrorCode;
@@ -32,6 +30,7 @@ import xiaozhi.modules.listen.entity.ListenGroupEntity;
 import xiaozhi.modules.listen.entity.ListenQuestionEntity;
 import xiaozhi.modules.listen.service.ListenAnswerService;
 import xiaozhi.modules.listen.service.ListenFeedbackService;
+import xiaozhi.modules.listen.util.ListenOptionsParser;
 import xiaozhi.modules.listen.vo.ListenDrawVO;
 import xiaozhi.modules.listen.vo.ListenSubmitResultVO;
 
@@ -59,9 +58,6 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
 
     /** 每日可答题组数上限，默认 5（0 或负数视为不限） */
     private final int dailyGroupLimit;
-
-    /** 解析 options_json 用的共享 ObjectMapper（线程安全，可复用） */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /** 自定义文本最大长度（与 DDL VARCHAR(200) 一致） */
     private static final int CUSTOM_TEXT_MAX_LENGTH = 200;
@@ -140,8 +136,8 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
         java.util.Map<Long, java.util.Map<String, String>> optionTextByQuestion = new java.util.HashMap<>();
         for (ListenQuestionEntity question : questionsInGroup) {
             java.util.Map<String, String> textByKey = new java.util.HashMap<>();
-            for (ListenDrawVO.Option option : parseOptions(question.getOptionsJson())) {
-                textByKey.put(option.getKey(), option.getText());
+            for (ListenOptionsParser.Option option : ListenOptionsParser.parse(question.getOptionsJson())) {
+                textByKey.put(option.key(), option.text());
             }
             optionTextByQuestion.put(question.getId(), textByKey);
         }
@@ -234,40 +230,19 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
                 .eq("group_id", groupId)) > 0;
     }
 
-    /** 实体转抽题题目 VO：options_json JSON 列解析为 key/text 选项列表 */
+    /** 实体转抽题题目 VO：options_json JSON 列解析为 key/text 选项列表（统一走 ListenOptionsParser） */
     private ListenDrawVO.Question toQuestionVo(ListenQuestionEntity entity) {
         ListenDrawVO.Question question = new ListenDrawVO.Question();
         question.setId(entity.getId());
         question.setText(entity.getText());
-        question.setOptions(parseOptions(entity.getOptionsJson()));
+        question.setOptions(ListenOptionsParser.parse(entity.getOptionsJson()).stream()
+                .map(o -> {
+                    ListenDrawVO.Option option = new ListenDrawVO.Option();
+                    option.setKey(o.key());
+                    option.setText(o.text());
+                    return option;
+                })
+                .collect(Collectors.toList()));
         return question;
-    }
-
-    /**
-     * 解析选项 JSON。库内格式为裸数组 [{"key":"A","text":"..."}]；
-     * 解析失败按空列表处理——坏数据不应让整个抽题 500，由导入期的校验兜底格式；记 warn 日志保留可观测性。
-     */
-    private List<ListenDrawVO.Option> parseOptions(String optionsJson) {
-        if (StringUtils.isBlank(optionsJson)) {
-            return List.of();
-        }
-        try {
-            JsonNode array = OBJECT_MAPPER.readTree(optionsJson);
-            if (!array.isArray()) {
-                log.warn("options_json 不是数组: {}", optionsJson);
-                return List.of();
-            }
-            return java.util.stream.StreamSupport.stream(array.spliterator(), false)
-                    .map(node -> {
-                        ListenDrawVO.Option option = new ListenDrawVO.Option();
-                        option.setKey(node.path("key").asText(null));
-                        option.setText(node.path("text").asText(null));
-                        return option;
-                    })
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("options_json 解析失败: {}", optionsJson, e);
-            return List.of();
-        }
     }
 }

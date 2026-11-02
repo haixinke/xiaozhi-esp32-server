@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
@@ -29,6 +28,7 @@ import xiaozhi.modules.listen.dto.ListenGroupSaveDTO;
 import xiaozhi.modules.listen.entity.ListenGroupEntity;
 import xiaozhi.modules.listen.entity.ListenQuestionEntity;
 import xiaozhi.modules.listen.service.ListenGroupService;
+import xiaozhi.modules.listen.util.ListenOptionsParser;
 import xiaozhi.modules.listen.vo.ListenGroupDetailVO;
 import xiaozhi.modules.listen.vo.ListenGroupVO;
 import xiaozhi.modules.sys.service.SysDictDataService;
@@ -186,41 +186,22 @@ public class ListenGroupServiceImpl extends BaseServiceImpl<ListenGroupDao, List
         }
     }
 
-    /** 实体转题目 VO：options_json JSON 列解析为 key/text 选项列表 */
+    /** 实体转题目 VO：options_json JSON 列解析为 key/text 选项列表（统一走 ListenOptionsParser） */
     private ListenGroupDetailVO.Question toQuestionVo(ListenQuestionEntity entity) {
         ListenGroupDetailVO.Question question = new ListenGroupDetailVO.Question();
         question.setId(entity.getId());
         question.setText(entity.getText());
         question.setType(entity.getType());
         question.setSortOrder(entity.getSortOrder());
-        question.setOptions(parseOptions(entity.getOptionsJson()));
+        question.setOptions(ListenOptionsParser.parse(entity.getOptionsJson()).stream()
+                .map(o -> {
+                    ListenGroupDetailVO.Option option = new ListenGroupDetailVO.Option();
+                    option.setKey(o.key());
+                    option.setText(o.text());
+                    return option;
+                })
+                .collect(Collectors.toList()));
         return question;
-    }
-
-    /**
-     * 解析选项 JSON。库内格式为裸数组 [{"key":"A","text":"..."}]（与 spec/DDL 注释及导入路径一致）；
-     * 解析失败按空列表处理——本期只读展示，坏数据不应让整个详情页 500，由导入期的校验兜底格式。
-     */
-    private List<ListenGroupDetailVO.Option> parseOptions(String optionsJson) {
-        if (StringUtils.isBlank(optionsJson)) {
-            return List.of();
-        }
-        try {
-            JsonNode array = OBJECT_MAPPER.readTree(optionsJson);
-            if (!array.isArray()) {
-                return List.of();
-            }
-            return java.util.stream.StreamSupport.stream(array.spliterator(), false)
-                    .map(node -> {
-                        ListenGroupDetailVO.Option option = new ListenGroupDetailVO.Option();
-                        option.setKey(node.path("key").asText(null));
-                        option.setText(node.path("text").asText(null));
-                        return option;
-                    })
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            return List.of();
-        }
     }
 
     /** 批量填充组内题数：一次 GROUP BY 查询，避免逐组查库（N+1） */

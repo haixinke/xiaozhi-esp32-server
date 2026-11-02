@@ -11,8 +11,6 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.redis.RedisKeys;
@@ -22,6 +20,7 @@ import xiaozhi.modules.listen.dao.ListenQuestionDao;
 import xiaozhi.modules.listen.dto.ListenAnswerSubmitDTO;
 import xiaozhi.modules.listen.entity.ListenGroupEntity;
 import xiaozhi.modules.listen.entity.ListenQuestionEntity;
+import xiaozhi.modules.listen.util.ListenOptionsParser;
 import xiaozhi.modules.llm.service.LLMService;
 
 /**
@@ -40,9 +39,6 @@ public class ListenFeedbackService {
     private final ListenQuestionDao listenQuestionDao;
     private final ListenFeedbackPromptBuilder promptBuilder;
     private final RedisUtils redisUtils;
-
-    /** 解析 options_json 用的共享 ObjectMapper */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /** 生成文案的最大保留字符数：超出截断（LLM 不保证严格遵守 ≤80 字 prompt 约束） */
     private static final int FEEDBACK_MAX_LENGTH = 80;
@@ -117,8 +113,8 @@ public class ListenFeedbackService {
         Map<Long, Map<String, String>> optionTextByQuestion = new HashMap<>();
         for (ListenQuestionEntity question : questions) {
             Map<String, String> textByKey = new HashMap<>();
-            for (Map.Entry<String, String> entry : parseOptions(question.getOptionsJson()).entrySet()) {
-                textByKey.put(entry.getKey(), entry.getValue());
+            for (ListenOptionsParser.Option option : ListenOptionsParser.parse(question.getOptionsJson())) {
+                textByKey.put(option.key(), option.text());
             }
             optionTextByQuestion.put(question.getId(), textByKey);
         }
@@ -134,30 +130,5 @@ public class ListenFeedbackService {
 
         String prompt = promptBuilder.build(group.getName(), questions, optionTextByQuestion, customTextByQuestion, optionKeyByQuestion);
         return llmService.generateText(prompt);
-    }
-
-    /** 解析 options_json 为 key -> 文本映射；解析失败返回空 Map（坏数据由导入期校验兜底） */
-    private Map<String, String> parseOptions(String optionsJson) {
-        if (StringUtils.isBlank(optionsJson)) {
-            return Map.of();
-        }
-        try {
-            JsonNode array = OBJECT_MAPPER.readTree(optionsJson);
-            if (!array.isArray()) {
-                return Map.of();
-            }
-            Map<String, String> result = new HashMap<>();
-            for (JsonNode node : array) {
-                String key = node.path("key").asText(null);
-                String text = node.path("text").asText(null);
-                if (key != null && text != null) {
-                    result.put(key, text);
-                }
-            }
-            return result;
-        } catch (Exception e) {
-            log.warn("options_json 解析失败: {}", optionsJson, e);
-            return Map.of();
-        }
     }
 }

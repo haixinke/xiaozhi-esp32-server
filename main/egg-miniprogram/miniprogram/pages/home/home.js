@@ -1,6 +1,5 @@
 const petStore = require('../../utils/pet-store');
 const auth = require('../../utils/auth');
-const { get } = require('../../utils/request');
 const wechatApi = require('../../utils/wechat-api');
 const inviteApi = require('../../utils/invite-api');
 const shareInvite = require('../../utils/share-invite');
@@ -245,10 +244,10 @@ Page({
     this._namePromptShownForShow = false;
     this.configureLayoutMetrics();
     this.syncTabBar();
-    const cached = petStore.getPet();
+    const snapshot = petStore.getPetSnapshot();
+    const cached = snapshot.pet;
     if (cached) {
-      // 列表中同步最新缓存宠物并以其为当前宠物；冷启动列表为空时先单条回显，等服务端列表补全
-      this.upsertPetIntoList(cached);
+      this.setData({ pets: snapshot.pets, currentPetIndex: snapshot.currentPetIndex });
       this.renderPet(cached);
       // 后台静默刷新后端派生字段(今日心情等)，避免缓存跨天后一直展示旧状态
       this.loadPetFromServer();
@@ -260,18 +259,6 @@ Page({
     this._petRestoreFinished = false;
     this.setData({ pet: null, pets: [], currentPetIndex: 0, stage: 'empty', petRestoreLoading: true, petRestoreError: '' });
     this.loadPetFromServer();
-  },
-
-  // 把宠物对象同步进列表并设为当前项；列表没有该宠物时追加到末尾（新领养的宠物领养时间最晚，排最后）
-  upsertPetIntoList(pet) {
-    const pets = this.data.pets.slice();
-    const index = pets.findIndex((item) => String(item.id) === String(pet.id));
-    if (index >= 0) {
-      pets[index] = pet;
-      this.setData({ pets, currentPetIndex: index });
-      return;
-    }
-    this.setData({ pets: pets.concat(pet), currentPetIndex: pets.length });
   },
 
   // 拉取最新 DOODLE 记录的 artUrl；空值表示恢复环境蛋，旧请求不能覆盖新保存结果
@@ -386,37 +373,16 @@ Page({
     const shouldRestoreDoodle = !this.data.pet;
     const previousPetId = this.data.pet && String(this.data.pet.id);
     try {
-      const list = await get('/pet/list');
-      this.setData({ petRestoreError: '' });
-      if (Array.isArray(list) && list.length > 0) {
-        const hasHatched = list.some((vo) => vo && vo.hatchStatus === 'HATCHED');
-        // 星星余额与宠物列表并发拉取：仅当前端存在破壳宠物时发请求；失败静默降级（隐藏星星行）
-        this.loadStarBalance(hasHatched);
-        // 当日小纸条与星星余额并列挂载：仅破壳后可得（未破壳无信封入口）
-        this.loadDailyNote(hasHatched);
-        // 多宠物：按领养时间正序排列（先领的在最上），整批写入按 petId 隔离的本地缓存；
-        // 列表接口已过滤已删除宠物(deleted_at=0)，前端无需再过滤。
-        // petType 为 prototype 的 WXML 别名（原型链保留属性禁止直接绑定，见 CLAUDE.md），供指示点 aria-label 使用
-        const pets = list.map((vo) => petStore.mapPetFromVO(vo))
-          .filter((pet) => !!pet)
-          .map((pet) => ({ ...pet, petType: pet.prototype || '' }))
-          .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-        petStore.cachePets(pets);
-        // 进入主页后的首次加载默认停在最先领取的宠物；之后的静默刷新保持用户当前选中的宠物
-        let index = 0;
-        if (!this._initialPetLoad && previousPetId) {
-          const kept = pets.findIndex((item) => String(item.id) === previousPetId);
-          if (kept >= 0) index = kept;
-        }
-        this._initialPetLoad = false;
-        // 「当前宠物」为客户端概念：聊天/许愿/早教等下游页面统一从 pet-store 读取当前选中的宠物
-        const pet = petStore.setActivePet(pets[index]);
-        this.setData({ pets, currentPetIndex: index });
-        this.renderPet(pet);
-        if (shouldRestoreDoodle || previousPetId !== String(pet.id)) this.restoreDoodleArt(pet);
-      } else {
-        this.setData({ pets: [], currentPetIndex: 0, starBalance: null });
-        this.syncPendingInvite(null);
+      const snapshot = await petStore.refreshPets({ resetSelection: this._initialPetLoad });
+      if (!snapshot) return;
+      this._initialPetLoad = false;
+      this.setData({ pets: snapshot.pets, currentPetIndex: snapshot.currentPetIndex, petRestoreError: '' });
+      const hasHatched = snapshot.pets.some((pet) => pet.hatchStatus === 'HATCHED');
+      this.loadStarBalance(hasHatched);
+      this.loadDailyNote(hasHatched);
+      this.renderPet(snapshot.pet);
+      if (shouldRestoreDoodle || previousPetId !== (snapshot.pet && String(snapshot.pet.id))) {
+        this.restoreDoodleArt(snapshot.pet);
       }
     } catch (error) {
       // 拉取失败(未登录/网络异常)保持空态,不打扰用户
@@ -567,13 +533,15 @@ Page({
       petRestoreError: '',
       hasPendingInvite: false
     });
-    this.loadPetFromServer();
+    return this.loadPetFromServer();
   },
 
   renderPet(pet) {
     if (!pet) {
       this.syncPendingInvite(null);
-      this.finishPetRestore({ pet: null, stage: 'empty' });
+      this.finishPetRestore({ pet: null, stage: 'empty', showNameSheet: false });
+      this.refreshEnvironment();
+      this.refreshStoryState('empty');
       return;
     }
     this.syncPendingInvite(pet);
@@ -1245,16 +1213,18 @@ Page({
   // 否则旧树已卸、新背景图未下载完成，opacity:1 时露出页面底色形成全屏闪白。
   // 预取通道复用 remoteImage 会话缓存：首次切换等待下载，切回再切立即命中。
   switchCurrentPet(index) {
-    const pet = this.data.pets[index];
+    const target = this.data.pets[index];
+    if (!target) return;
+    // 选择意图立即生效；预取期间的刷新必须保留用户最新选择。
+    const pet = petStore.selectPet(target.id);
     if (!pet) return;
     this._petSwitching = true;
     this.setData({ petSwitchStyle: 'opacity:0;' });
     this.prefetchPetAssets(pet).then(() => {
-      // 「当前宠物」为客户端概念：切换后聊天等下游页面统一从 pet-store 读到新选中的宠物
-      petStore.setActivePet(pet);
-      this.setData({ currentPetIndex: index, petSwitchStyle: 'opacity:1;' });
-      this.renderPet(pet);
-      this.restoreDoodleArt(pet);
+      const snapshot = petStore.getPetSnapshot();
+      this.setData({ pets: snapshot.pets, currentPetIndex: snapshot.currentPetIndex, petSwitchStyle: 'opacity:1;' });
+      this.renderPet(snapshot.pet);
+      this.restoreDoodleArt(snapshot.pet);
       setTimeout(() => {
         this._petSwitching = false;
         this.setData({ petSwitchStyle: '' });
@@ -1356,14 +1326,9 @@ Page({
       this.setData({ nameError: result.message || '名字没有保存成功，请重试' });
       return;
     }
-    const renamedPet = { ...this.data.pet, name: result.pet ? result.pet.name : this.data.nameDraft };
-    this.setData({
-      showNameSheet: false,
-      pet: renamedPet
-    });
-    // 必须同步列表副本：上下滑动切宠直接读 this.data.pets 并 setActivePet 覆盖缓存，
-    // 不同步会导致切走再切回时旧对象把新名字缓存冲掉
-    this.upsertPetIntoList(renamedPet);
+    const snapshot = petStore.getPetSnapshot();
+    this.setData({ showNameSheet: false, pets: snapshot.pets, currentPetIndex: snapshot.currentPetIndex });
+    this.renderPet(snapshot.pet);
     this.syncTabBar();
     this.showFeedback(result.alreadyDone ? '名字改好啦。' : '我记住自己的名字啦。');
   },

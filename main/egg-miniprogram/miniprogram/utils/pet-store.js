@@ -1,4 +1,7 @@
 const petApi = require('./pet-api');
+const petRoster = require('./pet-roster');
+const { getPet, getPetById, getAllPets, savePet, cachePets, replacePets,
+  setActivePet, getActivePetId, setActivePetId, getPetSnapshot, selectPet } = petRoster;
 const PET_KEY = 'eggbaby_mvp_pet_v1';
 const USER_KEY = 'eggbaby_mvp_user_v1';
 const IDENTITY_KEY = 'eggbaby_mvp_identity_v1';
@@ -51,6 +54,7 @@ function getUser() {
 }
 
 function saveUser(user) {
+  if ((getUser() && getUser().id) !== (user && user.id)) petRoster.invalidateAccount();
   if (user && user.id) write(IDENTITY_KEY, user.id);
   return write(USER_KEY, user);
 }
@@ -84,75 +88,15 @@ const ACCOUNT_KEYS = [
 ];
 
 function clearAccountData() {
+  petRoster.invalidateAccount();
   ACCOUNT_KEYS.forEach((key) => {
     try { wx.removeStorageSync(key); } catch (error) {}
   });
 }
 
 function clearUser() {
+  petRoster.invalidateAccount();
   try { wx.removeStorageSync(USER_KEY); } catch (error) {}
-}
-
-function getPet() {
-  const pet = read(PET_KEY);
-  const user = getUser();
-  if (pet && pet.ownerId && user && pet.ownerId !== user.id) return null;
-  return pet;
-}
-
-// 按 petId 从多宠物缓存读取宠物（不切换“当前宠物”），“我的卡册”跨宠物聚合与单卡页按 petId 取宠物使用。
-// 与 getPet() 同款 ownerId 校验：换账号后旧缓存不可见
-function getPetById(petId) {
-  if (!petId) return null;
-  const pet = readPetsMap()[String(petId)];
-  const user = getUser();
-  if (pet && pet.ownerId && user && pet.ownerId !== user.id) return null;
-  return pet || null;
-}
-
-// 读取全部缓存宠物（“我的卡册”聚合用户名下所有宠物的收藏卡）；同样按 ownerId 过滤
-function getAllPets() {
-  const user = getUser();
-  return Object.values(readPetsMap()).filter((pet) => pet && (!pet.ownerId || !user || pet.ownerId === user.id));
-}
-
-function savePet(pet) {
-  savePetToMap(pet);
-  return write(PET_KEY, pet);
-}
-
-function readPetsMap() {
-  const map = read(PETS_KEY);
-  return map && typeof map === 'object' ? map : {};
-}
-
-function savePetToMap(pet) {
-  if (!pet || !pet.id) return;
-  const map = readPetsMap();
-  map[String(pet.id)] = pet;
-  write(PETS_KEY, map);
-}
-
-// 批量写入多宠物缓存，不改动“当前宠物”；供主页整批刷新宠物列表时使用
-function cachePets(pets) {
-  if (!Array.isArray(pets)) return;
-  const map = readPetsMap();
-  pets.forEach((pet) => {
-    if (pet && pet.id) map[String(pet.id)] = pet;
-  });
-  write(PETS_KEY, map);
-}
-
-// 按服务端返回的宠物列表整体重建缓存（合并语义的补充）：
-// 不在列表里的宠物（服务端已删除）从缓存移除，防止“我的卡册”等聚合视图渲染幽灵宠物；
-// 空列表同样生效（用户宠物全部删除时清空缓存）。不改动“当前宠物”。
-function replacePets(pets) {
-  if (!Array.isArray(pets)) return;
-  const map = {};
-  pets.forEach((pet) => {
-    if (pet && pet.id) map[String(pet.id)] = pet;
-  });
-  write(PETS_KEY, map);
 }
 
 function isBound() {
@@ -175,9 +119,8 @@ function toTimestamp(value) {
 function mapPetFromVO(vo) {
   if (!vo || !vo.id) return null;
   const user = getUser();
-  const map = readPetsMap();
-  const legacy = read(PET_KEY);
-  const existing = map[String(vo.id)] || (legacy && String(legacy.id) === String(vo.id) ? legacy : null);
+  const legacy = getPet();
+  const existing = getPetById(vo.id) || (legacy && String(legacy.id) === String(vo.id) ? legacy : null);
   const accelerated = vo.acceleratedMinutes || 0;
   const progress = Math.max(0, Math.min(100, Math.round((accelerated / HATCH_TOTAL_MINUTES) * 100)));
   const hatchStartTime = toTimestamp(vo.hatchStartTime);
@@ -235,25 +178,18 @@ function mapPetFromVO(vo) {
 function savePetFromVO(vo) {
   const pet = mapPetFromVO(vo);
   if (!pet) return null;
-  savePet(pet);
-  setActivePetId(pet.id);
-  return pet;
+  return setActivePet(pet);
 }
 
-// 切换“当前宠物”：「当前宠物」是客户端概念，聊天/许愿/早教等下游页面统一从 getPet() 读取当前选中的宠物
-function setActivePet(pet) {
-  if (!pet || !pet.id) return null;
-  savePet(pet);
-  setActivePetId(pet.id);
-  return pet;
+function saveUpdatedPetFromVO(vo, canApply) {
+  if (!vo || !canApply(vo.id)) throw new Error('蛋宝宝状态已变化，请返回后重试');
+  const pet = mapPetFromVO(vo);
+  if (!pet) throw new Error('蛋宝宝状态已变化，请返回后重试');
+  return savePet(pet);
 }
 
-function getActivePetId() {
-  return read(ACTIVE_PET_KEY);
-}
-
-function setActivePetId(id) {
-  return write(ACTIVE_PET_KEY, id);
+function refreshPets(options) {
+  return petRoster.refreshPets(mapPetFromVO, options);
 }
 
 function mockCodeError(code) {
@@ -332,6 +268,7 @@ function addProgress(pet, amount) {
 async function updateNickname(name) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
+  const canApply = petRoster.capturePetUpdate(pet.id);
   const value = String(name || '').trim();
   if (!value) return { ok: false, message: '昵称不能为空' };
   if (Array.from(value).length > 10) return { ok: false, message: '昵称最多 10 个字符' };
@@ -344,19 +281,20 @@ async function updateNickname(name) {
     if (pet.hatchStatus === 'HATCHED') {
       // 破壳后 NICKNAME 修炼动作不再合法(后端抛 10209)，改名直接走 PUT /pet/update
       const vo = await petApi.updateNickname(pet.id, value);
-      updated = savePetFromVO(vo);
+      updated = saveUpdatedPetFromVO(vo, canApply);
     } else {
       const result = await petApi.submitHatchAction(pet.id, 'NICKNAME', { nickname: value });
       alreadyDone = !!result.alreadyDone;
       if (result.alreadyDone) {
+        if (!canApply(pet.id)) throw new Error('蛋宝宝状态已变化，请返回后重试');
         // 后端 HatchActionService 仅在首次提交时持久化 nickname；二次提交走 PUT /pet/update 兜底。
         const vo = await petApi.updateNickname(pet.id, value);
-        updated = savePetFromVO(vo);
+        updated = saveUpdatedPetFromVO(vo, canApply);
       } else {
-        updated = savePetFromVO(result.pet);
+        updated = saveUpdatedPetFromVO(result.pet, canApply);
       }
     }
-    updated.name = value;
+    updated = { ...updated, name: value };
     savePet(updated);
     return { ok: true, alreadyDone, pet: updated };
   } catch (error) {
@@ -369,6 +307,7 @@ const ACTION_TYPE = { cuddle: 'CUDDLE', wish: 'WISH', lesson: 'LESSON' };
 async function completeDailyTask(task, value) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
+  const canApply = petRoster.capturePetUpdate(pet.id);
 
   // 许愿支持对象入参 { questionId, value }，兼容旧字符串入参
   var wishData = null;
@@ -383,10 +322,12 @@ async function completeDailyTask(task, value) {
   try {
     const payload = task === 'cuddle' ? {} : (task === 'wish' ? { questionId: wishData.questionId, value: wishData.value } : { value });
     const result = await petApi.submitHatchAction(pet.id, ACTION_TYPE[task], payload);
-    const updated = savePetFromVO(result.pet);
+    let updated = saveUpdatedPetFromVO(result.pet, canApply);
     if (!result.alreadyDone) {
-      if (task === 'wish') updated.preferences.wishes.push({ date: todayKey(), questionId: wishData.questionId, value: wishData.value });
-      if (task === 'lesson') updated.preferences.lessons.push({ date: todayKey(), value });
+      if (task === 'wish') updated = { ...updated, preferences: { ...updated.preferences,
+        wishes: updated.preferences.wishes.concat({ date: todayKey(), questionId: wishData.questionId, value: wishData.value }) } };
+      if (task === 'lesson') updated = { ...updated, preferences: { ...updated.preferences,
+        lessons: updated.preferences.lessons.concat({ date: todayKey(), value }) } };
     }
     savePet(updated);
     return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated };
@@ -410,6 +351,7 @@ function completeLesson(value) {
 async function saveDoodle(artUrl, petId) {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
+  const canApply = petRoster.capturePetUpdate(pet.id);
   if (!petId || String(pet.id) !== String(petId)) {
     return { ok: false, message: '蛋宝宝状态已变化，请返回后重试' };
   }
@@ -421,7 +363,7 @@ async function saveDoodle(artUrl, petId) {
       || !responsePet || String(responsePet.id) !== String(petId)) {
       return { ok: false, message: '蛋宝宝状态已变化，请返回后重试' };
     }
-    const updated = savePetFromVO(result.pet);
+    const updated = saveUpdatedPetFromVO(result.pet, canApply);
     savePet(updated);
     return { ok: true, alreadyDone: !!result.alreadyDone, pet: updated, petId: String(petId) };
   } catch (error) {
@@ -601,11 +543,12 @@ function derivePersonality(pet) {
 async function createCollectionCard() {
   const pet = getPet();
   if (!pet) return { ok: false, message: '还没有蛋宝宝' };
+  const canApply = petRoster.capturePetUpdate(pet.id);
   if (Date.now() < pet.hatchAt) return { ok: false, message: '还没到破壳时间' };
   if (pet.hatchStatus === 'HATCHED') return { ok: true, created: false, pet };
   try {
     const vo = await petApi.hatchPet(pet.id);
-    const updated = savePetFromVO(vo);
+    const updated = saveUpdatedPetFromVO(vo, canApply);
     return { ok: true, created: true, pet: updated };
   } catch (error) {
     return { ok: false, message: (error && error.userMessage) || '破壳失败，请稍后重试' };
@@ -656,6 +599,9 @@ module.exports = {
   getPet,
   getPetById,
   getAllPets,
+  refreshPets,
+  getPetSnapshot,
+  selectPet,
   savePet,
   isBound,
   savePetFromVO,

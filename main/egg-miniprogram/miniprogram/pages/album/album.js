@@ -1,5 +1,4 @@
 const petStore = require('../../utils/pet-store');
-const petApi = require('../../utils/pet-api');
 
 // "我的卡册"聚合用户名下全部宠物的收藏卡（不按当前宠物），
 // 按获得时间正序混排（最早获得在前，与主页宠物领养顺序一致）；
@@ -9,17 +8,9 @@ Page({
 
   async onShow() {
     this._render();
-    // 请求序号：快速重复进出页面时，慢的旧响应不得覆盖新响应的渲染
-    const requestSeq = (this._requestSeq || 0) + 1;
-    this._requestSeq = requestSeq;
     try {
-      const list = await petApi.listPets();
-      if (requestSeq !== this._requestSeq) return;
-      const pets = (Array.isArray(list) ? list : [])
-        .map((vo) => petStore.mapPetFromVO(vo))
-        .filter((pet) => !!pet);
-      // 整体重建缓存（非合并）：服务端已删除的宠物从缓存移除，空列表同样生效
-      petStore.replacePets(pets);
+      const snapshot = await petStore.refreshPets();
+      if (!snapshot) return;
       this._render();
     } catch (error) {
       // 刷新失败：保持缓存渲染，不阻塞页面

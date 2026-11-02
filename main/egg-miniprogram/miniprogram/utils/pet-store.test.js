@@ -289,11 +289,6 @@ async function runUpdateNicknameTests() {
   console.log('pet-store.test.js: ALL PASS');
 }
 
-runUpdateNicknameTests().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
-
 // --- getPetById / getAllPets：多宠物缓存读取（"我的卡册"跨宠物聚合依赖） ---
 petStore.clearAccountData();
 petStore.saveUser({ id: 42, nickname: '蛋友' });
@@ -333,3 +328,8 @@ assert.strictEqual(zeroDays.companionDays, 0, 'companionDays=0 保留');
 const missingDays = petStore.mapPetFromVO({ ...eggVO, id: 'pet-days-3' });
 assert.strictEqual(missingDays.companionDays, 0, 'companionDays 缺失时兜底 0');
 console.log('pet-store mapPetFromVO companionDays: PASS');
+
+runUpdateNicknameTests().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

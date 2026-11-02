@@ -57,7 +57,7 @@ main/egg-miniprogram/
 
 登录态由 `utils/auth.js` 管理（提前 5 分钟续期，401 静默重登）。
 
-`pet-store.js` 为本地缓存层：`savePetFromVO(vo)` 将后端 `PetVO` 映射为本地 pet 并缓存，支持离线回显。**后端为唯一事实源**。
+`pet-store.js` 为本地缓存入口，内部由 `pet-roster.js` 管理宠物列表与当前选择。`refreshPets()` 统一接受后端完整列表、排序、移除失效缓存并校正当前宠物；失败保留缓存。页面通过 `getPetSnapshot()` 回显、`selectPet(petId)` 切宠，避免页面旧对象覆盖最新资料。`savePetFromVO(vo)` 用于领养或 NFC 跳转等显式选择；改名、修炼和破壳的响应仅更新对应宠物，不改变用户最新选择。保留原缓存格式及旧单宠物字段兼容。**后端为唯一事实源**。
 
 ## 与后端服务 `manager-api` 的交互
 
@@ -122,6 +122,11 @@ main/egg-miniprogram/
 ## 开发与校验命令
 
 ```bash
+# 宠物一致性测试：真实页面与真实缓存组合
+node main/egg-miniprogram/scripts/pet-consistency.test.js
+node main/egg-miniprogram/miniprogram/utils/pet-roster.test.js
+node main/egg-miniprogram/miniprogram/pages/hatch-guide/hatch-guide.test.js
+
 # 工程完整性校验
 node main/egg-miniprogram/scripts/verify-project.js
 

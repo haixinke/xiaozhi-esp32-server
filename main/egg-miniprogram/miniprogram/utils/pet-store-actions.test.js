@@ -154,7 +154,7 @@ function todayKey() {
   let resolvePendingDoodle;
   actionResponses = [new Promise(resolve => { resolvePendingDoodle = resolve; })];
   const pendingDoodle = petStore.saveDoodle('https://oss.example/doodles/pending.png', 'real-1');
-  petStore.savePet({ ...realPet, id: 'real-2' });
+  petStore.setActivePet({ ...realPet, id: 'real-2' });
   resolvePendingDoodle({
     addedMinutes: 0, alreadyDone: true, readyToHatch: false,
     pet: { id: 'real-1', hatchStatus: 'EGG', acceleratedMinutes: 1440, prototype: '玉兔',
@@ -163,7 +163,7 @@ function todayKey() {
   const changedPetResult = await pendingDoodle;
   assert.strictEqual(changedPetResult.ok, false, 'switching pets while a doodle request is pending rejects the stale response');
   assert.strictEqual(petStore.getPet().id, 'real-2', 'a stale doodle response cannot replace the current pet cache');
-  petStore.savePet(realPet);
+  petStore.setActivePet(realPet);
 
   // === 错误路径：后端 reject（business error）===
   const Module2 = require('module');
@@ -246,7 +246,7 @@ function todayKey() {
     hatchStatus: 'EGG', acceleratedMinutes: 3000,
     expectedHatchTime: Date.now() - 1000, hatchStartTime: Date.now() - 7 * DAY
   };
-  petStore.savePet(readyPet);
+  petStore.setActivePet(readyPet);
   hatchCalls = 0;
   hatchResponse = {
     id: 'real-2', hatchStatus: 'HATCHED', prototype: '锦鲤', nickname: '小金',

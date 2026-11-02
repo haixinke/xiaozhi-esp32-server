@@ -27,7 +27,7 @@ let toastTitle = null;
 let applySessionArgument = null;
 let bindPhonePromise = null;
 let requestGetCalls = 0;
-let requestGetResult = [];
+let requestGetResult = null;
 let requestGetPromise = null;
 let requestGetError = null;
 let starBalanceCalls = 0;
@@ -83,6 +83,8 @@ let lastStoryStatePetId = null;
 let cachedPetsArg = null;
 let setActivePetCalls = 0;
 let lastActivePet = null;
+let petRefreshRevision = 0;
+let petSelectionRevision = 0;
 let intervalDelay = null;
 let intervalCallback = null;
 let intervalIdSequence = 555;
@@ -103,8 +105,32 @@ const petStoreMock = {
     savedPetVO = pet;
     return pet;
   },
-  mapPetFromVO: (vo) => (vo ? { ...vo } : null),
-  cachePets: (pets) => { cachedPetsArg = pets; },
+  getPetSnapshot: () => {
+    const pets = (cachedPetsArg || (storedPet ? [storedPet] : [])).slice();
+    const index = pets.findIndex((pet) => storedPet && pet.id === storedPet.id);
+    return { pets, pet: storedPet, currentPetIndex: Math.max(0, index) };
+  },
+  refreshPets: async ({ resetSelection } = {}) => {
+    const previous = storedPet;
+    const revision = ++petRefreshRevision;
+    const selection = petSelectionRevision;
+    const list = await requestMock.get();
+    if (revision !== petRefreshRevision) return null;
+    if (!Array.isArray(list)) throw new Error('invalid list');
+    cachedPetsArg = list.map((pet) => ({ ...pet, ...(storedPet !== previous && storedPet && storedPet.id === pet.id ? storedPet : {}), petType: pet.prototype || '' }))
+      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const kept = (!resetSelection || selection !== petSelectionRevision) && storedPet
+      && cachedPetsArg.find((pet) => pet.id === storedPet.id);
+    const pet = kept || cachedPetsArg[0] || null;
+    if (pet) petStoreMock.setActivePet(pet);
+    else storedPet = null;
+    return petStoreMock.getPetSnapshot();
+  },
+  selectPet: (id) => {
+    const pet = (cachedPetsArg || []).find((item) => item.id === id);
+    if (pet) petSelectionRevision += 1;
+    return pet ? petStoreMock.setActivePet(pet) : null;
+  },
   setActivePet: (pet) => {
     setActivePetCalls += 1;
     lastActivePet = pet;
@@ -147,6 +173,10 @@ const petStoreMock = {
   updateNickname: async (name) => {
     updateNicknameCalls += 1;
     lastNicknameValue = name;
+    if (updateNicknameResult.ok && storedPet) {
+      storedPet = { ...storedPet, name: (updateNicknameResult.pet && updateNicknameResult.pet.name) || name };
+      if (cachedPetsArg) cachedPetsArg = cachedPetsArg.map((pet) => pet.id === storedPet.id ? storedPet : pet);
+    }
     return updateNicknameResult;
   }
 };
@@ -170,7 +200,7 @@ const requestMock = {
     requestGetCalls += 1;
     if (requestGetPromise) return requestGetPromise;
     if (requestGetError) throw requestGetError;
-    return requestGetResult;
+    return requestGetResult === null ? (cachedPetsArg || (storedPet ? [storedPet] : [])) : requestGetResult;
   }
 };
 const wechatApiMock = {
@@ -363,6 +393,10 @@ global.setInterval = (callback, delay) => {
 };
 global.clearInterval = (id) => { clearedIntervals.push(id); };
 
+async function flushPageTasks() {
+  for (let index = 0; index < 12; index += 1) await Promise.resolve();
+}
+
 function makePage() {
   return {
     ...pageConfig,
@@ -388,7 +422,7 @@ function resetScenario() {
   applySessionArgument = null;
   bindPhonePromise = null;
   requestGetCalls = 0;
-  requestGetResult = [];
+  requestGetResult = null;
   requestGetPromise = null;
   requestGetError = null;
   starBalanceCalls = 0;
@@ -445,6 +479,8 @@ function resetScenario() {
   cachedPetsArg = null;
   setActivePetCalls = 0;
   lastActivePet = null;
+  petRefreshRevision += 1;
+  petSelectionRevision = 0;
   intervalDelay = null;
   intervalCallback = null;
   intervalIdSequence = 555;
@@ -570,7 +606,7 @@ async function run() {
   inviteMineResult = { code: 'EGG-ABCD', remaining: 3, status: 1 };
   const sharePage = makePage();
   sharePage.onLoad();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(inviteMineCalls, 1, 'home load should preload the personal invitation code');
   assert.deepStrictEqual(
     sharePage.onShareAppMessage(),
@@ -593,7 +629,7 @@ async function run() {
   inviteMineError = new Error('network unavailable');
   const fallbackSharePage = makePage();
   fallbackSharePage.onLoad();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.deepStrictEqual(
     fallbackSharePage.onShareAppMessage(),
     {
@@ -615,7 +651,7 @@ async function run() {
   inviteMineResult = { code: 'EGG-USED', remaining: 0, status: 1 };
   const exhaustedSharePage = makePage();
   exhaustedSharePage.onLoad();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.deepStrictEqual(
     exhaustedSharePage.onShareAppMessage(),
     {
@@ -667,7 +703,7 @@ async function run() {
   inviteMineResult = { code: 'ABCDE', remaining: 3, status: 1 };
   const selfInvitePage = makePage();
   selfInvitePage.onLoad();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(clearPendingCalls, 1, 'opening a personal invitation should clear the self-invite context');
 
   resetScenario();
@@ -688,7 +724,7 @@ async function run() {
   app.globalData.authReady = Promise.resolve(cachedSession);
   const browsingPage = makePage();
   browsingPage.onLoad();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(browsingPage.data.authChecked, true, 'valid unbound users can browse home');
   assert.strictEqual(relaunchedTo, null, 'valid unbound users are not redirected to welcome');
 
@@ -699,7 +735,7 @@ async function run() {
   requestGetPromise = new Promise((resolve) => { resolvePetList = resolve; });
   const coldStartPage = makePage();
   coldStartPage.onLoad();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(requestGetCalls, 1, 'cold start restores the server pet after login');
   assert.strictEqual(coldStartPage.data.petRestoreLoading, true,
     'empty state remains hidden while the server pet is restoring');
@@ -776,7 +812,7 @@ async function run() {
   bindPhonePromise = new Promise((resolve) => { resolveBind = resolve; });
   const concurrentPage = makePage();
   const firstAuthorization = concurrentPage.onAuthorizePhone({ detail: { code: 'test-phone-code' } });
-  await Promise.resolve();
+  await flushPageTasks();
   const secondAuthorization = concurrentPage.onAuthorizePhone({ detail: { code: 'test-phone-code' } });
   assert.strictEqual(bindPhoneCalls, 1, 'concurrent taps start only one phone bind');
   resolveBind();
@@ -1057,16 +1093,14 @@ async function run() {
   pageRestore.onLoad();
   pageRestore.onShow();
   // getLatestDoodleArtUrl 是异步的，等待微任务落定后再断言
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageRestore.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/existing.png', 'onShow restores the latest doodle artUrl onto the scene');
 
   // 11. 服务端明确返回空作品时清掉旧图，冷启动恢复宠物后也会拉取作品
   doodleArtUrlResult = '';
   pageRestore.setData({ eggArtUrl: 'https://oss.eggbabe.com/doodle/stale.png' });
   pageRestore.restoreDoodleArt(pageRestore.data.pet);
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageRestore.data.eggArtUrl, '', 'an empty server artwork clears a stale local preview');
 
   resetScenario();
@@ -1076,8 +1110,7 @@ async function run() {
   doodleArtUrlResult = 'https://oss.eggbabe.com/doodle/cold-start.png';
   const coldStartDoodlePage = makePage();
   await coldStartDoodlePage.loadPetFromServer();
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(getLatestDoodleArtUrlCalls, 1, 'cold start restores artwork after loading the pet');
   assert.strictEqual(coldStartDoodlePage.data.eggArtUrl, 'https://oss.eggbabe.com/doodle/cold-start.png', 'cold start shows the committed artwork');
 
@@ -1159,9 +1192,7 @@ async function run() {
   pageRename.onLoad();
   pageRename.onShow();
   // 等待 loadPetFromServer 静默刷新落地（两只宠物进列表）
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageRename.data.pets.length, 2, 'server list seeds both incubator pets');
   assert.strictEqual(pageRename.data.pet.name, '旧名字', 'current pet starts with the old name');
   pageRename.onPetNameTap();
@@ -1171,12 +1202,10 @@ async function run() {
   // 切走再切回；预取与渲染无关本用例，替换为即时完成
   pageRename.prefetchPetAssets = () => Promise.resolve();
   pageRename.switchCurrentPet(1);
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageRename.data.pet.name, '宝宝B', 'swiping down activates the second pet');
   pageRename.switchCurrentPet(0);
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(lastActivePet && lastActivePet.name, '新名字',
     'switching back must activate the renamed pet, not a stale list copy');
   assert.strictEqual(pageRename.data.pet.name, '新名字',
@@ -1269,8 +1298,7 @@ async function run() {
   const pageStory = makePage();
   pageStory.onLoad();
   pageStory.onShow();
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(getStoryStateCalls >= 1, true, 'hatched home loads the story state');
   assert.strictEqual(lastStoryStatePetId, 'pet-001', 'story state is queried by pet id');
   assert.strictEqual(pageStory.data.storyImageUrl, 'https://oss.eggbabe.com/story/bedroom.png', 'story image url drives the background');
@@ -1294,8 +1322,8 @@ async function run() {
     const pageWindowOff = makePage();
     pageWindowOff.onLoad();
     pageWindowOff.onShow();
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushPageTasks();
+    await flushPageTasks();
     assert.strictEqual(pageWindowOff.data.storyWindowAvailable, false,
       `window hotspot must stay off for ${state.bigSceneName}/${state.smallSceneName}/tag=${state.tagImageUrl}`);
   }
@@ -1308,8 +1336,7 @@ async function run() {
   const pageStoryEmpty = makePage();
   pageStoryEmpty.onLoad();
   pageStoryEmpty.onShow();
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageStoryEmpty.data.storyImageUrl, '', 'null story state clears the background');
   assert.strictEqual(pageStoryEmpty.data.storyWindowAvailable, false, 'null story state disables the window hotspot');
   assert.strictEqual(pageStoryEmpty.data.storyAtHome, false, 'null story state hides the chat entry');
@@ -1325,8 +1352,7 @@ async function run() {
   const pageOutdoor = makePage();
   pageOutdoor.onLoad();
   pageOutdoor.onShow();
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageOutdoor.data.storyAtHome, false, 'non-home big scene hides the chat entry');
 
   // 25. 破壳前：不拉取故事状态
@@ -1380,8 +1406,7 @@ async function run() {
   const pageStoryFail = makePage();
   pageStoryFail.onLoad();
   pageStoryFail.onShow();
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   pageStoryFail.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/old.png' });
   storyStateError = new Error('network unavailable');
   await pageStoryFail.loadStoryState();
@@ -1443,7 +1468,7 @@ async function run() {
   const fadeInTimer = timerCallback;
   if (typeof fadeInTimer === 'function') fadeInTimer();
   assert.strictEqual(pageSwitchBack.data.currentPetIndex, 1, 'swipe up switches to the second pet');
-  await Promise.resolve();
+  await flushPageTasks();
   // 在故事空间横向拖拽一次（drag.moved=true，置位 _storyDragMoved）。必须先有 storyImageUrl，
   // 否则 onStoryDragStart 直接 return，标志不会置位、测试就复现不了 bug
   pageSwitchBack.setData({ storyImageUrl: 'https://oss.eggbabe.com/story/pano.png' });
@@ -1640,8 +1665,7 @@ async function run() {
   const pageCaption = makePage();
   pageCaption.onLoad();
   pageCaption.onShow();
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageCaption.data.storyCaptionToastText, '阳光正好，我在卧室发呆', 'caption toast shows the story state caption');
   assert.strictEqual(pageCaption.data.storyCaptionToastVisible, true, 'caption toast fades in');
   assert.strictEqual(timerDelay, 5000, 'caption toast displays for 5000ms');
@@ -1655,14 +1679,14 @@ async function run() {
   // 相同 caption 再次轮询：不重弹、不动计时器
   const clearedBeforeRepoll = clearedTimers.length;
   await pageCaption.loadStoryState();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageCaption.data.storyCaptionToastText, '', 'same caption does not re-show the toast');
   assert.strictEqual(clearedTimers.length, clearedBeforeRepoll, 'same caption does not touch toast timers');
 
   // caption 变化：再次弹出
   storyStateResult = { ...storyStateResult, caption: '有点困了，想小憩一下' };
   await pageCaption.loadStoryState();
-  await Promise.resolve();
+  await flushPageTasks();
   assert.strictEqual(pageCaption.data.storyCaptionToastText, '有点困了，想小憩一下', 'changed caption re-shows the toast');
   assert.strictEqual(pageCaption.data.storyCaptionToastVisible, true, 'changed caption toast fades in again');
 

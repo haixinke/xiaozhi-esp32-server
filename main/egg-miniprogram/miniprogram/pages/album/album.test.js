@@ -16,6 +16,7 @@ let petsProvider = null;
 let listPetsResult = null;
 let listPetsError = null;
 let navigateToUrl = null;
+let refreshSequence = 0;
 // 受控延迟的 listPets 队列：每项是一个 () => Promise，供乱序测试注入
 const pendingListPets = [];
 
@@ -34,22 +35,19 @@ Module._load = function (request, parent, isMain) {
       const store = {
         getPetById: (petId) => (petsProvider ? petsProvider.find((p) => String(p.id) === String(petId)) || null : null),
         getAllPets: () => (petsProvider ? petsProvider.slice() : []),
-        cachePets: () => {},
-        replacePets: (pets) => { petsProvider = (pets || []).map((vo) => vo); },
-        mapPetFromVO: (vo) => ({ id: vo.id, prototype: vo.prototype, name: vo.nickname || '', collectionCards: vo.collectionCards || [] })
+        refreshPets: async () => {
+          const sequence = ++refreshSequence;
+          if (listPetsError) throw listPetsError;
+          const list = pendingListPets.length ? await pendingListPets.shift()() : listPetsResult;
+          if (sequence !== refreshSequence) return null;
+          if (!Array.isArray(list)) throw new Error('invalid list');
+          petsProvider = list.map((vo) => ({ id: vo.id, prototype: vo.prototype, name: vo.nickname || '', collectionCards: vo.collectionCards || [] }));
+          return { pets: petsProvider };
+        }
       };
       return store;
     }
-    if (request === '../../utils/pet-api') {
-      return {
-        listPets: async () => {
-          if (listPetsError) throw listPetsError;
-          // 延迟队列非空：取队首的受控 Promise（乱序测试用），否则同步返回结果
-          if (pendingListPets.length > 0) return pendingListPets.shift()();
-          return listPetsResult;
-        }
-      };
-    }
+
   }
   return originalLoad.call(this, request, parent, isMain);
 };

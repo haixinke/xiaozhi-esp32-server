@@ -5,7 +5,7 @@ Page({
   data: { pet: null, tasks: [] },
 
   async onShow() {
-    const pet = petStore.getPet();
+    let pet = petStore.getPet();
     if (!pet) {
       wx.switchTab({ url: '/pages/home/home' });
       return;
@@ -14,11 +14,19 @@ Page({
     if (pet.hatchStatus !== 'HATCHED') {
       try {
         const actions = await petApi.listHatchActions(pet.id);
-        pet._hatchActions = Array.isArray(actions) ? actions : [];
-        petStore.savePet(pet);
+        const latest = petStore.getPetById(pet.id) || petStore.getPet();
+        if (latest && String(latest.id) === String(pet.id)) {
+          petStore.savePet({ ...latest, _hatchActions: Array.isArray(actions) ? actions : [] });
+        }
       } catch (error) {
         // 拉取失败则沿用旧缓存或 tasks 默认值，不阻塞渲染
       }
+    }
+    pet = petStore.getPet();
+    if (!pet) {
+      this.setData({ pet: null, tasks: [] });
+      wx.switchTab({ url: '/pages/home/home' });
+      return;
     }
     const state = petStore.getHatchActionState(pet);
     this.setData({

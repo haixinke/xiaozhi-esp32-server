@@ -8,10 +8,10 @@
 .option-label { flex: 1; color: #374039; font-size: 25rpx; line-height: 1.45; }
 .radio { width: 30rpx; height: 30rpx; flex: 0 0 auto; border: 2rpx solid #B9BDB7; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .radio-dot { width: 14rpx; height: 14rpx; border-radius: 50%; background: #536B43; }
-.primary { height: 96rpx; padding: 0; border: 0; border-radius: 999rpx; background: #002900; color: #FFF; font-size: 28rpx; font-weight: 400; line-height: 28rpx; }
+.primary { height: 96rpx; padding: 0; border: 0; border-radius: 999rpx; background: #002900; color: #FFF; font-size: 28rpx; font-weight: 400; display: flex; align-items: center; justify-content: center; }
 .primary::after { border: none; }
 .primary--disabled { background: #AEB9AE !important; color: rgba(255,255,255,.86) !important; }
-.button-label { display: block; line-height: 1; transform: translateY(-2rpx); }
+.button-label { display: block; line-height: 1; }
 
 .progress-area { flex: none; padding: 48rpx 42rpx 0; }
 .meta { display: flex; justify-content: space-between; align-items: flex-start; gap: 24rpx; }
@@ -33,7 +33,7 @@
 .quote-mark { display: block; width: 60rpx; height: 60rpx; margin: 0 0 8rpx; }
 .feedback-quote-copy { display: block; color: #17311F; font-size: 44rpx; font-weight: 400; line-height: 1.6; letter-spacing: 0; overflow-wrap: anywhere; }
 .feedback-pet-stage { position: relative; flex: none; margin-top: auto; padding-top: 220rpx; }
-.pet-portrait { display: block; width: 100%; height: 420rpx; margin: 0 auto; }
+.pet-portrait { display: block; width: 460rpx; height: 460rpx; margin: 0 auto; }
 .feedback-reward-label { position: absolute; left: 50%; top: 0; width: 300rpx; min-height: 200rpx; transform: translateX(-50%); box-sizing: border-box; }
 .feedback-reward-label__copy { position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%); color: #17311F; font-size: 32rpx; font-weight: 500; line-height: 1.4; white-space: nowrap; }
 .feedback-reward-dots { color: #FFDD79; font-weight: 600; }
@@ -63,4 +63,5 @@
   .feedback-quote { margin-top: 24rpx; }
   .feedback-pet-stage { padding-top: 140rpx; }
   .feedback-footer { padding-top: 16rpx; }
+  .pet-portrait { width: 360rpx; height: 360rpx; }
 }

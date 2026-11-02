@@ -14,17 +14,19 @@ const HAPTIC_DELAY_MS = 840;
 const CODE_ALL_ANSWERED = 10382;
 const CODE_DAILY_LIMIT = 10384;
 
-// 宠物形象图：复用 home 页聊天入口同款静态图（按原型区分），与 DESIGN 体系一致
-const PET_IMAGE_BY_PROTOTYPE = {
-  '玉兔': '/assets/ui/3d-actions/ui_3d_scene_chat_jade_rabbit_96_v02.png',
-  'YT': '/assets/ui/3d-actions/ui_3d_scene_chat_jade_rabbit_96_v02.png',
-  '锦鲤': '/assets/ui/3d-actions/ui_3d_scene_chat_boon_koi_96_v02.png',
-  'KOI': '/assets/ui/3d-actions/ui_3d_scene_chat_boon_koi_96_v02.png'
+// 宠物形象图：与 UI 静态项目同款角色大立绘（按原型区分 stare 姿态）
+const CHARACTER_ROOT = '/assets/scenes/lifecycle/post-hatch/30-character';
+const CHARACTER_FOLDER_BY_PROTOTYPE = {
+  '玉兔': 'jade-rabbit',
+  'YT': 'jade-rabbit',
+  '锦鲤': 'boon-koi',
+  'KOI': 'boon-koi'
 };
-const PET_IMAGE_FALLBACK = '/assets/ui/3d-actions/ui_3d_scene_chat_jade_rabbit_96_v02.png';
+const CHARACTER_FOLDER_FALLBACK = 'jade-rabbit';
 
 function resolvePetImage(pet) {
-  return PET_IMAGE_BY_PROTOTYPE[pet && pet.prototype] || PET_IMAGE_FALLBACK;
+  const folder = CHARACTER_FOLDER_BY_PROTOTYPE[pet && pet.prototype] || CHARACTER_FOLDER_FALLBACK;
+  return `${CHARACTER_ROOT}/${folder}/stare.webp`;
 }
 
 // 组内最后一题（选项 E「都不是」）的 optionKey，选中时自动展开补充文本框

@@ -3110,8 +3110,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/llm/service/impl/OpenAIStyleLLMServiceImpl.java": {
-    "mtime": 1791015650.9984214,
-    "ast_hash": "4e2111cb9f31e33f520afc2538e25554",
+    "mtime": 1793612615.5436318,
+    "ast_hash": "07ca3c6c09cecc9b52ab23cc8c1663ce",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/sms/service/SmsService.java": {

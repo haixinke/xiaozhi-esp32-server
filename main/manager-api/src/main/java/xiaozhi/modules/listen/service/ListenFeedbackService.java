@@ -1,8 +1,9 @@
 package xiaozhi.modules.listen.service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
@@ -37,24 +38,34 @@ public class ListenFeedbackService {
     private final LLMService llmService;
     private final ListenGroupDao listenGroupDao;
     private final ListenQuestionDao listenQuestionDao;
-    private final ListenFeedbackPromptBuilder promptBuilder;
     private final RedisUtils redisUtils;
 
-    /** 生成文案的最大保留字符数：超出截断（LLM 不保证严格遵守 ≤80 字 prompt 约束） */
+    /** 生成文案的最大保留字符数：超出截断（LLM 不保证严格遵守 ≤50 字 prompt 约束） */
     private static final int FEEDBACK_MAX_LENGTH = 80;
 
     /** Redis 反馈文案 TTL：秒。覆盖用户从提交到退出反馈页的典型时长即可，不持久化（本期产品决定） */
     private static final long FEEDBACK_TTL_SECONDS = 300L;
 
+    /** 提示词模板：要求小红书风格、≤50 字、治愈感、有分享欲；对不当输入做软兜底 */
+    private static final String PROMPT_TEMPLATE = """
+            基于用户对以下每道题目的回答，按照小红书风格给出一个关于该用户最显著特征的简短描述（不超过 50 个字）。\
+            文案要给用户治愈感、让用户有分享欲。若回答中包含不当、攻击性或敏感内容，忽略这些内容，仍输出温和治愈的通用描述。\
+            直接输出文案本身，不要任何前缀、引号、解释或换行。
+
+            题目分组：%s
+
+            %s""";
+
+    /** 单题回答片段模板：题目 + 选项文本（+可选补充） */
+    private static final String ANSWER_ITEM_TEMPLATE = "题目：%s\n回答：%s";
+
     public ListenFeedbackService(LLMService llmService,
             ListenGroupDao listenGroupDao,
             ListenQuestionDao listenQuestionDao,
-            ListenFeedbackPromptBuilder promptBuilder,
             RedisUtils redisUtils) {
         this.llmService = llmService;
         this.listenGroupDao = listenGroupDao;
         this.listenQuestionDao = listenQuestionDao;
-        this.promptBuilder = promptBuilder;
         this.redisUtils = redisUtils;
     }
 
@@ -110,25 +121,39 @@ public class ListenFeedbackService {
             return null;
         }
 
-        Map<Long, Map<String, String>> optionTextByQuestion = new HashMap<>();
-        for (ListenQuestionEntity question : questions) {
-            Map<String, String> textByKey = new HashMap<>();
-            for (ListenOptionsParser.Option option : ListenOptionsParser.parse(question.getOptionsJson())) {
-                textByKey.put(option.key(), option.text());
-            }
-            optionTextByQuestion.put(question.getId(), textByKey);
-        }
-
-        Map<Long, String> optionKeyByQuestion = new HashMap<>();
-        Map<Long, String> customTextByQuestion = new HashMap<>();
-        for (ListenAnswerSubmitDTO.AnswerItem item : answers) {
-            optionKeyByQuestion.put(item.getQuestionId(), item.getOptionKey());
-            if (StringUtils.isNotBlank(item.getCustomText())) {
-                customTextByQuestion.put(item.getQuestionId(), item.getCustomText());
-            }
-        }
-
-        String prompt = promptBuilder.build(group.getName(), questions, optionTextByQuestion, customTextByQuestion, optionKeyByQuestion);
+        String prompt = buildPrompt(group.getName(), questions, answers);
         return llmService.generateText(prompt);
+    }
+
+    /**
+     * 组装一次生成所需的完整 prompt。
+     * <p>
+     * 模板硬编码在常量里（本期不做配置化）：要调整语气/字数/风格直接改这里发版。
+     * 答案语义（选项 key → 展示文本、补充文本去重）在此一处完成，调用方无需再维护中间映射。
+     */
+    private String buildPrompt(String groupName,
+            List<ListenQuestionEntity> questions,
+            List<ListenAnswerSubmitDTO.AnswerItem> answers) {
+        Map<Long, ListenAnswerSubmitDTO.AnswerItem> answerByQuestion = answers.stream()
+                .collect(Collectors.toMap(ListenAnswerSubmitDTO.AnswerItem::getQuestionId, Function.identity(),
+                        (first, ignored) -> first));
+        StringBuilder items = new StringBuilder();
+        for (ListenQuestionEntity question : questions) {
+            Map<String, String> textByKey = ListenOptionsParser.parse(question.getOptionsJson()).stream()
+                    .collect(Collectors.toMap(ListenOptionsParser.Option::key, ListenOptionsParser.Option::text,
+                            (first, ignored) -> first));
+            ListenAnswerSubmitDTO.AnswerItem answer = answerByQuestion.get(question.getId());
+            String optionKey = answer == null ? null : answer.getOptionKey();
+            String optionText = textByKey.get(optionKey);
+            // 选项文本兜底为 key 本身：理论上不该发生（选项来自库内 JSON），防御坏数据导致 prompt 出现 "null"
+            String answerText = StringUtils.isNotBlank(optionText) ? optionText : String.valueOf(optionKey);
+            String customText = answer == null ? null : answer.getCustomText();
+            if (StringUtils.isNotBlank(customText) && !StringUtils.equals(customText, optionText)) {
+                // 用户主动写了补充内容，附在选项文本后；与选项文本相同时不重复（选 A-D 时冗余进 custom_text 的情况）
+                answerText = answerText + "；补充：" + customText;
+            }
+            items.append(String.format(ANSWER_ITEM_TEMPLATE, question.getText(), answerText)).append('\n');
+        }
+        return String.format(PROMPT_TEMPLATE, groupName, items.toString().trim());
     }
 }

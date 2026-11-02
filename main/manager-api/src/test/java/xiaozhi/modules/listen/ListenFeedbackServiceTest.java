@@ -26,13 +26,13 @@ import xiaozhi.modules.listen.dao.ListenQuestionDao;
 import xiaozhi.modules.listen.dto.ListenAnswerSubmitDTO;
 import xiaozhi.modules.listen.entity.ListenGroupEntity;
 import xiaozhi.modules.listen.entity.ListenQuestionEntity;
-import xiaozhi.modules.listen.service.ListenFeedbackPromptBuilder;
 import xiaozhi.modules.listen.service.ListenFeedbackService;
 import xiaozhi.modules.llm.service.LLMService;
 
 /**
  * 听你说·反馈文案生成服务单测（Mockito，不依赖 DB/Redis/Spring 上下文）。
- * 覆盖：正常生成写 Redis、LLM 返回 null 不写、超长截断、异常静默、分组/题目缺失跳过。
+ * 覆盖：正常生成写 Redis、LLM 返回 null 不写、超长截断、异常静默、分组/题目缺失跳过，
+ * 以及 prompt 组装行为（分组/题干/选项文本进 prompt、补充文本去重、坏数据兜底、安全网指令）。
  */
 @ExtendWith(MockitoExtension.class)
 class ListenFeedbackServiceTest {
@@ -53,8 +53,7 @@ class ListenFeedbackServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ListenFeedbackService(llmService, listenGroupDao, listenQuestionDao,
-                new ListenFeedbackPromptBuilder(), redisUtils);
+        service = new ListenFeedbackService(llmService, listenGroupDao, listenQuestionDao, redisUtils);
     }
 
     private ListenGroupEntity group() {
@@ -164,5 +163,82 @@ class ListenFeedbackServiceTest {
         when(redisUtils.get(RedisKeys.getListenFeedbackKey(USER_ID, GROUP_ID)))
                 .thenReturn(null);
         assertThat(service.getFeedback(USER_ID, GROUP_ID)).isNull();
+    }
+
+    // ---------- prompt 组装行为（原 ListenFeedbackPromptBuilderTest，经 service 接口驱动） ----------
+
+    /** 捕获一次事件触发后真正发给 LLM 的 prompt */
+    private String capturePrompt(List<ListenQuestionEntity> questions, List<ListenAnswerSubmitDTO.AnswerItem> answers) {
+        when(listenGroupDao.selectById(GROUP_ID)).thenReturn(group());
+        when(listenQuestionDao.selectList(org.mockito.ArgumentMatchers.<QueryWrapper<ListenQuestionEntity>>any()))
+                .thenReturn(questions);
+        when(llmService.generateText(anyString())).thenReturn("ok");
+
+        service.onFeedbackRequested(new ListenFeedbackService.FeedbackRequestedEvent(USER_ID, GROUP_ID, answers));
+
+        ArgumentCaptor<String> promptCap = ArgumentCaptor.forClass(String.class);
+        verify(llmService).generateText(promptCap.capture());
+        return promptCap.getValue();
+    }
+
+    @Test
+    @DisplayName("prompt 组装：分组名、题干、选项文本进入 prompt")
+    void prompt_includesGroupAndAnswers() {
+        String prompt = capturePrompt(
+                List.of(question(1L, "睡前最后那一会儿，你通常在做什么？")),
+                List.of(answer(1L, "A", null)));
+
+        assertThat(prompt).contains("小红书风格", "50 个字", "睡前最后那一会儿", "刷手机");
+    }
+
+    @Test
+    @DisplayName("prompt 组装：用户补充文本与选项不同则附加「补充：」")
+    void prompt_appendsCustomTextWhenDifferent() {
+        String prompt = capturePrompt(
+                List.of(question(1L, "Q1")),
+                List.of(answer(1L, "A", "其实我也想早点睡")));
+
+        assertThat(prompt).contains("刷手机；补充：其实我也想早点睡");
+    }
+
+    @Test
+    @DisplayName("prompt 组装：选项文本与补充相同（A-D 冗余进 custom_text）时不重复拼接")
+    void prompt_dedupesRedundantCustomText() {
+        // 选 A 时后端把选项文本冗余进 custom_text，组装 prompt 时不能再拼一次
+        String prompt = capturePrompt(
+                List.of(question(1L, "Q1")),
+                List.of(answer(1L, "A", "刷手机")));
+
+        assertThat(prompt).contains("回答：刷手机").doesNotContain("；补充：");
+    }
+
+    @Test
+    @DisplayName("prompt 组装：选 E「都不是」时选项文本来自用户补充输入")
+    void prompt_optionE_withCustomTextOnly() {
+        String prompt = capturePrompt(
+                List.of(question(1L, "Q1")),
+                List.of(answer(1L, "E", "都不想")));
+
+        assertThat(prompt).contains("都不是；补充：都不想");
+    }
+
+    @Test
+    @DisplayName("prompt 组装：选项 key 不在选项 Map 中时回落为 key 本身，不出现 \"null\"")
+    void prompt_unknownOptionKey_fallsBackToKey() {
+        String prompt = capturePrompt(
+                List.of(question(1L, "Q1")),
+                List.of(answer(1L, "Z", null)));
+
+        assertThat(prompt).contains("回答：Z").doesNotContain("null");
+    }
+
+    @Test
+    @DisplayName("prompt 组装：含不当内容软兜底指令")
+    void prompt_containsSafetyNet() {
+        String prompt = capturePrompt(
+                List.of(question(1L, "Q1")),
+                List.of(answer(1L, "A", null)));
+
+        assertThat(prompt).contains("忽略这些内容");
     }
 }

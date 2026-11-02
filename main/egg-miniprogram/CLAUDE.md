@@ -52,12 +52,15 @@ main/egg-miniprogram/
 | 孵化修炼 | `pages/home` 等 → `POST /pet/{id}/hatch-action` |
 | 破壳 | `pet-store.createCollectionCard()` → `POST /pet/{id}/hatch` → 收藏卡页 |
 | 每日心情 | `GET /pet/list` 懒生成 `todayMood`，无值时前端本地 fallback |
+| 听你说答题 | `pages/listen` → `listen-session.js` 管理答题会话 → `listen-api.js` 调用抽题、提交与反馈查询 |
 | 语音对话 | `pages/chat` → `ota.js` 取 WS 凭证 → `websocket.js` → `audio.js` 播放 |
 | 邀请码 | `pages/invite-codes` → `GET /invite/mine` |
 
 登录态由 `utils/auth.js` 管理（提前 5 分钟续期，401 静默重登）。
 
 `pet-store.js` 为本地缓存入口，内部由 `pet-roster.js` 管理宠物列表与当前选择。`refreshPets()` 统一接受后端完整列表、排序、移除失效缓存并校正当前宠物；失败保留缓存。页面通过 `getPetSnapshot()` 回显、`selectPet(petId)` 切宠，避免页面旧对象覆盖最新资料。`savePetFromVO(vo)` 用于领养或 NFC 跳转等显式选择；改名、修炼和破壳的响应仅更新对应宠物，不改变用户最新选择。保留原缓存格式及旧单宠物字段兼容。**后端为唯一事实源**。
+
+修改听你说的答题或生命周期行为时，先查看根目录 `GLOSSARY.md` 中的「答题」「答题会话」和「答题反馈文案」。`utils/listen-session.js` 集中答案、提交和反馈等待；页面通过 `resume/pause/dispose` 管理会话可见性与终止，音频、震动和奖励动画仍由页面管理。会话状态仅驻留内存，不将答案草稿写入本地缓存。
 
 ## 与后端服务 `manager-api` 的交互
 
@@ -126,6 +129,10 @@ main/egg-miniprogram/
 node main/egg-miniprogram/scripts/pet-consistency.test.js
 node main/egg-miniprogram/miniprogram/utils/pet-roster.test.js
 node main/egg-miniprogram/miniprogram/pages/hatch-guide/hatch-guide.test.js
+
+# 听你说会话与页面生命周期
+node main/egg-miniprogram/miniprogram/utils/listen-session.test.js
+node main/egg-miniprogram/miniprogram/pages/listen/listen.test.js
 
 # 工程完整性校验
 node main/egg-miniprogram/scripts/verify-project.js

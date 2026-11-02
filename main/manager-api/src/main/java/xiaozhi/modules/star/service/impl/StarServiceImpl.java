@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
@@ -18,6 +20,7 @@ import xiaozhi.modules.star.entity.StarTransactionEntity;
 import xiaozhi.modules.star.enums.StarConsumeBizType;
 import xiaozhi.modules.star.enums.StarEarnBizType;
 import xiaozhi.modules.star.service.StarService;
+import xiaozhi.modules.star.vo.StarConsumeResult;
 
 /**
  * 星星罐服务实现。
@@ -35,6 +38,8 @@ public class StarServiceImpl implements StarService {
 
     private final StarAccountDao starAccountDao;
     private final StarTransactionDao starTransactionDao;
+    /** 自引用代理：保证 consumeIndependent 的 REQUIRES_NEW 事务经代理生效 */
+    private final ApplicationContext applicationContext;
 
     /**
      * 赚取星星（幂等）。账户行并发安全创建 → 写流水(撞唯一索引=幂等返回) →
@@ -80,6 +85,36 @@ public class StarServiceImpl implements StarService {
         }
         fillBalanceAfter(txn, userId);
         return txn;
+    }
+
+    /**
+     * 独立事务消费实现。供 {@link #consumeIndependent} 经代理调用；账户创建、流水写入、
+     * 原子扣减在同一事务提交，余额不足整体回滚。幂等命中返回已存在流水。
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public StarConsumeResult doConsumeIndependent(Long userId, StarConsumeBizType bizType, String refId,
+            long amount, String remark) {
+        validate(userId, refId, amount);
+        ensureAccount(userId);
+
+        StarTransactionEntity txn = buildTxn(userId, "consume", bizType.getCode(), refId, -amount, remark);
+        if (!insertTxnOrIdempotent(userId, bizType.getCode(), refId, txn)) {
+            return StarConsumeResult.alreadyCharged(txn);
+        }
+
+        int affected = starAccountDao.deductBalance(userId, amount);
+        if (affected <= 0) {
+            throw new RenException(ErrorCode.STAR_BALANCE_INSUFFICIENT);
+        }
+        fillBalanceAfter(txn, userId);
+        return StarConsumeResult.newCharge(txn);
+    }
+
+    @Override
+    public StarConsumeResult consumeIndependent(Long userId, StarConsumeBizType bizType, String refId, long amount,
+            String remark) {
+        // 走代理触发 REQUIRES_NEW，自调用会让事务失效
+        return self().doConsumeIndependent(userId, bizType, refId, amount, remark);
     }
 
     @Override
@@ -179,5 +214,9 @@ public class StarServiceImpl implements StarService {
         txn.setBalanceAfter(0L); // 占位，余额变动后由 fillBalanceAfter 回填
         txn.setRemark(remark);
         return txn;
+    }
+
+    private StarServiceImpl self() {
+        return applicationContext.getBean(StarServiceImpl.class);
     }
 }

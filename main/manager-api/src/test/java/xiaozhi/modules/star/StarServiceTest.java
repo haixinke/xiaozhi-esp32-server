@@ -29,6 +29,7 @@ import xiaozhi.modules.star.entity.StarTransactionEntity;
 import xiaozhi.modules.star.enums.StarConsumeBizType;
 import xiaozhi.modules.star.enums.StarEarnBizType;
 import xiaozhi.modules.star.service.StarService;
+import xiaozhi.modules.star.vo.StarConsumeResult;
 
 /**
  * 星星罐 service 接缝集成测试（真实 dev 库，OceanBase MySQL 模式）。
@@ -254,4 +255,77 @@ class StarServiceTest {
         assertThat(page.getRecords().stream().map(StarTransactionEntity::getType).distinct())
                 .containsExactlyInAnyOrder("earn", "consume");
     }
+
+    // ---- 票5：consumeIndependent 独立事务与结果语义 ----
+
+    @Test
+    @DisplayName("consumeIndependent 外层回滚时扣费仍提交，余额已扣")
+    void consumeIndependent_outerRollback_chargePersisted() {
+        long uid = newUser();
+        starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 10, null);
+        String r = ref();
+
+        // 用 TransactionTemplate 显式造外层事务，内层 REQUIRES_NEW 挂起外层；
+        // 外层回滚不应连带回滚内层已提交的扣费
+        org.springframework.transaction.support.TransactionTemplate tx =
+                new org.springframework.transaction.support.TransactionTemplate(
+                        applicationContext.getBean(org.springframework.transaction.PlatformTransactionManager.class));
+        try {
+            tx.execute(status -> {
+                StarConsumeResult result =
+                        starService.consumeIndependent(uid, StarConsumeBizType.GAME_PLAY, r, 4, "外层回滚测试");
+                assertThat(result.newCharge()).isTrue();
+                assertThat(result.transaction().getAmount()).isEqualTo(-4L);
+                // 强制外层回滚
+                status.setRollbackOnly();
+                return null;
+            });
+        } catch (Exception e) {
+            // setRollbackOnly 不抛异常；此处兜底
+        }
+
+        // 内层独立事务已提交：余额扣了 4，流水保留
+        assertThat(starService.balance(uid)).isEqualTo(6);
+        assertThat(starTransactionDao.selectCount(new QueryWrapper<StarTransactionEntity>()
+                .eq("user_id", uid).eq("ref_id", r))).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("consumeIndependent 幂等命中返回 alreadyCharged，amount 取反得原扣费额")
+    void consumeIndependent_idempotentHit_returnsAlreadyCharged() {
+        long uid = newUser();
+        starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 10, null);
+        String r = ref();
+
+        StarConsumeResult first = starService.consumeIndependent(uid, StarConsumeBizType.GAME_PLAY, r, 4, "扣费");
+        assertThat(first.newCharge()).isTrue();
+
+        // 同 refId 重试：命中幂等，返回已存在流水
+        StarConsumeResult second = starService.consumeIndependent(uid, StarConsumeBizType.GAME_PLAY, r, 4, "扣费");
+        assertThat(second.newCharge()).isFalse();
+        assertThat(second.transaction().getId()).isEqualTo(first.transaction().getId());
+        assertThat(second.transaction().getAmount()).isEqualTo(-4L);
+
+        // 只扣一次
+        assertThat(starService.balance(uid)).isEqualTo(6);
+    }
+
+    @Test
+    @DisplayName("consumeIndependent 余额不足抛业务异常，账户与流水零写入")
+    void consumeIndependent_insufficient_noResidue() {
+        long uid = newUser();
+        starService.earn(uid, StarEarnBizType.SIGN_IN, ref(), 2, null);
+        String r = ref();
+
+        assertThatThrownBy(() -> starService.consumeIndependent(uid, StarConsumeBizType.GAME_PLAY, r, 5, "超额"))
+                .isInstanceOf(RenException.class);
+
+        // 回滚连带流水：重试不算已扣款
+        assertThat(starService.balance(uid)).isEqualTo(2);
+        assertThat(starTransactionDao.selectCount(new QueryWrapper<StarTransactionEntity>()
+                .eq("user_id", uid).eq("ref_id", r))).isZero();
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.context.ApplicationContext applicationContext;
 }

@@ -32,7 +32,7 @@
 .feedback-quote { flex: none; width: 100%; max-width: 666rpx; margin: 44rpx auto 0; text-align: left; }
 .quote-mark { display: block; width: 60rpx; height: 60rpx; margin: 0 0 8rpx; }
 .feedback-quote-copy { display: block; color: #17311F; font-size: 44rpx; font-weight: 400; line-height: 1.6; letter-spacing: 0; overflow-wrap: anywhere; }
-.feedback-pet-stage { position: relative; flex: none; margin-top: auto; padding-top: 220rpx; }
+.feedback-pet-stage { position: relative; flex: none; margin-top: auto; padding-top: 20rpx; }
 .pet-portrait { display: block; width: 460rpx; height: 460rpx; margin: 0 auto; }
 .reply-copy { display: block; color: #647064; font-size: 23rpx; line-height: 1.55; overflow-wrap: anywhere; }
 .feedback-footer { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 26rpx; padding: 36rpx 42rpx calc(40rpx + env(safe-area-inset-bottom)); max-width: 666rpx; width: 100%; margin: 0 auto; box-sizing: border-box; }

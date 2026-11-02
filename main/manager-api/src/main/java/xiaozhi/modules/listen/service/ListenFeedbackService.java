@@ -1,9 +1,8 @@
 package xiaozhi.modules.listen.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
@@ -134,14 +133,17 @@ public class ListenFeedbackService {
     private String buildPrompt(String groupName,
             List<ListenQuestionEntity> questions,
             List<ListenAnswerSubmitDTO.AnswerItem> answers) {
-        Map<Long, ListenAnswerSubmitDTO.AnswerItem> answerByQuestion = answers.stream()
-                .collect(Collectors.toMap(ListenAnswerSubmitDTO.AnswerItem::getQuestionId, Function.identity(),
-                        (first, ignored) -> first));
+        // HashMap.put 容忍脏数据（null key/value）；Collectors.toMap 经 Map.merge 会 NPE
+        Map<Long, ListenAnswerSubmitDTO.AnswerItem> answerByQuestion = new HashMap<>();
+        for (ListenAnswerSubmitDTO.AnswerItem item : answers) {
+            answerByQuestion.put(item.getQuestionId(), item);
+        }
         StringBuilder items = new StringBuilder();
         for (ListenQuestionEntity question : questions) {
-            Map<String, String> textByKey = ListenOptionsParser.parse(question.getOptionsJson()).stream()
-                    .collect(Collectors.toMap(ListenOptionsParser.Option::key, ListenOptionsParser.Option::text,
-                            (first, ignored) -> first));
+            Map<String, String> textByKey = new HashMap<>();
+            for (ListenOptionsParser.Option option : ListenOptionsParser.parse(question.getOptionsJson())) {
+                textByKey.put(option.key(), option.text());
+            }
             ListenAnswerSubmitDTO.AnswerItem answer = answerByQuestion.get(question.getId());
             String optionKey = answer == null ? null : answer.getOptionKey();
             String optionText = textByKey.get(optionKey);

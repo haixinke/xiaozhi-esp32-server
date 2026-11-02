@@ -95,30 +95,35 @@ public class OpenAIStyleLLMServiceImpl implements LLMService {
             return "LLM服务不可用，无法生成总结";
         }
 
-        ModelConfigEntity llmConfig = resolveModelConfig(modelId);
-        if (llmConfig == null || llmConfig.getConfigJson() == null) {
-            log.error("未找到可用的LLM模型配置，modelId: {}", modelId);
-            return "未找到可用的LLM模型配置";
+        try {
+            ModelConfigEntity llmConfig = resolveModelConfig(modelId);
+            if (llmConfig == null || llmConfig.getConfigJson() == null) {
+                log.error("未找到可用的LLM模型配置，modelId: {}", modelId);
+                return "未找到可用的LLM模型配置";
+            }
+
+            JSONObject configJson = llmConfig.getConfigJson();
+            String baseUrl = configJson.getStr("base_url");
+            String apiKey = configJson.getStr("api_key");
+            if (StringUtils.isBlank(baseUrl) || StringUtils.isBlank(apiKey)) {
+                log.error("LLM配置不完整，baseUrl或apiKey为空");
+                return "LLM配置不完整，无法生成总结";
+            }
+
+            String model = configJson.getStr("model_name");
+            Double temperature = configJson.getDouble("temperature");
+            Integer maxTokens = configJson.getInt("max_tokens");
+            String prompt = (promptTemplate != null ? promptTemplate : DEFAULT_SUMMARY_PROMPT).replace("{conversation}",
+                    conversation);
+
+            String content = executeChatCompletion(baseUrl, apiKey, model, prompt,
+                    temperature != null ? temperature : 0.7,
+                    maxTokens != null ? maxTokens : 2000);
+            return content != null ? content : "生成总结失败，请稍后重试";
+        } catch (Exception e) {
+            log.error("调用LLM服务生成总结时发生异常，modelId: {}", modelId, e);
+            return "生成总结失败，请稍后重试";
         }
-
-        JSONObject configJson = llmConfig.getConfigJson();
-        String baseUrl = configJson.getStr("base_url");
-        String apiKey = configJson.getStr("api_key");
-        if (StringUtils.isBlank(baseUrl) || StringUtils.isBlank(apiKey)) {
-            log.error("LLM配置不完整，baseUrl或apiKey为空");
-            return "LLM配置不完整，无法生成总结";
-        }
-
-        String model = configJson.getStr("model_name");
-        Double temperature = configJson.getDouble("temperature");
-        Integer maxTokens = configJson.getInt("max_tokens");
-        String prompt = (promptTemplate != null ? promptTemplate : DEFAULT_SUMMARY_PROMPT).replace("{conversation}",
-                conversation);
-
-        String content = executeChatCompletion(baseUrl, apiKey, model, prompt,
-                temperature != null ? temperature : 0.7,
-                maxTokens != null ? maxTokens : 2000);
-        return content != null ? content : "生成总结失败，请稍后重试";
     }
 
     @Override
@@ -134,27 +139,32 @@ public class OpenAIStyleLLMServiceImpl implements LLMService {
             return "LLM服务不可用，无法生成总结";
         }
 
-        ModelConfigEntity llmConfig = resolveModelConfig(modelId);
-        if (llmConfig == null || llmConfig.getConfigJson() == null) {
-            log.error("未找到可用的LLM模型配置，modelId: {}", modelId);
-            return "未找到可用的LLM模型配置";
+        try {
+            ModelConfigEntity llmConfig = resolveModelConfig(modelId);
+            if (llmConfig == null || llmConfig.getConfigJson() == null) {
+                log.error("未找到可用的LLM模型配置，modelId: {}", modelId);
+                return "未找到可用的LLM模型配置";
+            }
+
+            JSONObject configJson = llmConfig.getConfigJson();
+            String baseUrl = configJson.getStr("base_url");
+            String apiKey = configJson.getStr("api_key");
+            if (StringUtils.isBlank(baseUrl) || StringUtils.isBlank(apiKey)) {
+                log.error("LLM配置不完整，baseUrl或apiKey为空");
+                return "LLM配置不完整，无法生成总结";
+            }
+
+            String model = configJson.getStr("model_name");
+            String prompt = (promptTemplate != null ? promptTemplate : DEFAULT_SUMMARY_PROMPT)
+                    .replace("{history_memory}", historyMemory != null ? historyMemory : "无历史记忆")
+                    .replace("{conversation}", conversation);
+
+            String content = executeChatCompletion(baseUrl, apiKey, model, prompt, 0.2, 2000);
+            return content != null ? content : "生成总结失败，请稍后重试";
+        } catch (Exception e) {
+            log.error("调用LLM服务生成总结时发生异常，modelId: {}", modelId, e);
+            return "生成总结失败，请稍后重试";
         }
-
-        JSONObject configJson = llmConfig.getConfigJson();
-        String baseUrl = configJson.getStr("base_url");
-        String apiKey = configJson.getStr("api_key");
-        if (StringUtils.isBlank(baseUrl) || StringUtils.isBlank(apiKey)) {
-            log.error("LLM配置不完整，baseUrl或apiKey为空");
-            return "LLM配置不完整，无法生成总结";
-        }
-
-        String model = configJson.getStr("model_name");
-        String prompt = (promptTemplate != null ? promptTemplate : DEFAULT_SUMMARY_PROMPT)
-                .replace("{history_memory}", historyMemory != null ? historyMemory : "无历史记忆")
-                .replace("{conversation}", conversation);
-
-        String content = executeChatCompletion(baseUrl, apiKey, model, prompt, 0.2, 2000);
-        return content != null ? content : "生成总结失败，请稍后重试";
     }
 
     @Override
@@ -235,31 +245,36 @@ public class OpenAIStyleLLMServiceImpl implements LLMService {
             return null;
         }
 
-        ModelConfigEntity llmConfig = resolveModelConfig(modelId);
-        if (llmConfig == null || llmConfig.getConfigJson() == null) {
-            log.error("未找到可用的LLM模型配置，modelId: {}", modelId);
-            return null;
-        }
+        try {
+            ModelConfigEntity llmConfig = resolveModelConfig(modelId);
+            if (llmConfig == null || llmConfig.getConfigJson() == null) {
+                log.error("未找到可用的LLM模型配置，modelId: {}", modelId);
+                return null;
+            }
 
-        JSONObject configJson = llmConfig.getConfigJson();
-        String baseUrl = configJson.getStr("base_url");
-        String apiKey = configJson.getStr("api_key");
-        if (StringUtils.isBlank(baseUrl) || StringUtils.isBlank(apiKey)) {
-            log.error("LLM配置不完整，baseUrl或apiKey为空");
-            return null;
-        }
+            JSONObject configJson = llmConfig.getConfigJson();
+            String baseUrl = configJson.getStr("base_url");
+            String apiKey = configJson.getStr("api_key");
+            if (StringUtils.isBlank(baseUrl) || StringUtils.isBlank(apiKey)) {
+                log.error("LLM配置不完整，baseUrl或apiKey为空");
+                return null;
+            }
 
-        String model = configJson.getStr("model_name");
-        String prompt = DEFAULT_TITLE_PROMPT.replace("{conversation}", conversation);
-        String title = executeChatCompletion(baseUrl, apiKey, model, prompt, 0.3, 50);
-        if (StringUtils.isBlank(title)) {
+            String model = configJson.getStr("model_name");
+            String prompt = DEFAULT_TITLE_PROMPT.replace("{conversation}", conversation);
+            String title = executeChatCompletion(baseUrl, apiKey, model, prompt, 0.3, 50);
+            if (StringUtils.isBlank(title)) {
+                return null;
+            }
+            title = title.trim().replaceAll("[，。！？、：；''\"\"【】（）]", "");
+            if (title.length() > 15) {
+                title = title.substring(0, 15);
+            }
+            return title;
+        } catch (Exception e) {
+            log.error("调用LLM服务生成标题时发生异常，modelId: {}", modelId, e);
             return null;
         }
-        title = title.trim().replaceAll("[，。！？、：；''\"\"【】（）]", "");
-        if (title.length() > 15) {
-            title = title.substring(0, 15);
-        }
-        return title;
     }
 
     @Override

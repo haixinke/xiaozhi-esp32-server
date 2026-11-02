@@ -34,13 +34,6 @@
 .feedback-quote-copy { display: block; color: #17311F; font-size: 44rpx; font-weight: 400; line-height: 1.6; letter-spacing: 0; overflow-wrap: anywhere; }
 .feedback-pet-stage { position: relative; flex: none; margin-top: auto; padding-top: 220rpx; }
 .pet-portrait { display: block; width: 460rpx; height: 460rpx; margin: 0 auto; }
-.feedback-reward-label { position: absolute; left: 50%; top: 0; width: 300rpx; min-height: 200rpx; transform: translateX(-50%); box-sizing: border-box; }
-.feedback-reward-label__copy { position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%); color: #17311F; font-size: 32rpx; font-weight: 500; line-height: 1.4; white-space: nowrap; }
-.feedback-reward-dots { color: #FFDD79; font-weight: 600; }
-.feedback-reward-spark { position: absolute; pointer-events: none; }
-.feedback-reward-spark--1 { left: 14rpx; top: 17rpx; width: 62rpx; height: 56rpx; }
-.feedback-reward-spark--2 { right: 31rpx; top: 10rpx; width: 62rpx; height: 69rpx; }
-.feedback-reward-spark--3 { right: 54rpx; top: 113rpx; width: 63rpx; height: 71rpx; }
 .reply-copy { display: block; color: #647064; font-size: 23rpx; line-height: 1.55; overflow-wrap: anywhere; }
 .feedback-footer { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 26rpx; padding: 36rpx 42rpx calc(40rpx + env(safe-area-inset-bottom)); max-width: 666rpx; width: 100%; margin: 0 auto; box-sizing: border-box; }
 .feedback-footer .primary,

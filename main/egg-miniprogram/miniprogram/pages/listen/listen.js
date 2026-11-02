@@ -32,7 +32,9 @@ function resolvePetImage(pet) {
 // 组内最后一题（选项 E「都不是」）的 optionKey，选中时自动展开补充文本框
 const OTHER_OPTION_KEY = 'E';
 
-// 反馈文案（LLM 生成失败/未就绪时回落的固定文案）
+// 反馈文案占位：进反馈页先显示（等 LLM 生成），拿到个性化文案后替换；
+// 轮询窗口耗尽仍未拿到时回落到固定兜底文案。
+const FEEDBACK_PENDING_TEXT = '正在听你说…';
 const FEEDBACK_FALLBACK_TEXT = '谢谢你愿意说给我听。';
 // 反馈轮询：提交成功后 LLM 异步生成，前端短轮询拉取
 // 500ms × 8 ≈ 4s 窗口：对齐 LLM 典型生成耗时（1-3s），显著降低"轮询耗尽只见固定文案"的比例
@@ -57,8 +59,7 @@ Page({
     petName: '',
     awardedStars: 0,
     awardVisible: false,
-    rewardLabel: '',
-    feedbackText: FEEDBACK_FALLBACK_TEXT,
+    feedbackText: FEEDBACK_PENDING_TEXT,
     endTitle: '',
     endText: '',
     scrollTop: 0,
@@ -196,17 +197,22 @@ Page({
       view: 'feedback',
       awardedStars: stars,
       awardVisible: stars > 0,
-      rewardLabel: stars > 0 ? '' : '谢谢你说给我听',
-      feedbackText: FEEDBACK_FALLBACK_TEXT,
+      // 先显示占位文案，LLM 文案轮询到后替换；窗口耗尽回落固定兜底文案
+      feedbackText: FEEDBACK_PENDING_TEXT,
       error: '',
       busy: false
     });
     if (stars > 0) this.playAward();
   },
 
-  // 轮询后端拿 LLM 生成的反馈文案；失败/未就绪静默，次数用尽即止
+  // 轮询后端拿 LLM 生成的反馈文案；失败/未就绪继续等，窗口耗尽回落固定文案
   pollFeedback(groupId, attempt) {
-    if (!this.pageActive || attempt >= FEEDBACK_POLL_MAX_ATTEMPTS) return;
+    if (!this.pageActive) return;
+    if (attempt >= FEEDBACK_POLL_MAX_ATTEMPTS) {
+      // LLM 未在窗口内生成完成（慢/挂/未配置默认模型）：回落固定文案
+      this.setData({ feedbackText: FEEDBACK_FALLBACK_TEXT });
+      return;
+    }
     listenApi.getFeedback(groupId)
       .then((res) => {
         const text = res && typeof res.feedback === 'string' ? res.feedback.trim() : '';
@@ -219,7 +225,10 @@ Page({
         }, FEEDBACK_POLL_INTERVAL_MS);
       })
       .catch(() => {
-        // 静默失败：固定文案兜底
+        // 请求失败也继续尝试到窗口耗尽（最后一次失败自然走到 attempts 上限分支回落）
+        this.feedbackPollTimer = setTimeout(() => {
+          if (this.pageActive) this.pollFeedback(groupId, attempt + 1);
+        }, FEEDBACK_POLL_INTERVAL_MS);
       });
   },
 

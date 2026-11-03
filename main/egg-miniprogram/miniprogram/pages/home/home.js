@@ -68,10 +68,6 @@ const DAILY_NOTE_LETTER_SOUND_SRC = '/assets/ui/3d-actions/letter-arrival.mp3';
 const DAILY_NOTE_SOUND_DELAY_MS = 450;
 const DAILY_NOTE_ARRIVAL_DURATION_MS = 1050;
 
-// 破壳后右下角 AI 写真入口 icon
-// TODO(design): AI写真暂无相机图标素材，暂用贴纸图标占位，待设计补齐后替换
-const PHOTO_ENTRY_ICON = '/assets/ui/3d-actions/ui_3d_toolbar_sticker_96_v02.png';
-
 // 聊天入口 icon：宠物角色站姿；未知原型兜底玉兔（与静态项目 companionPetImage 一致）
 function chatEntryPetImage(prototype) {
   const folder = PET_CHARACTER_FOLDER_BY_PROTOTYPE[String(prototype || '')] || 'jade-rabbit';
@@ -176,8 +172,6 @@ Page({
     storyWindowHotspotStyle: '',
     // 左下角聊天入口 icon（按原型选图）
     storyChatIcon: CHAT_ENTRY_ICON_FALLBACK,
-    // 右下角 AI 写真入口 icon（破壳后可见）
-    photoEntryIcon: PHOTO_ENTRY_ICON,
     // 故事状态 caption 提示条（toast）：进入/整串变化立即展示，之后每分钟轮换一条，每条展示 5000ms 后淡出
     storyCaptionToastText: '',
     storyCaptionToastVisible: false,
@@ -308,7 +302,10 @@ Page({
     // 孵化/命名弹层/窗景详情打开时隐藏百宝箱，避免遮挡
     const hidden = !!(this.data.hatching || this.data.showNameSheet
       || this.data.dailyWindowVisible || this.data.storyWindowVisible);
-    if (tabBar) tabBar.setData({ selected: 0, hidden });
+    // 写真仅对当前已破壳宠物开放，首页每次切宠或状态变化都同步到百宝箱。
+    const photoPetId = this.data.stage === 'hatched' && this.data.pet && this.data.pet.id
+      ? String(this.data.pet.id) : '';
+    if (tabBar) tabBar.setData({ selected: 0, hidden, photoPetId });
   },
 
   onHide() {
@@ -1259,13 +1256,6 @@ Page({
       const done = () => { if (--pending <= 0) resolve(); };
       urls.forEach((url) => remoteImage.loadRemoteImage(url, done));
     });
-  },
-
-  // 破壳后右下角 AI 写真入口：跳转写真集页（写真按宠物隔离，透传当前宠物）
-  onPhotoEntryTap() {
-    const pet = this.data.pet;
-    if (!pet || !pet.id) return;
-    wx.navigateTo({ url: `/pages/photo-gallery/photo-gallery?petId=${pet.id}` });
   },
 
   /**

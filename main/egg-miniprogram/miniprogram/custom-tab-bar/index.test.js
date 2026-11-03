@@ -32,6 +32,14 @@ try {
   component.onOpenSettings();
   assert.deepStrictEqual(navigation.pop(), ['tab', '/pages/my/my']);
   assert.strictEqual(component.data.toolboxVisible, false);
+  component.setData({ photoPetId: 'pet-001' });
+  component.onToggleToolbox();
+  component.onOpenPhoto();
+  assert.deepStrictEqual(navigation.pop(), ['page', '/pages/photo-gallery/photo-gallery?petId=pet-001']);
+  assert.strictEqual(component.data.toolboxVisible, false, '打开写真前收起浮窗');
+  component.setData({ photoPetId: '' });
+  component.onOpenPhoto();
+  assert.strictEqual(navigation.length, 0, '未破壳或无宠物时不打开写真');
   component.setData({ selected: 1 });
   component.onToggleToolbox();
   assert.strictEqual(component.data.toolboxVisible, false, '非首页不展开百宝箱');

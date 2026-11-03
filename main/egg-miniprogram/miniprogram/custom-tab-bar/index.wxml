@@ -1,10 +1,13 @@
 <view wx:if="{{!hidden && selected === 0 && toolboxVisible}}" class="toolbox-dismiss" catchtap="onCloseToolbox"></view>
 <view wx:if="{{!hidden}}" class="tab-bar">
   <block wx:if="{{selected === 0}}">
-    <view wx:if="{{toolboxVisible}}" class="toolbox-panel">
+    <view wx:if="{{toolboxVisible}}" class="toolbox-panel {{photoPetId ? 'toolbox-panel--with-photo' : ''}}">
       <view class="toolbox-grid">
         <view class="toolbox-item" aria-role="button" aria-label="打开活动" bindtap="onOpenActivities">
           <image src="{{activityIcon}}" mode="aspectFit"></image><text>活动</text>
+        </view>
+        <view wx:if="{{photoPetId}}" class="toolbox-item" aria-role="button" aria-label="和蛋宝宝拍写真" bindtap="onOpenPhoto">
+          <image src="{{photoIcon}}" mode="aspectFit"></image><text>AI 写真</text>
         </view>
         <view class="toolbox-item" aria-role="button" aria-label="打开设置" bindtap="onOpenSettings">
           <image src="{{items[1].iconPath}}" mode="aspectFit"></image><text>设置</text>

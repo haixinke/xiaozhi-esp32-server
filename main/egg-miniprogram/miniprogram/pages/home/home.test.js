@@ -568,9 +568,8 @@ async function run() {
     'post-hatch home must render the bottom-left chat entry icon');
   assert.ok(homeTemplate.includes('wx:if="{{storyAtHome}}"'),
     'chat entry must be gated on the at-home story scene');
-  const photoEntryTag = homeTemplate.match(/<view[^>]*class="story-photo-entry"[^>]*>/);
-  assert.ok(photoEntryTag && !photoEntryTag[0].includes('storyAtHome'),
-    'photo entry must always render post-hatch, not gated on the at-home story scene');
+  assert.ok(!homeTemplate.includes('class="story-photo-entry"'),
+    'photo entry lives inside the toolbox rather than on the scene');
   assert.ok(homeTemplate.includes('src="{{storyChatIcon}}"'),
     'chat entry icon must render the prototype-based image');
   assert.ok(!homeTemplate.includes('home-actions__chat'),
@@ -1619,16 +1618,23 @@ async function run() {
   pageEggIcon.onShow();
   assert.ok(pageEggIcon.data.storyChatIcon.includes('jade-rabbit/stare'), 'unknown prototype falls back to jade-rabbit');
 
-  // 32a. 破壳后右下角 AI 写真入口：点击跳转写真集页并透传当前宠物（写真按宠物隔离）
+  // 32a. 百宝箱写真入口跟随当前已破壳宠物，不受故事场景限制。
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatched');
   const pagePhotoEntry = makePage();
   pagePhotoEntry.onLoad();
   pagePhotoEntry.onShow();
-  assert.ok(pagePhotoEntry.data.photoEntryIcon, 'photo entry icon present');
-  pagePhotoEntry.onPhotoEntryTap();
-  assert.strictEqual(navigatedTo, '/pages/photo-gallery/photo-gallery?petId=pet-001', 'photo entry navigates to photo-gallery page with current petId');
+  let photoTabData;
+  pagePhotoEntry.getTabBar = () => ({ setData(data) { photoTabData = data; } });
+  pagePhotoEntry.syncTabBar();
+  assert.strictEqual(photoTabData.photoPetId, 'pet-001');
+  pagePhotoEntry.setData({ pet: { id: 'pet-002' } });
+  pagePhotoEntry.syncTabBar();
+  assert.strictEqual(photoTabData.photoPetId, 'pet-002', '写真入口跟随切换后的宠物');
+  pagePhotoEntry.setData({ stage: 'waiting' });
+  pagePhotoEntry.syncTabBar();
+  assert.strictEqual(photoTabData.photoPetId, '', '未破壳时隐藏写真入口');
 
   // 33. 背景图加载后按真实宽高比扩展轨道，初始居中，整张图任何区域都能拖到
   resetScenario();

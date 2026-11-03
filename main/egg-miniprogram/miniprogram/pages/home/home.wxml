@@ -143,13 +143,6 @@
         </view>
       </view>
 
-      <!-- 右下角 AI 写真入口：与聊天入口同款圆形按钮；破壳后常驻显示，不随故事场景切换 -->
-      <view class="story-photo-entry">
-        <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和蛋宝宝拍写真" bindtap="onPhotoEntryTap">
-          <image class="story-chat-icon" src="{{photoEntryIcon}}" mode="aspectFit" />
-        </view>
-      </view>
-
       <!-- 今日小纸条弹层：标题/正文/节气/关联游戏邀请；打开成功展示实发星星 -->
       <view wx:if="{{dailyNoteVisible && dailyNoteSnapshot}}" class="daily-note-overlay" aria-role="dialog" aria-label="今日小纸条" catchtouchmove="noop">
         <view class="daily-note-stage">

@@ -49,6 +49,8 @@
   animation: toolbox-open .28s ease-out both;
 }
 .toolbox-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 28rpx; }
+.toolbox-panel--with-photo { width: 420rpx; }
+.toolbox-panel--with-photo .toolbox-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
 .toolbox-item { display: flex; flex-direction: column; align-items: center; gap: 10rpx; min-height: 112rpx; font-size: 24rpx; color: #35483C; }
 .toolbox-item image { width: 88rpx; height: 88rpx; }
 @keyframes toolbox-open { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }

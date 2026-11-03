@@ -1598,7 +1598,7 @@ async function run() {
   const pageRabbitIcon = makePage();
   pageRabbitIcon.onLoad();
   pageRabbitIcon.onShow();
-  assert.ok(pageRabbitIcon.data.storyChatIcon.includes('scene_chat_jade_rabbit'), 'rabbit prototype picks the rabbit chat icon');
+  assert.ok(pageRabbitIcon.data.storyChatIcon.includes('jade-rabbit/stare'), 'rabbit prototype picks the jade-rabbit character image');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -1606,7 +1606,7 @@ async function run() {
   const pageKoiIcon = makePage();
   pageKoiIcon.onLoad();
   pageKoiIcon.onShow();
-  assert.ok(pageKoiIcon.data.storyChatIcon.includes('scene_chat_boon_koi'), 'koi prototype picks the koi chat icon');
+  assert.ok(pageKoiIcon.data.storyChatIcon.includes('boon-koi/stare'), 'koi prototype picks the boon-koi character image');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -1614,7 +1614,7 @@ async function run() {
   const pageEggIcon = makePage();
   pageEggIcon.onLoad();
   pageEggIcon.onShow();
-  assert.ok(pageEggIcon.data.storyChatIcon.includes('find_home_egg'), 'unknown prototype falls back to the egg icon');
+  assert.ok(pageEggIcon.data.storyChatIcon.includes('jade-rabbit/stare'), 'unknown prototype falls back to jade-rabbit');
 
   // 32a. 破壳后右下角 AI 写真入口：点击跳转写真集页并透传当前宠物（写真按宠物隔离）
   resetScenario();

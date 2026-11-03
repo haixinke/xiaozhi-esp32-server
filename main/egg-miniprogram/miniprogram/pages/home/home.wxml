@@ -135,18 +135,18 @@
       <view wx:if="{{storyAtHome}}" class="story-chat-entry">
         <view wx:if="{{dailyNote}}" class="story-chat-button story-chat-button--envelope" hover-class="story-chat-button--pressed" aria-role="button" aria-label="打开今日小纸条" bindtap="onDailyNoteTap">
           <view wx:if="{{dailyNoteArriving}}" class="daily-note-plane" aria-hidden="true"></view>
-          <image class="story-chat-icon {{dailyNoteArriving ? 'daily-note-envelope--arriving' : ''}}" src="{{dailyNoteEnvelopeIcon}}" mode="aspectFill" />
+          <image class="story-chat-icon {{dailyNoteArriving ? 'daily-note-envelope--arriving' : ''}}" src="{{dailyNoteEnvelopeIcon}}" mode="aspectFit" />
           <view class="daily-note-unread-dot" aria-hidden="true"></view>
         </view>
         <view wx:else class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
-          <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFill" />
+          <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFit" />
         </view>
       </view>
 
       <!-- 右下角 AI 写真入口：与聊天入口同款圆形按钮；破壳后常驻显示，不随故事场景切换 -->
       <view class="story-photo-entry">
         <view class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和蛋宝宝拍写真" bindtap="onPhotoEntryTap">
-          <image class="story-chat-icon" src="{{photoEntryIcon}}" mode="aspectFill" />
+          <image class="story-chat-icon" src="{{photoEntryIcon}}" mode="aspectFit" />
         </view>
       </view>
 

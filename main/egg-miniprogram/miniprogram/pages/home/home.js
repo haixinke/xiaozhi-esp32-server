@@ -50,16 +50,16 @@ const STORY_CAPTION_ROTATE_INTERVAL_MS = 60 * 1000;
 const PET_SWIPE_THRESHOLD_PX = 60;
 // 切换宠物的整屏渐隐过渡时长（淡入）；淡出阶段由预取就绪时点驱动，不再取固定时长
 const PET_SWITCH_FADE_IN_MS = 240;
-// 左下角聊天入口 icon：按宠物原型选图，与静态项目 life-scene 页同一组素材
-// （玉兔/锦鲤为专用聊天 icon v02，未知原型兜底 find_home 蛋 p8 版）；
-// 必须用 PNG：部分真机（尤其 iOS）image 组件无法解码 webp，icon 会空白
-const CHAT_ENTRY_ICONS = {
-  '玉兔': '/assets/ui/3d-actions/ui_3d_scene_chat_jade_rabbit_96_v02.png',
-  'YT': '/assets/ui/3d-actions/ui_3d_scene_chat_jade_rabbit_96_v02.png',
-  '锦鲤': '/assets/ui/3d-actions/ui_3d_scene_chat_boon_koi_96_v02.png',
-  'KOI': '/assets/ui/3d-actions/ui_3d_scene_chat_boon_koi_96_v02.png'
+// 左下角聊天入口 icon：宠物角色站姿（与静态项目 companionPetImage 对齐）
+// 注意：只有 webp 素材，旧真机/iOS image 组件对 webp 解码有兼容风险；若补 PNG 后需切回
+const PET_CHARACTER_ROOT = '/assets/scenes/lifecycle/post-hatch/30-character';
+const PET_CHARACTER_FOLDER_BY_PROTOTYPE = {
+  '玉兔': 'jade-rabbit',
+  'YT': 'jade-rabbit',
+  '锦鲤': 'boon-koi',
+  'KOI': 'boon-koi'
 };
-const CHAT_ENTRY_ICON_FALLBACK = '/assets/ui/3d-actions/ui_3d_scene_find_home_egg_96_v01_p8_v01.png';
+const CHAT_ENTRY_ICON_FALLBACK = `${PET_CHARACTER_ROOT}/jade-rabbit/stare.webp`;
 
 // 小纸条信封入口 icon 与抵达音效（与静态项目 life-scene 同素材；必须用 PNG：部分真机 image 无法解码 webp）
 const DAILY_NOTE_ENVELOPE_ICON = '/assets/ui/3d-actions/ui_3d_scene_message_envelope_96_v01.png';
@@ -72,8 +72,10 @@ const DAILY_NOTE_ARRIVAL_DURATION_MS = 1050;
 // TODO(design): AI写真暂无相机图标素材，暂用贴纸图标占位，待设计补齐后替换
 const PHOTO_ENTRY_ICON = '/assets/ui/3d-actions/ui_3d_toolbar_sticker_96_v02.png';
 
-function chatEntryIcon(prototype) {
-  return CHAT_ENTRY_ICONS[String(prototype || '')] || CHAT_ENTRY_ICON_FALLBACK;
+// 聊天入口 icon：宠物角色站姿；未知原型兜底玉兔（与静态项目 companionPetImage 一致）
+function chatEntryPetImage(prototype) {
+  const folder = PET_CHARACTER_FOLDER_BY_PROTOTYPE[String(prototype || '')] || 'jade-rabbit';
+  return `${PET_CHARACTER_ROOT}/${folder}/stare.webp`;
 }
 
 const COMPANION_ACTIONS = [
@@ -410,7 +412,7 @@ Page({
       });
   },
 
-  // 拉取当日小纸条：仅破壳后调用；无内容/已打开/失败一律回退 null（入口位显示聊天 icon，不打扰用户）
+  // 拉取当日小纸条：仅破壳后调用；无内容/已打开/失败一律回退 null（入口位显示宠物站姿 icon，不打扰用户）
   loadDailyNote(shouldLoad) {
     if (!shouldLoad) {
       if (this.data.dailyNote !== null) this.setData({ dailyNote: null });
@@ -489,7 +491,7 @@ Page({
       const result = await dailyNoteApi.markOpened();
       const amount = result && result.awarded && Number.isFinite(Number(result.amount)) ? Number(result.amount) : 0;
       this.setData({ dailyNoteAwardedStars: amount, dailyNoteOpening: false });
-      // 打开成功当日入口回聊天 icon：清空纸条，下次 onShow 拉取返回空维持该态
+      // 打开成功当日入口回宠物站姿 icon：清空纸条，下次 onShow 拉取返回空维持该态
       this.setData({ dailyNote: null });
       this.loadStarBalance(true);
     } catch (error) {
@@ -558,7 +560,7 @@ Page({
       countdown: petStore.getCountdown(pet),
       dailyStatus: petStore.getDailyStatus(),
       actionLabel: presentation.actionLabel,
-      storyChatIcon: chatEntryIcon(pet.prototype),
+      storyChatIcon: chatEntryPetImage(pet.prototype),
       wishUnlocked,
       learnUnlocked,
       companionActions: this.buildCompanionActions(wishUnlocked, learnUnlocked)

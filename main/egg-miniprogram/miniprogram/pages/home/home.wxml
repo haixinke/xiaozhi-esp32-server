@@ -139,7 +139,7 @@
           <view class="daily-note-unread-dot" aria-hidden="true"></view>
         </view>
         <view wx:else class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
-          <image class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFit" />
+          <image wx:if="{{storyChatIcon}}" class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFit" />
         </view>
       </view>
 

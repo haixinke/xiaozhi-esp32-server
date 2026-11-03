@@ -17,6 +17,8 @@ let submitResponse;
 let feedbackResponse;
 let navigateBackFails;
 let ownerId;
+let deferPetIcons;
+let petIconCallbacks;
 const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 const event = (key) => ({ currentTarget: { dataset: { key } } });
 const pendingText = '正在听你说…';
@@ -55,6 +57,8 @@ async function advance(milliseconds) {
   await flush();
 }
 function reset() {
+  deferPetIcons = false;
+  petIconCallbacks = [];
   time = 10000;
   nextTimer = 0;
   timers = new Map();
@@ -106,6 +110,13 @@ const transport = {
   }
 };
 Module._load = function (request, parent, isMain) {
+  // 下载回调独立于答题传输，验证隐藏及销毁后不会回写图片。
+  if (request === '../../utils/pet-icons') return {
+    loadPetIcon(prototype, onDone) {
+      if (deferPetIcons) petIconCallbacks.push(onDone);
+      else onDone('wxfile://saved/rabbit.png');
+    }
+  };
   const target = Module._resolveFilename(request, parent);
   if (target === requestPath) return transport;
   if (target === storePath) return {
@@ -136,6 +147,28 @@ async function submit(page) {
   return result;
 }
 const cases = [
+  ['pet icons use cached paths and ignore callbacks from hidden or disposed pages', async () => {
+    deferPetIcons = true;
+    const page = await boot();
+    assert.strictEqual(page.data.petImage, '', 'pending icon does not load the remote URL directly');
+    const hiddenCallback = petIconCallbacks[0];
+    page.onHide();
+    const hiddenWrites = metrics.setData;
+    hiddenCallback('wxfile://saved/old.png');
+    assert.strictEqual(metrics.setData, hiddenWrites);
+    page.onShow();
+    hiddenCallback('wxfile://saved/old.png');
+    assert.strictEqual(page.data.petImage, '', 'resuming cannot revive the old callback');
+    petIconCallbacks[1]('wxfile://saved/rabbit.png');
+    assert.strictEqual(page.data.petImage, 'wxfile://saved/rabbit.png');
+    page.onHide();
+    page.onShow();
+    const lateCallback = petIconCallbacks[2];
+    page.onUnload();
+    const unloadedWrites = metrics.setData;
+    lateCallback('wxfile://saved/late.png');
+    assert.strictEqual(metrics.setData, unloadedWrites);
+  }],
   ['temporary hiding preserves the current question and filled answers', async () => {
     drawResponse = async () => group(1, 2);
     const page = await boot();

@@ -10,6 +10,7 @@ const storyApi = require('../../utils/story-api');
 const starApi = require('../../utils/star-api');
 const dailyNoteApi = require('../../utils/daily-note-api');
 const remoteImage = require('../../utils/remote-image');
+const petIcons = require('../../utils/pet-icons');
 const { INTERACTION_ICONS, SCENE_OPTIONS } = require('../../config/pre-hatch-assets');
 
 const TOUCH_LINES = ['你碰到它啦。', '它轻轻晃了一下。', '它好像听见你了。', '蛋壳里传来小小的声音。'];
@@ -50,29 +51,12 @@ const STORY_CAPTION_ROTATE_INTERVAL_MS = 60 * 1000;
 const PET_SWIPE_THRESHOLD_PX = 60;
 // 切换宠物的整屏渐隐过渡时长（淡入）；淡出阶段由预取就绪时点驱动，不再取固定时长
 const PET_SWITCH_FADE_IN_MS = 240;
-// 左下角聊天入口 icon：宠物角色站姿（与静态项目 companionPetImage 对齐）
-// 注意：只有 webp 素材，旧真机/iOS image 组件对 webp 解码有兼容风险；若补 PNG 后需切回
-const PET_CHARACTER_ROOT = '/assets/scenes/lifecycle/post-hatch/30-character';
-const PET_CHARACTER_FOLDER_BY_PROTOTYPE = {
-  '玉兔': 'jade-rabbit',
-  'YT': 'jade-rabbit',
-  '锦鲤': 'boon-koi',
-  'KOI': 'boon-koi'
-};
-const CHAT_ENTRY_ICON_FALLBACK = `${PET_CHARACTER_ROOT}/jade-rabbit/stare.webp`;
-
 // 小纸条信封入口 icon 与抵达音效（与静态项目 life-scene 同素材；必须用 PNG：部分真机 image 无法解码 webp）
 const DAILY_NOTE_ENVELOPE_ICON = '/assets/ui/3d-actions/ui_3d_scene_message_envelope_96_v01.png';
 const DAILY_NOTE_LETTER_SOUND_SRC = '/assets/ui/3d-actions/letter-arrival.mp3';
 // 抵达动效节奏：音效延迟 450ms 播放，纸飞机动画 1s，1050ms 统一收尾（与静态项目一致）
 const DAILY_NOTE_SOUND_DELAY_MS = 450;
 const DAILY_NOTE_ARRIVAL_DURATION_MS = 1050;
-
-// 聊天入口 icon：宠物角色站姿；未知原型兜底玉兔（与静态项目 companionPetImage 一致）
-function chatEntryPetImage(prototype) {
-  const folder = PET_CHARACTER_FOLDER_BY_PROTOTYPE[String(prototype || '')] || 'jade-rabbit';
-  return `${PET_CHARACTER_ROOT}/${folder}/stare.webp`;
-}
 
 const COMPANION_ACTIONS = [
   { key: 'wish', title: '许愿池', icon: INTERACTION_ICONS.wish },
@@ -171,7 +155,7 @@ Page({
     // 窗户热区位置样式（随轨道宽按比例换算，空串时用 WXSS 的 200vw 比例兜底）
     storyWindowHotspotStyle: '',
     // 左下角聊天入口 icon（按原型选图）
-    storyChatIcon: CHAT_ENTRY_ICON_FALLBACK,
+    storyChatIcon: '',
     // 故事状态 caption 提示条（toast）：进入/整串变化立即展示，之后每分钟轮换一条，每条展示 5000ms 后淡出
     storyCaptionToastText: '',
     storyCaptionToastVisible: false,
@@ -236,6 +220,7 @@ Page({
 
   onShow() {
     if (!this.data.authChecked) return;
+    this._iconPageInactive = false;
     // 每次进入 home 都允许因未命名自动弹一次命名框；本页内多次 renderPet 不重复弹
     this._namePromptShownForShow = false;
     this.configureLayoutMetrics();
@@ -309,6 +294,9 @@ Page({
   },
 
   onHide() {
+    // 下载仍可完成并存入缓存，但隐藏页面不接收过期回调。
+    this._iconPageInactive = true;
+    this._chatIconRequestId = (this._chatIconRequestId || 0) + 1;
     // 自定义 tabBar 不触发组件 pageLifetimes，由首页主动收起浮窗。
     const tabBar = typeof this.getTabBar === 'function' && this.getTabBar();
     if (tabBar) tabBar.setData({ toolboxVisible: false });
@@ -321,6 +309,8 @@ Page({
   },
 
   onUnload() {
+    this._iconPageInactive = true;
+    this._chatIconRequestId = (this._chatIconRequestId || 0) + 1;
     this.clearEnvironmentTimer();
     this.clearStoryTimer();
     this.clearStoryCaptionRotation();
@@ -539,15 +529,21 @@ Page({
   },
 
   renderPet(pet) {
+    const iconRequestId = (this._chatIconRequestId || 0) + 1;
+    this._chatIconRequestId = iconRequestId;
     if (!pet) {
       this.syncPendingInvite(null);
-      this.finishPetRestore({ pet: null, stage: 'empty', showNameSheet: false });
+      this.finishPetRestore({ pet: null, stage: 'empty', showNameSheet: false, storyChatIcon: '' });
       this.refreshEnvironment();
       this.refreshStoryState('empty');
       return;
     }
     this.syncPendingInvite(pet);
     const stage = petStore.getStage(pet);
+    const iconUrl = petIcons.getPetIconUrl(pet.prototype);
+    // 同原型刷新保留已加载图片；切换原型先清空，避免短暂显示上一只宠物。
+    const storyChatIcon = this._chatIconUrl === iconUrl ? this.data.storyChatIcon : '';
+    this._chatIconUrl = iconUrl;
     const presentation = petStore.getStagePresentation(stage);
     const wishUnlocked = true;
     // 早教班过第一天(领养满24h)解锁：createdAt 缺失时视为已解锁，避免老数据被误锁
@@ -560,11 +556,19 @@ Page({
       countdown: petStore.getCountdown(pet),
       dailyStatus: petStore.getDailyStatus(),
       actionLabel: presentation.actionLabel,
-      storyChatIcon: chatEntryPetImage(pet.prototype),
+      storyChatIcon: stage === 'hatched' ? storyChatIcon : '',
       wishUnlocked,
       learnUnlocked,
       companionActions: this.buildCompanionActions(wishUnlocked, learnUnlocked)
     });
+    if (stage === 'hatched') {
+      petIcons.loadPetIcon(pet.prototype, (localPath) => {
+        const currentPet = this.data.pet;
+        if (!localPath || this._iconPageInactive || this._chatIconRequestId !== iconRequestId || !currentPet
+          || String(currentPet.id) !== String(pet.id) || this.data.stage !== 'hatched') return;
+        this.setData({ storyChatIcon: localPath });
+      });
+    }
     // 刷新破壳前环境
     this.refreshEnvironment();
     // 破壳后启动故事场景加载与 10 分钟轮询；破壳前清空

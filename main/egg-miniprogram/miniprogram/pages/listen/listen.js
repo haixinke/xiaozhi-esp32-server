@@ -1,4 +1,5 @@
 const petStore = require('../../utils/pet-store');
+const petIcons = require('../../utils/pet-icons');
 const { createListenSession, FEEDBACK_PENDING_TEXT } = require('../../utils/listen-session');
 
 // 收星音效：静态项目同款，反馈页播 +N 动画时同步播放
@@ -9,21 +10,6 @@ const AWARD_DURATION_MS = 2100;
 const SOUND_DELAY_MS = 520;
 // 震动延迟到星星落定节奏点
 const HAPTIC_DELAY_MS = 840;
-
-// 宠物形象图：与 UI 静态项目同款角色大立绘（按原型区分 stare 姿态）
-const CHARACTER_ROOT = '/assets/scenes/lifecycle/post-hatch/30-character';
-const CHARACTER_FOLDER_BY_PROTOTYPE = {
-  '玉兔': 'jade-rabbit',
-  'YT': 'jade-rabbit',
-  '锦鲤': 'boon-koi',
-  'KOI': 'boon-koi'
-};
-const CHARACTER_FOLDER_FALLBACK = 'jade-rabbit';
-
-function resolvePetImage(pet) {
-  const folder = CHARACTER_FOLDER_BY_PROTOTYPE[pet && pet.prototype] || CHARACTER_FOLDER_FALLBACK;
-  return `${CHARACTER_ROOT}/${folder}/stare.webp`;
-}
 
 Page({
   data: {
@@ -66,7 +52,8 @@ Page({
       const system = wx.getSystemSetting ? wx.getSystemSetting() : wx.getSystemInfoSync();
       reducedMotion = Boolean(system.reducedMotion || system.enableReduceMotion);
     } catch (error) {}
-    this.setData({ petImage: resolvePetImage(pet), petName: pet.name || '蛋宝宝', reducedMotion });
+    this.petIconPrototype = pet.prototype;
+    this.setData({ petName: pet.name || '蛋宝宝', reducedMotion });
     this.session = createListenSession({
       onChange: (snapshot) => {
         if (!this.pageActive || !this.hasSessionOwner()) return;
@@ -90,6 +77,13 @@ Page({
   onShow() {
     if (!this.session || !this.hasSessionOwner()) return;
     this.pageActive = true;
+    // 只使用缓存工具返回的本地路径，避免 image 与下载接口重复拉取线上图片。
+    const iconRequestId = (this.iconRequestId || 0) + 1;
+    this.iconRequestId = iconRequestId;
+    petIcons.loadPetIcon(this.petIconPrototype, (localPath) => {
+      if (localPath && this.pageActive && this.session && this.iconRequestId === iconRequestId
+        && this.hasSessionOwner()) this.setData({ petImage: localPath });
+    });
     this.clearAward();
     this.session.resume();
     if (!this.sessionStarted) {
@@ -168,6 +162,7 @@ Page({
   },
 
   disposeSession() {
+    this.iconRequestId = (this.iconRequestId || 0) + 1;
     this.pageActive = false;
     this.clearAward();
     if (this.session) this.session.dispose();
@@ -185,6 +180,7 @@ Page({
   },
 
   onHide() {
+    this.iconRequestId = (this.iconRequestId || 0) + 1;
     this.pageActive = false;
     if (this.session) this.session.pause();
     this.clearAward();

@@ -90,6 +90,8 @@ let intervalCallback = null;
 let intervalIdSequence = 555;
 let clearedIntervals = [];
 let selectorRect = { left: 200, top: 120, width: 130, height: 220 };
+let deferPetIcons = false;
+let petIconCallbacks = [];
 
 const FIXED_TIMESTAMP = 1754880000000;
 
@@ -337,6 +339,19 @@ const app = {
   }
 };
 
+// 图标下载可延后完成，用于验证切宠及离开页面时不会回写过期图标。
+const petIconsMock = {
+  getPetIconUrl(prototype) {
+    return prototype === '锦鲤' || prototype === 'KOI'
+      ? 'https://oss.eggbabe.com/default-ip/fish/fish-icon.png'
+      : 'https://oss.eggbabe.com/default-ip/rabbit/rabbit-icon.png';
+  },
+  loadPetIcon(prototype, onDone) {
+    if (deferPetIcons) petIconCallbacks.push(onDone);
+    else onDone(this.getPetIconUrl(prototype));
+  }
+};
+
 Module._load = function (request, parent, isMain) {
   if (parent && parent.filename === pagePath) {
     if (request === '../../utils/auth') return authMock;
@@ -351,6 +366,7 @@ Module._load = function (request, parent, isMain) {
     if (request === '../../utils/story-api') return storyApiMock;
     if (request === '../../utils/star-api') return starApiMock;
     if (request === '../../utils/daily-note-api') return dailyNoteApiMock;
+    if (request === '../../utils/pet-icons') return petIconsMock;
     if (request === '../../config/pre-hatch-assets') return preHatchAssetsMock;
   }
   return originalLoad.call(this, request, parent, isMain);
@@ -409,6 +425,8 @@ function makePage() {
 }
 
 function resetScenario() {
+  deferPetIcons = false;
+  petIconCallbacks = [];
   cachedSession = null;
   cachedExpired = false;
   ensureSession = null;
@@ -1593,14 +1611,14 @@ async function run() {
   pageDots.onPetDotTap({ currentTarget: { dataset: { index: 0 } } });
   assert.strictEqual(pageDots.data.currentPetIndex, 1, 'dots do not switch while a sheet is open');
 
-  // 32. 聊天入口 icon 按原型选图：玉兔/锦鲤/未知兜底
+  // 32. 聊天入口按原型加载线上 PNG，未知原型使用玉兔。
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
   requirePetStage('hatched', { prototype: '玉兔' });
   const pageRabbitIcon = makePage();
   pageRabbitIcon.onLoad();
   pageRabbitIcon.onShow();
-  assert.ok(pageRabbitIcon.data.storyChatIcon.includes('jade-rabbit/stare'), 'rabbit prototype picks the jade-rabbit character image');
+  assert.strictEqual(pageRabbitIcon.data.storyChatIcon, 'https://oss.eggbabe.com/default-ip/rabbit/rabbit-icon.png', 'rabbit prototype loads the online rabbit icon');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -1608,7 +1626,7 @@ async function run() {
   const pageKoiIcon = makePage();
   pageKoiIcon.onLoad();
   pageKoiIcon.onShow();
-  assert.ok(pageKoiIcon.data.storyChatIcon.includes('boon-koi/stare'), 'koi prototype picks the boon-koi character image');
+  assert.strictEqual(pageKoiIcon.data.storyChatIcon, 'https://oss.eggbabe.com/default-ip/fish/fish-icon.png', 'koi prototype loads the online fish icon');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -1616,7 +1634,30 @@ async function run() {
   const pageEggIcon = makePage();
   pageEggIcon.onLoad();
   pageEggIcon.onShow();
-  assert.ok(pageEggIcon.data.storyChatIcon.includes('jade-rabbit/stare'), 'unknown prototype falls back to jade-rabbit');
+  assert.strictEqual(pageEggIcon.data.storyChatIcon, 'https://oss.eggbabe.com/default-ip/rabbit/rabbit-icon.png', 'unknown prototype falls back to the online rabbit icon');
+
+  // 下载完成前不给 image 远程地址，且旧宠物、隐藏、卸载后的回调不能覆盖当前页面。
+  resetScenario();
+  deferPetIcons = true;
+  requirePetStage('hatched');
+  const pageCachedIcon = makePage();
+  assert.strictEqual(pageCachedIcon.data.storyChatIcon, '');
+  pageCachedIcon.renderPet(storedPet);
+  assert.strictEqual(pageCachedIcon.data.storyChatIcon, '', 'pending download does not trigger image direct loading');
+  pageCachedIcon.renderPet({ ...storedPet, id: 'pet-koi', prototype: '锦鲤' });
+  petIconCallbacks[1]('wxfile://saved/fish.png');
+  petIconCallbacks[0]('wxfile://saved/rabbit.png');
+  assert.strictEqual(pageCachedIcon.data.storyChatIcon, 'wxfile://saved/fish.png', 'late rabbit download cannot replace the fish icon');
+  pageCachedIcon.renderPet(storedPet);
+  assert.strictEqual(pageCachedIcon.data.storyChatIcon, '', 'switching prototype clears the previous icon');
+  const hiddenIconCallback = petIconCallbacks[2];
+  pageCachedIcon.onHide();
+  hiddenIconCallback('wxfile://saved/rabbit.png');
+  assert.strictEqual(pageCachedIcon.data.storyChatIcon, '', 'hidden page ignores late icon downloads');
+  pageCachedIcon.renderPet(storedPet);
+  pageCachedIcon.onUnload();
+  petIconCallbacks[3]('wxfile://saved/rabbit.png');
+  assert.strictEqual(pageCachedIcon.data.storyChatIcon, '', 'unloaded page ignores late icon downloads');
 
   // 32a. 百宝箱写真入口跟随当前已破壳宠物，不受故事场景限制。
   resetScenario();

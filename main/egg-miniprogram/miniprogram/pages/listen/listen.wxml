@@ -35,7 +35,7 @@
         <text wx:if="{{error}}" class="error" aria-role="alert">{{error}}</text>
         <view class="feedback-pet-stage">
           <view wx:if="{{awardVisible}}" class="today-companion-award {{reducedMotion ? 'today-companion-award--reduced' : ''}}" aria-live="polite" aria-label="获得 {{awardedStars}} 颗星星"><companion-star mode="award" size="150" reduced-motion="{{reducedMotion}}"></companion-star><text class="today-companion-award__plus">+{{awardedStars}}</text></view>
-          <image class="pet-portrait" src="{{petImage}}" mode="aspectFit" aria-label="{{petName}}"></image>
+          <image wx:if="{{petImage}}" class="pet-portrait" src="{{petImage}}" mode="aspectFit" aria-label="{{petName}}"></image>
         </view>
       </view>
     </scroll-view>
@@ -43,7 +43,7 @@
   </block>
 
   <block wx:else>
-    <view class="empty-content"><text class="title">{{view === 'loading' ? '话题正在过来' : view === 'end' ? endTitle : error}}</text><text wx:if="{{view === 'end'}}" class="reply-copy">{{endText}}</text><image wx:if="{{view === 'end'}}" class="pet-portrait" src="{{petImage}}" mode="aspectFit" aria-label="{{petName}}"></image></view>
+    <view class="empty-content"><text class="title">{{view === 'loading' ? '话题正在过来' : view === 'end' ? endTitle : error}}</text><text wx:if="{{view === 'end'}}" class="reply-copy">{{endText}}</text><image wx:if="{{view === 'end' && petImage}}" class="pet-portrait" src="{{petImage}}" mode="aspectFit" aria-label="{{petName}}"></image></view>
     <view class="feedback-footer"><button class="return" bindtap="onReturnRoom"><text class="button-label">回到房间</text></button></view>
   </block>
 </view>

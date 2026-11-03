@@ -5410,8 +5410,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1793671255.4216018,
-    "ast_hash": "850f0648ab23bc12156ab3c9f22ebe32",
+    "mtime": 1793671501.8564165,
+    "ast_hash": "f06622a8d984c74a4900fd7dbdd10c15",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -9525,13 +9525,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/iaa-activities/iaa-activities.js": {
-    "mtime": 1793671167.415768,
-    "ast_hash": "5536dfc54ac1f5da907be7fadd4e92e1",
+    "mtime": 1793671833.5427046,
+    "ast_hash": "692355189634680ec49c81b38eff6c3a",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/iaa-activities/iaa-activities.test.js": {
-    "mtime": 1793671006.4915175,
-    "ast_hash": "7c8e21cf445f15e2ff824220ecc0d4e2",
+    "mtime": 1793671834.5504982,
+    "ast_hash": "e2b892fee53698fe06bbabdffca361da",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/game-api.js": {

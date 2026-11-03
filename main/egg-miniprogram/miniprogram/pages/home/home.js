@@ -305,13 +305,16 @@ Page({
   syncTabBar() {
     if (typeof this.getTabBar !== 'function') return;
     const tabBar = this.getTabBar();
-    // 孵化/命名弹层/窗景详情打开时隐藏悬浮「我的」齿轮，避免遮挡
+    // 孵化/命名弹层/窗景详情打开时隐藏百宝箱，避免遮挡
     const hidden = !!(this.data.hatching || this.data.showNameSheet
       || this.data.dailyWindowVisible || this.data.storyWindowVisible);
     if (tabBar) tabBar.setData({ selected: 0, hidden });
   },
 
   onHide() {
+    // 自定义 tabBar 不触发组件 pageLifetimes，由首页主动收起浮窗。
+    const tabBar = typeof this.getTabBar === 'function' && this.getTabBar();
+    if (tabBar) tabBar.setData({ toolboxVisible: false });
     this.clearEnvironmentTimer();
     this.clearStoryTimer();
     this.clearStoryCaptionRotation();

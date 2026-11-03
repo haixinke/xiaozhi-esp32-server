@@ -1,0 +1,39 @@
+.activities-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #FAFAF8;
+  color: #002900;
+}
+.activities-scroll {
+  flex: 1;
+  height: 0;
+  box-sizing: border-box;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+}
+.activities-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 16rpx 48rpx 32rpx;
+}
+.activities-balance { display: flex; align-items: center; justify-content: center; gap: 16rpx; }
+.activities-balance__star { width: 80rpx; height: 80rpx; }
+.activities-balance__count { font-size: 72rpx; font-weight: 600; line-height: 1; }
+.activities-balance__label { font-size: 26rpx; line-height: 1.2; color: #6B6B66; }
+.activities-section { padding: 8rpx 32rpx 0; }
+.activities-section__title { display: block; padding: 8rpx 8rpx 16rpx; font-size: 28rpx; font-weight: 500; color: #374039; }
+.activities-card { border: 1rpx solid #E5E3DF; border-radius: 32rpx; background: #FFF; overflow: hidden; }
+.activities-card__divider { height: 1rpx; background: #E8E8E4; margin: 0 2rpx; }
+.activities-row { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 24rpx 24rpx 32rpx; box-sizing: border-box; }
+.activities-row__icon { width: 80rpx; height: 80rpx; border-radius: 16rpx; flex-shrink: 0; }
+.activities-row__copy { flex: 1; min-width: 0; }
+.activities-row__title { display: block; font-size: 32rpx; font-weight: 500; overflow-wrap: break-word; }
+.activities-row__description { display: block; margin-top: 8rpx; font-size: 24rpx; line-height: 1.5; color: #6B6B66; overflow-wrap: break-word; }
+.activities-cta { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 6rpx; min-width: 160rpx; height: 64rpx; padding: 0 20rpx; border-radius: 999rpx; background: #002900; box-sizing: border-box; }
+.activities-cta__text { font-size: 28rpx; line-height: 1; color: #FFF; }
+.activities-cta__star { font-size: 24rpx; font-weight: 600; color: #FFDD79; }
+.activities-state { display: flex; flex-direction: column; align-items: center; gap: 16rpx; padding: 48rpx 24rpx; font-size: 28rpx; color: #6B6B66; }
+.activities-retry { margin: 0; padding: 8rpx 20rpx; font-size: 26rpx; line-height: 1.5; color: #3F5A47; background: #F3F7E7; border-radius: 999rpx; }
+.activities-retry::after { border: none; }

@@ -1,4 +1,21 @@
+<view wx:if="{{!hidden && selected === 0 && toolboxVisible}}" class="toolbox-dismiss" catchtap="onCloseToolbox"></view>
 <view wx:if="{{!hidden}}" class="tab-bar">
+  <block wx:if="{{selected === 0}}">
+    <view wx:if="{{toolboxVisible}}" class="toolbox-panel">
+      <view class="toolbox-grid">
+        <view class="toolbox-item" aria-role="button" aria-label="打开活动" bindtap="onOpenActivities">
+          <image src="{{activityIcon}}" mode="aspectFit"></image><text>活动</text>
+        </view>
+        <view class="toolbox-item" aria-role="button" aria-label="打开设置" bindtap="onOpenSettings">
+          <image src="{{items[1].iconPath}}" mode="aspectFit"></image><text>设置</text>
+        </view>
+      </view>
+    </view>
+    <view class="tab-item" hover-class="tab-item--pressed" aria-role="button" aria-label="{{toolboxVisible ? '收起百宝箱' : '打开百宝箱'}}" aria-expanded="{{toolboxVisible}}" bindtap="onToggleToolbox">
+      <image class="toolbox-icon" src="{{toolboxVisible ? toolboxOpenIcon : toolboxClosedIcon}}" mode="aspectFit"></image>
+    </view>
+  </block>
+  <block wx:else>
   <block wx:for="{{items}}" wx:key="pagePath">
     <view
       wx:if="{{selected !== index}}"
@@ -11,5 +28,6 @@
     >
       <image class="tab-icon" src="{{item.selectedIconPath}}" mode="aspectFit"></image>
     </view>
+  </block>
   </block>
 </view>

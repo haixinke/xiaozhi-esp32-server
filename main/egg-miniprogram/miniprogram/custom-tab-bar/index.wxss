@@ -1,6 +1,6 @@
 .tab-bar {
   position: fixed;
-  z-index: 70;
+  z-index: 71;
   left: 0;
   right: 0;
   bottom: 0;
@@ -31,3 +31,25 @@
 }
 .tab-item--pressed { background: #F7F7F4; opacity: .9; transform: scale(.98); }
 .tab-icon { width: 62rpx; height: 62rpx; display: block; }
+.toolbox-icon { width: 84rpx; height: 84rpx; display: block; }
+.toolbox-dismiss { position: fixed; z-index: 70; inset: 0; background: transparent; }
+.toolbox-panel {
+  position: absolute;
+  right: 34rpx;
+  bottom: calc(154rpx + env(safe-area-inset-bottom));
+  width: 320rpx;
+  padding: 28rpx 32rpx;
+  box-sizing: border-box;
+  border: 1rpx solid #E5E3DF;
+  border-radius: 28rpx;
+  background: #FFFDF7;
+  box-shadow: 0 12rpx 36rpx rgba(32,28,23,.2);
+  pointer-events: auto;
+  transform-origin: 100% 100%;
+  animation: toolbox-open .28s ease-out both;
+}
+.toolbox-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 28rpx; }
+.toolbox-item { display: flex; flex-direction: column; align-items: center; gap: 10rpx; min-height: 112rpx; font-size: 24rpx; color: #35483C; }
+.toolbox-item image { width: 88rpx; height: 88rpx; }
+@keyframes toolbox-open { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .toolbox-panel { animation: none; } }

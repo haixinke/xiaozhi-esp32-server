@@ -908,7 +908,10 @@ async function run() {
   pageLifecycle.onShow();
   const lifecycleTimerId = pageLifecycle.environmentTimer;
   assert.ok(typeof lifecycleTimerId !== 'undefined' && lifecycleTimerId !== null, 'environment timer is set');
+  const toolboxState = { toolboxVisible: true };
+  pageLifecycle.getTabBar = () => ({ setData(change) { Object.assign(toolboxState, change); } });
   pageLifecycle.onHide();
+  assert.strictEqual(toolboxState.toolboxVisible, false, 'home hide closes the custom tabBar toolbox');
   assert.ok(clearedTimers.includes(lifecycleTimerId), 'onHide clears environment timer');
   clearedTimers = [];
   pageLifecycle.onUnload();

@@ -1,0 +1,41 @@
+<view class="activities-page">
+  <nav-bar title="" show-back="{{true}}" fallback-url="/pages/home/home"></nav-bar>
+  <scroll-view class="activities-scroll" scroll-y>
+    <view class="activities-header">
+      <view class="activities-balance" aria-label="星星余额 {{starBalance}}">
+        <image class="activities-balance__star" src="{{starBalanceIcon}}" mode="aspectFit"></image>
+        <text class="activities-balance__count">{{starBalance}}</text>
+      </view>
+      <text class="activities-balance__label">我的星星</text>
+      <button wx:if="{{balanceError}}" class="activities-retry" bindtap="refresh">余额加载失败，点击重试</button>
+    </view>
+
+    <view class="activities-section">
+      <text class="activities-section__title">可玩</text>
+      <view class="activities-card">
+        <view wx:if="{{loading}}" class="activities-state">正在加载活动…</view>
+        <view wx:elif="{{error}}" class="activities-state">
+          <text>{{error}}</text>
+          <button class="activities-retry" bindtap="refresh">重试</button>
+        </view>
+        <view wx:elif="{{!playable.length}}" class="activities-state">暂无可玩活动</view>
+        <block wx:else>
+        <block wx:for="{{playable}}" wx:key="id">
+          <view wx:if="{{index > 0}}" class="activities-card__divider"></view>
+          <view class="activities-row" data-id="{{item.id}}" bindtap="onTapRow" aria-role="button" aria-label="{{item.title}}">
+            <image class="activities-row__icon" src="{{item.icon || starBalanceIcon}}" mode="aspectFit"></image>
+            <view class="activities-row__copy">
+              <text class="activities-row__title">{{item.title}}</text>
+              <text wx:if="{{item.description}}" class="activities-row__description">{{item.description}}</text>
+            </view>
+            <view class="activities-cta">
+              <text class="activities-cta__text">{{item.ctaText}}</text>
+              <text wx:if="{{item.hasStars}}" class="activities-cta__star" aria-hidden="true">✦</text>
+            </view>
+          </view>
+        </block>
+        </block>
+      </view>
+    </view>
+  </scroll-view>
+</view>

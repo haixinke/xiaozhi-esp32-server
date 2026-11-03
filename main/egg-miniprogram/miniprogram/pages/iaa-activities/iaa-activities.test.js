@@ -8,7 +8,8 @@ let gamesResponse = async () => [
   { id: 1, gameType: 'LISTEN_TO_YOU', gameTypeName: '听你说', icon: 'https://example.com/listen.png', description: '说说今天', earnStars: 8, consumeStars: 0 },
   { id: 2, gameType: 'TRAVEL', gameTypeName: '旅行', earnStars: 0, consumeStars: 20 }
 ];
-let balanceResponse = async () => ({ balance: 38 });
+// Java Long 经后端全局序列化后为字符串，页面仍应显示星星余额。
+let balanceResponse = async () => ({ balance: '38' });
 global.Page = (value) => { definition = value; };
 global.wx = {
   navigateTo(options) { calls.push(['navigate', options.url]); },
@@ -44,7 +45,25 @@ function page() {
   assert.strictEqual(view.data.playable[0].ctaText, '赚 8');
   assert.strictEqual(view.data.playable[1].ctaText, '花 20');
   assert.strictEqual(view.data.starBalance, 38);
+  assert.strictEqual(view.data.balanceError, false, 'serialized Long balance must not show a loading failure');
   assert.strictEqual(view.data.loading, false);
+
+  for (const balance of [0, '0', 38]) {
+    balanceResponse = async () => ({ balance });
+    await view.refresh();
+    assert.strictEqual(view.data.starBalance, Number(balance));
+    assert.strictEqual(view.data.balanceError, false);
+  }
+  for (const balance of [null, undefined, '', ' ', true, {}, -1, '-1', 'invalid', 1.5, Infinity]) {
+    balanceResponse = async () => ({ balance });
+    await view.refresh();
+    assert.strictEqual(view.data.balanceError, true, 'invalid balance must retain the retry state');
+    assert.strictEqual(view.data.starBalance, '—', 'invalid balance must not appear as zero');
+  }
+  balanceResponse = async () => ({ balance: '38' });
+  await view.refresh();
+  assert.strictEqual(view.data.starBalance, 38);
+  assert.strictEqual(view.data.balanceError, false, 'successful retry clears the failure');
 
   gamesResponse = async () => { throw new Error('network'); };
   await view.onShow();

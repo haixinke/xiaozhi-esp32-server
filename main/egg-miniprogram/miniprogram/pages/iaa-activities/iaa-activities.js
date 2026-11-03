@@ -54,10 +54,15 @@ Page({
     try {
       const result = await starApi.getBalance();
       if (requestId !== this._requestId) return;
-      if (!result || !Number.isFinite(result.balance) || result.balance < 0) {
+      // 后端将 Long 序列化为十进制字符串；空值不能经 Number 转换后误显示为 0。
+      const rawBalance = result && result.balance;
+      const balance = typeof rawBalance === 'number'
+        || (typeof rawBalance === 'string' && /^\d+$/.test(rawBalance))
+        ? Number(rawBalance) : NaN;
+      if (!Number.isInteger(balance) || balance < 0) {
         throw new Error('Invalid balance response');
       }
-      this.setData({ starBalance: result.balance });
+      this.setData({ starBalance: balance });
     } catch (error) {
       if (requestId !== this._requestId) return;
       this.setData({ balanceError: true });

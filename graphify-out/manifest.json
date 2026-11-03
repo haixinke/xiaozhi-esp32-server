@@ -5405,13 +5405,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1793671236.790025,
-    "ast_hash": "01ad1d5cd137a74d7331cd0931124ee2",
+    "mtime": 1793672918.767904,
+    "ast_hash": "e8c9ed8eec0ca1d1adf49505027464b8",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1793671501.8564165,
-    "ast_hash": "f06622a8d984c74a4900fd7dbdd10c15",
+    "mtime": 1793673012.9603517,
+    "ast_hash": "f53695a7f69e103ab8c08ccfb498709b",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -6220,8 +6220,8 @@
     "semantic_hash": "d8bfaad6a89f94f68921fb71b0d4d72c"
   },
   "main/egg-miniprogram/miniprogram/custom-tab-bar/index.js": {
-    "mtime": 1793671255.439229,
-    "ast_hash": "fb65d33827ae48840df0d4aee0a75423",
+    "mtime": 1793673012.9829443,
+    "ast_hash": "a3131ac5fe99b0022cfe27fb1b34aa36",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/custom-tab-bar/index.json": {
@@ -9520,8 +9520,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/custom-tab-bar/index.test.js": {
-    "mtime": 1793671255.456094,
-    "ast_hash": "b29aa9f287ce5eaaa7fb7617b18330e8",
+    "mtime": 1793672918.7479136,
+    "ast_hash": "dabab2ba8c40e913bd60033594694965",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/iaa-activities/iaa-activities.js": {

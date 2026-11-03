@@ -5405,13 +5405,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1793606445.0132437,
-    "ast_hash": "882f3c5e7cbd9d4c9fe4e8da248464e7",
+    "mtime": 1793671236.790025,
+    "ast_hash": "01ad1d5cd137a74d7331cd0931124ee2",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1793606386.9357567,
-    "ast_hash": "0018099e3c9d4a0e83b55c507af51a1e",
+    "mtime": 1793671255.4216018,
+    "ast_hash": "850f0648ab23bc12156ab3c9f22ebe32",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -6110,8 +6110,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/app.json": {
-    "mtime": 1793589368.5430155,
-    "ast_hash": "31cdd907c803c7cda19c41cacd9213ca",
+    "mtime": 1793671040.8716087,
+    "ast_hash": "7b04bae8f650a171e3f089b613a1029a",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/components/button/button.json": {
@@ -6220,9 +6220,9 @@
     "semantic_hash": "d8bfaad6a89f94f68921fb71b0d4d72c"
   },
   "main/egg-miniprogram/miniprogram/custom-tab-bar/index.js": {
-    "mtime": 1788425021.0628927,
-    "ast_hash": "f80089585ebdb41618c37649360fa654",
-    "semantic_hash": "f80089585ebdb41618c37649360fa654"
+    "mtime": 1793671255.439229,
+    "ast_hash": "fb65d33827ae48840df0d4aee0a75423",
+    "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/custom-tab-bar/index.json": {
     "mtime": 1786523126.7186959,
@@ -9517,6 +9517,26 @@
   "main/manager-api/src/main/java/xiaozhi/modules/star/vo/StarConsumeResult.java": {
     "mtime": 1793611191.7761042,
     "ast_hash": "6df0184077e22f2f1823373730796fa8",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/custom-tab-bar/index.test.js": {
+    "mtime": 1793671255.456094,
+    "ast_hash": "b29aa9f287ce5eaaa7fb7617b18330e8",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/pages/iaa-activities/iaa-activities.js": {
+    "mtime": 1793671167.415768,
+    "ast_hash": "5536dfc54ac1f5da907be7fadd4e92e1",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/pages/iaa-activities/iaa-activities.test.js": {
+    "mtime": 1793671006.4915175,
+    "ast_hash": "7c8e21cf445f15e2ff824220ecc0d4e2",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/game-api.js": {
+    "mtime": 1793671167.4353673,
+    "ast_hash": "ecfab540a5f2ddb9b70113765722dff0",
     "semantic_hash": ""
   }
 }

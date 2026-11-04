@@ -5260,8 +5260,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1793683809.3354642,
-    "ast_hash": "fabc23fd4712b9af50df3d17092f9f50",
+    "mtime": 1793782522.3800206,
+    "ast_hash": "9ede9f5d501fa62582eba126a14d5f59",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -6445,8 +6445,8 @@
     "semantic_hash": "83cf39f605a49f1fba0a8fa51b862e4e"
   },
   "main/manager-api/src/main/java/xiaozhi/common/upload/UploadScene.java": {
-    "mtime": 1793145341.4977272,
-    "ast_hash": "f0bebfb73dc6dc742dc5a8781a675a40",
+    "mtime": 1793783008.734675,
+    "ast_hash": "7c56bfb9cc547a3a861f65b732fe21db",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/agent/service/ChatHistoryDeleteService.java": {
@@ -6860,8 +6860,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/common/upload/ImageUploadServiceTest.java": {
-    "mtime": 1793145341.5029862,
-    "ast_hash": "c3a4cbd8a1458630c27828989b8830e8",
+    "mtime": 1793782916.745244,
+    "ast_hash": "5bc8e58ecdb2aeb62877517580f3ac5a",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/agent/service/impl/ChatHistoryDeleteServiceImplTest.java": {

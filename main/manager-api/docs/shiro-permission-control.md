@@ -1,4 +1,4 @@
-# Shiro 权限控制机制
+# 蛋宝宝后端服务 Shiro 权限控制机制
 
 > 本文档描述 manager-api 服务中 Apache Shiro 的认证与授权流程。
 

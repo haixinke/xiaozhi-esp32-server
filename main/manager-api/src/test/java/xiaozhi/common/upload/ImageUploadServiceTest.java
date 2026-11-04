@@ -16,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -178,6 +180,46 @@ class ImageUploadServiceTest {
         assertThatThrownBy(() -> imageUploadService.uploadImage(1L, file, UploadScene.SMALL_OBJECT))
                 .isInstanceOf(RenException.class)
                 .satisfies(ex -> assertThat(((RenException) ex).getCode()).isEqualTo(ErrorCode.IMAGE_FILE_TYPE_ERROR));
+    }
+
+    @Test
+    @DisplayName("AI 写真旧场景码上传仍写入 ai-gen 目录")
+    void uploadImage_legacyAiGenScene_usesDedicatedPath() throws Exception {
+        when(file.getBytes()).thenReturn(new byte[] { 1, 2, 3 });
+
+        // 复用小程序实际传参，避免只验证枚举而遗漏上传入口的兼容性。
+        UploadScene scene = UploadScene.fromCode("ai_gen");
+        assertThat(scene).isEqualTo(UploadScene.AI_GEN);
+        String url = imageUploadService.uploadImage(42L, file, scene);
+
+        assertThat(url).startsWith("https://oss.eggbabe.com/ai-gen/42/");
+        assertThat(url).endsWith(".png");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "ai_gen", "AI_GEN", "  Ai_Gen  ", "ai-gen", "AI-GEN" })
+    @DisplayName("fromCode - AI 写真兼容枚举名与路径前缀")
+    void fromCode_aiGenAliases_resolveSameScene(String code) {
+        // 已发布小程序使用下划线，路径前缀使用连字符，两种协议均需保留。
+        assertThat(UploadScene.fromCode(code)).isEqualTo(UploadScene.AI_GEN);
+    }
+
+    @Test
+    @DisplayName("fromCode - 现有场景保留路径前缀并兼容枚举名")
+    void fromCode_existingScenes_resolveBothFormats() {
+        // 共享解析器不得因兼容写真旧参数而破坏管理后台的上传场景。
+        assertThat(UploadScene.fromCode("game-icon")).isEqualTo(UploadScene.GAME_ICON);
+        assertThat(UploadScene.fromCode("GAME_ICON")).isEqualTo(UploadScene.GAME_ICON);
+        assertThat(UploadScene.fromCode("small-object")).isEqualTo(UploadScene.SMALL_OBJECT);
+        assertThat(UploadScene.fromCode("SMALL_OBJECT")).isEqualTo(UploadScene.SMALL_OBJECT);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { " ", "unknown", "ai_gen/42", "../ai-gen", "ai gen" })
+    @DisplayName("fromCode - 场景别名兼容仍限制在白名单内")
+    void fromCode_invalidScene_returnsNull(String code) {
+        // 不接受任意路径或额外拼写，防止兼容逻辑放宽上传目录白名单。
+        assertThat(UploadScene.fromCode(code)).isNull();
     }
 
     @Test

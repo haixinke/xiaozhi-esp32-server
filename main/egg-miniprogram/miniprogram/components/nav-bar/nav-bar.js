@@ -11,6 +11,8 @@ Component({
   properties: {
     title: { type: String, value: '' },
     showBack: { type: Boolean, value: true },
+    // 需要离开确认的页面自行处理 back 事件；默认仍自动返回。
+    autoBack: { type: Boolean, value: true },
     // 页面栈顶（无上一页可退）时的兜底跳转目标，通常为某个 tab 页路径
     fallbackUrl: { type: String, value: '' }
   },
@@ -26,6 +28,7 @@ Component({
   methods: {
     onBack() {
       this.triggerEvent('back');
+      if (!this.properties.autoBack) return;
       const pages = getCurrentPages();
       if (pages.length > 1) {
         wx.navigateBack();

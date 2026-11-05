@@ -385,6 +385,13 @@ public interface ErrorCode {
     int FEEDBACK_SUBMIT_TOO_FREQUENTLY = 10330; // 反馈提交过于频繁，请稍后再试
     int FEEDBACK_NOT_FOUND = 10331; // 反馈记录不存在
 
+    // 一起画：仅服务端验证局次并结算，不接受通用客户端发星请求。
+    int DRAWING_PET_REQUIRED = 10420; // 请先选择已领取且已破壳的宠物
+    int DRAWING_DAILY_LIMIT = 10421; // 今日一起画次数已用完
+    int DRAWING_SESSION_NOT_FOUND = 10422; // 绘画局次不存在或不属于当前用户
+    int DRAWING_PRICE_CHANGED = 10424; // 开局费用已变化，请重新确认
+    int DRAWING_REQUEST_INVALID = 10425; // 开局请求不合法或幂等标识冲突
+
     // PDC NFC 实物生产域错误码
     int PDC_NFC_FEATURE_DISABLED = 10500; // NFC 功能未开启
     int PDC_NFC_MODEL_ID_NOT_CONFIGURED = 10501; // NFC 模型ID未配置

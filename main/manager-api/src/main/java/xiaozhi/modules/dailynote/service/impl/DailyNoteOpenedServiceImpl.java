@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -59,7 +60,8 @@ public class DailyNoteOpenedServiceImpl implements DailyNoteOpenedService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    // 与每日奖励共用 READ_COMMITTED，账户锁等待后读取最新领取记录，且不引入缺失行间隙锁。
+    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public DailyRewardResult markOpened(Long userId) {
         LocalDate today = LocalDate.now(clock);
         java.sql.Date todayDate = java.sql.Date.valueOf(today);

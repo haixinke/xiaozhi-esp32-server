@@ -1,12 +1,14 @@
 package xiaozhi.modules.star.service.impl;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -30,8 +32,8 @@ import xiaozhi.modules.star.vo.DailyRewardResult;
  *
  * 并发与事务设计：
  * 1) 先确保用户星星账户存在，再在同一事务内 SELECT ... FOR UPDATE 锁定账户行，
- *    串行化同一用户的奖励结算；锁内用当前读读奖励记录与流水，
- *    不依赖可重复读事务中锁等待前的旧快照。
+ *    串行化同一用户的奖励结算；业务入口统一 READ_COMMITTED，
+ *    锁后普通读可以看到等待期间提交的奖励，缺失行不加间隙锁。
  * 2) 北京时间日期在取得锁后确定，避免锁等待跨过日界时按旧日期发奖。
  * 3) 先分配奖励记录雪花 ID 作为钱包业务单号（refId），钱包入账取得流水 ID 后再写奖励记录，
  *    保证奖励记录与流水严格一对一；两者同事务提交，任一步失败整体回滚，重试可重新领取。
@@ -86,7 +88,7 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
      * 游戏业务请走 GameStarRewardService，不得走本入口套用连续规则。
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public DailyRewardResult claimDailyReward(Long userId, String sourceType, String sourceKey) {
         DailyRewardSourceType type = DailyRewardSourceType.parse(sourceType);
         String normalizedKey = normalizeSourceKey(sourceKey);
@@ -107,7 +109,7 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
      * 唯一约束兜底；撞键即并发下另一事务已提交，直接失败回滚，不返回伪成功。
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public DailyRewardResult claimWithDecision(Long userId, DailyRewardSourceType type, String sourceKey,
             ClaimDecider decider) {
         if (userId == null) {
@@ -116,22 +118,22 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
         // 落库使用规范值：来源类型统一大写枚举名，避免大小写差异形成两份每日资格
         String normalizedType = type.name();
 
-        // 锁内用当前读：当天已领取则返回原结果，不重新决策
-        LocalDate today = LocalDate.now(clock);
+        // 快速回放不产生资金写入；保留已领取时不重新读取游戏配置的既有契约。
+        Instant observedAt = clock.instant();
+        LocalDate today = LocalDate.ofInstant(observedAt, clock.getZone());
         StarDailyRewardEntity existing = selectReward(userId, normalizedType, sourceKey, today);
         if (existing != null) {
-            return DailyRewardResult.alreadyClaimed(existing.getAmount(), existing.getStarTransactionId(),
-                    existing.getId(), today);
+            return settled(DailyRewardResult.alreadyClaimed(existing.getAmount(), existing.getStarTransactionId(),
+                    existing.getId(), today), observedAt);
         }
 
         // 当天未领取：结算决策（游戏奖励在此读配置并校验）
         ClaimDecision decision = decider.decide(userId, normalizedType, sourceKey, today);
         if (!decision.award()) {
             // 跳过场景：不写奖励记录、不调钱包、不占资格，账户也不必创建
-            return DailyRewardResult.skipped(today);
+            return settled(DailyRewardResult.skipped(today), observedAt);
         }
-        long amount = decision.amount();
-        if (amount <= 0) {
+        if (decision.amount() <= 0) {
             // 每日奖励表 amount 必须大于 0；零金额应使用 skip 决策表达
             throw new IllegalArgumentException("奖励金额必须大于 0");
         }
@@ -139,12 +141,22 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
         // 确认发奖后才建户并加锁：免费/消费型游戏不产生任何星星业务数据
         ensureAccount(userId);
         starAccountDao.selectByUserIdForUpdate(userId);
-        // 拿锁后复查：等待锁期间另一事务可能已完成当天发奖，按已领取返回原结果
-        existing = selectReward(userId, normalizedType, sourceKey, today);
+        // 钱包锁可能等待到次日：日期与完成时刻必须取同一个锁后 Instant。
+        Instant settledAt = clock.instant();
+        LocalDate rewardDate = LocalDate.ofInstant(settledAt, clock.getZone());
+        // 所有实际奖励入口使用 READ_COMMITTED：账户行锁串行化同用户，普通读可见锁等待期间提交。
+        // 不对缺失奖励行加 FOR UPDATE，避免不同用户落在同一索引间隙后互相阻塞 INSERT。
+        existing = selectReward(userId, normalizedType, sourceKey, rewardDate);
         if (existing != null) {
-            return DailyRewardResult.alreadyClaimed(existing.getAmount(), existing.getStarTransactionId(),
-                    existing.getId(), today);
+            return settled(DailyRewardResult.alreadyClaimed(existing.getAmount(), existing.getStarTransactionId(),
+                    existing.getId(), rewardDate), settledAt);
         }
+
+        ClaimDecision finalDecision = today.equals(rewardDate) ? decision
+                : decider.decide(userId, normalizedType, sourceKey, rewardDate);
+        if (!finalDecision.award()) return settled(DailyRewardResult.skipped(rewardDate), settledAt);
+        long amount = finalDecision.amount();
+        if (amount <= 0) throw new IllegalArgumentException("奖励金额必须大于 0");
 
         // 先分配奖励记录 ID 作钱包业务单号；钱包入账成功后再写奖励记录，一对一关联
         long rewardId = snowflake.nextId();
@@ -156,7 +168,7 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
         reward.setUserId(userId);
         reward.setSourceType(normalizedType);
         reward.setSourceKey(sourceKey);
-        reward.setRewardDate(java.sql.Date.valueOf(today));
+        reward.setRewardDate(java.sql.Date.valueOf(rewardDate));
         reward.setAmount(amount);
         reward.setStarTransactionId(txn.getId());
         try {
@@ -168,7 +180,13 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
             // 直接失败并回滚整个事务，由调用方重试拿真实结果
             throw e;
         }
-        return DailyRewardResult.awarded(amount, txn.getId(), rewardId, today);
+        return settled(DailyRewardResult.awarded(amount, txn.getId(), rewardId, rewardDate), settledAt);
+    }
+
+    /** 将奖励日所用的同一时刻返回给业务调用方，不让调用方再次独立取时。 */
+    private DailyRewardResult settled(DailyRewardResult result, Instant settledAt) {
+        result.setSettledAt(settledAt);
+        return result;
     }
 
     /** 参数规范化：来源 key 去空白并校验长度上限 */
@@ -194,7 +212,7 @@ public class StarDailyRewardServiceImpl implements StarDailyRewardService {
                 : StarEarnBizType.GAME_REWARD;
     }
 
-    /** 按用户+来源+北京日期查询奖励记录（锁内当前读或普通查询共用） */
+    /** 按用户+来源+北京日期查询奖励记录（READ_COMMITTED 下锁后复查可见最新提交） */
     private StarDailyRewardEntity selectReward(Long userId, String sourceType, String sourceKey, LocalDate date) {
         return starDailyRewardDao.selectOne(new QueryWrapper<StarDailyRewardEntity>()
                 .eq("user_id", userId)

@@ -9,6 +9,7 @@ const doodleApi = require('../../utils/doodle-api');
 const storyApi = require('../../utils/story-api');
 const starApi = require('../../utils/star-api');
 const dailyNoteApi = require('../../utils/daily-note-api');
+const { openDrawing } = require('../../utils/drawing-entry');
 const remoteImage = require('../../utils/remote-image');
 const petIcons = require('../../utils/pet-icons');
 const { INTERACTION_ICONS, SCENE_OPTIONS } = require('../../config/pre-hatch-assets');
@@ -495,9 +496,13 @@ Page({
     this.setData({ dailyNoteVisible: false, dailyNoteAwardedStars: 0, dailyNoteSnapshot: null });
   },
 
-  // 游戏邀请：按游戏类型分发；听你说跳听你说页（同时关闭弹层，返回时不再盖着），其余类型本期只提示
+  // 游戏邀请共用实际玩法页面；一起画只在当前宠物已破壳时关闭纸条并跳转。
   onDailyNoteGameTap() {
     const game = this.data.dailyNoteSnapshot && this.data.dailyNoteSnapshot.game;
+    if (game && game.gameType === 'DRAW_TOGETHER') {
+      openDrawing(petStore.getPetSnapshot().pet, 'letter', () => this.onDailyNoteClose());
+      return;
+    }
     if (game && game.gameType === 'LISTEN_TO_YOU') {
       this.onDailyNoteClose();
       wx.navigateTo({ url: '/pages/listen/listen' });

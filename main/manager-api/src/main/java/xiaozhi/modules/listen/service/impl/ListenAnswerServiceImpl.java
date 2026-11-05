@@ -1,18 +1,15 @@
 package xiaozhi.modules.listen.service.impl;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -20,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.modules.game.service.GameStarRewardService;
+import xiaozhi.modules.game.service.GamePlayLimitService;
 import xiaozhi.modules.game.vo.GameStarRewardResult;
 import xiaozhi.modules.listen.dao.ListenAnswerDao;
 import xiaozhi.modules.listen.dao.ListenGroupDao;
@@ -56,38 +54,31 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
     /** 事件发布：答题落库事务提交后触发反馈文案生成（异步，不阻塞本事务） */
     private final ApplicationEventPublisher eventPublisher;
 
-    /** 每日可答题组数上限，默认 5（0 或负数视为不限） */
-    private final int dailyGroupLimit;
+    /** 每日局次统一从游戏管理配置读取。 */
+    private final GamePlayLimitService playLimits;
 
     /** 自定义文本最大长度（与 DDL VARCHAR(200) 一致） */
     private static final int CUSTOM_TEXT_MAX_LENGTH = 200;
 
-    /** 日界时区：额度按 Asia/Shanghai 自然日切分（与 AI 生图配额、每日聊天提醒一致） */
-    private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
-
-    /**
-     * 构造注入（不用 @AllArgsConstructor）：dailyGroupLimit 需要 @Value 注入，
-     * 交给 Lombok 的构造器会被当成按类型注入的 int 参数，启动即
-     * NoSuchBeanDefinitionException: No qualifying bean of type 'int'。
-     */
+    /** 统一限额与既有游戏奖励能力分别注入，避免出现两个运营配置入口。 */
     public ListenAnswerServiceImpl(ListenGroupDao listenGroupDao,
             ListenQuestionDao listenQuestionDao,
             ListenAnswerDao listenAnswerDao,
             GameStarRewardService gameStarRewardService,
             ApplicationEventPublisher eventPublisher,
-            @Value("${listen.daily-group-limit:5}") int dailyGroupLimit) {
+            GamePlayLimitService playLimits) {
         this.listenGroupDao = listenGroupDao;
         this.listenQuestionDao = listenQuestionDao;
         this.listenAnswerDao = listenAnswerDao;
         this.gameStarRewardService = gameStarRewardService;
         this.eventPublisher = eventPublisher;
-        this.dailyGroupLimit = dailyGroupLimit;
+        this.playLimits = playLimits;
     }
 
     @Override
     public ListenDrawVO draw(Long userId) {
         // 额度是当天的硬门槛，优先于「所有题目都答过」提示：题库可能还有未答组，只是今天不能答了
-        ensureDailyQuotaAvailable(userId);
+        playLimits.checkDailyLimit(userId, GAME_TYPE_LISTEN_TO_YOU);
 
         // 已答过的组 id：组内任一题有答案即整组排除（按组判定答过）
         List<Long> answeredGroupIds = listenAnswerDao.selectObjs(new QueryWrapper<ListenAnswerEntity>()
@@ -115,8 +106,15 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    // 提交与游戏奖励保持同一 READ_COMMITTED 事务，奖励复查能看到钱包锁等待期间的提交。
+    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public ListenSubmitResultVO submitAnswers(Long userId, ListenAnswerSubmitDTO dto) {
+        // 锁住用户再读取幂等与计次事实，等待中的提交会在 READ_COMMITTED 下看到前一局。
+        if (userId == null || listenAnswerDao.lockUser(userId) == null) {
+            throw new RenException(ErrorCode.UNAUTHORIZED);
+        }
+        // 整组重提是空操作：题库后来增删题也不补写答案，不重新占用每日次数。
+        if (hasAnsweredGroup(userId, dto.getGroupId())) return buildSubmitResult(userId);
         // 校验 questionId 确实属于 groupId：冗余 group_id 列支撑抽题按组排除，
         // 错配会污染排除索引（UNIQUE 约束兜不住），必须拒绝
         List<ListenQuestionEntity> questionsInGroup = listenQuestionDao.selectList(
@@ -124,14 +122,7 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
         Set<Long> questionIdsInGroup = questionsInGroup.stream()
                 .map(ListenQuestionEntity::getId).collect(Collectors.toSet());
 
-        // 额度校验放在查询组内题目之后、逐条写库之前：这样组内题目归属错配时先在下方的循环里报
-        // LISTEN_QUESTION_NOT_FOUND，不会被「今日次数已用完」盖住。事务会回滚，不会留半截数据。
-        // 已答过的组（无论哪天答的）重提是幂等空操作，不占新额度、不受上限拦截，
-        // 否则用户网络重试会被误报「今日次数已用完」。
-        boolean alreadyAnswered = hasAnsweredGroup(userId, dto.getGroupId());
-        if (!alreadyAnswered) {
-            ensureDailyQuotaAvailable(userId);
-        }
+        playLimits.checkDailyLimit(userId, GAME_TYPE_LISTEN_TO_YOU);
         // 题目 id -> 选项 key -> 选项文本，用于选 A-D 时回填 custom_text（方便后续查看答案）
         java.util.Map<Long, java.util.Map<String, String>> optionTextByQuestion = new java.util.HashMap<>();
         for (ListenQuestionEntity question : questionsInGroup) {
@@ -169,9 +160,7 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
             }
         }
         // 事务提交后异步生成个性化反馈文案（LLM 慢/挂不影响本响应；重提幂等空操作不重复生成）
-        if (!alreadyAnswered) {
-            eventPublisher.publishEvent(new ListenFeedbackService.FeedbackRequestedEvent(userId, dto.getGroupId(), dto.getAnswers()));
-        }
+        eventPublisher.publishEvent(new ListenFeedbackService.FeedbackRequestedEvent(userId, dto.getGroupId(), dto.getAnswers()));
         return buildSubmitResult(userId);
     }
 
@@ -188,39 +177,6 @@ public class ListenAnswerServiceImpl implements ListenAnswerService {
         vo.setAwardedStars(reward.getNewRewardedStars());
         vo.setRewardStatus(reward.getStatus().name());
         return vo;
-    }
-
-    /**
-     * 校验今日答题额度。额度用尽抛 LISTEN_DAILY_LIMIT_REACHED。
-     * <p>
-     * 计数取 DB 实时统计而非 Redis 计数器：答案行本身已在库、按组天然去重，
-     * Redis 一旦丢 key 就能刷额度，且要与提交事务对齐的成本更高（与 AI 生图配额同款做法）。
-     * <p>
-     * 已知并发窗口：先 count 后 insert 未加行锁，同一用户并发提交两组时可能各读到 4 组而双双通过，
-     * 当日落到 6 组。这是体验型限额而非资金/权益，触发需要同时抽两组再并发提交，概率可忽略；
-     * 上 Redis 原子计数或行锁会引入新的一致性问题，代价大于收益。
-     */
-    private void ensureDailyQuotaAvailable(Long userId) {
-        // 0 或负数表示不限（配置化留出调试/活动场景的口子）
-        if (dailyGroupLimit <= 0) {
-            return;
-        }
-        if (todayAnsweredGroupCount(userId) >= dailyGroupLimit) {
-            throw new RenException(ErrorCode.LISTEN_DAILY_LIMIT_REACHED);
-        }
-    }
-
-    /**
-     * 今日已答组数（按 create_date 落今日内、DISTINCT group_id 去重）。
-     * 日界按 Asia/Shanghai 自然日 00:00，与每日聊天提醒、AI 生图配额口径一致。
-     */
-    private long todayAnsweredGroupCount(Long userId) {
-        Date dayStart = Date.from(LocalDate.now(ZONE).atStartOfDay(ZONE).toInstant());
-        List<Object> groupIds = listenAnswerDao.selectObjs(new QueryWrapper<ListenAnswerEntity>()
-                .select("DISTINCT group_id")
-                .eq("user_id", userId)
-                .ge("create_date", dayStart));
-        return groupIds.size();
     }
 
     /** 该组是否已有答案（任何日期）——用于判定重提是否属于幂等空操作 */

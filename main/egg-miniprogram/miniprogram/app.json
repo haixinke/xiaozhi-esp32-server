@@ -28,6 +28,9 @@
     "pages/listen/listen",
     "pages/iaa-activities/iaa-activities"
   ],
+  "subPackages": [
+    { "root": "drawing", "pages": ["pages/draw/draw"] }
+  ],
   "tabBar": {
     "custom": true,
     "color": "#8C8C88",

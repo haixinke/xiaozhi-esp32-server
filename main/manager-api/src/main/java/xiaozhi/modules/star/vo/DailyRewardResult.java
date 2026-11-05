@@ -1,6 +1,8 @@
 package xiaozhi.modules.star.vo;
 
 import java.time.LocalDate;
+import java.time.Instant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
 
@@ -29,6 +31,10 @@ public class DailyRewardResult {
 
     /** 北京时间领取自然日 */
     private LocalDate rewardDate;
+
+    /** 内部结算时刻：与 rewardDate 同源，供业务原子保存完成时间，不新增公开响应字段。 */
+    @JsonIgnore
+    private Instant settledAt;
 
     public static DailyRewardResult awarded(long amount, Long transactionId, Long rewardId, LocalDate rewardDate) {
         DailyRewardResult result = new DailyRewardResult();

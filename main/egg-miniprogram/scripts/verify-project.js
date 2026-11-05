@@ -14,8 +14,12 @@ const project = readJson(path.join(root, 'project.config.json'));
 if (project.miniprogramRoot !== 'miniprogram/') errors.push('project.config.json 必须设置 miniprogramRoot 为 miniprogram/');
 
 const app = readJson(path.join(miniprogram, 'app.json'));
-const pages = app.pages || [];
-if (!pages.length) errors.push('app.json 没有注册页面');
+const mainPages = app.pages || [];
+// 一起画素材独立分包后，工程检查必须同样覆盖其页面四件套与组件。
+const subpackages = app.subPackages || app.subpackages || [];
+const pages = mainPages.concat(subpackages.flatMap(bundle =>
+  (bundle.pages || []).map(page => `${bundle.root}/${page}`)));
+if (!mainPages.length) errors.push('app.json 没有注册页面');
 if (pages.some(page => page.includes('scene-picker') || page.includes('scene-live'))) errors.push('最新 PRD 禁止编译孵化场景选择页面');
 
 for (const page of pages) {
@@ -26,7 +30,9 @@ for (const page of pages) {
   const pageJsonFile = path.join(miniprogram, `${page}.json`);
   const config = readJson(pageJsonFile);
   for (const [name, relative] of Object.entries(config.usingComponents || {})) {
-    const componentBase = path.resolve(path.dirname(pageJsonFile), relative);
+    const componentBase = relative.startsWith('/')
+      ? path.join(miniprogram, relative.slice(1))
+      : path.resolve(path.dirname(pageJsonFile), relative);
     for (const extension of ['js', 'json', 'wxml', 'wxss']) {
       if (!fs.existsSync(`${componentBase}.${extension}`)) errors.push(`${page}: 组件 ${name} 缺少 ${extension} 文件`);
     }

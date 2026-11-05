@@ -1895,6 +1895,19 @@ async function run() {
   await repeatPage.onDailyNoteTap();
   assert.strictEqual(repeatPage.data.dailyNoteAwardedStars, 0, 'not-awarded repeat shows no +N');
 
+  // 一起画与活动入口共用当前宠物门槛；进入成功时关闭小纸条，拒绝时保留。
+  storedPet = { id: 'hatched', hatchStatus: 'HATCHED' };
+  repeatPage.setData({ dailyNoteVisible: true, dailyNoteSnapshot: { game: { gameType: 'DRAW_TOGETHER' } } });
+  repeatPage.onDailyNoteGameTap();
+  assert.strictEqual(navigatedTo, '/drawing/pages/draw/draw?source=letter');
+  assert.strictEqual(repeatPage.data.dailyNoteVisible, false);
+  storedPet = { id: 'egg', hatchStatus: 'EGG' };
+  navigatedTo = null;
+  repeatPage.setData({ dailyNoteVisible: true, dailyNoteSnapshot: { game: { gameType: 'DRAW_TOGETHER' } } });
+  repeatPage.onDailyNoteGameTap();
+  assert.strictEqual(navigatedTo, null);
+  assert.strictEqual(repeatPage.data.dailyNoteVisible, true);
+
   console.log('home.test.js: ALL PASS');
 }
 

@@ -1,0 +1,98 @@
+<!-- 纸张临摹页沿用静态工程的画纸、工具与完成反馈布局。 -->
+<view class="page {{reducedMotion ? 'page--reduced' : ''}}">
+  <nav-bar title="一起画" auto-back="{{false}}" bind:back="onBack"></nav-bar>
+  <view class="stage">
+    <view class="paper {{result ? 'paper--hidden' : ''}}">
+      <view class="paper-dash"></view>
+      <view class="canvas-slot" style="transform:scale({{canvasScale}})">
+        <!-- 原生 Canvas 层须显式隐藏，父层 visibility 无法阻止笔迹覆盖结果图。初始化在开局前完成。 -->
+        <canvas type="2d" id="drawingCanvas" hidden="{{peekVisible || result !== null}}"
+          class="drawing-canvas {{errorText || assetError ? 'drawing-canvas--hidden' : ''}}" disable-scroll
+          catchtouchstart="onTouchStart" catchtouchmove="onTouchMove"
+          catchtouchend="onTouchEnd" catchtouchcancel="onTouchCancel"></canvas>
+      </view>
+    </view>
+    <image wx:if="{{reference}}" class="reference-preload" src="{{reference.line}}"
+      bindload="onReferenceLoad" binderror="onReferenceError"></image>
+    <view wx:if="{{!result && started}}" class="look-row">
+      <button class="look-pill" bindtap="onPeek" disabled="{{peekVisible || busy || looksRemaining === 0 || assetError}}"
+        aria-label="再看一眼，剩余{{looksRemaining}}次">再看一眼 · {{looksRemaining}}/3 次</button>
+    </view>
+    <view wx:if="{{peekVisible && reference}}" class="peek" bindtap="onDismissPeek" aria-role="button" aria-label="收起参考图，开始画">
+      <image class="reference-image" src="{{reference.line}}" mode="aspectFit"></image>
+      <text class="peek-caption">先看一眼，记住它的样子</text>
+    </view>
+    <text wx:if="{{notice && !result && !errorText}}" class="notice" aria-live="polite">{{notice}}</text>
+    <view wx:if="{{errorText || assetError || (!started && busy)}}" class="status">
+      <text>{{errorText || (assetError ? '参考图没有加载成功' : '正在准备画纸…')}}</text>
+      <button wx:if="{{!busy}}" class="primary retry" bindtap="onRetry">{{started ? '重试加载' : '开始一起画'}}</button>
+    </view>
+    <view wx:if="{{started && !result && !errorText && !assetError}}" class="editor-chrome {{peekVisible || busy ? 'editor-chrome--dimmed' : ''}}">
+      <view class="action-rail">
+        <view class="action {{!canUndo ? 'action--disabled' : ''}}" bindtap="onUndo" aria-role="button" aria-label="撤销一步">
+          <image src="/assets/ui/3d-actions/ui_3d_toolbar_undo_96_v02.png" mode="aspectFit"></image><text>撤销</text>
+        </view>
+        <view class="action {{!hasContent ? 'action--disabled' : ''}}" bindtap="onClear" aria-role="button" aria-label="清空画面">
+          <image src="/assets/ui/3d-actions/ui_3d_toolbar_clear_96_v01.png" mode="aspectFit"></image><text>清空</text>
+        </view>
+      </view>
+      <button class="primary finish" disabled="{{peekVisible || busy || !canvasReady}}" bindtap="onFinish">{{busy ? '正在提交…' : '画好了'}}</button>
+      <view class="tool-section">
+        <view wx:if="{{toolPanelOpen}}" class="tool-options">
+          <view wx:if="{{tool !== 'sticker'}}" class="size-options">
+            <view class="setting-group">
+              <text class="setting-title">粗细</text>
+              <view class="size-row">
+                <view wx:for="{{tool === 'eraser' ? eraserSizes : brushSizes}}" wx:key="*this"
+                  class="size-option {{(tool === 'eraser' ? eraserWidth : width) === item ? 'size-option--selected' : ''}}"
+                  data-size="{{item}}" bindtap="onSize" aria-role="button" aria-label="{{item}}像素">
+                  <view class="size-dot" style="width:{{item + 4}}rpx;height:{{item + 4}}rpx;background:{{tool === 'eraser' ? '#8c8c88' : color}}"></view>
+                  <text>{{item}} px</text>
+                </view>
+              </view>
+            </view>
+            <view wx:if="{{tool === 'brush'}}" class="color-setting">
+              <text class="setting-title">颜色</text>
+              <view class="color-trigger" bindtap="onColorPicker" aria-role="button" aria-label="选择画笔颜色">
+                <view style="background:{{color}}"></view>
+              </view>
+            </view>
+          </view>
+          <view wx:else class="sticker-row">
+            <view wx:for="{{stickers}}" wx:key="id" class="sticker-option {{sticker === item.id ? 'sticker-option--selected' : ''}}"
+              data-sticker="{{item.id}}" bindtap="onSticker" aria-role="button" aria-label="{{item.label}}贴纸">
+              <text class="sticker-symbol">{{item.symbol}}</text><text>{{item.label}}</text>
+            </view>
+          </view>
+          <view wx:if="{{colorPickerOpen && tool === 'brush'}}" class="color-picker">
+            <view wx:for="{{colors}}" wx:key="*this" class="color-option {{color === item ? 'color-option--selected' : ''}}"
+              style="background:{{item}}" data-color="{{item}}" bindtap="onColor" aria-role="button" aria-label="画笔颜色{{index + 1}}"></view>
+          </view>
+        </view>
+        <view class="toolbar">
+          <view class="tool-button {{tool === 'brush' && toolPanelOpen ? 'tool-button--selected' : ''}}" data-tool="brush" bindtap="onTool" aria-role="button" aria-label="画笔">
+            <image src="/assets/ui/3d-actions/ui_3d_toolbar_brush_96_v02.png" mode="aspectFit"></image><view class="current-color" style="background:{{color}}"></view>
+          </view>
+          <view class="tool-button {{tool === 'eraser' && toolPanelOpen ? 'tool-button--selected' : ''}}" data-tool="eraser" bindtap="onTool" aria-role="button" aria-label="橡皮擦">
+            <image src="/assets/ui/3d-actions/ui_3d_toolbar_eraser_96_v02.png" mode="aspectFit"></image>
+          </view>
+          <view class="tool-button {{tool === 'sticker' && toolPanelOpen ? 'tool-button--selected' : ''}}" data-tool="sticker" bindtap="onTool" aria-role="button" aria-label="贴纸">
+            <image src="/assets/ui/3d-actions/ui_3d_toolbar_sticker_96_v02.png" mode="aspectFit"></image>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{result}}" class="result {{animateReward ? 'result--animated' : ''}}">
+      <view wx:if="{{result.awardedStars > 0}}" class="result-award" aria-label="获得{{result.awardedStars}}颗星星">
+        <companion-star mode="{{animateReward ? 'award' : 'accent'}}" size="150" reduced-motion="{{reducedMotion}}"></companion-star>
+        <text>+{{result.awardedStars}}</text>
+      </view>
+      <view class="result-reveal">
+        <image class="reference-image" src="{{reference.color}}" mode="aspectFit"></image>
+        <text class="result-name">{{reference.name}}</text>
+        <text class="result-caption">这个小道具，送给你。</text>
+      </view>
+      <button class="primary result-ok" bindtap="onDone">好的</button>
+    </view>
+  </view>
+</view>

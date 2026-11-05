@@ -4,6 +4,7 @@ const Module = require('module');
 const originalLoad = Module._load;
 let definition;
 const calls = [];
+let currentPet = null;
 let gamesResponse = async () => [
   { id: 1, gameType: 'LISTEN_TO_YOU', gameTypeName: '听你说', icon: 'https://example.com/listen.png', description: '说说今天', earnStars: 8, consumeStars: 0 },
   { id: 2, gameType: 'TRAVEL', gameTypeName: '旅行', earnStars: 0, consumeStars: 20 }
@@ -16,6 +17,9 @@ global.wx = {
   showToast(options) { calls.push(['toast', options.title]); }
 };
 Module._load = function (request, parent) {
+  if (request === '../../utils/pet-store') {
+    return { getPetSnapshot: () => ({ pet: currentPet }) };
+  }
   if (request === './request' && parent.filename.endsWith('-api.js')) {
     return { get(url, data) {
       calls.push([url, data]);
@@ -91,6 +95,18 @@ function page() {
   const beforeInvalid = calls.length;
   view.onTapRow({ currentTarget: { dataset: { id: 999 } } });
   assert.strictEqual(calls.length, beforeInvalid, 'unknown row must not navigate');
+
+  // 活动页可浏览不代表可以开局：必须由当前选中的已破壳宠物进入一起画。
+  gamesResponse = async () => [{ id: 8, gameType: 'DRAW_TOGETHER' }];
+  await view.refresh();
+  view.onTapRow({ currentTarget: { dataset: { id: 8 } } });
+  assert.deepStrictEqual(calls.at(-1), ['toast', '请先领取蛋宝宝并陪它破壳']);
+  currentPet = { id: 'egg', hatchStatus: 'EGG' };
+  view.onTapRow({ currentTarget: { dataset: { id: 8 } } });
+  assert.deepStrictEqual(calls.at(-1), ['toast', '请切换到已破壳的蛋宝宝，或陪它完成孵化']);
+  currentPet = { id: 'hatched', hatchStatus: 'HATCHED' };
+  view.onTapRow({ currentTarget: { dataset: { id: 8 } } });
+  assert.deepStrictEqual(calls.at(-1), ['navigate', '/drawing/pages/draw/draw?source=activity']);
 
   let resolveOld;
   gamesResponse = () => new Promise(resolve => { resolveOld = resolve; });

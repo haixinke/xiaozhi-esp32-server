@@ -30,7 +30,7 @@ public interface StarDailyRewardService {
     DailyRewardResult claimDailyReward(Long userId, String sourceType, String sourceKey);
 
     /**
-     * 结算决策：在确认当天未领取后被调用一次。award(amount) 按金额入账；
+     * 结算决策：确认当天未领取后调用；钱包锁等待跨日时按新日期重新决策。award(amount) 按金额入账；
      * skip() 表示本次无需星星变动（如免费/消费型游戏），
      * 不写奖励记录、不调钱包，也不占当天奖励资格。
      * 决策结果不持久化：跳过后当日后续请求仍会重新决策，保证免费游戏改奖励型后可领。
@@ -62,8 +62,9 @@ public interface StarDailyRewardService {
      * @param userId     用户ID（服务端可信身份）
      * @param sourceType 奖励来源类型（如 GAME）
      * @param sourceKey  来源标识（如游戏类型 code，长度≤64）
-     * @param decider    结算决策回调，仅在当天未领取时执行一次
-     * @return 结算结果：awarded / alreadyClaimed / skipped 三种语义
+     * @param decider    未领取时执行的结算决策；等钱包锁跨日后按锁后日期重新执行
+     * @return 结算结果：awarded / alreadyClaimed / skipped 三种语义；settledAt 与奖励日期同源，
+     *         调用方保存业务完成时间时须沿用 settledAt
      */
     DailyRewardResult claimWithDecision(Long userId, DailyRewardSourceType sourceType, String sourceKey,
             ClaimDecider decider);

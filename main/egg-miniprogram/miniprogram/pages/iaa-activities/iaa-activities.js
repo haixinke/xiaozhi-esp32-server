@@ -1,5 +1,7 @@
 const gameApi = require('../../utils/game-api');
 const starApi = require('../../utils/star-api');
+const petStore = require('../../utils/pet-store');
+const { openDrawing } = require('../../utils/drawing-entry');
 
 function gameRow(game) {
   const earn = Number(game.earnStars) || 0;
@@ -72,6 +74,11 @@ Page({
   onTapRow(event) {
     const game = this.data.playable.find(item => String(item.id) === String(event.currentTarget.dataset.id));
     if (!game) return;
+    // 进入绘画页不执行扣费；收费确认、额度与资格以后端成功开局为准。
+    if (game.gameType === 'DRAW_TOGETHER') {
+      openDrawing(petStore.getPetSnapshot().pet, 'activity');
+      return;
+    }
     // 智控台可扩展类型；未接入的玩法保留展示，列表点击不参与星星结算。
     if (game.gameType !== 'LISTEN_TO_YOU') {
       wx.showToast({ title: '暂未开放', icon: 'none' });

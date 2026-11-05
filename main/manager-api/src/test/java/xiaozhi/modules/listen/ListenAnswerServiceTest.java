@@ -7,10 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -31,6 +34,8 @@ import xiaozhi.modules.listen.entity.ListenGroupEntity;
 import xiaozhi.modules.listen.entity.ListenQuestionEntity;
 import xiaozhi.modules.listen.service.ListenAnswerService;
 import xiaozhi.modules.listen.vo.ListenDrawVO;
+import xiaozhi.modules.game.dao.GameDao;
+import xiaozhi.modules.game.entity.GameEntity;
 import xiaozhi.modules.sys.dao.SysDictDataDao;
 import xiaozhi.modules.sys.dao.SysDictTypeDao;
 import xiaozhi.modules.sys.entity.SysDictDataEntity;
@@ -46,6 +51,12 @@ import xiaozhi.modules.sys.entity.SysDictTypeEntity;
 @ActiveProfiles("dev")
 @DisplayName("听你说小程序答题集成测试")
 class ListenAnswerServiceTest {
+
+    /** 运营游戏配置使用桩，测试不写真实 GAME_TYPE 字典或 ai_game。 */
+    @MockBean
+    private GameDao games;
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @Autowired
     private ListenAnswerService listenAnswerService;
@@ -72,6 +83,18 @@ class ListenAnswerServiceTest {
     /** 本用例创建的字典小类 id */
     private final List<Long> dictDataIds = new ArrayList<>();
 
+    @BeforeEach
+    void prepareUserAndGame() {
+        jdbc.update("INSERT INTO sys_user(id, username, status, super_admin) VALUES (?, ?, 1, 0)",
+                TEST_USER_ID, "TEST_LISTEN_PLAY_LIMIT_USER");
+        var game = new GameEntity();
+        game.setDailyLimit(5);
+        game.setEarnStars(0);
+        game.setConsumeStars(0);
+        game.setStatus(1);
+        org.mockito.Mockito.when(games.selectByGameType("LISTEN_TO_YOU")).thenReturn(game);
+    }
+
     @AfterEach
     void cleanup() {
         // 答题记录按 user_id+question_id 清理（questionIds 覆盖本用例全部题目）
@@ -88,6 +111,7 @@ class ListenAnswerServiceTest {
         dictDataIds.clear();
         // 字典列表有 Redis 缓存，用例间必须清掉
         redisUtils.delete(RedisKeys.getDictDataByTypeKey(Constant.DictType.LISTEN_CATEGORY.getValue()));
+        jdbc.update("DELETE FROM sys_user WHERE id = ?", TEST_USER_ID);
     }
 
     /** LISTEN_CATEGORY 字典大类由 Liquibase 迁移创建，用例直接在其下挂小类 */

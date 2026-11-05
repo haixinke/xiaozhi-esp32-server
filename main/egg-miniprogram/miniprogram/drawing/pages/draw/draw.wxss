@@ -24,7 +24,8 @@ button::after { border: 0; }
 .primary:active { opacity: .85; }
 .retry { width: 440rpx; max-width: 100%; margin: 0; }
 .editor-chrome--dimmed { opacity: .35; pointer-events: none; }
-.action-rail { position: absolute; bottom: calc(82rpx + 96rpx + env(safe-area-inset-bottom)); right: 20rpx; z-index: 30; width: 112rpx; border: 1rpx solid #E5E3DF; border-radius: 56rpx; overflow: hidden; background: rgba(255,255,255,.94); box-shadow: 0 8rpx 22rpx rgba(45,55,40,.1); }
+/* 与静态工程 prop 布局一致：底部 = 完成按钮底距 210 + 按钮高 96 - 悬浮栏高 224 = 82rpx，栏顶与完成按钮顶对齐 */
+.action-rail { position: absolute; bottom: calc(82rpx + env(safe-area-inset-bottom)); right: 20rpx; z-index: 30; width: 112rpx; border: 1rpx solid #E5E3DF; border-radius: 56rpx; overflow: hidden; background: rgba(255,255,255,.94); box-shadow: 0 8rpx 22rpx rgba(45,55,40,.1); }
 .action { width: 112rpx; height: 112rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 22rpx; }
 .action + .action { border-top: 1rpx solid #E5E3DF; }
 .action image { width: 52rpx; height: 52rpx; }

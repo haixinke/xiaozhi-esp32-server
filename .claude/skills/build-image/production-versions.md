@@ -5,6 +5,6 @@
 #
 # 格式：模块key: 完整镜像tag（标签原样推送到 ACR，含 egg- 前缀）
 
-manager-api: egg-4.8
+manager-api: egg-4.9
 manager-web: egg-2.8
 xiaozhi-server: egg-1.9

@@ -136,8 +136,10 @@
 /* ===== 小纸条弹层（信纸样式移植自静态项目 today-companion-letter，裁掉记忆收集等杂项） ===== */
 .daily-note-overlay { position: fixed; z-index: 400; inset: 0; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: calc(80rpx + env(safe-area-inset-top)) 30rpx calc(48rpx + env(safe-area-inset-bottom)); background: rgba(29,34,30,.38); }
 .daily-note-stage { position: relative; width: 100%; }
-.daily-note-award { position: absolute; left: 50%; bottom: 100%; margin-bottom: 20rpx; transform: translateX(-50%); pointer-events: none; }
-.daily-note-award__plus { color: #FFDD79; font-size: 44rpx; font-weight: 700; line-height: 68rpx; white-space: nowrap; text-shadow: 0 2rpx 8rpx rgba(72,50,12,.35); animation: daily-note-award-plus .85s cubic-bezier(.2,.9,.3,1) .3s both; }
+/* 收星：星体 150rpx，+N 落在星体右侧；星体挤压弹出（约 0.72s）后 +N 才绕出 */
+.daily-note-award { position: absolute; left: 50%; bottom: 100%; width: 150rpx; height: 150rpx; margin-bottom: 20rpx; transform: translateX(-50%); pointer-events: none; }
+.daily-note-award__plus { position: absolute; left: 100%; top: 50%; margin-left: 26rpx; margin-top: -34rpx; color: #FFDD79; font-size: 44rpx; font-weight: 700; line-height: 68rpx; white-space: nowrap; text-shadow: 0 2rpx 8rpx rgba(72,50,12,.35); transform-origin: 30% 60%; animation: daily-note-award-plus .85s cubic-bezier(.2,.9,.3,1) .88s both; }
+@media (prefers-reduced-motion: reduce) { .daily-note-award__plus { animation: none; } }
 @keyframes daily-note-award-plus { 0% { opacity: 0; transform: translate3d(-44rpx, 20rpx, 0) rotate(-160deg) scale(.5); } 40% { opacity: 1; transform: translate3d(4rpx, -14rpx, 0) rotate(10deg) scale(1.08); } 65% { transform: translate3d(0, 4rpx, 0) rotate(-4deg) scale(.97); } 85% { transform: translate3d(0, -2rpx, 0) rotate(1deg) scale(1.01); } 100% { opacity: 1; transform: translate3d(0, 0, 0) rotate(0) scale(1); } }
 /* 信纸：米色底 + 左侧装订线 + 右上折角 */
 .daily-note-letter { position: relative; width: 100%; max-height: 72vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 42rpx 42rpx 38rpx 66rpx; border: 1rpx solid rgba(126,103,73,.18); border-radius: 8rpx; background: linear-gradient(90deg, transparent 0, transparent 42rpx, rgba(184,105,84,.15) 43rpx, rgba(184,105,84,.15) 45rpx, transparent 46rpx), #FFF9EB; box-shadow: 0 26rpx 64rpx rgba(32,28,23,.28); color: #35483C; }

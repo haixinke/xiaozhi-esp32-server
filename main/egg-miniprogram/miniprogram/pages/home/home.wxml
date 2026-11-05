@@ -146,7 +146,9 @@
       <!-- 今日小纸条弹层：标题/正文/节气/关联游戏邀请；打开成功展示实发星星 -->
       <view wx:if="{{dailyNoteVisible && dailyNoteSnapshot}}" class="daily-note-overlay" aria-role="dialog" aria-label="今日小纸条" catchtouchmove="noop">
         <view class="daily-note-stage">
+          <!-- 收星动效：与静态项目 today-companion-award 一致，星体挤压弹出后 +N 才出现 -->
           <view wx:if="{{dailyNoteAwardedStars > 0}}" class="daily-note-award" aria-label="获得 {{dailyNoteAwardedStars}} 颗星星">
+            <companion-star mode="award" size="{{150}}"></companion-star>
             <text class="daily-note-award__plus">+{{dailyNoteAwardedStars}}</text>
           </view>
           <view class="daily-note-letter" catchtap="noop">

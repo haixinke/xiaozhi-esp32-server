@@ -5,6 +5,7 @@
     "daily-window-detail": "../../components/daily-window-detail/daily-window-detail",
     "doodle-editor": "../../components/doodle-editor/doodle-editor",
     "pet-mood-tab": "../../components/pet-mood-tab/pet-mood-tab",
-    "room-clock": "../../components/room-clock/room-clock"
+    "room-clock": "../../components/room-clock/room-clock",
+    "companion-star": "../../components/companion-star/companion-star"
   }
 }

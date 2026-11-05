@@ -5405,13 +5405,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1793798153.3941274,
-    "ast_hash": "692799b9058fe6d10dd7bed3cd52aff6",
+    "mtime": 1793857564.2754486,
+    "ast_hash": "2cf30cc01da104f48bae1ec13d2ca098",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1793798201.0415049,
-    "ast_hash": "65f7106ab862244d307872a055085c2e",
+    "mtime": 1793857548.1643605,
+    "ast_hash": "06f6a1d1ff18c61e5b2cad91ba695bcb",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -9605,7 +9605,7 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/scripts/drawing-e2e.js": {
-    "mtime": 1793853724.4496489,
+    "mtime": 1793857566.8060365,
     "ast_hash": "e33d5b2a7cb83cd623e5fa406ab95c76",
     "semantic_hash": ""
   },

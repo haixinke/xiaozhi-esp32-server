@@ -146,7 +146,7 @@ Page({
     storyWindowAvailable: false,
     storyWindowVisible: false,
     storyWindowOriginStyle: '',
-    // 故事大场景是否为"在家"：控制左下角聊天入口显隐（非在家不显示）
+    // 故事大场景是否为"在家"：仅控制左下角聊天 icon 显隐，小纸条信封在所有大场景都显示
     storyAtHome: false,
     // 故事背景横向拖拽位移（px），轨道宽按图片真实宽高比自适应，范围 [屏宽-轨道宽, 0]
     storyScrollX: 0,
@@ -720,7 +720,7 @@ Page({
           storyTagImageUrl: tagImageUrl,
           storyWindowAvailable: windowAvailable,
           storyWindowVisible: windowAvailable ? this.data.storyWindowVisible : false,
-          // 聊天入口仅"在家"大场景显示；轮询失败静默保留旧值
+          // 聊天 icon 仅"在家"大场景显示；信封不受此限制。轮询失败静默保留旧值
           storyAtHome: !!(state && state.bigSceneName === STORY_WINDOW_BIG_SCENE)
         });
         // 故事背景走共享 downloadFile 通道：绕开 <image> 内置加载器挂起问题；成功才换图，失败保留旧背景

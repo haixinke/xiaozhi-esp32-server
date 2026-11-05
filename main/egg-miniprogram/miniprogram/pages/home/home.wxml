@@ -131,14 +131,14 @@
         </view>
       </view>
 
-      <!-- 左下角入口位二态切换：有未读小纸条显示信封（红点），否则显示聊天 icon；仅"在家"大场景显示 -->
-      <view wx:if="{{storyAtHome}}" class="story-chat-entry">
+      <!-- 左下角入口位：有未读小纸条时所有大场景都显示信封（红点）；无纸条时仅"在家"显示聊天 icon -->
+      <view wx:if="{{dailyNote || storyAtHome}}" class="story-chat-entry">
         <view wx:if="{{dailyNote}}" class="story-chat-button story-chat-button--envelope" hover-class="story-chat-button--pressed" aria-role="button" aria-label="打开今日小纸条" bindtap="onDailyNoteTap">
           <view wx:if="{{dailyNoteArriving}}" class="daily-note-plane" aria-hidden="true"></view>
           <image class="story-chat-icon {{dailyNoteArriving ? 'daily-note-envelope--arriving' : ''}}" src="{{dailyNoteEnvelopeIcon}}" mode="aspectFit" />
           <view class="daily-note-unread-dot" aria-hidden="true"></view>
         </view>
-        <view wx:else class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
+        <view wx:elif="{{storyAtHome}}" class="story-chat-button" hover-class="story-chat-button--pressed" aria-role="button" aria-label="和它说说话" bindtap="onPrimaryAction">
           <image wx:if="{{storyChatIcon}}" class="story-chat-icon" src="{{storyChatIcon}}" mode="aspectFit" />
         </view>
       </view>

@@ -1,9 +1,10 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const request = require('../../utils/request');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EXPORT_EMAIL_KEY = 'export_email';
 
-Page({
+Page(withPhoneGate({
   data: {
     email: '',
     emailFocus: false,
@@ -107,4 +108,4 @@ Page({
         this.setData({ deleting: false });
       });
   }
-});
+}));

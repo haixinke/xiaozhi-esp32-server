@@ -14,6 +14,7 @@ let hiddenMenus = 0;
 let shownMenus = 0;
 
 Module._load = function (request, parent, isMain) {
+  if (request === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   if (parent && parent.filename === pagePath) {
     if (request === '../../utils/pet-store') {
       return { getUser: () => null, getPet: () => null, syncUserProfile() {} };

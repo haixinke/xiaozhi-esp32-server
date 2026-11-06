@@ -70,7 +70,7 @@ class PetServiceImplDeleteTest {
     @BeforeEach
     void setUp() {
         service = new PetServiceImpl(petDao, null, null, null, null, null, null, null, null,
-                null, null, null, petCollectionCardService, null, null, null, companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, null));
+                null, null, null, petCollectionCardService, null, null, null, companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao));
     }
 
     /** 构造一只未删除的蛋（deletedAt=0），todayMoodDate 置为今天以跳过今日心情懒刷新 */

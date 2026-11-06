@@ -130,7 +130,7 @@ async function run() {
   await new Promise((r) => setTimeout(r, 10));
   assert.strictEqual(p2.data.state, 'UNAVAILABLE', 'failed login shows UNAVAILABLE');
 
-  // 3. Intent + session without phone + CLAIMABLE preview → NEED_PHONE
+  // 3. 未绑定手机号同样可以预览并确认领取，绑定推迟到破壳后。
   reset();
   intentResult = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
   sessionResult = { userId: 42, hasPhone: false, token: 't' };
@@ -138,7 +138,12 @@ async function run() {
   previewResult = { productName: '蛋宝宝NFC', prototype: '锦鲤', claimStatus: 'CLAIMABLE', pet: null };
   const p3 = makePage();
   await p3.onLoad();
-  assert.strictEqual(p3.data.state, 'NEED_PHONE', 'no phone shows NEED_PHONE');
+  assert.strictEqual(p3.data.state, 'READY', 'unbound users can confirm a claimable NFC pet');
+  confirmResult = { claimStatus: 'CLAIMED', pet: { id: 'new-egg', hatchStatus: 'EGG', prototype: '锦鲤' } };
+  await p3.onConfirmClaim();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.strictEqual(p3.data.state, 'SUCCESS', 'unbound users complete NFC adoption');
+  assert.strictEqual(markedPhoneBound, false, 'NFC adoption never binds a phone number');
 
   // 4. Intent + session with phone + CLAIMABLE preview → READY
   reset();

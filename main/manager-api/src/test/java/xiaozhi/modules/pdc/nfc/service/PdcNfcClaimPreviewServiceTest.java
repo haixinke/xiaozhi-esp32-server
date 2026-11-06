@@ -39,7 +39,6 @@ import xiaozhi.modules.pdc.nfc.service.impl.PdcNfcClaimServiceImpl;
 import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimPreviewVO;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.vo.PetVO;
-import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 @ExtendWith(MockitoExtension.class)
 class PdcNfcClaimPreviewServiceTest {
@@ -48,7 +47,6 @@ class PdcNfcClaimPreviewServiceTest {
     private static final String VALID_CLAIM_REF = "abcdefghij1234567890_-";
 
     @Mock private PdcNfcProperties properties;
-    @Mock private WechatPhoneGate wechatPhoneGate;
     @Mock private ClaimRefProtection claimRefProtection;
     @Mock private PdcNfcAssetDao assetDao;
     @Mock private PdcNfcBatchDao batchDao;
@@ -69,7 +67,7 @@ class PdcNfcClaimPreviewServiceTest {
     @BeforeEach
     void setUp() {
         claimService = new PdcNfcClaimServiceImpl(
-                properties, wechatPhoneGate, claimRefProtection,
+                properties, claimRefProtection,
                 assetDao, batchDao, productTypeDao, rateLimiter, petService, claimRecordDao,
                 manualWriteService);
     }

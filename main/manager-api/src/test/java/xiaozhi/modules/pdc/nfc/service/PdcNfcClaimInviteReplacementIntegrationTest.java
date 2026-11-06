@@ -394,7 +394,6 @@ class PdcNfcClaimInviteReplacementIntegrationTest extends MySqlContainerSupport 
         @Bean
         WechatPhoneGate wechatPhoneGate() {
             WechatPhoneGate gate = mock(WechatPhoneGate.class);
-            lenient().when(gate.canAccess(org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
             lenient().when(gate.hasBoundWechatPhone(org.mockito.ArgumentMatchers.anyLong()))
                     .thenReturn(true);
             return gate;

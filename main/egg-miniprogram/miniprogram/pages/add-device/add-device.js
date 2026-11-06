@@ -27,7 +27,8 @@ Page({
 
   onLoad() {
     const session = auth.getSession();
-    if (!session || auth.isExpired() || session.hasPhone !== true) {
+    // 邀请码领取只要求有效微信会话；手机号绑定属于破壳后的账号门槛。
+    if (!session || auth.isExpired()) {
       wx.reLaunch({ url: '/pages/home/home' });
       return;
     }

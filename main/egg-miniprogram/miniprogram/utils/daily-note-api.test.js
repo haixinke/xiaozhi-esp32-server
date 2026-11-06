@@ -10,7 +10,7 @@ global.getApp = () => ({ silentLogin: async () => {} });
 const originalLoad = Module._load;
 Module._load = function (request) {
   if (request === '../config/api') return { API_BASE_URL: 'https://api.example/xiaozhi' };
-  if (request === './auth') return { getSession: () => ({ token: 't' }), clearSession: () => {} };
+  if (request === './auth') return { getPhoneBindingContext: () => ({ userId: 'fixture-user', generation: 0 }), getSession: () => ({ token: 't' }), clearSession: () => {} };
   return originalLoad.apply(this, arguments);
 };
 

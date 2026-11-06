@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const petStore = require('../../utils/pet-store');
 const request = require('../../utils/request');
 const inviteApi = require('../../utils/invite-api');
@@ -5,7 +6,7 @@ const inviteApi = require('../../utils/invite-api');
 const SHARE_TITLE = '一起来养蛋宝宝吧';
 const SHARE_HOME_PATH = '/pages/home/home?v=1&source=home_share';
 
-Page({
+Page(withPhoneGate({
   data: { userName: '蛋友', avatarUrl: '', eggCount: 0, shareReady: false },
 
   onShow() {
@@ -94,4 +95,4 @@ Page({
     if (!this.data.shareReady) return false;
     return { title: SHARE_TITLE };
   }
-});
+}));

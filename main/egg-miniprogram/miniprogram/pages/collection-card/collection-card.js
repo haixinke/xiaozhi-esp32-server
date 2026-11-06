@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const petStore = require('../../utils/pet-store');
 const inviteApi = require('../../utils/invite-api');
 
@@ -35,7 +36,7 @@ function signatureClass(value) {
   return '';
 }
 
-Page({
+Page(withPhoneGate({
   data: { card: null, pet: null, isNew: false, subtitle: '', birthdayLabel: '', genderLabel: '', genderClass: '', zodiacSymbol: '', signatureClass: '', shareReady: false },
 
   onLoad(query) {
@@ -460,4 +461,4 @@ Page({
     if (!card || !this.data.shareReady) return false;
     return { title: `我孵化了${card.name}，编号 ${card.serial}` };
   }
-});
+}));

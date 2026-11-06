@@ -11,6 +11,10 @@ class DeviceNotFoundException(Exception):
     pass
 
 
+class PhoneBindingRequiredException(Exception):
+    """微信账号需先绑定手机号，禁止降级为通用聊天配置。"""
+
+
 class DeviceBindException(Exception):
     def __init__(self, bind_code):
         self.bind_code = bind_code
@@ -99,6 +103,9 @@ class ManageApiClient:
                 raise DeviceNotFoundException(result.get("msg"))
             elif result.get("code") == 10042:
                 raise DeviceBindException(result.get("msg"))
+            elif result.get("code") == 10228:
+                # 独立传递手机号门槛，避免并发配置加载吞掉业务拒绝。
+                raise PhoneBindingRequiredException("请先绑定手机号")
             elif result.get("code") != 0:
                 raise Exception(f"API返回错误: {result.get('msg', '未知错误')}")
 

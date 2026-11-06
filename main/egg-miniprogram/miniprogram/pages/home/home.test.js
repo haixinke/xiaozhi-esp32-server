@@ -98,7 +98,7 @@ const FIXED_TIMESTAMP = 1754880000000;
 const authMock = {
   getSession: () => cachedSession,
   isExpired: () => cachedExpired,
-  markPhoneBound: () => markPhoneResult
+  markPhoneBound: () => { cachedSession = markPhoneResult; return markPhoneResult; }
 };
 
 const petStoreMock = {
@@ -619,6 +619,89 @@ async function run() {
   require('./home');
   assert.ok(pageConfig, 'home page should be registered');
 
+  // 存量破壳账号必须在首页恢复绑定门槛，不能因当前选择另一只蛋而绕过。
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: false };
+  requirePetStage('hatched');
+  const unboundHatchedPage = makePage();
+  unboundHatchedPage.onLoad();
+  unboundHatchedPage.onShow();
+  await flushPageTasks();
+  assert.strictEqual(unboundHatchedPage.data.showPhoneAuthorization, true,
+    'a restored unbound hatched account must complete phone binding');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: false };
+  requirePetStage('hatching');
+  cachedPetsArg = [storedPet, { id: 'other-pet', hatchStatus: 'HATCHED' }];
+  const multiPetGate = makePage();
+  multiPetGate.onLoad();
+  multiPetGate.onShow();
+  assert.strictEqual(multiPetGate.data.showPhoneAuthorization, true,
+    'cached account-wide state blocks immediately even when the selected pet is an egg');
+  await flushPageTasks();
+
+  // NFC 渠道替换邀请码破壳宠物后，以服务端剩余全是蛋的结果解除旧门槛。
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: false };
+  requirePetStage('hatched', { id: 'old-invite-pet' });
+  app.globalData.phoneBindingRequired = true;
+  requestGetResult = [{ id: 'new-nfc-egg', hatchStatus: 'EGG', prototype: '锦鲤' }];
+  const replacedInvitePage = makePage();
+  replacedInvitePage.onLoad();
+  replacedInvitePage.onShow();
+  assert.strictEqual(replacedInvitePage.data.showPhoneAuthorization, true, 'cached data cannot clear a prior server requirement');
+  await flushPageTasks();
+  assert.strictEqual(replacedInvitePage.data.showPhoneAuthorization, false, 'authoritative all-egg state clears the replaced invite gate');
+  assert.strictEqual(app.globalData.phoneBindingRequired, false);
+
+  // 接口先完成时仍完整播放视频，视频先完成时仍等待服务端确认。
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: false };
+  requirePetStage('ready');
+  const apiFirst = makePage();
+  apiFirst.onLoad();
+  apiFirst.onShow();
+  apiFirst.doHatch();
+  await flushPageTasks();
+  assert.strictEqual(apiFirst.data.showPhoneAuthorization, false, 'API completion never interrupts the hatch video');
+  requestGetResult = [{ ...storedPet, hatchStatus: 'HATCHED' }];
+  apiFirst.onHatchVideoEnded();
+  await flushPageTasks();
+  assert.strictEqual(apiFirst.data.showPhoneAuthorization, true, 'binding starts after both the video and API finish');
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: false };
+  requirePetStage('ready');
+  let resolveHatch;
+  createCollectionCardResult = new Promise((resolve) => { resolveHatch = resolve; });
+  const videoFirst = makePage();
+  videoFirst.onLoad();
+  videoFirst.onShow();
+  videoFirst.doHatch();
+  videoFirst.onHatchVideoEnded();
+  await flushPageTasks();
+  assert.strictEqual(videoFirst.data.hatching, true, 'video completion waits for the pending hatch transaction');
+  assert.strictEqual(videoFirst.data.showPhoneAuthorization, false);
+  requestGetResult = [{ ...storedPet, hatchStatus: 'HATCHED' }];
+  resolveHatch({ ok: true });
+  await flushPageTasks();
+  assert.strictEqual(videoFirst.data.showPhoneAuthorization, true);
+
+  resetScenario();
+  cachedSession = { userId: 42, hasPhone: false };
+  requirePetStage('ready');
+  createCollectionCardResult = { ok: false };
+  const failedHatch = makePage();
+  failedHatch.onLoad();
+  failedHatch.onShow();
+  failedHatch.doHatch();
+  failedHatch.onHatchVideoError();
+  await flushPageTasks();
+  assert.strictEqual(failedHatch.data.hatching, false, 'video errors use the existing hatch failure recovery');
+  assert.strictEqual(failedHatch.data.showPhoneAuthorization, false, 'failed hatch never requires binding');
+  assert.strictEqual(toastTitle, '破壳失败，请稍后重试');
+
   // ===== 既有业务回归断言（分享、邀请、设备绑定、冷启动） =====
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };
@@ -735,8 +818,8 @@ async function run() {
   cachedSession = { userId: 42, hasPhone: false };
   const unboundPage = makePage();
   unboundPage.onAddDevice();
-  assert.strictEqual(unboundPage.data.showPhoneAuthorization, true);
-  assert.strictEqual(navigatedTo, null);
+  assert.strictEqual(unboundPage.data.showPhoneAuthorization, false, 'adoption does not ask for a phone number');
+  assert.strictEqual(navigatedTo, '/pages/add-device/add-device', 'unbound users can enter invitation adoption');
 
   resetScenario();
   cachedSession = { userId: 42, hasPhone: false };
@@ -781,15 +864,17 @@ async function run() {
   assert.deepStrictEqual(applySessionArgument, markPhoneResult, 'bound session syncs with app state');
   assert.strictEqual(authorizationPage.data.showPhoneAuthorization, false);
   assert.strictEqual(authorizationPage.data.authorizingPhone, false);
-  assert.strictEqual(navigatedTo, '/pages/add-device/add-device');
+  assert.strictEqual(navigatedTo, null, 'post-hatch binding stays on home');
 
   resetScenario();
   const rejectedPage = makePage();
+  rejectedPage.setData({ showPhoneAuthorization: true });
   await rejectedPage.onAuthorizePhone({ detail: {} });
   assert.strictEqual(bindPhoneCalls, 0, 'rejected phone authorization does not bind');
   assert.strictEqual(navigatedTo, null, 'rejected phone authorization does not navigate');
   assert.strictEqual(rejectedPage.data.authorizingPhone, false);
-  assert.strictEqual(toastTitle, '需要授权手机号后才能领取蛋宝宝');
+  assert.strictEqual(toastTitle, '需要绑定手机号后才能继续使用');
+  assert.strictEqual(rejectedPage.data.showPhoneAuthorization, true, 'refusal keeps the binding requirement');
 
   resetScenario();
   const missingCodePage = makePage();
@@ -810,19 +895,26 @@ async function run() {
   ensureSession = { userId: 42, hasPhone: false };
   bindPhoneError = new Error('bind failed');
   const failedBindPage = makePage();
+  failedBindPage.setData({ showPhoneAuthorization: true });
   await failedBindPage.onAuthorizePhone({ detail: { code: 'test-phone-code' } });
   assert.strictEqual(bindPhoneCalls, 1, 'binding failure still attempts exactly once');
   assert.strictEqual(navigatedTo, null, 'binding failure does not navigate');
   assert.strictEqual(failedBindPage.data.authorizingPhone, false);
+  assert.strictEqual(failedBindPage.data.showPhoneAuthorization, true, 'binding failure keeps the completed hatch gated');
+  bindPhoneError = null;
+  markPhoneResult = { userId: 42, hasPhone: true };
+  await failedBindPage.onAuthorizePhone({ detail: { code: 'test-phone-code' } });
+  assert.strictEqual(bindPhoneCalls, 2, 'failed binding can be retried explicitly');
+  assert.strictEqual(failedBindPage.data.showPhoneAuthorization, false, 'confirmed successful retry releases the gate');
 
   resetScenario();
   const closePage = makePage();
   closePage.setData({ showPhoneAuthorization: true });
-  closePage.onClosePhoneAuthorization();
-  assert.strictEqual(closePage.data.showPhoneAuthorization, false, 'close hides the authorization dialog');
-  closePage.setData({ showPhoneAuthorization: true, authorizingPhone: true });
-  closePage.onClosePhoneAuthorization();
-  assert.strictEqual(closePage.data.showPhoneAuthorization, true, 'close is disabled while authorizing');
+  closePage.noop();
+  assert.strictEqual(closePage.data.showPhoneAuthorization, true, 'tapping the mask cannot skip binding');
+  assert.ok(!homeTemplate.includes('onClosePhoneAuthorization'), 'binding dialog has no skip action');
+  closePage.onPhonePrivacy();
+  assert.strictEqual(navigatedTo, '/pages/privacy/privacy', 'privacy remains accessible before binding');
 
   resetScenario();
   ensureSession = { userId: 42, hasPhone: false };
@@ -837,7 +929,7 @@ async function run() {
   resolveBind();
   await Promise.all([firstAuthorization, secondAuthorization]);
   assert.strictEqual(bindPhoneCalls, 1, 'concurrent taps bind only once');
-  assert.strictEqual(navigatedTo, '/pages/add-device/add-device');
+  assert.strictEqual(navigatedTo, null, 'successful binding does not navigate to adoption');
   assert.strictEqual(concurrentPage.data.authorizingPhone, false);
 
   // ===== Task 7 新增断言：破壳前场景集成 =====

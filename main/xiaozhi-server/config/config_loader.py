@@ -9,6 +9,7 @@ from config.manage_api_client import (
     get_correct_words,
     DeviceNotFoundException,
     DeviceBindException,
+    PhoneBindingRequiredException,
 )
 
 
@@ -98,6 +99,9 @@ async def get_private_config_from_api(config, device_id, client_id):
     if isinstance(agent_result, DeviceNotFoundException):
         raise agent_result
     if isinstance(agent_result, DeviceBindException):
+        raise agent_result
+    if isinstance(agent_result, PhoneBindingRequiredException):
+        # 交给连接初始化的阻断路径，不能回退空配置后继续处理消息。
         raise agent_result
 
     private_config = agent_result if not isinstance(agent_result, Exception) else {}

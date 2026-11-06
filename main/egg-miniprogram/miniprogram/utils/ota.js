@@ -11,6 +11,7 @@
  */
 
 const { API_BASE_URL } = require('../config/api');
+const auth = require('./auth');
 
 function createError(message) {
   return { type: 'ota', message, userMessage: message };
@@ -30,6 +31,7 @@ function checkOrRegisterDevice(deviceId) {
 
     const app = getApp();
     const version = (app && app.globalData && app.globalData.version) || '1.0.0-mvp';
+    const phoneBindingContext = auth.getPhoneBindingContext();
 
     wx.request({
       url: `${API_BASE_URL}/ota/`,
@@ -52,6 +54,13 @@ function checkOrRegisterDevice(deviceId) {
       success: (response) => {
         const statusCode = response && response.statusCode;
         const data = response && response.data;
+
+        // OTA 通常返回裸配置，手机号门槛仍通过统一业务码恢复首页绑定。
+        if (data && data.code === 10228) {
+          require('./phone-gate').requirePhoneBinding(phoneBindingContext);
+          reject({ ...createError('需要绑定手机号后才能继续使用'), code: 10228 });
+          return;
+        }
 
         if (typeof statusCode !== 'number' || statusCode < 200 || statusCode >= 300) {
           reject(createError('获取聊天配置失败：' + statusCode));

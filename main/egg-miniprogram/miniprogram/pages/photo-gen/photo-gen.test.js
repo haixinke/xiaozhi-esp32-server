@@ -22,6 +22,7 @@ let compressResult = null;
 let fileInfoSizes = {};
 
 Module._load = function (request, parent, isMain) {
+  if (request === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   if (parent && parent.filename === pagePath) {
     if (request === '../../utils/image-gen-api') {
       return {

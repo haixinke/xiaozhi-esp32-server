@@ -44,7 +44,6 @@ import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.service.NfcAdoptionResult;
 import xiaozhi.modules.pet.vo.PetVO;
-import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 @ExtendWith(MockitoExtension.class)
 class PdcNfcClaimServiceTest {
@@ -56,7 +55,6 @@ class PdcNfcClaimServiceTest {
     private static final UUID DIFFERENT_REQUEST_ID = UUID.fromString("660e8400-e29b-41d4-a716-446655440000");
 
     @Mock private PdcNfcProperties properties;
-    @Mock private WechatPhoneGate wechatPhoneGate;
     @Mock private ClaimRefProtection claimRefProtection;
     @Mock private PdcNfcAssetDao assetDao;
     @Mock private PdcNfcBatchDao batchDao;
@@ -77,15 +75,14 @@ class PdcNfcClaimServiceTest {
     @BeforeEach
     void setUp() {
         claimService = new PdcNfcClaimServiceImpl(
-                properties, wechatPhoneGate, claimRefProtection,
+                properties, claimRefProtection,
                 assetDao, batchDao, productTypeDao, rateLimiter, petService, claimRecordDao,
                 manualWriteService);
     }
 
     @Test
-    void confirmSuccessCreatesPetAndClaimRecord() {
+    void unboundAccountCanConfirmAndCreatePetAndClaimRecord() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = createActiveAsset();
@@ -110,7 +107,6 @@ class PdcNfcClaimServiceTest {
     @Test
     void firstClaimPersistsCreateDate() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
         when(assetDao.selectByClaimHashesForUpdate(any(Collection.class)))
                 .thenReturn(List.of(createActiveAsset()));
@@ -132,7 +128,6 @@ class PdcNfcClaimServiceTest {
     @Test
     void petFailureRollsBackClaimAndLeavesAssetActive() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = createActiveAsset();
@@ -151,7 +146,6 @@ class PdcNfcClaimServiceTest {
     @Test
     void sameRequestIdReturnsOriginalResult() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = createActiveAsset();
@@ -186,7 +180,6 @@ class PdcNfcClaimServiceTest {
     @Test
     void differentRequestIdSameAssetReturnsAlreadyClaimed() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -207,7 +200,6 @@ class PdcNfcClaimServiceTest {
     @Test
     void sameUserSameAssetNewRequestIdReturnsSelf() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -233,7 +225,6 @@ class PdcNfcClaimServiceTest {
     @Test
     void invalidClaimRefThrows() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
 
         assertThatThrownBy(() -> claimService.confirm(USER_ID, "short", REQUEST_ID))
                 .isInstanceOf(RenException.class)
@@ -246,7 +237,6 @@ class PdcNfcClaimServiceTest {
     @Test
     void nonActiveAssetThrows() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = new PdcNfcAssetEntity();
@@ -264,13 +254,38 @@ class PdcNfcClaimServiceTest {
     }
 
     @Test
-    void phoneNotBoundThrows() {
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(false);
+    void unauthenticatedUserCannotConfirm() {
+        assertThatThrownBy(() -> claimService.confirm(null, VALID_CLAIM_REF, REQUEST_ID))
+                .isInstanceOfSatisfying(RenException.class,
+                        error -> assertThat(error.getCode()).isEqualTo(ErrorCode.USER_NOT_LOGIN));
+        org.mockito.Mockito.verifyNoInteractions(assetDao, petService);
+    }
 
+    @Test
+    void featureSwitchStillRejectsClaimBeforeAssetLookup() {
         assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
-                .isInstanceOf(RenException.class);
+                .isInstanceOfSatisfying(RenException.class,
+                        error -> assertThat(error.getCode()).isEqualTo(ErrorCode.PDC_NFC_FEATURE_DISABLED));
+        org.mockito.Mockito.verifyNoInteractions(assetDao, petService);
+    }
 
-        verify(petService, never()).createEgg(any(), anyString());
+    @Test
+    void claimSwitchStillRejectsClaimBeforeAssetLookup() {
+        when(properties.isEnabled()).thenReturn(true);
+        assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
+                .isInstanceOfSatisfying(RenException.class,
+                        error -> assertThat(error.getCode()).isEqualTo(ErrorCode.PDC_NFC_FEATURE_DISABLED));
+        org.mockito.Mockito.verifyNoInteractions(assetDao, petService);
+    }
+
+    @Test
+    void releaseReadinessStillRejectsClaimBeforeAssetLookup() {
+        when(properties.isEnabled()).thenReturn(true);
+        when(properties.isClaimEnabled()).thenReturn(true);
+        assertThatThrownBy(() -> claimService.confirm(USER_ID, VALID_CLAIM_REF, REQUEST_ID))
+                .isInstanceOfSatisfying(RenException.class,
+                        error -> assertThat(error.getCode()).isEqualTo(ErrorCode.PDC_NFC_RELEASE_NOT_READY));
+        org.mockito.Mockito.verifyNoInteractions(assetDao, petService);
     }
 
     @Test
@@ -278,7 +293,6 @@ class PdcNfcClaimServiceTest {
         // 同原型名额已占用：领养 module 抛 10206，
         // 必须原样透出（前端据此展示"已领取过"面板），且不产生领取记录、不核销资产
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = createActiveAsset();
@@ -301,7 +315,6 @@ class PdcNfcClaimServiceTest {
     @Test
     void optimisticLockFailureThrowsInvalidState() {
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
 
         PdcNfcAssetEntity asset = createActiveAsset();
@@ -332,7 +345,6 @@ class PdcNfcClaimServiceTest {
     void confirmReturnsReplacementOutcomeFromPetModule() {
         // 资产编排只消费领养结果，不再承担邀请码删除或展示查询。
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
         when(assetDao.selectByClaimHashesForUpdate(any(Collection.class)))
                 .thenReturn(List.of(createActiveAsset()));
@@ -356,7 +368,6 @@ class PdcNfcClaimServiceTest {
     void adoptionFailureDoesNotWriteClaimRecordOrConsumeAsset() {
         // 替换或建蛋的任一步失败，领取记录和资产消费都不能继续。
         setupAllGatesEnabled();
-        when(wechatPhoneGate.hasBoundWechatPhone(USER_ID)).thenReturn(true);
         when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
         when(assetDao.selectByClaimHashesForUpdate(any(Collection.class)))
                 .thenReturn(List.of(createActiveAsset()));

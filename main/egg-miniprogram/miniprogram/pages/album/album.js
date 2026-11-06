@@ -1,9 +1,10 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const petStore = require('../../utils/pet-store');
 
 // "我的卡册"聚合用户名下全部宠物的收藏卡（不按当前宠物），
 // 按获得时间正序混排（最早获得在前，与主页宠物领养顺序一致）；
 // 进入时拉一次 /pet/list 刷新缓存，失败回退本地缓存
-Page({
+Page(withPhoneGate({
   data: { cards: [] },
 
   async onShow() {
@@ -50,4 +51,4 @@ Page({
     const query = `petId=${petId || ''}&index=${index || 0}`;
     wx.navigateTo({ url: `/pages/collection-card/collection-card?${query}` });
   }
-});
+}));

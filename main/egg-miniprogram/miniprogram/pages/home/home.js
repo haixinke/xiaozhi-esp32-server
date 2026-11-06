@@ -287,7 +287,7 @@ Page({
     const tabBar = this.getTabBar();
     // 孵化/命名弹层/窗景详情打开时隐藏百宝箱，避免遮挡
     const hidden = !!(this.data.hatching || this.data.showNameSheet
-      || this.data.dailyWindowVisible || this.data.storyWindowVisible);
+      || this.data.showPhoneAuthorization || this.data.dailyWindowVisible || this.data.storyWindowVisible);
     // 写真仅对当前已破壳宠物开放，首页每次切宠或状态变化都同步到百宝箱。
     const photoPetId = this.data.stage === 'hatched' && this.data.pet && this.data.pet.id
       ? String(this.data.pet.id) : '';
@@ -371,8 +371,9 @@ Page({
       this._initialPetLoad = false;
       this.setData({ pets: snapshot.pets, currentPetIndex: snapshot.currentPetIndex, petRestoreError: '' });
       const hasHatched = snapshot.pets.some((pet) => pet.hatchStatus === 'HATCHED');
-      this.loadStarBalance(hasHatched);
-      this.loadDailyNote(hasHatched);
+      const phoneRequired = this.syncPhoneAuthorization(snapshot.pets, true);
+      this.loadStarBalance(hasHatched && !phoneRequired);
+      this.loadDailyNote(hasHatched && !phoneRequired);
       this.renderPet(snapshot.pet);
       if (shouldRestoreDoodle || previousPetId !== (snapshot.pet && String(snapshot.pet.id))) {
         this.restoreDoodleArt(snapshot.pet);
@@ -534,6 +535,7 @@ Page({
   },
 
   renderPet(pet) {
+    this.syncPhoneAuthorization(this.data.pets);
     const iconRequestId = (this._chatIconRequestId || 0) + 1;
     this._chatIconRequestId = iconRequestId;
     if (!pet) {
@@ -577,9 +579,26 @@ Page({
     // 刷新破壳前环境
     this.refreshEnvironment();
     // 破壳后启动故事场景加载与 10 分钟轮询；破壳前清空
-    this.refreshStoryState(stage);
+    this.refreshStoryState(this.data.showPhoneAuthorization ? 'empty' : stage);
     // 破壳前未命名时自动弹出命名框，引导用户给蛋宝宝起名
-    this.maybePromptPetName(pet, stage);
+    if (!this.data.showPhoneAuthorization) this.maybePromptPetName(pet, stage);
+  },
+
+  // 门槛属于账号：切到另一只孵化中的蛋，也不能绕过已经破壳后的绑定要求。
+  syncPhoneAuthorization(pets, authoritative = false) {
+    const session = auth.getSession();
+    const app = getApp();
+    // 只有本轮服务端完整列表才能解除旧门槛，本地旧快照不能证明破壳宠物已被替换。
+    if (authoritative && !(pets || []).some((pet) => pet.hatchStatus === 'HATCHED')) {
+      app.globalData.phoneBindingRequired = false;
+    }
+    const required = !!(app.globalData.phoneBindingRequired
+      || (session && session.hasPhone !== true
+        && (pets || []).some((pet) => pet.hatchStatus === 'HATCHED')));
+    this.setData({ showPhoneAuthorization: required && !this.data.hatching });
+    if (required) this.setData({ showNameSheet: false });
+    this.syncTabBar();
+    return required;
   },
 
   // 破壳前且未命名时自动打开命名弹层；每次 onShow 只自动弹一次，用户手动点名字药丸仍可随时打开
@@ -1017,21 +1036,18 @@ Page({
 
   onAddDevice() {
     const session = auth.getSession();
-    if (session && !auth.isExpired() && session.hasPhone === true) {
+    // 领取及孵化先体验，手机号绑定统一放到破壳成功之后。
+    if (session && !auth.isExpired()) {
       wx.navigateTo({ url: '/pages/add-device/add-device' });
       return;
     }
-    this.setData({ showPhoneAuthorization: true });
-  },
-
-  onClosePhoneAuthorization() {
-    if (!this.data.authorizingPhone) this.setData({ showPhoneAuthorization: false });
+    wx.showToast({ title: '登录状态已失效，请重新进入', icon: 'none' });
   },
 
   async onAuthorizePhone(event) {
     const phoneCode = event && event.detail && event.detail.code;
     if (!phoneCode) {
-      wx.showToast({ title: '需要授权手机号后才能领取蛋宝宝', icon: 'none' });
+      wx.showToast({ title: '需要绑定手机号后才能继续使用', icon: 'none' });
       return;
     }
     if (this.data.authorizingPhone) return;
@@ -1043,13 +1059,18 @@ Page({
       const boundSession = auth.markPhoneBound();
       if (!boundSession) throw new Error('invalid login session');
       getApp().applySession(boundSession);
+      getApp().globalData.phoneBindingRequired = false;
       this.setData({ showPhoneAuthorization: false });
-      wx.navigateTo({ url: '/pages/add-device/add-device' });
+      this.onShow();
     } catch (error) {
       wx.showToast({ title: error.userMessage || '暂时无法连接服务，请稍后重试', icon: 'none' });
     } finally {
       this.setData({ authorizingPhone: false });
     }
+  },
+
+  onPhonePrivacy() {
+    wx.navigateTo({ url: '/pages/privacy/privacy' });
   },
 
   showFeedback(text) {
@@ -1362,6 +1383,9 @@ Page({
       wx.showToast({ title: (result && result.message) || '破壳失败，请稍后重试', icon: 'none' });
       return;
     }
+    // 只有视频收尾并确认破壳成功后才要求绑定，不能让接口先返回打断破壳体验。
+    const session = auth.getSession();
+    if (session && session.hasPhone !== true) getApp().globalData.phoneBindingRequired = true;
     this.onShow();
   },
 

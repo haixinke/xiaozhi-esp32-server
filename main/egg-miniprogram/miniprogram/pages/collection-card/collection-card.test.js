@@ -16,6 +16,7 @@ let inviteMineResult = null;
 let inviteMineError = null;
 
 Module._load = function (request, parent, isMain) {
+  if (request === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   if (parent && parent.filename === pagePath) {
     if (request === '../../utils/pet-store') {
       return {

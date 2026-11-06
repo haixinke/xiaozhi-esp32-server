@@ -23,7 +23,7 @@ global.wx = {
   navigateTo() {},
   vibrateShort() {}
 };
-global.getApp = () => ({ globalData: {}, silentLogin: async () => {} });
+global.getApp = () => ({ globalData: {}, silentLogin: async () => {}, ensureLogin: async () => ({ userId: 'test-user', hasPhone: true }) });
 global.Page = (definition) => { pageDefinition = definition; };
 global.setTimeout = () => ++timerId;
 global.clearTimeout = () => {};

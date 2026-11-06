@@ -17,6 +17,7 @@ global.wx = {
   showToast(options) { calls.push(['toast', options.title]); }
 };
 Module._load = function (request, parent) {
+  if (request === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   if (request === '../../utils/pet-store') {
     return { getPetSnapshot: () => ({ pet: currentPet }) };
   }

@@ -9,7 +9,6 @@ import xiaozhi.common.exception.RenException;
 import xiaozhi.common.utils.SpringContextUtils;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.entity.PetEntity;
-import xiaozhi.modules.wechat.service.WechatPhoneGate;
 import java.util.List;
 import java.util.Locale;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +19,6 @@ import static org.mockito.Mockito.*;
 /** 通过领养 interface 验证名额、替换和存量读取，不依赖展示或 LLM。 */
 class PetAdoptionModuleTest {
     private PetDao dao;
-    private WechatPhoneGate phoneGate;
     private PetAdoptionModule module;
 
     @BeforeAll
@@ -36,9 +34,7 @@ class PetAdoptionModuleTest {
     @BeforeEach
     void setup() {
         dao = mock(PetDao.class);
-        phoneGate = mock(WechatPhoneGate.class);
-        module = new PetAdoptionModule(dao, phoneGate);
-        when(phoneGate.canAccess(7L)).thenReturn(true);
+        module = new PetAdoptionModule(dao);
     }
 
     @Test
@@ -54,7 +50,6 @@ class PetAdoptionModuleTest {
         order.verify(dao).selectList(any());
         order.verify(dao).updateById(invite);
         order.verify(dao).insert(result.pet());
-        verifyNoInteractions(phoneGate);
     }
 
     @Test
@@ -90,10 +85,11 @@ class PetAdoptionModuleTest {
     }
 
     @Test
-    void invitePhoneGatePrecedesWriting() {
-        when(phoneGate.canAccess(7L)).thenReturn(false);
-        assertThatThrownBy(() -> module.createInviteEgg(7L, "玉兔")).isInstanceOf(RenException.class);
-        verifyNoInteractions(dao);
+    void unboundAccountCanClaimInviteEggBeforeExperiencingIncubation() {
+        PetEntity egg = module.createInviteEgg(7L, "玉兔");
+        assertThat(egg.getHatchStatus()).isEqualTo("EGG");
+        assertThat(egg.getSource()).isEqualTo("INVITE_CODE");
+        verify(dao).insert(egg);
     }
 
     @Test

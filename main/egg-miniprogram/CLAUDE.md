@@ -47,10 +47,10 @@ main/egg-miniprogram/
 | 链路 | 入口页面 → 后端/API |
 |---|---|
 | 微信登录 | `app.js` → `wx.login` → `POST /wechat/login` |
-| 手机号绑定 | `pages/home`「添加蛋宝宝」→ `POST /wechat/bindPhone`（领养前置门槛） |
+| 手机号绑定 | `pages/home` 破壳动画结束且服务端成功后 → `POST /wechat/bindPhone`（账号级后续功能门槛） |
 | 领养 | `pages/add-device` → `POST /pet/adopt`（激活码即邀请码） |
 | 孵化修炼 | `pages/home` 等 → `POST /pet/{id}/hatch-action` |
-| 破壳 | `pet-store.createCollectionCard()` → `POST /pet/{id}/hatch` → 收藏卡页 |
+| 破壳 | `pet-store.createCollectionCard()` → `POST /pet/{id}/hatch`，与破壳动画共同结束后刷新首页 |
 | 每日心情 | `GET /pet/list` 懒生成 `todayMood`，无值时前端本地 fallback |
 | 听你说答题 | `pages/listen` → `listen-session.js` 管理答题会话 → `listen-api.js` 调用抽题、提交与反馈查询 |
 | 语音对话 | `pages/chat` → `ota.js` 取 WS 凭证 → `websocket.js` → `audio.js` 播放 |
@@ -72,7 +72,9 @@ main/egg-miniprogram/
 - `POST /wechat/bindPhone`（需认证）：`button open-type="getPhoneNumber"` 回调 `code` 绑定手机号
 - `GET/PUT /wechat/profile`：查询/更新用户资料；`POST /wechat/avatar`：上传头像到 OSS
 
-**token / openid / wx.login code 严禁落日志、严禁入库**。未绑定手机号可以进入并浏览首页；点击“添加蛋宝宝”后必须完成手机号授权，才能继续进入邀请码/激活码页面领取蛋宝宝。
+**token / openid / wx.login code 严禁落日志、严禁入库**。未绑定手机号可通过邀请码或 NFC 领取并体验孵化，破壳动画结束且服务端确认成功后，必须完成手机号绑定才能继续使用后续功能。手机号用于后续手机号登录，本次不新增手机号登录能力。
+
+该门槛按账号全部宠物判断，覆盖存量账号、冷启动和回到前台，切换当前宠物不能绕过；已绑定账号不重复授权。首页复用手机号弹层，无跳过入口，拒绝或绑定失败保留破壳成果并允许重试，隐私与条款保持可读。后续页面显式使用 `utils/phone-gate.js` 的 `withPhoneGate`，在加载、显示和画布就绪生命周期先检查门槛；受限接口或 OTA 返回 `10228` 时保留登录态并回首页绑定，服务端仍是最终访问控制依据。
 
 
 ### 孵化状态机映射

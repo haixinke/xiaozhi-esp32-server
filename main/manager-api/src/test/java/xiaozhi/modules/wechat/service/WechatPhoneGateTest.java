@@ -5,21 +5,18 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.MessageSource;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 
 import xiaozhi.modules.wechat.dao.WechatUserDao;
 import xiaozhi.modules.wechat.entity.WechatUserEntity;
+import xiaozhi.modules.pet.dao.PetDao;
 
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class WechatPhoneGateTest {
@@ -27,28 +24,22 @@ class WechatPhoneGateTest {
     @Mock
     private WechatUserDao wechatUserDao;
 
-    private WechatPhoneGate gate;
+    @Mock
+    private PetDao petDao;
 
-    @BeforeAll
-    static void initMessageSource() {
-        ApplicationContext applicationContext = org.mockito.Mockito.mock(ApplicationContext.class);
-        MessageSource messageSource = org.mockito.Mockito.mock(MessageSource.class);
-        lenient().when(applicationContext.getBean("messageSource")).thenReturn(messageSource);
-    }
+    private WechatPhoneGate gate;
 
     @BeforeEach
     void setUp() {
-        gate = new WechatPhoneGate(wechatUserDao);
+        gate = new WechatPhoneGate(wechatUserDao, petDao);
     }
-
-    // --- canAccess tests (existing) ---
 
     @Test
     void rejectsAccountWithoutWechatMapping() {
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(List.of());
 
-        assertThat(gate.canAccess(7L)).isFalse();
+        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
     }
 
     @Test
@@ -56,7 +47,7 @@ class WechatPhoneGateTest {
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(null);
 
-        assertThat(gate.canAccess(7L)).isFalse();
+        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
     }
 
     @Test
@@ -65,7 +56,7 @@ class WechatPhoneGateTest {
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(List.of(mapping));
 
-        assertThat(gate.canAccess(7L)).isFalse();
+        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
     }
 
     @Test
@@ -75,29 +66,11 @@ class WechatPhoneGateTest {
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(List.of(blankPhone, boundPhone));
 
-        assertThat(gate.canAccess(7L)).isTrue();
-    }
-
-    // --- hasBoundWechatPhone tests (new) ---
-
-    @Test
-    void noWechatMappingIsNotEligibleForClaim() {
-        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
-                .thenReturn(List.of());
-
-        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
+        assertThat(gate.hasBoundWechatPhone(7L)).isTrue();
     }
 
     @Test
-    void emptyMappingIsNotEligibleForClaim() {
-        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
-                .thenReturn(List.of());
-
-        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
-    }
-
-    @Test
-    void blankPhoneMappingIsNotEligibleForClaim() {
+    void blankPhoneMappingIsNotBound() {
         WechatUserEntity mapping = mapping(7L, " ");
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(List.of(mapping));
@@ -106,7 +79,7 @@ class WechatPhoneGateTest {
     }
 
     @Test
-    void validPhoneMappingIsEligible() {
+    void validPhoneMappingIsBound() {
         WechatUserEntity mapping = mapping(7L, "13800138000");
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(List.of(mapping));
@@ -117,6 +90,45 @@ class WechatPhoneGateTest {
     @Test
     void nullUserIdHasBoundWechatPhoneReturnsFalse() {
         assertThat(gate.hasBoundWechatPhone(null)).isFalse();
+    }
+
+    /** 门槛依据账号持有的已破壳宠物，不取决于客户端当前选择。 */
+    @Test
+    void unboundWechatAccountWithHatchedPetRequiresBinding() {
+        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of(mapping(7L, " ")));
+        when(petDao.selectCount(org.mockito.ArgumentMatchers.any())).thenReturn(1L);
+
+        assertThat(gate.requiresPhoneBinding(7L)).isTrue();
+    }
+
+    @Test
+    void unboundWechatAccountWithoutHatchedPetCanExperienceIncubation() {
+        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of(mapping(7L, null)));
+        when(petDao.selectCount(org.mockito.ArgumentMatchers.any())).thenReturn(0L);
+
+        assertThat(gate.requiresPhoneBinding(7L)).isFalse();
+    }
+
+    @Test
+    void ordinaryAccountWithoutWechatMappingKeepsExistingAccess() {
+        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+
+        assertThat(gate.requiresPhoneBinding(7L)).isFalse();
+    }
+
+    @Test
+    void boundAccountDoesNotRequireBindingAgain() {
+        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of(mapping(7L, "13800138000")));
+
+        assertThat(gate.requiresPhoneBinding(7L)).isFalse();
+    }
+
+    @Test
+    void anonymousRequestDoesNotUseAccountGate() {
+        assertThat(gate.requiresPhoneBinding(null)).isFalse();
     }
 
     private WechatUserEntity mapping(Long userId, String phone) {

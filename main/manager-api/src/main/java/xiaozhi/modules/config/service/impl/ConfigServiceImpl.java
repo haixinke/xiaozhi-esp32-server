@@ -53,7 +53,6 @@ import xiaozhi.modules.timbre.vo.TimbreDetailsVO;
 import xiaozhi.modules.voiceclone.entity.VoiceCloneEntity;
 import xiaozhi.modules.voiceclone.service.VoiceCloneService;
 import xiaozhi.modules.subscription.service.SubscriptionService;
-import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 @Service
 @RequiredArgsConstructor
@@ -72,7 +71,6 @@ public class ConfigServiceImpl implements ConfigService {
     private final AgentVoicePrintDao agentVoicePrintDao;
     private final CorrectWordFileService correctWordFileService;
     private final SubscriptionService subscriptionService;
-    private final WechatPhoneGate wechatPhoneGate;
 
     @Value("${chat.quota.free-daily-limit:30}")
     private int freeDailyChatLimit;
@@ -132,9 +130,6 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public Map<String, Object> getAgentModels(String macAddress, Map<String, String> selectedModule) {
-        DeviceEntity device = deviceService.getDeviceByMacAddress(macAddress);
-        // 旧连接凭据与临时管理标志均不能绕过真实微信设备的手机号门槛。
-        wechatPhoneGate.requireDeviceAccess(device);
         // 检查是否为管理控制台请求
         String redisKey = RedisKeys.getTmpRegisterMacKey(macAddress);
         Object isAdminRequest = redisUtils.get(redisKey);
@@ -145,6 +140,7 @@ public class ConfigServiceImpl implements ConfigService {
             return getConfig(true);
         }
         // 根据MAC地址查找设备
+        DeviceEntity device = deviceService.getDeviceByMacAddress(macAddress);
         if (device == null) {
             // 如果设备，去redis里看看有没有需要连接的设备
             String cachedCode = deviceService.geCodeByDeviceId(macAddress);

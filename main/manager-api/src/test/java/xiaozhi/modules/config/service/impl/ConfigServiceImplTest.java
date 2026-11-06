@@ -116,7 +116,6 @@ class ConfigServiceImplTest {
                 mock(VoiceCloneService.class),
                 mock(AgentVoicePrintDao.class),
                 mock(CorrectWordFileService.class),
-                mock(SubscriptionService.class),
-                mock(xiaozhi.modules.wechat.service.WechatPhoneGate.class));
+                mock(SubscriptionService.class));
     }
 }

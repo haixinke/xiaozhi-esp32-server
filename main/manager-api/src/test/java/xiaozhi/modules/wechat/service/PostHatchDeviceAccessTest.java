@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/** OTA 和旧 WebSocket 凭据都必须在实际设备归属校验后才可继续。 */
+/** OTA 获取凭据校验手机号，聊天配置保持原有设备和智能体加载行为。 */
 class PostHatchDeviceAccessTest {
     @Mock private WechatUserDao wechatUserDao;
     @Mock private PetDao petDao;
@@ -58,7 +58,7 @@ class PostHatchDeviceAccessTest {
         WechatPhoneGate phoneGate = new WechatPhoneGate(wechatUserDao, petDao);
         otaTarget = new DeviceServiceImpl(null, null, null, redisUtils, null, null, phoneGate);
         configService = new ConfigServiceImpl(null, deviceService, null, agentService, null,
-                redisUtils, null, null, null, null, null, null, null, null, phoneGate);
+                redisUtils, null, null, null, null, null, null, null, null);
     }
 
     @AfterEach
@@ -84,25 +84,25 @@ class PostHatchDeviceAccessTest {
     }
 
     @Test
-    void unboundWechatDeviceCannotFetchPrivateConfigurationWithOldCredentials() {
+    void unboundWechatDeviceKeepsOriginalPrivateConfigurationLookup() {
         when(deviceService.getDeviceByMacAddress("pet-device")).thenReturn(device());
         unboundWechatAccount(1L);
 
         assertThatThrownBy(() -> configService.getAgentModels("pet-device", Map.of()))
                 .isInstanceOfSatisfying(RenException.class,
-                        error -> org.assertj.core.api.Assertions.assertThat(error.getCode()).isEqualTo(10228));
-        verifyNoInteractions(agentService);
+                        error -> org.assertj.core.api.Assertions.assertThat(error.getCode()).isEqualTo(ErrorCode.AGENT_NOT_FOUND));
+        verify(agentService).getAgentById("agent");
     }
 
     @Test
-    void temporaryAdminRegistrationFlagCannotBypassRealWechatDeviceGate() {
-        when(deviceService.getDeviceByMacAddress("pet-device")).thenReturn(device());
+    void temporaryAdminRegistrationKeepsOriginalConfigurationBehavior() {
         when(redisUtils.get(RedisKeys.getTmpRegisterMacKey("pet-device"))).thenReturn("true");
-        unboundWechatAccount(1L);
+        ConfigServiceImpl target = spy(configService);
+        doReturn(Map.of("testConfig", true)).when(target).getConfig(true);
 
-        assertThatThrownBy(() -> configService.getAgentModels("pet-device", Map.of()))
-                .isInstanceOfSatisfying(RenException.class,
-                        error -> org.assertj.core.api.Assertions.assertThat(error.getCode()).isEqualTo(10228));
+        org.assertj.core.api.Assertions.assertThat(target.getAgentModels("pet-device", Map.of()))
+                .isEqualTo(Map.of("testConfig", true));
+        verifyNoInteractions(wechatUserDao, petDao, deviceService);
     }
 
     @Test

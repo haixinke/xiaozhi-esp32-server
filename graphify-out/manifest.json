@@ -1230,8 +1230,8 @@
     "semantic_hash": "46d7e54aedaf27c98698c0e5fd2ba4da"
   },
   "main/xiaozhi-server/config/config_loader.py": {
-    "mtime": 1793882915.5140429,
-    "ast_hash": "2ba36e4fbfdd6cf530606a5e10c3765e",
+    "mtime": 1793929715.5420349,
+    "ast_hash": "2f8d97eb012b6101a19dcaa6be78382e",
     "semantic_hash": ""
   },
   "main/xiaozhi-server/config/logger.py": {
@@ -1240,8 +1240,8 @@
     "semantic_hash": "9b3b04f813cc0566dbf86d7c4b60fa69"
   },
   "main/xiaozhi-server/config/manage_api_client.py": {
-    "mtime": 1793882915.4831872,
-    "ast_hash": "8595bcdeac7ca6bdbcbde69c942f5c0a",
+    "mtime": 1793929715.5467367,
+    "ast_hash": "f03511e34d66cd8c6423716811ec6254",
     "semantic_hash": ""
   },
   "main/xiaozhi-server/config/settings.py": {
@@ -1930,8 +1930,8 @@
     "semantic_hash": "a3d2668003e8bd570ea13bd2cf653d3b"
   },
   "main/manager-api/src/test/java/xiaozhi/modules/config/service/impl/ConfigServiceImplTest.java": {
-    "mtime": 1793883175.3456259,
-    "ast_hash": "fcf0417cbcfa3031deb433805cd6e8e0",
+    "mtime": 1793929715.5569978,
+    "ast_hash": "e95f278a6f3599c59b7e1946be244ed7",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/security/config/ShiroConfigTest.java": {
@@ -3160,8 +3160,8 @@
     "semantic_hash": "7458256149c70deb9f481fab863e7636"
   },
   "main/manager-api/src/main/java/xiaozhi/modules/config/service/impl/ConfigServiceImpl.java": {
-    "mtime": 1793883175.3145204,
-    "ast_hash": "9f44f88d5391fc1179eb2d026d10cf50",
+    "mtime": 1793929715.5521603,
+    "ast_hash": "82032ad0f2b2c29fa5512c44b5704972",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/security/dto/SmsVerificationDTO.java": {
@@ -9750,18 +9750,13 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/wechat/service/PostHatchDeviceAccessTest.java": {
-    "mtime": 1793883639.7754505,
-    "ast_hash": "105372c06f204e89bcc029c18db1606f",
+    "mtime": 1793929715.5572245,
+    "ast_hash": "1e8471163b648ddb370a211e31f00c4c",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/wechat/service/WechatPhoneInterceptorTest.java": {
     "mtime": 1793883024.2344933,
     "ast_hash": "221644d0536bf5f4dffdc59eb5deee1e",
-    "semantic_hash": ""
-  },
-  "main/xiaozhi-server/tests/test_post_hatch_phone_gate.py": {
-    "mtime": 1793882963.175638,
-    "ast_hash": "15671de74f36ae2f62a09d1a816a8796",
     "semantic_hash": ""
   }
 }

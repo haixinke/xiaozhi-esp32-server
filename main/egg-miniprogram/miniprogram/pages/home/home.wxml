@@ -176,7 +176,7 @@
   <view wx:if="{{showPhoneAuthorization}}" class="phone-auth-mask" catchtap="noop" catchtouchmove="noop">
     <view class="phone-auth-dialog" catchtap="noop">
       <text class="phone-auth-title">绑定手机号后继续</text>
-      <text class="phone-auth-copy">绑定手机号，用于后续手机号登录。</text>
+      <text class="phone-auth-copy">用于保障你的蛋宝宝账号安全。</text>
       <button class="primary-button" open-type="getPhoneNumber" loading="{{authorizingPhone}}" disabled="{{authorizingPhone}}" bindgetphonenumber="onAuthorizePhone">授权手机号并继续</button>
       <button class="phone-auth-cancel" bindtap="onPhonePrivacy">查看隐私政策</button>
     </view>

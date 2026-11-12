@@ -52,21 +52,4 @@ public class WechatPhoneGate {
             throw new RenException(ErrorCode.WECHAT_PHONE_REQUIRED);
         }
     }
-
-    public boolean hasBoundWechatPhone(Long userId) {
-        if (userId == null) {
-            return false;
-        }
-
-        List<WechatUserEntity> mappings = wechatUserDao.selectList(
-                new QueryWrapper<WechatUserEntity>()
-                        .select("phone")
-                        .eq("user_id", userId));
-
-        return mappings != null
-                && !mappings.isEmpty()
-                && mappings.stream()
-                        .filter(java.util.Objects::nonNull)
-                        .anyMatch(mapping -> StringUtils.isNotBlank(mapping.getPhone()));
-    }
 }

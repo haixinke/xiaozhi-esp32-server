@@ -35,61 +35,22 @@ class WechatPhoneGateTest {
     }
 
     @Test
-    void rejectsAccountWithoutWechatMapping() {
-        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
-                .thenReturn(List.of());
-
-        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
-    }
-
-    @Test
-    void rejectsNullMappingResult() {
+    void nullMappingResultDoesNotRequireBinding() {
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(null);
 
-        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
+        assertThat(gate.requiresPhoneBinding(7L)).isFalse();
     }
 
     @Test
-    void rejectsWechatAccountWithoutPhone() {
-        WechatUserEntity mapping = mapping(7L, null);
-        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
-                .thenReturn(List.of(mapping));
-
-        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
-    }
-
-    @Test
-    void allowsWechatAccountWhenAnyMappingHasPhone() {
+    void anyBoundMappingReleasesBindingRequirement() {
         WechatUserEntity blankPhone = mapping(7L, " ");
         WechatUserEntity boundPhone = mapping(7L, "13800000000");
         when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
                 .thenReturn(List.of(blankPhone, boundPhone));
 
-        assertThat(gate.hasBoundWechatPhone(7L)).isTrue();
-    }
-
-    @Test
-    void blankPhoneMappingIsNotBound() {
-        WechatUserEntity mapping = mapping(7L, " ");
-        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
-                .thenReturn(List.of(mapping));
-
-        assertThat(gate.hasBoundWechatPhone(7L)).isFalse();
-    }
-
-    @Test
-    void validPhoneMappingIsBound() {
-        WechatUserEntity mapping = mapping(7L, "13800138000");
-        when(wechatUserDao.selectList(org.mockito.ArgumentMatchers.<Wrapper<WechatUserEntity>>any()))
-                .thenReturn(List.of(mapping));
-
-        assertThat(gate.hasBoundWechatPhone(7L)).isTrue();
-    }
-
-    @Test
-    void nullUserIdHasBoundWechatPhoneReturnsFalse() {
-        assertThat(gate.hasBoundWechatPhone(null)).isFalse();
+        // 已绑定任一微信映射的账号不再要求绑定，破壳宠物也不参与判定。
+        assertThat(gate.requiresPhoneBinding(7L)).isFalse();
     }
 
     /** 门槛依据账号持有的已破壳宠物，不取决于客户端当前选择。 */

@@ -89,7 +89,7 @@ async function run() {
   resetScenario();
   cachedSession = { userId: 42, hasPhone: false };
   makePage().onLoad();
-  assert.strictEqual(relaunchedTo, '/pages/home/home', 'unbound users return home for phone authorization');
+  assert.strictEqual(relaunchedTo, null, 'unbound authenticated users can adopt before phone binding');
 
   resetScenario();
   makePage().onLoad();

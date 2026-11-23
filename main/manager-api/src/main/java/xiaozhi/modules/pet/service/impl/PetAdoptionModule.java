@@ -9,7 +9,6 @@ import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.modules.pet.dao.PetDao;
 import xiaozhi.modules.pet.entity.PetEntity;
-import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 import java.util.Date;
 import java.util.List;
@@ -20,7 +19,6 @@ import java.util.List;
 public class PetAdoptionModule {
     private static final long HATCH_DURATION_MS = 7L * 24 * 60 * 60 * 1000;
     private final PetDao petDao;
-    private final WechatPhoneGate phoneGate;
 
     /** NFC 领养结果；替换标记属于本次领养事实，不需要调用者重新扫描宠物列表。 */
     public record NfcEgg(PetEntity pet, boolean replacedInvitePet) { }
@@ -53,13 +51,10 @@ public class PetAdoptionModule {
         return insertEgg(userId, prototype, "NFC");
     }
 
-    /** 邀请码领养限一只；门禁与名额检查先于创建，所有渠道共用用户锁。 */
+    /** 邀请码领养限一只；手机号在破壳后要求，所有渠道继续共用用户锁。 */
     @Transactional(rollbackFor = Exception.class)
     public PetEntity createInviteEgg(Long userId, String prototype) {
         validate(userId, prototype);
-        if (!phoneGate.canAccess(userId)) {
-            throw new RenException(ErrorCode.FORBIDDEN);
-        }
         lockUser(userId);
         if (!activeForUpdate(userId).isEmpty()) {
             throw new RenException(ErrorCode.PET_ALREADY_EXISTS);

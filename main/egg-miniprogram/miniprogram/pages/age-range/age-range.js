@@ -1,10 +1,11 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const ageRangeApi = require('../../utils/age-range-api');
 const petStore = require('../../utils/pet-store');
 const { FALLBACK_AGE_RANGES } = require('../../config/age-ranges');
 
 const SAVE_SUCCESS_RETURN_DELAY_MS = 900;
 
-Page({
+Page(withPhoneGate({
   data: {
     options: FALLBACK_AGE_RANGES,
     selected: '',
@@ -82,4 +83,4 @@ Page({
     clearTimeout(this.returnTimer);
     this.returnTimer = null;
   }
-});
+}));

@@ -271,5 +271,6 @@ const definition = {
   }
 };
 
-if (typeof Page === 'function') Page(definition);
+// 一起画属于破壳后业务，直接打开子包同样要先完成手机号绑定。
+if (typeof Page === 'function') Page(require('../../../utils/phone-gate').withPhoneGate(definition));
 module.exports = definition;

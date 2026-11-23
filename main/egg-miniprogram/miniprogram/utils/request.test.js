@@ -5,14 +5,17 @@ let token = 'old-token';
 let requestCalls = [];
 let loginCalls = 0;
 let responses = [];
+let phoneBindingRequests = 0;
 global.wx = { request(options) { requestCalls.push(options); options.success(responses.shift()); } };
 global.getApp = () => ({ silentLogin: async () => { loginCalls += 1; token = 'new-token'; } });
 
 const originalLoad = Module._load;
 Module._load = function (request) {
+  if (request === './phone-gate') return { requirePhoneBinding: () => { phoneBindingRequests += 1; } };
   if (request === '../config/api') return { API_BASE_URL: 'https://api.example/xiaozhi' };
   if (request === './auth') return {
     getSession: () => token ? { token } : null,
+    getPhoneBindingContext: () => ({ userId: 'fixture-user', generation: 0 }),
     clearSession: () => { token = ''; }
   };
   return originalLoad.apply(this, arguments);
@@ -34,6 +37,13 @@ const api = require('./request');
   assert.strictEqual(requestCalls.length, anonymousRequestCount + 1);
   assert.strictEqual(loginCalls, anonymousLoginCount);
   token = 'old-token';
+
+  responses = [{ statusCode: 200, data: { code: 10228, msg: '请绑定手机号' } }];
+  const phoneLoginCount = loginCalls;
+  await assert.rejects(api.get('/star/balance'), (error) => error.code === 10228);
+  assert.strictEqual(phoneBindingRequests, 1, 'server phone requirement enters binding flow');
+  assert.strictEqual(loginCalls, phoneLoginCount, 'phone binding errors never trigger silent relogin');
+  assert.strictEqual(token, 'old-token', 'phone binding errors preserve the authenticated session');
 
   responses = [
     { statusCode: 401, data: { code: 10021, msg: 'expired' } },

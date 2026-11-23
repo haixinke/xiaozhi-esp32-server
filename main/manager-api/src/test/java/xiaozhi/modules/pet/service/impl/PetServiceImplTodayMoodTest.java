@@ -87,7 +87,7 @@ class PetServiceImplTodayMoodTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties, null, null,
-                companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, null));
+                companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao));
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 

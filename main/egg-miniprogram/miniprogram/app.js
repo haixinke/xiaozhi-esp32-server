@@ -36,6 +36,7 @@ App({
     hasPhone: null,
     agentId: null,
     welcomeCompleted: false,
+    phoneBindingRequired: false,
     launchPath: 'pages/home/home'
   },
 
@@ -46,10 +47,6 @@ App({
       ? options.path
       : 'pages/home/home';
     this.globalData.authReady = this.ensureLogin()
-      .then((session) => {
-        this.redirectUnboundToWelcome(this.globalData.launchPath);
-        return session;
-      })
       .catch(() => {
         this.applySession(null);
         return null;
@@ -67,28 +64,14 @@ App({
     if (session && auth.isExpiringSoon()) {
       this.silentLogin().catch(() => null);
     }
-    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
-    const currentRoute = pages.length ? pages[pages.length - 1].route : this.globalData.launchPath;
-    this.redirectUnboundToWelcome(currentRoute);
-  },
-
-  redirectUnboundToWelcome(route) {
-    if (route === 'pages/welcome/welcome' || route === '/pages/welcome/welcome') {
-      this._welcomeRedirecting = false;
-      return;
-    }
-    if (this.globalData.welcomeCompleted === true) return;
-    if (this._welcomeRedirecting === true) return;
-    if (!auth.getSession()) return;
-    if (this.globalData.hasPhone !== true) {
-      this._welcomeRedirecting = true;
-      const redirect = () => wx.reLaunch({ url: '/pages/welcome/welcome' });
-      if (typeof wx.nextTick === 'function') wx.nextTick(redirect);
-      else setTimeout(redirect, 0);
-    }
+    // 手机号门槛由破壳状态决定，启动与回前台不再仅凭未绑定就送回欢迎页。
   },
 
   applySession(session) {
+    // 门槛只属于发出该请求的账号，新账号不能继承旧账号尚未完成的绑定状态。
+    if (!session || String(this.globalData.userId) !== String(session.userId)) {
+      this.globalData.phoneBindingRequired = false;
+    }
     AUTH_FIELDS.forEach((field) => {
       this.globalData[field] = session ? session[field] : null;
     });
@@ -120,6 +103,7 @@ App({
 
   clearLoginState() {
     auth.clearSession();
+    this.globalData.phoneBindingRequired = false;
     this.applySession(null);
   }
 });

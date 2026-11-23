@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const petStore = require('../../utils/pet-store');
 const petApi = require('../../utils/pet-api');
 const ota = require('../../utils/ota');
@@ -60,7 +61,7 @@ function reducedMotionEnabled() {
   }
 }
 
-Page({
+Page(withPhoneGate({
   data: {
     pet: null,
     title: '和蛋宝宝说说话',
@@ -886,4 +887,4 @@ Page({
   },
 
   noop() {},
-});
+}));

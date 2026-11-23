@@ -30,6 +30,7 @@ const auth = { getSession: () => ({ token: 'T' }) };
 const api = { API_BASE_URL: 'http://test' };
 
 Module._load = function (requestName, parent, isMain) {
+  if (requestName === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   if (parent && parent.filename === profilePath) {
     if (requestName === '../../utils/pet-store') return petStore;
     if (requestName === '../../utils/request') return request;

@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const feedbackApi = require('../../utils/feedback-api');
 const { FALLBACK_FEEDBACK_TYPES } = require('../../config/feedback-types');
 
@@ -9,7 +10,7 @@ function buildTypeOptions(types) {
   return [{ value: '', label: '请选择诉求类型' }].concat(types);
 }
 
-Page({
+Page(withPhoneGate({
   data: {
     typeOptions: buildTypeOptions(FALLBACK_FEEDBACK_TYPES),
     typeIndex: 0,
@@ -146,4 +147,4 @@ Page({
       });
     });
   }
-});
+}));

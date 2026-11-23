@@ -36,7 +36,6 @@ import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.service.NfcAdoptionResult;
 import xiaozhi.modules.pet.vo.PetVO;
-import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 @Service
 public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
@@ -45,7 +44,6 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
     private static final Pattern CLAIM_REF_PATTERN = Pattern.compile("[A-Za-z0-9_-]{22}");
 
     private final PdcNfcProperties properties;
-    private final WechatPhoneGate wechatPhoneGate;
     private final ClaimRefProtection claimRefProtection;
     private final PdcNfcAssetDao assetDao;
     private final PdcNfcBatchDao batchDao;
@@ -57,7 +55,6 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
 
     public PdcNfcClaimServiceImpl(
             PdcNfcProperties properties,
-            WechatPhoneGate wechatPhoneGate,
             ClaimRefProtection claimRefProtection,
             PdcNfcAssetDao assetDao,
             PdcNfcBatchDao batchDao,
@@ -67,7 +64,6 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             PdcNfcClaimRecordDao claimRecordDao,
             PdcNfcManualWriteService manualWriteService) {
         this.properties = properties;
-        this.wechatPhoneGate = wechatPhoneGate;
         this.claimRefProtection = claimRefProtection;
         this.assetDao = assetDao;
         this.batchDao = batchDao;
@@ -95,7 +91,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
                         .last("LIMIT 1"));
 
         // ADR 0003 手动写卡模式：触碰自验证 + 锁后复验。
-        // 只要资产被查到了就触发，必须在手机号门禁、功能开关、限流之前——
+        // 只要资产被查到了就触发，必须在功能开关、限流之前——
         // 复验证据价值在"卡可读"本身，未授权用户的触碰同样有效；
         // 且写卡验证阶段 release 通常未就绪，功能开关不得挡住验证链路。
         // 无副作用的幂等推进，不核销领取资格，不影响下方状态分支的返回。
@@ -103,8 +99,7 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
             manualWriteService.touchVerify(assets.get(0));
         }
 
-        // 3. 手机号门禁不在 preview 校验：未授权用户也可预览产品信息（先看货再授权），
-        // claimRef 只有物理碰卡才能拿到，预览不泄露额外信息；领取确认仍在 confirm 校验。
+        // 3. 手机号在破壳后要求；预览与领取确认均允许未绑定账号体验。
 
         // 4. Feature gates: enabled → claimEnabled → releaseReady
         if (!properties.isEnabled()) {
@@ -205,8 +200,8 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PdcNfcClaimResultVO confirm(Long userId, String claimRef, UUID requestId) {
-        // 1. Auth: check phone binding + feature gates
-        requireClaimEnabledAndPhone(userId);
+        // 1. 领取只要求已登录与功能开关；手机号由破壳后的统一门槛校验。
+        requireClaimEnabled(userId);
 
         // 2. Validate claimRef format
         if (claimRef == null || !CLAIM_REF_PATTERN.matcher(claimRef).matches()) {
@@ -279,9 +274,9 @@ public class PdcNfcClaimServiceImpl implements PdcNfcClaimService {
         return PdcNfcClaimResultVO.claimed(pet, replacedInvitePet);
     }
 
-    private void requireClaimEnabledAndPhone(Long userId) {
-        if (!wechatPhoneGate.hasBoundWechatPhone(userId)) {
-            throw new RenException(ErrorCode.PDC_NFC_ASSET_UNAVAILABLE);
+    private void requireClaimEnabled(Long userId) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
         }
         if (!properties.isEnabled()) {
             throw new RenException(ErrorCode.PDC_NFC_FEATURE_DISABLED);

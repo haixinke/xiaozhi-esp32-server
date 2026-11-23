@@ -1,6 +1,7 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const DEREGISTER_KEY = 'eggbaby_deregister_request_v1';
 
-Page({
+Page(withPhoneGate({
   data: { pending: false, endDate: '' },
 
   onShow() {
@@ -47,4 +48,4 @@ Page({
 
   onBackAccount() { wx.navigateBack(); },
   onCancel() { wx.navigateBack(); }
-});
+}));

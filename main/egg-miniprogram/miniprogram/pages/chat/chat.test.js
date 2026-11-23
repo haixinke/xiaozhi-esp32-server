@@ -4,6 +4,7 @@ const Module = require('module');
 // chat.js 依赖的模块全部 mock 掉，本测试只关注时间分隔条相关纯逻辑
 const originalLoad = Module._load;
 Module._load = function (request) {
+  if (request === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   if (request === '../../utils/pet-store') return { getPet: () => null, saveMessage: () => {}, getDailyStatus: () => null };
   if (request === '../../utils/pet-api') return {};
   if (request === '../../utils/ota') return {};

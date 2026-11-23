@@ -374,6 +374,7 @@ public interface ErrorCode {
     int CITY_TOO_LONG = 10221; // 城市最多32个字符
     int IMAGE_FILE_TYPE_ERROR = 10222; // 图片文件类型错误
     int INVALID_AGE_RANGE = 10223; // 年龄区间错误
+    int WECHAT_PHONE_REQUIRED = 10228; // 破壳后需绑定手机号才能继续
 
     // AI生图相关错误码
     int IMAGE_GEN_QUOTA_EXCEEDED = 10224; // 今日生成次数已用完，明天再来吧

@@ -1,7 +1,8 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const ageRangeApi = require('../../utils/age-range-api');
 const { FALLBACK_AGE_RANGES } = require('../../config/age-ranges');
 
-Page({
+Page(withPhoneGate({
   data: {
     ageRangeLabel: '',
     ageRangeLoading: true
@@ -28,4 +29,4 @@ Page({
   onNavFeedback() { wx.navigateTo({ url: '/pages/feedback/feedback' }); },
   onNavTerms() { wx.navigateTo({ url: '/pages/terms/terms' }); },
   onNavPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); }
-});
+}));

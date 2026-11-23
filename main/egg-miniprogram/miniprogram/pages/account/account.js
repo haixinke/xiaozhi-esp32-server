@@ -1,6 +1,7 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const petStore = require('../../utils/pet-store');
 
-Page({
+Page(withPhoneGate({
   onLogout() {
     wx.showModal({
       title: '退出登录',
@@ -16,4 +17,4 @@ Page({
   },
 
   onDeregister() { wx.navigateTo({ url: '/pages/deregister/deregister' }); }
-});
+}));

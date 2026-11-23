@@ -93,9 +93,8 @@ class PetServiceImplAdoptTest {
         petService = new PetServiceImpl(petDao, deviceDao, llmService, chatHistoryDao,
                 memoryDao, userProfileDao, inviteService, agentService, null, eventPublisher,
                 avatarProperties, collectionCardProperties, petCollectionCardService, petSceneProperties,
-                wechatPhoneGate, null, companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao, wechatPhoneGate));
+                wechatPhoneGate, null, companionDaysService, new xiaozhi.modules.pet.service.impl.PetAdoptionModule(petDao));
         setQuickHatchCode(DEMO_QUICK_HATCH_CODE);
-        when(wechatPhoneGate.canAccess(any())).thenReturn(true);
         when(petCollectionCardService.listByPetId(anyString())).thenReturn(java.util.List.of());
     }
 
@@ -138,18 +137,17 @@ class PetServiceImplAdoptTest {
     }
 
     @Test
-    @DisplayName("未绑定手机号 - 拒绝领取且不访问宠物或邀请码数据")
-    void adopt_phoneNotBound_throwsForbiddenBeforeDataAccess() {
+    @DisplayName("未绑定手机号 - 可以领取并进入孵化体验")
+    void adopt_phoneNotBound_createsEggAndConsumesInvite() {
         Long userId = 1000L;
         PetAdoptDTO dto = new PetAdoptDTO();
         dto.setInviteCode("EGG-ABCD-1");
-        when(wechatPhoneGate.canAccess(userId)).thenReturn(false);
 
-        assertThatThrownBy(() -> petService.adopt(userId, dto))
-                .isInstanceOf(RenException.class)
-                .satisfies(exception -> assertThat(((RenException) exception).getCode())
-                        .isEqualTo(ErrorCode.FORBIDDEN));
-        verifyNoInteractions(petDao, inviteService);
+        PetVO result = petService.adopt(userId, dto);
+        assertThat(result.getHatchStatus()).isEqualTo("EGG");
+        verify(petDao).insert(any(PetEntity.class));
+        verify(inviteService).consume("EGG-ABCD-1", userId);
+        verifyNoInteractions(wechatPhoneGate);
     }
 
     @Test

@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const petStore = require('../../utils/pet-store');
 const petIcons = require('../../utils/pet-icons');
 const { createListenSession, FEEDBACK_PENDING_TEXT } = require('../../utils/listen-session');
@@ -11,7 +12,7 @@ const SOUND_DELAY_MS = 520;
 // 震动延迟到星星落定节奏点
 const HAPTIC_DELAY_MS = 840;
 
-Page({
+Page(withPhoneGate({
   data: {
     view: 'loading', // loading | question | feedback | end | blocked
     navTitle: '听你说',
@@ -189,4 +190,4 @@ Page({
   onUnload() {
     this.disposeSession();
   }
-});
+}));

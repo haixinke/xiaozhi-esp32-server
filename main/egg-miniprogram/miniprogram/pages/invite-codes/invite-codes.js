@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const inviteApi = require('../../utils/invite-api');
 
 const MESSAGES = {
@@ -5,7 +6,7 @@ const MESSAGES = {
   empty: '暂无可用激活码'
 };
 
-Page({
+Page(withPhoneGate({
   data: {
     inviteCode: null,
     exhausted: false,
@@ -47,4 +48,4 @@ Page({
     if (loading || !inviteCode || exhausted) return;
     wx.setClipboardData({ data: inviteCode.code });
   }
-});
+}));

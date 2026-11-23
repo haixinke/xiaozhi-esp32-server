@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 // AI写真页：拍照/选图 → 上传 → 异步生成（轮询任务状态）→ 结果展示/保存/分享。
 // 后端链路为 照片审核(PENDING) → 生成(RUNNING) → 结果审核(REVIEWING) → SUCCEEDED/FAILED，
 // 期间任何中间态都展示"生成中"与审核提示。
@@ -10,7 +11,7 @@ const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 3 * 60 * 1000;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-Page({
+Page(withPhoneGate({
   data: {
     phase: 'pick', // pick 选图 | working 生成中 | result 结果 | failed 失败
     photoPreview: '',
@@ -207,4 +208,4 @@ Page({
       // 单次轮询失败（网络抖动）不打断，等待下一次
     }
   }
-});
+}));

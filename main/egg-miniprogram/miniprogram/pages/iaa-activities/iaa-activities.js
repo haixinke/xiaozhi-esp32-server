@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const gameApi = require('../../utils/game-api');
 const starApi = require('../../utils/star-api');
 const petStore = require('../../utils/pet-store');
@@ -14,7 +15,7 @@ function gameRow(game) {
   };
 }
 
-Page({
+Page(withPhoneGate({
   data: {
     starBalance: '—',
     starBalanceIcon: '/assets/ui/3d-actions/ui_activity_star_balance_80_v01.png',
@@ -89,4 +90,4 @@ Page({
       fail: () => wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' })
     });
   }
-});
+}));

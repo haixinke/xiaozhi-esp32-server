@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 const petStore = require('../../utils/pet-store');
 const request = require('../../utils/request');
 const auth = require('../../utils/auth');
@@ -45,7 +46,7 @@ function formatDisplay(profile) {
   };
 }
 
-Page({
+Page(withPhoneGate({
   data: {
     nickname: '蛋友',
     userId: '',
@@ -200,4 +201,4 @@ Page({
   onMbtiChange(e) {
     this.saveProfile({ mbti: MBTI_LIST[e.detail.value] });
   }
-});
+}));

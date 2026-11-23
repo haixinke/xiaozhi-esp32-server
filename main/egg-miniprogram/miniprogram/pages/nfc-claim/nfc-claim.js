@@ -1,15 +1,13 @@
 const auth = require('../../utils/auth');
-const wechatApi = require('../../utils/wechat-api');
 const nfcClaimApi = require('../../utils/nfc-claim-api');
 const { getPendingNfcClaimIntent, clearPendingNfcClaimIntent } = require('../../utils/nfc-claim-intent');
 const petStore = require('../../utils/pet-store');
 
-// States: BOOTSTRAPPING, NEED_PHONE, LOADING_PREVIEW, READY, SUBMITTING,
+// States: BOOTSTRAPPING, LOADING_PREVIEW, READY, SUBMITTING,
 //         SUCCESS, CLAIMED_BY_OTHER, ALREADY_OWNED, NOT_ACTIVATED, UNAVAILABLE, NETWORK_ERROR
 // 注：CLAIMED_BY_SELF 不再是页面态——蛋已归本用户时跳过中间页，直接回首页
 const STATES = {
   BOOTSTRAPPING: 'BOOTSTRAPPING',
-  NEED_PHONE: 'NEED_PHONE',
   LOADING_PREVIEW: 'LOADING_PREVIEW',
   READY: 'READY',
   SUBMITTING: 'SUBMITTING',
@@ -58,9 +56,7 @@ Page({
     claimStatus: '',
     statusLabel: '',
     pet: null,
-    errorMessage: '',
-    authorizingPhone: false,
-    hasPhoneBound: false
+    errorMessage: ''
   },
 
   _requestId: null,
@@ -80,7 +76,6 @@ Page({
     if (!session || auth.isExpired()) {
       getApp().ensureLogin().then((s) => {
         if (s && s.userId) {
-          this.setData({ hasPhoneBound: s.hasPhone === true });
           this.loadPreview();
         } else {
           this.setData({ state: STATES.UNAVAILABLE, errorMessage: '登录失败，请稍后重试。' });
@@ -90,19 +85,16 @@ Page({
       });
       return;
     }
-    this.setData({ hasPhoneBound: session.hasPhone === true });
     this.loadPreview();
   },
 
   async loadPreview() {
     this.setData({ state: STATES.LOADING_PREVIEW, errorMessage: '' });
     try {
-      // preview 不受手机号门禁限制（ADR 0003）：触碰即触发后端触碰自验证/锁后复验，
-      // 未授权用户也能看到预览；授权只在真正领取时才需要
+      // 触碰即触发后端触碰自验证/锁后复验；手机号绑定统一延后到破壳成功之后。
       const result = await nfcClaimApi.preview(this.data.claimRef);
       this.applyPreview(result);
     } catch (error) {
-      // preview 失败不阻塞授权入口：WXML 在 NETWORK_ERROR 态仍按 hasPhoneBound 渲染授权按钮
       this.setData({
         state: STATES.NETWORK_ERROR,
         errorMessage: (error && error.userMessage) || '暂时无法连接服务，请稍后重试'
@@ -119,8 +111,8 @@ Page({
       statusLabel: STATUS_LABELS[status] || ''
     };
     if (status === 'CLAIMABLE') {
-      // 可领取但未授权手机号：先展示预览 + 授权按钮（NEED_PHONE），授权后重取 preview 转 READY
-      this.setData({ ...data, state: this.data.hasPhoneBound ? STATES.READY : STATES.NEED_PHONE });
+      // 领取与孵化先体验，是否可领取仅由资产及领养资格决定。
+      this.setData({ ...data, state: STATES.READY });
     } else if (status === 'CLAIMED_BY_SELF') {
       // 蛋已归本用户：不停留中间页，直接回首页
       this.goHomeWithPet(result.pet);
@@ -135,32 +127,6 @@ Page({
       this.setData({ ...data, state: STATES.NOT_ACTIVATED });
     } else {
       this.setData({ ...data, state: STATES.UNAVAILABLE, statusLabel: STATUS_LABELS.UNAVAILABLE });
-    }
-  },
-
-  async onAuthorizePhone(event) {
-    const phoneCode = event && event.detail && event.detail.code;
-    if (!phoneCode) {
-      wx.showToast({ title: '需要授权手机号后才能领取蛋宝宝', icon: 'none' });
-      return;
-    }
-    if (this.data.authorizingPhone) return;
-    this.setData({ authorizingPhone: true });
-    try {
-      const session = await getApp().ensureLogin();
-      if (!session || !session.userId) throw new Error('invalid login session');
-      await wechatApi.bindPhone(phoneCode);
-      const boundSession = auth.markPhoneBound();
-      if (!boundSession) throw new Error('invalid login session');
-      getApp().applySession(boundSession);
-      // 授权成功后重取 preview（ADR 0003 Q5）：资产状态可能已变，且此刻转 READY
-      this.setData({ hasPhoneBound: true });
-      this.loadPreview();
-    } catch (error) {
-      wx.showToast({ title: error.userMessage || '暂时无法连接服务，请稍后重试', icon: 'none' });
-      this.setData({ state: STATES.NEED_PHONE });
-    } finally {
-      this.setData({ authorizingPhone: false });
     }
   },
 

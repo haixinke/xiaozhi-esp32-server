@@ -110,6 +110,7 @@ const transport = {
   }
 };
 Module._load = function (request, parent, isMain) {
+  if (request === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   // 下载回调独立于答题传输，验证隐藏及销毁后不会回写图片。
   if (request === '../../utils/pet-icons') return {
     loadPetIcon(prototype, onDone) {

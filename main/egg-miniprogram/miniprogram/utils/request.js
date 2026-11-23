@@ -23,6 +23,7 @@ function createError(type, statusCode, code, serverMessage) {
 function performRequest(options, retried401) {
   const { url, method = 'GET', data, header = {}, anonymous = false } = options;
   const session = auth.getSession();
+  const phoneBindingContext = auth.getPhoneBindingContext();
 
   if (!anonymous && (!session || !session.token)) {
     return Promise.reject(createError('unauthorized', 401));
@@ -67,6 +68,8 @@ function performRequest(options, retried401) {
           return;
         }
         if (envelope.code !== 0) {
+          // 绑定门槛不是登录失效：保留会话并恢复首页绑定流程，避免 401 重登循环。
+          if (envelope.code === 10228) require('./phone-gate').requirePhoneBinding(phoneBindingContext);
           reject(createError('business', statusCode, envelope.code, envelope.msg));
           return;
         }

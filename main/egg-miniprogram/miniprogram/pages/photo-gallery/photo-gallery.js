@@ -1,3 +1,4 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 // AI写真集：按天倒序的时间轴（含年份里程碑）+ 卡册翻页 + 全屏查看器（长按保存）。
 // 分页单位是天（一页 10 天），只含成功写真；无写真时展示空状态引导制作。
 const { getImageGenGallery, GALLERY_DIRTY_KEY } = require('../../utils/image-gen-api');
@@ -13,7 +14,7 @@ const FLY_OUT_DISTANCE = 500;
 // 与 WXSS 过渡时长一致：滑出/回弹动画结束后再重排卡册
 const DECK_ANIM_MS = 300;
 
-Page({
+Page(withPhoneGate({
   data: {
     loaded: false, // 首屏加载完成（区分加载中与空状态）
     timelineItems: [], // 含年份里程碑的渲染项
@@ -199,7 +200,7 @@ Page({
   },
 
   noop() {}
-});
+}));
 
 /** 今天（设备本地时区）的 yyyy-MM-dd */
 function formatToday() {

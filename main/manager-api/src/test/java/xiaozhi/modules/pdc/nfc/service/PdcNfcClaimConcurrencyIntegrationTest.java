@@ -39,7 +39,6 @@ import xiaozhi.modules.pdc.nfc.vo.PdcNfcClaimResultVO;
 import xiaozhi.modules.pet.service.PetService;
 import xiaozhi.modules.pet.service.NfcAdoptionResult;
 import xiaozhi.modules.pet.vo.PetVO;
-import xiaozhi.modules.wechat.service.WechatPhoneGate;
 
 @ExtendWith(MockitoExtension.class)
 class PdcNfcClaimConcurrencyIntegrationTest {
@@ -47,7 +46,6 @@ class PdcNfcClaimConcurrencyIntegrationTest {
     private static final String VALID_CLAIM_REF = "abcdefghij1234567890_-";
 
     @Mock private PdcNfcProperties properties;
-    @Mock private WechatPhoneGate wechatPhoneGate;
     @Mock private ClaimRefProtection claimRefProtection;
     @Mock private PdcNfcAssetDao assetDao;
     @Mock private PdcNfcBatchDao batchDao;
@@ -68,7 +66,7 @@ class PdcNfcClaimConcurrencyIntegrationTest {
     @BeforeEach
     void setUp() {
         claimService = new PdcNfcClaimServiceImpl(
-                properties, wechatPhoneGate, claimRefProtection,
+                properties, claimRefProtection,
                 assetDao, batchDao, productTypeDao, rateLimiter, petService, claimRecordDao,
                 manualWriteService);
     }
@@ -83,7 +81,6 @@ class PdcNfcClaimConcurrencyIntegrationTest {
         lenient().when(properties.isEnabled()).thenReturn(true);
         lenient().when(properties.isClaimEnabled()).thenReturn(true);
         lenient().when(properties.isReleaseReady()).thenReturn(true);
-        lenient().when(wechatPhoneGate.hasBoundWechatPhone(any())).thenReturn(true);
         lenient().when(claimRefProtection.lookupHashes(VALID_CLAIM_REF)).thenReturn(List.of("hash1"));
         lenient().when(claimRecordDao.findByUserAndRequest(any(), anyString())).thenReturn(Optional.empty());
 

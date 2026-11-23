@@ -149,20 +149,20 @@ async function run() {
   assert.strictEqual(captureCalls[0], launchOptions, 'onLaunch must pass launch options to capture');
   assert.strictEqual(hideTabBarCalls, 0,
     'custom floating tab bar replaced the native tab bar, so launch never hides it');
-  assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
-    'unbound session should launch into welcome before claiming a pet');
-  assert.strictEqual(relaunchCalls, 1,
-    'launch should schedule only one welcome redirect');
+  assert.strictEqual(relaunchedTo, null,
+    'unbound sessions can launch directly into the pre-hatch experience');
+  assert.strictEqual(relaunchCalls, 0,
+    'launch must not make the phone number a prerequisite');
 
   captureCalls = [];
   const showOptions = { path: 'pages/nfc-claim/nfc-claim', query: { v: '1', ref: 'ABCDEFGHIJ1234567890_-' } };
   appConfig.onShow.call(appConfig, showOptions);
   assert.strictEqual(captureCalls.length, 1, 'onShow must capture NFC intent');
   assert.strictEqual(captureCalls[0], showOptions, 'onShow must pass show options to capture');
-  assert.strictEqual(relaunchedTo, '/pages/welcome/welcome',
-    'in-flight launch redirect remains the welcome destination');
-  assert.strictEqual(relaunchCalls, 1,
-    'onShow should not duplicate an in-flight welcome redirect');
+  assert.strictEqual(relaunchedTo, null,
+    'resuming an NFC claim must not divert unbound users to welcome');
+  assert.strictEqual(relaunchCalls, 0,
+    'foreground restoration never asks for a phone number before hatching');
 
   relaunchedTo = null;
   currentRoute = 'pages/welcome/welcome';
@@ -170,8 +170,6 @@ async function run() {
   appConfig.onShow.call(appConfig);
   assert.strictEqual(relaunchedTo, null,
     'welcome route should not redirect itself');
-  assert.strictEqual(appConfig._welcomeRedirecting, false,
-    'welcome route should release the redirect lock');
 
   appConfig.globalData.welcomeCompleted = true;
   currentRoute = 'pages/home/home';
@@ -233,6 +231,11 @@ async function run() {
   ['token', 'userId', 'openid', 'isNewUser', 'hasPhone', 'agentId'].forEach((key) => {
     assert.strictEqual(appConfig.globalData[key], null, `${key} should be cleared`);
   });
+
+  appConfig.applySession.call(appConfig, restored);
+  appConfig.globalData.phoneBindingRequired = true;
+  appConfig.applySession.call(appConfig, { ...restored, userId: 88 });
+  assert.strictEqual(appConfig.globalData.phoneBindingRequired, false, 'switching accounts does not inherit the previous account gate');
 
   console.log('app.test.js: ALL PASS');
 }

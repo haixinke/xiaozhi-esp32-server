@@ -22,6 +22,7 @@ const inviteApi = {
 };
 
 Module._load = function (requestName, parent, isMain) {
+  if (requestName === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   if (parent && parent.filename === inviteCodesPath && requestName === '../../utils/invite-api') {
     return inviteApi;
   }

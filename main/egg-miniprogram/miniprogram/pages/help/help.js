@@ -1,7 +1,8 @@
+const { withPhoneGate } = require('../../utils/phone-gate');
 // 客服邮箱：页面唯一的联系方式入口，首屏与底部支持条共用
 const SUPPORT_EMAIL = 'hello@eggbabe.com';
 
-Page({
+Page(withPhoneGate({
   data: {
     supportEmail: SUPPORT_EMAIL,
     cats: { device: true, account: true, chat: true, other: true },
@@ -119,4 +120,4 @@ Page({
   onFeedback() {
     wx.navigateTo({ url: '/pages/feedback/feedback' });
   }
-});
+}));

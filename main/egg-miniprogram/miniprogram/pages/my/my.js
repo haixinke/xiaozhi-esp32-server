@@ -79,6 +79,7 @@ Page(withPhoneGate({
   onTapUserCard() { wx.navigateTo({ url: '/pages/profile/profile' }); },
   onNavAlbum() { wx.navigateTo({ url: '/pages/album/album' }); },
   onNavCodes() { wx.navigateTo({ url: '/pages/invite-codes/invite-codes' }); },
+  onNavBottleFlip() { wx.navigateTo({ url: '/pages/bottle-flip/bottle-flip' }); },
   onNavSettings() { wx.navigateTo({ url: '/pages/settings/settings' }); },
   onNavChatSettings() { wx.navigateTo({ url: '/pages/chat-settings/chat-settings' }); },
   onNavAccount() { wx.navigateTo({ url: '/pages/account/account' }); },

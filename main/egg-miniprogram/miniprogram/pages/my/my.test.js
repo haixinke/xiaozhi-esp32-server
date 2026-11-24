@@ -58,9 +58,15 @@ function makePage() {
   assert.ok(pageConfig, 'my page should be registered');
 
   const menuMarkup = fs.readFileSync(path.join(__dirname, 'my.wxml'), 'utf8');
+  makePage().onNavBottleFlip();
+  const gameRoute = navigations.at(-1).url;
+  assert.strictEqual(gameRoute, '/pages/bottle-flip/bottle-flip');
+  const appConfig = require('../../app.json');
+  assert.ok(appConfig.pages.includes(gameRoute.slice(1)), 'the game route must be registered');
+
   assert.match(menuMarkup,
-    /<list-row label="帮助中心" show-border="{{showBleDebug}}" bind:rowtap="onNavHelp"><\/list-row>\s*<list-row wx:if="{{showBleDebug}}" label="蓝牙联调" show-border="{{false}}" bind:rowtap="onNavBleDebug">/,
-    'the Bluetooth debug row should immediately follow Help and only appear when enabled');
+    /<list-row label="帮助中心" bind:rowtap="onNavHelp"><\/list-row>\s*<list-row wx:if="{{showBleDebug}}" label="蓝牙联调" bind:rowtap="onNavBleDebug"><\/list-row>\s*<list-row label="瓶空一翻" show-border="{{false}}" bind:rowtap="onNavBottleFlip"><\/list-row>\s*<\/view>/,
+    'the game should follow the optional Bluetooth debug row and end the menu');
 
   for (envVersion of ['release', 'develop', 'trial']) {
     const menuPage = makePage();

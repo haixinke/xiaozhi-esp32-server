@@ -1,0 +1,1 @@
+<web-view wx:if="{{gameUrl}}" src="{{gameUrl}}"></web-view>

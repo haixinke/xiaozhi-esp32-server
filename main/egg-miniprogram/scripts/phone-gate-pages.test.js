@@ -123,6 +123,13 @@ function page() {
   assert.equal(gameStarts, 2, 'unload permanently cancels deferred initialization');
   assert.equal(drawingInitializations, 2, 'unloaded pages never allocate a renderer after the gate returns');
 
+  require('../miniprogram/pages/bottle-flip/bottle-flip');
+  const bottleFlip = page();
+  const bottleFlipLoad = bottleFlip.onLoad({ url: 'https://example.invalid/' });
+  assert.equal(bottleFlip.data.gameUrl, '', 'the web-view stays unmounted while access is pending');
+  await bottleFlipLoad;
+  assert.equal(bottleFlip.data.gameUrl, 'https://game.eggbabe.com/games/bottle-flip/', 'the game loads only from its fixed HTTPS URL');
+
   loginPromise = null;
   session = { userId: 42, hasPhone: false };
   const blockedDrawing = page();
@@ -130,6 +137,9 @@ function page() {
   assert.equal(gameStarts, 2, 'unbound hatched users cannot start a game from a direct subpackage route');
   assert.equal(drawingInitializations, 2, 'blocked pages do not initialize business resources');
   assert.equal(redirects, 1);
+  const blockedBottleFlip = page();
+  await blockedBottleFlip.onLoad({});
+  assert.equal(blockedBottleFlip.data.gameUrl, '', 'the direct game route must also honor the phone gate');
   console.log('phone-gate-pages.test.js: ALL PASS');
 })().finally(() => {
   Module._load = originalLoad;

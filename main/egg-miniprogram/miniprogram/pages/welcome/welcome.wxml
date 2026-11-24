@@ -24,8 +24,8 @@
     </view>
 
     <view class="bottom-panel page-safe-bottom">
-      <button class="auth-button" bindtap="onEnterIsland">进入快乐仙岛</button>
-      <text class="auth-note">开启一段只属于你的陪伴</text>
+      <button class="auth-button" bindtap="onEnterIsland">{{bleDebug ? '进入蓝牙联调' : '进入快乐仙岛'}}</button>
+      <text wx:if="{{!bleDebug}}" class="auth-note">开启一段只属于你的陪伴</text>
     </view>
   </block>
 </view>

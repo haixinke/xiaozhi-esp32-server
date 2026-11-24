@@ -2,6 +2,7 @@
   "pages": [
     "pages/home/home",
     "pages/welcome/welcome",
+    "pages/ble-debug/ble-debug",
     "pages/nfc-claim/nfc-claim",
     "pages/add-device/add-device",
     "pages/hatch-guide/hatch-guide",

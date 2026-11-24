@@ -1,14 +1,22 @@
 const auth = require('../../utils/auth');
 const { getPendingNfcClaimIntent } = require('../../utils/nfc-claim-intent');
+const { isBleDebugMode } = require('../../utils/ble-debug-entry');
 const shareInvite = require('../../utils/share-invite');
 
 Page({
   data: {
     ready: false,
-    hasPendingInvite: false
+    hasPendingInvite: false,
+    bleDebug: false
   },
 
-  async onLoad() {
+  async onLoad(options) {
+    // 联调入口需在现有登录与 NFC 分流前可用，后端停机时也能打开。
+    if (isBleDebugMode(options)) {
+      this.setData({ ready: true, bleDebug: true });
+      return;
+    }
+
     const hasPendingInvite = Boolean(shareInvite.getPending());
     // 同步检查本地登录态：已绑定会话直接跳转首页
     const cached = auth.getSession();
@@ -45,6 +53,17 @@ Page({
   },
 
   onEnterIsland() {
+    if (this.data.bleDebug) {
+      // 连续点击只打开一个页面，避免建立多个 BLE 会话。
+      if (this._openingBleDebug) return;
+      this._openingBleDebug = true;
+      wx.navigateTo({
+        url: '/pages/ble-debug/ble-debug?bleDebug=1',
+        complete: () => { this._openingBleDebug = false; }
+      });
+      return;
+    }
+
     // 进入小岛前先恢复 NFC 领取
     if (this.navigateNfcClaim()) return;
     getApp().globalData.welcomeCompleted = true;

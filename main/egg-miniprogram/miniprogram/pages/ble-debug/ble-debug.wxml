@@ -1,0 +1,199 @@
+<view wx:if="{{allowed}}" class="bench">
+  <nav-bar title="蓝牙联调" auto-back="{{false}}" bind:back="onBack" />
+
+  <scroll-view class="bench-scroll" scroll-y>
+    <view class="bench-inner">
+      <view class="panel connection-panel">
+        <view class="panel-heading">
+          <view>
+            <text class="protocol-label mono">BLE V2.0</text>
+            <text class="panel-title connection-title">控制板</text>
+          </view>
+          <view class="phase phase--{{phase}}">
+            <view class="phase-dot"></view>
+            <text>{{phaseLabel}}</text>
+          </view>
+        </view>
+        <text class="connection-message">{{message}}</text>
+        <text wx:if="{{operationError}}" class="feedback-error">{{operationError}}</text>
+        <text wx:if="{{deviceId}}" class="device-id mono" user-select>{{deviceId}}</text>
+
+        <button
+          wx:if="{{phase === 'idle' || phase === 'offline' || phase === 'scanning'}}"
+          class="bench-button {{phase === 'scanning' ? 'button-secondary' : 'button-primary'}} scan-button"
+          bindtap="onToggleScan"
+        >{{phase === 'scanning' ? '停止扫描' : '扫描附近设备'}}</button>
+        <button wx:else class="bench-button button-secondary scan-button" bindtap="onDisconnect">断开连接</button>
+
+        <view wx:if="{{!deviceId && devices.length}}" class="devices">
+          <button
+            wx:for="{{devices}}"
+            wx:key="deviceId"
+            class="device"
+            data-device-id="{{item.deviceId}}"
+            bindtap="onSelectDevice"
+            disabled="{{phase === 'connecting' || phase === 'handshake'}}"
+          >
+            <view class="device-copy">
+              <text class="device-name">{{item.localName || item.name || '未命名设备'}}</text>
+              <text class="device-id mono">{{item.deviceId}}</text>
+            </view>
+            <text wx:if="{{item.RSSI}}" class="signal mono">{{item.RSSI}} dBm</text>
+            <view class="device-chevron"></view>
+          </button>
+        </view>
+        <text wx:elif="{{phase === 'scanning'}}" class="empty-state">正在查找附近设备</text>
+      </view>
+
+      <view class="panel">
+        <view class="panel-heading">
+          <text class="panel-title">设备状态</text>
+          <text wx:if="{{deviceId}}" class="panel-aside">{{phase === 'ready' ? '协议已就绪' : '等待板端应答'}}</text>
+        </view>
+        <view wx:if="{{info}}" class="info-list">
+          <view class="data-row">
+            <text class="data-key">设备 SN</text>
+            <text class="data-value mono" user-select>{{info.SN}}</text>
+          </view>
+          <view class="data-row">
+            <text class="data-key">宠物类型</text>
+            <text class="data-value">{{petType}} · {{info.TYPE}}</text>
+          </view>
+          <view class="data-row">
+            <text class="data-key">固件版本</text>
+            <text class="data-value mono">{{info.FW}}</text>
+          </view>
+          <view class="data-row">
+            <text class="data-key">协议 / 灯珠</text>
+            <text class="data-value mono">V{{info.PROTO}} / {{info.LEDS}}</text>
+          </view>
+        </view>
+        <view class="status-grid">
+          <view class="metric">
+            <text class="metric-label">破壳 · HATCH</text>
+            <text class="metric-value mono">{{status ? status.HATCH : '—'}}</text>
+          </view>
+          <view class="metric">
+            <text class="metric-label">电机 · MOTOR</text>
+            <text class="metric-value">{{status && status.MOTOR === '1' ? '运行 · 1' : status && status.MOTOR === '0' ? '停止 · 0' : '—'}}</text>
+          </view>
+          <view class="metric">
+            <text class="metric-label">故障 · FAULT</text>
+            <text class="metric-value {{status && status.FAULT === '1' ? 'metric-error' : ''}}">{{status && status.FAULT === '1' ? '故障 · 1' : status && status.FAULT === '0' ? '正常 · 0' : '—'}}</text>
+          </view>
+          <view class="metric">
+            <text class="metric-label">灯效 · LIGHT</text>
+            <text class="metric-value mono">{{status && status.LIGHT ? status.LIGHT : '—'}}</text>
+          </view>
+        </view>
+        <view class="button-row">
+          <button class="bench-button button-secondary" bindtap="onReadInfo" disabled="{{!canSend}}">读取 INFO</button>
+          <button class="bench-button button-secondary" bindtap="onReadStatus" disabled="{{!canSend}}">查询 STATUS</button>
+        </view>
+      </view>
+
+      <view class="panel">
+        <text class="panel-title">灯光控制</text>
+        <picker
+          mode="selector"
+          range="{{lightModes}}"
+          range-key="label"
+          value="{{lightModeIndex}}"
+          bindchange="onLightMode"
+        >
+          <view class="picker-field">
+            <text class="field-label">模式</text>
+            <text class="picker-value">{{lightModes[lightModeIndex].label}}</text>
+            <view class="device-chevron"></view>
+          </view>
+        </picker>
+        <view class="field-grid">
+          <view wx:for="{{channelFields}}" wx:key="key" class="field">
+            <text class="field-label">{{item.label}}</text>
+            <input
+              class="number-input mono"
+              type="number"
+              maxlength="3"
+              value="{{lightMode === 'RAINBOW' ? '0' : lightValues[item.key]}}"
+              data-key="{{item.key}}"
+              bindinput="onLightField"
+              disabled="{{lightMode === 'RAINBOW'}}"
+              aria-label="{{item.label}}"
+            />
+          </view>
+        </view>
+        <view class="field-grid">
+          <view class="field">
+            <text class="field-label">亮度 0–255</text>
+            <input class="number-input mono" type="number" maxlength="3" value="{{lightValues.brightness}}" data-key="brightness" bindinput="onLightField" aria-label="亮度" />
+          </view>
+          <view class="field">
+            <text class="field-label">时长（毫秒）</text>
+            <input
+              class="number-input mono"
+              type="number"
+              maxlength="5"
+              value="{{lightMode === 'SOLID' ? '0' : lightValues.time}}"
+              data-key="time"
+              bindinput="onLightField"
+              disabled="{{lightMode === 'SOLID'}}"
+              aria-label="时长，毫秒"
+            />
+          </view>
+        </view>
+        <text wx:if="{{lightError}}" class="feedback-error">{{lightError}}</text>
+        <view class="button-row">
+          <button class="bench-button button-primary" bindtap="onApplyLight" disabled="{{!canSend}}">发送灯效</button>
+          <button class="bench-button button-secondary" bindtap="onLightOff" disabled="{{!canSend}}">关闭灯光</button>
+        </view>
+      </view>
+
+      <view class="panel">
+        <text class="panel-title">原始指令</text>
+        <text class="panel-caption">单行 ASCII，发送时自动补 LF</text>
+        <input
+          class="raw-input mono"
+          value="{{rawLine}}"
+          placeholder="!STATUS"
+          maxlength="129"
+          confirm-type="send"
+          bindinput="onRawInput"
+          bindconfirm="onSendRaw"
+          aria-label="原始指令"
+        />
+        <text wx:if="{{rawError}}" class="feedback-error">{{rawError}}</text>
+        <button
+          class="bench-button button-secondary raw-send"
+          bindtap="onSendRaw"
+          disabled="{{!canSend && (!canStop || rawLine !== '!STOP')}}"
+        >发送原始指令</button>
+      </view>
+
+      <view class="panel">
+        <text class="panel-title">通信记录</text>
+        <view class="log-actions">
+          <button class="log-action" bindtap="onTogglePackets">{{showPackets ? '隐藏分包' : '显示分包'}}</button>
+          <view class="log-management">
+            <button class="log-action" bindtap="onCopyLogs" disabled="{{!logs.length}}">复制</button>
+            <button class="log-action" bindtap="onClearLogs" disabled="{{!logs.length}}">清空</button>
+          </view>
+        </view>
+        <view class="console">
+          <text wx:if="{{!logs.length}}" class="console-empty">收发报文将在这里显示</text>
+          <view wx:for="{{logs}}" wx:key="id" class="log-entry">
+            <view class="log-meta">
+              <text class="mono">{{item.time}}</text>
+              <text class="log-direction log-direction--{{item.kind}}">{{item.label}}</text>
+            </view>
+            <text class="log-text mono" user-select>{{item.display}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="motor-bar">
+    <button class="bench-button button-secondary" bindtap="onHatch" disabled="{{!canHatch}}">启动破壳</button>
+    <button class="bench-button button-danger" bindtap="onStop" disabled="{{!canStop}}">{{stopping ? '停止请求中' : '停止电机'}}</button>
+  </view>
+</view>

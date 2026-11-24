@@ -27,6 +27,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "蓝牙联调",
+          "pathName": "pages/welcome/welcome",
+          "query": "bleDebug=1",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

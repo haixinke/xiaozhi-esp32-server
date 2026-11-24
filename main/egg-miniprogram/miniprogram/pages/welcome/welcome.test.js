@@ -17,6 +17,10 @@ let cachedSession = null;
 let cachedExpired = false;
 let pendingIntent = null;
 let pendingInvite = null;
+let navigatedTo = null;
+let navigationCalls = 0;
+let navigationComplete = null;
+let envVersion = 'release';
 
 const authMock = {
   getSession: () => cachedSession,
@@ -55,6 +59,12 @@ Module._load = function (request, parent, isMain) {
 global.Page = (config) => { pageConfig = config; };
 global.getApp = () => app;
 global.wx = {
+  getAccountInfoSync() { return { miniProgram: { envVersion } }; },
+  navigateTo({ url, complete }) {
+    navigatedTo = url;
+    navigationCalls += 1;
+    navigationComplete = complete;
+  },
   switchTab({ url }) { switchedTo = url; },
   redirectTo({ url }) { redirectTo = url; }
 };
@@ -78,6 +88,10 @@ function resetScenario() {
   cachedExpired = false;
   pendingIntent = null;
   pendingInvite = null;
+  navigatedTo = null;
+  navigationCalls = 0;
+  navigationComplete = null;
+  envVersion = 'release';
   app.globalData = { userId: null, hasPhone: null, welcomeCompleted: false };
 }
 
@@ -180,6 +194,51 @@ async function run() {
   await noNfcPage.onLoad();
   assert.strictEqual(switchedTo, '/pages/home/home', 'no NFC intent navigates to home');
   assert.strictEqual(redirectTo, null, 'no NFC intent does not redirectTo');
+
+  for (const version of ['develop', 'trial']) {
+    resetScenario();
+    envVersion = version;
+    cachedSession = { userId: 42, hasPhone: true };
+    pendingIntent = { type: 'NFC_CLAIM', claimRef: 'ABCDEFGHIJ1234567890_-' };
+    const debugPage = makePage();
+    await debugPage.onLoad({ bleDebug: '1' });
+    assert.strictEqual(debugPage.data.ready, true, 'debug entry renders with a bound account');
+    assert.strictEqual(debugPage.data.bleDebug, true);
+    assert.strictEqual(switchedTo, null);
+    assert.strictEqual(redirectTo, null);
+    debugPage.onEnterIsland();
+    assert.strictEqual(navigatedTo, '/pages/ble-debug/ble-debug?bleDebug=1');
+    assert.strictEqual(app.globalData.welcomeCompleted, false);
+  }
+
+  resetScenario();
+  envVersion = 'develop';
+  app.globalData.authReady = Promise.resolve(null);
+  const offlineDebugPage = makePage();
+  await offlineDebugPage.onLoad({ bleDebug: '1' });
+  offlineDebugPage.onEnterIsland();
+  assert.strictEqual(ensureCalls, 0, 'debug entry does not await a page login');
+  assert.strictEqual(navigatedTo, '/pages/ble-debug/ble-debug?bleDebug=1');
+  offlineDebugPage.onEnterIsland();
+  assert.strictEqual(navigationCalls, 1, 'a second tap while opening must not start another BLE page');
+  navigationComplete();
+  offlineDebugPage.onEnterIsland();
+  assert.strictEqual(navigationCalls, 2, 'another tap works after navigation completes');
+
+  resetScenario();
+  const releasePage = makePage();
+  await releasePage.onLoad({ bleDebug: '1' });
+  releasePage.onEnterIsland();
+  assert.strictEqual(navigatedTo, null, 'release builds ignore the debug launch parameter');
+  assert.strictEqual(switchedTo, '/pages/home/home');
+
+  resetScenario();
+  envVersion = 'trial';
+  const normalTrialPage = makePage();
+  await normalTrialPage.onLoad();
+  normalTrialPage.onEnterIsland();
+  assert.strictEqual(navigatedTo, null, 'trial build requires an explicit debug startup');
+  assert.strictEqual(switchedTo, '/pages/home/home');
 
   console.log('welcome.test.js: ALL PASS');
 }

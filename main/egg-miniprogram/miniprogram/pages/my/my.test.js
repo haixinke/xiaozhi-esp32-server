@@ -64,9 +64,11 @@ function makePage() {
   const appConfig = require('../../app.json');
   assert.ok(appConfig.pages.includes(gameRoute.slice(1)), 'the game route must be registered');
 
-  assert.match(menuMarkup,
-    /<list-row label="帮助中心" bind:rowtap="onNavHelp"><\/list-row>\s*<list-row wx:if="{{showBleDebug}}" label="蓝牙联调" bind:rowtap="onNavBleDebug"><\/list-row>\s*<list-row label="瓶空一翻" show-border="{{false}}" bind:rowtap="onNavBottleFlip"><\/list-row>\s*<\/view>/,
-    'the game should follow the optional Bluetooth debug row and end the menu');
+  const activeMenuMarkup = menuMarkup.replace(/<!--[\s\S]*?-->/g, '');
+  assert.doesNotMatch(activeMenuMarkup, /onNavBottleFlip/, 'the game entry should be hidden');
+  assert.match(activeMenuMarkup,
+    /<list-row label="帮助中心" show-border="{{showBleDebug}}" bind:rowtap="onNavHelp"><\/list-row>\s*<list-row wx:if="{{showBleDebug}}" label="蓝牙联调" show-border="{{false}}" bind:rowtap="onNavBleDebug"><\/list-row>\s*<\/view>/,
+    'the menu should end with Help or the optional Bluetooth debug row');
 
   for (envVersion of ['release', 'develop', 'trial']) {
     const menuPage = makePage();

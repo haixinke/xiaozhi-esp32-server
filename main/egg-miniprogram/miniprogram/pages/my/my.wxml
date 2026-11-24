@@ -20,9 +20,9 @@
       <list-row label="系统设置" bind:rowtap="onNavSettings"></list-row>
       <!-- 账号，后期打开 -->
       <!-- <list-row label="账号" bind:rowtap="onNavAccount"></list-row> -->
-      <list-row label="帮助中心" bind:rowtap="onNavHelp"></list-row>
-      <list-row wx:if="{{showBleDebug}}" label="蓝牙联调" bind:rowtap="onNavBleDebug"></list-row>
-      <list-row label="瓶空一翻" show-border="{{false}}" bind:rowtap="onNavBottleFlip"></list-row>
+      <list-row label="帮助中心" show-border="{{showBleDebug}}" bind:rowtap="onNavHelp"></list-row>
+      <list-row wx:if="{{showBleDebug}}" label="蓝牙联调" show-border="{{false}}" bind:rowtap="onNavBleDebug"></list-row>
+      <!-- <list-row label="瓶空一翻" show-border="{{false}}" bind:rowtap="onNavBottleFlip"></list-row> -->
     </view>
 
   </view>

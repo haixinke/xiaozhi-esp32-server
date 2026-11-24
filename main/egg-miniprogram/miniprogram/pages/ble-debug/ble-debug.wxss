@@ -367,6 +367,8 @@
 }
 
 .log-action {
+  /* 紧凑按钮保留文字宽度，避免在同一行被挤压。 */
+  flex: 0 0 auto;
   min-height: 72rpx;
   margin: 0;
   padding: 0 14rpx;
@@ -375,6 +377,7 @@
   color: #002900;
   font-size: 24rpx;
   line-height: 72rpx;
+  white-space: nowrap;
 }
 
 .console {

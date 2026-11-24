@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>蛋宝宝 · 蓝牙交互演示</title>
+  <style>
+    :root {
+      --paper: #f5f1e6;
+      --card: #fffcf4;
+      --ink: #203d34;
+      --muted: #53645a;
+      --rule: #d7dccd;
+      --mint: #dce9da;
+      --deep: #254e3f;
+      --warm: #7a3f30;
+      --log: #172d28;
+      --log-ink: #eff8eb;
+      --sans: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font: 15px/1.65 var(--sans);
+      background: radial-gradient(ellipse at 83% 5%, #e7ead8 0, transparent 36%), var(--paper);
+    }
+    button, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid #8e4d34; outline-offset: 3px; }
+    h1, h2, h3, p, dl, dd { margin: 0; }
+    h1 { font-family: "Songti SC", "Noto Serif CJK SC", Georgia, serif; font-size: clamp(2.2rem, 5.5vw, 4.9rem); line-height: 1.1; letter-spacing: -.055em; }
+    h2 { font-size: 1.25rem; line-height: 1.35; }
+    h3 { font-size: 1rem; }
+    main { width: min(1232px, calc(100% - 80px)); margin: 0 auto; padding: 35px 0 42px; }
+    .top { display: flex; justify-content: space-between; gap: 14px; border-bottom: 1px solid #aab7a7; padding-bottom: 11px; font-size: .8rem; letter-spacing: .1em; }
+    .top span:last-child { font-family: var(--mono); color: var(--muted); letter-spacing: .02em; }
+    .hero { padding: 25px 0 22px; }
+    .hero p { color: var(--muted); margin-top: 13px; max-width: 660px; }
+    .route { list-style: none; padding: 0; margin: 0 0 17px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .route li { border-top: 1px solid var(--rule); padding: 8px 10px 4px 0; }
+    .route strong { font-size: .88rem; }
+    .route span { display: block; font-size: .78rem; color: var(--muted); }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 15px; align-items: stretch; }
+    .column { min-width: 0; display: grid; align-content: start; gap: 13px; }
+    .panel { min-width: 0; background: var(--card); border: 1px solid var(--rule); border-radius: 17px; padding: 17px 19px; }
+    .status { display: grid; grid-template-columns: 135px minmax(0, 1fr); gap: 19px; align-items: center; }
+    .toy { min-height: 148px; display: grid; place-items: center; background: #e9eddf; border-radius: 13px; position: relative; overflow: hidden; }
+    .egg { width: 66px; height: 88px; border-radius: 50% 50% 47% 47% / 63% 63% 37% 37%; margin-top: -20px; background: radial-gradient(ellipse at 33% 30%, #fffdf0, #f6e6bd 65%, #e3ca9d); box-shadow: inset 0 0 0 1px #bca67d, 0 8px 13px #264a3023; position: relative; z-index: 1; }
+    .egg::after { content: ""; position: absolute; inset: 48% 21% auto; height: 1px; border-top: 1px dashed #a99065; }
+    .base { position: absolute; width: 97px; height: 26px; inset: auto auto 15px; background: #38554a; border-radius: 50%; border: 1px solid #264438; box-shadow: 0 5px 0 #244036; }
+    .base::after { content: ""; position: absolute; width: 63px; height: 3px; left: 16px; bottom: 5px; border-radius: 20px; background: #70887a; }
+    .toy[data-lit="yes"] { background: radial-gradient(ellipse at 50% 80%, #f6d19d, #edf0e4 73%); }
+    .toy[data-lit="yes"] .base::after { background: #ffbc6f; box-shadow: 0 0 11px 2px #ffd87b; }
+    .toy[data-moving="yes"] .egg { transform: rotate(-13deg) translateY(-4px); }
+    .metrics dl { display: grid; grid-template-columns: 1fr 1fr; column-gap: 13px; margin-top: 8px; }
+    .metrics dl div { border-top: 1px solid var(--rule); padding: 4px 0; }
+    dt { font-size: .72rem; color: var(--muted); }
+    dd { font-size: .83rem; font-weight: 650; overflow-wrap: anywhere; }
+    .guide p { margin-top: 6px; color: var(--muted); font-size: .84rem; }
+    .tabs, .toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tabs { margin-top: 10px; }
+    button { border-radius: 8px; padding: 6px 10px; border: 1px solid #a9bbaa; background: transparent; color: var(--ink); font-size: .81rem; min-height: 34px; }
+    button:hover { background: var(--mint); }
+    button[aria-pressed="true"] { background: var(--mint); border-color: #7c9a84; font-weight: 650; }
+    button.primary { color: #fffdf1; background: var(--deep); border-color: var(--deep); font-weight: 650; }
+    button.primary:hover { background: #376452; }
+    button.stop { color: var(--warm); border-color: #ba9e8c; }
+    .next { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+    .step { font-size: .76rem; color: var(--muted); }
+    .actions .toolbar { margin-top: 9px; }
+    .reset { margin-left: auto; }
+    .wire { background: var(--log); color: var(--log-ink); border: 1px solid var(--log); display: flex; flex-direction: column; }
+    .wire-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+    .wire-head p { font-family: var(--mono); font-size: .74rem; color: #bfd9c7; }
+    .notice { color: #e2efdf; margin: 9px 0 0; padding-bottom: 10px; border-bottom: 1px solid #47635a; font-size: .85rem; min-height: 3.75em; }
+    .trace { list-style: none; margin: 0; padding: 0 2px 0 0; height: 235px; overflow: auto; scrollbar-color: #648374 var(--log); }
+    .trace li { padding: 7px 0; border-bottom: 1px solid #36534a; }
+    .trace small { color: #b6d0bd; font-size: .72rem; }
+    code { font-family: var(--mono); overflow-wrap: anywhere; }
+    .trace code { display: block; font-size: .74rem; line-height: 1.55; color: #f4f9ee; }
+    .trace .empty { color: #b6d0bd; font-size: .82rem; }
+    .packets { margin-top: 12px; }
+    .packets label { display: block; font-size: .84rem; font-weight: 650; }
+    select { max-width: 100%; color: var(--log-ink); background: #253f36; border: 1px solid #668678; border-radius: 6px; padding: 4px 7px; font-size: .78rem; margin: 5px 0 0; }
+    .packet-list { list-style: none; padding: 0; margin: 7px 0 0; display: flex; flex-wrap: wrap; gap: 5px; }
+    .packet-list li { background: #294439; border-radius: 6px; padding: 3px 6px; font-size: .73rem; }
+    .packet-list span { color: #bed5c4; margin-right: 5px; font-size: .65rem; }
+    .packets p { color: #c5dacb; font-size: .74rem; margin-top: 6px; }
+    details { margin-top: 15px; }
+    summary { cursor: pointer; font-weight: 650; }
+    .glossary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 21px; margin-top: 10px; }
+    .glossary dt { font-weight: 700; color: var(--ink); font-size: .86rem; }
+    .glossary dd { font-weight: 400; color: var(--muted); }
+    @media (max-width: 900px) {
+      main { width: min(100% - 32px, 690px); padding-top: 21px; }
+      .workspace { grid-template-columns: 1fr; }
+      .actions { order: 2; }
+    }
+    @media (max-width: 480px) {
+      main { width: calc(100% - 24px); }
+      .panel { padding: 13px; }
+      .status { grid-template-columns: 87px minmax(0, 1fr); gap: 12px; }
+      .toy { min-height: 140px; }
+      .egg { width: 51px; height: 72px; }
+      .base { width: 70px; height: 21px; bottom: 25px; }
+      .base::after { width: 46px; left: 11px; }
+      .glossary { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="top"><strong>蛋宝宝 · 交互原型</strong><span>BLE V2.1 / 本地模拟</span></div>
+  <header class="hero">
+    <h1>手机怎么叫醒一颗蛋？</h1>
+    <p>试着连接、点灯和破壳，看看微信小程序、后端与板端各自收到了什么。电机用按钮推进模拟时间，方便体验运行中停止与断线。</p>
+  </header>
+  <ol class="route" aria-label="三方分工">
+    <li><strong>微信小程序</strong><span>连接玩具、发送指令</span></li>
+    <li><strong>后端</strong><span>识别归属、签发许可</span></li>
+    <li><strong>玩具控制板</strong><span>驱动灯带和电机、回报状态</span></li>
+  </ol>
+  <div class="workspace">
+    <div class="column">
+      <section class="panel status" aria-labelledby="state-title">
+        <div class="toy" id="toy" aria-hidden="true"><div class="egg"></div><div class="base"></div></div>
+        <div class="metrics">
+          <h2 id="state-title">现在发生了什么</h2>
+          <dl>
+            <div><dt>小程序连接</dt><dd id="connection"></dd></div>
+            <div><dt>设备绑定</dt><dd id="binding"></dd></div>
+            <div><dt>数字宠物</dt><dd id="digital"></dd></div>
+            <div><dt>本次连接权限</dt><dd id="permission"></dd></div>
+            <div><dt>板端灯带</dt><dd id="light"></dd></div>
+            <div><dt>板端电机与状态</dt><dd id="physical"></dd></div>
+            <div><dt>小程序确认的实体状态</dt><dd id="seen"></dd></div>
+          </dl>
+        </div>
+      </section>
+      <section class="panel guide" aria-labelledby="guide-title">
+        <h2 id="guide-title">跟着情景体验</h2>
+        <div class="tabs" id="scenarios" aria-label="演示情景">
+          <button type="button" data-scenario="light" aria-pressed="true">连上并点灯</button>
+          <button type="button" data-scenario="hatch" aria-pressed="false">从数字孵化到破壳</button>
+          <button type="button" data-scenario="stop" aria-pressed="false">运行中按停止</button>
+          <button type="button" data-scenario="disconnect" aria-pressed="false">运行中断线</button>
+        </div>
+        <p id="scenario-description"></p>
+        <div class="next"><button id="next" type="button" class="primary"></button><span id="step" class="step"></span></div>
+      </section>
+      <section class="panel actions" aria-labelledby="actions-title">
+        <h2 id="actions-title">自由操作</h2>
+        <div class="toolbar" id="actions">
+          <button type="button" data-action="connect">连接／重连</button>
+          <button type="button" data-action="bind">扫码绑定</button>
+          <button type="button" data-action="authorize">取得灯光权限</button>
+          <button type="button" data-action="lightOn">橙色呼吸灯</button>
+          <button type="button" data-action="lightOff">关灯</button>
+          <button type="button" data-action="digital">完成数字孵化</button>
+          <button type="button" data-action="hatch">确认实体破壳</button>
+          <button type="button" data-action="finish">推进到定时结束</button>
+          <button type="button" data-action="stop" class="stop">停止电机</button>
+          <button type="button" data-action="disconnect">模拟断开</button>
+          <button type="button" data-action="power">模拟掉电重启</button>
+          <button type="button" data-action="status">查询状态</button>
+          <button type="button" data-action="reset" class="reset">重置演示</button>
+        </div>
+      </section>
+    </div>
+    <section class="panel wire" aria-labelledby="wire-title">
+      <div class="wire-head"><h2 id="wire-title">通信记录</h2><p>手机 ↔ 板端 BLE / 手机 ↔ 后端 HTTPS</p></div>
+      <p id="notice" class="notice" role="status"></p>
+      <ol class="trace" id="trace" aria-label="本次演示通信记录" tabindex="0"></ol>
+      <div class="packets">
+        <label for="frame">看看一条消息怎么拆包</label>
+        <select id="frame">
+          <option value="info">板端 → 小程序 · INFO 应答</option>
+          <option value="light">小程序 → 板端 · 点灯请求</option>
+          <option value="status">板端 → 小程序 · STATUS 应答</option>
+          <option value="stop">小程序 → 板端 · STOP 请求</option>
+        </select>
+        <ul class="packet-list" id="packet-list"></ul>
+        <p id="packet-note"></p>
+      </div>
+    </section>
+  </div>
+  <details class="panel">
+    <summary>术语速查 · 找入口、拆消息、接收回执</summary>
+    <dl class="glossary">
+      <div><dt>服务、特征、UUID</dt><dd>服务是一组功能，特征是具体的读写入口。UUID 是入口编号。FFF0 是服务，FFF2 接请求，FFF1 回应答。FFF0 的全写为 <code>0000FFF0-0000-1000-8000-00805F9B34FB</code>。</dd></div>
+      <div><dt>双向分包</dt><dd>手机发长指令要拆包，板端回长应答也要拆包。收件方按原顺序拼回完整一行。</dd></div>
+      <div><dt>LF、CRLF</dt><dd>LF 是协议的一行结束标记，字节为 <code>0A</code>。CRLF 是 <code>0D 0A</code> 两个字节，协议接收端也能识别。</dd></div>
+      <div><dt>Write、Write Without Response</dt><dd>手机向 FFF2 写入。前者有蓝牙层写入回执，后者没有这一层回执。业务结果由板端的 <code>!OK</code> 或 <code>!ERR</code> 告诉小程序。</dd></div>
+      <div><dt>Notify、Indicate</dt><dd>板端通过 FFF1 把数据送回，手机要先订阅。Indicate 有手机蓝牙栈的接收确认，Notify 无这一步确认。</dd></div>
+      <div><dt>ATT MTU</dt><dd>一个 ATT 消息最多可有多少字节。默认 23 字节，这里的常用写和应答方式扣去 3 字节开销后，可带 20 字节数据。</dd></div>
+    </dl>
+  </details>
+  <noscript><p>请在启用 JavaScript 的浏览器中打开此文件来操作演示。</p></noscript>
+</main>
+<script>
+  const demo = (() => {
+    const uid = '00112233445566778899AABB';
+    const info = '!OK INFO PROTO=2 REV=1 FW=DEV LEDS=20 UID=' + uid + '\n';
+    const light = '!LIGHT BREATHE 255 120 30 40 1600\n';
+    const status = (state) => '!OK STATUS HATCH=' + state.physical +
+      ' MOTOR=' + Number(state.physical === 'RUNNING') + ' FAULT=0 LIGHT=' + state.light + '\n';
+    const blank = () => ({connected: false, bound: false, digital: false, authorized: false, light: 'OFF', physical: 'FRESH', observed: null});
+    const hosts = { send: '小程序 → 板端 · FFF2', receive: '板端 → 小程序 · FFF1', cloud: '小程序 ↔ 后端 · HTTPS', board: '板端 · 本地执行', link: '微信蓝牙 · 连接' };
+    const row = (channel, content) => ({ channel: hosts[channel], content });
+    const pair = (request, reply) => [row('send', request), row('receive', reply)];
+    const authorize = (scope) => [
+      ...pair('!CHALLENGE\n', '!OK CHALLENGE NONCE=000102030405060708090A0B0C0D0E0F\n'),
+      row('cloud', scope === 'HATCH' ? '后端核对绑定和数字宠物 HATCHED，签发一次性破壳授权' : '后端核对绑定，签发灯光授权'),
+      ...pair('!AUTH ' + scope + ' <TAG>\n（TAG 以占位符展示）', '!OK AUTH SCOPE=' + scope + '\n')
+    ];
+    const result = (state, note, rows = []) => ({ state, note, rows });
+    function act(state, action) {
+      switch (action) {
+        case 'connect': {
+          if (state.connected) return result(state, '当前已连接，可直接查询状态。');
+          const next = { ...state, connected: true, authorized: false, observed: state.physical };
+          const binding = state.bound ? [row('cloud', '读取宠物绑定的目标 UID')] : [];
+          return result(next, '已订阅回信入口，核对协议版本和 UID，再查询实体状态。', [
+            ...binding, row('link', '扫描并连接 · 发现 FFF0、FFF2、FFF1 · 订阅 FFF1'),
+            ...pair('!INFO\n', info), row('link', '核对 INFO 中的 UID · 模拟加密链路已就绪'),
+            ...pair('!STATUS\n', status(next))
+          ]);
+        }
+        case 'bind':
+          if (!state.connected) return result(state, '请先连接玩具，取得板端 UID，再扫码绑定。');
+          if (state.bound) return result(state, '这台玩具已绑定当前数字宠物。');
+          return result({ ...state, bound: true }, '服务器核对认领码和 UID，把这台玩具绑定到当前宠物。', [
+            row('cloud', '提交宠物、认领码和 UID · 后端核销认领码，保存绑定')
+          ]);
+        case 'authorize':
+          if (!state.connected || !state.bound) return result(state, '取得灯光权限前，需要连接并绑定这台玩具。');
+          return result({ ...state, authorized: true }, '板端校验成功。本次连接可以控制灯光和停止电机。', authorize('LIGHT'));
+        case 'lightOn':
+        case 'lightOff': {
+          if (!state.connected || !state.authorized) return result(state, '点灯前先连接、绑定，再取得灯光权限。');
+          const mode = action === 'lightOn' ? 'BREATHE' : 'OFF';
+          const request = mode === 'BREATHE' ? light : '!LIGHT OFF\n';
+          return result({ ...state, light: mode }, '板端收到完整指令后更新灯效，并返回应用应答。', pair(request, '!OK LIGHT MODE=' + mode + '\n'));
+        }
+        case 'digital':
+          if (state.digital) return result(state, '数字孵化已经完成。');
+          return result({ ...state, digital: true }, '数字宠物已孵化。这个操作走网络，电机状态保持原样。', [
+            row('cloud', 'POST /pet/{petId}/hatch → HATCHED')
+          ]);
+        case 'hatch':
+          if (!state.digital) return result(state, '先完成数字孵化，再由你确认实体破壳。');
+          if (!state.connected || !state.bound) return result(state, '请连接并绑定目标玩具，再查实体状态。');
+          if (state.physical !== 'FRESH') return result(state, '这台玩具的动作正在进行，或破壳机会已消耗。');
+          return result({ ...state, authorized: true, physical: 'RUNNING', observed: 'RUNNING' },
+            '板端先记下本次动作，再启动电机。现在可以试着停机、断线，或推进到定时结束。', [
+              ...authorize('HATCH'), row('send', '!HATCH\n'),
+              row('board', '消费许可 · 持久化开始记录 · 启动限时与电机'),
+              row('receive', '!OK HATCH RUNNING\n'),
+              ...pair('!STATUS\n', status({ ...state, physical: 'RUNNING' }))
+            ]);
+        case 'finish': {
+          if (state.physical !== 'RUNNING') return result(state, '当前没有需要推进的电机动作。');
+          const next = { ...state, physical: 'DONE', observed: 'DONE' };
+          return result(next, '板端按时关闭驱动，小程序下一次查询看到动作结束。', [
+            row('board', '本地运行限时到达 · 关驱动 · 保存 DONE'), ...pair('!STATUS\n', status(next))
+          ]);
+        }
+        case 'stop': {
+          if (!state.connected || !state.authorized) return result(state, '当前没有可用的控制连接，无法发送 STOP。');
+          const physical = state.physical === 'RUNNING' ? 'ABORTED' : state.physical;
+          const next = { ...state, physical, observed: physical };
+          return result(next, '板端先关闭驱动，返回 STOP 应答。手机随后用一次新查询核对结果。', [
+            row('send', '!STOP\n'), row('board', '立即关闭驱动 · 保存或保留当前动作记录'),
+            row('receive', '!OK STOP MOTOR=0 HATCH=' + physical + '\n'), ...pair('!STATUS\n', status(next))
+          ]);
+        }
+        case 'disconnect':
+        case 'power': {
+          const power = action === 'power';
+          if (!state.connected && !power) return result(state, '玩具当前已离线。');
+          const moving = state.physical === 'RUNNING';
+          return result({
+            ...state, connected: false, authorized: false, observed: null,
+            physical: moving ? 'INTERRUPTED' : state.physical,
+            light: power ? 'OFF' : state.light
+          }, '手机显示离线、结果待确认。重连后查询同一块板的动作记录。', [
+            row('link', power ? '模拟控制板掉电并重启 · 连接失效' : '模拟板端检测到蓝牙断开'),
+            row('board', moving ? '本地关断驱动 · 动作恢复为 INTERRUPTED' : '电机保持关闭 · 保留动作记录')
+          ]);
+        }
+        case 'status':
+          if (!state.connected) return result(state, '先重连同一台玩具，再查询实体状态。');
+          return result({ ...state, observed: state.physical }, '小程序已收到板端当前状态。', pair('!STATUS\n', status(state)));
+        default:
+          return result(state, '');
+      }
+    }
+    const frames = { info, light, status: status(blank()), stop: '!STOP\n' };
+    return { blank, act, frames };
+  })();
+</script>
+<script>
+  const common = [['connect', '连接玩具'], ['bind', '扫码绑定']];
+  const hatch = [['digital', '完成数字孵化'], ...common, ['hatch', '确认实体破壳']];
+  const scenarios = {
+    light: { intro: '看手机怎样找到回信入口，拿到授权，再把长灯效指令拆成两包。', steps: [...common, ['authorize', '取得灯光权限'], ['lightOn', '让灯带呼吸'], ['lightOff', '关闭灯带']] },
+    hatch: { intro: '先体验一次还没孵化时的点击，再完成数字孵化，并观察实体动作如何结束。', steps: [['hatch', '试点破壳'], ...hatch, ['finish', '推进到定时结束']] },
+    stop: { intro: '电机运行时按 STOP，比较停机应用应答和之后的状态查询。', steps: [...hatch, ['stop', '运行中按停止']] },
+    disconnect: { intro: '运行中断开，比较板端已经知道的结果与手机断线时能确认的结果。', steps: [...hatch, ['disconnect', '运行中断开'], ['connect', '重连并查询'], ['hatch', '尝试再次破壳']] }
+  };
+  const labels = { FRESH: '尚未动作', RUNNING: '动作进行中', DONE: '动作已结束', ABORTED: '已手动停止', INTERRUPTED: '动作已中断' };
+  const byId = (id) => document.getElementById(id);
+  const visible = (content) => content.replace(/\n/g, '\\n');
+  let state = demo.blank();
+  let scenario = 'light';
+  let position = 0;
+  let notice = '从连接玩具开始，或试试任一个自由操作。';
+  const history = [];
+  function render() {
+    const moving = state.physical === 'RUNNING';
+    byId('connection').textContent = state.connected ? '已连接' : '离线';
+    byId('binding').textContent = state.bound ? '已绑定这块板' : '未绑定';
+    byId('digital').textContent = state.digital ? '已孵化' : '未孵化';
+    byId('permission').textContent = state.authorized ? '灯光与停止' : '未授权';
+    byId('light').textContent = state.light === 'OFF' ? '已关闭' : '橙色呼吸灯';
+    byId('physical').textContent = (moving ? '电机运行 · ' : '电机关闭 · ') + labels[state.physical];
+    byId('seen').textContent = state.observed ? labels[state.observed] : '待查询';
+    byId('toy').dataset.lit = state.light === 'OFF' ? 'no' : 'yes';
+    byId('toy').dataset.moving = moving ? 'yes' : 'no';
+    byId('notice').textContent = notice;
+    const current = scenarios[scenario];
+    const step = current.steps[position];
+    byId('scenario-description').textContent = current.intro;
+    byId('next').textContent = step ? step[1] : '重玩本情景';
+    byId('step').textContent = step ? '第 ' + (position + 1) + ' 步 / 共 ' + current.steps.length + ' 步' : '情景已完成';
+    byId('scenarios').querySelectorAll('button').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.scenario === scenario));
+    });
+    const trace = byId('trace');
+    const items = history.map(({ channel, content }) => {
+      const item = document.createElement('li');
+      const name = document.createElement('small');
+      const message = document.createElement('code');
+      name.textContent = channel;
+      message.textContent = visible(content);
+      item.append(name, message);
+      return item;
+    });
+    if (!items.length) {
+      const item = document.createElement('li');
+      item.className = 'empty';
+      item.textContent = '你的操作会在这里留下通信记录。';
+      items.push(item);
+    }
+    trace.replaceChildren(...items);
+    trace.scrollTop = trace.scrollHeight;
+  }
+  function renderPackets() {
+    const frame = demo.frames[byId('frame').value];
+    const parts = frame.match(/[\s\S]{1,20}/g);
+    byId('packet-list').replaceChildren(...parts.map((part, i) => {
+      const item = document.createElement('li');
+      const number = document.createElement('span');
+      const packet = document.createElement('code');
+      number.textContent = (i + 1) + ' · ' + part.length + ' B';
+      packet.textContent = visible(part).replace(/ /g, '␠');
+      item.append(number, packet);
+      return item;
+    }));
+    byId('packet-note').textContent = '共 ' + frame.length + ' 字节 / ' + parts.length + ' 包。␠ 表示空格，\\n 表示单个 LF 字节。';
+  }
+  function reset() {
+    state = demo.blank();
+    history.length = 0;
+    notice = '演示已重置，可以从第一步开始。';
+    position = 0;
+    render();
+  }
+  function perform(action) {
+    const next = demo.act(state, action);
+    state = next.state;
+    notice = next.note;
+    history.push(...next.rows);
+    render();
+  }
+  byId('scenarios').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-scenario]');
+    if (!button) return;
+    scenario = button.dataset.scenario;
+    reset();
+  });
+  byId('next').addEventListener('click', () => {
+    const step = scenarios[scenario].steps[position];
+    if (!step) return reset();
+    position += 1;
+    perform(step[0]);
+  });
+  byId('actions').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+    if (button.dataset.action === 'reset') return reset();
+    perform(button.dataset.action);
+  });
+  byId('frame').addEventListener('change', renderPackets);
+  render();
+  renderPackets();
+</script>
+</body>
+</html>

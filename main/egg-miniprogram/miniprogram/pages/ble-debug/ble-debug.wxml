@@ -172,10 +172,10 @@
       <view class="panel">
         <text class="panel-title">通信记录</text>
         <view class="log-actions">
-          <button class="log-action" bindtap="onTogglePackets">{{showPackets ? '隐藏分包' : '显示分包'}}</button>
+          <button class="log-action" size="mini" bindtap="onTogglePackets">{{showPackets ? '隐藏分包' : '显示分包'}}</button>
           <view class="log-management">
-            <button class="log-action" bindtap="onCopyLogs" disabled="{{!logs.length}}">复制</button>
-            <button class="log-action" bindtap="onClearLogs" disabled="{{!logs.length}}">清空</button>
+            <button class="log-action" size="mini" bindtap="onCopyLogs" disabled="{{!logs.length}}">复制</button>
+            <button class="log-action" size="mini" bindtap="onClearLogs" disabled="{{!logs.length}}">清空</button>
           </view>
         </view>
         <view class="console">

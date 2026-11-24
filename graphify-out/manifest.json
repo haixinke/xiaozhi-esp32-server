@@ -5475,8 +5475,8 @@
     "semantic_hash": "bbdf2f124b0a49b1e3ad0f51c85415d7"
   },
   "main/egg-miniprogram/miniprogram/pages/my/my.js": {
-    "mtime": 1795514672.437057,
-    "ast_hash": "471a2dfe1cddea0b6a8500d47c3c2872",
+    "mtime": 1795521947.8462794,
+    "ast_hash": "a9bce43324df7ede3f5027833090857d",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/hatch-guide/hatch-guide.js": {
@@ -6110,8 +6110,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/app.json": {
-    "mtime": 1795510376.5454035,
-    "ast_hash": "633a1709ed1fce07643b5f0aedb503c8",
+    "mtime": 1795521947.8266935,
+    "ast_hash": "260c0ab24f92c36de1e832edc2181103",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/components/button/button.json": {
@@ -6305,8 +6305,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/my/my.test.js": {
-    "mtime": 1795514711.7044806,
-    "ast_hash": "05f46f7f9a04089bc15bcec06bf1d61b",
+    "mtime": 1795522057.724874,
+    "ast_hash": "feb4659ca2c32c6a73441be6438a60ba",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/nickname/nickname.json": {
@@ -9730,8 +9730,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/scripts/phone-gate-pages.test.js": {
-    "mtime": 1795440695.1062336,
-    "ast_hash": "9440853590858ab36d37624c47c2efc6",
+    "mtime": 1795528601.0299432,
+    "ast_hash": "660869a7752cfe53d00494b51dbc5870",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/scripts/phone-gate-races.test.js": {
@@ -9802,6 +9802,11 @@
   "main/egg-miniprogram/docs/ble-interaction-prototype.html": {
     "mtime": 1795495943.6659327,
     "ast_hash": "7889dee619fc84a4c273c7acd761087d",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/pages/bottle-flip/bottle-flip.js": {
+    "mtime": 1795528606.1523964,
+    "ast_hash": "1f7e37959f724ab3d21eaeb5984e5a30",
     "semantic_hash": ""
   }
 }

@@ -2,12 +2,13 @@ const { withPhoneGate } = require('../../utils/phone-gate');
 const petStore = require('../../utils/pet-store');
 const request = require('../../utils/request');
 const inviteApi = require('../../utils/invite-api');
+const { isBleDebugMode } = require('../../utils/ble-debug-entry');
 
 const SHARE_TITLE = '一起来养蛋宝宝吧';
 const SHARE_HOME_PATH = '/pages/home/home?v=1&source=home_share';
 
 Page(withPhoneGate({
-  data: { userName: '蛋友', avatarUrl: '', eggCount: 0, shareReady: false },
+  data: { userName: '蛋友', avatarUrl: '', eggCount: 0, shareReady: false, showBleDebug: false },
 
   onShow() {
     // 自定义悬浮 tabBar：标记当前 tab；在「我的」页不渲染任何圆形按钮
@@ -15,6 +16,7 @@ Page(withPhoneGate({
       const tabBar = this.getTabBar();
       if (tabBar) tabBar.setData({ selected: 1, hidden: true });
     }
+    this.setData({ showBleDebug: isBleDebugMode({ bleDebug: '1' }) });
     this.loadUserProfile();
     this.loadPetStatus();
     this.prepareShare();
@@ -81,6 +83,14 @@ Page(withPhoneGate({
   onNavChatSettings() { wx.navigateTo({ url: '/pages/chat-settings/chat-settings' }); },
   onNavAccount() { wx.navigateTo({ url: '/pages/account/account' }); },
   onNavHelp() { wx.navigateTo({ url: '/pages/help/help' }); },
+  onNavBleDebug() {
+    if (!this.data.showBleDebug || this._openingBleDebug) return;
+    this._openingBleDebug = true;
+    wx.navigateTo({
+      url: '/pages/ble-debug/ble-debug?bleDebug=1',
+      complete: () => { this._openingBleDebug = false; }
+    });
+  },
 
   onShareAppMessage() {
     if (!this.data.shareReady) return false;

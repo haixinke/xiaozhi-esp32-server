@@ -24,6 +24,7 @@ function writeMode({ writeDefault, writeNoResponse, write } = {}) {
 function platformError(action, cause) {
   const code = cause?.errCode ?? cause?.errno;
   const details = {
+    112: '请在微信公众平台的《用户隐私保护指引》中补充「蓝牙」声明，生效后重新打开小程序再试',
     10001: '请打开手机蓝牙并检查微信蓝牙权限',
     10006: '蓝牙连接已断开',
     10009: '当前环境不支持 BLE',

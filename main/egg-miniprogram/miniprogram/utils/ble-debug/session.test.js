@@ -114,6 +114,14 @@ async function adapterUnavailable({ ble, session, snapshot }) {
   assert.equal(ble.calls.some(call => call.name === 'startBluetoothDevicesDiscovery'), false);
 }
 
+async function bluetoothNotDeclared({ ble, session, snapshot }) {
+  const hint = /微信公众平台.*用户隐私保护指引.*蓝牙.*112/;
+  await assert.rejects(session.scan(), { code: 112, message: hint });
+  assert.equal(snapshot().phase, 'offline');
+  assert.match(snapshot().message, hint);
+  assert.equal(ble.calls.some(call => call.name === 'startBluetoothDevicesDiscovery'), false);
+}
+
 async function adapterTurnedOffDuringScan({ ble, clock, session, snapshot }) {
   await session.scan();
   ble.powerOff();
@@ -439,6 +447,9 @@ async function run() {
     }],
     [legacyFirmware, { infoReply: '!OK INFO PROTO=1 FW=V5 LEDS=20 SN=00112233445566778899AABB TYPE=1' }],
     [adapterUnavailable, { fail: { openBluetoothAdapter: { errCode: 10001, errMsg: 'not available' } } }],
+    [bluetoothNotDeclared, { fail: { openBluetoothAdapter: {
+      errno: 112, errMsg: 'openBluetoothAdapter:fail api scope is not declared in the privacy agreement'
+    } } }],
     [adapterTurnedOffDuringScan],
     [rawCommandsAndPacketBoundaries],
     [stopPreemptsPartialWrite],

@@ -1,5 +1,7 @@
 const assert = require('assert');
+const fs = require('fs');
 const Module = require('module');
+const path = require('path');
 
 const pagePath = require.resolve('./my');
 const originalLoad = Module._load;
@@ -12,6 +14,8 @@ let inviteMineError = null;
 let inviteMineQueue = [];
 let hiddenMenus = 0;
 let shownMenus = 0;
+let envVersion = 'release';
+const navigations = [];
 
 Module._load = function (request, parent, isMain) {
   if (request === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
@@ -37,7 +41,8 @@ global.Page = (config) => { pageConfig = config; };
 global.wx = {
   hideShareMenu() { hiddenMenus += 1; },
   showShareMenu() { shownMenus += 1; },
-  navigateTo() {}
+  getAccountInfoSync() { return { miniProgram: { envVersion } }; },
+  navigateTo(options) { navigations.push(options); }
 };
 
 function makePage() {
@@ -51,6 +56,30 @@ function makePage() {
 (async () => {
   require('./my');
   assert.ok(pageConfig, 'my page should be registered');
+
+  const menuMarkup = fs.readFileSync(path.join(__dirname, 'my.wxml'), 'utf8');
+  assert.match(menuMarkup,
+    /<list-row label="帮助中心" show-border="{{showBleDebug}}" bind:rowtap="onNavHelp"><\/list-row>\s*<list-row wx:if="{{showBleDebug}}" label="蓝牙联调" show-border="{{false}}" bind:rowtap="onNavBleDebug">/,
+    'the Bluetooth debug row should immediately follow Help and only appear when enabled');
+
+  for (envVersion of ['release', 'develop', 'trial']) {
+    const menuPage = makePage();
+    menuPage.loadUserProfile = () => {};
+    menuPage.loadPetStatus = () => {};
+    menuPage.prepareShare = () => {};
+    menuPage.onShow();
+    assert.strictEqual(menuPage.data.showBleDebug, envVersion !== 'release');
+    const navigationCount = navigations.length;
+    menuPage.onNavBleDebug();
+    menuPage.onNavBleDebug();
+    assert.strictEqual(navigations.length, navigationCount + (envVersion === 'release' ? 0 : 1));
+    if (envVersion !== 'release') {
+      assert.strictEqual(navigations.at(-1).url, '/pages/ble-debug/ble-debug?bleDebug=1');
+      navigations.at(-1).complete();
+      menuPage.onNavBleDebug();
+      assert.strictEqual(navigations.length, navigationCount + 2);
+    }
+  }
 
   const loadingPage = makePage();
   assert.strictEqual(loadingPage.onShareAppMessage(), false,

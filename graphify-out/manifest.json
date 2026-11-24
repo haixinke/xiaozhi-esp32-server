@@ -5260,8 +5260,8 @@
     "semantic_hash": "da0a4086063e98ba27a02a94dbe68bd5"
   },
   "main/egg-miniprogram/miniprogram/config/api.js": {
-    "mtime": 1795440695.0914984,
-    "ast_hash": "f547fefe1d4edeca74775811536dfe7e",
+    "mtime": 1795514331.742018,
+    "ast_hash": "c3684cdb349dba7135453c9c44a04de3",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/pet-store.test.js": {
@@ -5475,8 +5475,8 @@
     "semantic_hash": "bbdf2f124b0a49b1e3ad0f51c85415d7"
   },
   "main/egg-miniprogram/miniprogram/pages/my/my.js": {
-    "mtime": 1795440695.100377,
-    "ast_hash": "b5dd540d4806b8e69fabc5d3c1dbec53",
+    "mtime": 1795514672.437057,
+    "ast_hash": "471a2dfe1cddea0b6a8500d47c3c2872",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/hatch-guide/hatch-guide.js": {
@@ -6305,8 +6305,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/my/my.test.js": {
-    "mtime": 1795440695.1005576,
-    "ast_hash": "b6358ca33a1dd387484cdb2173b85f7f",
+    "mtime": 1795514711.7044806,
+    "ast_hash": "05f46f7f9a04089bc15bcec06bf1d61b",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/nickname/nickname.json": {
@@ -9785,13 +9785,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/ble-debug/session.js": {
-    "mtime": 1795511120.1612318,
-    "ast_hash": "645fb8ae191918414a9e221322a7b709",
+    "mtime": 1795521285.346705,
+    "ast_hash": "5c015b43e507f22f47c3db8dbfe47ea1",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/ble-debug/session.test.js": {
-    "mtime": 1795511100.0239542,
-    "ast_hash": "fcdf6eb671dd48637f71eaa21414fb00",
+    "mtime": 1795521279.6908689,
+    "ast_hash": "5216b7f20e31c65cb82af7a46e3ac855",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/scripts/ble-fake.js": {

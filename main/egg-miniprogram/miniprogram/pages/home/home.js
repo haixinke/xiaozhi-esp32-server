@@ -198,6 +198,14 @@ Page({
     const app = getApp();
     if (app.globalData.authReady && typeof app.globalData.authReady.then === 'function') {
       app.globalData.authReady.then((session) => {
+        // 全新注册用户先进欢迎页走完引导，再回首页领取
+        if (session && session.isNewUser === true) {
+          if (!this._navigating) {
+            this._navigating = true;
+            wx.reLaunch({ url: '/pages/welcome/welcome' });
+          }
+          return;
+        }
         if (session) {
           this.setData({ authChecked: true });
           this.loadShareInviteCode();

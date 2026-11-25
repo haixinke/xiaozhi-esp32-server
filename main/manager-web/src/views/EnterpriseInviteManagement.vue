@@ -85,7 +85,7 @@
         />
       </div>
     </CustomDialog>
-    <VersionFooter />
+    <el-footer><VersionFooter /></el-footer>
   </div>
 </template>
 

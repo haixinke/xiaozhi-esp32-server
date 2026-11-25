@@ -96,3 +96,9 @@ test('a persisted session with missing role information cannot open enterprise m
   assert.deepEqual(canAccessRoute(enterpriseRoute, 'session', null), { allowed: false, redirect: '/home' })
   assert.equal(canAccessRoute(enterpriseRoute, 'session', { superAdmin: true, role: 'operator' }).allowed, true)
 })
+
+test('enterprise table has a separate fixed-height footer in the page layout', async () => {
+  const source = await readFile(new URL('../src/views/EnterpriseInviteManagement.vue', import.meta.url), 'utf8')
+
+  assert.match(source, /<el-footer>\s*<VersionFooter\s*\/>\s*<\/el-footer>/)
+})

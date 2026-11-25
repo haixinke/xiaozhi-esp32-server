@@ -4,7 +4,8 @@ const Module = require('module');
 const originalLoad = Module._load;
 let definition;
 const calls = [];
-let currentPet = null;
+let currentPet = { id: 'hatched', hatchStatus: 'HATCHED' };
+let otherPets = [currentPet];
 let gamesResponse = async () => [
   { id: 1, gameType: 'LISTEN_TO_YOU', gameTypeName: '听你说', icon: 'https://example.com/listen.png', description: '说说今天', earnStars: 8, consumeStars: 0 },
   { id: 2, gameType: 'TRAVEL', gameTypeName: '旅行', earnStars: 0, consumeStars: 20 }
@@ -14,12 +15,14 @@ let balanceResponse = async () => ({ balance: '38' });
 global.Page = (value) => { definition = value; };
 global.wx = {
   navigateTo(options) { calls.push(['navigate', options.url]); },
+  navigateBack(options) { calls.push(['back', options]); if (options && options.fail) options.fail(); },
+  switchTab(options) { calls.push(['tab', options.url]); if (options && options.fail) options.fail(); },
   showToast(options) { calls.push(['toast', options.title]); }
 };
 Module._load = function (request, parent) {
   if (request === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
   if (request === '../../utils/pet-store') {
-    return { getPetSnapshot: () => ({ pet: currentPet }) };
+    return { getPetSnapshot: () => ({ pet: currentPet, pets: currentPet ? [currentPet, ...otherPets] : otherPets }) };
   }
   if (request === './request' && parent.filename.endsWith('-api.js')) {
     return { get(url, data) {
@@ -42,6 +45,27 @@ function page() {
 (async () => {
   require('./iaa-activities');
   const view = page();
+  // 未破壳或无宠物时直达本页被拦截：提示并返回首页，不发起活动请求；switchTab 失败兜底 navigateBack
+  const countToasts = (title) => calls.filter(([kind, text]) => kind === 'toast' && text === title).length;
+  const countTabs = () => calls.filter(([kind]) => kind === 'tab').length;
+  otherPets = [];
+  currentPet = { id: 'egg', hatchStatus: 'EGG' };
+  await view.onShow();
+  assert.strictEqual(countToasts('破壳后解锁百宝箱'), 1, 'unhatched shows unlock toast');
+  assert.strictEqual(countTabs(), 1, 'unhatched switches back home');
+  assert.ok(calls.some(([kind]) => kind === 'back'), 'switchTab failure falls back to navigateBack');
+  assert.ok(!calls.some(([url]) => url === '/app/game/list'), 'unhatched entry must not load games');
+  // 账号另有已破壳宠物时，提示切换而非死等当前蛋破壳
+  otherPets = [{ id: 'pet-hatched', hatchStatus: 'HATCHED' }];
+  await view.onShow();
+  assert.strictEqual(countToasts('请切换到已破壳的蛋宝宝'), 1, 'multi-pet account prompted to switch');
+  assert.strictEqual(countTabs(), 2);
+  otherPets = [];
+  currentPet = null;
+  await view.onShow();
+  assert.strictEqual(countTabs(), 3, 'no pet still switches back home');
+  currentPet = { id: 'hatched', hatchStatus: 'HATCHED' };
+  otherPets = [currentPet];
   await view.onShow();
   assert.ok(calls.some(([url, data]) => url === '/app/game/list' && data.entrance === 'ACTIVITY'));
   assert.strictEqual(view.data.playable.length, 2, 'all configured games remain visible');
@@ -100,6 +124,7 @@ function page() {
   // 活动页可浏览不代表可以开局：必须由当前选中的已破壳宠物进入一起画。
   gamesResponse = async () => [{ id: 8, gameType: 'DRAW_TOGETHER' }];
   await view.refresh();
+  currentPet = null;
   view.onTapRow({ currentTarget: { dataset: { id: 8 } } });
   assert.deepStrictEqual(calls.at(-1), ['toast', '请先领取蛋宝宝并陪它破壳']);
   currentPet = { id: 'egg', hatchStatus: 'EGG' };

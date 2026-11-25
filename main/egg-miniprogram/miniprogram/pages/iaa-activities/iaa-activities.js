@@ -25,7 +25,19 @@ Page(withPhoneGate({
     balanceError: false
   },
 
-  onShow() { return this.refresh(); },
+  onShow() {
+    // 百宝箱仅对已破壳宠物开放；分享卡片/缓存路径可直达本页，未破壳时提示并返回首页。
+    // 多宠物账号当前选中未破壳蛋时，提示切换而非死等当前蛋破壳；switchTab 失败兜底回退，避免停留空白页。
+    const snapshot = petStore.getPetSnapshot();
+    const pet = snapshot && snapshot.pet;
+    if (!pet || pet.hatchStatus !== 'HATCHED') {
+      const hasHatched = !!(snapshot && (snapshot.pets || []).some((item) => item.hatchStatus === 'HATCHED'));
+      wx.showToast({ title: hasHatched ? '请切换到已破壳的蛋宝宝' : '破壳后解锁百宝箱', icon: 'none' });
+      wx.switchTab({ url: '/pages/home/home', fail: () => wx.navigateBack({ fail: () => {} }) });
+      return;
+    }
+    return this.refresh();
+  },
 
   // 隐藏或销毁后使在途响应失效；返回页面时重新拉取最新运营配置。
   onHide() { this._requestId = (this._requestId || 0) + 1; },

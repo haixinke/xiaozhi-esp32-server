@@ -289,12 +289,12 @@ Page({
     }
   },
 
-  // 自定义悬浮 tabBar：破壳视频与命名弹层期间隐藏，其余时间显示当前为「蛋宝宝」
+  // 自定义悬浮 tabBar：未破壳、破壳视频与命名弹层期间隐藏，其余时间显示当前为「蛋宝宝」
   syncTabBar() {
     if (typeof this.getTabBar !== 'function') return;
     const tabBar = this.getTabBar();
-    // 孵化/命名弹层/窗景详情打开时隐藏百宝箱，避免遮挡
-    const hidden = !!(this.data.hatching || this.data.showNameSheet
+    // 百宝箱仅对当前已破壳宠物开放；未破壳（含尚无宠物）连同孵化/命名等弹层期间一并隐藏整个 tabBar，避免遮挡与误触
+    const hidden = !!(this.data.stage !== 'hatched' || this.data.hatching || this.data.showNameSheet
       || this.data.showPhoneAuthorization || this.data.dailyWindowVisible || this.data.storyWindowVisible);
     // 写真仅对当前已破壳宠物开放，首页每次切宠或状态变化都同步到百宝箱。
     const photoPetId = this.data.stage === 'hatched' && this.data.pet && this.data.pet.id

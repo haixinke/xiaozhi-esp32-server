@@ -1775,6 +1775,18 @@ async function run() {
   pagePhotoEntry.syncTabBar();
   assert.strictEqual(photoTabData.photoPetId, '', '未破壳时隐藏写真入口');
 
+  // 32b. 百宝箱整体仅对已破壳宠物显示；未破壳时连同 tabBar 一起隐藏
+  assert.strictEqual(photoTabData.hidden, true, '未破壳时隐藏整个百宝箱');
+  pagePhotoEntry.setData({ stage: 'hatched', pet: { id: 'pet-001' } });
+  pagePhotoEntry.syncTabBar();
+  assert.strictEqual(photoTabData.hidden, false, '已破壳时显示百宝箱');
+  pagePhotoEntry.setData({ stage: 'ready' });
+  pagePhotoEntry.syncTabBar();
+  assert.strictEqual(photoTabData.hidden, true, '待破壳(ready)仍隐藏百宝箱');
+  pagePhotoEntry.setData({ stage: 'empty', pet: null });
+  pagePhotoEntry.syncTabBar();
+  assert.strictEqual(photoTabData.hidden, true, '无宠物时隐藏百宝箱');
+
   // 33. 背景图加载后按真实宽高比扩展轨道，初始居中，整张图任何区域都能拖到
   resetScenario();
   cachedSession = { userId: 42, hasPhone: true };

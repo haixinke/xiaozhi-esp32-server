@@ -6,4 +6,8 @@ function getMine() {
   return get('/invite/mine');
 }
 
-module.exports = { getMine };
+function getMineQrCode() {
+  return get('/invite/mine/qrcode');
+}
+
+module.exports = { getMine, getMineQrCode };

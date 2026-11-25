@@ -14,9 +14,13 @@ import xiaozhi.modules.invite.vo.InviteUsageVO;
 
 public interface InviteService extends BaseService<InviteCodeEntity> {
 
-    InviteCodeVO createPersonalCode(Long userId);
+    InviteCodeVO createPersonalCode(Long userId, String username);
 
     InviteCodeVO getMine(Long userId);
+
+    byte[] getMineQrCode(Long userId);
+
+    byte[] getEnterpriseQrCode(Long id);
 
     InviteConsumeVO consume(String code, Long inviteeUserId);
 

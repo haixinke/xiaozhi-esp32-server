@@ -42,7 +42,6 @@ function sendRequest() {
                 this._header.Authorization = 'Bearer ' + (JSON.parse(store.getters.getToken)).token
             }
 
-            // 打印请求信息
             fly.request(this._url, this._data, {
                 method: this._method,
                 headers: this._header,
@@ -57,8 +56,6 @@ function sendRequest() {
                     this._sucCallback(res)
                 }
             }).catch((res) => {
-                // 打印失败响应
-                console.log('catch', res)
                 httpHandlerError(res, this._failCallback, this._networkFailCallback)
             })
             return this

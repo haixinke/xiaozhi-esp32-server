@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'pending_share_invite';
 const TTL = 7 * 24 * 60 * 60 * 1000;
-const INVITE_CODE_PATTERN = /^[A-Z0-9-]{5,32}$/;
+const { isInviteCode } = require('./invite-code');
 
 function parseEntryOptions(options) {
   const query = options && options.query;
@@ -9,8 +9,7 @@ function parseEntryOptions(options) {
     || !query
     || String(query.v) !== '1'
     || query.source !== 'home_share'
-    || typeof query.inviteCode !== 'string'
-    || !INVITE_CODE_PATTERN.test(query.inviteCode)) {
+    || !isInviteCode(query.inviteCode)) {
     return null;
   }
   return { code: query.inviteCode, source: 'home_share', version: 1 };
@@ -54,8 +53,7 @@ function clearPending() {
 
 function isValidContext(context) {
   return !!context
-    && typeof context.code === 'string'
-    && INVITE_CODE_PATTERN.test(context.code)
+    && isInviteCode(context.code)
     && context.source === 'home_share'
     && context.version === 1;
 }

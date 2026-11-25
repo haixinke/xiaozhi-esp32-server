@@ -3,6 +3,7 @@ package xiaozhi.modules.invite.entity;
 import java.util.Date;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -25,6 +26,9 @@ public class InviteCodeEntity {
     @Schema(description = "邀请码字符串")
     private String code;
 
+    @Schema(description = "邀请码名称")
+    private String name;
+
     @Schema(description = "1=个人 2=企业")
     private Integer type;
 
@@ -43,6 +47,7 @@ public class InviteCodeEntity {
     @Schema(description = "0=失效 1=有效")
     private Integer status;
 
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @Schema(description = "过期时间")
     private Date expireTime;
 

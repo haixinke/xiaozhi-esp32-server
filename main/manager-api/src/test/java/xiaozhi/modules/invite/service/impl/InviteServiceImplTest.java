@@ -1,6 +1,7 @@
 package xiaozhi.modules.invite.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -8,12 +9,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +31,11 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+
+import cn.hutool.extra.qrcode.QrCodeUtil;
+import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.utils.SpringContextUtils;
@@ -37,6 +46,7 @@ import xiaozhi.modules.invite.entity.InviteCodeEntity;
 import xiaozhi.modules.invite.entity.InviteUsageEntity;
 import xiaozhi.modules.invite.vo.InviteCodeVO;
 import xiaozhi.modules.invite.vo.InviteConsumeVO;
+import xiaozhi.modules.security.config.WebMvcConfig;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -75,7 +85,7 @@ class InviteServiceImplTest {
     void createPersonalCode_newUser() {
         when(inviteCodeDao.selectOne(any())).thenReturn(null);
 
-        InviteCodeVO vo = service.createPersonalCode(100L);
+        InviteCodeVO vo = service.createPersonalCode(100L, "account-at-issuance");
 
         assertThat(vo).isNotNull();
         assertThat(vo.getType()).isEqualTo(InviteCodeType.PERSONAL);
@@ -86,7 +96,10 @@ class InviteServiceImplTest {
         assertThat(vo.getStatus()).isEqualTo(1);
         // 邀请码现为 5 位（见 InviteCodeGenerator.LENGTH，commit 3762bdd3 有意从 8 缩短到 5）
         assertThat(vo.getCode()).hasSize(5);
-        verify(inviteCodeDao).insert(any(InviteCodeEntity.class));
+        var persisted = org.mockito.ArgumentCaptor.forClass(InviteCodeEntity.class);
+        verify(inviteCodeDao).insert(persisted.capture());
+        assertThat(persisted.getValue().getName()).isEqualTo("account-at-issuance");
+        assertThat(vo.getName()).isNull();
     }
 
     @Test
@@ -101,7 +114,7 @@ class InviteServiceImplTest {
         existing.setRemaining(3);
         when(inviteCodeDao.selectOne(any())).thenReturn(existing);
 
-        InviteCodeVO vo = service.createPersonalCode(100L);
+        InviteCodeVO vo = service.createPersonalCode(100L, "renamed-account");
 
         assertThat(vo.getCode()).isEqualTo("AAAA2222");
         assertThat(vo.getRemaining()).isEqualTo(3);
@@ -112,7 +125,7 @@ class InviteServiceImplTest {
     @DisplayName("createPersonalCode - userId 为空抛 NOT_NULL")
     void createPersonalCode_nullUserId() {
         try {
-            service.createPersonalCode(null);
+            service.createPersonalCode(null, "account");
             assertThat(false).as("应抛异常").isTrue();
         } catch (RenException e) {
             assertThat(e.getCode()).isEqualTo(10001);
@@ -126,8 +139,10 @@ class InviteServiceImplTest {
         e.setId(1L);
         e.setCode("BBBB3333");
         e.setType(InviteCodeType.PERSONAL);
+        e.setName("private-account-name");
         when(inviteCodeDao.selectOne(any())).thenReturn(e);
         assertThat(service.getMine(7L).getCode()).isEqualTo("BBBB3333");
+        assertThat(service.getMine(7L).getName()).isNull();
 
         when(inviteCodeDao.selectOne(any())).thenReturn(null);
         try {
@@ -136,6 +151,39 @@ class InviteServiceImplTest {
         } catch (RenException ex) {
             assertThat(ex.getMsg()).contains("个人邀请码");
         }
+    }
+
+    @Test
+    void personalQrPreservesLegacyCodeAndExcludesName() {
+        InviteCodeEntity personal = codeEntity(1L, "BBBB3333", 7L, 5, 5, 1, null);
+        personal.setName("private-account-name");
+        when(inviteCodeDao.selectOne(any())).thenReturn(personal);
+
+        byte[] png = service.getMineQrCode(7L);
+
+        assertThat(QrCodeUtil.decode(new ByteArrayInputStream(png))).isEqualTo("iv1-BBBB3333");
+    }
+
+    @Test
+    void enterpriseQrIsStableAcrossRenameAndRejectsPersonalCodes() {
+        InviteCodeEntity enterprise = codeEntity(1L, "ABC23", null, 5, 5, 1, null);
+        enterprise.setName("原活动");
+        when(inviteCodeDao.selectById(1L)).thenReturn(enterprise);
+        when(inviteCodeDao.selectByIdForUpdate(1L)).thenReturn(enterprise);
+        when(inviteCodeDao.selectById(2L)).thenReturn(codeEntity(2L, "DEF45", 7L, 5, 5, 1, null));
+        byte[] before = service.getEnterpriseQrCode(1L);
+
+        var dto = new xiaozhi.modules.invite.dto.InviteCodeUpdateDTO();
+        dto.setId(1L);
+        dto.setName("新活动");
+        service.update(dto);
+
+        assertThat(enterprise.getName()).isEqualTo("新活动");
+        byte[] after = service.getEnterpriseQrCode(1L);
+        assertThat(after).isEqualTo(before);
+        assertThat(QrCodeUtil.decode(new ByteArrayInputStream(after))).isEqualTo("iv1-ABC23");
+        assertThatThrownBy(() -> service.getEnterpriseQrCode(2L)).isInstanceOfSatisfying(RenException.class,
+                error -> assertThat(error.getCode()).isEqualTo(ErrorCode.ENTERPRISE_INVITE_NOT_FOUND));
     }
 
     @Test
@@ -269,6 +317,7 @@ class InviteServiceImplTest {
         xiaozhi.modules.invite.dto.InviteCodeCreateDTO dto =
                 new xiaozhi.modules.invite.dto.InviteCodeCreateDTO();
         dto.setQuota(100);
+        dto.setName("  展会活动  ");
         dto.setStatus(1);
         dto.setRemark("展会A");
 
@@ -279,8 +328,20 @@ class InviteServiceImplTest {
         assertThat(vo.getQuota()).isEqualTo(100);
         assertThat(vo.getRemaining()).isEqualTo(100);
         assertThat(vo.getUsedCount()).isZero();
+        assertThat(vo.getName()).isEqualTo("展会活动");
         assertThat(vo.getRemark()).isEqualTo("展会A");
         verify(inviteCodeDao).insert(any(InviteCodeEntity.class));
+    }
+
+    @Test
+    void createEnterpriseRejectsBlankName() {
+        var dto = new xiaozhi.modules.invite.dto.InviteCodeCreateDTO();
+        dto.setQuota(100);
+        dto.setName("  ");
+
+        assertThatThrownBy(() -> service.createEnterprise(dto)).isInstanceOfSatisfying(RenException.class,
+                error -> assertThat(error.getCode()).isEqualTo(ErrorCode.INVITE_NAME_REQUIRED));
+        verify(inviteCodeDao, never()).insert(any(InviteCodeEntity.class));
     }
 
     @Test
@@ -339,26 +400,52 @@ class InviteServiceImplTest {
     }
 
     @Test
-    @DisplayName("delete - used_count=0 可删")
+    @DisplayName("delete - 即使零核销也保留企业码")
     void delete_unused() {
-        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 10, 1, null); // used=0
-        when(inviteCodeDao.selectByIdForUpdate(1L)).thenReturn(entity);
-        service.delete(1L);
-        verify(inviteCodeDao).deleteById((java.io.Serializable) 1L);
+        assertThatThrownBy(() -> service.delete(1L)).isInstanceOfSatisfying(RenException.class,
+                error -> assertThat(error.getCode()).isEqualTo(ErrorCode.ENTERPRISE_INVITE_DELETE_DISABLED));
+        verify(inviteCodeDao, never()).deleteById((java.io.Serializable) any());
     }
 
     @Test
-    @DisplayName("delete - used_count>0 拒绝")
-    void delete_used() {
-        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 7, 1, null); // used=3
+    void updateExplicitNullExpiryClearsItWhileOmissionPreservesIt() throws Exception {
+        Date expires = Date.from(Instant.parse("2026-07-10T00:00:00Z"));
+        InviteCodeEntity entity = codeEntity(1L, "X", null, 10, 7, 1, expires);
         when(inviteCodeDao.selectByIdForUpdate(1L)).thenReturn(entity);
-        try {
-            service.delete(1L);
-            assertThat(false).as("应抛异常").isTrue();
-        } catch (RenException e) {
-            assertThat(e.getMsg()).contains("已被使用");
-        }
-        verify(inviteCodeDao, never()).deleteById((java.io.Serializable) any());
+        var mapper = new WebMvcConfig().jackson2HttpMessageConverter().getObjectMapper();
+
+        service.update(mapper.readValue("{\"id\":1,\"status\":0}",
+                xiaozhi.modules.invite.dto.InviteCodeUpdateDTO.class));
+        assertThat(entity.getExpireTime()).isEqualTo(expires);
+
+        service.update(mapper.readValue("{\"id\":1,\"expireTime\":\"2026-07-11 08:00:00\"}",
+                xiaozhi.modules.invite.dto.InviteCodeUpdateDTO.class));
+        assertThat(entity.getExpireTime().toInstant()).isEqualTo(Instant.parse("2026-07-11T00:00:00Z"));
+
+        service.update(mapper.readValue("{\"id\":1,\"expireTime\":null}",
+                xiaozhi.modules.invite.dto.InviteCodeUpdateDTO.class));
+        assertThat(entity.getExpireTime()).isNull();
+    }
+
+    @Test
+    void managementPageIsLimitedToEnterpriseCodesWhenTypeIsMissingOrPersonal() {
+        var enterprise = codeEntity(1L, "ABC23", null, 5, 5, 1, null);
+        when(inviteCodeDao.selectPage(any(), any())).thenAnswer(invocation -> {
+            QueryWrapper<InviteCodeEntity> query = invocation.getArgument(1);
+            assertThat(query.getSqlSegment()).contains("type =");
+            assertThat(query.getParamNameValuePairs().values()).containsExactly(InviteCodeType.ENTERPRISE);
+            IPage<InviteCodeEntity> page = invocation.getArgument(0);
+            assertThat(page.orders()).singleElement().satisfies(order -> {
+                assertThat(order.getColumn()).isEqualTo("create_date");
+                assertThat(order.isAsc()).isFalse();
+            });
+            return page.setRecords(List.of(enterprise)).setTotal(1);
+        });
+
+        assertThat(service.page(Map.of()).getList()).extracting(InviteCodeVO::getType)
+                .containsExactly(InviteCodeType.ENTERPRISE);
+        assertThat(service.page(Map.of("type", "1", "ownerUserId", "7", "orderField", "name", "order", "asc")).getList())
+                .extracting(InviteCodeVO::getType).containsExactly(InviteCodeType.ENTERPRISE);
     }
 
     private static InviteCodeEntity codeEntity(Long id, String code, Long owner,

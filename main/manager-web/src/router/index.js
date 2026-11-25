@@ -378,6 +378,16 @@ const routes = [
       title: '小纸条管理'
     }
   },
+  {
+    path: '/enterprise-invite-management',
+    name: 'EnterpriseInviteManagement',
+    component: () => import('../views/EnterpriseInviteManagement.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresSuperAdmin: true,
+      title: '企业邀请码'
+    }
+  },
 ]
 const router = new VueRouter({
   base: process.env.VUE_APP_PUBLIC_PATH || '/',

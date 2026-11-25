@@ -16,7 +16,7 @@ export function canAccessRoute(route, token, userInfo) {
   if (route.meta && route.meta.requiresAuth && !token) {
     return { allowed: false, redirect: '/login' };
   }
-  if (route.meta && route.meta.requiresSuperAdmin && !userInfo.superAdmin) {
+  if (route.meta && route.meta.requiresSuperAdmin && !userInfo?.superAdmin) {
     return { allowed: false, redirect: '/home' };
   }
   return { allowed: true };

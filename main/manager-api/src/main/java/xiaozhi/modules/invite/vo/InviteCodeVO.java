@@ -2,6 +2,8 @@ package xiaozhi.modules.invite.vo;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -13,6 +15,9 @@ public class InviteCodeVO {
     private Long id;
     @Schema(description = "邀请码字符串")
     private String code;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "企业邀请码名称")
+    private String name;
     @Schema(description = "1=个人 2=企业")
     private Integer type;
     @Schema(description = "归属用户id")

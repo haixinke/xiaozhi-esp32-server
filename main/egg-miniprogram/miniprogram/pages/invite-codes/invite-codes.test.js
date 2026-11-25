@@ -1,41 +1,64 @@
 const assert = require('assert');
-const Module = require('module');
+const fs = require('fs');
+const path = require('path');
+const auth = require('../../utils/auth');
 
-const inviteCodesPath = require.resolve('./invite-codes');
-const originalLoad = Module._load;
-const originalPage = global.Page;
-const originalGetApp = global.getApp;
-const originalWx = global.wx;
+process.env.TZ = 'UTC';
 
+const storage = new Map();
+const files = new Map();
+const requests = [];
+const albumSaves = [];
+const toasts = [];
+const base64Png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==';
+const defaultInvite = { code: 'ABCD2345', quota: 5, usedCount: 2, remaining: 3, status: 1 };
 let pageConfig;
-let apiCalls = [];
-let clipboardData = null;
-let shouldReject = false;
-let rejectValue = null;
-
-const inviteApi = {
-  getMine: async () => {
-    apiCalls.push('getMine');
-    if (shouldReject) throw rejectValue;
-    return { code: 'EGG-ABCD', quota: 5, usedCount: 2, remaining: 3, status: 1 };
-  }
-};
-
-Module._load = function (requestName, parent, isMain) {
-  if (requestName === '../../utils/phone-gate') return { withPhoneGate: (definition) => definition };
-  if (parent && parent.filename === inviteCodesPath && requestName === '../../utils/invite-api') {
-    return inviteApi;
-  }
-  return originalLoad.call(this, requestName, parent, isMain);
-};
+let metadata;
+let qrResponse;
+let onQrRequest;
+let finishAlbumSave;
 
 global.Page = (config) => { pageConfig = config; };
-global.getApp = () => ({ silentLogin: async () => {} });
+global.getApp = () => ({ ensureLogin: async () => auth.getSession(), globalData: {} });
 global.wx = {
-  setClipboardData: (options) => { clipboardData = options.data; }
+  env: { USER_DATA_PATH: 'wxfile://usr' },
+  getStorageSync: (key) => storage.get(key),
+  setStorageSync: (key, value) => storage.set(key, value),
+  removeStorageSync: (key) => storage.delete(key),
+  getFileSystemManager: () => ({
+    writeFileSync(filePath, data, encoding) {
+      assert.strictEqual(encoding, 'base64');
+      files.set(filePath, data);
+    },
+    unlink({ filePath }) { files.delete(filePath); }
+  }),
+  saveImageToPhotosAlbum(options) {
+    assert.ok(files.has(options.filePath), 'the QR file exists when handing it to the album');
+    albumSaves.push(options.filePath);
+    finishAlbumSave = options.success;
+  },
+  showToast: ({ title }) => toasts.push(title),
+  request(options) {
+    const endpoint = new URL(options.url).pathname;
+    requests.push(endpoint);
+    if (endpoint.endsWith('/invite/mine/qrcode')) {
+      if (onQrRequest) onQrRequest(options);
+      else options.success({ statusCode: 200, data: qrResponse });
+      return;
+    }
+    assert.ok(endpoint.endsWith('/invite/mine'));
+    options.success({ statusCode: 200, data: metadata });
+  }
 };
 
-function makePage() {
+function makePage(invite = defaultInvite) {
+  files.clear();
+  requests.length = 0;
+  albumSaves.length = 0;
+  toasts.length = 0;
+  onQrRequest = null;
+  metadata = { code: 0, data: invite };
+  qrResponse = { code: 0, data: base64Png };
   return {
     ...pageConfig,
     data: { ...pageConfig.data },
@@ -43,93 +66,107 @@ function makePage() {
   };
 }
 
-(async () => {
+async function run() {
   require('./invite-codes');
-  assert.ok(pageConfig, 'invite-codes page should be registered');
-  assert.deepStrictEqual(
-    pageConfig.data,
-    { inviteCode: null, exhausted: false, loading: true, error: '' },
-    'initial data should be set'
-  );
+  auth.saveSession({ token: 'test-session', userId: 42, openid: 'test-user', hasPhone: true, expire: 3600 });
 
-  // 1. 正常加载：激活码 + 未用完
-  shouldReject = false;
-  apiCalls = [];
+  const template = fs.readFileSync(path.join(__dirname, 'invite-codes.wxml'), 'utf8');
+  assert.ok(!template.includes('{{inviteCode.code}}'));
+  assert.ok(!template.includes('复制激活码'));
+  assert.ok(template.includes('src="{{qrImage}}"'));
+  assert.ok(template.includes('bindtap="onSaveQrImage"'));
+
   const page = makePage();
+  await page.onLoad();
   await page.onShow();
-  assert.strictEqual(apiCalls.length, 1, 'onShow should call getMine');
-  assert.strictEqual(page.data.loading, false, 'loading should be false after success');
-  assert.strictEqual(page.data.error, '', 'error should be empty after success');
-  assert.strictEqual(page.data.inviteCode.code, 'EGG-ABCD', 'code should be loaded');
-  assert.strictEqual(page.data.inviteCode.quota, 5, 'quota should be loaded');
-  assert.strictEqual(page.data.inviteCode.usedCount, 2, 'usedCount should be loaded');
-  assert.strictEqual(page.data.inviteCode.remaining, 3, 'remaining should be loaded');
-  assert.strictEqual(page.data.exhausted, false, 'remaining > 0 and status == 1 should not be exhausted');
+  assert.strictEqual(requests.length, 2);
+  assert.strictEqual(files.get(page.data.qrImage), base64Png, 'the PNG is rendered from a mini-program file');
+  assert.strictEqual(page.data.inviteCode.usedCount, 2);
+  assert.strictEqual(page.data.inviteCode.quota, 5);
+  assert.strictEqual(page.data.inviteCode.remaining, 3);
+  assert.strictEqual(page.data.statusLabel, '可邀请');
+  assert.strictEqual(page.data.inviteCode.code, undefined, 'the visible data does not carry the text code');
+  const save = page.onSaveQrImage();
+  assert.deepStrictEqual(albumSaves, [page.data.qrImage], 'saving uses the existing local QR file');
+  finishAlbumSave();
+  await save;
+  assert.deepStrictEqual(toasts, ['已保存到相册']);
+  const previousImage = page.data.qrImage;
+  await page.onShow();
+  page.onQrImageError({ currentTarget: { dataset: { path: previousImage } } });
+  assert.strictEqual(page.data.error, '', 'a retired image cannot break the current QR display');
+  assert.strictEqual(files.get(page.data.qrImage), base64Png);
+  page.onUnload();
+  assert.strictEqual(files.size, 0, 'leaving the page removes its QR file');
 
-  // 2. 已用完：remaining 为 0
-  let usedPage = makePage();
-  usedPage.loadInviteCode = async function () {
-    this.setData({ loading: true, error: '' });
-    const code = { code: 'EGG-USED', quota: 5, usedCount: 5, remaining: 0, status: 1 };
-    this.setData({ inviteCode: code, exhausted: pageConfig.isExhausted(code), loading: false });
-  };
-  await usedPage.loadInviteCode();
-  assert.strictEqual(usedPage.data.exhausted, true, 'remaining <= 0 should be exhausted');
+  for (const [invite, label] of [
+    [{ ...defaultInvite, remaining: 0, usedCount: 5 }, '已用完'],
+    [{ ...defaultInvite, status: 0 }, '已停用'],
+    [{ ...defaultInvite, expireTime: '2020-01-01T00:00:00.000+00:00' }, '已过期']
+  ]) {
+    const unavailable = makePage(invite);
+    await unavailable.onShow();
+    assert.strictEqual(unavailable.data.statusLabel, label);
+    assert.strictEqual(unavailable.data.qrImage, '');
+    assert.strictEqual(requests.length, 1, 'an unavailable code only loads metadata');
+    await unavailable.onSaveQrImage();
+    assert.deepStrictEqual(albumSaves, [], 'unavailable codes cannot be saved');
+  }
 
-  // 3. 失效：status 不为 1
-  let pausedPage = makePage();
-  pausedPage.loadInviteCode = async function () {
-    this.setData({ loading: true, error: '' });
-    const code = { code: 'EGG-PAUSED', quota: 5, usedCount: 1, remaining: 4, status: 0 };
-    this.setData({ inviteCode: code, exhausted: pageConfig.isExhausted(code), loading: false });
-  };
-  await pausedPage.loadInviteCode();
-  assert.strictEqual(pausedPage.data.exhausted, true, 'status !== 1 should be exhausted');
+  const realNow = Date.now;
+  const midnightInChina = Date.parse('2026-11-24T16:00:00Z');
+  try {
+    const invite = { ...defaultInvite, expireTime: '2026-11-25 00:00:00' };
+    Date.now = () => midnightInChina - 1000;
+    const stillAvailable = makePage(invite);
+    await stillAvailable.onShow();
+    assert.strictEqual(stillAvailable.data.statusLabel, '可邀请');
+    stillAvailable.onUnload();
 
-  // 4. 加载失败
-  shouldReject = true;
-  rejectValue = { userMessage: '登录状态已失效，请重新登录' };
-  const errorPage = makePage();
-  apiCalls = [];
-  await errorPage.onShow();
-  assert.strictEqual(errorPage.data.loading, false, 'loading should be false after error');
-  assert.strictEqual(errorPage.data.inviteCode, null, 'inviteCode should be null on error');
-  assert.strictEqual(errorPage.data.error, '登录状态已失效，请重新登录', 'error message should surface');
+    Date.now = () => midnightInChina;
+    const expired = makePage(invite);
+    await expired.onShow();
+    assert.strictEqual(expired.data.statusLabel, '已过期', 'server timestamps expire at GMT+8 on a UTC device');
+    assert.strictEqual(requests.length, 1, 'an expired code only loads metadata');
+  } finally {
+    Date.now = realNow;
+  }
 
-  // 5. 重试
-  shouldReject = false;
-  await errorPage.onRetry();
-  assert.strictEqual(errorPage.data.error, '', 'error should clear after retry success');
-  assert.strictEqual(errorPage.data.inviteCode.code, 'EGG-ABCD', 'retry should reload code');
+  const failedPage = makePage();
+  qrResponse = { code: 1, msg: '二维码暂不可用' };
+  await failedPage.onShow();
+  assert.strictEqual(failedPage.data.error, '二维码暂不可用');
+  assert.strictEqual(failedPage.data.inviteCode.remaining, 3, 'available usage information remains visible');
+  qrResponse = { code: 0, data: base64Png };
+  await failedPage.onRetry();
+  assert.strictEqual(failedPage.data.error, '');
+  assert.strictEqual(files.get(failedPage.data.qrImage), base64Png);
+  failedPage.onUnload();
 
-  // 6. 复制
-  const copyPage = makePage();
-  shouldReject = false;
-  await copyPage.onShow();
-  clipboardData = null;
-  copyPage.onCopy();
-  assert.strictEqual(clipboardData, 'EGG-ABCD', 'copy should set clipboard to code');
+  const albumPage = makePage();
+  await albumPage.onShow();
+  const savingFile = albumPage.data.qrImage;
+  const saving = albumPage.onSaveQrImage();
+  albumPage.onHide();
+  assert.ok(files.has(savingFile), 'an in-flight album save retains its source file');
+  finishAlbumSave();
+  await saving;
+  assert.strictEqual(files.size, 0, 'the hidden page releases its source file after saving');
 
-  // 已用完不可复制
-  usedPage = makePage();
-  usedPage.loadInviteCode = async function () {
-    this.setData({ loading: true, error: '' });
-    const code = { code: 'EGG-USED', quota: 5, usedCount: 5, remaining: 0, status: 1 };
-    this.setData({ inviteCode: code, exhausted: pageConfig.isExhausted(code), loading: false });
-  };
-  await usedPage.loadInviteCode();
-  clipboardData = null;
-  usedPage.onCopy();
-  assert.strictEqual(clipboardData, null, 'exhausted code should not be copied');
+  const delayedPage = makePage();
+  const requestedQr = new Promise((resolve) => { onQrRequest = resolve; });
+  const showing = delayedPage.onShow();
+  const request = await requestedQr;
+  delayedPage.onHide();
+  request.success({ statusCode: 200, data: qrResponse });
+  await showing;
+  assert.strictEqual(files.size, 0, 'a response after the page hides cannot leave a QR file behind');
+  assert.strictEqual(delayedPage.data.qrImage, '');
 
   console.log('invite-codes.test.js: ALL PASS');
-})().finally(() => {
-  Module._load = originalLoad;
-  global.Page = originalPage;
-  global.getApp = originalGetApp;
-  global.wx = originalWx;
-  delete require.cache[inviteCodesPath];
-}).catch((error) => {
+}
+
+run().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });

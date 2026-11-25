@@ -1,35 +1,39 @@
 <view class="page">
   <nav-bar title="我的激活码"></nav-bar>
   <scroll-view class="content" scroll-y>
-    <view wx:if="{{loading}}" class="state state--loading">
+    <view wx:if="{{loading}}" class="state">
       <text class="state-text">加载中…</text>
     </view>
 
-    <view wx:elif="{{error}}" class="state state--error">
-      <text class="state-text">{{error}}</text>
+    <view wx:elif="{{error && !inviteCode}}" class="state">
+      <text class="state-error">{{error}}</text>
       <button class="retry" bindtap="onRetry">重试</button>
     </view>
 
     <block wx:elif="{{inviteCode}}">
       <view class="intro">
         <text class="title">把一颗蛋送给朋友</text>
-        <text class="desc">你有一个专属激活码，可邀请朋友各领养一只蛋宝宝。每位朋友只能使用一次，使用后扣减一次剩余次数。</text>
+        <text class="desc">请好友打开蛋宝宝，从「添加蛋宝宝」扫码领取。</text>
       </view>
-      <view class="code-card {{exhausted ? 'code-card--exhausted' : ''}}">
+      <view class="code-card">
         <view class="code-head">
-          <text class="code-label">我的激活码</text>
+          <text class="state-label {{qrImage ? 'state-label--available' : ''}}">{{statusLabel}}</text>
           <text class="usage">已用 {{inviteCode.usedCount}} / {{inviteCode.quota}} · 剩余 {{inviteCode.remaining}}</text>
         </view>
-        <text class="code">{{inviteCode.code}}</text>
-        <view class="code-foot">
-          <text class="state-label">{{exhausted ? '已用完' : '可邀请'}}</text>
-          <button class="copy" disabled="{{exhausted}}" bindtap="onCopy">复制激活码</button>
+        <block wx:if="{{qrImage}}">
+          <image class="qr-image" src="{{qrImage}}" data-path="{{qrImage}}" mode="aspectFit"
+            aria-label="我的激活码二维码" binderror="onQrImageError"></image>
+          <button class="qr-save" disabled="{{saving}}" bindtap="onSaveQrImage">{{saving ? '保存中…' : '保存到相册'}}</button>
+        </block>
+        <view wx:elif="{{error}}" class="qr-error">
+          <text class="state-error">{{error}}</text>
+          <button class="retry" bindtap="onRetry">重试</button>
         </view>
       </view>
     </block>
 
-    <view wx:else class="empty">暂无可用激活码</view>
-
-    <view class="note">个人激活码不提供积分、排行榜或现金奖励。只有朋友成功绑定蛋宝宝后，才会扣减一次剩余次数。</view>
+    <view wx:else class="state">
+      <text class="state-text">暂无可用激活码</text>
+    </view>
   </scroll-view>
 </view>

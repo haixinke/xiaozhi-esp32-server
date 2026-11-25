@@ -2,6 +2,7 @@ package xiaozhi.modules.invite.service.impl;
 
 import java.time.Clock;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -16,6 +17,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
+import cn.hutool.extra.qrcode.QrCodeUtil;
+import cn.hutool.extra.qrcode.QrConfig;
+import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.PageData;
@@ -42,6 +46,8 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
         implements InviteService {
 
     private static final int CODE_MAX_RETRY = 5;
+    private static final String QR_PAYLOAD_PREFIX = "iv1-";
+    private static final int QR_SIZE = 512;
 
     @Autowired
     private InviteUsageDao inviteUsageDao;
@@ -62,8 +68,8 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public InviteCodeVO createPersonalCode(Long userId) {
-        if (userId == null) {
+    public InviteCodeVO createPersonalCode(Long userId, String username) {
+        if (userId == null || username == null || username.isBlank()) {
             throw new RenException(ErrorCode.NOT_NULL);
         }
         InviteCodeEntity existing = baseDao.selectOne(new QueryWrapper<InviteCodeEntity>()
@@ -73,6 +79,7 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
         }
         InviteCodeEntity entity = new InviteCodeEntity();
         entity.setCode(generateUniqueCode());
+        entity.setName(username);
         entity.setType(InviteCodeType.PERSONAL);
         entity.setOwnerUserId(userId);
         entity.setQuota(personalQuota);
@@ -86,12 +93,41 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
 
     @Override
     public InviteCodeVO getMine(Long userId) {
+        return toVO(findPersonalCode(userId));
+    }
+
+    @Override
+    public byte[] getMineQrCode(Long userId) {
+        return renderQrCode(findPersonalCode(userId));
+    }
+
+    @Override
+    public byte[] getEnterpriseQrCode(Long id) {
+        return renderQrCode(requireEnterprise(baseDao.selectById(id)));
+    }
+
+    private InviteCodeEntity findPersonalCode(Long userId) {
+        if (userId == null) {
+            throw new RenException(ErrorCode.USER_NOT_LOGIN);
+        }
         InviteCodeEntity entity = baseDao.selectOne(new QueryWrapper<InviteCodeEntity>()
                 .eq("owner_user_id", userId).eq("type", InviteCodeType.PERSONAL));
         if (entity == null) {
             throw new RenException("未找到个人邀请码");
         }
-        return toVO(entity);
+        return entity;
+    }
+
+    private static byte[] renderQrCode(InviteCodeEntity entity) {
+        QrConfig config = new QrConfig(QR_SIZE, QR_SIZE).setMargin(4);
+        return QrCodeUtil.generatePng(QR_PAYLOAD_PREFIX + entity.getCode(), config);
+    }
+
+    private static InviteCodeEntity requireEnterprise(InviteCodeEntity entity) {
+        if (entity == null || !Integer.valueOf(InviteCodeType.ENTERPRISE).equals(entity.getType())) {
+            throw new RenException(ErrorCode.ENTERPRISE_INVITE_NOT_FOUND);
+        }
+        return entity;
     }
 
     private String generateUniqueCode() {
@@ -110,6 +146,9 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
         vo.setId(e.getId());
         vo.setCode(e.getCode());
         vo.setType(e.getType());
+        if (Integer.valueOf(InviteCodeType.ENTERPRISE).equals(e.getType())) {
+            vo.setName(e.getName());
+        }
         vo.setOwnerUserId(e.getOwnerUserId());
         vo.setQuota(e.getQuota());
         vo.setUsedCount(e.getUsedCount());
@@ -186,8 +225,10 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
         if (dto.getQuota() == null || dto.getQuota() <= 0) {
             throw new RenException("配额必须大于0");
         }
+        String name = normalizeEnterpriseName(dto.getName());
         InviteCodeEntity entity = new InviteCodeEntity();
         entity.setCode(generateUniqueCode());
+        entity.setName(name);
         entity.setType(InviteCodeType.ENTERPRISE);
         entity.setOwnerUserId(null);
         entity.setQuota(dto.getQuota());
@@ -204,9 +245,9 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(InviteCodeUpdateDTO dto) {
-        InviteCodeEntity entity = baseDao.selectByIdForUpdate(dto.getId());
-        if (entity == null) {
-            throw new RenException("邀请码不存在");
+        InviteCodeEntity entity = requireEnterprise(baseDao.selectByIdForUpdate(dto.getId()));
+        if (dto.getName() != null) {
+            entity.setName(normalizeEnterpriseName(dto.getName()));
         }
         if (dto.getQuota() != null) {
             int currentQuota = entity.getQuota() == null ? 0 : entity.getQuota();
@@ -220,7 +261,7 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
         if (dto.getStatus() != null) {
             entity.setStatus(dto.getStatus());
         }
-        if (dto.getExpireTime() != null) {
+        if (dto.isExpireTimeSpecified()) {
             entity.setExpireTime(dto.getExpireTime());
         }
         if (dto.getRemark() != null) {
@@ -231,31 +272,27 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        InviteCodeEntity entity = baseDao.selectByIdForUpdate(id);
-        if (entity == null) {
-            throw new RenException("邀请码不存在");
+        throw new RenException(ErrorCode.ENTERPRISE_INVITE_DELETE_DISABLED);
+    }
+
+    private static String normalizeEnterpriseName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new RenException(ErrorCode.INVITE_NAME_REQUIRED);
         }
-        int used = entity.getUsedCount() == null ? 0 : entity.getUsedCount();
-        if (used > 0) {
-            throw new RenException("邀请码已被使用，无法删除");
-        }
-        baseDao.deleteById(id);
+        return name.strip();
     }
 
     @Override
     public PageData<InviteCodeVO> page(Map<String, Object> params) {
-        IPage<InviteCodeEntity> page = getPage(params, "create_date", false);
-        QueryWrapper<InviteCodeEntity> wrapper = new QueryWrapper<>();
-        if (params.get("type") != null) {
-            wrapper.eq("type", params.get("type"));
-        }
+        Map<String, Object> pageParams = new HashMap<>(params);
+        pageParams.remove(Constant.ORDER_FIELD);
+        pageParams.remove(Constant.ORDER);
+        IPage<InviteCodeEntity> page = getPage(pageParams, "create_date", false);
+        QueryWrapper<InviteCodeEntity> wrapper = new QueryWrapper<InviteCodeEntity>()
+                .eq("type", InviteCodeType.ENTERPRISE);
         if (params.get("status") != null) {
             wrapper.eq("status", params.get("status"));
-        }
-        if (params.get("ownerUserId") != null) {
-            wrapper.eq("owner_user_id", params.get("ownerUserId"));
         }
         IPage<InviteCodeEntity> result = baseDao.selectPage(page, wrapper);
         List<InviteCodeVO> list = result.getRecords().stream()
@@ -265,6 +302,7 @@ public class InviteServiceImpl extends BaseServiceImpl<InviteCodeDao, InviteCode
 
     @Override
     public PageData<InviteUsageVO> usageList(Long codeId, Map<String, Object> params) {
+        requireEnterprise(baseDao.selectById(codeId));
         long cur = params.get("page") == null ? 1 : Long.parseLong(params.get("page").toString());
         long limit = params.get("limit") == null ? 10 : Long.parseLong(params.get("limit").toString());
         Page<InviteUsageEntity> page = new Page<>(cur, limit);

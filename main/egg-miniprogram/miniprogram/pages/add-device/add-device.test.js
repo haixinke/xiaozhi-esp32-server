@@ -1,177 +1,119 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const Module = require('module');
+const auth = require('../../utils/auth');
+const petStore = require('../../utils/pet-store');
+const shareInvite = require('../../utils/share-invite');
 
-const pagePath = require.resolve('./add-device');
-const originalLoad = Module._load;
-const originalPage = global.Page;
-const originalWx = global.wx;
+const storage = new Map();
+const requests = [];
+const scanners = [];
+const redirects = [];
 const originalSetTimeout = global.setTimeout;
-
 let pageConfig;
-let cachedSession = null;
-let cachedExpired = false;
-let relaunchedTo = null;
-let pendingInvite = null;
-let postCalls = 0;
-let postData = null;
-let postError = null;
-let clearPendingCalls = 0;
-
-const authMock = {
-  getSession: () => cachedSession,
-  isExpired: () => cachedExpired
-};
-const shareInviteMock = {
-  getPending: () => pendingInvite,
-  clearPending: () => { clearPendingCalls += 1; }
-};
-
-Module._load = function (request, parent, isMain) {
-  if (parent && parent.filename === pagePath) {
-    if (request === '../../utils/auth') return authMock;
-    if (request === '../../utils/request') return {
-      post: async (url, data) => {
-        postCalls += 1;
-        postData = data;
-        if (postError) throw postError;
-        return { prototype: '玉兔' };
-      }
-    };
-    if (request === '../../utils/pet-store') return { savePetFromVO() {} };
-    if (request === '../../utils/share-invite') return shareInviteMock;
-  }
-  return originalLoad.call(this, request, parent, isMain);
-};
+let response;
 
 global.Page = (config) => { pageConfig = config; };
 global.wx = {
-  reLaunch({ url }) { relaunchedTo = url; },
-  switchTab() {}
+  getStorageSync: (key) => storage.get(key),
+  setStorageSync: (key, value) => storage.set(key, value),
+  removeStorageSync: (key) => storage.delete(key),
+  reLaunch: ({ url }) => redirects.push(url),
+  switchTab: ({ url }) => redirects.push(url),
+  request(options) {
+    requests.push(options);
+    options.success({ statusCode: 200, data: response });
+  },
+  scanCode: (options) => scanners.push(options)
 };
-global.setTimeout = (callback) => {
-  callback();
-  return 0;
-};
+global.setTimeout = (callback) => { callback(); return 0; };
 
-function resetScenario() {
-  cachedSession = null;
-  cachedExpired = false;
-  relaunchedTo = null;
-  pendingInvite = null;
-  postCalls = 0;
-  postData = null;
-  postError = null;
-  clearPendingCalls = 0;
-}
-
-function makePage() {
-  return {
+function makePage({ hasPhone = true, expired = false, guest = false, sharedCode } = {}) {
+  storage.clear();
+  requests.length = 0;
+  scanners.length = 0;
+  redirects.length = 0;
+  response = { code: 0, data: { id: 'test-egg', prototype: '玉兔' } };
+  if (!guest) {
+    auth.saveSession({ token: 'test-session', userId: 42, openid: 'test-user', hasPhone, expire: 3600 },
+      expired ? Date.now() - 7200000 : Date.now());
+  }
+  if (sharedCode) shareInvite.savePending({ code: sharedCode, source: 'home_share', version: 1 });
+  const page = {
     ...pageConfig,
     data: { ...pageConfig.data },
     setData(changes) { this.data = { ...this.data, ...changes }; }
   };
+  page.onLoad();
+  return page;
 }
 
 async function run() {
-  const template = fs.readFileSync(path.join(__dirname, 'add-device.wxml'), 'utf8');
-  assert.ok(template.includes('wx:if="{{sharedInvite}}"'),
-    'shared invite users see an explicit confirmation message');
   require('./add-device');
-  assert.ok(pageConfig, 'add-device page should be registered');
+  const template = fs.readFileSync(path.join(__dirname, 'add-device.wxml'), 'utf8');
+  assert.ok(!template.includes('<input'), 'invite codes are no longer entered manually');
+  assert.ok(template.includes('bind:tap="onScanCode"'));
+  assert.ok(template.includes('bind:tap="onClaimSharedInvite"'));
 
-  resetScenario();
-  cachedSession = { userId: 42, hasPhone: true };
-  makePage().onLoad();
-  assert.strictEqual(relaunchedTo, null, 'bound users can enter add-device directly');
+  makePage({ guest: true });
+  assert.deepStrictEqual(redirects, ['/pages/home/home']);
+  makePage({ expired: true });
+  assert.deepStrictEqual(redirects, ['/pages/home/home']);
 
-  resetScenario();
-  cachedSession = { userId: 42, hasPhone: false };
-  makePage().onLoad();
-  assert.strictEqual(relaunchedTo, null, 'unbound authenticated users can adopt before phone binding');
+  const scanPage = makePage({ hasPhone: false });
+  assert.deepStrictEqual(redirects, [], 'an authenticated account can adopt before phone binding');
+  const scan = scanPage.onScanCode();
+  scanPage.onScanCode();
+  assert.strictEqual(scanners.length, 1, 'repeated taps open one scanner');
+  assert.strictEqual(scanners[0].onlyFromCamera, false, 'the scanner can select an image from the album');
+  assert.deepStrictEqual(scanners[0].scanType, ['qrCode']);
+  scanners[0].success({ result: 'iv1-ABCD2345' });
+  await scan;
+  assert.strictEqual(requests.length, 1);
+  assert.ok(requests[0].url.endsWith('/pet/adopt'));
+  assert.strictEqual(requests[0].method, 'POST');
+  assert.deepStrictEqual(requests[0].data, { inviteCode: 'ABCD2345' }, 'the full historical code is submitted');
+  assert.strictEqual(petStore.getPet().id, 'test-egg');
+  assert.strictEqual(scanPage.data.success.petType, '玉兔');
+  assert.deepStrictEqual(redirects, ['/pages/home/home']);
 
-  resetScenario();
-  makePage().onLoad();
-  assert.strictEqual(relaunchedTo, '/pages/home/home', 'users without a session return home');
+  for (const result of ['ABCDE', 'iv2-ABCDE', 'iv1-ABCD', 'iv1-ABCDE\n', 'https://example.com/?code=ABCDE']) {
+    const page = makePage();
+    const attempt = page.onScanCode();
+    scanners[0].success({ result });
+    await attempt;
+    assert.strictEqual(requests.length, 0, 'unrelated content never reaches the adopt API');
+    assert.ok(page.data.error);
+  }
 
-  resetScenario();
-  cachedSession = { userId: 42, hasPhone: true };
-  cachedExpired = true;
-  makePage().onLoad();
-  assert.strictEqual(relaunchedTo, '/pages/home/home', 'expired sessions return home');
+  const cancelledPage = makePage();
+  const cancelled = cancelledPage.onScanCode();
+  scanners[0].fail({ errMsg: 'scanCode:fail cancel' });
+  await cancelled;
+  assert.strictEqual(requests.length, 0);
+  assert.strictEqual(cancelledPage.data.error, '', 'cancelling leaves the page ready to retry');
 
-  resetScenario();
-  cachedSession = { userId: 42, hasPhone: true };
-  pendingInvite = { code: 'ABCDE', source: 'home_share', version: 1, receivedAt: 1 };
-  const invitePage = makePage();
-  invitePage.onLoad();
-  assert.strictEqual(invitePage.data.code, 'ABCDE', 'shared invite code is prefilled');
-  assert.strictEqual(invitePage.data.canSubmit, true, 'prefilled shared invite can be submitted');
-  assert.strictEqual(postCalls, 0, 'prefilling never automatically adopts a pet');
-  assert.strictEqual(clearPendingCalls, 0, 'prefilling keeps the invite until successful adoption');
+  const rejectedPage = makePage();
+  response = { code: 1, msg: '邀请码已失效' };
+  const rejected = rejectedPage.onScanCode();
+  scanners[0].success({ result: 'iv1-ABCDE' });
+  await rejected;
+  assert.strictEqual(rejectedPage.data.error, '邀请码已失效');
+  assert.strictEqual(rejectedPage.data.submitting, false);
 
-  await invitePage.onValidate();
-  assert.strictEqual(postCalls, 1, 'explicit confirmation adopts the pet once');
-  assert.deepStrictEqual(postData, { inviteCode: 'ABCDE' });
-  assert.strictEqual(clearPendingCalls, 1, 'successful shared-code adoption clears the pending invite');
-
-  resetScenario();
-  cachedSession = { userId: 42, hasPhone: true };
-  pendingInvite = { code: 'ABCDE', source: 'home_share', version: 1, receivedAt: 1 };
-  const editedInvitePage = makePage();
-  editedInvitePage.onLoad();
-  editedInvitePage.onCodeInput({ detail: { value: 'MANUAL999' } });
-  assert.strictEqual(clearPendingCalls, 1, 'editing a shared code discards the pending invite');
-  assert.strictEqual(editedInvitePage.data.sharedInvite, false, 'edited codes are treated as manual input');
-
-  resetScenario();
-  cachedSession = { userId: 42, hasPhone: true };
-  const inputPage = makePage();
-  inputPage.onLoad();
-  inputPage.onCodeInput({ detail: { value: 'ab-12' } });
-  assert.strictEqual(inputPage.data.code, 'AB12', 'input is uppercased and non-alphanumerics stripped');
-  assert.strictEqual(inputPage.data.canSubmit, false, 'fewer than 5 characters cannot be submitted');
-  assert.deepStrictEqual(
-    inputPage.data.codeCells.map((cell) => cell.value),
-    ['A', 'B', '1', '2', ''],
-    'filled cells mirror the typed code'
-  );
-  assert.deepStrictEqual(
-    inputPage.data.codeCells.map((cell) => cell.active),
-    [false, false, false, false, true],
-    'next empty cell is marked active'
-  );
-  inputPage.onCodeInput({ detail: { value: 'abc12345' } });
-  assert.strictEqual(inputPage.data.code, 'ABC12', 'input is truncated to 5 characters');
-  assert.strictEqual(inputPage.data.canSubmit, true, 'full 5-character code can be submitted');
-  assert.ok(
-    inputPage.data.codeCells.every((cell) => !cell.active),
-    'no cell is active once the code is complete'
-  );
-  inputPage.onCodeFocus();
-  assert.strictEqual(inputPage.data.codeFocused, true, 'focus highlights the active cell');
-  inputPage.onCodeBlur();
-  assert.strictEqual(inputPage.data.codeFocused, false, 'blur removes the highlight');
-
-  resetScenario();
-  cachedSession = { userId: 42, hasPhone: true };
-  const shortPage = makePage();
-  shortPage.onLoad();
-  shortPage.onCodeInput({ detail: { value: 'ABC' } });
-  await shortPage.onValidate();
-  assert.strictEqual(postCalls, 0, 'short codes never reach the adopt API');
+  const sharedPage = makePage({ sharedCode: 'ABCD2345' });
+  assert.strictEqual(sharedPage.data.sharedInvite, true);
+  assert.strictEqual(requests.length, 0, 'opening a share never automatically adopts');
+  assert.ok(shareInvite.getPending());
+  await sharedPage.onClaimSharedInvite();
+  assert.strictEqual(requests.length, 1);
+  assert.deepStrictEqual(requests[0].data, { inviteCode: 'ABCD2345' });
+  assert.strictEqual(shareInvite.getPending(), null, 'successful adoption clears the pending share');
 
   console.log('add-device.test.js: ALL PASS');
 }
 
-run().finally(() => {
-  Module._load = originalLoad;
-  global.Page = originalPage;
-  global.wx = originalWx;
-  global.setTimeout = originalSetTimeout;
-  delete require.cache[pagePath];
-}).catch((error) => {
+run().finally(() => { global.setTimeout = originalSetTimeout; }).catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });

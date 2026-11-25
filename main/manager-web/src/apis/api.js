@@ -19,6 +19,7 @@ import game from './module/game.js'
 import smallObject from './module/smallObject.js'
 import listenQuestion from './module/listenQuestion.js'
 import dailyNote from './module/dailyNote.js'
+import enterpriseInvite from './module/enterpriseInvite.js'
 
 
 
@@ -59,5 +60,6 @@ export default {
     game,
     smallObject,
     dailyNote,
+    enterpriseInvite,
     listenQuestion
   }

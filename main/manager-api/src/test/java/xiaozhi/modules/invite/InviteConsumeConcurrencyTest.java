@@ -154,6 +154,7 @@ class InviteConsumeConcurrencyTest {
 
     private InviteCodeVO createEnterpriseCode(int quota) {
         InviteCodeCreateDTO dto = new InviteCodeCreateDTO();
+        dto.setName("邀请码并发测试");
         dto.setQuota(quota);
         dto.setStatus(1);
         dto.setRemark("concurrency-test-" + UUID.randomUUID());

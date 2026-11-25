@@ -2,52 +2,31 @@
   <nav-bar title="添加蛋宝宝"></nav-bar>
 
   <view class="content">
-    <view class="intro">
-      <text class="intro-title">输入激活码</text>
-      <text class="intro-desc">购买或受邀后获得的激活码都从这里输入，具体款式会在破壳时揭晓。</text>
+    <view wx:if="{{sharedInvite}}" class="intro">
+      <text class="intro-title">好友送你一颗蛋</text>
+      <text class="intro-desc">确认后即可领取蛋宝宝。</text>
     </view>
-
-    <view wx:if="{{sharedInvite}}" class="invite-note">
-      <text>好友送你的激活码已填好，请确认后领取蛋宝宝。</text>
-    </view>
-
-    <view class="code-block">
-      <text class="label">5 位激活码</text>
-      <view class="activation-code {{codeFocused ? 'activation-code--focused' : ''}}" bindtap="onCodeTap">
-        <view class="activation-code-cells" aria-role="group" aria-label="5 位激活码输入框">
-          <view wx:for="{{codeCells}}" wx:key="index" class="activation-code-cell {{item.value ? 'activation-code-cell--filled' : ''}} {{codeFocused && item.active ? 'activation-code-cell--active' : ''}}">
-            <text>{{item.value}}</text>
-          </view>
-        </view>
-        <input
-          class="activation-code-native-input"
-          value="{{code}}"
-          maxlength="5"
-          type="text"
-          confirm-type="done"
-          focus="{{codeFocused}}"
-          aria-label="请输入 5 位激活码"
-          bindinput="onCodeInput"
-          bindfocus="onCodeFocus"
-          bindblur="onCodeBlur"
-          bindconfirm="onValidate"
-        />
-      </view>
-      <text class="code-hint">由 5 位英文或数字组成</text>
+    <view wx:else class="intro">
+      <text class="intro-title">扫描激活码</text>
+      <text class="intro-desc">对准激活码二维码扫描，也可以在扫码界面从相册选图。</text>
     </view>
 
     <text wx:if="{{error}}" class="error">{{error}}</text>
 
     <view class="spacer"></view>
-    <btn text="{{submitting ? '正在校验…' : '添加蛋宝宝'}}" disabled="{{!canSubmit || submitting}}" bind:tap="onValidate"></btn>
+    <view class="actions">
+      <btn wx:if="{{sharedInvite}}" text="{{submitting ? '正在领取…' : '领取好友邀请'}}"
+        disabled="{{scanning || submitting}}" bind:tap="onClaimSharedInvite"></btn>
+      <btn text="{{submitting ? '正在领取…' : '扫码领取'}}" variant="{{sharedInvite ? 'secondary' : 'primary'}}"
+        disabled="{{scanning || submitting}}" bind:tap="onScanCode"></btn>
+    </view>
   </view>
 
-  <!-- 校验成功轻惊喜浮层 -->
   <view wx:if="{{success}}" class="success-mask">
     <view class="success-egg-stage">
       <view class="success-glow"></view>
       <view class="success-egg"></view>
     </view>
-    <text class="success-text">你获得了一只{{success.petType || success.prototype}}蛋宝宝</text>
+    <text class="success-text">你获得了一只{{success.petType}}蛋宝宝</text>
   </view>
 </view>

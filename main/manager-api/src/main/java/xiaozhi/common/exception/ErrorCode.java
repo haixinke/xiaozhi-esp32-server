@@ -393,6 +393,11 @@ public interface ErrorCode {
     int DRAWING_PRICE_CHANGED = 10424; // 开局费用已变化，请重新确认
     int DRAWING_REQUEST_INVALID = 10425; // 开局请求不合法或幂等标识冲突
 
+    // 邀请码管理
+    int ENTERPRISE_INVITE_NOT_FOUND = 10430;
+    int ENTERPRISE_INVITE_DELETE_DISABLED = 10431;
+    int INVITE_NAME_REQUIRED = 10432;
+
     // PDC NFC 实物生产域错误码
     int PDC_NFC_FEATURE_DISABLED = 10500; // NFC 功能未开启
     int PDC_NFC_MODEL_ID_NOT_CONFIGURED = 10501; // NFC 模型ID未配置

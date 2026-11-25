@@ -1,8 +1,14 @@
 package xiaozhi.modules.invite.controller;
 
+import java.util.Base64;
 import java.util.Map;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,6 +51,15 @@ public class InviteController {
         return new Result<InviteCodeVO>().ok(inviteService.getMine(userId));
     }
 
+    @GetMapping("/mine/qrcode")
+    @Operation(summary = "获取我的个人邀请码二维码")
+    @RequiresPermissions("sys:role:normal")
+    public ResponseEntity<Result<String>> mineQrCode() {
+        byte[] png = inviteService.getMineQrCode(SecurityUser.getUserId());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(new Result<String>().ok(Base64.getEncoder().encodeToString(png)));
+    }
+
     @PostMapping("/consume")
     @Operation(summary = "消耗邀请码领蛋")
     @RequiresPermissions("sys:role:normal")
@@ -69,15 +84,25 @@ public class InviteController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "删除企业邀请码")
+    @Operation(summary = "企业邀请码保留原记录，请使用停用操作", deprecated = true)
     @RequiresPermissions("sys:role:superAdmin")
     public Result<Void> delete(@PathVariable Long id) {
         inviteService.delete(id);
         return new Result<>();
     }
 
+    @GetMapping("/{id}/qrcode")
+    @Operation(summary = "下载企业邀请码二维码")
+    @RequiresPermissions("sys:role:superAdmin")
+    public ResponseEntity<byte[]> enterpriseQrCode(@PathVariable Long id) {
+        byte[] png = inviteService.getEnterpriseQrCode(id);
+        String attachment = ContentDisposition.attachment().filename("invite-" + id + ".png").build().toString();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_PNG)
+                .header(HttpHeaders.CONTENT_DISPOSITION, attachment).body(png);
+    }
+
     @GetMapping("/page")
-    @Operation(summary = "分页查询邀请码")
+    @Operation(summary = "分页查询企业邀请码")
     @RequiresPermissions("sys:role:superAdmin")
     public Result<PageData<InviteCodeVO>> page(@RequestParam Map<String, Object> params) {
         return new Result<PageData<InviteCodeVO>>().ok(inviteService.page(params));

@@ -455,7 +455,7 @@ public class WechatServiceImpl extends BaseServiceImpl<WechatUserDao, WechatUser
         sysUserDao.insert(user);
         // 自动为该 openid 用户生成个人邀请码（失败不阻断登录）
         try {
-            inviteService.createPersonalCode(user.getId());
+            inviteService.createPersonalCode(user.getId(), username);
         } catch (Exception e) {
             log.warn("为新用户生成个人邀请码失败 userId={}, err={}", user.getId(), e.getMessage());
         }

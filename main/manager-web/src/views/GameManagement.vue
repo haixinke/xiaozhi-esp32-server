@@ -187,7 +187,8 @@ export default {
     }
   },
   created() {
-    this.tableColumns = [      { prop: 'gameType', label: '游戏类型', align: 'center', slot: 'gameType' },
+    this.tableColumns = [
+      { prop: 'gameType', label: '游戏类型', align: 'center', slot: 'gameType' },
       { prop: 'gameCategory', label: '游戏分类', align: 'center', slot: 'gameCategory' },
       { prop: 'icon', label: '图标', align: 'center', slot: 'icon' },
       { prop: 'earnStars', label: '赚取星星', align: 'center' },

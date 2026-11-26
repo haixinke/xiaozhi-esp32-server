@@ -187,6 +187,13 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
                 dto.setGameCategory(GameCategoryEnum.INTERNAL.name());
             }
         }
+        // 旧客户端更新时可能显式回传 EXTERNAL 却不携带链接：与缺省分类同一保留哲学，
+        // 链接为空白（null 或纯空白字符）时沿用已保存链接，再交给 validate 校验有效值；
+        // 新增无存量链接可保留，仍会在 validateCategory 因缺链接被拒
+        if (existing != null && GameCategoryEnum.EXTERNAL.name().equals(dto.getGameCategory())
+                && StringUtils.isBlank(dto.getJumpUrl())) {
+            dto.setJumpUrl(existing.getJumpUrl());
+        }
         // 显式内部游戏：清空跳转链接
         if (GameCategoryEnum.INTERNAL.name().equals(dto.getGameCategory())) {
             dto.setJumpUrl(null);

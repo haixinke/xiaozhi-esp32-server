@@ -1,6 +1,7 @@
 package xiaozhi.modules.game.enums;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,9 +22,16 @@ public enum GameCategoryEnum {
     EXTERNAL;
 
     /**
+     * 合法 code 集合在类加载时构建一次：校验路径高频调用 codes()，
+     * 避免每次重建流式 Set 的分配开销；只读视图防止调用方意外改动
+     */
+    private static final Set<String> CODES = Collections.unmodifiableSet(
+            Arrays.stream(values()).map(Enum::name).collect(Collectors.toSet()));
+
+    /**
      * 所有合法 code 的集合，用于校验 gameCategory 字段
      */
     public static Set<String> codes() {
-        return Arrays.stream(values()).map(Enum::name).collect(Collectors.toSet());
+        return CODES;
     }
 }

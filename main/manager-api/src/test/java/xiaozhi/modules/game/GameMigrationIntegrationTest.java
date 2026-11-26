@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 在真实 MySQL 兼容库上验证游戏分类迁移：为 ai_game 增加 game_category / jump_url。
  *
  * <p>直接执行迁移 SQL 文件，不加载 Spring Boot 上下文。默认连接本地 OceanBase
- * (MySQL 兼容模式，端口 2881)，主机可用环境变量 DB_HOST 覆盖。
+ * (MySQL 兼容模式，端口 2881)，主机与账号可用环境变量 DB_HOST / DB_USER / DB_PASSWORD 覆盖。
  * 使用独立测试库 {@code egg_game_test}，严禁指向开发库 egg_database。
  *
  * <p>测试先按迁移前的旧表结构建 ai_game（不含两个新列），写入存量风格数据，
@@ -36,6 +36,11 @@ class GameMigrationIntegrationTest {
 
     private static final String DB_HOST = System.getenv().getOrDefault("DB_HOST", "127.0.0.1");
 
+    // 与 DB_HOST 同一约定：账号默认本地开发值，可用环境变量覆盖，避免把环境密码写死进仓库
+    private static final String DB_USER = System.getenv().getOrDefault("DB_USER", "root");
+
+    private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "123456");
+
     private static final Path MIGRATION = Path.of(
             "src/main/resources/db/changelog/202611261000.sql");
 
@@ -46,7 +51,7 @@ class GameMigrationIntegrationTest {
     static void setUp() throws Exception {
         try (Connection bootstrap = DriverManager.getConnection(
                 "jdbc:mysql://" + DB_HOST + ":2881/?useSSL=false&allowPublicKeyRetrieval=true",
-                "root", "123456");
+                DB_USER, DB_PASSWORD);
              Statement stmt = bootstrap.createStatement()) {
             stmt.execute("CREATE DATABASE IF NOT EXISTS " + TEST_DATABASE);
         }
@@ -54,7 +59,7 @@ class GameMigrationIntegrationTest {
                 "jdbc:mysql://" + DB_HOST + ":2881/" + TEST_DATABASE + "?useUnicode=true" +
                 "&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai" +
                 "&nullCatalogMeansCurrent=true&useSSL=false&allowPublicKeyRetrieval=true",
-                "root", "123456");
+                DB_USER, DB_PASSWORD);
 
         // 按迁移前的旧 schema 建 ai_game（202610161000 的列集 + 202610171000 的唯一索引），
         // 模拟含存量游戏的升级现场；已存在则先删，保证每次运行都是从旧结构升级
@@ -79,16 +84,17 @@ class GameMigrationIntegrationTest {
             stmt.execute("ALTER TABLE `ai_game` ADD UNIQUE KEY `uk_ai_game_game_type` (`game_type`)");
         }
 
-        // 写入存量风格数据（旧结构，无新列），再执行迁移
+        // 写入存量风格数据（旧结构，无新列），再执行迁移。
+        // 用合成的测试类型而非真实业务类型：迁移回填行为与具体类型无关，测试库隔离无需真实数据
         jdbc = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
         jdbc.update("insert into ai_game " +
                         "(game_type, earn_stars, consume_stars, daily_limit, icon, description, entrances, status, creator, create_date) " +
                         "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                "DRAW_TOGETHER", 5, 0, 3, "https://oss.example/icon.png", "一起画", "NOTE,ACTIVITY", 1, 1L, new Date());
+                "MIG_TEST_A", 5, 0, 3, "https://oss.example/icon.png", "迁移测试A", "NOTE,ACTIVITY", 1, 1L, new Date());
         jdbc.update("insert into ai_game " +
                         "(game_type, earn_stars, consume_stars, daily_limit, icon, description, entrances, status, creator, create_date) " +
                         "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                "LISTEN_TO_YOU", 0, 2, 0, null, "听你说", "NOTE", 0, 1L, new Date());
+                "MIG_TEST_B", 0, 2, 0, null, "迁移测试B", "NOTE", 0, 1L, new Date());
 
         executeMigration();
     }
@@ -115,26 +121,26 @@ class GameMigrationIntegrationTest {
 
         assertThat(rows).hasSize(2);
 
-        var drawTogether = rows.get(0);
-        assertThat(drawTogether.get("GAME_TYPE")).isEqualTo("DRAW_TOGETHER");
-        assertThat(drawTogether.get("GAME_CATEGORY")).isEqualTo("INTERNAL");
-        assertThat(drawTogether.get("JUMP_URL")).isNull();
+        var migTestA = rows.get(0);
+        assertThat(migTestA.get("GAME_TYPE")).isEqualTo("MIG_TEST_A");
+        assertThat(migTestA.get("GAME_CATEGORY")).isEqualTo("INTERNAL");
+        assertThat(migTestA.get("JUMP_URL")).isNull();
         // 原有列逐项核对，确认迁移只加列不改数据
-        assertThat(((Number) drawTogether.get("EARN_STARS")).intValue()).isEqualTo(5);
-        assertThat(((Number) drawTogether.get("CONSUME_STARS")).intValue()).isEqualTo(0);
-        assertThat(((Number) drawTogether.get("DAILY_LIMIT")).intValue()).isEqualTo(3);
-        assertThat(drawTogether.get("ENTRANCES")).isEqualTo("NOTE,ACTIVITY");
-        assertThat(((Number) drawTogether.get("STATUS")).intValue()).isEqualTo(1);
+        assertThat(((Number) migTestA.get("EARN_STARS")).intValue()).isEqualTo(5);
+        assertThat(((Number) migTestA.get("CONSUME_STARS")).intValue()).isEqualTo(0);
+        assertThat(((Number) migTestA.get("DAILY_LIMIT")).intValue()).isEqualTo(3);
+        assertThat(migTestA.get("ENTRANCES")).isEqualTo("NOTE,ACTIVITY");
+        assertThat(((Number) migTestA.get("STATUS")).intValue()).isEqualTo(1);
 
-        var listenToYou = rows.get(1);
-        assertThat(listenToYou.get("GAME_TYPE")).isEqualTo("LISTEN_TO_YOU");
-        assertThat(listenToYou.get("GAME_CATEGORY")).isEqualTo("INTERNAL");
-        assertThat(listenToYou.get("JUMP_URL")).isNull();
-        assertThat(((Number) listenToYou.get("EARN_STARS")).intValue()).isEqualTo(0);
-        assertThat(((Number) listenToYou.get("CONSUME_STARS")).intValue()).isEqualTo(2);
-        assertThat(((Number) listenToYou.get("DAILY_LIMIT")).intValue()).isEqualTo(0);
-        assertThat(listenToYou.get("ENTRANCES")).isEqualTo("NOTE");
-        assertThat(((Number) listenToYou.get("STATUS")).intValue()).isEqualTo(0);
+        var migTestB = rows.get(1);
+        assertThat(migTestB.get("GAME_TYPE")).isEqualTo("MIG_TEST_B");
+        assertThat(migTestB.get("GAME_CATEGORY")).isEqualTo("INTERNAL");
+        assertThat(migTestB.get("JUMP_URL")).isNull();
+        assertThat(((Number) migTestB.get("EARN_STARS")).intValue()).isEqualTo(0);
+        assertThat(((Number) migTestB.get("CONSUME_STARS")).intValue()).isEqualTo(2);
+        assertThat(((Number) migTestB.get("DAILY_LIMIT")).intValue()).isEqualTo(0);
+        assertThat(migTestB.get("ENTRANCES")).isEqualTo("NOTE");
+        assertThat(((Number) migTestB.get("STATUS")).intValue()).isEqualTo(0);
     }
 
     @Test

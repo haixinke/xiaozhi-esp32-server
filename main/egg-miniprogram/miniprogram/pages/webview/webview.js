@@ -33,8 +33,11 @@ Page({
     return decoded.startsWith('https://') ? decoded : '';
   },
 
-  // web-view 加载失败（域名未配置、网络异常等）：提示并收起 web-view，避免停留在空白页
+  // web-view 加载失败（域名未配置、网络异常等）：提示并收起 web-view，避免停留在空白页。
+  // 部分客户端版本在 web-view 卸载时可能再次触发 binderror：已进入错误态时直接返回，
+  // 防止重复 setData 与叠加 toast
   onError() {
+    if (this.data.error) return;
     this.setData({ url: '', error: '页面加载失败，请稍后再试' });
     wx.showToast({ title: '页面加载失败，请稍后再试', icon: 'none' });
   },

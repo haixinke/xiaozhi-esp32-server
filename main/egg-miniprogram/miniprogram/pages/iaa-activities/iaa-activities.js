@@ -3,6 +3,7 @@ const gameApi = require('../../utils/game-api');
 const starApi = require('../../utils/star-api');
 const petStore = require('../../utils/pet-store');
 const { openDrawing } = require('../../utils/drawing-entry');
+const { openExternalGame } = require('../../utils/external-game');
 
 function gameRow(game) {
   const earn = Number(game.earnStars) || 0;
@@ -88,16 +89,9 @@ Page(withPhoneGate({
     const game = this.data.playable.find(item => String(item.id) === String(event.currentTarget.dataset.id));
     if (!game) return;
     // 外部游戏优先按分类分流：在小程序 web-view 中打开运营配置的 H5，
-    // 不产生星星奖励、扣费或计次；目标地址经路由编码传递，由 webview 页完整还原。
+    // 不产生星星奖励、扣费或计次（本分支不调用任何游戏接口）
     if (game.gameCategory === 'EXTERNAL') {
-      if (!game.jumpUrl) {
-        wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' });
-        return;
-      }
-      wx.navigateTo({
-        url: `/pages/webview/webview?url=${encodeURIComponent(game.jumpUrl)}`,
-        fail: () => wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' })
-      });
+      openExternalGame(game);
       return;
     }
     // 进入绘画页不执行扣费；收费确认、额度与资格以后端成功开局为准。

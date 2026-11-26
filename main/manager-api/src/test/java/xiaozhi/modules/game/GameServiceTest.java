@@ -663,7 +663,9 @@ class GameServiceTest {
     @Test
     @DisplayName("save 内置原生类型（一起画/听你说）保存为外部游戏：拒绝")
     void save_reservedNativeTypeAsExternal_rejected() {
-        // 一起画/听你说走小程序原生页面，不能改为外部链接跳转，保护存量体验
+        // 一起画/听你说走小程序原生页面，不能改为外部链接跳转，保护存量体验。
+        // 此处引用真实类型 code 是保护契约而非硬编码业务数据：生产常量 INTERNAL_ONLY_GAME_TYPES
+        // 本就写死这两个 code；且拒绝发生在保存前，两个类型不会因此落库
         for (String reservedType : List.of("DRAW_TOGETHER", "LISTEN_TO_YOU")) {
             GameDTO dto = validExternalDTO();
             dto.setGameType(reservedType);
@@ -686,6 +688,50 @@ class GameServiceTest {
 
         GameVO vo = gameService.get(id);
         assertThat(vo.getJumpUrl()).isEqualTo("https://games.example.com/v2/new?from=update#top");
+    }
+
+    @Test
+    @DisplayName("update 显式外部分类但 jumpUrl 为 null：保留记录已保存的链接（旧客户端兼容）")
+    void update_externalWithoutJumpUrl_keepsStoredLink() {
+        Long id = saveAndTrack(validExternalDTO());
+
+        // 旧客户端更新时显式回传 EXTERNAL 却不携带链接：与缺省分类同一保留哲学，
+        // 沿用已保存链接而非误报缺少跳转地址
+        GameDTO dto = validExternalDTO();
+        dto.setId(id);
+        dto.setJumpUrl(null);
+        gameService.update(dto);
+
+        GameVO vo = gameService.get(id);
+        assertThat(vo.getGameCategory()).isEqualTo("EXTERNAL");
+        assertThat(vo.getJumpUrl()).isEqualTo("https://games.example.com/play/abc");
+    }
+
+    @Test
+    @DisplayName("update 显式外部分类但 jumpUrl 为空白字符：同样保留已保存链接")
+    void update_externalBlankJumpUrl_keepsStoredLink() {
+        Long id = saveAndTrack(validExternalDTO());
+
+        GameDTO dto = validExternalDTO();
+        dto.setId(id);
+        // 空白与 null 同义（旧客户端可能回传空串），都不应覆盖已保存链接
+        dto.setJumpUrl("   ");
+        gameService.update(dto);
+
+        assertThat(gameService.get(id).getJumpUrl()).isEqualTo("https://games.example.com/play/abc");
+    }
+
+    @Test
+    @DisplayName("update 外部游戏新链接首尾空白：去除后落库")
+    void update_externalNewJumpUrl_trimmed() {
+        Long id = saveAndTrack(validExternalDTO());
+
+        GameDTO dto = validExternalDTO();
+        dto.setId(id);
+        dto.setJumpUrl("  https://games.example.com/v2/new  ");
+        gameService.update(dto);
+
+        assertThat(gameService.get(id).getJumpUrl()).isEqualTo("https://games.example.com/v2/new");
     }
 
     @Test

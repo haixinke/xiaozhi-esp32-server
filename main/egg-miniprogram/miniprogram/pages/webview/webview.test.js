@@ -68,6 +68,18 @@ require('./webview');
   assert.strictEqual(view.data.error, '', 'successful reload clears the error');
 }
 
+// 重复 binderror（部分客户端在卸载 web-view 时会再触发一次）：幂等，不叠加 toast
+{
+  const view = page();
+  const toastBefore = calls.filter(([kind]) => kind === 'toast').length;
+  view.onLoad({ url: encodeURIComponent('https://games.example.com/play') });
+  view.onError({});
+  view.onError({});
+  assert.strictEqual(calls.filter(([kind]) => kind === 'toast').length, toastBefore + 1,
+    'duplicate binderror must not stack toasts');
+  assert.strictEqual(view.data.error.length > 0, true, 'error state is kept');
+}
+
 // 返回：页面栈可退时 navigateBack
 {
   const view = page();

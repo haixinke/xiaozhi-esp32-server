@@ -1,7 +1,9 @@
 <view class="page">
   <nav-bar title="游戏" fallback-url="/pages/home/home" bind:back="onBack"></nav-bar>
 
-  <!-- 外部 H5 页面全屏承载：仅当地址有效时渲染，避免空白容器占位 -->
+  <!-- 外部 H5 页面全屏承载：仅当地址有效时渲染，避免空白容器占位。
+       binderror 仅保证主框架加载失败时触发（子资源失败不一定回调），
+       因此 onLoad 的 HTTPS 前置校验才是主要防线，binderror 只是兜底提示 -->
   <web-view wx:if="{{url}}" src="{{url}}" binderror="onError"></web-view>
 
   <!-- 无效地址或加载失败：给出可理解的提示与返回出口 -->

@@ -33,6 +33,9 @@ public class GameDTO implements Serializable {
     @NotBlank(message = "{game.type.require}", groups = DefaultGroup.class)
     private String gameType;
 
+    @Schema(description = "游戏分类：INTERNAL内部游戏 EXTERNAL外部游戏；可空，新增缺省按内部游戏处理，更新缺省保留原分类")
+    private String gameCategory;
+
     @Schema(description = "赚取星星数")
     @NotNull(message = "{game.earnStars.require}", groups = DefaultGroup.class)
     @Min(value = 0, message = "{game.earnStars.min}", groups = DefaultGroup.class)
@@ -53,6 +56,9 @@ public class GameDTO implements Serializable {
 
     @Schema(description = "游戏说明")
     private String description;
+
+    @Schema(description = "跳转链接，仅外部游戏使用；保存为内部游戏时由服务端清空")
+    private String jumpUrl;
 
     @Schema(description = "游戏入口，逗号分隔")
     @NotBlank(message = "{game.entrances.require}", groups = DefaultGroup.class)

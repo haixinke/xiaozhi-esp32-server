@@ -22,6 +22,7 @@ import xiaozhi.common.utils.ConvertUtils;
 import xiaozhi.modules.game.dao.GameDao;
 import xiaozhi.modules.game.dto.GameDTO;
 import xiaozhi.modules.game.entity.GameEntity;
+import xiaozhi.modules.game.enums.GameCategoryEnum;
 import xiaozhi.modules.game.enums.GameEntranceEnum;
 import xiaozhi.modules.game.service.GameService;
 import xiaozhi.modules.game.vo.GameVO;
@@ -64,6 +65,8 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void save(GameDTO dto) {
+        // 旧客户端新增时不携带分类：缺省按内部游戏处理（存量与旧版兼容约定）
+        applyCategoryDefaults(dto, null);
         validate(dto);
         // 同 game_type 只允许一条配置；DB 层由 uk_ai_game_game_type 唯一索引兜底
         ensureGameTypeUnique(dto.getGameType(), null);
@@ -79,11 +82,14 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(GameDTO dto) {
-        validate(dto);
         // 目标行必须存在，避免 updateById 静默 0 行影响返回成功
-        if (baseDao.selectById(dto.getId()) == null) {
+        GameEntity existing = baseDao.selectById(dto.getId());
+        if (existing == null) {
             throw new RenException(ErrorCode.GAME_NOT_FOUND);
         }
+        // 旧客户端更新时不携带分类：保留该记录已保存的分类与链接
+        applyCategoryDefaults(dto, existing);
+        validate(dto);
         // 编辑场景允许 game_type 保持原值，需排除自身 id
         ensureGameTypeUnique(dto.getGameType(), dto.getId());
         GameEntity entity = ConvertUtils.sourceToTarget(dto, GameEntity.class);
@@ -153,6 +159,32 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
     }
 
     /**
+     * 解析并应用游戏分类的缺省规则，在 validate 之前调用。
+     * 新增缺省 INTERNAL（旧客户端不携带分类）；更新缺省保留记录已保存的分类与链接，
+     * 避免旧客户端更新时把分类重置掉。显式保存为内部游戏时清空跳转链接，
+     * 内部游戏的 jump_url 恒为 NULL，防止脏数据残留。
+     * 分类相关的完整校验（外链 HTTPS、零结算、内置类型保护）由 ticket 02 在此扩展。
+     */
+    private void applyCategoryDefaults(GameDTO dto, GameEntity existing) {
+        if (StringUtils.isBlank(dto.getGameCategory())) {
+            if (existing != null) {
+                // 更新缺省：沿用已保存分类，并保留其链接
+                dto.setGameCategory(existing.getGameCategory());
+                if (dto.getJumpUrl() == null) {
+                    dto.setJumpUrl(existing.getJumpUrl());
+                }
+            } else {
+                // 新增缺省：按内部游戏处理
+                dto.setGameCategory(GameCategoryEnum.INTERNAL.name());
+            }
+        }
+        // 显式内部游戏：清空跳转链接
+        if (GameCategoryEnum.INTERNAL.name().equals(dto.getGameCategory())) {
+            dto.setJumpUrl(null);
+        }
+    }
+
+    /**
      * 统一校验 save/update 的业务规则。
      * game_type 必须在 GAME_TYPE 字典中存在，防止配置指向无效类型；
      * entrances 至少一项且全在 GameEntranceEnum 内，保证投放位置合法；
@@ -166,6 +198,9 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
         if (!typeExists) {
             throw new RenException(ErrorCode.GAME_TYPE_NOT_EXIST);
         }
+
+        // 校验游戏分类合法（缺省值已在 applyCategoryDefaults 解析，此处只拦显式传入的未知分类）
+        validateCategory(dto);
 
         // 校验 entrances 非空且全在枚举内
         if (StringUtils.isBlank(dto.getEntrances())) {
@@ -195,6 +230,17 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
         int consume = dto.getConsumeStars() == null ? 0 : dto.getConsumeStars();
         if (earn > 0 && consume > 0) {
             throw new RenException(ErrorCode.GAME_EARN_CONSUME_CONFLICT);
+        }
+    }
+
+    /**
+     * 校验游戏分类取值合法。ticket 01 只校验分类在枚举内并按分类应用缺省/清空规则；
+     * 外部游戏的完整校验（jump_url 必须为非空 HTTPS、零结算约束、
+     * DRAW_TOGETHER/LISTEN_TO_YOU 只允许 INTERNAL）由 ticket 02 在此扩展。
+     */
+    private void validateCategory(GameDTO dto) {
+        if (!GameCategoryEnum.codes().contains(dto.getGameCategory())) {
+            throw new RenException(ErrorCode.GAME_CATEGORY_INVALID, dto.getGameCategory());
         }
     }
 }

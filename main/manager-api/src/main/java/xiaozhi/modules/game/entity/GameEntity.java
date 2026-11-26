@@ -3,6 +3,7 @@ package xiaozhi.modules.game.entity;
 import java.util.Date;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -23,6 +24,11 @@ public class GameEntity extends BaseEntity {
      * 游戏类型，对应字典 GAME_TYPE 的 code
      */
     private String gameType;
+
+    /**
+     * 游戏分类：INTERNAL 内部游戏(原生玩法)，EXTERNAL 外部游戏(H5跳转)，非空
+     */
+    private String gameCategory;
 
     /**
      * 赚取星星数，非负
@@ -48,6 +54,14 @@ public class GameEntity extends BaseEntity {
      * 游戏说明，可空
      */
     private String description;
+
+    /**
+     * 跳转链接，仅外部游戏(EXTERNAL)使用；内部游戏恒为 NULL。
+     * updateStrategy=ALWAYS：显式保存为内部游戏时服务端将本字段置空，
+     * 默认的 NOT_NULL 策略会让 update 语句跳过 null 值导致旧链接清不掉。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String jumpUrl;
 
     /**
      * 游戏入口，逗号分隔枚举 code，如 NOTE,ACTIVITY

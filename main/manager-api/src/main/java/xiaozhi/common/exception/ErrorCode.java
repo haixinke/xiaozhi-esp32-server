@@ -319,6 +319,12 @@ public interface ErrorCode {
     int GAME_EARN_CONSUME_CONFLICT = 10358; // 赚取星星数与消耗星星数不能同时大于零
     int GAME_CATEGORY_INVALID = 10359; // 未知的游戏分类: {0}
 
+    // 游戏外部链接相关错误码（10396 起独立小区间，避开并行开发的游戏结算与小纸条号段）
+    int GAME_JUMP_URL_REQUIRED = 10396; // 外部游戏必须配置跳转链接
+    int GAME_JUMP_URL_INVALID = 10397; // 跳转链接必须是完整的 HTTPS 地址
+    int GAME_EXTERNAL_SETTLEMENT_FORBIDDEN = 10398; // 外部游戏不支持星星奖励、扣费与次数限制
+    int GAME_RESERVED_TYPE_INTERNAL_ONLY = 10399; // 该游戏类型为原生玩法，只能配置为内部游戏
+
     // 游戏星星结算相关错误码（10368 起，避开 10358-10367 给其他游戏结算票使用，避免并行开发冲突）
     int GAME_CHARGE_SESSION_REQUIRED = 10368; // 缺少局次业务单号(playSessionId)
     int GAME_DISABLED = 10369; // 游戏已停用

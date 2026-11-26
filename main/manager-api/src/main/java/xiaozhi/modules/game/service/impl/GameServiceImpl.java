@@ -1,8 +1,11 @@
 package xiaozhi.modules.game.service.impl;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
@@ -39,6 +42,12 @@ import xiaozhi.modules.sys.vo.SysDictDataItem;
 public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implements GameService {
 
     private final SysDictDataService sysDictDataService;
+
+    /**
+     * 原生保留类型：一起画与听你说走小程序原生页面及局次结算，
+     * 只允许配置为内部游戏，防止被改为外部链接跳转后破坏存量体验
+     */
+    private static final Set<String> INTERNAL_ONLY_GAME_TYPES = Set.of("DRAW_TOGETHER", "LISTEN_TO_YOU");
 
     @Override
     public PageData<GameVO> page(Map<String, Object> params) {
@@ -163,7 +172,7 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
      * 新增缺省 INTERNAL（旧客户端不携带分类）；更新缺省保留记录已保存的分类与链接，
      * 避免旧客户端更新时把分类重置掉。显式保存为内部游戏时清空跳转链接，
      * 内部游戏的 jump_url 恒为 NULL，防止脏数据残留。
-     * 分类相关的完整校验（外链 HTTPS、零结算、内置类型保护）由 ticket 02 在此扩展。
+     * 分类相关的完整校验（外链 HTTPS、零结算、内置类型保护）在 validateCategory 中执行。
      */
     private void applyCategoryDefaults(GameDTO dto, GameEntity existing) {
         if (StringUtils.isBlank(dto.getGameCategory())) {
@@ -234,13 +243,67 @@ public class GameServiceImpl extends BaseServiceImpl<GameDao, GameEntity> implem
     }
 
     /**
-     * 校验游戏分类取值合法。ticket 01 只校验分类在枚举内并按分类应用缺省/清空规则；
-     * 外部游戏的完整校验（jump_url 必须为非空 HTTPS、零结算约束、
-     * DRAW_TOGETHER/LISTEN_TO_YOU 只允许 INTERNAL）由 ticket 02 在此扩展。
+     * 校验游戏分类取值合法，并按分类应用外部游戏的完整规则：
+     * 外部游戏必须携带合法的 HTTPS 跳转链接（保留查询参数与锚点，落库存储去除首尾空白后的地址），
+     * 且星星奖励、扣费、每日上限必须均为 0（外部 H5 不走蛋宝宝结算，违规写入一律拒绝而非静默清零）；
+     * 一起画/听你说为原生保留类型，只允许内部游戏。
      */
     private void validateCategory(GameDTO dto) {
         if (!GameCategoryEnum.codes().contains(dto.getGameCategory())) {
             throw new RenException(ErrorCode.GAME_CATEGORY_INVALID, dto.getGameCategory());
         }
+
+        boolean external = GameCategoryEnum.EXTERNAL.name().equals(dto.getGameCategory());
+
+        // 原生保留类型保护：一起画/听你说仅允许内部游戏
+        if (external && INTERNAL_ONLY_GAME_TYPES.contains(dto.getGameType())) {
+            throw new RenException(ErrorCode.GAME_RESERVED_TYPE_INTERNAL_ONLY);
+        }
+
+        if (!external) {
+            return;
+        }
+
+        // 外部游戏必须配置跳转链接
+        String jumpUrl = dto.getJumpUrl();
+        if (StringUtils.isBlank(jumpUrl)) {
+            throw new RenException(ErrorCode.GAME_JUMP_URL_REQUIRED);
+        }
+        // 去除首尾空白后落库；查询参数与锚点属于合法配置，需完整保留
+        String trimmed = jumpUrl.trim();
+        if (!isValidExternalJumpUrl(trimmed)) {
+            throw new RenException(ErrorCode.GAME_JUMP_URL_INVALID);
+        }
+        dto.setJumpUrl(trimmed);
+
+        // 外部游戏免费、不限次、无星星奖励：拒绝非零结算配置而非静默改写，避免运营误以为已生效
+        int earn = dto.getEarnStars() == null ? 0 : dto.getEarnStars();
+        int consume = dto.getConsumeStars() == null ? 0 : dto.getConsumeStars();
+        int limit = dto.getDailyLimit() == null ? 0 : dto.getDailyLimit();
+        if (earn != 0 || consume != 0 || limit != 0) {
+            throw new RenException(ErrorCode.GAME_EXTERNAL_SETTLEMENT_FORBIDDEN);
+        }
+    }
+
+    /**
+     * 校验外部游戏跳转链接：必须是含有效主机名的完整 HTTPS URL，且不能嵌入用户名或密码。
+     * userinfo 在部分客户端会被隐藏显示，易被用于钓鱼伪装，一律拒绝；
+     * 合法查询参数与片段原样保留（域名准入由微信业务域名控制，此处只校验格式）。
+     */
+    private boolean isValidExternalJumpUrl(String url) {
+        final URI uri;
+        try {
+            uri = new URI(url);
+        } catch (URISyntaxException e) {
+            return false;
+        }
+        if (!"https".equalsIgnoreCase(uri.getScheme())) {
+            return false;
+        }
+        if (StringUtils.isBlank(uri.getHost())) {
+            return false;
+        }
+        // 拒绝 https://user:pass@host 形式的内嵌凭证
+        return uri.getUserInfo() == null;
     }
 }

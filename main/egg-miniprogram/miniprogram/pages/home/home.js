@@ -10,6 +10,7 @@ const storyApi = require('../../utils/story-api');
 const starApi = require('../../utils/star-api');
 const dailyNoteApi = require('../../utils/daily-note-api');
 const { openDrawing } = require('../../utils/drawing-entry');
+const { openExternalGame } = require('../../utils/external-game');
 const remoteImage = require('../../utils/remote-image');
 const petIcons = require('../../utils/pet-icons');
 const { INTERACTION_ICONS, SCENE_OPTIONS } = require('../../config/pre-hatch-assets');
@@ -510,18 +511,9 @@ Page({
   onDailyNoteGameTap() {
     const game = this.data.dailyNoteSnapshot && this.data.dailyNoteSnapshot.game;
     if (game && game.gameCategory === 'EXTERNAL') {
-      // 外部分流优先：分类独立于游戏类型，避免为外部玩法逐个扩充分支
-      const jumpUrl = typeof game.jumpUrl === 'string' ? game.jumpUrl.trim() : '';
-      if (!jumpUrl) {
-        wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' });
-        return;
-      }
-      // 地址仅来自服务端运营配置，凭证不随链接传递；编码后经路由还原，查询参数与锚点完整保留；
-      // 纸条弹层保持打开，用户从 H5 返回后仍可再次点击
-      wx.navigateTo({
-        url: `/pages/webview/webview?url=${encodeURIComponent(jumpUrl)}`,
-        fail: () => wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' })
-      });
+      // 外部分流优先：分类独立于游戏类型，避免为外部玩法逐个扩充分支；
+      // 纸条弹层保持打开，用户从 H5 返回后仍可再次点击（弹层处理留在本页，不进共享 helper）
+      openExternalGame(game);
       return;
     }
     if (game && game.gameType === 'DRAW_TOGETHER') {

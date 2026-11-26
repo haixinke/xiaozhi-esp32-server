@@ -147,6 +147,21 @@ function page() {
   view.onTapRow({ currentTarget: { dataset: { id: 12 } } });
   assert.strictEqual(calls.at(-1)[0], 'toast', 'external game without url must toast instead of navigating');
 
+  // 外部游戏 jumpUrl 为纯空白字符：与缺失同义，提示并停留（共享 helper 统一 trim 语义）
+  gamesResponse = async () => [{ id: 13, gameType: 'SOME_H5', gameCategory: 'EXTERNAL', jumpUrl: '   ' }];
+  await view.refresh();
+  const beforeBlank = calls.length;
+  view.onTapRow({ currentTarget: { dataset: { id: 13 } } });
+  assert.deepStrictEqual(calls.slice(beforeBlank), [['toast', '暂时打不开，请稍后再试']],
+    'whitespace-only url must toast and stay put without navigating');
+
+  // 外部游戏链接带首尾空白：trim 后导航（服务端落库前已 trim，此处兜底防御）
+  gamesResponse = async () => [{ id: 14, gameType: 'SOME_H5', gameCategory: 'EXTERNAL', jumpUrl: `  ${externalUrl}  ` }];
+  await view.refresh();
+  view.onTapRow({ currentTarget: { dataset: { id: 14 } } });
+  assert.deepStrictEqual(calls.at(-1), ['navigate', `/pages/webview/webview?url=${encodeURIComponent(externalUrl)}`],
+    'url with surrounding whitespace navigates with the trimmed address');
+
   gamesResponse = async () => [{ id: 4, gameType: 'NEW_GAME' }];
   await view.refresh();
   view.onTapRow({ currentTarget: { dataset: { id: '4' } } });

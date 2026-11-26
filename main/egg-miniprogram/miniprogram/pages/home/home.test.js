@@ -2044,6 +2044,16 @@ async function run() {
   assert.strictEqual(toastTitle, '暂时打不开，请稍后再试', 'blank external link shows an understandable toast');
   assert.strictEqual(repeatPage.data.dailyNoteVisible, true, 'overlay stays so the user can close or retry');
 
+  // 外部游戏链接带首尾空白：trim 后导航（服务端落库前已 trim，此处兜底防御）
+  navigatedTo = null;
+  toastTitle = null;
+  repeatPage.setData({ dailyNoteVisible: true, dailyNoteSnapshot: { game: { gameType: 'TRAVEL', gameCategory: 'EXTERNAL', jumpUrl: `  ${externalGame.jumpUrl}  ` } } });
+  repeatPage.onDailyNoteGameTap();
+  assert.strictEqual(navigatedTo,
+    `/pages/webview/webview?url=${encodeURIComponent(externalGame.jumpUrl)}`,
+    'url with surrounding whitespace navigates with the trimmed address');
+  assert.strictEqual(toastTitle, null, 'no toast on successful trimmed navigation');
+
   // 旧响应缺少分类：按游戏类型分流，听你说进原生页，未知类型保留敬请期待
   navigatedTo = null;
   toastTitle = null;

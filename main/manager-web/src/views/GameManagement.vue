@@ -78,14 +78,15 @@
           <div class="section-heading">基本信息</div>
           <div class="form-grid">
         <el-form-item label="游戏类型" required>
-          <el-select v-model="editForm.gameType" placeholder="请选择游戏类型" class="form-control">
+          <el-select v-model="editForm.gameType" placeholder="请选择游戏类型" class="form-control" @change="handleGameTypeChange">
             <el-option v-for="item in gameTypeOptions" :key="item.key" :label="item.name" :value="item.key" />
           </el-select>
         </el-form-item>
         <el-form-item label="游戏分类" required>
           <el-radio-group v-model="editForm.gameCategory">
             <el-radio label="INTERNAL">内部游戏</el-radio>
-            <el-radio label="EXTERNAL">外部游戏</el-radio>
+            <!-- 一起画/听你说为原生保留玩法，只能选择内部游戏（后端同样兜底拦截） -->
+            <el-radio label="EXTERNAL" :disabled="isInternalOnlyType">外部游戏</el-radio>
           </el-radio-group>
         </el-form-item>
         <!-- 跳转链接仅外部游戏适用；内部游戏隐藏输入，保存时由后端清空已存链接 -->
@@ -109,13 +110,14 @@
           <div class="section-heading">游戏规则</div>
           <div class="form-grid">
         <el-form-item label="赚取星星数">
-          <el-input-number v-model="editForm.earnStars" :min="0" class="form-control" controls-position="right" />
+          <!-- 外部游戏不走星星结算，三项固定为 0 并禁用编辑，避免运营误以为可配置 -->
+          <el-input-number v-model="editForm.earnStars" :min="0" :disabled="editForm.gameCategory === 'EXTERNAL'" class="form-control" controls-position="right" />
         </el-form-item>
         <el-form-item label="消耗星星数">
-          <el-input-number v-model="editForm.consumeStars" :min="0" class="form-control" controls-position="right" />
+          <el-input-number v-model="editForm.consumeStars" :min="0" :disabled="editForm.gameCategory === 'EXTERNAL'" class="form-control" controls-position="right" />
         </el-form-item>
         <el-form-item label="每日次数上限">
-          <el-input-number v-model="editForm.dailyLimit" :min="0" class="form-control" controls-position="right" />
+          <el-input-number v-model="editForm.dailyLimit" :min="0" :disabled="editForm.gameCategory === 'EXTERNAL'" class="form-control" controls-position="right" />
           <span class="form-tip">0 表示不限次数</span>
         </el-form-item>
           </div>
@@ -178,9 +180,14 @@ export default {
       tableColumns: []
     };
   },
+  computed: {
+    // 一起画/听你说为原生保留玩法，只能选择内部游戏（与后端校验一致）
+    isInternalOnlyType() {
+      return this.editForm.gameType === 'DRAW_TOGETHER' || this.editForm.gameType === 'LISTEN_TO_YOU';
+    }
+  },
   created() {
-    this.tableColumns = [
-      { prop: 'gameType', label: '游戏类型', align: 'center', slot: 'gameType' },
+    this.tableColumns = [      { prop: 'gameType', label: '游戏类型', align: 'center', slot: 'gameType' },
       { prop: 'gameCategory', label: '游戏分类', align: 'center', slot: 'gameCategory' },
       { prop: 'icon', label: '图标', align: 'center', slot: 'icon' },
       { prop: 'earnStars', label: '赚取星星', align: 'center' },
@@ -219,6 +226,26 @@ export default {
         .catch(() => {
           this.gameTypeOptions = [];
         });
+    },
+
+    // 编辑中把类型改为一起画/听你说时，已选的外部分类必须纠正回内部，避免出现原生玩法+外链的非法组合
+    handleGameTypeChange() {
+      if (this.isInternalOnlyType && this.editForm.gameCategory === 'EXTERNAL') {
+        this.editForm.gameCategory = 'INTERNAL';
+      }
+    },
+
+    // 外部游戏跳转链接的轻量前置校验：仅 https 协议、必须有主机名、拒绝内嵌用户名密码；完整校验以后端为准
+    isValidExternalJumpUrl(url) {
+      let parsed;
+      try {
+        parsed = new URL(url);
+      } catch (e) {
+        return false;
+      }
+      if (parsed.protocol !== 'https:') return false;
+      if (!parsed.hostname) return false;
+      return !parsed.username && !parsed.password;
     },
 
     gameTypeLabel(type) {
@@ -377,6 +404,22 @@ export default {
       if (this.editForm.entranceList.length === 0) {
         this.$message.warning('请至少选择一个游戏入口');
         return;
+      }
+      if (this.editForm.gameCategory === 'EXTERNAL') {
+        const jumpUrl = (this.editForm.jumpUrl || '').trim();
+        if (!jumpUrl) {
+          this.$message.warning('请填写跳转链接');
+          return;
+        }
+        if (!this.isValidExternalJumpUrl(jumpUrl)) {
+          this.$message.warning('请填写以 https:// 开头的有效跳转链接');
+          return;
+        }
+        // 外部游戏免费、不限次、无星星奖励：提交前固定为 0（后端同样拒绝非零写入）
+        this.editForm.jumpUrl = jumpUrl;
+        this.editForm.earnStars = 0;
+        this.editForm.consumeStars = 0;
+        this.editForm.dailyLimit = 0;
       }
 
       this.saving = true;

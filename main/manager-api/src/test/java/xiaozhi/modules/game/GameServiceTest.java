@@ -507,6 +507,247 @@ class GameServiceTest {
         assertThat(vo.getJumpUrl()).isNull();
     }
 
+    // ---- 外部游戏校验（ticket 02：外部游戏保存与打开） ----
+
+    /** 构造合法的外部游戏 DTO：零奖励零费用不限次，携带 HTTPS 跳转链接 */
+    private GameDTO validExternalDTO() {
+        GameDTO dto = validDTO();
+        dto.setGameCategory("EXTERNAL");
+        dto.setJumpUrl("https://games.example.com/play/abc");
+        dto.setEarnStars(0);
+        dto.setConsumeStars(0);
+        dto.setDailyLimit(0);
+        return dto;
+    }
+
+    @Test
+    @DisplayName("save 外部游戏：合法 HTTPS 链接保存成功并可读取回显")
+    void save_externalWithValidHttpsUrl_accepted() {
+        GameDTO dto = validExternalDTO();
+        Long id = saveAndTrack(dto);
+
+        GameVO vo = gameService.get(id);
+        assertThat(vo.getGameCategory()).isEqualTo("EXTERNAL");
+        assertThat(vo.getJumpUrl()).isEqualTo("https://games.example.com/play/abc");
+        assertThat(vo.getEarnStars()).isZero();
+        assertThat(vo.getConsumeStars()).isZero();
+        assertThat(vo.getDailyLimit()).isZero();
+    }
+
+    @Test
+    @DisplayName("save 外部游戏：链接首尾空白被去除后落库")
+    void save_external_trimsJumpUrlWhitespace() {
+        GameDTO dto = validExternalDTO();
+        dto.setJumpUrl("  https://games.example.com/play/abc  ");
+        Long id = saveAndTrack(dto);
+
+        assertThat(gameService.get(id).getJumpUrl()).isEqualTo("https://games.example.com/play/abc");
+    }
+
+    @Test
+    @DisplayName("save 外部游戏：链接的查询参数与锚点完整保留")
+    void save_external_preservesQueryAndFragment() {
+        GameDTO dto = validExternalDTO();
+        String url = "https://games.example.com/play?level=3&lang=zh-CN&a=b%20c#stage-2";
+        dto.setJumpUrl(" " + url + "\t");
+        Long id = saveAndTrack(dto);
+
+        assertThat(gameService.get(id).getJumpUrl()).isEqualTo(url);
+    }
+
+    @Test
+    @DisplayName("save 外部游戏缺少跳转链接：拒绝")
+    void save_externalMissingJumpUrl_rejected() {
+        GameDTO dto = validExternalDTO();
+        dto.setJumpUrl(null);
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_JUMP_URL_REQUIRED));
+        assertThat(gameDao.selectCount(new QueryWrapper<GameEntity>().eq("game_type", dto.getGameType())))
+                .isZero();
+    }
+
+    @Test
+    @DisplayName("save 外部游戏链接为空白字符：拒绝（视为缺失）")
+    void save_externalBlankJumpUrl_rejected() {
+        GameDTO dto = validExternalDTO();
+        dto.setJumpUrl("   ");
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_JUMP_URL_REQUIRED));
+    }
+
+    @Test
+    @DisplayName("save 外部游戏链接非 HTTPS（http）：拒绝")
+    void save_externalHttpUrl_rejected() {
+        GameDTO dto = validExternalDTO();
+        dto.setJumpUrl("http://games.example.com/play");
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_JUMP_URL_INVALID));
+    }
+
+    @Test
+    @DisplayName("save 外部游戏链接无法解析为 URL：拒绝")
+    void save_externalMalformedUrl_rejected() {
+        GameDTO dto = validExternalDTO();
+        dto.setJumpUrl("not-a-url");
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_JUMP_URL_INVALID));
+    }
+
+    @Test
+    @DisplayName("save 外部游戏链接缺少主机名：拒绝")
+    void save_externalUrlWithoutHost_rejected() {
+        GameDTO dto = validExternalDTO();
+        dto.setJumpUrl("https:///play/abc");
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_JUMP_URL_INVALID));
+    }
+
+    @Test
+    @DisplayName("save 外部游戏链接内嵌用户名密码：拒绝")
+    void save_externalUrlWithUserinfo_rejected() {
+        GameDTO dto = validExternalDTO();
+        // userinfo 会被部分客户端隐藏显示，易被用于钓鱼伪装，一律拒绝
+        dto.setJumpUrl("https://user:pass@games.example.com/play");
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_JUMP_URL_INVALID));
+    }
+
+    @Test
+    @DisplayName("save 外部游戏奖励非零：拒绝")
+    void save_externalNonZeroEarnStars_rejected() {
+        GameDTO dto = validExternalDTO();
+        dto.setEarnStars(1);
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_EXTERNAL_SETTLEMENT_FORBIDDEN));
+    }
+
+    @Test
+    @DisplayName("save 外部游戏消耗或每日上限非零：拒绝")
+    void save_externalNonZeroConsumeOrDailyLimit_rejected() {
+        GameDTO consume = validExternalDTO();
+        consume.setConsumeStars(2);
+        assertThatThrownBy(() -> gameService.save(consume))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_EXTERNAL_SETTLEMENT_FORBIDDEN));
+
+        GameDTO limit = validExternalDTO();
+        limit.setDailyLimit(5);
+        assertThatThrownBy(() -> gameService.save(limit))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_EXTERNAL_SETTLEMENT_FORBIDDEN));
+    }
+
+    @Test
+    @DisplayName("save 内置原生类型（一起画/听你说）保存为外部游戏：拒绝")
+    void save_reservedNativeTypeAsExternal_rejected() {
+        // 一起画/听你说走小程序原生页面，不能改为外部链接跳转，保护存量体验
+        for (String reservedType : List.of("DRAW_TOGETHER", "LISTEN_TO_YOU")) {
+            GameDTO dto = validExternalDTO();
+            dto.setGameType(reservedType);
+            assertThatThrownBy(() -> gameService.save(dto))
+                    .isInstanceOf(RenException.class)
+                    .satisfies(e -> assertThat(((RenException) e).getCode())
+                            .isEqualTo(ErrorCode.GAME_RESERVED_TYPE_INTERNAL_ONLY));
+        }
+    }
+
+    @Test
+    @DisplayName("update 修改外部游戏链接：以新地址为准")
+    void update_externalChangeJumpUrl_usesNewUrl() {
+        Long id = saveAndTrack(validExternalDTO());
+
+        GameDTO dto = validExternalDTO();
+        dto.setId(id);
+        dto.setJumpUrl("https://games.example.com/v2/new?from=update#top");
+        gameService.update(dto);
+
+        GameVO vo = gameService.get(id);
+        assertThat(vo.getJumpUrl()).isEqualTo("https://games.example.com/v2/new?from=update#top");
+    }
+
+    @Test
+    @DisplayName("update 旧客户端缺少分类更新外部游戏：保留已保存分类与链接，并按外链规则校验")
+    void update_legacyClientKeepsExternalCategoryAndLink() {
+        Long id = saveAndTrack(validExternalDTO());
+
+        // 旧客户端不携带 gameCategory/jumpUrl，仅修改描述：分类与链接必须原样保留
+        GameDTO dto = validDTO();
+        dto.setId(id);
+        dto.setEarnStars(0);
+        dto.setConsumeStars(0);
+        dto.setDailyLimit(0);
+        dto.setDescription("旧客户端更新");
+        gameService.update(dto);
+
+        GameVO vo = gameService.get(id);
+        assertThat(vo.getGameCategory()).isEqualTo("EXTERNAL");
+        assertThat(vo.getJumpUrl()).isEqualTo("https://games.example.com/play/abc");
+        assertThat(vo.getDescription()).isEqualTo("旧客户端更新");
+    }
+
+    @Test
+    @DisplayName("update 旧客户端缺省更新外部游戏但携带非零结算字段：拒绝（按保留的分类校验）")
+    void update_legacyClientViolatesExternalRules_rejected() {
+        Long id = saveAndTrack(validExternalDTO());
+
+        // 旧客户端不带分类但把奖励改为非零：按记录已保存的 EXTERNAL 分类校验，必须拒绝
+        GameDTO dto = validDTO();
+        dto.setId(id);
+        dto.setEarnStars(5);
+        assertThatThrownBy(() -> gameService.update(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_EXTERNAL_SETTLEMENT_FORBIDDEN));
+    }
+
+    @Test
+    @DisplayName("listEnabled 外部游戏启停往返：停用后不再返回，重新启用后恢复分类与链接")
+    void listEnabled_externalDisableThenReEnable_roundTrip() {
+        Long id = saveAndTrack(validExternalDTO());
+
+        // 停用后活动列表不再返回
+        GameDTO disable = validExternalDTO();
+        disable.setId(id);
+        disable.setStatus(0);
+        gameService.update(disable);
+        assertThat(gameService.listEnabled("ACTIVITY").stream().map(GameVO::getId)).doesNotContain(id);
+
+        // 重新启用后恢复，且分类、链接、入口不变
+        GameDTO enable = validExternalDTO();
+        enable.setId(id);
+        enable.setStatus(1);
+        gameService.update(enable);
+
+        GameVO vo = gameService.listEnabled("ACTIVITY").stream()
+                .filter(v -> id.equals(v.getId())).findFirst().orElseThrow();
+        assertThat(vo.getGameCategory()).isEqualTo("EXTERNAL");
+        assertThat(vo.getJumpUrl()).isEqualTo("https://games.example.com/play/abc");
+        assertThat(vo.getEntrances()).isEqualTo("NOTE,ACTIVITY");
+    }
+
     // ---- delete ----
 
     @Test

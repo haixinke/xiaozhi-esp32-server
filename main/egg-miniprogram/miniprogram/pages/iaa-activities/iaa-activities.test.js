@@ -113,6 +113,40 @@ function page() {
 
   view.onTapRow({ currentTarget: { dataset: { id: 3 } } });
   assert.deepStrictEqual(calls.at(-1), ['navigate', '/pages/listen/listen']);
+
+  // 外部游戏：进入 webview 页并完整还原目标地址（查询参数与锚点经路由编码传递）
+  const externalUrl = 'https://games.example.com/play?level=3&lang=zh-CN#stage-2';
+  gamesResponse = async () => [
+    { id: 10, gameType: 'SOME_H5', gameTypeName: '跳跳乐', gameCategory: 'EXTERNAL', jumpUrl: externalUrl, earnStars: 0, consumeStars: 0, dailyLimit: 0 }
+  ];
+  await view.refresh();
+  assert.strictEqual(view.data.playable[0].ctaText, '去玩', 'external games are free: 去玩 label');
+  const beforeExternal = calls.length;
+  view.onTapRow({ currentTarget: { dataset: { id: 10 } } });
+  assert.strictEqual(calls.length, beforeExternal + 1, 'external tap issues exactly one navigation');
+  assert.deepStrictEqual(calls.at(-1), ['navigate', `/pages/webview/webview?url=${encodeURIComponent(externalUrl)}`],
+    'external tap opens webview with encoded url');
+  assert.ok(!calls.some(([url]) => url === '/star' || String(url).includes('settle') || String(url).includes('consume')),
+    'opening external games must not call any settlement api');
+
+  // 重复打开外部游戏：每次仅导航，无扣费/计次
+  view.onTapRow({ currentTarget: { dataset: { id: 10 } } });
+  assert.deepStrictEqual(calls.at(-1), ['navigate', `/pages/webview/webview?url=${encodeURIComponent(externalUrl)}`],
+    'reopening an external game navigates again without extra side effects');
+
+  // 旧响应缺少 gameCategory：按内部游戏分流（未识别类型保留未开放提示）
+  gamesResponse = async () => [{ id: 11, gameType: 'SOME_H5', jumpUrl: externalUrl }];
+  await view.refresh();
+  view.onTapRow({ currentTarget: { dataset: { id: 11 } } });
+  assert.deepStrictEqual(calls.at(-1), ['toast', '暂未开放'],
+    'missing category keeps legacy gameType routing even when jumpUrl is present');
+
+  // 外部游戏缺少 jumpUrl：提示而非导航到空白页
+  gamesResponse = async () => [{ id: 12, gameType: 'SOME_H5', gameCategory: 'EXTERNAL', jumpUrl: '' }];
+  await view.refresh();
+  view.onTapRow({ currentTarget: { dataset: { id: 12 } } });
+  assert.strictEqual(calls.at(-1)[0], 'toast', 'external game without url must toast instead of navigating');
+
   gamesResponse = async () => [{ id: 4, gameType: 'NEW_GAME' }];
   await view.refresh();
   view.onTapRow({ currentTarget: { dataset: { id: '4' } } });

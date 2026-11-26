@@ -87,6 +87,19 @@ Page(withPhoneGate({
   onTapRow(event) {
     const game = this.data.playable.find(item => String(item.id) === String(event.currentTarget.dataset.id));
     if (!game) return;
+    // 外部游戏优先按分类分流：在小程序 web-view 中打开运营配置的 H5，
+    // 不产生星星奖励、扣费或计次；目标地址经路由编码传递，由 webview 页完整还原。
+    if (game.gameCategory === 'EXTERNAL') {
+      if (!game.jumpUrl) {
+        wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' });
+        return;
+      }
+      wx.navigateTo({
+        url: `/pages/webview/webview?url=${encodeURIComponent(game.jumpUrl)}`,
+        fail: () => wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' })
+      });
+      return;
+    }
     // 进入绘画页不执行扣费；收费确认、额度与资格以后端成功开局为准。
     if (game.gameType === 'DRAW_TOGETHER') {
       openDrawing(petStore.getPetSnapshot().pet, 'activity');

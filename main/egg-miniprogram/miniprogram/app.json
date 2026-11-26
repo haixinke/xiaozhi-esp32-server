@@ -26,7 +26,8 @@
     "pages/feedback/feedback",
     "pages/age-range/age-range",
     "pages/listen/listen",
-    "pages/iaa-activities/iaa-activities"
+    "pages/iaa-activities/iaa-activities",
+    "pages/webview/webview"
   ],
   "subPackages": [
     { "root": "drawing", "pages": ["pages/draw/draw"] }

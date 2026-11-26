@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "游戏",
+  "usingComponents": {
+    "nav-bar": "../../components/nav-bar/nav-bar"
+  }
+}

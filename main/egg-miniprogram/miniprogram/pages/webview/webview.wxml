@@ -1,0 +1,12 @@
+<view class="page">
+  <nav-bar title="游戏" fallback-url="/pages/home/home" bind:back="onBack"></nav-bar>
+
+  <!-- 外部 H5 页面全屏承载：仅当地址有效时渲染，避免空白容器占位 -->
+  <web-view wx:if="{{url}}" src="{{url}}" binderror="onError"></web-view>
+
+  <!-- 无效地址或加载失败：给出可理解的提示与返回出口 -->
+  <view wx:if="{{error}}" class="error-state">
+    <text class="error-text" aria-role="alert">{{error}}</text>
+    <button class="back-btn" bindtap="onBack"><text class="back-btn-label">返回</text></button>
+  </view>
+</view>

@@ -152,16 +152,28 @@ class DailyNoteTodayServiceTest {
      * 因此本测试类统一使用 GAME_TYPE 字典中未被占用的 MEET_YOU / TRAVEL / WORK。
      */
     private void insertGame(String gameType, String entrances, int status) {
+        insertGame(gameType, entrances, status, null, null);
+    }
+
+    /**
+     * 落库带分类与跳转链接的游戏配置（外部游戏零结算字段，链接原样保存，含查询参数与锚点）。
+     * 返回新记录 id，便于用例精确定位被抽中的游戏。
+     */
+    private Long insertGame(String gameType, String entrances, int status, String gameCategory, String jumpUrl) {
         GameEntity entity = new GameEntity();
         entity.setGameType(gameType);
+        // 未显式指定分类时按内部游戏处理，与存量迁移默认值一致
+        entity.setGameCategory(gameCategory == null ? "INTERNAL" : gameCategory);
         entity.setEarnStars(0);
         entity.setConsumeStars(0);
         entity.setDailyLimit(0);
         entity.setDescription("测试游戏");
         entity.setEntrances(entrances);
         entity.setStatus(status);
+        entity.setJumpUrl(jumpUrl);
         gameDao.insert(entity);
         gameIds.add(entity.getId());
+        return entity.getId();
     }
 
     @Test
@@ -198,6 +210,31 @@ class DailyNoteTodayServiceTest {
         // 存量/缺省游戏迁移后为内部游戏，跳转链接为空
         assertThat(vo.getGame().getGameCategory()).isEqualTo("INTERNAL");
         assertThat(vo.getGame().getJumpUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("小纸条嵌套外部游戏：分类与完整链接（含查询参数与锚点）随响应返回，停用后不再抽中")
+    void todayNestedExternalGameCarriesCategoryAndFullJumpUrl() {
+        atShanghaiNoon("2160-01-12");
+        insertNote("2160-01-12", "外部游戏");
+        // 外部游戏：零结算字段，链接保留查询参数与锚点（运营可定位到具体关卡/活动页）
+        String jumpUrl = "https://games.example.com/h5/maze?level=3&channel=note#stage-2";
+        Long externalId = insertGame("MEET_YOU", "NOTE", 1, "EXTERNAL", jumpUrl);
+        sidelinePreExistingNoteGames();
+
+        DailyNoteTodayVO vo = dailyNoteTodayService.today(null);
+
+        assertThat(vo).isNotNull();
+        assertThat(vo.getGame()).isNotNull();
+        assertThat(vo.getGame().getId()).isEqualTo(externalId);
+        assertThat(vo.getGame().getGameCategory()).isEqualTo("EXTERNAL");
+        assertThat(vo.getGame().getJumpUrl()).isEqualTo(jumpUrl);
+
+        // 停用后立即不再被抽中（无其他合格游戏 → 整体返回空）
+        GameEntity entity = gameDao.selectById(externalId);
+        entity.setStatus(0);
+        gameDao.updateById(entity);
+        assertThat(dailyNoteTodayService.today(null)).isNull();
     }
 
     @Test

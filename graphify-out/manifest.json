@@ -3075,8 +3075,8 @@
     "semantic_hash": "2f593a2563dc25cde134d224f3f885a6"
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/ErrorCode.java": {
-    "mtime": 1795600848.6663237,
-    "ast_hash": "311a53c1277ee1105db0bd1a569d1ca1",
+    "mtime": 1795678284.5011194,
+    "ast_hash": "17f5d87a9bcd27da0f0cfade8ec45793",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/common/exception/RenException.java": {
@@ -5405,13 +5405,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.test.js": {
-    "mtime": 1795609219.897758,
-    "ast_hash": "b18e4c88dc15d9477715d9da5368222f",
+    "mtime": 1795680261.0554016,
+    "ast_hash": "a1cc400ec30cf6e394e1ebdfd676620c",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/home/home.js": {
-    "mtime": 1795609295.9775634,
-    "ast_hash": "7df95f12a8189301d1b312e74ff37aca",
+    "mtime": 1795680261.0546434,
+    "ast_hash": "a6b2e731d46a36a06cb5bc06666cadb2",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/add-device/add-device.js": {
@@ -5885,8 +5885,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/resources/db/changelog/db.changelog-master.yaml": {
-    "mtime": 1795600848.668078,
-    "ast_hash": "47555307c1501f465d585d266b9cd39e",
+    "mtime": 1795677252.897817,
+    "ast_hash": "023855de1f9c3d7ff1acb877b1bdd025",
     "semantic_hash": ""
   },
   "docs/aliyun/sae-deployment/scripts/_common.sh": {
@@ -6110,8 +6110,8 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/app.json": {
-    "mtime": 1795600649.9348404,
-    "ast_hash": "dcd9690e594b5b67afc763986586fc49",
+    "mtime": 1795678284.4998684,
+    "ast_hash": "610339bc0ad261a098aaf2cb1ff99b17",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/components/button/button.json": {
@@ -8715,13 +8715,13 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/dto/GameDTO.java": {
-    "mtime": 1792206343.1434202,
-    "ast_hash": "e37686c784c99d99d76c8182ca796686",
+    "mtime": 1795677252.8962972,
+    "ast_hash": "d573fa080b5d6d2baa5e0e5a41261ddc",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/entity/GameEntity.java": {
-    "mtime": 1792206343.1436675,
-    "ast_hash": "c41f8d66404dd4149fa0ee24c163fb33",
+    "mtime": 1795677252.8965936,
+    "ast_hash": "8ac1873972d94f258ff4732a7046c425",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/enums/GameEntranceEnum.java": {
@@ -8735,18 +8735,18 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/service/impl/GameServiceImpl.java": {
-    "mtime": 1793796281.370441,
-    "ast_hash": "81252c8d356f09922fbb7e8b9851bbf5",
+    "mtime": 1795680261.0615022,
+    "ast_hash": "69e8701053626981c986db3a98d67760",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/game/vo/GameVO.java": {
-    "mtime": 1793796281.3708673,
-    "ast_hash": "68a133bba219c6e17c95e470fca75687",
+    "mtime": 1795677252.8973672,
+    "ast_hash": "4a84e241923584018b7da47ed5082902",
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/game/GameServiceTest.java": {
-    "mtime": 1793796281.384827,
-    "ast_hash": "7c74563d914a02d2aa09ed71143caf6c",
+    "mtime": 1795680261.062335,
+    "ast_hash": "835eafd91a7b53763524f898128ead97",
     "semantic_hash": ""
   },
   "main/manager-web/scripts/check-vue-template.js": {
@@ -8760,8 +8760,8 @@
     "semantic_hash": ""
   },
   "main/manager-web/src/views/GameManagement.vue": {
-    "mtime": 1793340478.0480645,
-    "ast_hash": "796fd6d0020827a02e31de39c05d179c",
+    "mtime": 1795680261.0627792,
+    "ast_hash": "31a16b2b865a5a2a955e7822c6e81fbe",
     "semantic_hash": ""
   },
   "main/xiaozhi-server/safety_eval/__init__.py": {
@@ -9220,8 +9220,8 @@
     "semantic_hash": ""
   },
   "main/manager-api/src/test/java/xiaozhi/modules/dailynote/DailyNoteTodayServiceTest.java": {
-    "mtime": 1793258925.7637465,
-    "ast_hash": "c74592ea03fdc92d04e62cc261f6ffb2",
+    "mtime": 1795678878.3500586,
+    "ast_hash": "469e30b963cd6efdb5c727d04b676125",
     "semantic_hash": ""
   },
   "main/manager-api/src/main/java/xiaozhi/modules/dailynote/exception/DailyNoteImportException.java": {
@@ -9515,13 +9515,13 @@
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/iaa-activities/iaa-activities.js": {
-    "mtime": 1795609969.4670684,
-    "ast_hash": "499f800faad0ef72377a2707b29859d6",
+    "mtime": 1795680261.055877,
+    "ast_hash": "a9e33e5b37319ed8a26f091569589e53",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/pages/iaa-activities/iaa-activities.test.js": {
-    "mtime": 1795610032.457078,
-    "ast_hash": "50d19c032021a7991ebd15d3ce547ba8",
+    "mtime": 1795680261.05752,
+    "ast_hash": "def6db5ac6e6e40675f2bbfc34402521",
     "semantic_hash": ""
   },
   "main/egg-miniprogram/miniprogram/utils/game-api.js": {
@@ -9759,14 +9759,39 @@
     "ast_hash": "221644d0536bf5f4dffdc59eb5deee1e",
     "semantic_hash": ""
   },
-  "scripts/dbg-invite-list.cjs": {
-    "mtime": 1795586278.1908681,
-    "ast_hash": "6b9527443440c4fe3e774203b713e438",
+  "main/egg-miniprogram/miniprogram/pages/webview/webview.js": {
+    "mtime": 1795680261.0578055,
+    "ast_hash": "c02ad44ca0d96498b2d9c1fc0e126441",
     "semantic_hash": ""
   },
-  "scripts/hitl-invite-list.sh": {
-    "mtime": 1795586174.2014418,
-    "ast_hash": "89b5322460ce25fad8ac427794580db7",
+  "main/egg-miniprogram/miniprogram/pages/webview/webview.test.js": {
+    "mtime": 1795680261.0579858,
+    "ast_hash": "5b277e62a340a09ce47ea3678f572d03",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/external-game.js": {
+    "mtime": 1795680261.0604877,
+    "ast_hash": "06217254e65c608dfd9a4089fd39c312",
+    "semantic_hash": ""
+  },
+  "main/egg-miniprogram/miniprogram/utils/external-game.test.js": {
+    "mtime": 1795680261.0606487,
+    "ast_hash": "be0dc5dfd334f19c5e9f4b89782d46e9",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/main/java/xiaozhi/modules/game/enums/GameCategoryEnum.java": {
+    "mtime": 1795680261.0611658,
+    "ast_hash": "4bc6380bbeaa42c9962551548a26b16b",
+    "semantic_hash": ""
+  },
+  "main/manager-api/src/test/java/xiaozhi/modules/game/GameMigrationIntegrationTest.java": {
+    "mtime": 1795680261.0620167,
+    "ast_hash": "74645b428e95ee66fb0615757c375e58",
+    "semantic_hash": ""
+  },
+  "main/manager-web/tests/gameManagement.test.mjs": {
+    "mtime": 1795678284.5032306,
+    "ast_hash": "cc27966d30f87fde653edb616ce4188e",
     "semantic_hash": ""
   }
 }

@@ -317,6 +317,7 @@ public interface ErrorCode {
     int GAME_DAILY_LIMIT_NEGATIVE = 10356; // 每日次数上限不能为负数
     int GAME_TYPE_ALREADY_EXISTS = 10357; // 该游戏类型已存在，不允许重复创建
     int GAME_EARN_CONSUME_CONFLICT = 10358; // 赚取星星数与消耗星星数不能同时大于零
+    int GAME_CATEGORY_INVALID = 10359; // 未知的游戏分类: {0}
 
     // 游戏星星结算相关错误码（10368 起，避开 10358-10367 给其他游戏结算票使用，避免并行开发冲突）
     int GAME_CHARGE_SESSION_REQUIRED = 10368; // 缺少局次业务单号(playSessionId)

@@ -22,6 +22,12 @@ public class GameVO implements Serializable {
     @Schema(description = "游戏类型名称(字典 GAME_TYPE 的 dict_label，翻译不到时为原始 code)")
     private String gameTypeName;
 
+    @Schema(description = "游戏分类：INTERNAL内部游戏 EXTERNAL外部游戏")
+    private String gameCategory;
+
+    @Schema(description = "跳转链接，仅外部游戏返回；内部游戏为 null")
+    private String jumpUrl;
+
     @Schema(description = "赚取星星数")
     private Integer earnStars;
 

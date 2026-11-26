@@ -184,6 +184,23 @@ class DailyNoteTodayServiceTest {
     }
 
     @Test
+    @DisplayName("小纸条嵌套游戏返回 gameCategory 与 jumpUrl（与 /app/game/list 同一响应模型）")
+    void todayNestedGameCarriesCategoryAndJumpUrl() {
+        atShanghaiNoon("2160-01-11");
+        insertNote("2160-01-11", "分类回显");
+        insertGame("MEET_YOU", "NOTE", 1);
+        sidelinePreExistingNoteGames();
+
+        DailyNoteTodayVO vo = dailyNoteTodayService.today(null);
+
+        assertThat(vo).isNotNull();
+        assertThat(vo.getGame()).isNotNull();
+        // 存量/缺省游戏迁移后为内部游戏，跳转链接为空
+        assertThat(vo.getGame().getGameCategory()).isEqualTo("INTERNAL");
+        assertThat(vo.getGame().getJumpUrl()).isNull();
+    }
+
+    @Test
     @DisplayName("完整日期精确匹配：其他年份的同月同日不命中，相邻日不命中")
     void fullDateMatchNoYearRollover() {
         atShanghaiNoon("2160-02-15");

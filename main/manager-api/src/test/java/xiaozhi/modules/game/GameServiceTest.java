@@ -413,6 +413,100 @@ class GameServiceTest {
                 .isInstanceOf(RenException.class);
     }
 
+    // ---- 游戏分类（ticket 01：内部游戏分类与存量兼容） ----
+
+    @Test
+    @DisplayName("save 缺少 gameCategory：按内部游戏保存，jumpUrl 为空（旧客户端兼容）")
+    void save_missingCategory_defaultsToInternal() {
+        GameDTO dto = validDTO();
+        // 旧版客户端不会携带 gameCategory / jumpUrl
+        Long id = saveAndTrack(dto);
+
+        GameVO vo = gameService.get(id);
+        assertThat(vo.getGameCategory()).isEqualTo("INTERNAL");
+        assertThat(vo.getJumpUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("save 显式内部游戏且携带 jumpUrl：保存成功且链接被清空")
+    void save_explicitInternal_clearsJumpUrl() {
+        GameDTO dto = validDTO();
+        dto.setGameCategory("INTERNAL");
+        // 显式存为内部游戏时链接无意义，服务端负责清空，防止脏数据残留
+        dto.setJumpUrl("https://example.com/game");
+        Long id = saveAndTrack(dto);
+
+        GameVO vo = gameService.get(id);
+        assertThat(vo.getGameCategory()).isEqualTo("INTERNAL");
+        assertThat(vo.getJumpUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("save 未知 gameCategory：拒绝")
+    void save_unknownCategory_rejected() {
+        GameDTO dto = validDTO();
+        dto.setGameCategory("ARCADE");
+
+        assertThatThrownBy(() -> gameService.save(dto))
+                .isInstanceOf(RenException.class)
+                .satisfies(e -> assertThat(((RenException) e).getCode())
+                        .isEqualTo(ErrorCode.GAME_CATEGORY_INVALID));
+    }
+
+    @Test
+    @DisplayName("update 缺少 gameCategory：保留记录已保存的分类（旧客户端兼容）")
+    void update_missingCategory_keepsSavedCategory() {
+        Long id = saveAndTrack(validDTO());
+
+        GameDTO dto = validDTO();
+        dto.setId(id);
+        dto.setEarnStars(9);
+        // 旧版客户端更新时不携带分类：保留已保存的 INTERNAL，而不是重置或报错
+        gameService.update(dto);
+
+        GameVO vo = gameService.get(id);
+        assertThat(vo.getGameCategory()).isEqualTo("INTERNAL");
+        assertThat(vo.getEarnStars()).isEqualTo(9);
+    }
+
+    @Test
+    @DisplayName("update 显式改为内部游戏：jumpUrl 被清空")
+    void update_explicitInternal_clearsJumpUrl() {
+        // 先以外部游戏形态落库（ticket 02 才加完整外链校验，此处直接经 DAO 准备数据）
+        GameEntity entity = new GameEntity();
+        entity.setGameType(PRIMARY_GAME_TYPE);
+        entity.setGameCategory("EXTERNAL");
+        entity.setJumpUrl("https://example.com/game");
+        entity.setEarnStars(0);
+        entity.setConsumeStars(0);
+        entity.setDailyLimit(0);
+        entity.setEntrances("ACTIVITY");
+        entity.setStatus(1);
+        gameDao.insert(entity);
+        touchedIds.add(entity.getId());
+
+        GameDTO dto = validDTO();
+        dto.setId(entity.getId());
+        dto.setGameCategory("INTERNAL");
+        gameService.update(dto);
+
+        GameVO vo = gameService.get(entity.getId());
+        assertThat(vo.getGameCategory()).isEqualTo("INTERNAL");
+        assertThat(vo.getJumpUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("listEnabled 返回 gameCategory：小程序读接口携带分类字段")
+    void listEnabled_returnsGameCategory() {
+        Long id = saveTrackedWith(TEST_GAME_TYPES.get(0), "NOTE", 1);
+
+        List<GameVO> list = gameService.listEnabled("NOTE");
+
+        GameVO vo = list.stream().filter(v -> id.equals(v.getId())).findFirst().orElseThrow();
+        assertThat(vo.getGameCategory()).isEqualTo("INTERNAL");
+        assertThat(vo.getJumpUrl()).isNull();
+    }
+
     // ---- delete ----
 
     @Test

@@ -31,6 +31,9 @@
               <template slot="gameType" slot-scope="scope">
                 <span>{{ gameTypeLabel(scope.row.gameType) }}</span>
               </template>
+              <template slot="gameCategory" slot-scope="scope">
+                <span>{{ categoryLabel(scope.row.gameCategory) }}</span>
+              </template>
               <template slot="icon" slot-scope="scope">
                 <img v-if="scope.row.icon" :src="scope.row.icon" class="game-icon" alt="" />
                 <span v-else>-</span>
@@ -78,6 +81,21 @@
           <el-select v-model="editForm.gameType" placeholder="请选择游戏类型" class="form-control">
             <el-option v-for="item in gameTypeOptions" :key="item.key" :label="item.name" :value="item.key" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="游戏分类" required>
+          <el-radio-group v-model="editForm.gameCategory">
+            <el-radio label="INTERNAL">内部游戏</el-radio>
+            <el-radio label="EXTERNAL">外部游戏</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <!-- 跳转链接仅外部游戏适用；内部游戏隐藏输入，保存时由后端清空已存链接 -->
+        <el-form-item v-if="editForm.gameCategory === 'EXTERNAL'" label="跳转链接" required>
+          <el-input
+            v-model="editForm.jumpUrl"
+            placeholder="https:// 开头的 H5 游戏地址"
+            maxlength="1024"
+            class="form-control"
+          />
         </el-form-item>
         <el-form-item label="游戏入口" required>
           <el-checkbox-group v-model="editForm.entranceList">
@@ -163,6 +181,7 @@ export default {
   created() {
     this.tableColumns = [
       { prop: 'gameType', label: '游戏类型', align: 'center', slot: 'gameType' },
+      { prop: 'gameCategory', label: '游戏分类', align: 'center', slot: 'gameCategory' },
       { prop: 'icon', label: '图标', align: 'center', slot: 'icon' },
       { prop: 'earnStars', label: '赚取星星', align: 'center' },
       { prop: 'consumeStars', label: '消耗星星', align: 'center' },
@@ -178,6 +197,9 @@ export default {
       return {
         id: null,
         gameType: '',
+        // 新增默认内部游戏：存量玩法与最常见的新增场景都是原生玩法
+        gameCategory: 'INTERNAL',
+        jumpUrl: '',
         earnStars: 0,
         consumeStars: 0,
         dailyLimit: 0,
@@ -202,6 +224,12 @@ export default {
     gameTypeLabel(type) {
       const hit = this.gameTypeOptions.find(item => item.key === type);
       return hit ? hit.name : type;
+    },
+
+    // 游戏分类显示名；旧数据缺分类时按内部游戏展示（迁移后存量均为 INTERNAL）
+    categoryLabel(category) {
+      const labelMap = { INTERNAL: '内部游戏', EXTERNAL: '外部游戏' };
+      return labelMap[category] || labelMap.INTERNAL;
     },
 
     entrancesLabel(entrances) {
@@ -254,6 +282,9 @@ export default {
           this.editForm = {
             id: d.id,
             gameType: d.gameType,
+            // 编辑回显已保存分类与链接；旧记录缺分类时回落内部游戏
+            gameCategory: d.gameCategory || 'INTERNAL',
+            jumpUrl: d.jumpUrl || '',
             earnStars: d.earnStars,
             consumeStars: d.consumeStars,
             dailyLimit: d.dailyLimit,
@@ -274,6 +305,9 @@ export default {
       Api.game.updateGame({
         id: row.id,
         gameType: row.gameType,
+        // 启停走完整 update 载荷：必须携带分类与链接，否则后端按缺省规则可能重置配置
+        gameCategory: row.gameCategory,
+        jumpUrl: row.jumpUrl,
         earnStars: row.earnStars,
         consumeStars: row.consumeStars,
         dailyLimit: row.dailyLimit,
@@ -348,6 +382,9 @@ export default {
       this.saving = true;
       const payload = {
         gameType: this.editForm.gameType,
+        gameCategory: this.editForm.gameCategory,
+        // 内部游戏不提交跳转链接（后端也会兜底清空），外部游戏提交运营填写的地址
+        jumpUrl: this.editForm.gameCategory === 'EXTERNAL' ? (this.editForm.jumpUrl || null) : null,
         earnStars: this.editForm.earnStars,
         consumeStars: this.editForm.consumeStars,
         dailyLimit: this.editForm.dailyLimit,

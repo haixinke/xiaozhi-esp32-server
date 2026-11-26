@@ -505,9 +505,25 @@ Page({
     this.setData({ dailyNoteVisible: false, dailyNoteAwardedStars: 0, dailyNoteSnapshot: null });
   },
 
-  // 游戏邀请共用实际玩法页面；一起画只在当前宠物已破壳时关闭纸条并跳转。
+  // 游戏邀请先按分类分流：外部游戏进 webview 页打开运营配置的 H5，不产生扣费/计次（本分支不调用任何游戏接口）；
+  // 旧响应缺少分类时按游戏类型走原有路由。一起画只在当前宠物已破壳时关闭纸条并跳转。
   onDailyNoteGameTap() {
     const game = this.data.dailyNoteSnapshot && this.data.dailyNoteSnapshot.game;
+    if (game && game.gameCategory === 'EXTERNAL') {
+      // 外部分流优先：分类独立于游戏类型，避免为外部玩法逐个扩充分支
+      const jumpUrl = typeof game.jumpUrl === 'string' ? game.jumpUrl.trim() : '';
+      if (!jumpUrl) {
+        wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' });
+        return;
+      }
+      // 地址仅来自服务端运营配置，凭证不随链接传递；编码后经路由还原，查询参数与锚点完整保留；
+      // 纸条弹层保持打开，用户从 H5 返回后仍可再次点击
+      wx.navigateTo({
+        url: `/pages/webview/webview?url=${encodeURIComponent(jumpUrl)}`,
+        fail: () => wx.showToast({ title: '暂时打不开，请稍后再试', icon: 'none' })
+      });
+      return;
+    }
     if (game && game.gameType === 'DRAW_TOGETHER') {
       openDrawing(petStore.getPetSnapshot().pet, 'letter', () => this.onDailyNoteClose());
       return;

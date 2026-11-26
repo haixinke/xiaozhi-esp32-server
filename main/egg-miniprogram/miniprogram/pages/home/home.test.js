@@ -2018,6 +2018,46 @@ async function run() {
   assert.strictEqual(navigatedTo, null);
   assert.strictEqual(repeatPage.data.dailyNoteVisible, true);
 
+  // 外部游戏：优先按分类分流到 webview 页，查询参数与锚点经路由编码完整还原；
+  // 纸条保持打开，可重复点击 H5 不产生扣费/计次（本分支不调用任何游戏接口）
+  navigatedTo = null;
+  toastTitle = null;
+  const externalGame = {
+    gameType: 'TRAVEL',
+    gameCategory: 'EXTERNAL',
+    jumpUrl: 'https://games.example.com/h5/maze?level=3&channel=note#stage-2'
+  };
+  repeatPage.setData({ dailyNoteVisible: true, dailyNoteSnapshot: { game: externalGame } });
+  repeatPage.onDailyNoteGameTap();
+  assert.strictEqual(navigatedTo,
+    `/pages/webview/webview?url=${encodeURIComponent(externalGame.jumpUrl)}`,
+    'external game opens the shared webview page with the full encoded url');
+  assert.strictEqual(repeatPage.data.dailyNoteVisible, true, 'daily note overlay stays open for replay');
+  assert.strictEqual(toastTitle, null, 'no toast on successful external navigation');
+
+  // 外部游戏链接缺失/空白：提示并停留在纸条弹层，不导航
+  navigatedTo = null;
+  toastTitle = null;
+  repeatPage.setData({ dailyNoteVisible: true, dailyNoteSnapshot: { game: { gameType: 'TRAVEL', gameCategory: 'EXTERNAL', jumpUrl: '   ' } } });
+  repeatPage.onDailyNoteGameTap();
+  assert.strictEqual(navigatedTo, null, 'blank external link does not navigate');
+  assert.strictEqual(toastTitle, '暂时打不开，请稍后再试', 'blank external link shows an understandable toast');
+  assert.strictEqual(repeatPage.data.dailyNoteVisible, true, 'overlay stays so the user can close or retry');
+
+  // 旧响应缺少分类：按游戏类型分流，听你说进原生页，未知类型保留敬请期待
+  navigatedTo = null;
+  toastTitle = null;
+  repeatPage.setData({ dailyNoteVisible: true, dailyNoteSnapshot: { game: { gameType: 'LISTEN_TO_YOU' } } });
+  repeatPage.onDailyNoteGameTap();
+  assert.strictEqual(navigatedTo, '/pages/listen/listen', 'legacy response without category keeps gameType routing');
+  assert.strictEqual(repeatPage.data.dailyNoteVisible, false, 'listen entry closes the overlay as before');
+  navigatedTo = null;
+  toastTitle = null;
+  repeatPage.setData({ dailyNoteVisible: true, dailyNoteSnapshot: { game: { gameType: 'MEET_YOU' } } });
+  repeatPage.onDailyNoteGameTap();
+  assert.strictEqual(navigatedTo, null, 'unimplemented internal game does not navigate');
+  assert.strictEqual(toastTitle, '敬请期待', 'unimplemented internal game keeps the coming-soon prompt');
+
   console.log('home.test.js: ALL PASS');
 }
 

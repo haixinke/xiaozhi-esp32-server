@@ -47,7 +47,7 @@ class HatchActionServiceImplTest {
 
     private static final Long USER_ID = 1001L;
     private static final String PET_ID = "pet-egg-1";
-    private static final long SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000;
+    private static final long HATCH_DURATION_MS = 24L * 60 * 60 * 1000;
     private static final long ONE_MINUTE_MS = 60L * 1000;
 
     @BeforeAll
@@ -97,7 +97,7 @@ class HatchActionServiceImplTest {
         long startTs = 1_700_000_000_000L;
         Date hatchStart = new Date(startTs);
         pet.setHatchStartTime(hatchStart);
-        pet.setExpectedHatchTime(new Date(startTs + SEVEN_DAYS_MS));
+        pet.setExpectedHatchTime(new Date(startTs + HATCH_DURATION_MS));
         when(petDao.selectById(PET_ID)).thenReturn(pet);
         when(hatchActionDao.selectCount(any())).thenReturn(0L);
 
@@ -116,8 +116,8 @@ class HatchActionServiceImplTest {
         assertThat(updated.getHatchStartTime()).isEqualTo(hatchStart);
         assertThat(updated.getExpectedHatchTime()).isNotNull();
         long span = updated.getExpectedHatchTime().getTime() - updated.getHatchStartTime().getTime();
-        // expected = start + 7d - 720min => 提前 12h
-        assertThat(span).isEqualTo(SEVEN_DAYS_MS - 720 * ONE_MINUTE_MS);
+        // expected = start + 24h - 720min => 提前 12h
+        assertThat(span).isEqualTo(HATCH_DURATION_MS - 720 * ONE_MINUTE_MS);
         assertThat(updated.getAcceleratedMinutes()).isEqualTo(720);
         assertThat(updated.getNickname()).isEqualTo("小金鱼");
         assertThat(updated.getUpdater()).isEqualTo(USER_ID);
@@ -139,7 +139,7 @@ class HatchActionServiceImplTest {
         long startTs = 1_700_000_000_000L;
         pet.setHatchStartTime(new Date(startTs));
         pet.setAcceleratedMinutes(720);
-        pet.setExpectedHatchTime(new Date(startTs + SEVEN_DAYS_MS - 720 * ONE_MINUTE_MS));
+        pet.setExpectedHatchTime(new Date(startTs + HATCH_DURATION_MS - 720 * ONE_MINUTE_MS));
         when(petDao.selectById(PET_ID)).thenReturn(pet);
         when(hatchActionDao.selectCount(any())).thenReturn(0L);
 
@@ -155,7 +155,7 @@ class HatchActionServiceImplTest {
         PetEntity updated = petCaptor.getValue();
         assertThat(updated.getAcceleratedMinutes()).isEqualTo(840);
         long expected = updated.getExpectedHatchTime().getTime();
-        long baseExpected = startTs + SEVEN_DAYS_MS - 840 * ONE_MINUTE_MS;
+        long baseExpected = startTs + HATCH_DURATION_MS - 840 * ONE_MINUTE_MS;
         assertThat(expected).isEqualTo(Math.max(baseExpected, startTs));
         // 比动作前更早(加速使其提前)
         assertThat(expected).isLessThan(originalExpected);
@@ -268,12 +268,12 @@ class HatchActionServiceImplTest {
     }
 
     @Test
-    @DisplayName("首次DOODLE - 加速720, insert动作记录")
+    @DisplayName("首次DOODLE - 加速360, insert动作记录")
     void firstDoodle_acceleratesAndInserts() {
         PetEntity pet = eggPet();
         long startTs = 1_700_000_000_000L;
         pet.setHatchStartTime(new Date(startTs));
-        pet.setExpectedHatchTime(new Date(startTs + SEVEN_DAYS_MS));
+        pet.setExpectedHatchTime(new Date(startTs + HATCH_DURATION_MS));
         when(petDao.selectById(PET_ID)).thenReturn(pet);
         when(hatchActionDao.selectCount(any())).thenReturn(0L);
 
@@ -281,14 +281,14 @@ class HatchActionServiceImplTest {
 
         HatchActionResultVO result = service.recordHatchAction(USER_ID, PET_ID, dto);
 
-        assertThat(result.getAddedMinutes()).isEqualTo(720);
+        assertThat(result.getAddedMinutes()).isEqualTo(360);
         assertThat(result.isAlreadyDone()).isFalse();
 
         ArgumentCaptor<HatchActionEntity> actCaptor = ArgumentCaptor.forClass(HatchActionEntity.class);
         verify(hatchActionDao).insert(actCaptor.capture());
         HatchActionEntity act = actCaptor.getValue();
         assertThat(act.getActionType()).isEqualTo("DOODLE");
-        assertThat(act.getAcceleratedMinutes()).isEqualTo(720);
+        assertThat(act.getAcceleratedMinutes()).isEqualTo(360);
         assertThat(act.getPayload()).contains("a.png");
         verify(hatchActionDao, never()).updateById(any(HatchActionEntity.class));
     }

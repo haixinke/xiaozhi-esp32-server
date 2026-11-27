@@ -17,7 +17,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PetAdoptionModule {
-    private static final long HATCH_DURATION_MS = 7L * 24 * 60 * 60 * 1000;
+    /** 孵化基础时长 24 小时：领养即设 hatchStartTime/expectedHatchTime，动作只做加速 */
+    private static final long HATCH_DURATION_MS = 24L * 60 * 60 * 1000;
     private final PetDao petDao;
 
     /** NFC 领养结果；替换标记属于本次领养事实，不需要调用者重新扫描宠物列表。 */

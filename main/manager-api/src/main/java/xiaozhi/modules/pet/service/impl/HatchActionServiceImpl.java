@@ -34,7 +34,8 @@ import java.util.Set;
 public class HatchActionServiceImpl implements HatchActionService {
 
     private static final String HATCH_STATUS_EGG = "EGG";
-    private static final long SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000;
+    /** 孵化基础时长 24 小时，与 PetAdoptionModule.HATCH_DURATION_MS 保持一致 */
+    private static final long HATCH_DURATION_MS = 24L * 60 * 60 * 1000;
     private static final long ONE_MINUTE_MS = 60L * 1000;
 
     /** 昵称违禁词：仅做轻量过滤，非完整合规方案。 */
@@ -89,11 +90,11 @@ public class HatchActionServiceImpl implements HatchActionService {
             }
 
             // Model X: adopt 已设 hatchStartTime/expectedHatchTime。动作不再写起点，
-            // 只累加 acceleratedMinutes 并重算 expectedHatchTime = hatchStartTime + 7d - acc(clamp >= hatchStartTime)
+            // 只累加 acceleratedMinutes 并重算 expectedHatchTime = hatchStartTime + 24h - acc(clamp >= hatchStartTime)
             int acc = (pet.getAcceleratedMinutes() == null ? 0 : pet.getAcceleratedMinutes()) + minutes;
             pet.setAcceleratedMinutes(acc);
             long startTs = pet.getHatchStartTime().getTime();
-            long base = startTs + SEVEN_DAYS_MS - acc * ONE_MINUTE_MS;
+            long base = startTs + HATCH_DURATION_MS - acc * ONE_MINUTE_MS;
             pet.setExpectedHatchTime(new Date(Math.max(base, startTs)));
 
             pet.setUpdater(userId);

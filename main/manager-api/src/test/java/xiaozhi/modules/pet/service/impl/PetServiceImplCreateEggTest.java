@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 @DisplayName("PetService.createEgg 纯数据库建蛋测试")
 class PetServiceImplCreateEggTest {
 
-    private static final long SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000;
+    private static final long HATCH_DURATION_MS = 24L * 60 * 60 * 1000;
 
     @BeforeAll
     static void initMessageSource() {
@@ -134,8 +134,8 @@ class PetServiceImplCreateEggTest {
     }
 
     @Test
-    @DisplayName("createEgg 设置 7 天孵化基线")
-    void createEggSetsSevenDayBaseline() {
+    @DisplayName("createEgg 设置 24 小时孵化基线")
+    void createEggSetsHatchBaseline() {
         petService.createEgg(1004L, "锦鲤");
 
         ArgumentCaptor<PetEntity> pet = ArgumentCaptor.forClass(PetEntity.class);
@@ -144,7 +144,7 @@ class PetServiceImplCreateEggTest {
         assertThat(saved.getHatchStartTime()).isNotNull();
         assertThat(saved.getExpectedHatchTime()).isNotNull();
         long span = saved.getExpectedHatchTime().getTime() - saved.getHatchStartTime().getTime();
-        assertThat(span).isEqualTo(SEVEN_DAYS_MS);
+        assertThat(span).isEqualTo(HATCH_DURATION_MS);
     }
 
     @Test

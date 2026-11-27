@@ -57,7 +57,7 @@ class PetServiceImplAdoptTest {
 
     private static final Set<String> PROTOTYPES = Set.of("锦鲤", "玉兔");
     private static final String DEMO_QUICK_HATCH_CODE = "EGG-DEMO-HATCH";
-    private static final int SEVEN_DAYS_MINUTES = 7 * 24 * 60;
+    private static final int HATCH_DURATION_MINUTES = 24 * 60; // 1440
 
     @BeforeAll
     static void initMessageSource() {
@@ -180,12 +180,12 @@ class PetServiceImplAdoptTest {
         assertThat(saved.getGender()).isNull();
         assertThat(saved.getBloodType()).isNull();
         assertThat(saved.getHatchedAt()).isNull();
-        // Model X: adopt 即为破壳时间基线，已写 hatchStartTime/expectedHatchTime(now+7d)
+        // Model X: adopt 即为破壳时间基线，已写 hatchStartTime/expectedHatchTime(now+24h)
         assertThat(saved.getHatchStartTime()).isNotNull();
         assertThat(saved.getExpectedHatchTime()).isNotNull();
-        long sevenDaysMs = 7L * 24 * 60 * 60 * 1000;
+        long hatchDurationMs = 24L * 60 * 60 * 1000;
         long span = saved.getExpectedHatchTime().getTime() - saved.getHatchStartTime().getTime();
-        assertThat(span).isEqualTo(sevenDaysMs);
+        assertThat(span).isEqualTo(hatchDurationMs);
 
         // 创建来源：邀请码（激活码）领养入口
         assertThat(saved.getSource()).isEqualTo("INVITE_CODE");
@@ -306,7 +306,7 @@ class PetServiceImplAdoptTest {
 
         // 从返回 VO 验证进度满
         assertThat(result.getHatchStatus()).isEqualTo("EGG");
-        assertThat(result.getAcceleratedMinutes()).isEqualTo(SEVEN_DAYS_MINUTES);
+        assertThat(result.getAcceleratedMinutes()).isEqualTo(HATCH_DURATION_MINUTES);
         assertThat(result.getNickname()).isEqualTo("蛋宝宝");
         assertThat(result.getExpectedHatchTime()).isNotNull();
         // expectedHatchTime 应在 [before, after] 区间内，表示设为当前时间

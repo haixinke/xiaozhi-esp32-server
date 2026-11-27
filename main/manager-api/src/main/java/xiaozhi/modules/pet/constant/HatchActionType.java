@@ -14,7 +14,7 @@ public enum HatchActionType {
     CUDDLE(120, false),
     WISH(120, false),
     LESSON(120, false),
-    DOODLE(720, true);
+    DOODLE(360, true);
 
     private final int minutes;
     private final boolean oneTime;

@@ -107,8 +107,9 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private static final long SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000;
-    private static final int SEVEN_DAYS_MINUTES = 7 * 24 * 60; // 10080
+    /** 孵化基础时长 24 小时，与 PetAdoptionModule.HATCH_DURATION_MS 保持一致 */
+    private static final long HATCH_DURATION_MS = 24L * 60 * 60 * 1000;
+    private static final int HATCH_DURATION_MINUTES = 24 * 60; // 1440
 
     private static final String HATCH_STATUS_EGG = "EGG";
     private static final String HATCH_STATUS_HATCHED = "HATCHED";
@@ -348,7 +349,7 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
         if (inviteCode != null && inviteCode.equalsIgnoreCase(quickHatchCode)) {
             pet.setNickname("蛋宝宝");
             pet.setExpectedHatchTime(now);
-            pet.setAcceleratedMinutes(SEVEN_DAYS_MINUTES);
+            pet.setAcceleratedMinutes(HATCH_DURATION_MINUTES);
             pet.setUpdater(userId);
             petDao.updateById(pet);
             log.info("演示快速破壳领养 userId={}, petId={}", userId, pet.getId());
@@ -587,9 +588,9 @@ public class PetServiceImpl extends BaseServiceImpl<PetDao, PetEntity> implement
 
         Date now = new Date();
         if (pet.getExpectedHatchTime() == null) {
-            // 兜底：无动作且未设基线的蛋，按 createDate+7d 推算到点时间
+            // 兜底：无动作且未设基线的蛋，按 createDate+24h 推算到点时间
             long baseTs = pet.getCreateDate() != null ? pet.getCreateDate().getTime() : now.getTime();
-            pet.setExpectedHatchTime(new Date(baseTs + SEVEN_DAYS_MS));
+            pet.setExpectedHatchTime(new Date(baseTs + HATCH_DURATION_MS));
         }
         if (now.before(pet.getExpectedHatchTime())) {
             throw new RenException(ErrorCode.PET_HATCH_TIME_NOT_REACHED);

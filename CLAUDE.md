@@ -4,7 +4,9 @@
 
 ## 项目概述
 
-本项目是 **xiaozhi-esp32-server**，为 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 开源智能硬件项目提供的后端服务。它为 ESP32 设备提供实时语音 AI 助手服务器，由 `main/` 下的七个子项目组成。
+本项目是 **xiaozhi-esp32-server**，为 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 开源智能硬件项目提供的后端服务。它为 ESP32 设备提供实时语音 AI 助手服务器，由 `main/` 下的若干子项目组成。
+
+> **不考虑的项目**：`main/digital-human/` 和 `main/manager-mobile/` 在任何情况下都不在本项目工作范围内，不要阅读、修改、构建或引用它们。
 
 ## 子项目
 
@@ -14,6 +16,7 @@
 - **智控台** → `main/manager-web/`
 - **蛋宝宝小程序** → `main/egg-miniprogram/`
 - **UI静态项目** → `main/eggbabe-miniprogram/`
+- **H5小游戏** → `main/games/`（嵌入蛋宝宝小程序的一系列 H5 小游戏）
 
 | 子项目 | 语言 / 技术栈 | 端口 | 用途 |
 |---|---|---|---|

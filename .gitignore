@@ -186,6 +186,7 @@ my_wakeup_words.mp3
 !main/xiaozhi-server/config/assets/max_output_size.wav
 main/manager-api/.vscode
 main/manager-api/.factorypath
+main/manager-api/.classpath
 # Ignore webpack cache directory
 main/manager-web/.webpack_cache/
 main/xiaozhi-server/mysql

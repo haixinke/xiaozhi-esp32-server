@@ -1,5 +1,7 @@
 {
   "navigationBarTitleText": "游戏",
+  "navigationBarBackgroundColor": "#FFFFFF",
+  "navigationBarTextStyle": "black",
   "usingComponents": {
     "nav-bar": "../../components/nav-bar/nav-bar"
   }
